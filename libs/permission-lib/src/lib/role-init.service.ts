@@ -3,6 +3,7 @@ import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
 import { RoleInitOptions } from './permission-builder';
+import { AppScopePolicyRegistry } from '@optimistic-tanuki/permissions-domain';
 import {
   PermissionCommands,
   RoleCommands,
@@ -15,10 +16,11 @@ export class RoleInitService {
   private readonly queue: RoleInitOptions[] = [];
   private processing = false;
   private readonly logger = new Logger(RoleInitService.name);
+  private readonly policyRegistry = new AppScopePolicyRegistry();
 
   constructor(
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private readonly permissionsClient: ClientProxy
+    private readonly permissionsClient: ClientProxy,
   ) {}
 
   enqueue(options: RoleInitOptions) {
@@ -41,7 +43,7 @@ export class RoleInitService {
       this.processLoop().catch((err) => {
         this.logger.error('RoleInit worker failed', err);
         this.processing = false;
-      })
+      }),
     );
   }
 
@@ -60,7 +62,7 @@ export class RoleInitService {
 
   private async processOne(item: RoleInitOptions) {
     this.logger.log(
-      `role-init scope=${item.scopeName} resource=${item.scopeResourceId}`
+      `role-init scope=${item.scopeName} resource=${item.scopeResourceId}`,
     );
 
     // 1) ensure app scope
@@ -71,14 +73,14 @@ export class RoleInitService {
           { cmd: AppScopeCommands.GetByName },
           {
             name: item.scopeName,
-          }
-        )
+          },
+        ),
       ).catch(() => null);
       this.logger.log(appScope);
     } catch (e: unknown) {
       this.logger.debug(
         'AppScope.GetByName failed',
-        (e as { message: string })?.message || e
+        (e as { message: string })?.message || e,
       );
     }
     if (!appScope) {
@@ -90,13 +92,13 @@ export class RoleInitService {
               name: item.scopeName,
               resourceId: item.scopeResourceId,
               description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
-            }
-          )
+            },
+          ),
         ).catch(() => null);
       } catch (e) {
         this.logger.debug(
           'AppScope.Create failed',
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
       }
     }
@@ -105,9 +107,7 @@ export class RoleInitService {
     }
     const appScopeId = appScope?.id ?? item.scopeResourceId ?? item.scopeName;
 
-    // Cache for cross-scope mappings we may need (e.g. mapping
-    // client-interface roles into the social app scope by default).
-    let socialScope: any | null = null;
+    const scopeCache = new Map<string, any>();
 
     // 2) create permissions (match CreatePermissionDto)
     const permNameToId: Record<string, string> = {};
@@ -123,66 +123,85 @@ export class RoleInitService {
         const created = await firstValueFrom(
           this.permissionsClient.send(
             { cmd: PermissionCommands.Create },
-            payload
-          )
+            payload,
+          ),
         );
         if (created?.id) permNameToId[p.name] = created.id;
       } catch (e) {
         this.logger.debug(
           `Permission.Create failed for ${p.name}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         // fallback: try lookup (optional)
       }
     }
 
-    // For client-interface scope, also create community permissions in social scope
-    if (item.scopeName === 'client-interface') {
-      const communityPermissions = item.permissions?.filter((p) =>
-        p.name.startsWith('community.')
+    const permissionMirrors = this.policyRegistry
+      .get(item.scopeName || 'default')
+      .buildPermissionMirrors?.(item.permissions || []);
+
+    for (const mirror of permissionMirrors || []) {
+      const mirroredPermissions = (item.permissions || []).filter(
+        (permission) => mirror.permissionNames.includes(permission.name),
       );
-      if (communityPermissions?.length) {
-        try {
-          const socialScopeForPerms = await firstValueFrom(
+
+      if (!mirroredPermissions.length) {
+        continue;
+      }
+
+      try {
+        let targetScope = scopeCache.get(mirror.targetScope);
+        if (!targetScope) {
+          targetScope = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: AppScopeCommands.GetByName },
-              { name: 'social' }
-            )
+              { name: mirror.targetScope },
+            ),
           ).catch(() => null);
 
-          if (socialScopeForPerms?.id) {
-            for (const p of communityPermissions) {
-              const socialPayload = {
-                name: p.name,
-                description: p.description || '',
-                resource: p.resource,
-                action: p.action,
-                targetId: socialScopeForPerms.id,
-              };
-              try {
-                await firstValueFrom(
-                  this.permissionsClient.send(
-                    { cmd: PermissionCommands.Create },
-                    socialPayload
-                  )
-                );
-                this.logger.debug(
-                  `Created community permission ${p.name} in social scope`
-                );
-              } catch (e) {
-                this.logger.debug(
-                  `Permission.Create failed for ${p.name} in social scope`,
-                  (e as { message: string })?.message || e
-                );
-              }
-            }
+          if (targetScope) {
+            scopeCache.set(mirror.targetScope, targetScope);
           }
-        } catch (e) {
-          this.logger.debug(
-            `Failed to create community permissions in social scope`,
-            (e as { message: string })?.message || e
-          );
         }
+
+        if (!targetScope?.id) {
+          this.logger.debug(
+            `Permission mirror skipped; scope ${mirror.targetScope} not found`,
+          );
+          continue;
+        }
+
+        for (const permission of mirroredPermissions) {
+          const mirroredPayload = {
+            name: permission.name,
+            description: permission.description || '',
+            resource: permission.resource,
+            action: permission.action,
+            targetId: targetScope.id,
+          };
+
+          try {
+            await firstValueFrom(
+              this.permissionsClient.send(
+                { cmd: PermissionCommands.Create },
+                mirroredPayload,
+              ),
+            );
+            this.logger.debug(
+              `Created mirrored permission ${permission.name} in ${mirror.targetScope}`,
+            );
+          } catch (e) {
+            this.logger.debug(
+              `Permission mirror failed for ${permission.name} in ${mirror.targetScope}`,
+              (e as { message: string })?.message || e,
+            );
+          }
+        }
+      } catch (e) {
+        this.logger.debug(
+          `Permission mirror lookup failed for ${mirror.targetScope}`,
+          (e as { message: string })?.message || e,
+        );
       }
     }
 
@@ -199,48 +218,48 @@ export class RoleInitService {
               name: r.name,
               description: r.description || '',
               appScopeId: appScopeId,
-            }
-          )
+            },
+          ),
         );
         createdRoles[r.name] = role;
       } catch (e) {
         // Creation failed -> try to find existing role by name & scope, then fall back to global scope
         this.logger.debug(
           `Role.Create failed ${r.name}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         try {
           // First try to find role in the specific app scope
           let existing = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: r.name, appScope: item.scopeName }
-            )
+              { name: r.name, appScope: item.scopeName },
+            ),
           ).catch(() => null);
 
           // If not found in app scope, try global scope
           if (!existing && item.scopeName !== 'global') {
             this.logger.debug(
-              `Role ${r.name} not found in ${item.scopeName}, trying global scope`
+              `Role ${r.name} not found in ${item.scopeName}, trying global scope`,
             );
             existing = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: r.name, appScope: 'global' }
-              )
+                { name: r.name, appScope: 'global' },
+              ),
             ).catch(() => null);
           }
 
           // Third try: find role without scope at all (legacy or global fallback)
           if (!existing) {
             this.logger.debug(
-              `Role ${r.name} not found in global scope, trying without scope`
+              `Role ${r.name} not found in global scope, trying without scope`,
             );
             existing = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: r.name }
-              )
+                { name: r.name },
+              ),
             ).catch(() => null);
           }
 
@@ -254,7 +273,7 @@ export class RoleInitService {
         } catch (err) {
           this.logger.debug(
             `Role lookup failed for ${r.name}`,
-            (err as { message: string })?.message || err
+            (err as { message: string })?.message || err,
           );
         }
       }
@@ -272,13 +291,13 @@ export class RoleInitService {
           await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.AddPermission },
-              attachPayload
-            )
+              attachPayload,
+            ),
           );
         } catch (e) {
           this.logger.debug(
             `Role.AddPermission failed role=${r.name} perm=${pname}`,
-            (e as { message: string })?.message || e
+            (e as { message: string })?.message || e,
           );
         }
       }
@@ -294,8 +313,8 @@ export class RoleInitService {
           role = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: a.roleName, appScope: item.scopeName }
-            )
+              { name: a.roleName, appScope: item.scopeName },
+            ),
           ).catch(() => null);
 
           // Fall back to global scope if not found
@@ -303,8 +322,8 @@ export class RoleInitService {
             role = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: a.roleName, appScope: 'global' }
-              )
+                { name: a.roleName, appScope: 'global' },
+              ),
             ).catch(() => null);
           }
 
@@ -313,14 +332,14 @@ export class RoleInitService {
             role = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: a.roleName }
-              )
+                { name: a.roleName },
+              ),
             ).catch(() => null);
           }
         } catch (e) {
           this.logger.debug(
             `Role lookup before assignment failed role=${a.roleName}`,
-            (e as { message: string })?.message || e
+            (e as { message: string })?.message || e,
           );
           role = null;
         }
@@ -338,67 +357,76 @@ export class RoleInitService {
         await firstValueFrom(
           this.permissionsClient.send(
             { cmd: RoleCommands.Assign },
-            assignPayload
-          )
+            assignPayload,
+          ),
         );
       } catch (e) {
         this.logger.debug(
           `Role.Assign failed role=${a.roleName}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         continue;
       }
 
-      // Default cross-scope mapping: when initializing roles for the
-      // client-interface scope, ensure that profiles which receive the
-      // "client_interface_user" or "community_user" role also get that role assigned in
-      // the "social" app scope. This makes social routes callable by
-      // default for client-interface users without requiring
-      // controller-specific mapping logic.
-      if (
-        item.scopeName === 'client-interface' &&
-        a.profileId &&
-        (a.roleName === 'client_interface_user' ||
-          a.roleName === 'community_owner')
-      ) {
+      const crossScopeAssignments = this.policyRegistry
+        .get(item.scopeName || 'default')
+        .buildCrossScopeMappings?.(a);
+
+      for (const mappedAssignment of crossScopeAssignments || []) {
+        if (!mappedAssignment.appScope) {
+          continue;
+        }
+
         try {
-          if (!socialScope) {
-            socialScope = await firstValueFrom(
+          let targetScope = scopeCache.get(mappedAssignment.appScope);
+          if (!targetScope) {
+            targetScope = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: AppScopeCommands.GetByName },
-                { name: 'social' }
-              )
+                { name: mappedAssignment.appScope },
+              ),
             ).catch(() => null);
+
+            if (targetScope) {
+              scopeCache.set(mappedAssignment.appScope, targetScope);
+            }
           }
 
-          if (socialScope?.id) {
-            const socialAssignPayload: any = {
-              roleId: role.id,
-              appScopeId: socialScope.id,
-              profileId: a.profileId,
-            };
-            await firstValueFrom(
-              this.permissionsClient.send(
-                { cmd: RoleCommands.Assign },
-                socialAssignPayload
-              )
-            );
-          } else {
+          if (!targetScope?.id) {
             this.logger.debug(
-              `RoleInitService: social app scope not found; skipping ${a.roleName} -> social mapping`
+              `RoleInitService: ${mappedAssignment.appScope} app scope not found; skipping ${a.roleName} mapping`,
             );
+            continue;
           }
+
+          const mappedPayload: any = {
+            roleId: role.id,
+            appScopeId: targetScope.id,
+          };
+          if (mappedAssignment.profileId) {
+            mappedPayload.profileId = mappedAssignment.profileId;
+          }
+          if (mappedAssignment.userId) {
+            mappedPayload.userId = mappedAssignment.userId;
+          }
+
+          await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.Assign },
+              mappedPayload,
+            ),
+          );
         } catch (e) {
           this.logger.debug(
-            `Role.Assign (social mirror) failed role=${a.roleName}`,
-            (e as { message: string })?.message || e
+            `Role.Assign (cross-scope) failed role=${a.roleName}`,
+            (e as { message: string })?.message || e,
           );
         }
       }
     }
 
     this.logger.log(
-      `completed role-init scope=${item.scopeName} resource=${item.scopeResourceId}`
+      `completed role-init scope=${item.scopeName} resource=${item.scopeResourceId}`,
     );
   }
 }

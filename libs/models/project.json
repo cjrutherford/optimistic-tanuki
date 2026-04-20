@@ -3,7 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/models/src",
   "projectType": "library",
-  "tags": [],
+  "tags": [
+    "type:contracts",
+    "scope:shared",
+    "platform:shared",
+    "visibility:internal"
+  ],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

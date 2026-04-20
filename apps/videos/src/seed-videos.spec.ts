@@ -31,6 +31,8 @@ describe('seed video helpers', () => {
     const files = await discoverSeedVideoFiles(root);
 
     expect(files.map((file) => getRelativeImportPath(root, file))).toEqual([
+      'Comedy/Special.avi',
+      'Drama/Season 1/Episode 01.mkv',
       'Drama/Season 1/Episode 02.mp4',
     ]);
   });
@@ -79,10 +81,19 @@ describe('seed video helpers', () => {
   });
 
   it('marks unsupported extensions as not importable', () => {
-    expect(assessVideoImport('/tmp/show.mkv', 1024)).toEqual({
+    expect(assessVideoImport('/tmp/show.txt', 1024)).toEqual({
       canImport: false,
       reason:
-        'unsupported extension .mkv; supported extensions: .mp4, .mpeg, .mov, .webm',
+        'unsupported extension .txt; supported extensions: .mp4, .mpeg, .mov, .webm, .mkv, .avi, .m3u8',
+    });
+  });
+
+  it('allows common library container formats', () => {
+    expect(assessVideoImport('/tmp/show.mkv', 1024)).toEqual({
+      canImport: true,
+    });
+    expect(assessVideoImport('/tmp/show.avi', 1024)).toEqual({
+      canImport: true,
     });
   });
 

@@ -27,6 +27,10 @@
         "libs/app-config-models/src/index.ts"
       ],
       "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
+      "@optimistic-tanuki/auth-domain": ["libs/auth/domain/src/index.ts"],
+      "@optimistic-tanuki/auth-feature-account-bootstrap": [
+        "libs/auth/feature-account-bootstrap/src/index.ts"
+      ],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
@@ -70,6 +74,9 @@
       ],
       "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
+      "@optimistic-tanuki/permissions-domain": [
+        "libs/permissions/domain/src/index.ts"
+      ],
       "@optimistic-tanuki/persona-ui": ["libs/persona-ui/src/index.ts"],
       "@optimistic-tanuki/profile-ui": ["libs/profile-ui/src/index.ts"],
       "@optimistic-tanuki/project-ui": ["libs/project-ui/src/index.ts"],

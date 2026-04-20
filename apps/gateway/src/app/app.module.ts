@@ -1,7 +1,15 @@
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TcpServiceConfig, loadConfig } from '../config';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import {
+  LoginAccountBootstrapService,
+  RegisterAccountBootstrapService,
+} from '@optimistic-tanuki/auth-feature-account-bootstrap';
 
 import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
@@ -147,10 +155,46 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     },
     RoleInitService,
     {
+      provide: LoginAccountBootstrapService,
+      useFactory: (
+        authClient: ClientProxy,
+        profileClient: ClientProxy,
+        roleInitService: RoleInitService,
+      ) =>
+        new LoginAccountBootstrapService(
+          authClient,
+          profileClient,
+          roleInitService,
+        ),
+      inject: [
+        ServiceTokens.AUTHENTICATION_SERVICE,
+        ServiceTokens.PROFILE_SERVICE,
+        RoleInitService,
+      ],
+    },
+    {
+      provide: RegisterAccountBootstrapService,
+      useFactory: (
+        authClient: ClientProxy,
+        profileClient: ClientProxy,
+        roleInitService: RoleInitService,
+      ) =>
+        new RegisterAccountBootstrapService(
+          authClient,
+          profileClient,
+          roleInitService,
+        ),
+      inject: [
+        ServiceTokens.AUTHENTICATION_SERVICE,
+        ServiceTokens.PROFILE_SERVICE,
+        RoleInitService,
+      ],
+    },
+    {
       provide: ServiceTokens.AUTHENTICATION_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.authentication'
+          'services.authentication',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -211,7 +255,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
       useFactory: (config: ConfigService) => {
         const serviceConfig = config.get<TcpServiceConfig>(
-          'services.project_planning'
+          'services.project_planning',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -227,7 +271,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.chat_collector'
+          'services.chat_collector',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -243,7 +287,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.TELOS_DOCS_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.telos_docs_service'
+          'services.telos_docs_service',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -261,7 +305,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.ai_orchestration'
+          'services.ai_orchestration',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -295,7 +339,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.PERMISSIONS_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.permissions'
+          'services.permissions',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -326,7 +370,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.APP_CONFIGURATOR_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.app_configurator'
+          'services.app_configurator',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -387,7 +431,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.CLASSIFIEDS_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.classifieds'
+          'services.classifieds',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -403,7 +447,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.LEAD_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.lead_tracker'
+          'services.lead_tracker',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -419,7 +463,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       provide: ServiceTokens.SYSTEM_CONFIGURATOR_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.system_configurator'
+          'services.system_configurator',
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
@@ -434,9 +478,8 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     {
       provide: ServiceTokens.VIDEOS_SERVICE,
       useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.videos'
-        );
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.videos');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

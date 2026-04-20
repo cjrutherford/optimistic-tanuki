@@ -24,13 +24,13 @@ import {
   AuthCommands,
   ProfileCommands,
   ServiceTokens,
-  ALL_APP_SCOPES,
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
+import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import {
-  RoleInitBuilder,
-  RoleInitService,
-} from '@optimistic-tanuki/permission-lib';
+  LoginAccountBootstrapService,
+  RegisterAccountBootstrapService,
+} from '@optimistic-tanuki/auth-feature-account-bootstrap';
 
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -45,7 +45,9 @@ export class AuthenticationController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly logger: Logger,
-    private readonly roleInit: RoleInitService
+    private readonly roleInit: RoleInitService,
+    private readonly loginBootstrap: LoginAccountBootstrapService,
+    private readonly registerBootstrap: RegisterAccountBootstrapService,
   ) {
     this.authClient
       .connect()
@@ -62,129 +64,12 @@ export class AuthenticationController {
   async loginUser(@Body() data: LoginRequest, @AppScope() appScope: string) {
     try {
       this.logger.debug(`loginUser called for email=${data.email}`);
-      const userIdResult: string | { userId?: string; id?: string } = await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.UserIdFromEmail },
-          { email: data.email }
-        )
-      );
-      const userId =
-        typeof userIdResult === 'string'
-          ? userIdResult
-          : userIdResult?.userId || userIdResult?.id;
-      if (!userId) {
-        throw new Error(`Unable to resolve userId for email=${data.email}`);
-      }
-      this.logger.debug(
-        `loginUser resolved userId=${userId} for email=${data.email}`
-      );
-      const profiles = await firstValueFrom(
-        this.profileClient.send(
-          { cmd: ProfileCommands.GetAll },
-          { where: { userId: userId } }
-        )
-      );
-      this.logger.debug(
-        `loginUser found ${profiles?.length || 0
-        } profile(s) for userId=${userId}`
-      );
-
-      const effectiveAppScope =
-        appScope === 'owner-console' ? 'global' : appScope;
-
-      // Prefer an app-scoped profile; fall back to global if necessary
-      let appScopedProfile = profiles.find(
-        (p: ProfileDto) => p.appScope === effectiveAppScope
-      );
-      const globalProfile = profiles.find(
-        (p: ProfileDto) => !p.appScope || p.appScope === 'global'
-      );
-      const seedProfile = globalProfile || profiles[0] || null;
-
-      // If the user is signing into a new app for the first time,
-      // create an app-scoped profile and initialize permissions now.
-      if (!appScopedProfile && effectiveAppScope !== 'global') {
-        if (!seedProfile) {
-          this.logger.error(
-            `No profile available to seed scoped profile for userId=${userId} in scope=${effectiveAppScope}`
-          );
-          throw new Error('No profile available for user');
-        }
-
-        this.logger.log(
-          `No app-scoped profile found for userId=${userId} in scope=${effectiveAppScope}. Creating one from seed profile ${seedProfile.id}.`
-        );
-
-        const newProfile: CreateProfileDto & {
-          appScope: string;
-          copyPermissionsFromGlobalProfile?: boolean;
-        } = {
-          userId: seedProfile.userId,
-          name: seedProfile.profileName || data.email,
-          description: '',
-          profilePic: seedProfile.profilePic || '',
-          coverPic: seedProfile.coverPic || '',
-          bio: seedProfile.bio || '',
-          location: seedProfile.location || '',
-          occupation: seedProfile.occupation || '',
-          interests: seedProfile.interests || '',
-          skills: seedProfile.skills || '',
-          appScope: effectiveAppScope,
-          copyPermissionsFromGlobalProfile: false,
-        };
-
-        const createdProfile: ProfileDto = await firstValueFrom(
-          this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
-        );
-
-        this.logger.log(
-          `Created app-scoped profile ${createdProfile.id} for userId=${userId} in scope=${effectiveAppScope}`
-        );
-
-        // Initialize permissions for this new app-scoped profile so that
-        // profile.update and asset.* operations work immediately.
-        const builder = new RoleInitBuilder()
-          .setScopeName(effectiveAppScope)
-          .setProfile(createdProfile.id)
-          .addDefaultProfileOwner(createdProfile.id, effectiveAppScope)
-          .addAppScopeDefaults()
-          .addAssetOwnerPermissions();
-
-        const roleInitOptions = builder.build();
-        this.logger.debug(
-          `loginUser initializing permissions for profile=${createdProfile.id} scope=${effectiveAppScope}`
-        );
-        await this.roleInit.processNow(roleInitOptions);
-
-        appScopedProfile = createdProfile;
-      }
-
-      const profileToUse =
-        effectiveAppScope === 'global'
-          ? globalProfile || profiles[0] || null
-          : appScopedProfile;
-
-      if (!profileToUse) {
-        this.logger.error(
-          `loginUser could not resolve a profile for userId=${userId}`
-        );
-        throw new Error('No profile available for user');
-      }
-
-      this.logger.debug(
-        `loginUser using profileId=${profileToUse.id} appScope=${profileToUse.appScope}`
-      );
-      return await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.Login },
-          { ...data, profileId: profileToUse.id }
-        )
-      );
+      return await this.loginBootstrap.login(data, appScope);
     } catch (error) {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -196,23 +81,23 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async issueTokenForProfile(
     @User() user: UserDetails,
-    @Body() body: { profileId?: string }
+    @Body() body: { profileId?: string },
   ) {
     try {
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId: user.userId, profileId: body.profileId || user.profileId }
-        )
+          { userId: user.userId, profileId: body.profileId || user.profileId },
+        ),
       );
     } catch (error) {
       this.logger.error(
         'Error in issueTokenForProfile:',
-        error?.message || error
+        error?.message || error,
       );
       throw new HttpException(
         `Token issue failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -224,79 +109,20 @@ export class AuthenticationController {
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   async registerUser(
     @Body() data: RegisterRequest,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
   ) {
     try {
       this.logger.debug('registerUser called');
-      const result = await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Register }, data)
-      );
-      this.logger.log(
-        `Registered user with id=${result?.data?.user?.id} email=${result?.data?.user?.email}`
-      );
-      const newProfile: CreateProfileDto & { appScope: string } = {
-        userId: result.data.user.id,
-        name: `${result.data.user.firstName} ${result.data.user.lastName}`,
-        coverPic: '',
-        profilePic: '',
-        bio: '',
-        location: '',
-        description: '',
-        occupation: '',
-        interests: '',
-        skills: '',
-        appScope: appScope === 'owner-console' ? 'global' : appScope,
-      };
-      this.logger.debug(
-        `Creating initial profile for userId=${newProfile.userId} scope=${newProfile.appScope}`
-      );
-      const createdProfile = await firstValueFrom(
-        this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
-      );
-
-      // Special handling for owner-console: create profiles for all app scopes with owner roles
-      if (appScope === 'owner-console') {
-        this.logger.log(
-          `Registering owner user - initializing global owner permissions`
-        );
-
-        // Assign owner-level roles for this scope with full control permissions
-        const builder = new RoleInitBuilder()
-          .setScopeName('global')
-          .setProfile(createdProfile.id)
-          .assignOwnerRole()
-          .addOwnerScopeDefaults()
-          .addAssetOwnerPermissions();
-
-        const roleInitOptions = builder.build();
-        this.logger.debug(
-          `registerUser initializing owner permissions for profile=${createdProfile.id} scope=global`
-        );
-        await this.roleInit.processNow(roleInitOptions);
-      } else {
-        // Standard registration flow
-        const effectiveScope = appScope || 'global';
-        const profilePermissionsBuilder = new RoleInitBuilder()
-          .setScopeName(effectiveScope)
-          .setProfile(createdProfile.id)
-          .addDefaultProfileOwner(createdProfile.id, effectiveScope)
-          .addAppScopeDefaults()
-          .addAssetOwnerPermissions();
-        this.logger.log(
-          `Initializing standard permissions for userId=${newProfile.userId} scope=${effectiveScope}`
-        );
-        const roleInitOptions = profilePermissionsBuilder.build();
-        this.logger.debug(
-          `registerUser initializing standard permissions for profile=${createdProfile.id} scope=${effectiveScope}`
-        );
-        await this.roleInit.processNow(roleInitOptions);
-      }
+      const result = await this.registerBootstrap.register(data, appScope);
       return result;
     } catch (error) {
-      this.logger.error('Error in registerUser:', error?.message || JSON.stringify(error));
+      this.logger.error(
+        'Error in registerUser:',
+        error?.message || JSON.stringify(error),
+      );
       throw new HttpException(
         `Registration failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -308,13 +134,13 @@ export class AuthenticationController {
   async resetPassword(@Body() data: ResetPasswordRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.ResetPassword }, data)
+        this.authClient.send({ cmd: AuthCommands.ResetPassword }, data),
       );
     } catch (error) {
       console.error('Error in resetPassword:', error);
       throw new HttpException(
         `Password reset failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -326,13 +152,13 @@ export class AuthenticationController {
   async enableMfa(@Body() data: EnableMultiFactorRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.EnableMultiFactor }, data)
+        this.authClient.send({ cmd: AuthCommands.EnableMultiFactor }, data),
       );
     } catch (error) {
       console.error('Error in enableMfa:', error);
       throw new HttpException(
         `Enable MFA failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -344,13 +170,13 @@ export class AuthenticationController {
   async validateToken(@Body() data: ValidateTokenRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Validate }, data)
+        this.authClient.send({ cmd: AuthCommands.Validate }, data),
       );
     } catch (error) {
       console.error('Error in validateToken:', error);
       throw new HttpException(
         `Token validation failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -365,13 +191,13 @@ export class AuthenticationController {
   async validateMfa(@Body() data: { userId: string; token: string }) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.ValidateTotp }, data)
+        this.authClient.send({ cmd: AuthCommands.ValidateTotp }, data),
       );
     } catch (error) {
       console.error('Error in validateMfa:', error);
       throw new HttpException(
         `MFA validation failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
@@ -384,13 +210,13 @@ export class AuthenticationController {
     try {
       this.logger.debug('logoutUser called');
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Logout }, data)
+        this.authClient.send({ cmd: AuthCommands.Logout }, data),
       );
     } catch (error) {
       console.error('Error in logoutUser:', error);
       throw new HttpException(
         `Logout failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

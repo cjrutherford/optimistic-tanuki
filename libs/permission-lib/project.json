@@ -3,7 +3,12 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "libs/permission-lib/src",
   "projectType": "library",
-  "tags": [],
+  "tags": [
+    "type:feature",
+    "scope:permissions",
+    "platform:server",
+    "visibility:internal"
+  ],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

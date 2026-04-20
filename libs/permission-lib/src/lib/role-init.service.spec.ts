@@ -4,6 +4,7 @@ import { RoleInitService } from './role-init.service';
 import {
   AppScopeCommands,
   PermissionCommands,
+  RoleCommands,
 } from '@optimistic-tanuki/constants';
 
 describe('RoleInitService', () => {
@@ -14,7 +15,7 @@ describe('RoleInitService', () => {
         .mockImplementation((pattern: { cmd: string }, payload: any) => {
           if (pattern.cmd === AppScopeCommands.GetByName) {
             return throwError(
-              () => new Error(`App scope missing: ${payload.name}`)
+              () => new Error(`App scope missing: ${payload.name}`),
             );
           }
 
@@ -50,14 +51,63 @@ describe('RoleInitService', () => {
         ],
         roles: [],
         assignments: [],
-      })
+      }),
     ).resolves.toBeUndefined();
 
     expect(permissionsClient.send).toHaveBeenCalledWith(
       { cmd: AppScopeCommands.Create },
       expect.objectContaining({
         name: 'leads-app',
-      })
+      }),
+    );
+  });
+
+  it('mirrors cross-scope assignments through the policy registry', async () => {
+    const permissionsClient = {
+      send: jest
+        .fn()
+        .mockImplementation((pattern: { cmd: string }, payload: any) => {
+          if (pattern.cmd === AppScopeCommands.GetByName) {
+            if (payload.name === 'client-interface') {
+              return of({ id: 'scope-client' });
+            }
+
+            if (payload.name === 'social') {
+              return of({ id: 'scope-social' });
+            }
+          }
+
+          if (pattern.cmd === RoleCommands.GetByName) {
+            return of({ id: 'role-community-owner', name: payload.name });
+          }
+
+          if (pattern.cmd === RoleCommands.Assign) {
+            return of({ ok: true });
+          }
+
+          return of(null);
+        }),
+    };
+
+    const service = new RoleInitService(permissionsClient as any);
+    (service as any).logger = {
+      log: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    } as unknown as Logger;
+
+    await service.processNow({
+      scopeName: 'client-interface',
+      assignments: [{ roleName: 'community_owner', profileId: 'profile-1' }],
+    });
+
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.Assign },
+      expect.objectContaining({
+        roleId: 'role-community-owner',
+        appScopeId: 'scope-social',
+        profileId: 'profile-1',
+      }),
     );
   });
 });
