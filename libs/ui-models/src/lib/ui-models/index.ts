@@ -1,4 +1,4 @@
-export type { default as LoginRequest } from './LoginRequest';
+export type { default as LoginRequest, LoginResponse } from './LoginRequest';
 export { type NoteDto, NoteStatus } from './note.dto';
 export { type TaskDto, TaskStatus } from './task.dto';
 export { type TimerDto, TimerStatus } from './timer.dto';
@@ -84,3 +84,4 @@ export * from './appointment';
 export * from './availability';
 export * from './invoice';
 export * from './resource';
+export * from './video';

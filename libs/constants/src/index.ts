@@ -89,6 +89,8 @@ export {
   ForumLinkCommands,
 } from './lib/libs/forum';
 
+export { VideoCommands } from './lib/libs/videos';
+
 export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';

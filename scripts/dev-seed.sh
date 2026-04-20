@@ -19,7 +19,8 @@ run_seed() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" "$service" "$@"
+  # `docker compose exec` is failing in this dev setup with an OCI cwd error.
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" "$service" "$@"
 }
 
 run_seed_with_run() {
@@ -28,7 +29,7 @@ run_seed_with_run() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" "$service" "$@"
 }
 
 run_seed_with_env() {
@@ -39,7 +40,7 @@ run_seed_with_env() {
   shift 4
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" -e "${env_key}=${env_value}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" -e "${env_key}=${env_value}" "$service" "$@"
 }
 
 run_seed_with_run_env() {
@@ -105,3 +106,4 @@ run_seed_with_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./se
 # Skip classifieds seed - path issue needs resolution
 # run_seed_with_env classifieds /app/classifieds GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
 run_seed_with_run payments /usr/src/app node ./seed-products.js
+run_seed_with_run videos /usr/src/app node ./seed-videos.js

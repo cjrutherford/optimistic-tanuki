@@ -14,7 +14,7 @@ export * from './lib/libs/store';
 export * from './lib/libs/appointments';
 export * from './lib/libs/forum';
 export * from './lib/libs/finance';
+export * from './lib/libs/videos';
 export * from './lib/libs/system-configurator';
 export * from './lib/libs/leads/contracts';
 export * from './lib/libs/leads';
-export * from './lib/libs/finance';

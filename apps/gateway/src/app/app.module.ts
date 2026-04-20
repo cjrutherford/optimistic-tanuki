@@ -36,6 +36,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
+import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
@@ -102,6 +103,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     AppConfigController,
     ForumController,
     FinanceController,
+    VideosController,
     WellnessController,
     ClassifiedsController,
     CommunitiesController,
@@ -418,6 +420,22 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       useFactory: (configService: ConfigService) => {
         const serviceConfig = configService.get<TcpServiceConfig>(
           'services.system_configurator'
+        );
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.VIDEOS_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.videos'
         );
         return ClientProxyFactory.create({
           transport: Transport.TCP,

@@ -12,6 +12,11 @@ import { Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import * as nodeFs from 'node:fs/promises';
+
+jest.mock('node:fs/promises', () => ({
+  readFile: jest.fn(),
+}));
 
 describe('AppService', () => {
   let appService: AppService;
@@ -43,7 +48,9 @@ describe('AppService', () => {
       validateFile: jest.fn().mockReturnValue({ isValid: true }),
     } as unknown as FileValidationService;
     virusScanService = {
-      scanFile: jest.fn().mockResolvedValue({ isClean: true, scanner: 'clamav' }),
+      scanFile: jest
+        .fn()
+        .mockResolvedValue({ isClean: true, scanner: 'clamav' }),
     } as unknown as VirusScanService;
 
     const moduleRef = await Test.createTestingModule({
@@ -96,7 +103,7 @@ describe('AppService', () => {
 
       expect(result).toEqual(asset);
       expect(assetRepo.create).toHaveBeenCalledWith({
-        name: 'test.png',
+        name: 'test',
         storageStrategy: 'local_block_storage',
         type: 'image',
         profileId: undefined,
@@ -119,11 +126,11 @@ describe('AppService', () => {
         .mockRejectedValue(new Error('Storage error'));
 
       await expect(appService.createAsset(dto)).rejects.toThrow(
-        new RpcException('Failed to create asset')
+        new RpcException('Failed to create asset'),
       );
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating asset:',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -150,62 +157,226 @@ describe('AppService', () => {
         dto.name,
         dto.profileId,
         dto.type,
-        dto.content.length
+        dto.content.length,
       );
     });
 
     it('should create an asset with base64 content and validation/scanning', async () => {
-      const dto = { name: 'test', type: 'image', content: Buffer.from('test').toString('base64'), fileExtension: 'jpg' } as any;
-      const createdAsset = { id: '1', name: 'sanitized_test.jpg', type: 'image' } as any;
+      const dto = {
+        name: 'test',
+        type: 'image',
+        content: Buffer.from('test').toString('base64'),
+        fileExtension: 'jpg',
+      } as any;
+      const createdAsset = {
+        id: '1',
+        name: 'sanitized_test.jpg',
+        type: 'image',
+      } as any;
       jest.spyOn(assetRepo, 'create').mockReturnValue(createdAsset);
       jest.spyOn(storageAdapter, 'create').mockResolvedValue(createdAsset);
       jest.spyOn(assetRepo, 'save').mockResolvedValue(createdAsset);
-      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: true, sanitizedFilename: 'sanitized_test' } as any);
+      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({
+        isValid: true,
+        sanitizedFilename: 'sanitized_test',
+      } as any);
 
       const result = await appService.createAsset(dto);
 
-      expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'image/jpeg', expect.any(Number), 'image');
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'test',
+        'image/jpeg',
+        expect.any(Number),
+        'image',
+      );
       expect(virusScanService.scanFile).toHaveBeenCalled();
       expect(result.name).toBe('sanitized_test.jpg');
     });
 
+    it('preserves a single filename extension when the name already includes one', async () => {
+      const dto = {
+        name: 'episode.mkv',
+        type: 'video',
+        content: Buffer.from('video').toString('base64'),
+        fileExtension: 'mkv',
+        profileId: 'profile-1',
+      } as any;
+      const asset = { id: '1', ...dto } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'episode.mkv',
+        'video/x-matroska',
+        expect.any(Number),
+        'video',
+      );
+      expect(assetRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'episode.mkv',
+        }),
+      );
+    });
+
+    it('accepts hls manifest files with the correct mime type', async () => {
+      const dto = {
+        name: 'stream.m3u8',
+        type: 'video',
+        content: Buffer.from('#EXTM3U').toString('base64'),
+        fileExtension: 'm3u8',
+      } as any;
+      const asset = { id: '1', ...dto } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'stream.m3u8',
+        'application/vnd.apple.mpegurl',
+        expect.any(Number),
+        'video',
+      );
+    });
+
+    it('accepts rpc-serialized buffer content for large video assets', async () => {
+      const dto = {
+        name: 'episode.mp4',
+        type: 'video',
+        content: {
+          type: 'Buffer',
+          data: [0, 1, 2, 3],
+        },
+        fileExtension: 'mp4',
+        profileId: '00000000-0000-0000-0000-000000000001',
+      } as any;
+      const asset = { id: '1', ...dto } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'episode.mp4',
+        'video/mp4',
+        4,
+        'video',
+      );
+      expect(virusScanService.scanFile).toHaveBeenCalledWith(
+        Buffer.from([0, 1, 2, 3]),
+        'episode.mp4',
+      );
+      expect(
+        (storageAdapter.create as jest.Mock).mock.calls[0][0].content,
+      ).toEqual(Buffer.from([0, 1, 2, 3]));
+    });
+
+    it('creates an asset from sourcePath without requiring inline content', async () => {
+      const dto = {
+        name: 'episode.mp4',
+        type: 'video',
+        sourcePath: '/tmp/imports/episode.mp4',
+        fileExtension: 'mp4',
+        profileId: '00000000-0000-0000-0000-000000000001',
+      } as any;
+      const asset = { id: '1', ...dto } as any;
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+      (nodeFs.readFile as jest.Mock).mockResolvedValue(Buffer.from('video'));
+
+      await appService.createAsset(dto);
+
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'episode.mp4',
+        'video/mp4',
+        expect.any(Number),
+        'video',
+      );
+      expect(virusScanService.scanFile).toHaveBeenCalledWith(
+        expect.any(Buffer),
+        'episode.mp4',
+      );
+      expect(storageAdapter.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sourcePath: '/tmp/imports/episode.mp4',
+        }),
+      );
+    });
+
     it('should throw RpcException if file validation fails', async () => {
       const dto = { name: 'test', type: 'image', content: 'abc' } as any;
-      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: false, errors: ['Invalid size'] } as any);
+      jest
+        .spyOn(fileValidationService, 'validateFile')
+        .mockReturnValue({ isValid: false, errors: ['Invalid size'] } as any);
 
       await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
-      expect(logger.error).toHaveBeenCalledWith('File validation failed:', ['Invalid size']);
+      expect(logger.error).toHaveBeenCalledWith('File validation failed:', [
+        'Invalid size',
+      ]);
     });
 
     it('should throw RpcException if virus scan fails', async () => {
       const dto = { name: 'test', type: 'image', content: 'abc' } as any;
-      jest.spyOn(fileValidationService, 'validateFile').mockReturnValue({ isValid: true } as any);
-      jest.spyOn(virusScanService, 'scanFile').mockResolvedValue({ isClean: false, threats: ['Eicar-Test-Signature'] } as any);
+      jest
+        .spyOn(fileValidationService, 'validateFile')
+        .mockReturnValue({ isValid: true } as any);
+      jest.spyOn(virusScanService, 'scanFile').mockResolvedValue({
+        isClean: false,
+        threats: ['Eicar-Test-Signature'],
+      } as any);
 
       await expect(appService.createAsset(dto)).rejects.toThrow(RpcException);
-      expect(logger.error).toHaveBeenCalledWith('Virus scan failed:', ['Eicar-Test-Signature']);
+      expect(logger.error).toHaveBeenCalledWith('Virus scan failed:', [
+        'Eicar-Test-Signature',
+      ]);
     });
 
     it('should handle buffer content in createAsset', async () => {
-        const dto = { name: 'test', type: 'image', content: Buffer.from('test'), fileExtension: 'pdf' } as any;
-        const asset = { id: '1', ...dto };
-        jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
-        jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
-        jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
-        
-        await appService.createAsset(dto);
-        expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'application/pdf', 4, 'image');
+      const dto = {
+        name: 'test',
+        type: 'image',
+        content: Buffer.from('test'),
+        fileExtension: 'pdf',
+      } as any;
+      const asset = { id: '1', ...dto };
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'test',
+        'application/pdf',
+        4,
+        'image',
+      );
     });
 
     it('should handle unknown file extension', async () => {
-        const dto = { name: 'test', type: 'image', content: 'abc', fileExtension: 'unknown' } as any;
-        const asset = { id: '1', ...dto };
-        jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
-        jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
-        jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
-        
-        await appService.createAsset(dto);
-        expect(fileValidationService.validateFile).toHaveBeenCalledWith('test', 'application/octet-stream', expect.any(Number), 'image');
+      const dto = {
+        name: 'test',
+        type: 'image',
+        content: 'abc',
+        fileExtension: 'unknown',
+      } as any;
+      const asset = { id: '1', ...dto };
+      jest.spyOn(assetRepo, 'create').mockReturnValue(asset);
+      jest.spyOn(storageAdapter, 'create').mockResolvedValue(asset);
+      jest.spyOn(assetRepo, 'save').mockResolvedValue(asset);
+
+      await appService.createAsset(dto);
+      expect(fileValidationService.validateFile).toHaveBeenCalledWith(
+        'test',
+        'application/octet-stream',
+        expect.any(Number),
+        'image',
+      );
     });
   });
 
@@ -229,7 +400,7 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
 
       await expect(appService.removeAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
+        new RpcException(`Asset with id ${handle.id} not found`),
       );
     });
 
@@ -263,7 +434,7 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
 
       await expect(appService.retrieveAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
+        new RpcException(`Asset with id ${handle.id} not found`),
       );
     });
 
@@ -277,7 +448,7 @@ describe('AppService', () => {
 
       expect(logSpy).toHaveBeenCalledWith(
         'Retrieving asset with data:',
-        handle
+        handle,
       );
     });
   });
@@ -304,7 +475,7 @@ describe('AppService', () => {
       jest.spyOn(storageAdapter, 'read').mockResolvedValue(null);
 
       await expect(appService.readAsset(handle)).rejects.toThrow(
-        new RpcException(`Failed to read asset with id ${handle.id}`)
+        new RpcException(`Failed to read asset with id ${handle.id}`),
       );
     });
 
@@ -322,7 +493,7 @@ describe('AppService', () => {
       expect(logSpy).toHaveBeenCalledWith('Retrieved asset:', asset);
       expect(logSpy).toHaveBeenCalledWith(
         'Read asset content length:',
-        content.length
+        content.length,
       );
     });
   });

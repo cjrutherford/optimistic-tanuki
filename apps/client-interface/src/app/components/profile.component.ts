@@ -1,4 +1,4 @@
-import { inject } from '@angular/core';
+import { inject, PLATFORM_ID } from '@angular/core';
 import {
   MessageLevelType,
   MessageService,
@@ -17,6 +17,7 @@ import {
   ProfileDto,
 } from '@optimistic-tanuki/ui-models';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import { isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommunityService } from '../community.service';
 import { PostService } from '../post.service';
@@ -39,6 +40,7 @@ import { PostDto } from '@optimistic-tanuki/social-ui';
   styleUrl: './profile.component.scss',
 })
 export class ProfileComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
@@ -59,11 +61,13 @@ export class ProfileComponent implements OnInit {
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
 
   constructor(readonly _profileService: ProfileService) {
+   if(isPlatformBrowser(this.platformId)) {
     this.profileService = _profileService;
     const profile = localStorage.getItem('selectedProfile');
     if (profile) {
       this.profileService.selectProfile(JSON.parse(profile));
     }
+  }
   }
 
   ngOnInit(): void {

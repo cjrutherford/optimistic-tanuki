@@ -99,6 +99,11 @@
       "name": "finance",
       "description": "Finance application",
       "active": true
+    },
+    {
+      "name": "video-client",
+      "description": "Video platform and channel communities",
+      "active": true
     }
   ],
   "roles": [
@@ -336,6 +341,16 @@
       "name": "finance_admin",
       "description": "Finance administrator with tenant and member management authority",
       "appScope": "finance"
+    },
+    {
+      "name": "video_client_member",
+      "description": "Standard member for the video platform community experience",
+      "appScope": "video-client"
+    },
+    {
+      "name": "video_channel_creator",
+      "description": "Creator role for managing a video channel, schedule, and live feed",
+      "appScope": "video-client"
     }
   ],
   "permissions": [
@@ -2432,6 +2447,102 @@
       "action": "manage",
       "targetId": null,
       "appScope": "finance"
+    },
+    {
+      "name": "videos.channel.create",
+      "description": "Create a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.channel.update",
+      "description": "Update a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.channel.delete",
+      "description": "Delete a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.create",
+      "description": "Create a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.update",
+      "description": "Update a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.delete",
+      "description": "Delete a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.create",
+      "description": "Create a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.update",
+      "description": "Update a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.delete",
+      "description": "Delete a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.live.start",
+      "description": "Start a live on-air session",
+      "active": true,
+      "resource": "videos.live",
+      "action": "start",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.live.stop",
+      "description": "Stop a live on-air session",
+      "active": true,
+      "resource": "videos.live",
+      "action": "stop",
+      "appScope": "video-client"
+    },
+    {
+      "name": "social.reaction.read",
+      "description": "Read a channel community reaction",
+      "active": true,
+      "resource": "reaction",
+      "action": "read",
+      "appScope": "video-client"
     }
   ],
   "role_permissions": [
@@ -5729,6 +5840,151 @@
       "role": "finance_admin",
       "permission": "finance.member.manage",
       "permissionAppScope": "finance"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "community.join",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "community.leave",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "community.read",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.post.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.post.read",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.comment.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.vote.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_client_member",
+      "permission": "social.reaction.read",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.channel.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.channel.update",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.channel.delete",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.video.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.video.update",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.video.delete",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.schedule.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.schedule.update",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.schedule.delete",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.live.start",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "videos.live.stop",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "community.join",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "community.leave",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "community.read",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.post.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.post.read",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.comment.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.vote.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.reaction.create",
+      "permissionAppScope": "video-client"
+    },
+    {
+      "role": "video_channel_creator",
+      "permission": "social.reaction.read",
+      "permissionAppScope": "video-client"
     }
   ]
 }

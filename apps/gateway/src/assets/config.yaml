@@ -100,6 +100,11 @@ services:
     transport: TCP
     host: ot_system_configurator_api
     port: 3021
+  videos:
+    name: videos
+    transport: TCP
+    host: ot_videos
+    port: 3022
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

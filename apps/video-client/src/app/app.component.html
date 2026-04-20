@@ -1,0 +1,27 @@
+<div class="container">
+  <div class="motion-background">
+    <otui-topographic-drift></otui-topographic-drift>
+  </div>
+
+  <otui-app-bar
+    appTitle="Video Platform"
+    logoSrc="assets/logo.png"
+    logoAlt="Video Platform Logo"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    (menuToggle)="toggleNav()"
+  >
+  </otui-app-bar>
+
+  <otui-nav-sidebar
+    [isOpen]="isNavExpanded()"
+    [navItems]="navItems()"
+    heading="Navigation"
+    (close)="isNavExpanded.set(false)"
+  >
+  </otui-nav-sidebar>
+
+  <div class="content">
+    <router-outlet />
+  </div>
+</div>

@@ -707,5 +707,45 @@ services:
     environment:
       - NODE_ENV=development
 
+  videos:
+    container_name: ot_videos
+    volumes:
+      - ./dist/apps/videos:/usr/src/app
+      - /usr/src/app/node_modules
+      - asset-data:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+
+  video-transcoder-worker:
+    container_name: ot_video_transcoder_worker
+    build:
+      context: .
+      dockerfile: ./apps/video-transcoder-worker/Dockerfile
+    volumes:
+      - asset-data:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+
+  video-client:
+    volumes:
+      - ./dist/apps/video-client:/usr/src/app
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/video-client/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/video-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9248 /app/dist/apps/video-client/server/server.mjs'",
+      ]
+    ports:
+      - '8092:4000'
+      - '9248:9248'
+    environment:
+      - NODE_ENV=development
+
+
 volumes:
   asset-data:

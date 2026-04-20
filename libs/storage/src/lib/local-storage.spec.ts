@@ -56,5 +56,25 @@ describe('LocalStorageAdapter', () => {
     expect(adapter).toBeDefined();
   });
 
-  // Add tests for create, remove, retrieve, and read methods here
+  it('creates an asset by copying from sourcePath when content is omitted', async () => {
+    (fs.copyFile as unknown as jest.Mock).mockResolvedValue(undefined);
+    (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
+
+    const dto = {
+      name: 'episode.mp4',
+      profileId: 'profile-1',
+      type: 'video',
+      sourcePath: '/tmp/imports/episode.mp4',
+    } as CreateAssetDto & { sourcePath: string };
+
+    const asset = await adapter.create(dto);
+
+    expect(fs.copyFile).toHaveBeenCalledWith(
+      '/tmp/imports/episode.mp4',
+      path.join(basePath, 'assets', mockUuid, 'episode.mp4'),
+    );
+    expect(asset.storagePath).toBe(
+      path.join('assets', mockUuid, 'episode.mp4'),
+    );
+  });
 });

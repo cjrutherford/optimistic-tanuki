@@ -1,0 +1,181 @@
+# Docker Compose for Video Client UI E2E Tests
+# Setup for testing video-client with required backend services
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    container_name: e2e_db_video_client
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  db-setup:
+    image: node:lts-alpine
+    container_name: e2e_db_setup_video_client
+    working_dir: /workspace
+    volumes:
+      - ..:/workspace
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    restart: 'no'
+
+  authentication:
+    container_name: e2e_authentication_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/authentication/Dockerfile
+    ports:
+      - '3001:3001'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+      JWT_SECRET: e2e-test-jwt-secret
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  profile:
+    container_name: e2e_profile_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/profile/Dockerfile
+    ports:
+      - '3002:3002'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  permissions:
+    container_name: e2e_permissions_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - '3012:3012'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  assets:
+    container_name: e2e_assets_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/assets/Dockerfile
+    ports:
+      - '3005:3005'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  social:
+    container_name: e2e_social_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  videos:
+    container_name: e2e_videos_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/videos/Dockerfile
+    ports:
+      - '3016:3009'
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: videos
+      PORT: 3009
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  gateway:
+    container_name: e2e_gateway_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      AUTHENTICATION_HOST: authentication
+      PROFILE_HOST: profile
+      SOCIAL_HOST: social
+      ASSETS_HOST: assets
+      VIDEOS_HOST: videos
+      VIDEOS_PORT: 3009
+      PERMISSIONS_HOST: permissions
+    depends_on:
+      - authentication
+      - profile
+      - permissions
+      - assets
+      - social
+      - videos
+
+  video-client:
+    container_name: e2e_video_client
+    build:
+      context: ..
+      dockerfile: ./apps/video-client/Dockerfile
+    ports:
+      - '8086:4000'
+    depends_on:
+      - gateway

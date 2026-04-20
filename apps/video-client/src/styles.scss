@@ -1,0 +1,77 @@
+/* Global theme-aware defaults and legacy aliases */
+:root {
+  /* Core standardized theme variables (can be overridden by ThemeService at runtime) */
+  --background: var(--background, #0a0a0f);
+  --foreground: var(--foreground, #e8e8ec);
+  --accent: var(--accent, #6366f1);
+  --complement: var(--complement, #c0af4b);
+  --tertiary: var(--tertiary, #6c757d);
+  --success: var(--success, #22c55e);
+  --danger: var(--danger, #ef4444);
+  --warning: var(--warning, #f59e0b);
+
+  /* RGB triplets for rgba() usage */
+  --background-rgb: 10, 10, 15;
+  --foreground-rgb: 232, 232, 236;
+  --accent-rgb: 99, 102, 241;
+
+  /* Legacy aliases for components that still reference older names */
+  --background-color: var(--background);
+  --foreground-color: var(--foreground);
+  --accent-color: var(--accent);
+  --complementary-color: var(--complement);
+  --primary-color: var(--accent);
+  --button-text-color: #ffffff;
+  --text-color: var(--foreground);
+  --text-secondary-color: rgba(var(--foreground-rgb, 232, 232, 236), 0.6);
+  --surface-color: var(--background);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* Basic page styling honoring theme variables */
+html,
+body {
+  height: 100%;
+  background: var(--background, #0a0a0f);
+  color: var(--foreground, #e8e8ec);
+  font-family: var(--font-body, 'system-ui');
+  scroll-behavior: smooth;
+}
+
+/* Selection styling */
+::selection {
+  background: rgba(var(--accent-rgb, 99, 102, 241), 0.3);
+  color: var(--foreground);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(var(--background-rgb, 10, 10, 15), 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-rgb, 99, 102, 241), 0.4);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-rgb, 99, 102, 241), 0.6);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-rgb, 99, 102, 241), 0.4)
+    rgba(var(--background-rgb, 10, 10, 15), 0.8);
+}
