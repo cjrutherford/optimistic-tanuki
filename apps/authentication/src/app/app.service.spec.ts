@@ -34,6 +34,18 @@ jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
 }));
 
+const expectRpcError = async (promise: Promise<unknown>, message: string) => {
+  let rejected: unknown;
+  try {
+    await promise;
+  } catch (error) {
+    rejected = error;
+  }
+
+  expect(rejected).toBeInstanceOf(RpcException);
+  expect((rejected as RpcException).message).toBe(message);
+};
+
 describe('AppService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -233,12 +245,10 @@ describe('AppService', () => {
       jest
         .spyOn(userRepo, 'findOne')
         .mockResolvedValue(null as unknown as UserEntity);
-      await expect(
+      await expectRpcError(
         service.login('nonexistent@example.com', 'password'),
-      ).rejects.toThrow(RpcException);
-      await expect(
-        service.login('nonexistent@example.com', 'password'),
-      ).rejects.toThrow('User not found');
+        'User not found',
+      );
     });
 
     it('should throw RpcException if password is invalid', async () => {
@@ -246,19 +256,10 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(false as boolean);
-      await expect(
+      await expectRpcError(
         service.login('test@example.com', 'wrongpassword'),
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'wrongpassword');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'Invalid password' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')",
-        ).toBeTruthy();
-      }
+        'Invalid password',
+      );
     });
 
     it('should throw RpcException if MFA is required but not provided', async () => {
@@ -273,19 +274,10 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(true as boolean);
-      await expect(
+      await expectRpcError(
         service.login('test@example.com', 'password'),
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'password');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'MFA token is required for this user.' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')",
-        ).toBeTruthy();
-      }
+        'MFA token is required for this user.',
+      );
     });
 
     it('should throw RpcException if MFA token is invalid', async () => {
@@ -301,19 +293,10 @@ describe('AppService', () => {
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(true as boolean);
       jest.spyOn(authenticator, 'check').mockReturnValue(false as boolean);
-      await expect(
+      await expectRpcError(
         service.login('test@example.com', 'password', 'wrongMfa'),
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'password', 'wrongMfa');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'Invalid MFA token' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')",
-        ).toBeTruthy();
-      }
+        'Invalid MFA token',
+      );
     });
 
     it('should throw RpcException on generic error during login', async () => {
