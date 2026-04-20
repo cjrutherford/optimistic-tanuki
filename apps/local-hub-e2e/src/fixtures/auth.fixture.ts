@@ -130,7 +130,7 @@ export const test = base.extend<TestContext>({
     const user = await createTestUser(request);
     await use(user);
   },
-  dbPool: async ({}, use) => {
+  dbPool: async (_, use) => {
     let pool: Pool | null = null;
     try {
       pool = await createDbPool();
