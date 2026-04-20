@@ -42,14 +42,14 @@ interface LibraryDoc {
         <div class="doc-card">
           <h3>Library Organization</h3>
           <p>
-            This monorepo contains UI libraries (published to npm as
+            This monorepo contains UI libraries (published as
             <code>@optimistic-tanuki/*</code>) and core utilities. The main
             monorepo is <strong>private</strong> while individual libraries are
-            published as <strong>public npm packages</strong>.
+            published as <strong>public packages</strong>.
           </p>
           <div class="doc-meta">
             <span class="meta-tag">Monorepo: <strong>Private</strong></span>
-            <span class="meta-tag">Libraries: <strong>Public npm</strong></span>
+            <span class="meta-tag">Libraries: <strong>Public packages</strong></span>
             <span class="meta-tag">Package Manager: <strong>pnpm</strong></span>
           </div>
         </div>
@@ -57,7 +57,7 @@ interface LibraryDoc {
         <div class="doc-card">
           <h3>Package Manager Migration</h3>
           <p>
-            Successfully migrated from npm to pnpm for improved workspace
+            Successfully migrated to pnpm for improved workspace
             management, faster installs, and better disk space utilization.
           </p>
           <pre class="code-block"><code>pnpm install
@@ -105,7 +105,7 @@ pnpm exec nx build</code></pre>
               optimistic-tanuki org
             </li>
             <li>
-              <strong>npm packages</strong>: @optimistic-tanuki/[lib-name]
+              <strong>public packages</strong>: @optimistic-tanuki/[lib-name]
             </li>
           </ul>
         </div>
@@ -118,7 +118,7 @@ pnpm exec nx build</code></pre>
             <li>
               Libraries in <code>libs/*</code> and apps in <code>apps/*</code>
             </li>
-            <li>All CI workflows updated to use pnpm instead of npm</li>
+            <li>All CI workflows updated to use pnpm</li>
           </ul>
         </div>
       </section>

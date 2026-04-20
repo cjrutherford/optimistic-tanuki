@@ -35,6 +35,7 @@ import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
+import { FinanceController } from '../controllers/finance/finance.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
@@ -101,6 +102,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     StoreController,
     AppConfigController,
     ForumController,
+    FinanceController,
     VideosController,
     WellnessController,
     ClassifiedsController,
@@ -341,6 +343,21 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.forum');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.FINANCE_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig =
+          configService.get<TcpServiceConfig>('services.finance');
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {

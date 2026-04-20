@@ -222,7 +222,7 @@ DOMPurify.sanitize(content, {
 
 **Priority:** HIGH  
 **Status:** Not Started  
-**Action:** Run `npm audit` and address critical vulnerabilities
+**Action:** Run `pnpm audit` and address critical vulnerabilities
 
 ### 4. Security Testing Suite
 

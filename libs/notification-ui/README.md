@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build notification-ui
-npx nx test notification-ui
+pnpm exec nx build notification-ui
+pnpm exec nx test notification-ui
 ```

@@ -39,7 +39,7 @@ if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
   SERVER_RUNNING=true
 else
   echo "Starting $APP_NAME..."
-  npx nx serve "$APP_NAME" --port="$PORT" > "/tmp/${APP_NAME}-serve.log" 2>&1 &
+  pnpm exec nx serve "$APP_NAME" --port="$PORT" > "/tmp/${APP_NAME}-serve.log" 2>&1 &
   SERVER_PID=$!
   SERVER_RUNNING=false
   
@@ -66,7 +66,7 @@ fi
 # Run Playwright tests
 cd "$SCRIPT_DIR"
 echo "Capturing screenshots..."
-BASE_URL="$BASE_URL" APP_NAME="$APP_NAME" npx playwright test --grep="$APP_NAME" --config=playwright.config.ts
+BASE_URL="$BASE_URL" APP_NAME="$APP_NAME" pnpm exec playwright test --grep="$APP_NAME" --config=playwright.config.ts
 
 # Cleanup
 if [ "$SERVER_RUNNING" = false ]; then

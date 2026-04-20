@@ -279,6 +279,61 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('provisions solo finance permissions during fin-commander registration', async () => {
+    const registerRequest: RegisterRequest = {
+      fn: 'Finance',
+      ln: 'User',
+      password: 'test',
+      email: 'finance@test.com',
+      confirm: 'test',
+      bio: '',
+    };
+    const mockResult = {
+      data: {
+        user: {
+          id: 'finance-user',
+          profileId: 'finance-profile',
+          firstName: 'Finance',
+          lastName: 'User',
+        },
+      },
+    };
+
+    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
+    jest
+      .spyOn(profileService, 'send')
+      .mockReturnValueOnce(of({ id: 'finance-profile', appScope: 'finance' }));
+
+    await expect(
+      controller.registerUser(registerRequest, 'finance')
+    ).resolves.toEqual(mockResult);
+
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'finance',
+        roles: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'finance_member',
+            permissions: expect.arrayContaining([
+              'finance.tenant.manage',
+              'finance.onboarding.manage',
+              'finance.summary.read',
+              'finance.transaction.read',
+              'finance.budget.read',
+              'finance.recurring.read',
+            ]),
+          }),
+        ]),
+        assignments: expect.arrayContaining([
+          expect.objectContaining({
+            roleName: 'finance_member',
+            profileId: 'finance-profile',
+          }),
+        ]),
+      })
+    );
+  });
+
   it('should throw HttpException if registerUser fails', async () => {
     const registerRequest: RegisterRequest = {
       fn: 'Test',

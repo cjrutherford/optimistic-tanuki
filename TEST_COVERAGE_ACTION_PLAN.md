@@ -4,7 +4,7 @@
 
 **Repository:** optimistic-tanuki monorepo
 **Target:** 80% code coverage (statements, branches, functions, lines)
-**Test Command:** `npx nx run-many --target=test --all --configuration=ci`
+**Test Command:** `pnpm exec nx run-many --target=test --all --configuration=ci`
 
 ### Issues Identified
 
@@ -45,7 +45,7 @@
 
 ```bash
 # Verify all jest configs parse correctly
-npx nx test <project> --verbose
+pnpm exec nx test <project> --verbose
 ```
 
 ### 2. Fix Angular Component Test Files
@@ -94,20 +94,20 @@ describe('Component', () => {
 
 ```bash
 # All projects
-npx nx run-many --target=test --all --configuration=ci
+pnpm exec nx run-many --target=test --all --configuration=ci
 
 # Single project
-npx nx run <project>:test:ci
+pnpm exec nx run <project>:test:ci
 
 # With verbose output
-npx nx run <project>:test:ci --verbose
+pnpm exec nx run <project>:test:ci --verbose
 ```
 
 ### E2E Tests (Backend Services)
 
 ```bash
 # Note: Requires Docker services running
-npx nx run-many --target=e2e --all
+pnpm exec nx run-many --target=e2e --all
 ```
 
 ## Coverage Reporting

@@ -99,7 +99,7 @@ Metrics captured:
 ### 6. **Debug Mode with Full Message Flow**
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --debug
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --debug
 ```
 
 Shows complete message flow:
@@ -118,7 +118,7 @@ Shows complete message flow:
 ### 7. **Context Window Detection**
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ```
 
 Tests actual context sizes:
@@ -171,25 +171,25 @@ Score 60/100: +20 (correct tool name) +20 (has required fields) +0 (wrong enum v
 ### Basic First Message Testing
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
 ```
 
 ### Debug with Full Flow
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --debug
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --debug
 ```
 
 ### Context Window Detection
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ```
 
 ### Complete Test Suite
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts \
+pnpm exec tsx scripts/ollama-model-screener.ts \
   --benchmark \
   --max-vram 16 \
   --context-window-test \

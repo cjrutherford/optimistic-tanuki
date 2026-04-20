@@ -7,8 +7,8 @@ This guide covers how the permissions service fits into the current local and Ku
 For normal local work, use the repo dev stack:
 
 ```bash
-npm install
-npm run docker:dev
+pnpm install
+pnpm run docker:dev
 ```
 
 That starts the permissions service as part of the main development stack and wires it to the rest of the platform through the gateway.
@@ -115,4 +115,4 @@ docker logs ot_gateway
 docker ps | rg permissions
 ```
 
-Also verify the gateway config and that the full dev stack is up through `npm run docker:dev`.
+Also verify the gateway config and that the full dev stack is up through `pnpm run docker:dev`.

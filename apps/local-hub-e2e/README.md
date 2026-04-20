@@ -29,9 +29,9 @@ docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner
 Equivalent package scripts:
 
 ```bash
-npm run e2e:docker:up
-npm run e2e:docker:test
-npm run e2e:docker:down
+pnpm run e2e:docker:up
+pnpm run e2e:docker:test
+pnpm run e2e:docker:down
 ```
 
 ### Local Playwright run
@@ -39,7 +39,7 @@ npm run e2e:docker:down
 If the required services are already running:
 
 ```bash
-BASE_URL=http://localhost:8087 npx playwright test --config=apps/local-hub-e2e/playwright.config.ts
+BASE_URL=http://localhost:8087 pnpm exec playwright test --config=apps/local-hub-e2e/playwright.config.ts
 ```
 
 ## Environment Variables
@@ -58,4 +58,4 @@ BASE_URL=http://localhost:8087 npx playwright test --config=apps/local-hub-e2e/p
 
 - The suite is designed around Docker-backed dependencies.
 - The compose file lives at the repo root, not inside `apps/local-hub-e2e/`.
-- For the platform-wide local stack, see `npm run docker:dev` and the Docker docs in `docs/devops/docker-compose.md`.
+- For the platform-wide local stack, see `pnpm run docker:dev` and the Docker docs in `docs/devops/docker-compose.md`.

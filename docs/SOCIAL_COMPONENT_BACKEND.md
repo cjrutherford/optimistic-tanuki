@@ -550,7 +550,7 @@ describe('Social Component E2E', () => {
 
 ```bash
 # Development
-npm run migration:run -- -c social
+pnpm run migration:run -- -c social
 
 # Production
 # Include in deployment pipeline

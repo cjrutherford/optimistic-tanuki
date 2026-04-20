@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build form-ui
-npx nx test form-ui
+pnpm exec nx build form-ui
+pnpm exec nx test form-ui
 ```

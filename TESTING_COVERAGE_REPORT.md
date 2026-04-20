@@ -195,19 +195,19 @@ Projects close to 80% that need minimal work:
 
 ```bash
 # Run all tests with coverage
-npx nx run-many --target=test --all --configuration=ci
+pnpm exec nx run-many --target=test --all --configuration=ci
 
 # Run tests for specific project
-npx nx run <project-name>:test:ci
+pnpm exec nx run <project-name>:test:ci
 
 # Run e2e tests
-npx nx run-many --target=e2e --all
+pnpm exec nx run-many --target=e2e --all
 
 # Check coverage report
 cat coverage/<project-path>/coverage-summary.json
 
 # Run with verbose output
-npx nx run <project-name>:test:ci --verbose
+pnpm exec nx run <project-name>:test:ci --verbose
 ```
 
 ## Configuration Changes Made

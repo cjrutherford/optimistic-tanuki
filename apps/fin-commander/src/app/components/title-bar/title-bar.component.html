@@ -1,0 +1,78 @@
+<otui-app-bar
+  appTitle="Fin Commander"
+  [showThemeToggle]="true"
+  [useTile]="true"
+  logoSrc="images/finn-profile.png"
+  menuIcon="☰"
+  (menuToggle)="toggleMenu()"
+>
+</otui-app-bar>
+
+@if (profileContext.isAuthenticated()) {
+<div class="command-bar">
+  <div class="command-bar-left">
+    <div class="state-chip">
+      <span class="state-label">Account</span>
+      <strong>{{ activeTenantName() }}</strong>
+    </div>
+    @if (activePlan(); as plan) {
+    <div class="state-chip accent">
+      <span class="state-label">Plan</span>
+      <strong>{{ plan.name }}</strong>
+    </div>
+    }
+  </div>
+
+  <div class="command-bar-right">
+    <fc-tenant-switcher></fc-tenant-switcher>
+    <fc-profile-selector></fc-profile-selector>
+    <button class="help-btn" (click)="toggleHelp()" aria-label="Help">
+      <span class="help-icon">?</span>
+    </button>
+  </div>
+</div>
+}
+
+<otui-nav-sidebar
+  [isOpen]="menuOpen()"
+  [navItems]="navItems()"
+  heading="Finance command workspace"
+  (close)="menuOpen.set(false)"
+>
+</otui-nav-sidebar>
+
+@if (helpOpen()) {
+<div class="help-overlay" (click)="toggleHelp()">
+  <div class="help-panel" (click)="$event.stopPropagation()">
+    <div class="help-header">
+      <h3>What to do next</h3>
+      <button class="close-btn" (click)="toggleHelp()">×</button>
+    </div>
+    <div class="help-content">
+      <section class="help-section spotlight">
+        <h4>Primary action</h4>
+        <a
+          class="help-cta"
+          [routerLink]="nextAction().route"
+          (click)="toggleHelp()"
+        >
+          {{ nextAction().label }}
+        </a>
+        <p>{{ nextAction().description }}</p>
+      </section>
+
+      <section class="help-section">
+        <h4>Also useful</h4>
+        <div class="help-links">
+          @for (action of supportingActions(); track action.route) {
+          <a [routerLink]="action.route" (click)="toggleHelp()">
+            <strong>{{ action.label }}</strong>
+            <span>{{ action.description }}</span>
+          </a>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+}

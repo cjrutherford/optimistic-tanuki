@@ -3,16 +3,16 @@ RUN apk add --no-cache libc6-compat dumb-init
 WORKDIR /usr/src/app
 
 # Install dependencies
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY eslint.config.mjs .
 COPY libs ./libs
 COPY apps/gateway ./apps/gateway
-RUN npm install --legacy-peer-deps
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # Build the app with sourcemaps (development configuration)
-RUN npx nx build gateway --configuration development --verbose
+RUN pnpm exec nx build gateway --configuration development --verbose
 
 # Production image
 FROM docker.io/node:lts-alpine AS runner
@@ -20,7 +20,7 @@ RUN apk add --no-cache dumb-init
 ENV NODE_ENV=development
 ENV PORT=3000
 WORKDIR /usr/src/app
-RUN npm i -g nodemon
+RUN corepack enable && pnpm add nodemon
 COPY --from=base /usr/src/app/node_modules ./node_modules
 COPY --from=base /usr/src/app/dist/apps/gateway ./dist/apps/gateway
 COPY --from=base /usr/src/app/package.json ./package.json

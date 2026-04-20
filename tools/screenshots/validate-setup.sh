@@ -21,25 +21,25 @@ echo "✓ Repository root found"
 
 # Check if node_modules exists
 if [ ! -d "$ROOT_DIR/node_modules" ]; then
-  echo "✗ node_modules not found. Please run: npm install"
+  echo "✗ node_modules not found. Please run: pnpm install"
   exit 1
 fi
 echo "✓ node_modules found"
 
 # Check if Playwright is installed
-if ! command -v npx &> /dev/null; then
-  echo "✗ npx not found. Please install Node.js"
+if ! command -v pnpm exec &> /dev/null; then
+  echo "✗ pnpm exec not found. Please install Node.js"
   exit 1
 fi
-echo "✓ npx available"
+echo "✓ pnpm exec available"
 
 # Check if TypeScript compiles
 echo ""
 echo "Checking TypeScript compilation..."
 cd "$SCRIPT_DIR"
-if npx tsc --noEmit 2>&1 | grep -q "error TS"; then
+if pnpm exec tsc --noEmit 2>&1 | grep -q "error TS"; then
   echo "✗ TypeScript compilation errors found"
-  npx tsc --noEmit
+  pnpm exec tsc --noEmit
   exit 1
 fi
 echo "✓ TypeScript compiles successfully"
@@ -47,8 +47,8 @@ echo "✓ TypeScript compiles successfully"
 # Check if Playwright config is valid
 echo ""
 echo "Checking Playwright configuration..."
-if npx playwright test --list --config=playwright.config.ts > /dev/null 2>&1; then
-  TEST_COUNT=$(npx playwright test --list --config=playwright.config.ts 2>/dev/null | grep "Total:" | awk '{print $2}')
+if pnpm exec playwright test --list --config=playwright.config.ts > /dev/null 2>&1; then
+  TEST_COUNT=$(pnpm exec playwright test --list --config=playwright.config.ts 2>/dev/null | grep "Total:" | awk '{print $2}')
   echo "✓ Playwright configuration valid"
   echo "  Found $TEST_COUNT tests configured"
 else
@@ -59,11 +59,11 @@ fi
 # Check if Playwright browsers are installed
 echo ""
 echo "Checking Playwright browsers..."
-if npx playwright install --dry-run chromium 2>&1 | grep -q "is already installed"; then
+if pnpm exec playwright install --dry-run chromium 2>&1 | grep -q "is already installed"; then
   echo "✓ Chromium browser is installed"
-elif npx playwright install --dry-run chromium 2>&1 | grep -q "needs to be installed"; then
+elif pnpm exec playwright install --dry-run chromium 2>&1 | grep -q "needs to be installed"; then
   echo "⚠ Chromium browser needs to be installed"
-  echo "  Run: npx playwright install chromium"
+  echo "  Run: pnpm exec playwright install chromium"
   NEEDS_BROWSER=true
 else
   # Try to check if browser exists
@@ -71,7 +71,7 @@ else
     echo "✓ Playwright browsers cache exists"
   else
     echo "⚠ Chromium browser may need to be installed"
-    echo "  Run: npx playwright install chromium"
+    echo "  Run: pnpm exec playwright install chromium"
     NEEDS_BROWSER=true
   fi
 fi
@@ -99,7 +99,7 @@ echo ""
 
 if [ "$NEEDS_BROWSER" = true ]; then
   echo "⚠ Setup is mostly complete, but Playwright browser needs installation:"
-  echo "  npx playwright install chromium"
+  echo "  pnpm exec playwright install chromium"
   echo ""
   echo "After installing the browser, you can run:"
   echo "  cd tools/screenshots"

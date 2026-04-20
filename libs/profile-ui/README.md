@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build profile-ui
-npx nx test profile-ui
+pnpm exec nx build profile-ui
+pnpm exec nx test profile-ui
 ```

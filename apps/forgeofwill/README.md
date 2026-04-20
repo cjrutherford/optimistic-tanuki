@@ -7,7 +7,7 @@
 Run it through the main development stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local URL:
@@ -17,8 +17,8 @@ Primary local URL:
 For direct Nx work:
 
 ```bash
-npx nx serve forgeofwill
-npx nx build forgeofwill
+pnpm exec nx serve forgeofwill
+pnpm exec nx build forgeofwill
 ```
 
 ## Repo Role

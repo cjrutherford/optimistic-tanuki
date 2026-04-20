@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build search-ui
-npx nx test search-ui
+pnpm exec nx build search-ui
+pnpm exec nx test search-ui
 ```

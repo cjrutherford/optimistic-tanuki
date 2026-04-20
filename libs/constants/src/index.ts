@@ -126,3 +126,13 @@ export {
   LeadOnboardingCommands,
   LeadAnalysisCommands,
 } from './lib/libs/leads/lead-commands';
+export {
+  AccountCommands,
+  TransactionCommands,
+  InventoryItemCommands,
+  BudgetCommands,
+  RecurringItemCommands,
+  FinanceSummaryCommands,
+  FinanceTenantCommands,
+  FinanceBankingCommands,
+} from './lib/libs/finance';

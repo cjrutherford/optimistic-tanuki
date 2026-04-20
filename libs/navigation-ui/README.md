@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build navigation-ui
-npx nx test navigation-ui
+pnpm exec nx build navigation-ui
+pnpm exec nx test navigation-ui
 ```

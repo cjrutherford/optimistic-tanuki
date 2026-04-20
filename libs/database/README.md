@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build database
-npx nx test database
+pnpm exec nx build database
+pnpm exec nx test database
 ```

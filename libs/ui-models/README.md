@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build ui-models
-npx nx test ui-models
+pnpm exec nx build ui-models
+pnpm exec nx test ui-models
 ```

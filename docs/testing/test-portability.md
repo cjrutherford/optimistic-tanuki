@@ -14,7 +14,7 @@ This document ensures that all E2E tests in this workspace are portable and can 
 ### ✅ Browser Compatibility
 
 - [x] Playwright tests support Chromium, Firefox, and WebKit
-- [x] Browser installation automated via `npx playwright install`
+- [x] Browser installation automated via `pnpm exec playwright install`
 - [x] Configs allow running specific browsers or all browsers
 
 ### ✅ Dependency Management
@@ -50,7 +50,7 @@ This document ensures that all E2E tests in this workspace are portable and can 
 ### Minimum Requirements
 
 - **Node.js**: v18.0.0 or higher
-- **npm**: v8.0.0 or higher
+- **pnpm**: v10.0.0 or higher
 - **Docker**: v20.0.0 or higher (for microservice tests)
 - **RAM**: 4GB minimum, 8GB recommended
 - **Disk Space**: 5GB for dependencies and browsers
@@ -75,8 +75,8 @@ Total: ~500MB for all browsers
 
 ```bash
 # First time setup
-npm install
-npx playwright install
+pnpm install
+pnpm exec playwright install
 
 # Run all tests
 nx run-many --target=e2e --all
@@ -111,9 +111,10 @@ wsl --install
 
 # Inside WSL2
 sudo apt update
-sudo apt install nodejs npm docker.io
-npm install
-npx playwright install --with-deps
+sudo apt install nodejs docker.io
+corepack enable
+pnpm install
+pnpm exec playwright install --with-deps
 ```
 
 ## Port Configuration
@@ -189,10 +190,10 @@ colima start
 
 ```bash
 # Install with system dependencies
-npx playwright install --with-deps
+pnpm exec playwright install --with-deps
 
 # Or install specific browser
-npx playwright install chromium
+pnpm exec playwright install chromium
 
 # Check installation
 ls ~/.cache/ms-playwright/
@@ -228,7 +229,7 @@ docker-compose logs db
 3. **Clean Up Resources**: Always clean up after tests (databases, files, etc.)
 4. **Handle Timing**: Use proper wait conditions, not arbitrary delays
 5. **Mock External Services**: Don't rely on external APIs in tests
-6. **Version Lock Dependencies**: Use package-lock.json for reproducibility
+6. **Version Lock Dependencies**: Use pnpm-lock.yaml for reproducibility
 7. **Document Assumptions**: Clearly document any environment assumptions
 
 ## Verification Steps
@@ -241,10 +242,10 @@ git clone https://github.com/cjrutherford/optimistic-tanuki.git
 cd optimistic-tanuki
 
 # 2. Install dependencies
-npm install
+pnpm install
 
 # 3. Install browsers
-npx playwright install
+pnpm exec playwright install
 
 # 4. Start required services (if testing microservices)
 docker-compose up -d

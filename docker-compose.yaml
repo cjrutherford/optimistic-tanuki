@@ -15,8 +15,18 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
   db-setup:
-    image: node:lts-alpine
+    build:
+      context: .
+      dockerfile: ./docker/db-setup/Dockerfile
     container_name: db-setup
     working_dir: /workspace
     volumes:
@@ -28,7 +38,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && command -v pg_isready && npm run db:setup"
+    command: /bin/sh -c "command -v pg_isready && pnpm run db:setup"
     restart: 'no'
   redis:
     image: redis:latest
@@ -41,6 +51,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   authentication:
     container_name: ot_authentication
@@ -54,6 +72,14 @@ services:
         condition: service_healthy
       db-setup: # Ensures db-setup is completed before starting authentication
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   ot-client-interface:
     container_name: ot_client_interface # Added
@@ -62,6 +88,14 @@ services:
       dockerfile: ./apps/client-interface/Dockerfile
     ports:
       - '8080:4000'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   forgeofwill-client-interface:
     container_name: fow_client_interface # Added
@@ -70,6 +104,14 @@ services:
       dockerfile: ./apps/forgeofwill/Dockerfile
     ports:
       - '8081:4000'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   digital-homestead-client-interface:
     container_name: dh_client_interface # Added
@@ -86,6 +128,20 @@ services:
       dockerfile: ./apps/hai/Dockerfile
     ports:
       - '8088:4000'
+
+  fin-commander:
+    container_name: ot_fin_commander
+    build:
+      context: .
+      dockerfile: ./apps/fin-commander/Dockerfile
+    ports:
+      - '8089:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
 
   crdn-client-interface:
     container_name: crdn_client_interface # Added
@@ -179,6 +235,8 @@ services:
         condition: service_started
       forum:
         condition: service_started
+      finance:
+        condition: service_started
       wellness:
         condition: service_started
       classifieds:
@@ -189,6 +247,14 @@ services:
         condition: service_started
       leads-app:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   lead-tracker:
     container_name: ot_lead_tracker
@@ -209,6 +275,8 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+      finance:
+        condition: service_started
 
   profile:
     container_name: ot_profile
@@ -244,6 +312,19 @@ services:
       dockerfile: ./apps/forum/Dockerfile
     ports:
       - 3015:3015
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  finance:
+    container_name: ot_finance
+    build:
+      context: .
+      dockerfile: ./apps/finance/Dockerfile
+    ports:
+      - 3016:3016
     depends_on:
       postgres:
         condition: service_healthy
@@ -324,6 +405,14 @@ services:
         condition: service_started
       telos-docs-service:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   telos-docs-service:
     container_name: ot_telos_docs_service
@@ -384,25 +473,13 @@ services:
       - '8085:4000'
     depends_on:
       - gateway
-
-  video-client:
-    container_name: ot_video_client
-    build:
-      context: .
-      dockerfile: ./apps/video-client/Dockerfile
-    ports:
-      - '8089:4000'
-    depends_on:
-      - gateway
-      - videos
-
   store:
     container_name: ot_store
     build:
       context: .
       dockerfile: ./apps/store/Dockerfile
     ports:
-      - '3013:3013'
+      - '3013:3009'
     depends_on:
       postgres:
         condition: service_healthy
@@ -482,7 +559,7 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     ports:
-      - '3016:3016'
+      - '3017:3017'
     depends_on:
       postgres:
         condition: service_healthy
@@ -495,7 +572,7 @@ services:
       context: .
       dockerfile: ./apps/classifieds/Dockerfile
     ports:
-      - '3017:3017'
+      - '3018:3018'
     depends_on:
       postgres:
         condition: service_healthy
@@ -508,61 +585,12 @@ services:
       context: .
       dockerfile: ./apps/payments/Dockerfile
     ports:
-      - '3018:3018'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      db-setup:
-        condition: service_completed_successfully
-
-  videos:
-    container_name: ot_videos
-    build:
-      context: .
-      dockerfile: ./apps/videos/Dockerfile
-    ports:
       - '3019:3019'
-    environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ot_videos
-      - PORT=3019
-      - VIDEO_SEED_SOURCE_DIR=${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
-      - ASSETS_HOST=${ASSETS_HOST:-assets}
-      - ASSETS_PORT=${ASSETS_PORT:-3005}
-      - LOCAL_STORAGE_PATH=/usr/src/app/storage
-      - VIDEO_TRANSCODER_HOST=${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
-      - VIDEO_TRANSCODER_PORT=${VIDEO_TRANSCODER_PORT:-3022}
-    volumes:
-      - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
-      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
-      - video-processing-data:/tmp/video-processing
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-      assets:
-        condition: service_started
-      video-transcoder-worker:
-        condition: service_started
-
-  video-transcoder-worker:
-    container_name: ot_video_transcoder_worker
-    build:
-      context: .
-      dockerfile: ./apps/video-transcoder-worker/Dockerfile
-    ports:
-      - '3022:3022'
-    environment:
-      - PORT=3022
-      - HOST=0.0.0.0
-      - VIDEO_TRANSCODER_OUTPUT_ROOT=/tmp/video-processing
-    volumes:
-      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
-      - video-processing-data:/tmp/video-processing
 
   local-hub-client-interface:
     container_name: ot_local_hub
@@ -587,6 +615,70 @@ services:
     depends_on:
       - gateway
 
+  videos:
+    container_name: ot_videos
+    build:
+      context: .
+      dockerfile: ./apps/videos/Dockerfile
+    ports:
+      - '3022:3022'
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=ot_videos
+      - PORT=3022
+      - VIDEO_SEED_SOURCE_DIR=${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
+      - ASSETS_HOST=${ASSETS_HOST:-assets}
+      - ASSETS_PORT=${ASSETS_PORT:-3005}
+      - LOCAL_STORAGE_PATH=/usr/src/app/storage
+      - VIDEO_TRANSCODER_HOST=${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
+      - VIDEO_TRANSCODER_PORT=${VIDEO_TRANSCODER_PORT:-3023}
+    volumes:
+      - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+      assets:
+        condition: service_started
+      video-transcoder-worker:
+        condition: service_started
+
+  video-transcoder-worker:
+    container_name: ot_video_transcoder_worker
+    build:
+      context: .
+      dockerfile: ./apps/video-transcoder-worker/Dockerfile
+    ports:
+      - '3023:3023'
+    environment:
+      - PORT=3023
+      - HOST=0.0.0.0
+      - VIDEO_TRANSCODER_OUTPUT_ROOT=/tmp/video-processing
+    volumes:
+      - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
+      - video-processing-data:/tmp/video-processing
+
+  video-client:
+    container_name: ot_video_client
+    build:
+      context: .
+      dockerfile: ./apps/video-client/Dockerfile
+    ports:
+      - '8092:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - videos
+
+
 volumes:
   postgres_data:
-  video-processing-data:

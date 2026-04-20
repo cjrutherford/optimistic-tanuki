@@ -55,7 +55,7 @@ For development or when API access isn't available, you can seed placeholder pro
 **Via setup-and-migrate.sh (runs automatically after migrations):**
 
 ```bash
-npm run db:setup
+pnpm run db:setup
 ```
 
 **Direct execution:**
@@ -101,7 +101,7 @@ lemonSqueezy:
 ### Step 2: Run Database Migrations
 
 ```bash
-npm run payments:typeorm:migration:run
+pnpm run payments:typeorm:migration:run
 ```
 
 This creates the `lemon_squeezy_products` table.
@@ -115,7 +115,7 @@ Call the sync command via the payments microservice (see section 2 above).
 **Option B: Manual seed via setup-and-migrate.sh**
 
 ```bash
-npm run db:setup
+pnpm run db:setup
 ```
 
 ### Step 4: Verify Products

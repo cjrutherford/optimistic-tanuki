@@ -21,6 +21,7 @@ export type TcpServiceConfig = {
     | 'app_configurator'
     | 'store'
     | 'forum'
+    | 'finance'
     | 'wellness'
     | 'classifieds'
     | 'payments'
@@ -69,6 +70,7 @@ export type Config = {
     app_configurator: TcpServiceConfig;
     store: TcpServiceConfig;
     forum: TcpServiceConfig;
+    finance: TcpServiceConfig;
     wellness: TcpServiceConfig;
     classifieds: TcpServiceConfig;
     payments: TcpServiceConfig;

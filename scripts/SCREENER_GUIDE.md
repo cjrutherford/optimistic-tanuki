@@ -68,25 +68,25 @@ Tests actual ai-orchestrator requirements:
 ### Basic Screening
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --max-vram 8
+pnpm exec tsx scripts/ollama-model-screener.ts --max-vram 8
 ```
 
 ### Full Benchmark with Verbose Logging
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --max-vram 8 --benchmark --verbose
+pnpm exec tsx scripts/ollama-model-screener.ts --max-vram 8 --benchmark --verbose
 ```
 
 ### Filter by Family and Quantization
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --families llama,qwen --quantizations Q4_K_M,Q5_K_M --benchmark
+pnpm exec tsx scripts/ollama-model-screener.ts --families llama,qwen --quantizations Q4_K_M,Q5_K_M --benchmark
 ```
 
 ### Limit Number of Models
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --max-models 3
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --max-models 3
 ```
 
 ## Output Files

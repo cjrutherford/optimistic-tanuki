@@ -96,6 +96,11 @@
       "active": true
     },
     {
+      "name": "finance",
+      "description": "Finance application",
+      "active": true
+    },
+    {
       "name": "video-client",
       "description": "Video platform and channel communities",
       "active": true
@@ -316,6 +321,26 @@
       "name": "local_hub_admin",
       "description": "Community admin for local-hub",
       "appScope": "local-hub"
+    },
+    {
+      "name": "finance_member",
+      "description": "Finance member with workspace read access and limited contribution rights",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_bookkeeper",
+      "description": "Finance operator for transaction, import, and reconciliation work",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_manager",
+      "description": "Finance manager for accounts, budgets, recurring flows, and onboarding",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_admin",
+      "description": "Finance administrator with tenant and member management authority",
+      "appScope": "finance"
     },
     {
       "name": "video_client_member",
@@ -2047,166 +2072,6 @@
       "appScope": "local-hub"
     },
     {
-      "name": "videos.channel.create",
-      "description": "Create a video channel community",
-      "active": true,
-      "resource": "videos.channel",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.channel.update",
-      "description": "Update a video channel community",
-      "active": true,
-      "resource": "videos.channel",
-      "action": "update",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.channel.delete",
-      "description": "Delete a video channel community",
-      "active": true,
-      "resource": "videos.channel",
-      "action": "delete",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.video.create",
-      "description": "Create a video entry",
-      "active": true,
-      "resource": "videos.video",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.video.update",
-      "description": "Update a video entry",
-      "active": true,
-      "resource": "videos.video",
-      "action": "update",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.video.delete",
-      "description": "Delete a video entry",
-      "active": true,
-      "resource": "videos.video",
-      "action": "delete",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.schedule.create",
-      "description": "Create a scheduled feed block",
-      "active": true,
-      "resource": "videos.schedule",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.schedule.update",
-      "description": "Update a scheduled feed block",
-      "active": true,
-      "resource": "videos.schedule",
-      "action": "update",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.schedule.delete",
-      "description": "Delete a scheduled feed block",
-      "active": true,
-      "resource": "videos.schedule",
-      "action": "delete",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.live.start",
-      "description": "Start a live on-air session",
-      "active": true,
-      "resource": "videos.live",
-      "action": "start",
-      "appScope": "video-client"
-    },
-    {
-      "name": "videos.live.stop",
-      "description": "Stop a live on-air session",
-      "active": true,
-      "resource": "videos.live",
-      "action": "stop",
-      "appScope": "video-client"
-    },
-    {
-      "name": "community.join",
-      "description": "Join a video channel community",
-      "active": true,
-      "resource": "community",
-      "action": "join",
-      "appScope": "video-client"
-    },
-    {
-      "name": "community.leave",
-      "description": "Leave a video channel community",
-      "active": true,
-      "resource": "community",
-      "action": "leave",
-      "appScope": "video-client"
-    },
-    {
-      "name": "community.read",
-      "description": "Read a video channel community",
-      "active": true,
-      "resource": "community",
-      "action": "read",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.post.create",
-      "description": "Create a channel community post",
-      "active": true,
-      "resource": "post",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.post.read",
-      "description": "Read a channel community post",
-      "active": true,
-      "resource": "post",
-      "action": "read",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.comment.create",
-      "description": "Create a channel community comment",
-      "active": true,
-      "resource": "comment",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.vote.create",
-      "description": "Vote in a channel community",
-      "active": true,
-      "resource": "vote",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.reaction.create",
-      "description": "Create a channel community reaction",
-      "active": true,
-      "resource": "reaction",
-      "action": "create",
-      "appScope": "video-client"
-    },
-    {
-      "name": "social.reaction.read",
-      "description": "Read a channel community reaction",
-      "active": true,
-      "resource": "reaction",
-      "action": "read",
-      "appScope": "video-client"
-    },
-    {
       "name": "app-config.create",
       "description": "Create app configurations (global)",
       "active": true,
@@ -2357,6 +2222,327 @@
       "resource": "store.availability",
       "action": "delete",
       "appScope": "global"
+    },
+    {
+      "name": "finance.account.create",
+      "description": "Create finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.read",
+      "description": "Read finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.update",
+      "description": "Update finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.delete",
+      "description": "Delete finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.create",
+      "description": "Create finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.read",
+      "description": "Read finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.update",
+      "description": "Update finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.delete",
+      "description": "Delete finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.create",
+      "description": "Create finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.read",
+      "description": "Read finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.update",
+      "description": "Update finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.delete",
+      "description": "Delete finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.create",
+      "description": "Create finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.read",
+      "description": "Read finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.update",
+      "description": "Update finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.delete",
+      "description": "Delete finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.create",
+      "description": "Create finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.read",
+      "description": "Read finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.update",
+      "description": "Update finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.delete",
+      "description": "Delete finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.summary.read",
+      "description": "Read finance workspace summary and work queues",
+      "active": true,
+      "resource": "finance.summary",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.bank.manage",
+      "description": "Manage finance bank connections",
+      "active": true,
+      "resource": "finance.bank",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.onboarding.manage",
+      "description": "Bootstrap and manage finance onboarding",
+      "active": true,
+      "resource": "finance.onboarding",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.tenant.manage",
+      "description": "Manage finance tenants",
+      "active": true,
+      "resource": "finance.tenant",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.member.manage",
+      "description": "Manage finance tenant members",
+      "active": true,
+      "resource": "finance.member",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "videos.channel.create",
+      "description": "Create a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.channel.update",
+      "description": "Update a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.channel.delete",
+      "description": "Delete a video channel community",
+      "active": true,
+      "resource": "videos.channel",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.create",
+      "description": "Create a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.update",
+      "description": "Update a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.video.delete",
+      "description": "Delete a video entry",
+      "active": true,
+      "resource": "videos.video",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.create",
+      "description": "Create a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "create",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.update",
+      "description": "Update a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "update",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.schedule.delete",
+      "description": "Delete a scheduled feed block",
+      "active": true,
+      "resource": "videos.schedule",
+      "action": "delete",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.live.start",
+      "description": "Start a live on-air session",
+      "active": true,
+      "resource": "videos.live",
+      "action": "start",
+      "appScope": "video-client"
+    },
+    {
+      "name": "videos.live.stop",
+      "description": "Stop a live on-air session",
+      "active": true,
+      "resource": "videos.live",
+      "action": "stop",
+      "appScope": "video-client"
+    },
+    {
+      "name": "social.reaction.read",
+      "description": "Read a channel community reaction",
+      "active": true,
+      "resource": "reaction",
+      "action": "read",
+      "appScope": "video-client"
     }
   ],
   "role_permissions": [
@@ -4876,6 +5062,786 @@
       "permissionAppScope": "store"
     },
     {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "global_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "app-config.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.product.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.order.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.subscription.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.view",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.approve",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.deny",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.cancel",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.complete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.appointment.invoice",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.create",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.update",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "system_admin",
+      "permission": "store.availability.delete",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.tenant.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.tenant.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.member.manage",
+      "permissionAppScope": "finance"
+    },
+    {
       "role": "video_client_member",
       "permission": "community.join",
       "permissionAppScope": "video-client"
@@ -5019,401 +5985,6 @@
       "role": "video_channel_creator",
       "permission": "social.reaction.read",
       "permissionAppScope": "video-client"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.create",
-      "permissionAppScope": "owner-console"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.update",
-      "permissionAppScope": "owner-console"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.delete",
-      "permissionAppScope": "owner-console"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "app-config.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.product.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.product.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.product.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.order.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.order.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.subscription.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.subscription.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.approve",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.deny",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.complete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.appointment.invoice",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.availability.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.availability.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner_console_owner",
-      "permission": "store.availability.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "app-config.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "app-config.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "app-config.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.product.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.product.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.product.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.order.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.order.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.subscription.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.subscription.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.approve",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.deny",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.complete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.appointment.invoice",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.availability.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.availability.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "owner",
-      "permission": "store.availability.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "app-config.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "app-config.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "app-config.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.product.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.product.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.product.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.order.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.order.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.subscription.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.subscription.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.approve",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.deny",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.complete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.appointment.invoice",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.availability.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.availability.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "global_admin",
-      "permission": "store.availability.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "app-config.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "app-config.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "app-config.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.product.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.product.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.product.delete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.order.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.order.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.subscription.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.subscription.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.view",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.approve",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.deny",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.cancel",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.complete",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.appointment.invoice",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.availability.create",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.availability.update",
-      "permissionAppScope": "global"
-    },
-    {
-      "role": "system_admin",
-      "permission": "store.availability.delete",
-      "permissionAppScope": "global"
     }
   ]
 }

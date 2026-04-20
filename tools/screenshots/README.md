@@ -47,20 +47,20 @@ The tool captures screenshots from these Angular applications:
 1. Install dependencies (from the root of the workspace):
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Install Playwright browsers:
 
    ```bash
-   npx playwright install chromium
+   pnpm exec playwright install chromium
    ```
 
    **Note**: If the Playwright browser download fails, you can try:
 
-   - Using a different mirror: `PLAYWRIGHT_DOWNLOAD_HOST=https://mirrors.huaweicloud.com/playwright npx playwright install chromium`
-   - Clearing the cache: `rm -rf ~/.cache/ms-playwright && npx playwright install chromium`
-   - Installing all browsers: `npx playwright install`
+   - Using a different mirror: `PLAYWRIGHT_DOWNLOAD_HOST=https://mirrors.huaweicloud.com/playwright pnpm exec playwright install chromium`
+   - Clearing the cache: `rm -rf ~/.cache/ms-playwright && pnpm exec playwright install chromium`
+   - Installing all browsers: `pnpm exec playwright install`
 
 3. Validate your setup:
 
@@ -113,11 +113,11 @@ If you already have an application running, you can capture screenshots directly
 
 ```bash
 # In one terminal, start the app
-npx nx serve client-interface --port=4200
+pnpm exec nx serve client-interface --port=4200
 
 # In another terminal, run the screenshot tests
 cd tools/screenshots
-BASE_URL="http://localhost:4200" APP_NAME="client-interface" npx playwright test --grep="client-interface" --config=playwright.config.ts
+BASE_URL="http://localhost:4200" APP_NAME="client-interface" pnpm exec playwright test --grep="client-interface" --config=playwright.config.ts
 ```
 
 ### Viewing Results
@@ -144,7 +144,7 @@ To view the Playwright HTML report:
 
 ```bash
 cd tools/screenshots
-npm run report
+pnpm run report
 ```
 
 ## Configuration
@@ -158,7 +158,7 @@ To add new routes to capture, edit `app-configs.ts`:
   name: 'client-interface',
   port: 4200,
   baseUrl: 'http://localhost:4200',
-  serveCommand: 'npx nx serve client-interface',
+  serveCommand: 'pnpm exec nx serve client-interface',
   routes: [
     {
       path: '/new-route',
@@ -221,14 +221,14 @@ lsof -ti:4200 | xargs kill -9
 ### Playwright Browser Not Installed
 
 ```bash
-npx playwright install chromium
+pnpm exec playwright install chromium
 ```
 
 ### Screenshots Look Incomplete
 
 - Increase the `waitForTimeout` in `capture-screenshots.spec.ts`
 - Add specific `waitForSelector` to wait for key elements to load
-- Check the Playwright report for errors: `npm run report`
+- Check the Playwright report for errors: `pnpm run report`
 
 ### Server Fails to Start
 
@@ -281,11 +281,11 @@ To integrate into your own CI/CD pipelines:
 
 ```bash
 # Install dependencies
-npm install
-npx playwright install chromium
+pnpm install
+pnpm exec playwright install chromium
 
 # Build all applications
-npm run build
+pnpm run build
 
 # Capture screenshots
 cd tools/screenshots

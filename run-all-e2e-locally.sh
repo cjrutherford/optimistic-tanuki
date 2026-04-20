@@ -86,7 +86,7 @@ for PROJECT in $PROJECTS; do
     echo "Running tests for $PROJECT..."
     if [ "$IS_JEST" = true ]; then
         # Unset CI for Jest to avoid nx/jest config issues
-        if CI= npx nx e2e "$PROJECT"; then
+        if CI= pnpm exec nx e2e "$PROJECT"; then
             echo "✅ Tests passed for $PROJECT"
         else
             echo "❌ Tests failed for $PROJECT"
@@ -94,7 +94,7 @@ for PROJECT in $PROJECTS; do
         fi
     else
         # Playwright
-        if npx nx e2e "$PROJECT"; then
+        if pnpm exec nx e2e "$PROJECT"; then
             echo "✅ Tests passed for $PROJECT"
         else
             echo "❌ Tests failed for $PROJECT"
@@ -107,14 +107,14 @@ for PROJECT in $PROJECTS; do
   else
     echo "⚠️ No docker-compose file found for $PROJECT ($COMPOSE_FILE). Skipping docker setup, running nx e2e directly..."
     if [ "$IS_JEST" = true ]; then
-        if CI= npx nx e2e "$PROJECT"; then
+        if CI= pnpm exec nx e2e "$PROJECT"; then
              echo "✅ Tests passed for $PROJECT"
         else
              echo "❌ Tests failed for $PROJECT"
              FAILED_PROJECTS+=("$PROJECT")
         fi
     else
-        if npx nx e2e "$PROJECT"; then
+        if pnpm exec nx e2e "$PROJECT"; then
              echo "✅ Tests passed for $PROJECT"
         else
              echo "❌ Tests failed for $PROJECT"

@@ -33,7 +33,7 @@ export default defineConfig({
     process.env['USE_DOCKER'] || process.env['CI']
       ? undefined
       : {
-          command: 'npx nx run client-interface:serve',
+          command: 'pnpm exec nx run client-interface:serve',
           url: 'http://localhost:4200',
           reuseExistingServer: true,
           cwd: workspaceRoot,

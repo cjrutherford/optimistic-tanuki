@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build auth-ui
-npx nx test auth-ui
+pnpm exec nx build auth-ui
+pnpm exec nx test auth-ui
 ```

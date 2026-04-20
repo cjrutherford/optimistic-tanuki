@@ -26,7 +26,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && pnpm run db:setup"
     restart: 'no'
 
   social:
