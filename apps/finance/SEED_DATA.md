@@ -95,7 +95,7 @@ docker compose exec finance node /usr/src/app/seed-finance.js
 Or as part of the development startup:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 ## Notes

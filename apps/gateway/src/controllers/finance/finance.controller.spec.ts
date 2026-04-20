@@ -1,4 +1,9 @@
-import { of } from 'rxjs';
+import {
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { throwError, of } from 'rxjs';
 import { Reflector } from '@nestjs/core';
 import { FinanceController } from './finance.controller';
 import {
@@ -28,7 +33,7 @@ describe('FinanceController', () => {
     await (controller as any).getAccount(
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'account-1',
-      'finance'
+      'finance',
     );
 
     expect(financeClient.send).toHaveBeenCalledWith(
@@ -38,7 +43,7 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
   });
 
@@ -48,7 +53,7 @@ describe('FinanceController', () => {
     await (controller as any).getSummary(
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'business',
-      'finance'
+      'finance',
     );
 
     expect(financeClient.send).toHaveBeenCalledWith(
@@ -58,19 +63,19 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
   });
 
   it('requests the workspace work queue using the authenticated user context', async () => {
     financeClient.send.mockReturnValue(
-      of({ workspace: 'business', items: [] })
+      of({ workspace: 'business', items: [] }),
     );
 
     await (controller as any).getWorkQueue(
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'business',
-      'finance'
+      'finance',
     );
 
     expect(financeClient.send).toHaveBeenCalledWith(
@@ -80,7 +85,7 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
   });
 
@@ -114,7 +119,7 @@ describe('FinanceController', () => {
     ];
 
     const permissionMetadata = Object.getOwnPropertyNames(
-      FinanceController.prototype
+      FinanceController.prototype,
     )
       .flatMap((property) => {
         const handler =
@@ -132,19 +137,19 @@ describe('FinanceController', () => {
   it('protects finance read and onboarding handlers with explicit permission metadata', () => {
     const getAllAccountsPermissions = reflector.get(
       PERMISSIONS_KEY,
-      FinanceController.prototype.getAllAccounts
+      FinanceController.prototype.getAllAccounts,
     );
     const getAllTransactionsPermissions = reflector.get(
       PERMISSIONS_KEY,
-      FinanceController.prototype.getAllTransactions
+      FinanceController.prototype.getAllTransactions,
     );
     const getSummaryPermissions = reflector.get(
       PERMISSIONS_KEY,
-      FinanceController.prototype.getSummary
+      FinanceController.prototype.getSummary,
     );
     const bootstrapPermissions = reflector.get(
       PERMISSIONS_KEY,
-      FinanceController.prototype.bootstrapWorkspaces
+      FinanceController.prototype.bootstrapWorkspaces,
     );
 
     expect(getAllAccountsPermissions?.permissions).toEqual([
@@ -166,15 +171,15 @@ describe('FinanceController', () => {
 
     await (controller as any).listTenants(
       { userId: 'user-1', profileId: 'profile-1' } as any,
-      'finance'
+      'finance',
     );
     await (controller as any).getCurrentTenant(
       { userId: 'user-1', profileId: 'profile-1' } as any,
-      'finance'
+      'finance',
     );
     await (controller as any).listTenantMembers(
       { userId: 'user-1', profileId: 'profile-1' } as any,
-      'finance'
+      'finance',
     );
 
     expect(financeClient.send).toHaveBeenNthCalledWith(
@@ -184,7 +189,7 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
     expect(financeClient.send).toHaveBeenNthCalledWith(
       2,
@@ -193,7 +198,7 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
     expect(financeClient.send).toHaveBeenNthCalledWith(
       3,
@@ -202,8 +207,53 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
+  });
+
+  it('maps rpc not found errors for current tenant requests into http exceptions', async () => {
+    financeClient.send.mockReturnValue(
+      throwError(() => ({
+        statusCode: 404,
+        message: 'Active finance tenant not found',
+      })),
+    );
+
+    await expect(
+      (controller as any).getCurrentTenant(
+        { userId: 'user-1', profileId: 'profile-1' } as any,
+        'finance',
+        null,
+      ),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('maps rpc bad request errors into http exceptions', async () => {
+    financeClient.send.mockReturnValue(
+      throwError(() => ({ statusCode: 400, message: 'Invalid tenant scope' })),
+    );
+
+    await expect(
+      (controller as any).getCurrentTenant(
+        { userId: 'user-1', profileId: 'profile-1' } as any,
+        'finance',
+        null,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('maps unknown rpc failures into internal server errors', async () => {
+    financeClient.send.mockReturnValue(
+      throwError(() => new Error('finance service offline')),
+    );
+
+    await expect(
+      (controller as any).getCurrentTenant(
+        { userId: 'user-1', profileId: 'profile-1' } as any,
+        'finance',
+        null,
+      ),
+    ).rejects.toBeInstanceOf(InternalServerErrorException);
   });
 
   it('routes bank connection commands through the authenticated finance scope', async () => {
@@ -213,18 +263,18 @@ describe('FinanceController', () => {
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'finance',
       'tenant-1',
-      { provider: 'plaid' }
+      { provider: 'plaid' },
     );
     await (controller as any).listBankConnections(
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'finance',
-      'tenant-1'
+      'tenant-1',
     );
     await (controller as any).syncBankConnection(
       { userId: 'user-1', profileId: 'profile-1' } as any,
       'connection-1',
       'finance',
-      'tenant-1'
+      'tenant-1',
     );
 
     expect(financeClient.send).toHaveBeenNthCalledWith(
@@ -234,7 +284,7 @@ describe('FinanceController', () => {
         provider: 'plaid',
         userId: 'user-1',
         tenantId: 'tenant-1',
-      })
+      }),
     );
     expect(financeClient.send).toHaveBeenNthCalledWith(
       2,
@@ -244,7 +294,7 @@ describe('FinanceController', () => {
         profileId: 'profile-1',
         tenantId: 'tenant-1',
         appScope: 'finance',
-      }
+      },
     );
     expect(financeClient.send).toHaveBeenNthCalledWith(
       3,
@@ -255,7 +305,7 @@ describe('FinanceController', () => {
         profileId: 'profile-1',
         tenantId: 'tenant-1',
         appScope: 'finance',
-      }
+      },
     );
   });
 
@@ -268,7 +318,7 @@ describe('FinanceController', () => {
       {
         name: 'Household',
         type: 'household',
-      }
+      },
     );
 
     expect(financeClient.send).toHaveBeenCalledWith(
@@ -279,7 +329,7 @@ describe('FinanceController', () => {
         userId: 'user-1',
         profileId: 'profile-1',
         appScope: 'finance',
-      }
+      },
     );
   });
 });

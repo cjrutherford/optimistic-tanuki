@@ -17,23 +17,23 @@ This directory contains the infrastructure and deployment docs for the active re
 
 ```bash
 # Build dist/ and start the full Docker dev stack
-npm run docker:dev
+pnpm run docker:dev
 
 # First-time bootstrap with seed data
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 
 # Keep hot reload active
-npm run watch:build
+pnpm run watch:build
 
 # Inspect or stop the stack
-npm run docker:dev:ps
-npm run docker:dev:logs
-npm run docker:dev:down
+pnpm run docker:dev:ps
+pnpm run docker:dev:logs
+pnpm run docker:dev:down
 ```
 
 ### Deployment Environments
 
-- **Development**: Docker Compose via `npm run docker:dev`
+- **Development**: Docker Compose via `pnpm run docker:dev`
 - **Staging**: Kubernetes overlay in `k8s/overlays/staging/`
 - **Production**: Kubernetes overlay in `k8s/overlays/production/`
 

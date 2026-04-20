@@ -12,6 +12,6 @@ Additional docs live under `libs/blogging-ui/docs/`.
 ## Nx Commands
 
 ```bash
-npx nx build blogging-ui
-npx nx test blogging-ui
+pnpm exec nx build blogging-ui
+pnpm exec nx test blogging-ui
 ```

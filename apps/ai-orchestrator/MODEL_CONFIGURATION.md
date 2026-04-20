@@ -135,8 +135,8 @@ The model configuration system includes comprehensive tests:
 
 Run tests with:
 ```bash
-npx nx test ai-orchestrator --testPathPattern="model-initializer"
-npx nx test ai-orchestrator --testPathPattern="workflow-control"
+pnpm exec nx test ai-orchestrator --testPathPattern="model-initializer"
+pnpm exec nx test ai-orchestrator --testPathPattern="workflow-control"
 ```
 
 ## Troubleshooting

@@ -12,6 +12,7 @@ import { AuthenticationService } from '../authentication.service';
     <lib-register-block
       registerHeader="Create Fin Commander Account"
       registerButtonText="Register"
+      heroSrc="'images/register-splash.png'"
       callToAction="Create an account for your finance workspace."
       (submitEvent)="onSubmit($event)"
     />

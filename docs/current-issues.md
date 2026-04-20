@@ -66,4 +66,4 @@
 - Objectives 1-7 in additional objectives section are ment
 - No regression in feed rendering or profile navigation.
 - Tests pass via Nx (target affected projects), and manual smoke test on Linux dev stack succeeds.
-- the command `npm run build:dev && npm run docker:build:dev && npm run docker:dev` completes successfully without issue.
+- the command `pnpm run build:dev && pnpm run docker:build:dev && pnpm run docker:dev` completes successfully without issue.

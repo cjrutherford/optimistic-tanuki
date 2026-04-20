@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FinanceTenantService } from './finance-tenant.service';
@@ -241,5 +242,53 @@ describe('FinanceTenantService', () => {
       appScope: 'finance',
       type: 'household',
     });
+  });
+
+  it('surfaces missing current tenants as rpc not found errors', async () => {
+    tenantRepo.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.getCurrentTenant({
+        tenantId: 'missing-tenant',
+        profileId: 'profile-1',
+        appScope: 'finance',
+      }),
+    ).rejects.toMatchObject({
+      constructor: RpcException,
+    });
+
+    await service
+      .getCurrentTenant({
+        tenantId: 'missing-tenant',
+        profileId: 'profile-1',
+        appScope: 'finance',
+      })
+      .catch((error) => {
+        expect(error).toBeInstanceOf(RpcException);
+        expect(error.getError()).toEqual({
+          statusCode: 404,
+          message: 'Active finance tenant not found',
+          error: 'Not Found',
+        });
+      });
+  });
+
+  it('wraps tenant provisioning failures as rpc internal server errors', async () => {
+    tenantRepo.findOne.mockResolvedValue(null);
+    tenantRepo.save.mockRejectedValue(new Error('insert failed'));
+
+    await service
+      .getCurrentTenant({
+        profileId: 'profile-1',
+        appScope: 'finance',
+      })
+      .catch((error) => {
+        expect(error).toBeInstanceOf(RpcException);
+        expect(error.getError()).toEqual({
+          statusCode: 500,
+          message: 'insert failed',
+          error: 'Internal Server Error',
+        });
+      });
   });
 });

@@ -19,7 +19,7 @@ FROM node:lts-alpine
 RUN apk add --no-cache dumb-init
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && pnpm add -g nodemon
+RUN corepack enable && pnpm add nodemon
 
 WORKDIR /app
 

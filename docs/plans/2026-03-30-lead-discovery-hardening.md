@@ -37,7 +37,7 @@ Add provider-level tests that prove:
 
 **Step 2: Run backend tests to verify failure**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: provider tests fail because the providers parse JSON unconditionally and the topic model has no blocklist/intent behavior.
 
@@ -50,7 +50,7 @@ Add Angular tests that prove:
 
 **Step 4: Run frontend tests to verify failure**
 
-Run: `npx nx test leads-app --runInBand`
+Run: `pnpm exec nx test leads-app --runInBand`
 
 Expected: form and service tests fail because the new fields do not exist yet.
 
@@ -79,7 +79,7 @@ Add tests for a small shared helper that:
 
 **Step 2: Run the targeted test to verify failure**
 
-Run: `npx jest apps/lead-tracker/src/app/discovery/himalayas-discovery.provider.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/discovery/himalayas-discovery.provider.spec.ts --runInBand`
 
 Expected: failure because the provider still calls `response.json()` directly.
 
@@ -95,7 +95,7 @@ For Himalayas specifically, treat the current endpoint as unavailable and return
 
 **Step 4: Run tests to verify pass**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: provider tests pass and discovery produces warnings instead of parser crashes.
 
@@ -128,7 +128,7 @@ Add tests that prove:
 
 **Step 2: Run targeted tests to verify failure**
 
-Run: `npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
 
 Expected: failure because DTOs/entities do not expose the new fields.
 
@@ -142,7 +142,7 @@ Normalize them in `LeadsService` the same way sources and Google Maps lists are 
 
 **Step 4: Run tests to verify pass**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: model and service tests pass.
 
@@ -174,7 +174,7 @@ Expected behavior:
 
 **Step 2: Run targeted tests to verify failure**
 
-Run: `npx jest apps/lead-tracker/src/app/discovery/google-maps-discovery.provider.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/discovery/google-maps-discovery.provider.spec.ts --runInBand`
 
 Expected: failure because the provider still requires positive keyword matches from the topic terms.
 
@@ -190,7 +190,7 @@ Also include richer notes so the lead records preserve the exact city/type query
 
 **Step 4: Run tests to verify pass**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: Google Maps tests pass and service-buyer topics produce candidates more reliably.
 
@@ -220,7 +220,7 @@ Add one shared expectation per provider: if the candidate text contains an exclu
 
 **Step 2: Run the tests to verify failure**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: providers still return blocked results.
 
@@ -235,7 +235,7 @@ Use them consistently in every provider instead of duplicating ad hoc string mat
 
 **Step 4: Run tests to verify pass**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: excluded terms are enforced uniformly.
 
@@ -265,7 +265,7 @@ Add tests that prove:
 
 **Step 2: Run UI tests to verify failure**
 
-Run: `npx nx test leads-app --runInBand`
+Run: `pnpm exec nx test leads-app --runInBand`
 
 Expected: failure because the form does not render or submit the new fields.
 
@@ -279,7 +279,7 @@ Update the topic form to:
 
 **Step 4: Run tests to verify pass**
 
-Run: `npx nx test leads-app --runInBand`
+Run: `pnpm exec nx test leads-app --runInBand`
 
 Expected: form tests pass and payloads match backend expectations.
 
@@ -306,7 +306,7 @@ Add coverage that provider warnings surface enough detail to distinguish:
 
 **Step 2: Run tests to verify failure**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
 Expected: diagnostics are too generic.
 
@@ -316,9 +316,9 @@ Improve provider warnings and discovery result messaging so the UI can show acti
 
 **Step 4: Run full verification**
 
-Run: `npx nx test lead-tracker --runInBand`
+Run: `pnpm exec nx test lead-tracker --runInBand`
 
-Run: `npx nx test leads-app --runInBand`
+Run: `pnpm exec nx test leads-app --runInBand`
 
 Expected: both suites pass.
 

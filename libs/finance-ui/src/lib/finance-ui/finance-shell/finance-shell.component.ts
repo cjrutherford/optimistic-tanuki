@@ -152,7 +152,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
       }
       .subnav a {
         padding: 9px 14px;
-        border-radius: var(--border-radius-full, 999px);
+        border-radius: var(--border-radius-lg, 999px);
         background: var(--surface, #ffffff);
         color: var(--primary, #2563eb);
         text-decoration: none;
@@ -160,7 +160,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
       }
       .subnav a.active {
-        background: var(--accent, #d97706);
+        background: var(--secondary, #d97706);
         color: var(--background, #ffffff);
       }
       @media (max-width: 800px) {

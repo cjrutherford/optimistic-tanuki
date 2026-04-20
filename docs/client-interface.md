@@ -170,27 +170,27 @@ From `@optimistic-tanuki/common-ui`:
 ### Prerequisites
 
 - Node.js 18+
-- npm 9+
+- pnpm 10+
 - Angular CLI 17+
 
 ### Development Server
 
 ```bash
 # Start development server
-npm start
+pnpm start
 
 # Or with nx
-npx nx serve client-interface
+pnpm exec nx serve client-interface
 ```
 
 ### Build
 
 ```bash
 # Production build
-npm run build
+pnpm run build
 
 # Or with nx
-npx nx build client-interface
+pnpm exec nx build client-interface
 ```
 
 ## Related Documentation

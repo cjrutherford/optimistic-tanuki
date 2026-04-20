@@ -493,7 +493,7 @@ docker-compose up -d
 
 # With debugging enabled
 docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-npm run watch:build
+pnpm run watch:build
 ```
 
 ### Access Points
@@ -650,7 +650,7 @@ docker-compose up -d
 
 # Start with debugging
 docker-compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-npm run watch:build
+pnpm run watch:build
 ```
 
 ### Testing
@@ -671,10 +671,10 @@ nx e2e social-e2e
 
 ```bash
 # Build all services
-npm run build
+pnpm run build
 
 # Build for development
-npm run build:dev
+pnpm run build:dev
 
 # Build specific service
 nx build authentication

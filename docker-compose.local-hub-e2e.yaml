@@ -43,7 +43,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && npm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && pnpm run db:setup"
     restart: 'no'
     profiles:
       - setup
@@ -239,6 +239,6 @@ services:
     depends_on:
       local-hub-frontend:
         condition: service_healthy
-    command: /bin/sh -c "npx playwright install --with-deps chromium && npx playwright test"
+    command: /bin/sh -c "pnpm exec playwright install --with-deps chromium && pnpm exec playwright test"
     profiles:
       - test

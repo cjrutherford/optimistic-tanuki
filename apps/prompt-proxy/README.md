@@ -7,7 +7,7 @@ The prompt-proxy service provides the platform’s backend surface for prompt-or
 Run it through the normal development stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build prompt-proxy
-npx nx test prompt-proxy
+pnpm exec nx build prompt-proxy
+pnpm exec nx test prompt-proxy
 ```

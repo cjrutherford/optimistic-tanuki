@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build storage
-npx nx test storage
+pnpm exec nx build storage
+pnpm exec nx test storage
 ```

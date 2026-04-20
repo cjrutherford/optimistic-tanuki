@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'npx nx run configurable-client:serve',
+        command: 'pnpm exec nx run configurable-client:serve',
         url: 'http://localhost:4200',
         reuseExistingServer: true,
         cwd: workspaceRoot,

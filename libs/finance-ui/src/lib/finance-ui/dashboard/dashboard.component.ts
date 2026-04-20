@@ -230,7 +230,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
       padding: 10px 16px;
       background: var(--primary, #2563eb);
       color: var(--background, #ffffff);
-      border-radius: var(--border-radius-full, 999px);
+      border-radius: var(--border-radius-lg, 999px);
       text-decoration: none;
       font-weight: 600;
     }

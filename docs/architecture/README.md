@@ -341,13 +341,13 @@ See: [CI/CD Pipeline](./cicd-pipeline.md)
 
 ```bash
 # Full Docker development stack
-npm run docker:dev
+pnpm run docker:dev
 
 # Optional first-time bootstrap with seeds
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 
 # In a second terminal for hot reload
-npm run watch:build
+pnpm run watch:build
 ```
 
 ### Testing

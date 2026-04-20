@@ -172,14 +172,14 @@ The permissions database includes:
 ### Development
 
 ```bash
-npm run build
-npm run docker:dev
+pnpm run build
+pnpm run docker:dev
 ```
 
 ### Production
 
 ```bash
-npm run build
+pnpm run build
 docker-compose up -d
 ```
 

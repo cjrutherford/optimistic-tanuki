@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build permission-lib
-npx nx test permission-lib
+pnpm exec nx build permission-lib
+pnpm exec nx test permission-lib
 ```

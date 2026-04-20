@@ -121,6 +121,8 @@
 }
 
 .help-panel {
+  position: relative;
+  top: 10rem;
   background: var(--surface);
   border-radius: 16px;
   width: min(420px, 90vw);

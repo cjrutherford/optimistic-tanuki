@@ -6,7 +6,7 @@ apt-get update
 apt-get install -y postgresql-client
 
 # Install node deps for running migrations
-npm ci --silent
+pnpm install --frozen-lockfile --silent
 
 # Run the repo's setup-and-migrate script
 sh ./setup-and-migrate.sh

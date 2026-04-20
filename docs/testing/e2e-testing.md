@@ -15,13 +15,13 @@ The workspace includes comprehensive E2E tests for:
 1. Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 2. Install Playwright browsers (required for UI tests):
 
 ```bash
-npx playwright install
+pnpm exec playwright install
 ```
 
 3. Ensure Docker is running (required for microservice tests)
@@ -324,9 +324,9 @@ test.describe('Feature Name', () => {
 
 **Issue**: Playwright executable not found or browser not installed
 
-- Run `npx playwright install` to install all browsers (Chromium, Firefox, WebKit)
-- For specific browser: `npx playwright install chromium`
-- If installation fails, try `npx playwright install --with-deps`
+- Run `pnpm exec playwright install` to install all browsers (Chromium, Firefox, WebKit)
+- For specific browser: `pnpm exec playwright install chromium`
+- If installation fails, try `pnpm exec playwright install --with-deps`
 - Verify installation: `ls ~/.cache/ms-playwright/`
 
 **Issue**: Element not found
@@ -382,7 +382,7 @@ For a simpler setup:
 # Example GitHub Actions workflow
 - name: Run E2E Tests
   run: |
-    npm install
+    pnpm install
     nx run-many --target=e2e --all --configuration=ci
 ```
 

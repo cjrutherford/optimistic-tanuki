@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: process.env['CI']
     ? undefined
     : {
-        command: 'npx nx run owner-console:serve',
+        command: 'pnpm exec nx run owner-console:serve',
         url: 'http://localhost:4200',
         reuseExistingServer: true,
         cwd: workspaceRoot,

@@ -16,6 +16,6 @@ See also:
 ## Nx Commands
 
 ```bash
-npx nx build theme-ui
-npx nx test theme-ui
+pnpm exec nx build theme-ui
+pnpm exec nx test theme-ui
 ```

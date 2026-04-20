@@ -12,7 +12,7 @@ This project contains the Fin Commander Playwright review suite.
 Run the shared bootstrap flow before the suite:
 
 ```bash
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 ```
 
 Only start the suite after all of the following are true:

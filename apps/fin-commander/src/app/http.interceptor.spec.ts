@@ -38,7 +38,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url })
+          new HttpResponse({ status: 200, url: req.url }),
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -46,7 +46,7 @@ describe('AuthInterceptor', () => {
     });
 
     expect(forwardedRequest?.headers.get('Authorization')).toBe(
-      'Bearer fin-token'
+      'Bearer fin-token',
     );
   });
 
@@ -62,7 +62,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url })
+          new HttpResponse({ status: 200, url: req.url }),
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -84,7 +84,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url })
+          new HttpResponse({ status: 200, url: req.url }),
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -108,7 +108,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url })
+          new HttpResponse({ status: 200, url: req.url }),
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -116,7 +116,84 @@ describe('AuthInterceptor', () => {
     });
 
     expect(forwardedRequest?.headers.get('x-finance-tenant-id')).toBe(
-      'tenant-42'
+      'tenant-42',
     );
+  });
+
+  it('does not send a stale finance tenant header for tenant bootstrap requests', async () => {
+    let forwardedRequest: HttpRequest<unknown> | undefined;
+    localStorage.setItem('fin-commander-active-tenant-id', 'tenant-42');
+
+    TestBed.configureTestingModule({
+      providers: [provideRouter([])],
+    });
+
+    await TestBed.runInInjectionContext(async () => {
+      const request = new HttpRequest('GET', '/api/finance/tenant/current');
+      const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
+        forwardedRequest = req;
+        return of(
+          new HttpResponse({ status: 200, url: req.url }),
+        ) as ReturnType<HttpHandlerFn>;
+      };
+
+      await firstValueFrom(financeAppScopeInterceptor(request, next));
+    });
+
+    expect(forwardedRequest?.headers.get('x-ot-appscope')).toBe('finance');
+    expect(forwardedRequest?.headers.has('x-finance-tenant-id')).toBe(false);
+  });
+
+  it('keeps the selected finance tenant header for tenant member requests', async () => {
+    let forwardedRequest: HttpRequest<unknown> | undefined;
+    localStorage.setItem('fin-commander-active-tenant-id', 'tenant-42');
+
+    TestBed.configureTestingModule({
+      providers: [provideRouter([])],
+    });
+
+    await TestBed.runInInjectionContext(async () => {
+      const request = new HttpRequest('GET', '/api/finance/tenant/members');
+      const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
+        forwardedRequest = req;
+        return of(
+          new HttpResponse({ status: 200, url: req.url }),
+        ) as ReturnType<HttpHandlerFn>;
+      };
+
+      await firstValueFrom(financeAppScopeInterceptor(request, next));
+    });
+
+    expect(forwardedRequest?.headers.get('x-finance-tenant-id')).toBe(
+      'tenant-42',
+    );
+  });
+
+  it('does not send a stale finance tenant header for onboarding bootstrap requests', async () => {
+    let forwardedRequest: HttpRequest<unknown> | undefined;
+    localStorage.setItem('fin-commander-active-tenant-id', 'tenant-42');
+
+    TestBed.configureTestingModule({
+      providers: [provideRouter([])],
+    });
+
+    await TestBed.runInInjectionContext(async () => {
+      const request = new HttpRequest(
+        'POST',
+        '/api/finance/onboarding/bootstrap',
+        {},
+      );
+      const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
+        forwardedRequest = req;
+        return of(
+          new HttpResponse({ status: 200, url: req.url }),
+        ) as ReturnType<HttpHandlerFn>;
+      };
+
+      await firstValueFrom(financeAppScopeInterceptor(request, next));
+    });
+
+    expect(forwardedRequest?.headers.get('x-ot-appscope')).toBe('finance');
+    expect(forwardedRequest?.headers.has('x-finance-tenant-id')).toBe(false);
   });
 });

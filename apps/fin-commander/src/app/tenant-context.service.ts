@@ -1,9 +1,5 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import {
-  FinanceService,
-  FinanceTenant,
-  FinanceTenantMember,
-} from '@optimistic-tanuki/finance-ui';
+import { FinanceService, FinanceTenant } from '@optimistic-tanuki/finance-ui';
 import { FinCommanderPlanStore } from '@optimistic-tanuki/fin-commander-data-access';
 import { ProfileContext } from './profile.context';
 
@@ -20,7 +16,6 @@ export class TenantContextService {
 
   readonly activeTenant = signal<FinanceTenant | null>(null);
   readonly availableTenants = signal<FinanceTenant[]>([]);
-  readonly tenantMembers = signal<FinanceTenantMember[]>([]);
   readonly activeTenantId = computed(() => this.activeTenant()?.id ?? null);
 
   constructor() {
@@ -36,7 +31,6 @@ export class TenantContextService {
       const loadVersion = ++this.loadVersion;
       this.activeTenant.set(null);
       this.availableTenants.set([]);
-      this.tenantMembers.set([]);
       this.planStore.setScope(null);
 
       void this.loadTenantContext(loadVersion);
@@ -44,7 +38,7 @@ export class TenantContextService {
   }
 
   async loadTenantContext(
-    expectedLoadVersion = this.loadVersion
+    expectedLoadVersion = this.loadVersion,
   ): Promise<void> {
     const tenant = await this.financeService.getCurrentTenant();
 
@@ -52,10 +46,7 @@ export class TenantContextService {
       return;
     }
 
-    const [tenants, members] = await Promise.all([
-      this.financeService.getTenants(),
-      this.financeService.getTenantMembers(),
-    ]);
+    const tenants = await this.financeService.getTenants();
 
     if (expectedLoadVersion !== this.loadVersion) {
       return;
@@ -63,7 +54,6 @@ export class TenantContextService {
 
     this.availableTenants.set(tenants);
     this.activeTenant.set(this.resolveActiveTenant(tenants, tenant));
-    this.tenantMembers.set(members);
 
     const profileId = this.profileContext.currentProfileId();
     this.planStore.setScope(
@@ -72,7 +62,7 @@ export class TenantContextService {
             tenantId: this.activeTenant()!.id,
             profileId,
           }
-        : null
+        : null,
     );
   }
 
@@ -87,7 +77,7 @@ export class TenantContextService {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(
         TenantContextService.activeTenantStorageKey,
-        tenant.id
+        tenant.id,
       );
     }
     this.activeTenant.set(tenant);
@@ -99,18 +89,13 @@ export class TenantContextService {
             tenantId: tenant.id,
             profileId,
           }
-        : null
+        : null,
     );
-
-    void this.financeService
-      .getTenantMembers()
-      .then((members) => this.tenantMembers.set(members))
-      .catch(() => undefined);
   }
 
   private resolveActiveTenant(
     tenants: FinanceTenant[],
-    fallbackTenant: FinanceTenant | null
+    fallbackTenant: FinanceTenant | null,
   ): FinanceTenant | null {
     const persistedId =
       typeof localStorage !== 'undefined'
@@ -128,7 +113,6 @@ export class TenantContextService {
     this.loadVersion += 1;
     this.activeTenant.set(null);
     this.availableTenants.set([]);
-    this.tenantMembers.set([]);
     this.planStore.setScope(null);
   }
 }

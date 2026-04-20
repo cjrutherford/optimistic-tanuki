@@ -57,7 +57,7 @@ it('loads a selected lead into the form when edit is clicked', () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL because `LeadsComponent` has no edit state or edit submit behavior.
 
 **Step 3: Write minimal implementation**
@@ -66,7 +66,7 @@ No production code yet. Just confirm the missing behavior through tests.
 
 **Step 4: Run test to verify it fails for the right reason**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL specifically on edit-mode expectations, not test setup.
 
 **Step 5: Commit**
@@ -93,7 +93,7 @@ Add tests covering explicit mode transitions:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL because the component does not track edit state separately from quick add.
 
 **Step 3: Write minimal implementation**
@@ -116,7 +116,7 @@ Use one normalized form object for both modes.
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: PASS for state transitions.
 
 **Step 5: Commit**
@@ -167,7 +167,7 @@ it('submits an update when the form is in edit mode', () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL because there is no save branching for edit mode.
 
 **Step 3: Write minimal implementation**
@@ -185,8 +185,8 @@ Keep DTO shaping in one helper so create and edit do not diverge accidentally.
 Run:
 
 ```bash
-npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand
-npx jest apps/leads-app/src/app/leads.service.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/leads.service.spec.ts --runInBand
 ```
 
 Expected: PASS.
@@ -216,7 +216,7 @@ Add DOM-level tests for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL because the UI does not distinguish create from edit.
 
 **Step 3: Write minimal implementation**
@@ -230,7 +230,7 @@ Adjust the existing slide panel rather than introducing a second modal:
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -263,7 +263,7 @@ Add tests covering editing of:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: FAIL for fields that are not currently editable in the panel.
 
 **Step 3: Write minimal implementation**
@@ -277,7 +277,7 @@ Recommendation:
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -310,9 +310,9 @@ Add or tighten tests to ensure:
 Run:
 
 ```bash
-npx jest apps/gateway/src/controllers/leads/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
+pnpm exec jest apps/gateway/src/controllers/leads/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
 ```
 
 Expected: FAIL only if the current update path does not match the edited payload assumptions.
@@ -352,13 +352,13 @@ No new tests. This is integration verification.
 Run:
 
 ```bash
-npx jest apps/leads-app/src/app/leads.component.spec.ts --runInBand
-npx jest apps/leads-app/src/app/leads.service.spec.ts --runInBand
-npx jest apps/gateway/src/controllers/leads/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
-npx tsc -p apps/leads-app/tsconfig.app.json --noEmit
-npm run build:dev
+pnpm exec jest apps/leads-app/src/app/leads.component.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/leads.service.spec.ts --runInBand
+pnpm exec jest apps/gateway/src/controllers/leads/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
+pnpm exec tsc -p apps/leads-app/tsconfig.app.json --noEmit
+pnpm run build:dev
 ```
 
 Expected: all edit workflow tests pass and the dev build succeeds.

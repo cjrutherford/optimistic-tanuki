@@ -101,7 +101,7 @@ export * from './user-onboarding-profile.interface';
 
 **Step 3: Run TypeScript to verify**
 
-Run: `npx tsc -p libs/models/tsconfig.lib.json --noEmit`
+Run: `pnpm exec tsc -p libs/models/tsconfig.lib.json --noEmit`
 Expected: PASS
 
 **Step 4: Commit**
@@ -140,7 +140,7 @@ expect(topicDto.priority).toBe(1);
 
 **Step 2: Run to verify**
 
-Run: `npx tsc -p libs/models/tsconfig.lib.json --noEmit`
+Run: `pnpm exec tsc -p libs/models/tsconfig.lib.json --noEmit`
 Expected: FAIL - new fields don't exist yet
 
 **Step 3: Update the LeadTopic model**
@@ -245,7 +245,7 @@ export interface CreateLeadTopicDto {
 
 **Step 5: Run TypeScript to verify**
 
-Run: `npx tsc -p libs/models/tsconfig.lib.json --noEmit`
+Run: `pnpm exec tsc -p libs/models/tsconfig.lib.json --noEmit`
 Expected: PASS
 
 **Step 6: Commit**
@@ -312,7 +312,7 @@ export interface LeadAnalysisDto {
 
 **Step 2: Run TypeScript to verify**
 
-Run: `npx tsc -p libs/models/tsconfig.lib.json --noEmit`
+Run: `pnpm exec tsc -p libs/models/tsconfig.lib.json --noEmit`
 Expected: PASS
 
 **Step 3: Commit**
@@ -1219,7 +1219,7 @@ export class AppModule {}
 
 **Step 3: Run tests**
 
-Run: `npx jest apps/lead-tracker/src/app/onboarding-analysis.service.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/onboarding-analysis.service.spec.ts --runInBand`
 Expected: Will need to create test file
 
 **Step 4: Commit**
@@ -1571,9 +1571,9 @@ git commit -m "feat: integrate interview wizard into dashboard"
 Run:
 
 ```bash
-npx tsc -p apps/leads-app/tsconfig.app.json --noEmit
-npx tsc -p apps/lead-tracker/tsconfig.app.json --noEmit
-npx tsc -p libs/models/tsconfig.lib.json --noEmit
+pnpm exec tsc -p apps/leads-app/tsconfig.app.json --noEmit
+pnpm exec tsc -p apps/lead-tracker/tsconfig.app.json --noEmit
+pnpm exec tsc -p libs/models/tsconfig.lib.json --noEmit
 ```
 
 Expected: PASS
@@ -1583,17 +1583,17 @@ Expected: PASS
 Run:
 
 ```bash
-npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand
-npx jest apps/leads-app/src/app/topics.component.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/topics.component.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
 ```
 
 Expected: PASS
 
 **Step 3: Build**
 
-Run: `npm run build:dev`
+Run: `pnpm run build:dev`
 Expected: PASS
 
 **Step 4: Commit**

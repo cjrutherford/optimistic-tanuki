@@ -7,7 +7,7 @@ The chat collector service stores and retrieves chat-related data for the platfo
 Run it via the main development stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build chat-collector
-npx nx test chat-collector
+pnpm exec nx build chat-collector
+pnpm exec nx test chat-collector
 ```

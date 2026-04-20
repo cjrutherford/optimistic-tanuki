@@ -64,7 +64,7 @@ validation pass run locally with `scripts/validate-workflows.sh` after commit
 |-------|--------|
 | **Workflow** | `e2e-tests.yml` → Microservices E2E Tests, UI E2E Tests |
 | **Error** | Microservices job: `The runner has received a shutdown signal` (exit 143, job cancelled after timeout). UI E2E: job logs not available (404). |
-| **Root cause** | Building all microservice Docker images with `npm install --legacy-peer-deps` inside each Dockerfile stage takes far more than the 6-hour GitHub Actions runner limit. The UI E2E job also silently fails (no artifacts, no logs uploaded) and its cancellation is counted as a failure. |
+| **Root cause** | Building all microservice Docker images with a legacy peer-dependency install inside each Dockerfile stage takes far more than the 6-hour GitHub Actions runner limit. The UI E2E job also silently fails (no artifacts, no logs uploaded) and its cancellation is counted as a failure. |
 | **Recommended fix** | (a) Pre-build and cache Docker images in the build-push workflow, then pull them in E2E. (b) Parallelize E2E jobs or use a self-hosted runner with a longer timeout. (c) Add `continue-on-error: true` to the `UI E2E Tests` job upload step to ensure logs are always uploaded before the job ends. |
 | **Status** | ⚠️ Pre-existing infrastructure issue — not introduced by this PR; tracked for a follow-up |
 
@@ -151,34 +151,34 @@ validation pass run locally with `scripts/validate-workflows.sh` after commit
 
 ---
 
-### 2.6 `README.md` — Uses `npm install` in a pnpm Repository
+### 2.6 `README.md` — Uses the Wrong Install Command in a pnpm Repository
 
 | Field | Detail |
 |-------|--------|
 | **File** | `README.md:15-33` |
-| **Issue** | The Getting Started quickstart and prerequisites listed `npm` / `npm install`, but the repo uses pnpm (`pnpm-lock.yaml`, `pnpm-workspace.yaml`). Running `npm install` produces a non-reproducible install and conflicts with CI. |
-| **Fix** | Replaced `npm install` with `pnpm install` and updated the prerequisite list to `pnpm` instead of `npm`. |
+| **Issue** | The Getting Started quickstart and prerequisites listed the wrong package-manager install command, but the repo uses pnpm (`pnpm-lock.yaml`, `pnpm-workspace.yaml`). Running the wrong installer produces a non-reproducible install and conflicts with CI. |
+| **Fix** | Replaced the install guidance with `pnpm install` and updated the prerequisite list to `pnpm`. |
 | **Status** | ✅ Fixed |
 
 ---
 
-### 2.7 `build-push.yml` — `npm ci` in pnpm Repository
+### 2.7 `build-push.yml` — `pnpm install --frozen-lockfile` in pnpm Repository
 
 | Field | Detail |
 |-------|--------|
 | **File** | `.github/workflows/build-push.yml:40-47` |
-| **Issue** | The original PR review suggested replacing `npm ci` with pnpm. |
+| **Issue** | The original PR review suggested replacing `pnpm install --frozen-lockfile` with pnpm. |
 | **Note** | The workflow was already using pnpm (`pnpm install --frozen-lockfile`) in commit `ef782c1`. No further change needed. |
 | **Status** | ✅ Already fixed in a prior commit |
 
 ---
 
-### 2.8 `deploy.yml` — `npm ci` in pnpm Repository
+### 2.8 `deploy.yml` — `pnpm install --frozen-lockfile` in pnpm Repository
 
 | Field | Detail |
 |-------|--------|
 | **File** | `.github/workflows/deploy.yml:83-93` |
-| **Issue** | The original PR review suggested replacing `npm ci` with pnpm. |
+| **Issue** | The original PR review suggested replacing `pnpm install --frozen-lockfile` with pnpm. |
 | **Note** | The workflow was already updated to `pnpm install --frozen-lockfile` in commit `ef782c1`. No further change needed. |
 | **Status** | ✅ Already fixed in a prior commit |
 
@@ -193,7 +193,7 @@ validate all GitHub Actions workflow files before committing. It:
 2. Falls back to **yamllint** for YAML structure errors.
 3. Falls back to **python3** YAML parsing as a last resort.
 4. Checks for common anti-patterns:
-   - `npm ci` / `npm install` in a pnpm-managed repo
+   - `pnpm install --frozen-lockfile` / `pnpm install` in a pnpm-managed repo
    - Missing top-level `permissions:` block
    - `k8s/**` push trigger without `paths-ignore` (self-trigger loop risk)
    - Bot `git push` without `paths-ignore` or an actor guard
@@ -242,7 +242,7 @@ go install github.com/rhysd/actionlint/cmd/actionlint@latest
 | 2.3 | admin-env-wizard — out-of-bounds panic on step transition | 🔴 Blocking | ✅ Fixed |
 | 2.4 | stack-client — nil `Run` field causes panic | 🔴 Blocking | ✅ Fixed |
 | 2.5 | stack-client — error banner not cleared on navigation | 🟡 Medium | ✅ Fixed |
-| 2.6 | README — `npm install` in pnpm repo | 🟡 Medium | ✅ Fixed |
-| 2.7 | build-push.yml — `npm ci` in pnpm repo | 🟡 Medium | ✅ Already fixed |
-| 2.8 | deploy.yml — `npm ci` in pnpm repo | 🟡 Medium | ✅ Already fixed |
+| 2.6 | README — `pnpm install` in pnpm repo | 🟡 Medium | ✅ Fixed |
+| 2.7 | build-push.yml — `pnpm install --frozen-lockfile` in pnpm repo | 🟡 Medium | ✅ Already fixed |
+| 2.8 | deploy.yml — `pnpm install --frozen-lockfile` in pnpm repo | 🟡 Medium | ✅ Already fixed |
 | 3.0 | Workflow validation script | 🟢 Enhancement | ✅ Added |

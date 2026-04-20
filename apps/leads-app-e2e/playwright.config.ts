@@ -24,7 +24,7 @@ export default defineConfig({
   },
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: 'npx nx run leads-app:serve',
+    command: 'pnpm exec nx run leads-app:serve',
     url: 'http://localhost:4200',
     reuseExistingServer: true,
     cwd: workspaceRoot,

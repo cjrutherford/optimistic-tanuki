@@ -7,7 +7,7 @@ The social service handles social interactions and social data for the platform.
 Run it via the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -24,6 +24,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build social
-npx nx test social
+pnpm exec nx build social
+pnpm exec nx test social
 ```

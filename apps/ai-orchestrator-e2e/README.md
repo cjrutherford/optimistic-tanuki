@@ -13,7 +13,7 @@ Recommended flow:
 ./scripts/start-e2e-deps.sh
 
 # Then run the suite
-npx nx e2e ai-orchestrator-e2e --skip-nx-cache --testTimeout=30000
+pnpm exec nx e2e ai-orchestrator-e2e --skip-nx-cache --testTimeout=30000
 ```
 
 ## Expected Local Dependencies

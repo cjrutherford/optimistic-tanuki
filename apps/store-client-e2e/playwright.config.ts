@@ -27,7 +27,7 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }]],
   /* Run your local dev server before starting the tests */
   // webServer: {
-  //   command: 'npx nx run store-client:serve',
+  //   command: 'pnpm exec nx run store-client:serve',
   //   url: 'http://localhost:4200',
   //   reuseExistingServer: true,
   //   cwd: workspaceRoot,

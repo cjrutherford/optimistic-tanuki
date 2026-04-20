@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build chat-ui
-npx nx test chat-ui
+pnpm exec nx build chat-ui
+pnpm exec nx test chat-ui
 ```

@@ -43,10 +43,10 @@ First time setup:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
 # Install Playwright Chrome browser
-npx playwright install chromium
+pnpm exec playwright install chromium
 ```
 
 ## More Information

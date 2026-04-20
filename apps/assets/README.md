@@ -7,7 +7,7 @@ The assets service manages uploaded and generated files for the platform. Its so
 Run it as part of the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build assets
-npx nx test assets
+pnpm exec nx build assets
+pnpm exec nx test assets
 ```

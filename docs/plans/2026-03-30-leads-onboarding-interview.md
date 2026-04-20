@@ -44,7 +44,7 @@ Add a spec that asserts the dashboard can render or consume an onboarding plan s
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
 Expected: FAIL because the shared onboarding plan contract does not exist.
 
 **Step 3: Write minimal implementation**
@@ -59,7 +59,7 @@ Keep it interface-only at this stage.
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
 Expected: PASS for contract usage.
 
 **Step 5: Commit**
@@ -109,7 +109,7 @@ it('creates remote and local topics from a both-mode interview', () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/onboarding-planner.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/onboarding-planner.spec.ts --runInBand`
 Expected: FAIL because planner does not exist.
 
 **Step 3: Write minimal implementation**
@@ -127,7 +127,7 @@ Recommendation:
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/onboarding-planner.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/onboarding-planner.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -158,7 +158,7 @@ Add dashboard tests covering:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
 Expected: FAIL because dashboard still uses a manual topic form.
 
 **Step 3: Write minimal implementation**
@@ -174,7 +174,7 @@ Do not add topic-editing complexity here; only first-run onboarding belongs on t
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -203,7 +203,7 @@ Add tests asserting:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/leads-app/src/app/topics.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/topics.component.spec.ts --runInBand`
 Expected: FAIL because the current page does not frame itself as a refinement step.
 
 **Step 3: Write minimal implementation**
@@ -218,7 +218,7 @@ Keep manual add/edit available for advanced users.
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/leads-app/src/app/topics.component.spec.ts --runInBand`
+Run: `pnpm exec jest apps/leads-app/src/app/topics.component.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -247,7 +247,7 @@ Add service tests for:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
 Expected: FAIL where normalization behavior is incomplete or inconsistent.
 
 **Step 3: Write minimal implementation**
@@ -260,7 +260,7 @@ Ensure backend persistence:
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -288,7 +288,7 @@ Add tests covering rediscovery when:
 
 **Step 2: Run test to verify it fails**
 
-Run: `npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand`
 Expected: FAIL for fields not currently treated as rediscovery triggers.
 
 **Step 3: Write minimal implementation**
@@ -297,7 +297,7 @@ Update `shouldRunDiscovery()` so any field that materially changes matching beha
 
 **Step 4: Run test to verify it passes**
 
-Run: `npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand`
+Run: `pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand`
 Expected: PASS.
 
 **Step 5: Commit**
@@ -367,13 +367,13 @@ No new test. This task validates the previous tasks together.
 Run:
 
 ```bash
-npx jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand
-npx jest apps/leads-app/src/app/topics.component.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
-npx jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
-npx tsc -p apps/leads-app/tsconfig.app.json --noEmit
-npx tsc -p apps/lead-tracker/tsconfig.app.json --noEmit
-npm run build:dev
+pnpm exec jest apps/leads-app/src/app/dashboard.component.spec.ts --runInBand
+pnpm exec jest apps/leads-app/src/app/topics.component.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.controller.spec.ts --runInBand
+pnpm exec jest apps/lead-tracker/src/app/leads.service.spec.ts --runInBand
+pnpm exec tsc -p apps/leads-app/tsconfig.app.json --noEmit
+pnpm exec tsc -p apps/lead-tracker/tsconfig.app.json --noEmit
+pnpm run build:dev
 ```
 
 Expected: any remaining issues surface here.
@@ -390,7 +390,7 @@ Re-run the same commands until:
 - topics refinement tests pass
 - lead-tracker controller/service tests pass
 - app TypeScript compiles
-- `npm run build:dev` succeeds
+- `pnpm run build:dev` succeeds
 
 **Step 5: Commit**
 

@@ -11,8 +11,8 @@
 docker-compose up -d
 
 # Or build and run specific services
-npx nx build blogging
-npx nx build gateway
+pnpm exec nx build blogging
+pnpm exec nx build gateway
 ```
 
 2. Ensure you have some published blog posts in the database
@@ -332,26 +332,26 @@ export class ContactComponent {
 ### Run all blog feature tests
 
 ```bash
-npx nx test blogging --testPathPattern="(rss|spam-protection|post).spec.ts"
+pnpm exec nx test blogging --testPathPattern="(rss|spam-protection|post).spec.ts"
 ```
 
 ### Run specific test file
 
 ```bash
 # RSS tests
-npx nx test blogging --testPathPattern="rss.service.spec.ts"
+pnpm exec nx test blogging --testPathPattern="rss.service.spec.ts"
 
 # Spam protection tests
-npx nx test blogging --testPathPattern="spam-protection.service.spec.ts"
+pnpm exec nx test blogging --testPathPattern="spam-protection.service.spec.ts"
 
 # Post service tests (includes search)
-npx nx test blogging --testPathPattern="post.service.spec.ts"
+pnpm exec nx test blogging --testPathPattern="post.service.spec.ts"
 ```
 
 ### Watch mode for development
 
 ```bash
-npx nx test blogging --watch --testPathPattern="rss.service.spec.ts"
+pnpm exec nx test blogging --watch --testPathPattern="rss.service.spec.ts"
 ```
 
 ## Integration Testing Checklist
@@ -402,7 +402,7 @@ ab -n 100 -c 10 "http://localhost:3000/post/search?q=test"
 
 ```bash
 # Install Lighthouse CLI
-npm install -g lighthouse
+pnpm add lighthouse
 
 # Run Lighthouse
 lighthouse https://your-blog-url/post/123 \
