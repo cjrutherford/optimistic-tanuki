@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   MfaService,
   PasswordPolicyService,
+  TokenIssuerService,
 } from '@optimistic-tanuki/auth-domain';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import {
@@ -93,6 +94,17 @@ import loadDatabase from './loadDatabase';
     {
       provide: MfaService,
       useFactory: () => new MfaService(authenticator),
+    },
+    {
+      provide: TokenIssuerService,
+      useFactory: (jwtService: JwtService, config: ConfigService) =>
+        new TokenIssuerService(
+          {
+            sign: (payload, options) => jwtService.sign(payload, options),
+          },
+          config.get('auth')?.jwt_secret || 'default_jwt_secret',
+        ),
+      inject: [JwtService, ConfigService],
     },
     {
       provide: 'JWT_SECRET',

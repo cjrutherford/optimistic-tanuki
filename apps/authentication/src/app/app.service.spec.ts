@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import {
   MfaService,
   PasswordPolicyService,
+  TokenIssuerService,
 } from '@optimistic-tanuki/auth-domain';
 
 import { AppService } from './app.service';
@@ -93,6 +94,17 @@ describe('AppService', () => {
           provide: MfaService,
           useFactory: (totp: any) => new MfaService(totp),
           inject: ['totp'],
+        },
+        {
+          provide: TokenIssuerService,
+          useFactory: (jwtService: JwtService) =>
+            new TokenIssuerService(
+              {
+                sign: (payload, options) => jwtService.sign(payload, options),
+              },
+              'test-secret',
+            ),
+          inject: [JwtService],
         },
         {
           provide: 'JWT_SECRET',

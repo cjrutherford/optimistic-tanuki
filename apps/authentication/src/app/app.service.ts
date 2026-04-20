@@ -8,6 +8,7 @@ import validator from 'validator';
 import {
   MfaService,
   PasswordPolicyService,
+  TokenIssuerService,
 } from '@optimistic-tanuki/auth-domain';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
 import { EmailService } from '@optimistic-tanuki/email';
@@ -33,6 +34,7 @@ export class AppService {
     private readonly saltedHashService: SaltedHashService,
     private readonly passwordPolicyService: PasswordPolicyService,
     private readonly mfaService: MfaService,
+    private readonly tokenIssuerService: TokenIssuerService,
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
@@ -89,14 +91,15 @@ export class AppService {
         throw new RpcException((e as Error).message);
       }
 
-      const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
-      // Include profileId in token if provided, otherwise empty string
-      // The profileId should be determined by the client based on appScope
-      (pl as any).profileId = profileId || '';
-      const tk = this.jsonWebToken.sign(pl, {
-        secret: this.jwtSecret,
-        expiresIn: '1h',
-      });
+      const tk = this.tokenIssuerService.issueForUser(
+        {
+          userId,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email,
+        },
+        profileId,
+      );
 
       delete user.keyData;
       delete user.password;
@@ -394,17 +397,15 @@ export class AppService {
       });
       if (!user) throw new RpcException('User not found');
 
-      const pl = {
-        userId: user.id,
-        name: `${user.firstName} ${user.lastName}`,
-        email: user.email,
-        profileId: profileId ?? '',
-      };
-
-      const tk = this.jsonWebToken.sign(pl, {
-        expiresIn: '1h',
-        secret: this.jwtSecret,
-      });
+      const tk = this.tokenIssuerService.issueForUser(
+        {
+          userId: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+        },
+        profileId,
+      );
 
       // Save token
       const ntk = {
