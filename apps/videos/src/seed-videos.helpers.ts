@@ -1,7 +1,7 @@
 import { Dirent, promises as fs } from 'fs';
 import { basename, extname, join, relative } from 'path';
 
-const SUPPORTED_VIDEO_EXTENSIONS = new Set(['.mp4', '.mpeg', '.mov', '.webm']);
+const SUPPORTED_VIDEO_EXTENSIONS = new Set(['.mp4', '.mpeg', '.mov', '.webm', '.mkv', '.avi', '.m3u8']);
 
 export async function discoverSeedVideoFiles(
   rootDir: string,

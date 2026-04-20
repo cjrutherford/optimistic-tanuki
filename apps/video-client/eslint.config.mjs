@@ -12,7 +12,7 @@ export default [
         'error',
         {
           type: 'attribute',
-          prefix: 'store',
+          prefix: 'videoClient',
           style: 'camelCase',
         },
       ],
@@ -20,7 +20,7 @@ export default [
         'error',
         {
           type: 'element',
-          prefix: 'store',
+          prefix: 'video-client',
           style: 'kebab-case',
         },
       ],

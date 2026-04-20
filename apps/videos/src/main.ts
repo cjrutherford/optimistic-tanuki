@@ -14,6 +14,7 @@ async function bootstrap() {
   const configApp = await NestFactory.createApplicationContext(AppModule);
   const config = configApp.get(ConfigService);
   const port = config.get<number>('listenPort') || 3016;
+  await configApp.close();
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {

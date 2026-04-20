@@ -1,5 +1,5 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { LoginRequest, LoginResponse } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
@@ -36,14 +36,14 @@ export class AuthStateService {
   }
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
-    const response = await this.http
-      .post<LoginResponse>('/api/authentication/login', loginRequest)
-      .toPromise();
-    
+    const response = await firstValueFrom(
+      this.http.post<LoginResponse>('/api/authentication/login', loginRequest)
+    );
+
     if (!response) {
       throw new Error('Login failed');
     }
-    
+
     return response;
   }
 
