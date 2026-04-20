@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build constants
-npx nx test constants
+pnpm exec nx build constants
+pnpm exec nx test constants
 ```

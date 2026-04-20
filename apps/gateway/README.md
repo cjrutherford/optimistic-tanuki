@@ -7,7 +7,7 @@ The gateway is the platform entrypoint for HTTP, SSE, and WebSocket traffic. It 
 The gateway runs as part of the main dev stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local endpoints:

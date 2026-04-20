@@ -81,7 +81,7 @@ capture_app_screenshots() {
   
   # Start the application
   echo "Starting $app_name on port $port..."
-  npx nx serve "$app_name" --port="$port" > "/tmp/${app_name}-serve.log" 2>&1 &
+  pnpm exec nx serve "$app_name" --port="$port" > "/tmp/${app_name}-serve.log" 2>&1 &
   local serve_pid=$!
   
   # Wait for the server to be ready
@@ -94,7 +94,7 @@ capture_app_screenshots() {
   # Run Playwright tests for this app
   echo "Capturing screenshots for $app_name..."
   cd "$SCRIPT_DIR"
-  BASE_URL="$base_url" APP_NAME="$app_name" npx playwright test --grep="$app_name" --config=playwright.config.ts || true
+  BASE_URL="$base_url" APP_NAME="$app_name" pnpm exec playwright test --grep="$app_name" --config=playwright.config.ts || true
   
   # Stop the application
   echo "Stopping $app_name..."
@@ -128,7 +128,7 @@ echo "Generating features breakdown report..."
 
 echo ""
 echo "To view the Playwright report, run:"
-echo "  cd $SCRIPT_DIR && npm run report"
+echo "  cd $SCRIPT_DIR && pnpm run report"
 echo ""
 echo "To view the features breakdown:"
 echo "  cat $ROOT_DIR/FEATURES_BREAKDOWN.md"

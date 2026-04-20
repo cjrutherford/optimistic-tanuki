@@ -99,6 +99,11 @@
       "name": "video-client",
       "description": "Video platform and channel communities",
       "active": true
+    },
+    {
+      "name": "finance",
+      "description": "Finance application",
+      "active": true
     }
   ],
   "roles": [
@@ -326,6 +331,26 @@
       "name": "video_channel_creator",
       "description": "Creator role for managing a video channel, schedule, and live feed",
       "appScope": "video-client"
+    },
+    {
+      "name": "finance_member",
+      "description": "Finance member with workspace read access and limited contribution rights",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_bookkeeper",
+      "description": "Finance operator for transaction, import, and reconciliation work",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_manager",
+      "description": "Finance manager for accounts, budgets, recurring flows, and onboarding",
+      "appScope": "finance"
+    },
+    {
+      "name": "finance_admin",
+      "description": "Finance administrator with tenant and member management authority",
+      "appScope": "finance"
     }
   ],
   "permissions": [
@@ -2357,6 +2382,231 @@
       "resource": "store.availability",
       "action": "delete",
       "appScope": "global"
+    },
+    {
+      "name": "finance.account.create",
+      "description": "Create finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.read",
+      "description": "Read finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.update",
+      "description": "Update finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.account.delete",
+      "description": "Delete finance account",
+      "active": true,
+      "resource": "finance.account",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.create",
+      "description": "Create finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.read",
+      "description": "Read finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.update",
+      "description": "Update finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.transaction.delete",
+      "description": "Delete finance transaction",
+      "active": true,
+      "resource": "finance.transaction",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.create",
+      "description": "Create finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.read",
+      "description": "Read finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.update",
+      "description": "Update finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.inventory.delete",
+      "description": "Delete finance inventory item",
+      "active": true,
+      "resource": "finance.inventory",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.create",
+      "description": "Create finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.read",
+      "description": "Read finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.update",
+      "description": "Update finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.budget.delete",
+      "description": "Delete finance budget",
+      "active": true,
+      "resource": "finance.budget",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.create",
+      "description": "Create finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.read",
+      "description": "Read finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.update",
+      "description": "Update finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.recurring.delete",
+      "description": "Delete finance recurring item",
+      "active": true,
+      "resource": "finance.recurring",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.summary.read",
+      "description": "Read finance workspace summary and work queues",
+      "active": true,
+      "resource": "finance.summary",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.bank.manage",
+      "description": "Manage finance bank connections",
+      "active": true,
+      "resource": "finance.bank",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.onboarding.manage",
+      "description": "Bootstrap and manage finance onboarding",
+      "active": true,
+      "resource": "finance.onboarding",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.tenant.manage",
+      "description": "Manage finance tenants",
+      "active": true,
+      "resource": "finance.tenant",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.member.manage",
+      "description": "Manage finance tenant members",
+      "active": true,
+      "resource": "finance.member",
+      "action": "manage",
+      "targetId": null,
+      "appScope": "finance"
     }
   ],
   "role_permissions": [
@@ -5414,6 +5664,391 @@
       "role": "system_admin",
       "permission": "store.availability.delete",
       "permissionAppScope": "global"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.account.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.tenant.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.account.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.transaction.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.inventory.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.budget.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.recurring.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.summary.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.bank.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.onboarding.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.tenant.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.member.manage",
+      "permissionAppScope": "finance"
     }
   ]
 }

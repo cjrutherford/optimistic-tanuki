@@ -24,7 +24,7 @@
             "command": "docker compose up -d --build"
           },
           {
-            "command": "npx playwright test --config=apps/full-stack-e2e/playwright.config.ts",
+            "command": "pnpm exec playwright test --config=apps/full-stack-e2e/playwright.config.ts",
             "forwardAllArgs": true
           },
           {

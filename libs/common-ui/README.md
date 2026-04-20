@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build common-ui
-npx nx test common-ui
+pnpm exec nx build common-ui
+pnpm exec nx test common-ui
 ```

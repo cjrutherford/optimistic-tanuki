@@ -1,14 +1,18 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   Inject,
+  InternalServerErrorException,
   Logger,
+  NotFoundException,
   Param,
   Post,
   Put,
   Query,
+  HttpException,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -53,7 +57,7 @@ import {
   UpdateBudgetDto,
   UpdateRecurringItemDto,
 } from '@optimistic-tanuki/models';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
@@ -73,13 +77,59 @@ export class FinanceController {
 
   constructor(
     @Inject(ServiceTokens.FINANCE_SERVICE)
-    private readonly financeClient: ClientProxy
+    private readonly financeClient: ClientProxy,
   ) {}
+
+  private mapFinanceRpcError(error: unknown): never {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+
+    const statusCode =
+      typeof error === 'object' && error !== null && 'statusCode' in error
+        ? Number((error as { statusCode?: unknown }).statusCode)
+        : undefined;
+    const message =
+      typeof error === 'object' && error !== null && 'message' in error
+        ? (error as { message?: unknown }).message
+        : undefined;
+    const normalizedMessage = Array.isArray(message)
+      ? message.join(', ')
+      : typeof message === 'string'
+        ? message
+        : error instanceof Error
+          ? error.message
+          : 'Finance service request failed';
+
+    switch (statusCode) {
+      case 400:
+        throw new BadRequestException(normalizedMessage);
+      case 404:
+        throw new NotFoundException(normalizedMessage);
+      default:
+        throw new InternalServerErrorException(normalizedMessage);
+    }
+  }
+
+  private async sendFinanceCommand<T>(
+    pattern: { cmd: string },
+    payload: unknown,
+  ): Promise<T> {
+    return await firstValueFrom(
+      this.financeClient
+        .send<T>(pattern, payload)
+        .pipe(
+          catchError((error) =>
+            throwError(() => this.mapFinanceRpcError(error)),
+          ),
+        ),
+    );
+  }
 
   private getScope(
     user: { userId: string; profileId: string },
     appScope?: string,
-    tenantId?: string | null
+    tenantId?: string | null,
   ) {
     return {
       userId: user.userId,
@@ -93,7 +143,7 @@ export class FinanceController {
     user: { userId: string; profileId: string },
     appScope: string | undefined,
     tenantId?: string | null,
-    workspace?: FinanceWorkspace
+    workspace?: FinanceWorkspace,
   ) {
     return workspace
       ? { ...this.getScope(user, appScope, tenantId), where: { workspace } }
@@ -116,7 +166,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() accountDto: Record<string, unknown>
+    @Body() accountDto: Record<string, unknown>,
   ) {
     this.logger.log(`Creating account for user: ${user.userId}`);
     const payload = {
@@ -124,7 +174,7 @@ export class FinanceController {
       ...this.getScope(user, appScope, tenantId),
     } as CreateAccountDto;
     return await firstValueFrom(
-      this.financeClient.send({ cmd: AccountCommands.CREATE }, payload)
+      this.financeClient.send({ cmd: AccountCommands.CREATE }, payload),
     );
   }
 
@@ -143,13 +193,13 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<AccountDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: AccountCommands.FIND },
-        { id, ...this.getScope(user, appScope, tenantId) }
-      )
+        { id, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -167,13 +217,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<AccountDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: AccountCommands.FIND_MANY },
-        this.withWorkspaceScope(user, appScope, tenantId, workspace)
-      )
+        this.withWorkspaceScope(user, appScope, tenantId, workspace),
+      ),
     );
   }
 
@@ -193,7 +243,7 @@ export class FinanceController {
     @Param('id') id: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() updateAccountDto: UpdateAccountDto
+    @Body() updateAccountDto: UpdateAccountDto,
   ): Promise<AccountDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -202,8 +252,8 @@ export class FinanceController {
           id,
           data: updateAccountDto,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -221,14 +271,14 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<void> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: AccountCommands.DELETE },
-        { id, ...this.getScope(user, appScope, tenantId) }
+        { id, ...this.getScope(user, appScope, tenantId) },
       ),
-      { defaultValue: undefined }
+      { defaultValue: undefined },
     );
   }
 
@@ -248,7 +298,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() transactionDto: Record<string, unknown>
+    @Body() transactionDto: Record<string, unknown>,
   ) {
     this.logger.log(`Creating transaction for user: ${user.userId}`);
     const payload = {
@@ -256,7 +306,7 @@ export class FinanceController {
       ...this.getScope(user, appScope, tenantId),
     } as CreateTransactionDto;
     return await firstValueFrom(
-      this.financeClient.send({ cmd: TransactionCommands.CREATE }, payload)
+      this.financeClient.send({ cmd: TransactionCommands.CREATE }, payload),
     );
   }
 
@@ -275,13 +325,13 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<TransactionDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: TransactionCommands.FIND },
-        { id, ...this.getScope(user, appScope, tenantId) }
-      )
+        { id, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -300,7 +350,7 @@ export class FinanceController {
     @Param('accountId') accountId: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<TransactionDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -308,8 +358,8 @@ export class FinanceController {
         {
           ...this.getScope(user, appScope, tenantId),
           where: workspace ? { accountId, workspace } : { accountId },
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -327,13 +377,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<TransactionDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: TransactionCommands.FIND_MANY },
-        this.withWorkspaceScope(user, appScope, tenantId, workspace)
-      )
+        this.withWorkspaceScope(user, appScope, tenantId, workspace),
+      ),
     );
   }
 
@@ -353,7 +403,7 @@ export class FinanceController {
     @Param('id') id: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() updateTransactionDto: UpdateTransactionDto
+    @Body() updateTransactionDto: UpdateTransactionDto,
   ): Promise<TransactionDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -362,8 +412,8 @@ export class FinanceController {
           id,
           data: updateTransactionDto,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -381,14 +431,14 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<void> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: TransactionCommands.DELETE },
-        { id, ...this.getScope(user, appScope, tenantId) }
+        { id, ...this.getScope(user, appScope, tenantId) },
       ),
-      { defaultValue: undefined }
+      { defaultValue: undefined },
     );
   }
 
@@ -405,7 +455,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() payload: BankConnectionLinkTokenDto
+    @Body() payload: BankConnectionLinkTokenDto,
   ): Promise<BankLinkTokenResponseDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -413,13 +463,15 @@ export class FinanceController {
         {
           ...payload,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
-  @ApiOperation({ summary: 'Exchange a provider public token into a bank connection' })
+  @ApiOperation({
+    summary: 'Exchange a provider public token into a bank connection',
+  })
   @ApiResponse({
     status: 201,
     description: 'The bank connection has been successfully created.',
@@ -431,7 +483,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() payload: BankConnectionExchangeDto
+    @Body() payload: BankConnectionExchangeDto,
   ): Promise<BankConnectionDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -439,8 +491,8 @@ export class FinanceController {
         {
           ...payload,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -456,13 +508,13 @@ export class FinanceController {
   async listBankConnections(
     @User() user,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<BankConnectionDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceBankingCommands.LIST_CONNECTIONS },
-        this.getScope(user, appScope, tenantId)
-      )
+        this.getScope(user, appScope, tenantId),
+      ),
     );
   }
 
@@ -480,7 +532,7 @@ export class FinanceController {
     @User() user,
     @Param('id') connectionId: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<BankSyncResultDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -488,8 +540,8 @@ export class FinanceController {
         {
           connectionId,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -507,7 +559,7 @@ export class FinanceController {
     @User() user,
     @Param('id') connectionId: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<BankConnectionDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -515,8 +567,8 @@ export class FinanceController {
         {
           connectionId,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -530,8 +582,8 @@ export class FinanceController {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceBankingCommands.PROCESS_WEBHOOK },
-        payload
-      )
+        payload,
+      ),
     );
   }
 
@@ -551,7 +603,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() inventoryItemDto: Record<string, unknown>
+    @Body() inventoryItemDto: Record<string, unknown>,
   ) {
     this.logger.log(`Creating inventory item for user: ${user.userId}`);
     const payload = {
@@ -559,7 +611,7 @@ export class FinanceController {
       ...this.getScope(user, appScope, tenantId),
     } as CreateInventoryItemDto;
     return await firstValueFrom(
-      this.financeClient.send({ cmd: InventoryItemCommands.CREATE }, payload)
+      this.financeClient.send({ cmd: InventoryItemCommands.CREATE }, payload),
     );
   }
 
@@ -578,13 +630,13 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<InventoryItemDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: InventoryItemCommands.FIND },
-        { id, ...this.getScope(user, appScope, tenantId) }
-      )
+        { id, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -602,13 +654,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<InventoryItemDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: InventoryItemCommands.FIND_MANY },
-        this.withWorkspaceScope(user, appScope, tenantId, workspace)
-      )
+        this.withWorkspaceScope(user, appScope, tenantId, workspace),
+      ),
     );
   }
 
@@ -628,7 +680,7 @@ export class FinanceController {
     @Param('id') id: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() updateInventoryItemDto: UpdateInventoryItemDto
+    @Body() updateInventoryItemDto: UpdateInventoryItemDto,
   ): Promise<InventoryItemDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -637,8 +689,8 @@ export class FinanceController {
           id,
           data: updateInventoryItemDto,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -656,14 +708,14 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<void> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: InventoryItemCommands.DELETE },
-        { id, ...this.getScope(user, appScope, tenantId) }
+        { id, ...this.getScope(user, appScope, tenantId) },
       ),
-      { defaultValue: undefined }
+      { defaultValue: undefined },
     );
   }
 
@@ -683,7 +735,7 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() budgetDto: Record<string, unknown>
+    @Body() budgetDto: Record<string, unknown>,
   ) {
     this.logger.log(`Creating budget for user: ${user.userId}`);
     const payload = {
@@ -691,7 +743,7 @@ export class FinanceController {
       ...this.getScope(user, appScope, tenantId),
     } as CreateBudgetDto;
     return await firstValueFrom(
-      this.financeClient.send({ cmd: BudgetCommands.CREATE }, payload)
+      this.financeClient.send({ cmd: BudgetCommands.CREATE }, payload),
     );
   }
 
@@ -710,13 +762,13 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<BudgetDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: BudgetCommands.FIND },
-        { id, ...this.getScope(user, appScope, tenantId) }
-      )
+        { id, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -734,13 +786,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<BudgetDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: BudgetCommands.FIND_MANY },
-        this.withWorkspaceScope(user, appScope, tenantId, workspace)
-      )
+        this.withWorkspaceScope(user, appScope, tenantId, workspace),
+      ),
     );
   }
 
@@ -757,13 +809,13 @@ export class FinanceController {
     @User() user,
     @Param('workspace') workspace: FinanceWorkspace,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<FinanceWorkspaceSummaryDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceSummaryCommands.GET_WORKSPACE_SUMMARY },
-        { workspace, ...this.getScope(user, appScope, tenantId) }
-      )
+        { workspace, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -780,13 +832,13 @@ export class FinanceController {
     @User() user,
     @Param('workspace') workspace: FinanceWorkspace,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<FinanceWorkQueueDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceSummaryCommands.GET_WORK_QUEUE },
-        { workspace, ...this.getScope(user, appScope, tenantId) }
-      )
+        { workspace, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -802,13 +854,13 @@ export class FinanceController {
   async getOnboardingState(
     @User() user,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<FinanceOnboardingStateDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceSummaryCommands.GET_ONBOARDING_STATE },
-        this.getScope(user, appScope, tenantId)
-      )
+        this.getScope(user, appScope, tenantId),
+      ),
     );
   }
 
@@ -825,13 +877,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() data: BootstrapFinanceWorkspaceDto
+    @Body() data: BootstrapFinanceWorkspaceDto,
   ): Promise<FinanceOnboardingStateDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: FinanceSummaryCommands.BOOTSTRAP },
-        { data, ...this.getScope(user, appScope, tenantId) }
-      )
+        { data, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -851,7 +903,7 @@ export class FinanceController {
     @Param('id') id: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() updateBudgetDto: UpdateBudgetDto
+    @Body() updateBudgetDto: UpdateBudgetDto,
   ): Promise<BudgetDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -860,8 +912,8 @@ export class FinanceController {
           id,
           data: updateBudgetDto,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -879,14 +931,14 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<void> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: BudgetCommands.DELETE },
-        { id, ...this.getScope(user, appScope, tenantId) }
+        { id, ...this.getScope(user, appScope, tenantId) },
       ),
-      { defaultValue: undefined }
+      { defaultValue: undefined },
     );
   }
 
@@ -903,14 +955,14 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() recurringItemDto: Record<string, unknown>
+    @Body() recurringItemDto: Record<string, unknown>,
   ): Promise<RecurringItemDto> {
     const payload = {
       ...(recurringItemDto as Partial<CreateRecurringItemDto>),
       ...this.getScope(user, appScope, tenantId),
     } as CreateRecurringItemDto;
     return await firstValueFrom(
-      this.financeClient.send({ cmd: RecurringItemCommands.CREATE }, payload)
+      this.financeClient.send({ cmd: RecurringItemCommands.CREATE }, payload),
     );
   }
 
@@ -927,13 +979,13 @@ export class FinanceController {
     @User() user,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Query('workspace') workspace?: FinanceWorkspace
+    @Query('workspace') workspace?: FinanceWorkspace,
   ): Promise<RecurringItemDto[]> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: RecurringItemCommands.FIND_MANY },
-        this.withWorkspaceScope(user, appScope, tenantId, workspace)
-      )
+        this.withWorkspaceScope(user, appScope, tenantId, workspace),
+      ),
     );
   }
 
@@ -951,13 +1003,13 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<RecurringItemDto> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: RecurringItemCommands.FIND },
-        { id, ...this.getScope(user, appScope, tenantId) }
-      )
+        { id, ...this.getScope(user, appScope, tenantId) },
+      ),
     );
   }
 
@@ -976,7 +1028,7 @@ export class FinanceController {
     @Param('id') id: string,
     @AppScope() appScope: string,
     @FinanceTenantId() tenantId: string | null,
-    @Body() updateRecurringItemDto: UpdateRecurringItemDto
+    @Body() updateRecurringItemDto: UpdateRecurringItemDto,
   ): Promise<RecurringItemDto> {
     return await firstValueFrom(
       this.financeClient.send(
@@ -985,8 +1037,8 @@ export class FinanceController {
           id,
           data: updateRecurringItemDto,
           ...this.getScope(user, appScope, tenantId),
-        }
-      )
+        },
+      ),
     );
   }
 
@@ -1003,14 +1055,14 @@ export class FinanceController {
     @User() user,
     @Param('id') id: string,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<void> {
     return await firstValueFrom(
       this.financeClient.send(
         { cmd: RecurringItemCommands.DELETE },
-        { id, ...this.getScope(user, appScope, tenantId) }
+        { id, ...this.getScope(user, appScope, tenantId) },
       ),
-      { defaultValue: undefined }
+      { defaultValue: undefined },
     );
   }
 
@@ -1026,16 +1078,14 @@ export class FinanceController {
   async createTenant(
     @User() user,
     @AppScope() appScope: string,
-    @Body() tenantDto: CreateFinanceTenantDto
+    @Body() tenantDto: CreateFinanceTenantDto,
   ): Promise<FinanceTenantDto> {
-    return await firstValueFrom(
-      this.financeClient.send(
-        { cmd: FinanceTenantCommands.CREATE_TENANT },
-        {
-          ...tenantDto,
-          ...this.getScope(user, appScope),
-        }
-      )
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.CREATE_TENANT },
+      {
+        ...tenantDto,
+        ...this.getScope(user, appScope),
+      },
     );
   }
 
@@ -1050,13 +1100,11 @@ export class FinanceController {
   @RequirePermissions('finance.tenant.manage')
   async listTenants(
     @User() user,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
   ): Promise<FinanceTenantDto[]> {
-    return await firstValueFrom(
-      this.financeClient.send(
-        { cmd: FinanceTenantCommands.LIST_TENANTS },
-        this.getScope(user, appScope)
-      )
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.LIST_TENANTS },
+      this.getScope(user, appScope),
     );
   }
 
@@ -1072,13 +1120,11 @@ export class FinanceController {
   async getCurrentTenant(
     @User() user,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<FinanceTenantDto> {
-    return await firstValueFrom(
-      this.financeClient.send(
-        { cmd: FinanceTenantCommands.GET_CURRENT_TENANT },
-        this.getScope(user, appScope, tenantId)
-      )
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.GET_CURRENT_TENANT },
+      this.getScope(user, appScope, tenantId),
     );
   }
 
@@ -1095,13 +1141,11 @@ export class FinanceController {
   async listTenantMembers(
     @User() user,
     @AppScope() appScope: string,
-    @FinanceTenantId() tenantId: string | null
+    @FinanceTenantId() tenantId: string | null,
   ): Promise<FinanceTenantMemberDto[]> {
-    return await firstValueFrom(
-      this.financeClient.send(
-        { cmd: FinanceTenantCommands.LIST_TENANT_MEMBERS },
-        this.getScope(user, appScope, tenantId)
-      )
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.LIST_TENANT_MEMBERS },
+      this.getScope(user, appScope, tenantId),
     );
   }
 }

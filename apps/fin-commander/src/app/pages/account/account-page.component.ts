@@ -28,7 +28,6 @@ import { TenantContextService } from '../../tenant-context.service';
         <article class="card">
           <h2>Context</h2>
           <p><strong>Type:</strong> {{ tenantType() }}</p>
-          <p><strong>Members:</strong> {{ tenantContext.tenantMembers().length }}</p>
           <p><strong>Active workspaces:</strong> Personal, Business, Net Worth</p>
         </article>
 

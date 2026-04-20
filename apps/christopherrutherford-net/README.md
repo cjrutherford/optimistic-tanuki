@@ -7,7 +7,7 @@
 Run it with the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local URL:
@@ -17,8 +17,8 @@ Primary local URL:
 For direct Nx work:
 
 ```bash
-npx nx serve christopherrutherford-net
-npx nx build christopherrutherford-net
+pnpm exec nx serve christopherrutherford-net
+pnpm exec nx build christopherrutherford-net
 ```
 
 ## Repo Role

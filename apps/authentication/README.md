@@ -7,7 +7,7 @@ The authentication service handles login, identity, tokens, and related user sec
 Run it as part of the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build authentication
-npx nx test authentication
+pnpm exec nx build authentication
+pnpm exec nx test authentication
 ```

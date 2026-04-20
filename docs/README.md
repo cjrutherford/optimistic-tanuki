@@ -6,7 +6,7 @@ Welcome to the Optimistic Tanuki documentation index. This page is the fastest w
 
 The current branch has a few operational surfaces that matter more than the older summary docs:
 
-- local development is driven by `npm run docker:dev` and the dev Compose overrides
+- local development is driven by `pnpm run docker:dev` and the dev Compose overrides
 - the Kubernetes deployment contract is generated from the Go catalog in `tools/admin-env-wizard`
 - GitHub Actions validate inventory consistency before image promotion
 - staging and production image tags are carried in Kustomize overlay `images:` blocks

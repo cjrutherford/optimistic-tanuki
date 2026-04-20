@@ -7,7 +7,7 @@ The blogging service manages blog posts, comments, and related publishing flows.
 Run it through the normal repo stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build blogging
-npx nx test blogging
+pnpm exec nx build blogging
+pnpm exec nx test blogging
 ```

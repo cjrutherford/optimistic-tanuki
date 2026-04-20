@@ -15,6 +15,7 @@ import { TenantContextService } from '../tenant-context.service';
   template: `
     <lib-login-block
       title="Fin Commander Login"
+      [heroSrc]="'images/login-splash.png'"
       description="Authenticate to access your finance command surfaces."
       (submitEvent)="onSubmit($event)"
     />

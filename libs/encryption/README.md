@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build encryption
-npx nx test encryption
+pnpm exec nx build encryption
+pnpm exec nx test encryption
 ```

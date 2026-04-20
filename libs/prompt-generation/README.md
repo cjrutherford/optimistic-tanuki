@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build prompt-generation
-npx nx test prompt-generation
+pnpm exec nx build prompt-generation
+pnpm exec nx test prompt-generation
 ```

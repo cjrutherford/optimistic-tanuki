@@ -80,4 +80,6 @@ tf/tfplan
 tmp/
 .env
 .kilo/
+.opencode/
+.ruff_cache/
 worktrees/*

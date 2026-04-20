@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build theme-models
-npx nx test theme-models
+pnpm exec nx build theme-models
+pnpm exec nx test theme-models
 ```

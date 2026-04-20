@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build app-config-models
-npx nx test app-config-models
+pnpm exec nx build app-config-models
+pnpm exec nx test app-config-models
 ```

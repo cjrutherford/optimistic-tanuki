@@ -78,6 +78,7 @@ describe('TenantContextService', () => {
     await service.loadTenantContext();
 
     expect(financeService.getCurrentTenant).toHaveBeenCalled();
+    expect(financeService.getTenantMembers).not.toHaveBeenCalled();
     expect(service.activeTenant()?.id).toBe('tenant-1');
   });
 
@@ -135,13 +136,14 @@ describe('TenantContextService', () => {
     service.selectTenant('tenant-2');
 
     expect(financeService.getTenants).toHaveBeenCalled();
+    expect(financeService.getTenantMembers).not.toHaveBeenCalled();
     expect(service.availableTenants().map((tenant) => tenant.id)).toEqual([
       'tenant-1',
       'tenant-2',
     ]);
     expect(service.activeTenant()?.id).toBe('tenant-2');
     expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
-      'tenant-2'
+      'tenant-2',
     );
   });
 

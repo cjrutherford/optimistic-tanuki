@@ -7,7 +7,7 @@ The profile service manages user profiles, timelines, and related profile data. 
 Run it as part of the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build profile
-npx nx test profile
+pnpm exec nx build profile
+pnpm exec nx test profile
 ```

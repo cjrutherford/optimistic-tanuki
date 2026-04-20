@@ -59,16 +59,16 @@ The enhanced Ollama Model Screener is now complete with all requested features:
 
 ```bash
 # Basic screening
-npx tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
 
 # With debug mode
-npx tsx scripts/ollama-model-screener.ts --benchmark --debug
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --debug
 
 # Test context windows
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 
 # Full test with everything
-npx tsx scripts/ollama-model-screener.ts \
+pnpm exec tsx scripts/ollama-model-screener.ts \
   --benchmark \
   --max-vram 16 \
   --context-window-test \
@@ -108,7 +108,7 @@ npx tsx scripts/ollama-model-screener.ts \
 ### Phase 1: Basic Validation
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
 ```
 
 Validates:
@@ -120,7 +120,7 @@ Validates:
 ### Phase 2: Context Testing
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --debug
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --debug
 ```
 
 Validates:
@@ -132,7 +132,7 @@ Validates:
 ### Phase 3: Capacity Planning
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ```
 
 Validates:

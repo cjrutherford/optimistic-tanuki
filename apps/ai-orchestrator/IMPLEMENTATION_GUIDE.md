@@ -303,7 +303,7 @@ socket.on('ai-event', (event: StreamingEvent) => {
 Run existing tests to ensure no regressions:
 
 ```bash
-npx nx test ai-orchestrator
+pnpm exec nx test ai-orchestrator
 ```
 
 ### Benchmark Tests

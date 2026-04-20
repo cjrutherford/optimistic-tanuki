@@ -30,7 +30,7 @@ This guide provides detailed instructions for developing, debugging, and hot-rel
 2. Build all applications:
 
    ```bash
-   npm run build:dev
+   pnpm run build:dev
    ```
 
 3. Start the development stack:
@@ -117,7 +117,7 @@ Source Change → Nx Watch → Rebuild → Dist Update → Nodemon Detects → S
 To enable hot reload, run the watch script in a **separate terminal**:
 
 ```bash
-npm run watch:build
+pnpm run watch:build
 ```
 
 This command uses `nx watch --all` to monitor all applications and rebuild them on changes.
@@ -127,14 +127,14 @@ This command uses `nx watch --all` to monitor all applications and rebuild them 
 For convenience, you can use the combined script that starts both the dev stack and watch mode:
 
 ```bash
-npm run docker:dev:watch
+pnpm run docker:dev:watch
 ```
 
 This runs:
 
-1. `npm run build:dev` - Initial build
+1. `pnpm run build:dev` - Initial build
 2. `docker compose up` - Starts the dev stack
-3. `npm run watch:build` - Enables hot reload
+3. `pnpm run watch:build` - Enables hot reload
 
 **Note**: This uses `concurrently` to run multiple commands, which may be harder to debug. Consider running the commands separately during active development.
 
@@ -205,7 +205,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 1. Verify source maps are enabled in `tsconfig.app.json`
 2. Check that the debug configuration's `outFiles` pattern matches your build output
 3. Ensure `localRoot` and `remoteRoot` mappings are correct in `launch.json`
-4. Rebuild the application: `npm run build:dev`
+4. Rebuild the application: `pnpm run build:dev`
 5. Restart the container: `docker compose restart <service-name>`
 
 ### Hot Reload Not Working
@@ -214,7 +214,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
 **Solutions**:
 
-1. Verify `npm run watch:build` is running
+1. Verify `pnpm run watch:build` is running
 2. Check that the changed file is included in the Nx project
 3. Look for build errors in the watch output
 4. Verify nodemon is monitoring the correct files in the container:
@@ -243,7 +243,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
 1. Check the watch build output for TypeScript errors
 2. Verify all imports are correct and libraries are built
-3. Clear the build cache: `rm -rf dist/ && npm run build:dev`
+3. Clear the build cache: `rm -rf dist/ && pnpm run build:dev`
 4. Rebuild the Docker image if Dockerfile changed: `docker compose build <service-name>`
 
 ### Service Keeps Restarting
@@ -260,7 +260,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
 ## Tips & Best Practices
 
-1. **Use the watch mode**: Keep `npm run watch:build` running in a dedicated terminal for the best development experience
+1. **Use the watch mode**: Keep `pnpm run watch:build` running in a dedicated terminal for the best development experience
 
 2. **Debug one service at a time**: Multiple debuggers can slow down your IDE and system
 
@@ -270,7 +270,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
    ```bash
    rm -rf dist/ node_modules/.cache
-   npm run build:dev
+   pnpm run build:dev
    docker compose down
    docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
    ```

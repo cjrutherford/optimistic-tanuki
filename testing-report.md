@@ -39,7 +39,7 @@ These suites passed, verifying the core business logic of individual microservic
 ### ✅ Passed (Integration)
 *   **`gateway-e2e`**:
     *   **Status:** Passed (1 test suite, 11 passed tests).
-    *   **Fix:** Configured Nx targets (`up`, `down`, `e2e-docker`) to manage the Docker Compose environment (`e2e/docker-compose.gateway-e2e.yaml`) automatically. Verified with `npx nx run gateway-e2e:e2e-docker`.
+    *   **Fix:** Configured Nx targets (`up`, `down`, `e2e-docker`) to manage the Docker Compose environment (`e2e/docker-compose.gateway-e2e.yaml`) automatically. Verified with `pnpm exec nx run gateway-e2e:e2e-docker`.
 
 ### ❌ Failed (Environment Issues)
 These suites failed due to the inability to launch browsers (Playwright) on the current host. Note that the underlying code for `owner-console` has been patched (see Critical Bug Fixes above).

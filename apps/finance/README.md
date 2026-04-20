@@ -75,7 +75,7 @@ Uses PostgreSQL database `ot_finance` with TypeORM migrations.
 
 ### Running Migrations
 
-Migrations run automatically as part of `npm run db:setup`.
+Migrations run automatically as part of `pnpm run db:setup`.
 
 To run manually:
 ```bash
@@ -84,7 +84,7 @@ export POSTGRES_DB=ot_finance
 export POSTGRES_HOST=localhost
 export POSTGRES_USER=postgres
 export POSTGRES_PASSWORD=postgres
-npx typeorm -d src/app/staticDatabase.ts migration:run
+pnpm exec typeorm -d src/app/staticDatabase.ts migration:run
 ```
 
 ## Seeding Data

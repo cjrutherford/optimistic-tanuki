@@ -39,7 +39,7 @@ Each E2E test has its own Docker Compose file that includes only the necessary s
 docker-compose -f e2e/docker-compose.authentication-e2e.yaml up -d
 
 # Run the E2E tests
-npx nx e2e authentication-e2e
+pnpm exec nx e2e authentication-e2e
 
 # Clean up
 docker-compose -f e2e/docker-compose.authentication-e2e.yaml down -v
@@ -54,7 +54,7 @@ For the full browser-based E2E test suite, use the main `docker-compose.yaml` fi
 docker-compose up -d
 
 # Run Playwright browser tests
-npx playwright test
+pnpm exec playwright test
 
 # Clean up
 docker-compose down -v

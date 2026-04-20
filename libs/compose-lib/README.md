@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build compose-lib
-npx nx test compose-lib
+pnpm exec nx build compose-lib
+pnpm exec nx test compose-lib
 ```

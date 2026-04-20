@@ -7,7 +7,7 @@
 #
 # Checks performed:
 #   1. YAML syntax (via actionlint, yamllint, or python3 as fallback)
-#   2. Common anti-patterns (npm in pnpm repo, missing permissions, overlay loop risk)
+#   2. Common anti-patterns (wrong package manager in pnpm repo, missing permissions, overlay loop risk)
 #
 # Install actionlint for the most thorough checks:
 #   go install github.com/rhysd/actionlint/cmd/actionlint@latest
@@ -75,12 +75,12 @@ for file in "$WORKFLOW_DIR"/*.yml; do
     HAS_OVERLAY_NEGATION=1
   fi
 
-  # Warn if npm ci / npm install used in a pnpm-managed repo
+  # Warn if the wrong package manager is used in a pnpm-managed repo
   # (skip YAML comments — lines whose first non-space character is '#')
   # Use \bnpm\b to avoid false-positive matches on 'pnpm install'
   if grep -qE '^\s+run:.*\bnpm (ci|install)\b' "$file" || \
      grep -qE '^\s+- \bnpm (ci|install)\b' "$file"; then
-    echo "  ⚠️  $filename: uses 'npm ci' or 'npm install' in a pnpm repo — use 'pnpm install --frozen-lockfile'"
+    echo "  ⚠️  $filename: uses the wrong package manager in a pnpm repo — use 'pnpm install --frozen-lockfile'"
     WARNINGS=$((WARNINGS + 1))
   fi
 

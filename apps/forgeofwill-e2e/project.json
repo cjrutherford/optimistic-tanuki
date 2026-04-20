@@ -36,7 +36,7 @@
           "nx run forgeofwill-e2e:up",
           "echo 'Stack started. Waiting for services...'",
           "sleep 45",
-          "docker compose -f e2e/docker-compose.forgeofwill-e2e.yaml run --rm playwright-runner npx nx run forgeofwill-e2e:e2e --skip-nx-cache",
+          "docker compose -f e2e/docker-compose.forgeofwill-e2e.yaml run --rm playwright-runner pnpm exec nx run forgeofwill-e2e:e2e --skip-nx-cache",
           "nx run forgeofwill-e2e:down"
         ],
         "parallel": false

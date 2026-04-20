@@ -16,13 +16,13 @@ Before running the tests:
 1. Build the store-client application:
 
    ```bash
-   npx nx build store-client
+   pnpm exec nx build store-client
    ```
 
 2. Ensure the backend services are running (for integration tests):
 
    ```bash
-   npm run docker:dev
+   pnpm run docker:dev
    ```
 
    This will:
@@ -36,25 +36,25 @@ Before running the tests:
 ### Run all e2e tests:
 
 ```bash
-npx nx e2e store-client-e2e
+pnpm exec nx e2e store-client-e2e
 ```
 
 ### Run tests in headed mode (see browser):
 
 ```bash
-npx nx e2e store-client-e2e --headed
+pnpm exec nx e2e store-client-e2e --headed
 ```
 
 ### Run specific test file:
 
 ```bash
-npx nx e2e store-client-e2e --grep "products"
+pnpm exec nx e2e store-client-e2e --grep "products"
 ```
 
 ### Run with UI mode (interactive):
 
 ```bash
-npx playwright test --ui
+pnpm exec playwright test --ui
 ```
 
 ## Test Categories
@@ -85,7 +85,7 @@ The store is seeded with 8 products:
 ### View test report:
 
 ```bash
-npx playwright show-report
+pnpm exec playwright show-report
 ```
 
 ### Generate trace on failure:
@@ -95,7 +95,7 @@ Traces are automatically generated on test failure and can be viewed in the repo
 ### Run single test in debug mode:
 
 ```bash
-npx playwright test --debug --grep "should display the catalog page"
+pnpm exec playwright test --debug --grep "should display the catalog page"
 ```
 
 ## CI/CD

@@ -98,7 +98,7 @@ function printHelp() {
   console.log(`
 Seed Lemon Squeezy Products
 
-Usage: npm run seed:products [options]
+Usage: pnpm run seed:products [options]
 
 Options:
   --app <scope>    Seed products for specific app scope (e.g., owner-console, local-hub)
@@ -107,9 +107,9 @@ Options:
   --help           Show this help message
 
 Examples:
-  npm run seed:products -- --app owner-console
-  npm run seed:products -- --list
-  npm run seed:products
+  pnpm run seed:products -- --app owner-console
+  pnpm run seed:products -- --list
+  pnpm run seed:products
   `);
 }
 

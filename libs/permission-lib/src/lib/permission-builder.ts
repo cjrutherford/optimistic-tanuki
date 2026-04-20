@@ -75,6 +75,7 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   ],
   'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
+  finance: ['finance_member'],
 };
 
 const ALL_USER_ROLES: { [key: string]: string[] } = {
@@ -89,6 +90,7 @@ const ALL_USER_ROLES: { [key: string]: string[] } = {
   store: ['store_customer'],
   'local-hub': ['local_hub_member'],
   'video-client': ['video_client_member'],
+  finance: ['finance_member'],
 };
 
 export class RoleInitBuilder {
@@ -341,6 +343,32 @@ export class RoleInitBuilder {
         return this;
       case 'store':
         this.assignRoleToProfile('store_customer');
+        return this;
+      case 'finance':
+        this.addRole(
+          'finance_member',
+          'Finance solo user for own tenant and workspace data',
+          [
+            'finance.account.create',
+            'finance.account.read',
+            'finance.account.update',
+            'finance.transaction.create',
+            'finance.transaction.read',
+            'finance.transaction.update',
+            'finance.inventory.read',
+            'finance.budget.create',
+            'finance.budget.read',
+            'finance.budget.update',
+            'finance.recurring.create',
+            'finance.recurring.read',
+            'finance.recurring.update',
+            'finance.summary.read',
+            'finance.bank.manage',
+            'finance.onboarding.manage',
+            'finance.tenant.manage',
+          ]
+        );
+        this.assignRoleToProfile('finance_member');
         return this;
       case 'global':
         this.assignRoleToProfile('standard_user');

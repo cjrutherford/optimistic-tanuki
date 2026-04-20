@@ -301,8 +301,8 @@ export class LandingComponent {}
 All new components include comprehensive unit tests. Run tests with:
 
 ```bash
-npx nx test theme-ui
-npx nx test common-ui
+pnpm exec nx test theme-ui
+pnpm exec nx test common-ui
 ```
 
 ## Storybook
@@ -310,8 +310,8 @@ npx nx test common-ui
 View and interact with the components in Storybook:
 
 ```bash
-npx nx storybook theme-ui
-npx nx storybook common-ui
+pnpm exec nx storybook theme-ui
+pnpm exec nx storybook common-ui
 ```
 
 ## Future Enhancements

@@ -29,7 +29,7 @@
       "executor": "@nx/js:prune-lockfile",
       "outputs": [
         "{workspaceRoot}/dist/apps/payments/package.json",
-        "{workspaceRoot}/dist/apps/payments/package-lock.json"
+        "{workspaceRoot}/dist/apps/payments/pnpm-lock.yaml"
       ],
       "options": {
         "buildTarget": "build"

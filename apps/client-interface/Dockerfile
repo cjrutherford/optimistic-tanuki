@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 
 ARG GIT_SHA=unknown
 
-# Copy package.json and package-lock.json
+# Copy package.json and pnpm-lock.yaml
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
@@ -34,7 +34,7 @@ ARG GIT_SHA=unknown
 ENV NODE_ENV=production
 ENV GIT_SHA=${GIT_SHA}
 
-# Copy package.json and package-lock.json again to install only production dependencies
+# Copy package.json and pnpm-lock.yaml again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./

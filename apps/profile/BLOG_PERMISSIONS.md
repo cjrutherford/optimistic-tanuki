@@ -61,7 +61,7 @@ A command-line script is provided to promote users:
 ```bash
 # From the root directory
 cd apps/profile
-npm run promote-blog-role <userId> <role>
+pnpm run promote-blog-role <userId> <role>
 ```
 
 Arguments:
@@ -73,13 +73,13 @@ Examples:
 
 ```bash
 # Promote user to poster
-npm run promote-blog-role user-123 poster
+pnpm run promote-blog-role user-123 poster
 
 # Promote user to owner
-npm run promote-blog-role user-456 owner
+pnpm run promote-blog-role user-456 owner
 
 # Revoke blog permissions
-npm run promote-blog-role user-789 none
+pnpm run promote-blog-role user-789 none
 ```
 
 ### Using the API
@@ -117,7 +117,7 @@ A database migration is provided to add the `blogRole` column to existing profil
 
 - File: `migrations/1730838000000-add-blog-role.ts`
 - Default value: `NONE`
-- Run with: `npm run migration:run`
+- Run with: `pnpm run migration:run`
 
 ## Future Enhancements
 

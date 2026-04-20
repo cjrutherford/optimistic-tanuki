@@ -53,7 +53,7 @@ echo "[full-stack-e2e] Running Playwright full-stack E2E tests via Nx..."
 # Forward all script arguments to Nx so callers can specify
 # Playwright project filters, headed/headless, grep tags, etc.
 # Example: ./run-full-stack-e2e.sh -- --project=client-interface-fullstack -- --headed
-npx nx e2e full-stack-e2e "$@"
+pnpm exec nx e2e full-stack-e2e "$@"
 
 echo "[full-stack-e2e] Tests completed. The ${STACK_NAME} is still running."
 echo "[full-stack-e2e] To stop and remove containers + volumes, run:"

@@ -257,7 +257,7 @@ data for all local-hub features. It reads geographic data from
 
 **Locally (TypeScript):**
 ```bash
-GATEWAY_URL=http://localhost:3000/api npx ts-node apps/local-hub/src/seed-http.ts
+GATEWAY_URL=http://localhost:3000/api pnpm exec ts-node apps/local-hub/src/seed-http.ts
 ```
 
 **In Docker (after building):**
