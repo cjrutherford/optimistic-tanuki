@@ -12,8 +12,7 @@ import {
   ResumeParseResult,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
-
-import { Topic } from './leads.types';
+import { Topic } from '@optimistic-tanuki/leads-contracts';
 
 @Injectable({ providedIn: 'root' })
 export class LeadOnboardingService {

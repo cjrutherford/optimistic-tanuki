@@ -2,7 +2,10 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { CreateLeadFlagDto, LeadFlag } from './leads.types';
+import {
+  CreateLeadFlagDto,
+  LeadFlag,
+} from '@optimistic-tanuki/leads-contracts';
 
 @Injectable({ providedIn: 'root' })
 export class LeadFlagsService {

@@ -1,0 +1,21 @@
+{
+  "name": "leads-data-access",
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/leads/data-access/src",
+  "projectType": "library",
+  "tags": [
+    "type:data-access",
+    "scope:leads",
+    "platform:web",
+    "visibility:internal"
+  ],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/leads/data-access/jest.config.ts"
+      }
+    }
+  }
+}
