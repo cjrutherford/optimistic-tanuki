@@ -160,6 +160,7 @@ services:
       SOCIAL_HOST: social
       ASSETS_HOST: assets
       VIDEOS_HOST: videos
+      VIDEOS_PORT: 3009
       PERMISSIONS_HOST: permissions
     depends_on:
       - authentication

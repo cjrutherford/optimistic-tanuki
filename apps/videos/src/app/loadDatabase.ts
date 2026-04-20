@@ -33,7 +33,7 @@ export default function loadDatabase(config: ConfigService): DataSourceOptions {
     synchronize: process.env['NODE_ENV'] !== 'production',
     logging: process.env['NODE_ENV'] === 'development',
   };
-  console.log('Database configuration:', ormConfig);
+  console.log('Database configuration:', { ...ormConfig, password: '[REDACTED]' });
   return ormConfig;
   // const dataSource = new DataSource({
   //   type: 'postgres',

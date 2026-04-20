@@ -617,7 +617,9 @@ SQL
 
 echo "App scopes seeded."
 
--- Video client permissions
+# Seed video-client permissions
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+BEGIN;
 INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
 VALUES
   ('videos.channel.create', 'Create a video channel community', 'videos.channel', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
@@ -687,4 +689,7 @@ FROM role r JOIN permission p ON p.name IN (
 WHERE r.name = 'video_channel_creator'
 ON CONFLICT DO NOTHING;
 
+COMMIT;
 SQL
+
+echo "Video-client permissions seeded."

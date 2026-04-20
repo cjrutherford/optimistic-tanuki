@@ -23,7 +23,10 @@ const loadConfig = () => {
       ? Number.parseInt(process.env.PORT, 10)
       : fileConfig.listenPort,
   };
-  console.log('Loaded configuration:', finalConfig);
+  console.log('Loaded configuration:', {
+    ...finalConfig,
+    database: { ...finalConfig.database, password: '[REDACTED]' },
+  });
   return finalConfig;
 };
 

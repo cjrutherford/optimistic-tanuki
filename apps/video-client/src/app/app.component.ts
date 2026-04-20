@@ -76,7 +76,7 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     // Subscribe to currentUrl$ to update active state
-    this.currentUrl$.subscribe(() => {
+    this.urlSub = this.currentUrl$.subscribe(() => {
       this.updateNavItems();
     });
 

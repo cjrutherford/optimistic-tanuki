@@ -1,8 +1,8 @@
 export default {
-  displayName: 'store-client',
+  displayName: 'video-client',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/apps/store-client',
+  coverageDirectory: '../../coverage/apps/video-client',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

@@ -24,7 +24,7 @@ export class VideoTranscodeClientService {
   private readonly host =
     process.env['VIDEO_TRANSCODER_HOST'] || 'video-transcoder-worker';
   private readonly port = Number.parseInt(
-    process.env['VIDEO_TRANSCODER_PORT'] || '3022',
+    process.env['VIDEO_TRANSCODER_PORT'] || '3023',
     10,
   );
 
