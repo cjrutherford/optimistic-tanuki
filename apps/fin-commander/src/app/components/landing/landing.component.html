@@ -1,0 +1,69 @@
+<div class="landing-shell">
+  <section class="hero-panel">
+    <div class="hero-copy">
+      <span class="eyebrow-badge">Plan with the numbers you use every day</span>
+      <h1>
+        Fin Commander keeps your account, ledger, and plan moving in one flow.
+      </h1>
+      <p class="lede">
+        Move from setup to daily money work without bouncing between separate
+        onboarding paths, demo plans, or system-heavy screens.
+      </p>
+
+      <div class="hero-actions">
+        <a class="cta primary" [routerLink]="primaryAction().route">{{
+          primaryAction().label
+        }}</a>
+        <a class="cta secondary" [routerLink]="secondaryAction().route">{{
+          secondaryAction().label
+        }}</a>
+      </div>
+    </div>
+
+    <aside class="hero-signal">
+      <div class="signal-header">
+        <span class="signal-icon">🦈</span>
+        <span class="signal-label">What this helps you do</span>
+      </div>
+      <ul>
+        <li>Set up one account and keep each workspace organized</li>
+        <li>Track cash flow, goals, scenarios, and imports in context</li>
+        <li>Finish ledger setup before you build your first plan</li>
+        <li>Stay focused on the next financial decision to make</li>
+      </ul>
+    </aside>
+  </section>
+
+  <section class="mode-grid">
+    @for (mode of commandModes; track mode.name; let i = $index) {
+    <article class="mode-card" [attr.data-index]="i">
+      <span class="mode-icon">{{ mode.icon }}</span>
+      <div class="mode-content">
+        <span class="card-label">{{ mode.name }}</span>
+        <p>{{ mode.tagline }}</p>
+      </div>
+    </article>
+    }
+  </section>
+
+  <section class="manifesto-rail">
+    <div class="manifesto-content">
+      <span class="eyebrow-badge">One guided path</span>
+      <h2>
+        Start with setup, build your first plan when you are ready, and keep
+        day-to-day money work close by.
+      </h2>
+      <p>
+        Ledger workspaces stay available for day-to-day updates while plans,
+        goals, and scenarios stay tied to the account you are actively managing.
+      </p>
+    </div>
+    <div class="manifesto-visual">
+      <div class="visual-stack">
+        <div class="stack-layer layer-1">Plans</div>
+        <div class="stack-layer layer-2">Ledgers</div>
+        <div class="stack-layer layer-3">Imports</div>
+      </div>
+    </div>
+  </section>
+</div>

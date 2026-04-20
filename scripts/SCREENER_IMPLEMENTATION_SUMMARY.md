@@ -170,7 +170,7 @@ Shows complete message flow:
 Tests actual context window sizes:
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ```
 
 **Test Process:**
@@ -195,25 +195,25 @@ npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ### Basic First Message Testing
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --max-vram 8
 ```
 
 ### Debug Mode with Full Flow
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --debug
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --debug
 ```
 
 ### Test Context Windows
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 ```
 
 ### Specific Models with Verbose Logging
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts \
+pnpm exec tsx scripts/ollama-model-screener.ts \
   --benchmark \
   --families llama \
   --max-models 3 \
@@ -224,7 +224,7 @@ npx tsx scripts/ollama-model-screener.ts \
 ### Complete Test Suite
 
 ```bash
-npx tsx scripts/ollama-model-screener.ts \
+pnpm exec tsx scripts/ollama-model-screener.ts \
   --benchmark \
   --max-vram 16 \
   --context-window-test \

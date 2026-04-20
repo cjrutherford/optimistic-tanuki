@@ -4,7 +4,7 @@ FROM node:lts-alpine as builder
 # Set working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json
+# Copy package.json and pnpm-lock.yaml
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
@@ -28,7 +28,7 @@ WORKDIR /app
 # Set NODE_ENV to production for the runtime environment
 ENV NODE_ENV=production
 
-# Copy package.json and package-lock.json again to install only production dependencies
+# Copy package.json and pnpm-lock.yaml again to install only production dependencies
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./

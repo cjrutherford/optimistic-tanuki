@@ -7,7 +7,7 @@ The project-planning service is the backend for project, task, timer, journal, a
 Run it through the main repo stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build project-planning
-npx nx test project-planning
+pnpm exec nx build project-planning
+pnpm exec nx test project-planning
 ```

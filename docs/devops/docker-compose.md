@@ -3,9 +3,9 @@
 This repository has two Compose paths:
 
 - `docker compose up -d`: the standard container stack
-- `npm run docker:dev`: the full development stack with debug ports, rebuilt `dist/`, and dev-oriented overrides
+- `pnpm run docker:dev`: the full development stack with debug ports, rebuilt `dist/`, and dev-oriented overrides
 
-For day-to-day local work, use `npm run docker:dev`.
+For day-to-day local work, use `pnpm run docker:dev`.
 
 ## Relationship to the Deployment Inventory
 
@@ -38,19 +38,19 @@ The root `docker:dev` script handles that by running `build:dev` before Compose 
 
 ```bash
 # Start the full development stack
-npm run docker:dev
+pnpm run docker:dev
 
 # First-time bootstrap with seed data
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 
 # Keep hot reload active
-npm run watch:build
+pnpm run watch:build
 
 # Inspect and control the stack
-npm run docker:dev:ps
-npm run docker:dev:logs
-npm run docker:dev:down
-npm run docker:dev:reset
+pnpm run docker:dev:ps
+pnpm run docker:dev:logs
+pnpm run docker:dev:down
+pnpm run docker:dev:reset
 ```
 
 ## Primary Local URLs
@@ -83,14 +83,14 @@ npm run docker:dev:reset
 ### `docker:dev` starts containers but the app still does not load
 
 ```bash
-npm run docker:dev:ps
+pnpm run docker:dev:ps
 ls dist/apps
 ```
 
 If `dist/` is incomplete, rerun:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 ### Source changes do not appear in the running stack
@@ -98,7 +98,7 @@ npm run docker:dev
 The containers do not build TypeScript for you. Make sure the watch process is running:
 
 ```bash
-npm run watch:build
+pnpm run watch:build
 ```
 
 ### Seed commands fail
@@ -106,11 +106,11 @@ npm run watch:build
 Use the bootstrap command so the seed scripts target the same dev Compose stack:
 
 ```bash
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 ```
 
 If you need to rerun only the seed phase:
 
 ```bash
-npm run docker:dev:seed
+pnpm run docker:dev:seed
 ```

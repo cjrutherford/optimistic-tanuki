@@ -328,13 +328,13 @@ Both utilities have comprehensive test coverage:
 
 ```bash
 # Run all utility tests
-npx jest --testPathPattern="utils"
+pnpm exec jest --testPathPattern="utils"
 
 # Run prompt engineering tests only
-npx jest prompt-engineering.spec.ts
+pnpm exec jest prompt-engineering.spec.ts
 
 # Run XML parser tests only
-npx jest xml-tool-parser.spec.ts
+pnpm exec jest xml-tool-parser.spec.ts
 ```
 
 ## Troubleshooting

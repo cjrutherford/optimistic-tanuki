@@ -1,0 +1,97 @@
+{
+  "name": "fin-commander",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "fc",
+  "sourceRoot": "apps/fin-commander/src",
+  "tags": [],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/fin-commander",
+        "index": "apps/fin-commander/src/index.html",
+        "browser": "apps/fin-commander/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/fin-commander/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/fin-commander/public"
+          }
+        ],
+        "styles": ["apps/fin-commander/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/fin-commander/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/fin-commander/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "fin-commander:build:production"
+        },
+        "development": {
+          "buildTarget": "fin-commander:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular-devkit/build-angular:extract-i18n",
+      "options": {
+        "buildTarget": "fin-commander:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/fin-commander/jest.config.ts"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "fin-commander:build",
+        "port": 4200,
+        "staticFilePath": "dist/apps/fin-commander/browser",
+        "spa": true
+      }
+    }
+  }
+}

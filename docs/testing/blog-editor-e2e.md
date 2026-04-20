@@ -63,7 +63,7 @@ apps/digital-homestead-e2e/src/blog-editor.spec.ts
 1. Ensure the Digital Homestead application is built:
 
    ```bash
-   npx nx build digital-homestead
+   pnpm exec nx build digital-homestead
    ```
 
 2. Ensure the backend services are running:
@@ -75,25 +75,25 @@ apps/digital-homestead-e2e/src/blog-editor.spec.ts
 
 ```bash
 # Run all digital-homestead E2E tests
-npx nx e2e digital-homestead-e2e
+pnpm exec nx e2e digital-homestead-e2e
 
 # Run only blog editor tests
-npx nx e2e digital-homestead-e2e --grep="Blog Editor"
+pnpm exec nx e2e digital-homestead-e2e --grep="Blog Editor"
 
 # Run in headed mode (see browser)
-npx nx e2e digital-homestead-e2e --headed
+pnpm exec nx e2e digital-homestead-e2e --headed
 
 # Run in debug mode
-npx nx e2e digital-homestead-e2e --debug
+pnpm exec nx e2e digital-homestead-e2e --debug
 
 # Run specific test
-npx nx e2e digital-homestead-e2e --grep="should allow typing in the editor"
+pnpm exec nx e2e digital-homestead-e2e --grep="should allow typing in the editor"
 ```
 
 ### Watch Mode
 
 ```bash
-npx nx e2e digital-homestead-e2e --ui
+pnpm exec nx e2e digital-homestead-e2e --ui
 ```
 
 This opens the Playwright UI where you can:
@@ -263,13 +263,13 @@ test-results/
 Enable trace mode to debug:
 
 ```bash
-npx nx e2e digital-homestead-e2e --trace=on
+pnpm exec nx e2e digital-homestead-e2e --trace=on
 ```
 
 View traces:
 
 ```bash
-npx playwright show-trace trace.zip
+pnpm exec playwright show-trace trace.zip
 ```
 
 ### 3. Debug Mode
@@ -277,7 +277,7 @@ npx playwright show-trace trace.zip
 Run in debug mode to step through tests:
 
 ```bash
-npx nx e2e digital-homestead-e2e --debug
+pnpm exec nx e2e digital-homestead-e2e --debug
 ```
 
 ### 4. Console Logs
@@ -308,19 +308,19 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build application
-        run: npx nx build digital-homestead
+        run: pnpm exec nx build digital-homestead
 
       - name: Start services
         run: docker-compose up -d
 
       - name: Wait for services
-        run: npx wait-on http://localhost:3000/health
+        run: pnpm exec wait-on http://localhost:3000/health
 
       - name: Run E2E tests
-        run: npx nx e2e digital-homestead-e2e
+        run: pnpm exec nx e2e digital-homestead-e2e
 
       - name: Upload test results
         if: always()

@@ -7,8 +7,8 @@ Quick reference card for running and writing E2E tests in the Optimistic Tanuki 
 ### Setup (First Time)
 
 ```bash
-npm install
-npx playwright install
+pnpm install
+pnpm exec playwright install
 ```
 
 ### Run All Tests

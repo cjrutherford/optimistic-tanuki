@@ -2,12 +2,12 @@
 
 /**
  * Script to promote a user to blog poster or owner
- * Usage: npm run promote-blog-role <userId> <role>
+ * Usage: pnpm run promote-blog-role <userId> <role>
  * Role can be: 'poster' or 'owner'
  *
  * Example:
- * npm run promote-blog-role user-123 poster
- * npm run promote-blog-role user-456 owner
+ * pnpm run promote-blog-role user-123 poster
+ * pnpm run promote-blog-role user-456 owner
  */
 
 import { DataSource } from 'typeorm';
@@ -79,7 +79,7 @@ async function promoteBlogRole(userId: string, role: string) {
 const args = process.argv.slice(2);
 
 if (args.length !== 2) {
-  console.error('Usage: npm run promote-blog-role <userId> <role>');
+  console.error('Usage: pnpm run promote-blog-role <userId> <role>');
   console.error('Role can be: poster, owner, or none');
   process.exit(1);
 }

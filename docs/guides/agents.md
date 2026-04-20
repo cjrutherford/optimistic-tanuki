@@ -43,15 +43,15 @@ _It's Highly important to note that UI and backend models should never mix as it
 ## Workspace commands
 
 1. Build everything:
-   - Dev: `npm run build:dev`
-   - Prod: `npm run build`
+   - Dev: `pnpm run build:dev`
+   - Prod: `pnpm run build`
 2. Build Docker:
-   - Dev: `npm run build:docker:dev`
-   - Prod: `npm run build:docker`
-   - Prod-slow: `npm run build:docker:slow`
+   - Dev: `pnpm run build:docker:dev`
+   - Prod: `pnpm run build:docker`
+   - Prod-slow: `pnpm run build:docker:slow`
 3. Start application suite:
-   - Dev: `npm run docker:dev`
-   - Prod: `npm run docker:up`
+   - Dev: `pnpm run docker:dev`
+   - Prod: `pnpm run docker:up`
 4. syncing the database should be done with the `db-setup` container only.
 5. generating migrations should be done in the app's folder and by using this command: `TS_NODE_PROJECT=./tsconfig.app.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/staticDatabase.ts migration:generate migrations/<migration-name>` (config.yaml database host must be set to local host first, and set back to db after.)
 

@@ -262,8 +262,8 @@ All moderation actions write to an immutable audit log.
 
 **Acceptance Criteria:**
 
-- `npx nx build local-hub` succeeds.
-- `npx nx serve local-hub` serves the app on `localhost:4201`.
+- `pnpm exec nx build local-hub` succeeds.
+- `pnpm exec nx serve local-hub` serves the app on `localhost:4201`.
 - Anonymous users can see all placeholder pages.
 - Gated buttons are visible and show a placeholder prompt.
 

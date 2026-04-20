@@ -7,7 +7,7 @@ The telos-docs-service manages documentation-oriented data for the platform. Its
 Run it as part of the main stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local surface:
@@ -23,6 +23,6 @@ Primary local surface:
 ## Nx Commands
 
 ```bash
-npx nx build telos-docs-service
-npx nx test telos-docs-service
+pnpm exec nx build telos-docs-service
+pnpm exec nx test telos-docs-service
 ```

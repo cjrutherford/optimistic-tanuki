@@ -38,21 +38,21 @@ The day-to-day development path is the Docker dev stack, not plain `docker compo
 
 ```bash
 # Build dist/ and start the development stack
-npm run docker:dev
+pnpm run docker:dev
 
 # First-time bootstrap with seed data
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 
 # Keep dist/ updated for hot reload in a second terminal
-npm run watch:build
+pnpm run watch:build
 
 # Inspect or stop the dev stack
-npm run docker:dev:ps
-npm run docker:dev:logs
-npm run docker:dev:down
+pnpm run docker:dev:ps
+pnpm run docker:dev:logs
+pnpm run docker:dev:down
 ```
 
-Why this matters: the dev containers run built output from `dist/`, so `npm run docker:dev` performs the required build before bringing services up. The full workflow is documented in [docs/devops/docker-compose.md](./docs/devops/docker-compose.md).
+Why this matters: the dev containers run built output from `dist/`, so `pnpm run docker:dev` performs the required build before bringing services up. The full workflow is documented in [docs/devops/docker-compose.md](./docs/devops/docker-compose.md).
 
 ## Deployment Model
 
@@ -91,20 +91,20 @@ Common commands:
 
 ```bash
 # Unit tests
-npx nx test <project>
+pnpm exec nx test <project>
 
 # E2E tests
-npx nx e2e <project>-e2e
+pnpm exec nx e2e <project>-e2e
 
 # Repo-wide validation examples
-npx nx run-many --target=build --all
-npx nx run-many --target=test --all
+pnpm exec nx run-many --target=build --all
+pnpm exec nx run-many --target=test --all
 ```
 
 Before running Playwright suites for the first time:
 
 ```bash
-npx playwright install
+pnpm exec playwright install
 ```
 
 See [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [docs/testing/e2e-testing.md](./docs/testing/e2e-testing.md) for the deeper test workflow.

@@ -94,7 +94,7 @@ permissions:
 
 - Redis server 6.0 or higher
 - Network connectivity to Redis
-- Install Redis client: `npm install redis`
+- Install Redis client: `pnpm install redis`
 
 ## Configuration Parameters
 
@@ -358,7 +358,7 @@ docker run -d -p 6379:6379 redis:7
 2. Install Redis client:
 
 ```bash
-npm install redis
+pnpm install redis
 ```
 
 3. Update configuration:

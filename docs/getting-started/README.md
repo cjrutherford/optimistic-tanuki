@@ -39,17 +39,17 @@ This will install all dependencies for the monorepo using Nx's optimized install
 
 ### Option 1: Full Docker Development Stack (Recommended)
 
-Use the npm entrypoints that match the current Docker Compose dev stack:
+Use the pnpm entrypoints that match the current Docker Compose dev stack:
 
 ```bash
 # Build the development artifacts and start the full stack
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 For a first-time bootstrap that also seeds the shared local data:
 
 ```bash
-npm run docker:dev:bootstrap
+pnpm run docker:dev:bootstrap
 ```
 
 This flow:
@@ -63,19 +63,19 @@ This flow:
 
 ```bash
 # Keep dist/ updated for hot reload in a separate terminal
-npm run watch:build
+pnpm run watch:build
 
 # See running containers
-npm run docker:dev:ps
+pnpm run docker:dev:ps
 
 # Tail logs
-npm run docker:dev:logs
+pnpm run docker:dev:logs
 
 # Stop the development stack
-npm run docker:dev:down
+pnpm run docker:dev:down
 
 # Rerun the shared dev seed step only
-npm run docker:dev:seed
+pnpm run docker:dev:seed
 ```
 
 **Primary Entry Points**
@@ -115,7 +115,7 @@ nx serve authentication
 
 ### 1. Database Setup
 
-The database should be automatically set up when using `npm run docker:dev`, `npm run docker:dev:bootstrap`, or the standard Docker Compose stack.
+The database should be automatically set up when using `pnpm run docker:dev`, `pnpm run docker:dev:bootstrap`, or the standard Docker Compose stack.
 
 To manually set up the database:
 
@@ -216,7 +216,7 @@ When running the development stack:
 
 ```bash
 # View all development logs
-npm run docker:dev:logs
+pnpm run docker:dev:logs
 
 # View a specific service
 docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f gateway
@@ -226,7 +226,7 @@ docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs -f gateway
 
 ```bash
 # Stop the development stack
-npm run docker:dev:down
+pnpm run docker:dev:down
 
 # Stop the standard stack with cleanup
 docker compose down -v  # Removes volumes (databases will be reset!)

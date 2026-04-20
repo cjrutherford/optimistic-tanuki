@@ -326,8 +326,8 @@ this.themeService.setPalette('Electric Sunset');
 Ensure all existing unit tests pass:
 
 ```bash
-npx nx test your-app-name
-npx nx test theme-lib
+pnpm exec nx test your-app-name
+pnpm exec nx test theme-lib
 ```
 
 ## Common Issues and Solutions

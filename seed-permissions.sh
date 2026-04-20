@@ -25,6 +25,7 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('global', 'Global scope - applies across all applications', true),
 ('forgeofwill', 'Forge of Will application', true),
 ('client-interface', 'Main client interface', true),
+('finance', 'Finance application', true),
 ('digital-homestead', 'Digital Homestead application', true),
 ('christopherrutherford-net', 'Personal website', true),
 ('blogging', 'Blogging platform', true),
@@ -33,7 +34,10 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('social', 'Social features', true),
 ('authentication', 'Authentication service', true),
 ('profile', 'Profile service', true),
-('local-hub', 'Local Hub - classifieds, communities, and city pages', true);
+('local-hub', 'Local Hub - classifieds, communities, and city pages', true)
+ON CONFLICT ("name") DO UPDATE SET
+  "description" = EXCLUDED."description",
+  "active" = EXCLUDED."active";
 SQL
 
 psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
@@ -50,6 +54,14 @@ VALUES
   ('client_profile_owner', 'Owner of profile data via client-interface', (SELECT id FROM app_scope WHERE name = 'client-interface')),
   ('client_follower', 'Follower role for client-interface (view/subscribe)', (SELECT id FROM app_scope WHERE name = 'client-interface')),
   ('client_asset_manager', 'Manage own assets via client-interface', (SELECT id FROM app_scope WHERE name = 'client-interface'))
+ON CONFLICT ("name") DO NOTHING;
+
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('finance_member', 'Finance member with workspace read access and limited contribution rights', (SELECT id FROM app_scope WHERE name = 'finance')),
+  ('finance_bookkeeper', 'Finance operator for transaction, import, and reconciliation work', (SELECT id FROM app_scope WHERE name = 'finance')),
+  ('finance_manager', 'Finance manager for accounts, budgets, recurring flows, and onboarding', (SELECT id FROM app_scope WHERE name = 'finance')),
+  ('finance_admin', 'Finance administrator with tenant and member management authority', (SELECT id FROM app_scope WHERE name = 'finance'))
 ON CONFLICT ("name") DO NOTHING;
 
 INSERT INTO "role" (name, description, "appScopeId")
@@ -131,6 +143,36 @@ VALUES
   ('asset.read',   'Read asset',   'asset', 'read',   NULL, (SELECT id FROM app_scope WHERE name='client-interface')),
   ('asset.update', 'Update asset', 'asset', 'update', NULL, (SELECT id FROM app_scope WHERE name='client-interface')),
   ('asset.delete', 'Delete asset', 'asset', 'delete', NULL, (SELECT id FROM app_scope WHERE name='client-interface'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Finance permissions
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('finance.account.create', 'Create finance account', 'finance.account', 'create', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.account.read', 'Read finance account', 'finance.account', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.account.update', 'Update finance account', 'finance.account', 'update', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.account.delete', 'Delete finance account', 'finance.account', 'delete', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.transaction.create', 'Create finance transaction', 'finance.transaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.transaction.read', 'Read finance transaction', 'finance.transaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.transaction.update', 'Update finance transaction', 'finance.transaction', 'update', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.transaction.delete', 'Delete finance transaction', 'finance.transaction', 'delete', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.inventory.create', 'Create finance inventory item', 'finance.inventory', 'create', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.inventory.read', 'Read finance inventory item', 'finance.inventory', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.inventory.update', 'Update finance inventory item', 'finance.inventory', 'update', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.inventory.delete', 'Delete finance inventory item', 'finance.inventory', 'delete', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.budget.create', 'Create finance budget', 'finance.budget', 'create', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.budget.read', 'Read finance budget', 'finance.budget', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.budget.update', 'Update finance budget', 'finance.budget', 'update', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.budget.delete', 'Delete finance budget', 'finance.budget', 'delete', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.recurring.create', 'Create finance recurring item', 'finance.recurring', 'create', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.recurring.read', 'Read finance recurring item', 'finance.recurring', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.recurring.update', 'Update finance recurring item', 'finance.recurring', 'update', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.recurring.delete', 'Delete finance recurring item', 'finance.recurring', 'delete', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.summary.read', 'Read finance workspace summary and work queues', 'finance.summary', 'read', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.bank.manage', 'Manage finance bank connections', 'finance.bank', 'manage', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.onboarding.manage', 'Bootstrap and manage finance onboarding', 'finance.onboarding', 'manage', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.tenant.manage', 'Manage finance tenants', 'finance.tenant', 'manage', NULL, (SELECT id FROM app_scope WHERE name='finance')),
+  ('finance.member.manage', 'Manage finance tenant members', 'finance.member', 'manage', NULL, (SELECT id FROM app_scope WHERE name='finance'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Reaction permissions for client-interface scope (mapped from social)
@@ -247,24 +289,24 @@ VALUES
   ('social.reaction.read', 'Read reaction (local-hub)', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
--- Map permissions to roles (role_permission)
+-- Map permissions to roles (role_permissions)
 -- Note: when mapping, choose the permission row that matches the role's app scope.
 -- digital_homesteader (digital-homestead scope) should map to blogging permissions (blogging scope)
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name = 'profile.read' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='digital-homestead')
 WHERE r.name = 'digital_homesteader'
 ON CONFLICT DO NOTHING;
 
 -- digital_homesteader blog mapping
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('blog.post.create', 'blog.post.read', 'blog.post.update', 'blog.post.delete') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='blogging')
 WHERE r.name = 'digital_homesteader'
 ON CONFLICT DO NOTHING;
 
 -- digital_follower
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('profile.read','blog.post.read','social.post.read') AND (
     (p.name = 'profile.read' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='digital-homestead'))
@@ -274,28 +316,28 @@ WHERE r.name = 'digital_follower'
 ON CONFLICT DO NOTHING;
 
 -- client_profile_owner (use client-interface profile permissions)
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('profile.read', 'profile.update') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='client-interface')
 WHERE r.name = 'client_profile_owner'
 ON CONFLICT DO NOTHING;
 
 -- client_follower
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name = 'profile.read' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='client-interface')
 WHERE r.name = 'client_follower'
 ON CONFLICT DO NOTHING;
 
 -- client_asset_manager
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('asset.create', 'asset.read', 'asset.update', 'asset.delete') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='client-interface')
 WHERE r.name = 'client_asset_manager'
 ON CONFLICT DO NOTHING;
 
 -- forgeofwill_planner (project-planning permissions)
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('project.create', 'project.read', 'project.update', 'task.create', 'task.read', 'task.update') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='project-planning')
 WHERE r.name = 'forgeofwill_planner'
@@ -303,7 +345,7 @@ ON CONFLICT DO NOTHING;
 
 -- forgeofwill_profile_owner (use profile permission rows tied to forgeofwill scope if present,
 -- otherwise fall back to profile service/profile name rows - map to profile.read/profile.update with profile appScope)
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('profile.read', 'profile.update') AND p."appScopeId" = (
     SELECT COALESCE(
@@ -315,34 +357,34 @@ WHERE r.name = 'forgeofwill_profile_owner'
 ON CONFLICT DO NOTHING;
 
 -- blogging roles
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('blog.post.create', 'blog.post.read', 'blog.post.update', 'blog.post.delete') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='blogging')
 WHERE r.name = 'blog_author'
 ON CONFLICT DO NOTHING;
 
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name = 'blog.post.read' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='blogging')
 WHERE r.name = 'blog_reader'
 ON CONFLICT DO NOTHING;
 
 -- assets role
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('asset.create', 'asset.read', 'asset.update', 'asset.delete') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='assets')
 WHERE r.name = 'asset_owner'
 ON CONFLICT DO NOTHING;
 
 -- social role
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN ('social.follow', 'social.post.create', 'social.post.read', 'social.reaction.create', 'social.reaction.read') AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='social')
 WHERE r.name = 'social_user'
 ON CONFLICT DO NOTHING;
 
 -- Global scope owner roles (owner_console_owner, global_admin, system_admin) - full permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
@@ -351,7 +393,7 @@ WHERE r.name IN ('owner_console_owner', 'global_admin', 'system_admin')
 ON CONFLICT DO NOTHING;
 
 -- standard_user (global scope) - basic read/write permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
@@ -363,7 +405,7 @@ WHERE r.name = 'standard_user'
 ON CONFLICT DO NOTHING;
 
 -- forgeofwill_standard_user - profile and social permissions for forgeofwill scope
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
@@ -375,7 +417,7 @@ WHERE r.name = 'forgeofwill_standard_user'
 ON CONFLICT DO NOTHING;
 
 -- client_interface_user - basic client interface permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'profile.read', 'profile.update',
@@ -386,7 +428,7 @@ WHERE r.name = 'client_interface_user'
 ON CONFLICT DO NOTHING;
 
 -- client_interface_user - social permissions via social app scope
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r
 JOIN permission p ON p.name IN (
@@ -403,8 +445,95 @@ JOIN permission p ON p.name IN (
 WHERE r.name = 'client_interface_user'
 ON CONFLICT DO NOTHING;
 
+-- finance_member - read access plus limited account and transaction contribution
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p.name IN (
+  'finance.account.read',
+  'finance.transaction.read',
+  'finance.inventory.read',
+  'finance.inventory.create',
+  'finance.inventory.update',
+  'finance.inventory.delete',
+  'finance.budget.read',
+  'finance.budget.create',
+  'finance.budget.update',
+  'finance.budget.delete',
+  'finance.recurring.read',
+  'finance.recurring.create',
+  'finance.recurring.update',
+  'finance.recurring.delete',
+  'finance.summary.read',
+  'finance.account.create',
+  'finance.account.update',
+  'finance.account.delete',
+  'finance.transaction.create',
+  'finance.transaction.update',
+  'finance.transaction.delete',
+  'finance.bank.manage',
+  'finance.onboarding.manage',
+  'finance.tenant.manage'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='finance')
+WHERE r.name = 'finance_member'
+ON CONFLICT DO NOTHING;
+
+-- finance_bookkeeper - transaction/import/reconciliation operations
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p.name IN (
+  'finance.account.read',
+  'finance.transaction.create',
+  'finance.transaction.read',
+  'finance.transaction.update',
+  'finance.transaction.delete',
+  'finance.inventory.read',
+  'finance.budget.read',
+  'finance.recurring.read',
+  'finance.summary.read'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='finance')
+WHERE r.name = 'finance_bookkeeper'
+ON CONFLICT DO NOTHING;
+
+-- finance_manager - budgeting, recurring, account setup, onboarding
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p.name IN (
+  'finance.account.create',
+  'finance.account.read',
+  'finance.account.update',
+  'finance.transaction.read',
+  'finance.inventory.create',
+  'finance.inventory.read',
+  'finance.inventory.update',
+  'finance.inventory.delete',
+  'finance.budget.create',
+  'finance.budget.read',
+  'finance.budget.update',
+  'finance.budget.delete',
+  'finance.recurring.create',
+  'finance.recurring.read',
+  'finance.recurring.update',
+  'finance.recurring.delete',
+  'finance.summary.read',
+  'finance.bank.manage',
+  'finance.onboarding.manage'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='finance')
+WHERE r.name = 'finance_manager'
+ON CONFLICT DO NOTHING;
+
+-- finance_admin - full finance permissions plus tenant/member administration
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r
+JOIN permission p ON p."appScopeId" = (SELECT id FROM app_scope WHERE name='finance')
+WHERE r.name = 'finance_admin'
+ON CONFLICT DO NOTHING;
+
 -- digital_standard_user - basic digital homestead permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
@@ -413,7 +542,7 @@ WHERE r.name = 'digital_standard_user'
 ON CONFLICT DO NOTHING;
 
 -- christopherrutherford_standard_user - basic permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
@@ -422,7 +551,7 @@ WHERE r.name = 'christopherrutherford_standard_user'
 ON CONFLICT DO NOTHING;
 
 -- christopherrutherford_owner_user - full permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
@@ -431,7 +560,7 @@ WHERE r.name = 'christopherrutherford_owner_user'
 ON CONFLICT DO NOTHING;
 
 -- local_hub_member - full classifieds, community, and social permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'classified.create',
@@ -457,14 +586,14 @@ WHERE r.name = 'local_hub_member'
 ON CONFLICT DO NOTHING;
 
 -- local_hub_community_poster - community posting via local-hub social permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name = 'social.post.create' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='local-hub')
 WHERE r.name = 'local_hub_community_poster'
 ON CONFLICT DO NOTHING;
 
 -- local_hub_standard_user - basic read permissions + social read permissions
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'classified.read',

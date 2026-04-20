@@ -7,7 +7,7 @@
 Run it through the repo stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local URL:
@@ -17,8 +17,8 @@ Primary local URL:
 For direct Nx work:
 
 ```bash
-npx nx serve digital-homestead
-npx nx build digital-homestead
+pnpm exec nx serve digital-homestead
+pnpm exec nx build digital-homestead
 ```
 
 ## Repo Role

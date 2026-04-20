@@ -5,7 +5,7 @@
  * Comprehensive benchmarking tool that tests models against real ai-orchestrator requirements.
  * Features: First message testing, multi-turn conversations, thought process tracking, context window detection.
  *
- * Usage: npx tsx scripts/ollama-model-screener.ts [options]
+ * Usage: pnpm exec tsx scripts/ollama-model-screener.ts [options]
  */
 
 import { ChatOllama } from '@langchain/ollama';
@@ -1917,7 +1917,7 @@ function parseArgs(): BenchmarkConfig {
       console.log(`
 ${COLORS.bright}Ollama Model Screener & Fitness Analyzer${COLORS.reset}
 
-Usage: npx tsx scripts/ollama-model-screener.ts [options]
+Usage: pnpm exec tsx scripts/ollama-model-screener.ts [options]
 
 Options:
   --host <host>              Ollama server host (default: localhost)
@@ -1944,16 +1944,16 @@ Environment Variables:
 
 Examples:
   # Basic screening
-  npx tsx scripts/ollama-model-screener.ts --max-vram 8
+  pnpm exec tsx scripts/ollama-model-screener.ts --max-vram 8
 
   # Full benchmark with debug mode
-  npx tsx scripts/ollama-model-screener.ts --max-vram 8 --benchmark --debug
+  pnpm exec tsx scripts/ollama-model-screener.ts --max-vram 8 --benchmark --debug
 
   # Test context windows
-  npx tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
+  pnpm exec tsx scripts/ollama-model-screener.ts --benchmark --context-window-test
 
   # Filter by family and quantization
-  npx tsx scripts/ollama-model-screener.ts --families llama --quantizations Q4_K_M --benchmark
+  pnpm exec tsx scripts/ollama-model-screener.ts --families llama --quantizations Q4_K_M --benchmark
 `);
       process.exit(0);
     }

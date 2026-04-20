@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build social-ui
-npx nx test social-ui
+pnpm exec nx build social-ui
+pnpm exec nx test social-ui
 ```

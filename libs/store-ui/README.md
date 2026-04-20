@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build store-ui
-npx nx test store-ui
+pnpm exec nx build store-ui
+pnpm exec nx test store-ui
 ```

@@ -5,7 +5,7 @@ Shared styles and mixins for Optimistic Tanuki UI components.
 ## Installation
 
 ```bash
-npm install @optimistic-tanuki/theme-styles
+pnpm install @optimistic-tanuki/theme-styles
 ```
 
 ## Usage

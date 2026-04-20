@@ -1,0 +1,112 @@
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body, var(--personality-font-family, 'Manrope', sans-serif));
+  color: var(--foreground);
+  background: radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--primary) 14%, transparent),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      color-mix(in srgb, var(--secondary) 12%, transparent),
+      transparent 32%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 96%, white 4%) 0%,
+      color-mix(in srgb, var(--surface, var(--background)) 96%, transparent)
+        100%
+    );
+  transition: background 0.4s ease, color 0.3s ease;
+}
+
+body.dark {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--foreground);
+}
+
+/* Fin Commander Shark Personality Tokens */
+:root {
+  --fc-card-radius: 18px;
+  --fc-card-shadow: 0 20px 40px rgba(4, 16, 28, 0.24);
+  --fc-card-shadow-hover: 0 28px 56px rgba(4, 16, 28, 0.32);
+  --fc-button-radius: 9999px;
+  --fc-input-radius: 14px;
+  --fc-transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --fc-border-width: 2px;
+  --fc-font-heading: 'Sora', 'Avenir Next', sans-serif;
+  --fc-font-body: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+/* Form element base styling */
+input, select, textarea {
+  font-family: var(--fc-font-body);
+  font-size: 0.9rem;
+  padding: 0.85rem 1.1rem;
+  border: var(--fc-border-width) solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: var(--fc-input-radius);
+  background: color-mix(in srgb, var(--surface) 92%, var(--background));
+  color: var(--foreground);
+  transition: var(--fc-transition);
+  outline: none;
+
+  &::placeholder {
+    color: var(--muted, #64748b);
+    opacity: 0.7;
+  }
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  &:hover:not(:focus) {
+    border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
+  }
+}
+
+/* Base button styling for plain buttons */
+button:not([class*="otui"]) {
+  font-family: var(--fc-font-body);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.85rem 1.5rem;
+  border: none;
+  border-radius: var(--fc-button-radius);
+  cursor: pointer;
+  transition: var(--fc-transition);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--fc-card-shadow);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

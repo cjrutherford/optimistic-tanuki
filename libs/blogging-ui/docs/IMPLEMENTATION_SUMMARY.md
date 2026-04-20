@@ -205,7 +205,7 @@ libs/blogging-ui/docs/
 - [x] Tests updated and passing
 - [x] Extension properly mocked
 - [x] No breaking changes to existing functionality
-- [ ] Manual testing in browser (pending npm install)
+- [ ] Manual testing in browser (pending pnpm install)
 - [ ] E2E testing (pending deployment)
 - [ ] User acceptance testing (pending)
 
@@ -221,7 +221,7 @@ libs/blogging-ui/docs/
 
 3. **No Dependencies Added**:
    - Uses existing TipTap packages
-   - No new npm packages required
+   - No new external packages required
 
 4. **Rollback Safe**:
    - Can revert to standard Image extension

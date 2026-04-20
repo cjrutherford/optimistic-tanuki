@@ -7,7 +7,7 @@
 The normal path is the repo development stack:
 
 ```bash
-npm run docker:dev
+pnpm run docker:dev
 ```
 
 Primary local URL:
@@ -17,8 +17,8 @@ Primary local URL:
 For direct Nx work:
 
 ```bash
-npx nx serve client-interface
-npx nx build client-interface
+pnpm exec nx serve client-interface
+pnpm exec nx build client-interface
 ```
 
 ## Repo Role

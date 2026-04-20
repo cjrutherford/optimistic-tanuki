@@ -279,6 +279,8 @@ export class PermissionsGuard implements CanActivate {
       if (typeof resolved === 'string' && resolved.trim()) {
         return resolved;
       }
+
+      return null;
     }
 
     const routeTargetId = request.params?.id;

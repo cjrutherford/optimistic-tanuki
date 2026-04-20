@@ -101,6 +101,8 @@ jobs:
       matrix:
         service:
           - authentication
+          - finance
+          - fin-commander
           - gateway
           - profile
           - social

@@ -10,6 +10,6 @@
 ## Nx Commands
 
 ```bash
-npx nx build logger
-npx nx test logger
+pnpm exec nx build logger
+pnpm exec nx test logger
 ```

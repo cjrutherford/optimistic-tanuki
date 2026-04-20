@@ -9,7 +9,7 @@
  * - Classifieds in their communities
  * - Memberships in communities
  *
- * Run via: npx ts-node apps/local-hub/src/seed-http.ts
+ * Run via: pnpm exec ts-node apps/local-hub/src/seed-http.ts
  * Or via Docker: docker compose exec local-hub node /usr/src/app/seed-http.js
  */
 
