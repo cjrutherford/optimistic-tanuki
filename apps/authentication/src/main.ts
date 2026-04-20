@@ -21,13 +21,22 @@ export async function bootstrap() {
         host: '0.0.0.0',
         port: Number(config.get('listenPort')) || 3001,
       },
-    }
+    },
   );
   await app.listen().then(() => {
     Logger.log(
-      'Microservice is listening On Port: ' + config.get('listenPort') || 3001
+      'Microservice is listening On Port: ' + config.get('listenPort') || 3001,
     );
   });
 }
 
-bootstrap();
+export async function start() {
+  await bootstrap();
+}
+
+const isJestRuntime =
+  typeof process !== 'undefined' && process.env.JEST_WORKER_ID;
+
+if (!isJestRuntime && require.main === module) {
+  void start();
+}

@@ -122,22 +122,46 @@ export class VideoProcessingService {
     type: AssetType,
   ): Promise<{ id: string }> {
     const fileName = path.basename(filePath);
-    const fileBuffer = await fs.readFile(filePath);
     const extension = path.extname(fileName).slice(1);
-    const asset = await firstValueFrom(
-      this.assetsClient.send(
-        { cmd: AssetCommands.CREATE },
-        {
-          name: fileName,
-          profileId,
-          type,
-          content: fileBuffer.toString('base64'),
-          fileExtension: extension,
-        } satisfies CreateAssetDto,
-      ),
+    const stagedSourcePath = await this.stageFileForAssetImport(
+      filePath,
+      fileName,
     );
 
-    return asset;
+    try {
+      const asset = await firstValueFrom(
+        this.assetsClient.send(
+          { cmd: AssetCommands.CREATE },
+          {
+            name: fileName,
+            profileId,
+            type,
+            sourcePath: stagedSourcePath,
+            fileExtension: extension,
+          } satisfies CreateAssetDto,
+        ),
+      );
+
+      return asset;
+    } finally {
+      await fs.rm(path.dirname(stagedSourcePath), {
+        recursive: true,
+        force: true,
+      });
+    }
+  }
+
+  private async stageFileForAssetImport(
+    filePath: string,
+    fileName: string,
+  ): Promise<string> {
+    await fs.mkdir(this.config.assetStorageRoot, { recursive: true });
+    const stagingDir = await fs.mkdtemp(
+      path.join(this.config.assetStorageRoot, 'video-processing-import-'),
+    );
+    const stagedPath = path.join(stagingDir, fileName);
+    await fs.copyFile(filePath, stagedPath);
+    return stagedPath;
   }
 
   private async createManifestAsset(

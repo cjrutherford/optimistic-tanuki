@@ -13,6 +13,10 @@ import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import {
+  LoginAccountBootstrapService,
+  RegisterAccountBootstrapService,
+} from '@optimistic-tanuki/auth-feature-account-bootstrap';
 import { AuthGuard } from '../../auth/auth.guard';
 
 describe('AuthenticationController', () => {
@@ -20,6 +24,8 @@ describe('AuthenticationController', () => {
   let clientProxy: ClientProxy;
   let profileService: ClientProxy;
   let roleInitService: { processNow: jest.Mock };
+  let loginBootstrap: { login: jest.Mock };
+  let registerBootstrap: { register: jest.Mock };
 
   beforeEach(async () => {
     clientProxy = {
@@ -37,6 +43,16 @@ describe('AuthenticationController', () => {
     roleInitService = {
       processNow: jest.fn().mockResolvedValue(undefined),
     };
+    loginBootstrap = {
+      login: jest.fn().mockResolvedValue(true),
+    };
+    registerBootstrap = {
+      register: jest.fn().mockResolvedValue({
+        data: {
+          user: { id: '12345', firstName: 'Test', lastName: 'Testerson' },
+        },
+      }),
+    };
 
     const moduleRef = Test.createTestingModule({
       controllers: [AuthenticationController],
@@ -53,9 +69,18 @@ describe('AuthenticationController', () => {
           provide: RoleInitService,
           useValue: roleInitService,
         },
+        {
+          provide: LoginAccountBootstrapService,
+          useValue: loginBootstrap,
+        },
+        {
+          provide: RegisterAccountBootstrapService,
+          useValue: registerBootstrap,
+        },
         Logger,
       ],
-    }).overrideGuard(AuthGuard)
+    })
+      .overrideGuard(AuthGuard)
       .useValue({ canActivate: jest.fn().mockReturnValue(true) });
 
     const module: TestingModule = await moduleRef.compile();
@@ -72,17 +97,10 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
       password: 'test',
     };
-    // Mock UserIdFromEmail to return a valid userId
-    (clientProxy.send as jest.Mock)
-      .mockReturnValueOnce(of('user-1')) // UserIdFromEmail
-      .mockReturnValueOnce(of(true)); // Login
     await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
-      true
+      true,
     );
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Login },
-      { ...loginRequest, profileId: 'profile-1' }
-    );
+    expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
   });
 
   it('should auto-create app-scoped profile for cross-app users and login with it', async () => {
@@ -91,74 +109,13 @@ describe('AuthenticationController', () => {
       password: 'test',
     };
 
-    (clientProxy.send as jest.Mock).mockImplementation((pattern) => {
-      if (pattern?.cmd === AuthCommands.UserIdFromEmail) {
-        return of('user-1');
-      }
-      if (pattern?.cmd === AuthCommands.Login) {
-        return of(true);
-      }
-      return of(true);
-    });
+    await expect(
+      controller.loginUser(loginRequest, 'forgeofwill'),
+    ).resolves.toBe(true);
 
-    (profileService.send as jest.Mock).mockImplementation((pattern, payload) => {
-      if (pattern?.cmd === ProfileCommands.GetAll) {
-        return of([
-          {
-            id: 'profile-client',
-            userId: 'user-1',
-            profileName: 'Client Profile',
-            appScope: 'client-interface',
-            profilePic: 'pic',
-            coverPic: 'cover',
-            bio: 'bio',
-            location: 'loc',
-            occupation: 'occ',
-            interests: 'int',
-            skills: 'skills',
-          },
-        ]);
-      }
-
-      if (pattern?.cmd === ProfileCommands.Create) {
-        expect(payload).toEqual(
-          expect.objectContaining({
-            userId: 'user-1',
-            name: 'Client Profile',
-            appScope: 'forgeofwill',
-            copyPermissionsFromGlobalProfile: false,
-          })
-        );
-        return of({
-          id: 'profile-forge',
-          userId: 'user-1',
-          profileName: 'Client Profile',
-          appScope: 'forgeofwill',
-        });
-      }
-
-      return of([]);
-    });
-
-    await expect(controller.loginUser(loginRequest, 'forgeofwill')).resolves.toBe(
-      true
-    );
-
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Login },
-      { ...loginRequest, profileId: 'profile-forge' }
-    );
-    expect(roleInitService.processNow).toHaveBeenCalled();
-    expect(roleInitService.processNow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        scopeName: 'forgeofwill',
-        assignments: expect.arrayContaining([
-          expect.objectContaining({
-            roleName: 'forgeofwill_standard_user',
-            profileId: 'profile-forge',
-          }),
-        ]),
-      })
+    expect(loginBootstrap.login).toHaveBeenCalledWith(
+      loginRequest,
+      'forgeofwill',
     );
   });
 
@@ -170,26 +127,27 @@ describe('AuthenticationController', () => {
     (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
       throw new Error('login error');
     });
+    loginBootstrap.login.mockRejectedValueOnce(new Error('login error'));
     await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(
-      HttpException
+      HttpException,
     );
   });
 
   it('should issue a fresh token for the requested profile', async () => {
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'fresh-token' } })
+      of({ data: { newToken: 'fresh-token' } }),
     );
 
     await expect(
       controller.issueTokenForProfile(
         { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
-        { profileId: 'profile-2' }
-      )
+        { profileId: 'profile-2' },
+      ),
     ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
 
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Issue },
-      { userId: 'user-1', profileId: 'profile-2' }
+      { userId: 'user-1', profileId: 'profile-2' },
     );
   });
 
@@ -212,13 +170,13 @@ describe('AuthenticationController', () => {
         },
       },
     };
-    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
+    registerBootstrap.register.mockResolvedValueOnce(mockResult);
     await expect(
-      controller.registerUser(registerRequest, 'test')
+      controller.registerUser(registerRequest, 'test'),
     ).resolves.toEqual(mockResult);
-    expect(clientProxy.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Register },
-      registerRequest
+    expect(registerBootstrap.register).toHaveBeenCalledWith(
+      registerRequest,
+      'test',
     );
   });
 
@@ -242,40 +200,15 @@ describe('AuthenticationController', () => {
       },
     };
 
-    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
-    jest
-      .spyOn(profileService, 'send')
-      .mockReturnValueOnce(of({ id: 'leads-profile', appScope: 'leads-app' }));
+    registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'leads-app')
+      controller.registerUser(registerRequest, 'leads-app'),
     ).resolves.toEqual(mockResult);
 
-    expect(roleInitService.processNow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        scopeName: 'leads-app',
-        permissions: expect.arrayContaining([
-          expect.objectContaining({ name: 'lead.read' }),
-          expect.objectContaining({ name: 'lead.topic.read' }),
-          expect.objectContaining({ name: 'lead.onboarding.update' }),
-        ]),
-        roles: expect.arrayContaining([
-          expect.objectContaining({
-            name: 'leads_app_member',
-            permissions: expect.arrayContaining([
-              'lead.read',
-              'lead.topic.read',
-              'lead.onboarding.update',
-            ]),
-          }),
-        ]),
-        assignments: expect.arrayContaining([
-          expect.objectContaining({
-            roleName: 'leads_app_member',
-            profileId: 'leads-profile',
-          }),
-        ]),
-      })
+    expect(registerBootstrap.register).toHaveBeenCalledWith(
+      registerRequest,
+      'leads-app',
     );
   });
 
@@ -299,38 +232,15 @@ describe('AuthenticationController', () => {
       },
     };
 
-    jest.spyOn(clientProxy, 'send').mockReturnValueOnce(of(mockResult));
-    jest
-      .spyOn(profileService, 'send')
-      .mockReturnValueOnce(of({ id: 'finance-profile', appScope: 'finance' }));
+    registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'finance')
+      controller.registerUser(registerRequest, 'finance'),
     ).resolves.toEqual(mockResult);
 
-    expect(roleInitService.processNow).toHaveBeenCalledWith(
-      expect.objectContaining({
-        scopeName: 'finance',
-        roles: expect.arrayContaining([
-          expect.objectContaining({
-            name: 'finance_member',
-            permissions: expect.arrayContaining([
-              'finance.tenant.manage',
-              'finance.onboarding.manage',
-              'finance.summary.read',
-              'finance.transaction.read',
-              'finance.budget.read',
-              'finance.recurring.read',
-            ]),
-          }),
-        ]),
-        assignments: expect.arrayContaining([
-          expect.objectContaining({
-            roleName: 'finance_member',
-            profileId: 'finance-profile',
-          }),
-        ]),
-      })
+    expect(registerBootstrap.register).toHaveBeenCalledWith(
+      registerRequest,
+      'finance',
     );
   });
 
@@ -346,8 +256,11 @@ describe('AuthenticationController', () => {
     (clientProxy.send as jest.Mock).mockImplementationOnce(() => {
       throw new Error('register error');
     });
+    registerBootstrap.register.mockRejectedValueOnce(
+      new Error('register error'),
+    );
     await expect(
-      controller.registerUser(registerRequest, 'test')
+      controller.registerUser(registerRequest, 'test'),
     ).rejects.toThrow(HttpException);
   });
 
@@ -359,11 +272,11 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
     };
     await expect(controller.resetPassword(resetPasswordRequest)).resolves.toBe(
-      true
+      true,
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.ResetPassword },
-      resetPasswordRequest
+      resetPasswordRequest,
     );
   });
 
@@ -378,7 +291,7 @@ describe('AuthenticationController', () => {
       throw new Error('reset error');
     });
     await expect(
-      controller.resetPassword(resetPasswordRequest)
+      controller.resetPassword(resetPasswordRequest),
     ).rejects.toThrow(HttpException);
   });
 
@@ -391,7 +304,7 @@ describe('AuthenticationController', () => {
     await expect(controller.enableMfa(enableMfaRequest)).resolves.toBe(true);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.EnableMultiFactor },
-      enableMfaRequest
+      enableMfaRequest,
     );
   });
 
@@ -405,7 +318,7 @@ describe('AuthenticationController', () => {
       throw new Error('mfa error');
     });
     await expect(controller.enableMfa(enableMfaRequest)).rejects.toThrow(
-      HttpException
+      HttpException,
     );
   });
 
@@ -415,11 +328,11 @@ describe('AuthenticationController', () => {
       userId: 'userId',
     };
     await expect(controller.validateToken(validateTokenRequest)).resolves.toBe(
-      true
+      true,
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      validateTokenRequest
+      validateTokenRequest,
     );
   });
 
@@ -432,18 +345,18 @@ describe('AuthenticationController', () => {
       throw new Error('validate error');
     });
     await expect(
-      controller.validateToken(validateTokenRequest)
+      controller.validateToken(validateTokenRequest),
     ).rejects.toThrow(HttpException);
   });
 
   it('should validate MFA', async () => {
     const validateMfaRequest = { userId: '123', token: '123456' };
     await expect(controller.validateMfa(validateMfaRequest)).resolves.toBe(
-      true
+      true,
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.ValidateTotp },
-      validateMfaRequest
+      validateMfaRequest,
     );
   });
 
@@ -453,7 +366,7 @@ describe('AuthenticationController', () => {
       throw new Error('validate mfa error');
     });
     await expect(controller.validateMfa(validateMfaRequest)).rejects.toThrow(
-      HttpException
+      HttpException,
     );
   });
 });

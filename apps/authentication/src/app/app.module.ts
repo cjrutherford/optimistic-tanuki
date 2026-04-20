@@ -1,6 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import {
+  MfaService,
+  PasswordPolicyService,
+} from '@optimistic-tanuki/auth-domain';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import {
   AsymmetricService,
@@ -12,7 +17,6 @@ import {
   ConsoleEmailProvider,
   SmtpEmailProvider,
 } from '@optimistic-tanuki/email';
-import * as jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
 import { DataSource } from 'typeorm';
 import loadConfig from '../config';
@@ -26,7 +30,6 @@ import { OAuthService } from './oauth.service';
 import { KeyService } from './key.service';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import loadDatabase from './loadDatabase';
-import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -80,11 +83,16 @@ import { JwtService } from '@nestjs/jwt';
     OAuthService,
     OAuthConfigValidator,
     SaltedHashService,
+    PasswordPolicyService,
     KeyService,
     AsymmetricService,
     {
       provide: 'totp',
       useValue: authenticator,
+    },
+    {
+      provide: MfaService,
+      useFactory: () => new MfaService(authenticator),
     },
     {
       provide: 'JWT_SECRET',

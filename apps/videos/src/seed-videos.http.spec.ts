@@ -59,6 +59,51 @@ describe('seed video HTTP helpers', () => {
     global.fetch = originalFetch;
   });
 
+  it('redacts large asset content from failed HTTP responses', async () => {
+    const largeBase64 = Buffer.alloc(1024, 'x').toString('base64');
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      json: async () => ({
+        message: 'File validation failed',
+        request: {
+          content: largeBase64,
+          nested: {
+            sourcePath: '/mnt/valhalla/media/TV/show.mp4',
+          },
+        },
+      }),
+    });
+    const originalFetch = global.fetch;
+    global.fetch = fetchMock as any;
+
+    const client = createHttpClient('http://gateway:3000/api', {
+      'Content-Type': 'application/json',
+    });
+
+    await expect(
+      client.post('/asset', {
+        name: 'show.mp4',
+        content: largeBase64,
+      }),
+    ).rejects.toMatchObject({
+      message: 'File validation failed',
+      status: 400,
+      data: {
+        message: 'File validation failed',
+        request: {
+          content: '[redacted base64 content]',
+          nested: {
+            sourcePath: '/mnt/valhalla/media/TV/show.mp4',
+          },
+        },
+      },
+    });
+
+    global.fetch = originalFetch;
+  });
+
   it('registers and logs in a seed user through the gateway api', async () => {
     const credentials: SeedUserCredentials = {
       email: 'alice@example.com',
@@ -103,7 +148,6 @@ describe('seed video HTTP helpers', () => {
         email: 'alice@example.com',
         password: 'TestPassword123!',
       },
-      undefined,
     );
     expect(session).toEqual({
       userId: 'user-1',

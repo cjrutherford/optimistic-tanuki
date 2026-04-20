@@ -68,5 +68,10 @@
       }
     }
   },
-  "tags": []
+  "tags": [
+    "type:app",
+    "scope:finance",
+    "platform:server",
+    "visibility:internal"
+  ]
 }

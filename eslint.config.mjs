@@ -16,7 +16,88 @@ export default [
       '@angular-eslint': angular,
     },
     rules: {
-      '@nx/enforce-module-boundaries': 'off',
+      '@nx/enforce-module-boundaries': [
+        'error',
+        {
+          enforceBuildableLibDependency: false,
+          allowCircularSelfDependency: true,
+          allow: [
+            '@optimistic-tanuki/database',
+            '@optimistic-tanuki/encryption',
+            '@optimistic-tanuki/logger',
+            '@optimistic-tanuki/app-config-models',
+            '@optimistic-tanuki/theme-models',
+            '@optimistic-tanuki/auth-ui',
+            '@optimistic-tanuki/common-ui',
+            '@optimistic-tanuki/motion-ui',
+            '@optimistic-tanuki/notification-ui',
+            '@optimistic-tanuki/theme-lib',
+            '@optimistic-tanuki/ui-models',
+          ],
+          depConstraints: [
+            {
+              sourceTag: 'type:app',
+              onlyDependOnLibsWithTags: [
+                'type:feature',
+                'type:data-access',
+                'type:domain',
+                'type:contracts',
+                'type:ui',
+                'type:util',
+              ],
+            },
+            {
+              sourceTag: 'type:feature',
+              onlyDependOnLibsWithTags: [
+                'type:domain',
+                'type:data-access',
+                'type:contracts',
+                'type:util',
+              ],
+            },
+            {
+              sourceTag: 'type:domain',
+              onlyDependOnLibsWithTags: ['type:contracts', 'type:util'],
+            },
+            {
+              sourceTag: 'type:contracts',
+              onlyDependOnLibsWithTags: ['type:util'],
+            },
+            {
+              sourceTag: 'scope:auth',
+              onlyDependOnLibsWithTags: ['scope:auth', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:permissions',
+              onlyDependOnLibsWithTags: ['scope:permissions', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:payments',
+              onlyDependOnLibsWithTags: ['scope:payments', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:finance',
+              onlyDependOnLibsWithTags: ['scope:finance', 'scope:shared'],
+            },
+            {
+              sourceTag: 'scope:leads',
+              onlyDependOnLibsWithTags: ['scope:leads', 'scope:shared'],
+            },
+            {
+              sourceTag: 'platform:web',
+              notDependOnLibsWithTags: ['platform:server'],
+            },
+            {
+              sourceTag: 'visibility:publishable',
+              onlyDependOnLibsWithTags: [
+                'visibility:publishable',
+                'type:contracts',
+                'type:util',
+              ],
+            },
+          ],
+        },
+      ],
       '@angular-eslint/component-selector': 'off',
       '@angular-eslint/directive-selector': 'off',
       '@angular-eslint/prefer-inject': 'off',

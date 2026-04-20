@@ -9,7 +9,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 describe('VideoProcessingService', () => {
-  const createService = () => {
+  const createService = (assetStorageRoot = '/asset-root') => {
     const videoRepository = {
       findOne: jest.fn(),
       update: jest.fn(),
@@ -26,7 +26,7 @@ describe('VideoProcessingService', () => {
       assetsClient,
       transcodeClient as never,
       {
-        assetStorageRoot: '/asset-root',
+        assetStorageRoot,
       },
     );
 
@@ -34,15 +34,17 @@ describe('VideoProcessingService', () => {
   };
 
   it('transcodes a source asset and persists mp4 plus hls playback assets', async () => {
-    const { service, videoRepository, assetsClient, transcodeClient } =
-      createService();
     const workingDir = await fs.mkdtemp(
       path.join(os.tmpdir(), 'video-processing-spec-'),
     );
+    const assetStorageRoot = path.join(workingDir, 'asset-storage');
     const playbackPath = path.join(workingDir, 'playback.mp4');
     const manifestPath = path.join(workingDir, 'stream.m3u8');
     const segmentPath = path.join(workingDir, 'segment-000.ts');
+    const { service, videoRepository, assetsClient, transcodeClient } =
+      createService(assetStorageRoot);
 
+    await fs.mkdir(assetStorageRoot, { recursive: true });
     await fs.writeFile(playbackPath, Buffer.from('mp4'));
     await fs.writeFile(
       manifestPath,
@@ -87,13 +89,28 @@ describe('VideoProcessingService', () => {
 
     expect(transcodeClient.transcode).toHaveBeenCalledWith({
       videoId: 'video-1',
-      sourcePath: '/asset-root/assets/source-asset/upload.mkv',
+      sourcePath: path.join(
+        assetStorageRoot,
+        'assets/source-asset/upload.mkv',
+      ),
     });
     expect(assetsClient.send).toHaveBeenCalledWith(
       { cmd: AssetCommands.CREATE },
       expect.objectContaining({
         name: 'playback.mp4',
         type: 'video',
+        sourcePath: expect.stringMatching(
+          new RegExp(
+            `^${assetStorageRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          ),
+        ),
+      }),
+    );
+    expect(assetsClient.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.CREATE },
+      expect.not.objectContaining({
+        name: 'playback.mp4',
+        content: expect.any(String),
       }),
     );
     expect(assetsClient.send).toHaveBeenCalledWith(

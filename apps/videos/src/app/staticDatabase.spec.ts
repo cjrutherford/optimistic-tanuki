@@ -32,42 +32,34 @@ describe('videos static datasource', () => {
   });
 
   it('initializes migrations in baseline-first order', async () => {
-    await staticSource.initialize();
+    const migrations = staticSource.options.migrations as Function[];
 
-    try {
-      expect(
-        staticSource.migrations.map((migration) => migration.name),
-      ).toEqual([
-        'Initial1770152975983',
-        'CommunityBroadcast20260417143000',
-        'VideoProcessingPipeline20260418170000',
-      ]);
-    } finally {
-      await staticSource.destroy();
-    }
+    expect(migrations.map((migration) => migration.name)).toEqual([
+      'Initial1770152975983',
+      'CommunityBroadcast20260417143000',
+      'VideoProcessingPipeline20260418170000',
+    ]);
   });
 
   it('declares uuid foreign key columns to match the baseline migration schema', async () => {
-    await staticSource.initialize();
+    await (
+      staticSource as unknown as { buildMetadatas(): Promise<void> }
+    ).buildMetadatas();
 
-    try {
-      expect(
-        staticSource.getMetadata(Video).findColumnWithPropertyName('channelId')
-          ?.type,
-      ).toBe('uuid');
-      expect(
-        staticSource
-          .getMetadata(VideoView)
-          .findColumnWithPropertyName('videoId')?.type,
-      ).toBe('uuid');
-      expect(
-        staticSource
-          .getMetadata(ChannelSubscription)
-          .findColumnWithPropertyName('channelId')?.type,
-      ).toBe('uuid');
-    } finally {
-      await staticSource.destroy();
-    }
+    expect(
+      staticSource.getMetadata(Video).findColumnWithPropertyName('channelId')
+        ?.type,
+    ).toBe('uuid');
+    expect(
+      staticSource
+        .getMetadata(VideoView)
+        .findColumnWithPropertyName('videoId')?.type,
+    ).toBe('uuid');
+    expect(
+      staticSource
+        .getMetadata(ChannelSubscription)
+        .findColumnWithPropertyName('channelId')?.type,
+    ).toBe('uuid');
   });
 
   it('bootstraps baseline tables when community broadcast runs first', async () => {

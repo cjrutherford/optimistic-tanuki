@@ -276,7 +276,7 @@ async function request(
       data?: unknown;
     };
     error.status = response.status;
-    error.data = data;
+    error.data = redactLargePayloads(data);
     throw error;
   }
 
@@ -285,6 +285,41 @@ async function request(
 
 function trimTrailingSlash(value: string): string {
   return value.endsWith('/') ? value.slice(0, -1) : value;
+}
+
+function redactLargePayloads(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactLargePayloads(item));
+  }
+
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+
+  const redacted: Record<string, unknown> = {};
+
+  for (const [key, childValue] of Object.entries(value)) {
+    if (shouldRedactPayloadField(key, childValue)) {
+      redacted[key] = '[redacted base64 content]';
+      continue;
+    }
+
+    redacted[key] = redactLargePayloads(childValue);
+  }
+
+  return redacted;
+}
+
+function shouldRedactPayloadField(key: string, value: unknown): boolean {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const normalizedKey = key.toLowerCase();
+  return (
+    (normalizedKey === 'content' || normalizedKey === 'contentbase64') &&
+    value.length > 256
+  );
 }
 
 function decodeJwtPayload(token: string): {

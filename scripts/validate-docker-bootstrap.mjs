@@ -13,7 +13,9 @@ import { tmpdir } from 'node:os';
 import { dirname, join, normalize } from 'node:path';
 
 const root = new URL('..', import.meta.url);
-const packageJson = JSON.parse(readFileSync(new URL('package.json', root), 'utf8'));
+const packageJson = JSON.parse(
+  readFileSync(new URL('package.json', root), 'utf8'),
+);
 
 const dockerScripts = Object.entries(packageJson.scripts).filter(([name]) =>
   name.startsWith('docker:'),
@@ -22,7 +24,9 @@ const referencedScripts = new Set();
 const directlyInvokedScripts = new Set();
 
 for (const [, command] of dockerScripts) {
-  for (const match of command.matchAll(/(?:^|\s)(sh\s+)?(\.\/scripts\/[^\s;&|]+\.sh)\b/g)) {
+  for (const match of command.matchAll(
+    /(?:^|\s)(sh\s+)?(\.\/scripts\/[^\s;&|]+\.sh)\b/g,
+  )) {
     const script = match[2];
     const usesShell = Boolean(match[1]);
     if (!usesShell) {
@@ -32,21 +36,22 @@ for (const [, command] of dockerScripts) {
   }
 }
 
-assert.deepEqual(
-  [...referencedScripts].sort(),
-  [
-    './scripts/dev-seed.sh',
-    './scripts/docker-build-batched.sh',
-    './scripts/docker-start-phased.sh',
-    './scripts/prod-seed.sh',
-  ],
-);
+assert.deepEqual([...referencedScripts].sort(), [
+  './scripts/dev-seed.sh',
+  './scripts/docker-build-batched.sh',
+  './scripts/docker-start-phased.sh',
+  './scripts/prod-seed.sh',
+]);
 
 for (const script of referencedScripts) {
   const path = new URL(script.slice(2), root);
   assert.equal(existsSync(path), true, `${script} must exist`);
   if (directlyInvokedScripts.has(script)) {
-    assert.equal((statSync(path).mode & 0o111) !== 0, true, `${script} must be executable`);
+    assert.equal(
+      (statSync(path).mode & 0o111) !== 0,
+      true,
+      `${script} must be executable`,
+    );
   }
 }
 
@@ -119,13 +124,17 @@ const phasedStartupServices = [
 ];
 
 for (const service of phasedStartupServices) {
-  assert.equal(composeServices.has(service), true, `${service} must exist in compose files`);
+  assert.equal(
+    composeServices.has(service),
+    true,
+    `${service} must exist in compose files`,
+  );
 }
 
 const composeYaml = readFileSync(new URL('docker-compose.yaml', root), 'utf8');
-const dockerfileReferences = [...composeYaml.matchAll(/^\s+dockerfile:\s+(.+)$/gm)].map((match) =>
-  match[1].replace(/^['"]|['"]$/g, ''),
-);
+const dockerfileReferences = [
+  ...composeYaml.matchAll(/^\s+dockerfile:\s+(.+)$/gm),
+].map((match) => match[1].replace(/^['"]|['"]$/g, ''));
 
 assert.equal(
   dockerfileReferences.includes('./docker/db-setup/Dockerfile'),
@@ -164,40 +173,147 @@ function execForOutput(command, args, options) {
   try {
     return execFileSync(command, args, options);
   } catch (error) {
-    if (error?.code === 'EPERM' && error.status === 0 && typeof error.stdout === 'string') {
+    if (
+      error?.code === 'EPERM' &&
+      error.status === 0 &&
+      typeof error.stdout === 'string'
+    ) {
       return error.stdout;
     }
     throw error;
   }
 }
 
-const buildOutput = execForOutput('bash', ['./scripts/docker-build-batched.sh', '--dry-run', '2', 'docker-compose.dev.yaml'], {
-  cwd: root,
-  env: { ...process.env, DOCKER_BUILD_BAKE_FILE: bakeFile },
-  encoding: 'utf8',
-});
+const buildOutput = execForOutput(
+  'bash',
+  [
+    './scripts/docker-build-batched.sh',
+    '--dry-run',
+    '2',
+    'docker-compose.dev.yaml',
+  ],
+  {
+    cwd: root,
+    env: { ...process.env, DOCKER_BUILD_BAKE_FILE: bakeFile },
+    encoding: 'utf8',
+  },
+);
 
-assert.match(buildOutput, /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/);
+assert.match(
+  buildOutput,
+  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/,
+);
 assert.match(buildOutput, /Found 3 services to build/);
 assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* db-setup/);
-assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* authentication gateway/);
+assert.match(
+  buildOutput,
+  /DRY RUN: docker buildx bake -f .* authentication gateway/,
+);
 assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* profile/);
 assert.doesNotMatch(buildOutput, /app-configurator-seed|store-seed/);
 
 const startupOutput = execForOutput(
   'bash',
-  ['./scripts/docker-start-phased.sh', '--dry-run', 'docker-compose.dev.yaml', '0', '--force-recreate'],
+  [
+    './scripts/docker-start-phased.sh',
+    '--dry-run',
+    'docker-compose.dev.yaml',
+    '0',
+    '--force-recreate',
+  ],
   {
     cwd: root,
     encoding: 'utf8',
   },
 );
 
-assert.match(startupOutput, /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/);
+assert.match(
+  startupOutput,
+  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/,
+);
 assert.match(startupOutput, /Extra flags: --force-recreate/);
-assert.match(startupOutput, /DRY RUN: docker compose .* up -d --force-recreate postgres redis/);
+assert.match(
+  startupOutput,
+  /DRY RUN: docker compose .* up -d --force-recreate postgres redis/,
+);
 assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
-assert.match(startupOutput, /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/);
+assert.match(
+  startupOutput,
+  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/,
+);
+
+const seedRuntimeEntries = [
+  {
+    path: 'dist/apps/telos-docs-service/seed-persona.js',
+    label: 'telos docs persona seed',
+  },
+  {
+    path: 'dist/apps/permissions/seed-permissions.js',
+    label: 'permissions seed',
+  },
+  { path: 'dist/apps/store/seed-store.js', label: 'store seed' },
+  { path: 'dist/apps/social/seed-social.js', label: 'social seed' },
+  {
+    path: 'dist/apps/social/seed-local-communities.js',
+    label: 'local communities seed',
+  },
+  {
+    path: 'dist/apps/social/seed-community-posts.js',
+    label: 'community posts seed',
+  },
+  {
+    path: 'dist/apps/payments/seed-products.js',
+    label: 'payments products seed',
+  },
+  { path: 'dist/apps/videos/seed-videos.js', label: 'videos seed' },
+  {
+    path: 'dist/apps/classifieds/seed-classifieds.js',
+    label: 'classifieds seed',
+  },
+];
+
+for (const entry of seedRuntimeEntries) {
+  assert.equal(
+    existsSync(new URL(entry.path, root)),
+    true,
+    `${entry.label} runtime entry must exist at ${entry.path}`,
+  );
+}
+
+const devSeedScript = readFileSync(
+  new URL('scripts/dev-seed.sh', root),
+  'utf8',
+);
+const prodSeedScript = readFileSync(
+  new URL('scripts/prod-seed.sh', root),
+  'utf8',
+);
+
+for (const token of [
+  'run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js',
+  'run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js',
+  'run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js',
+  'run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js',
+  'run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js',
+  'run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js',
+  'run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js',
+  'run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js',
+  'run_seed_with_run videos "${APP_RUNTIME_DIR}" node ./seed-videos.js',
+]) {
+  assert.equal(
+    devSeedScript.includes(token),
+    true,
+    `dev seed script must include ${token}`,
+  );
+}
+
+assert.equal(
+  prodSeedScript.includes(
+    'run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js',
+  ),
+  true,
+  'prod seed script must use the permissions runtime seed entrypoint',
+);
 
 const ignoredPackageManagerScanDirs = new Set([
   '.angular',
@@ -227,13 +343,25 @@ const ignoredPackageManagerScanExtensions = new Set([
 ]);
 
 const forbiddenPackageManagerPatterns = [
-  { pattern: /\bnpm\s+(?:run|install|ci|i|audit|start)\b/, label: 'npm command' },
+  {
+    pattern: /\bnpm\s+(?:run|install|ci|i|audit|start)\b/,
+    label: 'npm command',
+  },
   { pattern: /\bnpx\b/, label: 'npx command' },
   { pattern: /package-lock\.json/, label: 'package-lock.json reference' },
   { pattern: /package\*\.json/, label: 'package*.json Docker copy glob' },
-  { pattern: /pnpm install --legacy-peer-deps/, label: 'legacy npm peer flag on pnpm install' },
-  { pattern: /--omit=dev --legacy-peer-deps/, label: 'legacy npm peer flag on production install' },
-  { pattern: /RUN .*pnpm install --frozen-lockfile\s+\S/, label: 'pnpm install used where pnpm add is required' },
+  {
+    pattern: /pnpm install --legacy-peer-deps/,
+    label: 'legacy npm peer flag on pnpm install',
+  },
+  {
+    pattern: /--omit=dev --legacy-peer-deps/,
+    label: 'legacy npm peer flag on production install',
+  },
+  {
+    pattern: /RUN .*pnpm install --frozen-lockfile\s+\S/,
+    label: 'pnpm install used where pnpm add is required',
+  },
 ];
 
 function collectFiles(dirUrl, relativeDir = '') {
@@ -243,12 +371,19 @@ function collectFiles(dirUrl, relativeDir = '') {
       if (ignoredPackageManagerScanDirs.has(entry.name)) {
         continue;
       }
-      files.push(...collectFiles(new URL(`${entry.name}/`, dirUrl), join(relativeDir, entry.name)));
+      files.push(
+        ...collectFiles(
+          new URL(`${entry.name}/`, dirUrl),
+          join(relativeDir, entry.name),
+        ),
+      );
       continue;
     }
 
     const file = join(relativeDir, entry.name);
-    const extension = entry.name.includes('.') ? entry.name.slice(entry.name.lastIndexOf('.')) : '';
+    const extension = entry.name.includes('.')
+      ? entry.name.slice(entry.name.lastIndexOf('.'))
+      : '';
     if (
       !entry.isFile() ||
       ignoredPackageManagerScanFiles.has(entry.name) ||
@@ -279,4 +414,8 @@ for (const file of collectFiles(root)) {
   }
 }
 
-assert.deepEqual(packageManagerViolations, [], 'package operations must use pnpm');
+assert.deepEqual(
+  packageManagerViolations,
+  [],
+  'package operations must use pnpm',
+);

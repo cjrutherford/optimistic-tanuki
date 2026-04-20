@@ -2,19 +2,20 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { timingSafeEqual } from 'crypto';
 import { UserEntity } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import validator from 'validator';
+import {
+  MfaService,
+  PasswordPolicyService,
+} from '@optimistic-tanuki/auth-domain';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
 import { EmailService } from '@optimistic-tanuki/email';
 import { RpcException } from '@nestjs/microservices';
-import * as jwt from 'jsonwebtoken';
 import * as qrcode from 'qrcode';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { KeyService } from './key.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
-import { Repositories } from '../constants';
 import { randomBytes } from 'crypto';
 import { authenticator } from 'otplib';
 
@@ -30,6 +31,8 @@ export class AppService {
     @Inject(getRepositoryToken(KeyDatum))
     private readonly keyRepo: Repository<KeyDatum>,
     private readonly saltedHashService: SaltedHashService,
+    private readonly passwordPolicyService: PasswordPolicyService,
+    private readonly mfaService: MfaService,
     private readonly keyService: KeyService,
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
@@ -57,7 +60,7 @@ export class AppService {
     email: string,
     password: string,
     mfa?: string,
-    profileId?: string
+    profileId?: string,
   ) {
     try {
       const user = await this.userRepo.findOne({
@@ -73,20 +76,17 @@ export class AppService {
       const valid = await this.saltedHashService.validateHash(
         password,
         storedHash,
-        user.keyData?.salt
+        user.keyData?.salt,
       );
 
       if (!valid) {
         throw new RpcException('Invalid password');
       }
 
-      if (mfa !== undefined) {
-        const isValidMfa = this.totp.check(mfa, user.totpSecret);
-        if (!isValidMfa) {
-          throw new RpcException('Invalid MFA token');
-        }
-      } else if (user.totpSecret !== null && mfa === undefined) {
-        throw new RpcException('MFA token is required for this user.');
+      try {
+        this.mfaService.assertLoginToken(totpSecret, mfa);
+      } catch (e) {
+        throw new RpcException((e as Error).message);
       }
 
       const pl = { userId, name: `${user.firstName} ${user.lastName}`, email };
@@ -125,7 +125,7 @@ export class AppService {
     ln: string,
     password: string,
     confirm: string,
-    bio = ''
+    bio = '',
   ) {
     try {
       if (typeof password !== 'string' || typeof confirm !== 'string') {
@@ -133,29 +133,13 @@ export class AppService {
       }
       this.l.log('Registering user:', email, fn, ln, bio);
       this.l.log('Checking passwords', password, confirm);
-      const weakPasswordRegex =
-        // eslint-disable-next-line no-useless-escape
-        /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
-      if (!weakPasswordRegex.test(password)) {
-        throw new RpcException('Password is too weak');
-      }
-      const passwordBuffer = Buffer.from(password);
-      const confirmBuffer = Buffer.from(confirm);
-      if (
-        !timingSafeEqual(
-          new Uint8Array(
-            passwordBuffer.buffer,
-            passwordBuffer.byteOffset,
-            passwordBuffer.byteLength
-          ),
-          new Uint8Array(
-            confirmBuffer.buffer,
-            confirmBuffer.byteOffset,
-            confirmBuffer.byteLength
-          )
-        )
-      ) {
-        throw new RpcException('Passwords do not match');
+      try {
+        this.passwordPolicyService.ensurePasswordConfirmation(
+          password,
+          confirm,
+        );
+      } catch (e) {
+        throw new RpcException((e as Error).message);
       }
       this.l.log('Passwords match, proceeding with registration');
       if (typeof email !== 'string' || !validator.isEmail(email)) {
@@ -204,7 +188,7 @@ export class AppService {
       }
       const { pubKey, privLocation } = await this.keyService.generateUserKeys(
         newUser.id,
-        hashData.hash
+        hashData.hash,
       );
       this.l.log('User keys generated successfully:', pubKey, privLocation);
       const nk: Partial<KeyDatum> = {
@@ -240,17 +224,16 @@ export class AppService {
     newPassword: string,
     confirm: string,
     oldPass: string,
-    mfa?: string
+    mfa?: string,
   ) {
     // Implement your password reset logic here
-    const weakPasswordRegex =
-      // eslint-disable-next-line no-useless-escape
-      /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{8,}$/;
-    if (!weakPasswordRegex.test(newPassword)) {
-      throw new RpcException('Password is too weak');
-    }
-    if (newPassword !== confirm) {
-      throw new RpcException('Passwords do not match');
+    try {
+      this.passwordPolicyService.ensurePasswordConfirmation(
+        newPassword,
+        confirm,
+      );
+    } catch (e) {
+      throw new RpcException((e as Error).message);
     }
 
     const user = await this.userRepo.findOne({
@@ -264,20 +247,17 @@ export class AppService {
     const valid = await this.saltedHashService.validateHash(
       oldPass,
       user.password,
-      user.keyData.salt
+      user.keyData.salt,
     );
 
     if (!valid) {
       throw new RpcException('Invalid old password');
     }
 
-    if (mfa !== undefined) {
-      const isValidMfa = this.totp.check(mfa, user.totpSecret);
-      if (!isValidMfa) {
-        throw new RpcException('Invalid MFA token');
-      }
-    } else if (user.totpSecret !== null && mfa === undefined) {
-      throw new RpcException('MFA token is required for this user.');
+    try {
+      this.mfaService.assertLoginToken(user.totpSecret, mfa);
+    } catch (e) {
+      throw new RpcException((e as Error).message);
     }
 
     const { salt, hash } = this.saltedHashService.createNewHash(newPassword);
@@ -338,7 +318,7 @@ export class AppService {
         code: 0,
         data: {
           qr: qrcode.toDataURL(
-            authenticator.keyuri(userId, 'optomistic-tanuki', newSecret)
+            authenticator.keyuri(userId, 'optomistic-tanuki', newSecret),
           ),
         },
       };
@@ -353,9 +333,10 @@ export class AppService {
     if (!user || !user.totpSecret) {
       throw new RpcException('User not found or TOTP not set up');
     }
-    const isValid = this.totp.check(token, user.totpSecret);
-    if (!isValid) {
-      throw new RpcException('Invalid TOTP token');
+    try {
+      this.mfaService.validateToken(user.totpSecret, token);
+    } catch (e) {
+      throw new RpcException((e as Error).message);
     }
     return { message: 'TOTP token is valid', code: 0 };
   }
@@ -405,7 +386,7 @@ export class AppService {
 
   async issueToken(userId: string, profileId?: string) {    try {
       this.l.debug(
-        `Issuing token for userId: ${userId}, profileId: ${profileId}`
+        `Issuing token for userId: ${userId}, profileId: ${profileId}`,
       );
       const user = await this.userRepo.findOne({
         where: { id: userId },
