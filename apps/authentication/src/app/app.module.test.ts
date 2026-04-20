@@ -10,6 +10,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
 
 jest.mock('../config', () => {
   const mockConfig = {
@@ -96,6 +97,11 @@ describe('AppModule', () => {
   it('should have AppService defined', () => {
     const appService = appModule.get<AppService>(AppService);
     expect(appService).toBeDefined();
+  });
+
+  it('should provide the auth token issuer', () => {
+    const tokenIssuer = appModule.get<TokenIssuerService>(TokenIssuerService);
+    expect(tokenIssuer).toBeInstanceOf(TokenIssuerService);
   });
 
   it('should load DatabaseModule with correct configuration', () => {
