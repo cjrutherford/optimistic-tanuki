@@ -7,7 +7,7 @@ import {
   Topic,
   TopicDiscoveryResult,
   UpdateTopicDto,
-} from './leads.types';
+} from '@optimistic-tanuki/leads-contracts';
 
 @Injectable({ providedIn: 'root' })
 export class LeadTopicsService {

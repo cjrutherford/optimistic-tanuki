@@ -1,11 +1,15 @@
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
-import { LeadTopicsService } from './lead-topics.service';
 import {
   LeadDiscoverySource,
   LeadTopicDiscoveryIntent,
-} from './leads.types';
+} from '@optimistic-tanuki/leads-contracts';
+
+import { LeadTopicsService } from './lead-topics.service';
 
 describe('LeadTopicsService', () => {
   let service: LeadTopicsService;

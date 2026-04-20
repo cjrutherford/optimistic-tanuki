@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { LeadFlagsService } from './lead-flags.service';
-import { LeadOnboardingService } from './lead-onboarding.service';
-import { LeadTopicsService } from './lead-topics.service';
-import { LeadsApiService } from './leads-api.service';
+import { LeadFlagsService } from '@optimistic-tanuki/leads-feature-flags';
+import { LeadOnboardingService } from '@optimistic-tanuki/leads-feature-onboarding';
+import { LeadTopicsService } from '@optimistic-tanuki/leads-feature-topics';
+import { LeadsApiService } from '@optimistic-tanuki/leads-data-access';
 import {
   Lead,
   LeadStats,

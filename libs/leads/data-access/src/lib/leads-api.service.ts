@@ -2,7 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { CreateLeadDto, Lead, LeadStats, UpdateLeadDto } from './leads.types';
+import {
+  CreateLeadDto,
+  Lead,
+  LeadStats,
+  UpdateLeadDto,
+} from '@optimistic-tanuki/leads-contracts';
 
 @Injectable({ providedIn: 'root' })
 export class LeadsApiService {

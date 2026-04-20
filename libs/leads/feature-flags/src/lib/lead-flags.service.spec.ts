@@ -1,8 +1,12 @@
-import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
+import {
+  HttpClientTestingModule,
+  HttpTestingController,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 
+import { LeadFlagReason } from '@optimistic-tanuki/leads-contracts';
+
 import { LeadFlagsService } from './lead-flags.service';
-import { LeadFlagReason } from './leads.types';
 
 describe('LeadFlagsService', () => {
   let service: LeadFlagsService;
