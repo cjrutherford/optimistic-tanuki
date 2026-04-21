@@ -31,6 +31,15 @@
       "@optimistic-tanuki/auth-feature-account-bootstrap": [
         "libs/auth/feature-account-bootstrap/src/index.ts"
       ],
+      "@optimistic-tanuki/billing-contracts": [
+        "libs/billing/contracts/src/index.ts"
+      ],
+      "@optimistic-tanuki/billing-data-access": [
+        "libs/billing/data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/billing-domain": [
+        "libs/billing/domain/src/index.ts"
+      ],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
       "@optimistic-tanuki/chat-ui": ["libs/chat-ui/src/index.ts"],
