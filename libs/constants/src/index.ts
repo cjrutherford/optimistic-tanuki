@@ -95,6 +95,7 @@ export { WellnessCommands } from './lib/libs/wellness';
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
 export { ClassifiedCommands } from './lib/libs/classifieds';
+export { BillingCommands } from './lib/libs/billing';
 
 export {
   PLATFORM_FEE_PERCENTAGE,
