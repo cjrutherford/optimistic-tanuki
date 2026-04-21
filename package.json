@@ -51,7 +51,8 @@
     "packages:build": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run-many --target=build --projects=billing-contracts,billing-sdk,app-catalog-contracts --outputStyle=static",
     "packages:check": "node scripts/validate-publishable-packages.mjs",
     "packages:version": "changeset version",
-    "packages:publish": "changeset publish"
+    "packages:publish": "changeset publish",
+    "catalog:check": "node scripts/validate-app-catalog.mjs"
   },
   "private": true,
   "overrides": {},

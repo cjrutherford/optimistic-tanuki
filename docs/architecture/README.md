@@ -1,6 +1,7 @@
 # Architecture Overview
 
 - [Public package release workflow](./package-release.md)
+- [Developer app and package catalog](./app-catalog.md)
 
 This document provides a high-level overview of the Optimistic Tanuki platform architecture.
 
