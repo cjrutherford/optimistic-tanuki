@@ -2,7 +2,7 @@
 set -euo pipefail
 
 DRY_RUN=0
-BATCH_SIZE=4
+BATCH_SIZE=${DOCKER_BATCH_SIZE:-4}
 COMPOSE_FILE="docker-compose.yaml"
 
 while [ "$#" -gt 0 ]; do
@@ -25,6 +25,11 @@ while [ "$#" -gt 0 ]; do
             ;;
     esac
 done
+
+if ! [[ "$BATCH_SIZE" =~ ^[0-9]+$ ]]; then
+    echo "Batch size must be a positive integer" >&2
+    exit 2
+fi
 
 if [ "$BATCH_SIZE" -lt 1 ]; then
     echo "Batch size must be greater than zero" >&2

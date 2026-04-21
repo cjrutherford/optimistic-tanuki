@@ -117,6 +117,7 @@ run_seed_with_media_volume() {
   echo "Seeding ${service} with media volume..."
   docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" \
     -v /mnt/valhalla/media:/media:ro \
+    -e "ASSETS_HOST=assets" \
     "$service" "$@"
 }
 

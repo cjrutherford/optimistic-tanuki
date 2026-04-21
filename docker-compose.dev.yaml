@@ -728,22 +728,17 @@ services:
 
   video-client:
     volumes:
-      - ./dist/apps/video-client:/usr/src/app
+      - ./dist/apps/video-client:/app
+      - /app/node_modules
     command:
       [
         'dumb-init',
-        'nodemon',
-        '--watch',
-        '/app/dist/apps/video-client/server',
-        '--ext',
-        'mjs,js,json',
-        '--delay',
-        '2',
-        '--exec',
-        "sh -c 'while [ ! -f /app/dist/apps/video-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9248 /app/dist/apps/video-client/server/server.mjs'",
+        'node',
+        '--inspect=0.0.0.0:9248',
+        'server/server.mjs',
       ]
     ports:
-      - '8092:4000'
+      - '8093:4000'
       - '9248:9248'
     environment:
       - NODE_ENV=development

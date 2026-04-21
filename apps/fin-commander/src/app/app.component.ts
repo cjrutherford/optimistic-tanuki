@@ -5,16 +5,26 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ProfileContext } from './profile.context';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TenantContextService } from './tenant-context.service';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   selector: 'fc-root',
   standalone: true,
-  imports: [RouterOutlet, TitleBarComponent],
+  imports: [RouterOutlet, TitleBarComponent, HaiAboutTagComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit {
   readonly title = 'fin-commander';
+
+  haiAboutConfig = {
+    appId: 'fin-commander',
+    appName: 'Fin Commander',
+    appTagline: 'Navigation for personal finances.',
+    appDescription:
+      'Fin Commander helps you navigate your personal finances with clarity and confidence.',
+    appUrl: '/fin-commander',
+  };
 
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);

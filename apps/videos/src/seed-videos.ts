@@ -164,7 +164,7 @@ async function importVideosFromLibrary(params: {
       continue;
     }
 
-    const owner = users[index % users.length];
+    const owner = users[0];
     const channelName = deriveChannelName(DEFAULT_VIDEO_SOURCE_DIR, filePath);
     const channel = await ensureChannelThroughApi(
       owner,
