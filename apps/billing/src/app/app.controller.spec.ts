@@ -2,6 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { InvoicePreviewService } from '@optimistic-tanuki/billing-domain';
 import { AppController } from './app.controller';
 import { BillingService } from './services/billing.service';
+import {
+  InMemoryUsageBlockRepository,
+  InMemoryUsageEventRepository,
+} from './services/in-memory-billing.repositories';
+import { UsageBlocksService } from './services/usage-blocks.service';
+import { UsageMeteringService } from './services/usage-metering.service';
 
 describe('AppController', () => {
   let controller: AppController;
@@ -9,7 +15,14 @@ describe('AppController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [BillingService, InvoicePreviewService],
+      providers: [
+        BillingService,
+        InvoicePreviewService,
+        UsageMeteringService,
+        UsageBlocksService,
+        InMemoryUsageEventRepository,
+        InMemoryUsageBlockRepository,
+      ],
     }).compile();
 
     controller = module.get<AppController>(AppController);

@@ -20,6 +20,15 @@ export interface InvoicePreviewInput extends BillingScope {
   usageBlockBalance: number;
 }
 
+export interface PeriodInvoicePreviewInput extends BillingScope {
+  accountId: string;
+  currency: string;
+  subscriptionPriceCents: number;
+  meter: InvoicePreviewMeter;
+  periodStart: Date;
+  periodEnd: Date;
+}
+
 export interface InvoicePreview extends BillingScope {
   currency: string;
   subtotalCents: number;

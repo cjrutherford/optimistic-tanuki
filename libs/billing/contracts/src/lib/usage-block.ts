@@ -25,4 +25,16 @@ export interface ConsumeUsageBlockDto extends BillingScope {
   accountId: string;
   meterId: string;
   quantity: number;
+  occurredAt?: Date;
+}
+
+export interface GrantUsageBlockResult {
+  grant: UsageBlockGrant;
+}
+
+export interface ConsumeUsageBlockResult {
+  requestedQuantity: number;
+  consumedQuantity: number;
+  unfilledQuantity: number;
+  consumptions: UsageBlockConsumption[];
 }
