@@ -7,9 +7,22 @@
     "type:contracts",
     "scope:billing",
     "platform:shared",
-    "visibility:internal"
+    "visibility:publishable"
   ],
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/billing/contracts",
+        "main": "libs/billing/contracts/src/index.ts",
+        "tsConfig": "libs/billing/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/billing/contracts/package.json",
+          "libs/billing/contracts/README.md"
+        ]
+      }
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
