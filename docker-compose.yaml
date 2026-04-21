@@ -682,3 +682,4 @@ services:
 
 volumes:
   postgres_data:
+  video-processing-data:

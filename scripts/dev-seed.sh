@@ -100,6 +100,7 @@ restart_service authentication
 restart_service profile
 restart_service social
 restart_service payments
+restart_service assets
 restart_service gateway
 sleep 15
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
@@ -107,4 +108,25 @@ run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
-run_seed_with_run videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
+
+run_seed_with_media_volume() {
+  service="$1"
+  workdir="$2"
+  shift 2
+
+  echo "Seeding ${service} with media volume..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" \
+    -v /mnt/valhalla/media:/media:ro \
+    "$service" "$@"
+}
+
+run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
+# Optional: clear videos db before seeding to avoid duplicate slug issues
+# docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
+
+run_seed_assets() {
+  echo "Seeding assets..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps \
+    -v /mnt/valhalla/media:/media:ro \
+    assets node ./seed-assets.js || true
+}

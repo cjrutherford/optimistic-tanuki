@@ -693,3 +693,29 @@ COMMIT;
 SQL
 
 echo "Video-client permissions seeded."
+
+# Seed role assignments for video-client seed users
+# Note: profile IDs are assigned on user registration, so we do a fuzzy match approach
+# This will assign video_channel_creator role to any seed users in video-client scope
+# Run as separate script after users are registered
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
+SELECT 
+  p."profileId",
+  r.id,
+  s.id,
+  NOW()
+FROM "user" p
+JOIN "role" r ON r.name = 'video_channel_creator'
+JOIN "app_scope" s ON s.name = 'video-client'
+WHERE p.email IN ('alice@example.com', 'bob@example.com', 'charlie@example.com')
+  AND NOT EXISTS (
+    SELECT 1 FROM "role_assignment" ra 
+    WHERE ra."profileId" = p."profileId" 
+      AND ra."roleId" = r.id 
+      AND ra."appScopeId" = s.id
+  )
+ON CONFLICT DO NOTHING;
+SQL
+
+echo "Video-client role assignments seeded."

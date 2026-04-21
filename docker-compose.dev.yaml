@@ -656,14 +656,13 @@ services:
     volumes:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules
-      - asset-data:/usr/src/app/storage
+      - /tmp/ot-assets-storage:/usr/src/app/storage
+      - /mnt/valhalla/media:/media:ro
     command:
       [
         'dumb-init',
-        'nodemon',
-        '--exec',
-        'node --inspect=0.0.0.0:9235',
-        '-L',
+        'node',
+        '--inspect=0.0.0.0:9235',
         'main.js',
       ]
     ports:
@@ -714,6 +713,9 @@ services:
       - /usr/src/app/node_modules
       - asset-data:/usr/src/app/storage
       - video-processing-data:/tmp/video-processing
+      - /mnt/valhalla/media:/media:ro
+    environment:
+      - VIDEO_SEED_SOURCE_DIR=/media/Tv
 
   video-transcoder-worker:
     container_name: ot_video_transcoder_worker
