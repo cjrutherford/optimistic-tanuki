@@ -45,7 +45,13 @@
     "dev:ssr": "ng run christopherrutherford-net:serve-ssr",
     "serve:ssr": "node dist/apps/christopherrutherford-net/server/main.js",
     "build:ssr": "ng build && ng run christopherrutherford-net:server",
-    "prerender": "ng run christopherrutherford-net:prerender"
+    "prerender": "ng run christopherrutherford-net:prerender",
+    "changeset": "changeset",
+    "packages:test": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run-many --target=test --projects=billing-contracts,billing-sdk,app-catalog-contracts --outputStyle=static",
+    "packages:build": "NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm exec nx run-many --target=build --projects=billing-contracts,billing-sdk,app-catalog-contracts --outputStyle=static",
+    "packages:check": "node scripts/validate-publishable-packages.mjs",
+    "packages:version": "changeset version",
+    "packages:publish": "changeset publish"
   },
   "private": true,
   "overrides": {},
@@ -172,6 +178,7 @@
     "@angular/cli": "~20.0.0",
     "@angular/compiler-cli": "20.2.4",
     "@angular/language-service": "20.2.4",
+    "@changesets/cli": "^2.29.7",
     "@eslint/js": "^9.8.0",
     "@nestjs/schematics": "11.0.7",
     "@nestjs/testing": "^11.0.0",
