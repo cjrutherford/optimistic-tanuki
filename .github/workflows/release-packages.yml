@@ -1,0 +1,136 @@
+name: Release Packages
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - '.github/workflows/release-packages.yml'
+      - 'libs/billing/contracts/**'
+      - 'libs/billing-sdk/**'
+      - 'libs/app-catalog-contracts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+  push:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - '.github/workflows/release-packages.yml'
+      - 'libs/billing/contracts/**'
+      - 'libs/billing-sdk/**'
+      - 'libs/app-catalog-contracts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  validate-packages:
+    name: Validate Publishable Packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test publishable packages
+        run: pnpm run packages:test
+
+      - name: Check public package boundaries
+        run: pnpm run packages:check
+
+      - name: Build publishable packages
+        run: pnpm run packages:build
+
+      - name: Upload package build artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: package-build-artifacts
+          path: |
+            dist/libs/billing/contracts
+            dist/libs/billing-sdk
+            dist/libs/app-catalog-contracts
+          retention-days: 7
+
+  release-packages:
+    name: Version or Publish Packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: [validate-packages]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build publishable packages
+        run: pnpm run packages:build
+
+      - name: Check public package boundaries
+        run: pnpm run packages:check
+
+      - name: Create version PR or publish packages
+        uses: changesets/action@v1
+        with:
+          version: pnpm run packages:version
+          publish: pnpm run packages:publish
+          title: 'chore: version public packages'
+          commit: 'chore: version public packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
