@@ -7,9 +7,13 @@ import loadDatabase from './loadDatabase';
 import { AppController } from './app.controller';
 import { BillingService } from './services/billing.service';
 import {
-  InMemoryUsageBlockRepository,
-  InMemoryUsageEventRepository,
-} from './services/in-memory-billing.repositories';
+  USAGE_BLOCK_REPOSITORY,
+  USAGE_EVENT_REPOSITORY,
+} from './services/billing.repositories';
+import {
+  TypeOrmUsageBlockRepository,
+  TypeOrmUsageEventRepository,
+} from './services/typeorm-billing.repositories';
 import { UsageBlocksService } from './services/usage-blocks.service';
 import { UsageMeteringService } from './services/usage-metering.service';
 
@@ -30,8 +34,16 @@ import { UsageMeteringService } from './services/usage-metering.service';
     InvoicePreviewService,
     UsageMeteringService,
     UsageBlocksService,
-    InMemoryUsageEventRepository,
-    InMemoryUsageBlockRepository,
+    TypeOrmUsageEventRepository,
+    TypeOrmUsageBlockRepository,
+    {
+      provide: USAGE_EVENT_REPOSITORY,
+      useExisting: TypeOrmUsageEventRepository,
+    },
+    {
+      provide: USAGE_BLOCK_REPOSITORY,
+      useExisting: TypeOrmUsageBlockRepository,
+    },
   ],
 })
 export class AppModule {}

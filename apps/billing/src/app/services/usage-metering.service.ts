@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   BatchRecordUsageDto,
   RecordUsageDto,
@@ -8,12 +8,16 @@ import {
   UsageSummaryRequest,
 } from '@optimistic-tanuki/billing-contracts';
 import { assertBillingScope } from '@optimistic-tanuki/billing-domain';
-import { InMemoryUsageEventRepository } from './in-memory-billing.repositories';
+import {
+  USAGE_EVENT_REPOSITORY,
+  UsageEventRepository,
+} from './billing.repositories';
 
 @Injectable()
 export class UsageMeteringService {
   constructor(
-    private readonly usageEventRepository: InMemoryUsageEventRepository,
+    @Inject(USAGE_EVENT_REPOSITORY)
+    private readonly usageEventRepository: UsageEventRepository,
   ) {}
 
   async recordUsage(input: RecordUsageDto): Promise<RecordUsageResult> {

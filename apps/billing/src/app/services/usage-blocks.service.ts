@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ConsumeUsageBlockDto,
   ConsumeUsageBlockResult,
@@ -8,12 +8,16 @@ import {
   UsageBlockConsumption,
 } from '@optimistic-tanuki/billing-contracts';
 import { assertBillingScope } from '@optimistic-tanuki/billing-domain';
-import { InMemoryUsageBlockRepository } from './in-memory-billing.repositories';
+import {
+  USAGE_BLOCK_REPOSITORY,
+  UsageBlockRepository,
+} from './billing.repositories';
 
 @Injectable()
 export class UsageBlocksService {
   constructor(
-    private readonly usageBlockRepository: InMemoryUsageBlockRepository,
+    @Inject(USAGE_BLOCK_REPOSITORY)
+    private readonly usageBlockRepository: UsageBlockRepository,
   ) {}
 
   async grantUsageBlock(

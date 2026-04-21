@@ -656,7 +656,7 @@ services:
     volumes:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules
-      - /tmp/ot-assets-storage:/usr/src/app/storage
+      - asset-data:/usr/src/app/storage
       - /mnt/valhalla/media:/media:ro
     command:
       [

@@ -31,6 +31,7 @@ export default [
             '@optimistic-tanuki/common-ui',
             '@optimistic-tanuki/motion-ui',
             '@optimistic-tanuki/notification-ui',
+            '@optimistic-tanuki/permission-lib',
             '@optimistic-tanuki/theme-lib',
             '@optimistic-tanuki/ui-models',
           ],

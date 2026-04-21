@@ -3,6 +3,10 @@ import { InvoicePreviewService } from '@optimistic-tanuki/billing-domain';
 import { AppController } from './app.controller';
 import { BillingService } from './services/billing.service';
 import {
+  USAGE_BLOCK_REPOSITORY,
+  USAGE_EVENT_REPOSITORY,
+} from './services/billing.repositories';
+import {
   InMemoryUsageBlockRepository,
   InMemoryUsageEventRepository,
 } from './services/in-memory-billing.repositories';
@@ -20,8 +24,14 @@ describe('AppController', () => {
         InvoicePreviewService,
         UsageMeteringService,
         UsageBlocksService,
-        InMemoryUsageEventRepository,
-        InMemoryUsageBlockRepository,
+        {
+          provide: USAGE_EVENT_REPOSITORY,
+          useClass: InMemoryUsageEventRepository,
+        },
+        {
+          provide: USAGE_BLOCK_REPOSITORY,
+          useClass: InMemoryUsageBlockRepository,
+        },
       ],
     }).compile();
 
