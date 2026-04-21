@@ -786,6 +786,9 @@ services:
       - /usr/src/app/node_modules
       - asset-data:/usr/src/app/storage
       - video-processing-data:/tmp/video-processing
+      - /mnt/valhalla/media:/media:ro
+    environment:
+      - VIDEO_SEED_SOURCE_DIR=/media/Tv
 
   video-transcoder-worker:
     container_name: ot_video_transcoder_worker
