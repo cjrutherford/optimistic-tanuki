@@ -96,6 +96,9 @@
       "@optimistic-tanuki/payment-fees": [
         "libs/constants/src/lib/libs/payment-fees.ts"
       ],
+      "@optimistic-tanuki/payments-domain": [
+        "libs/payments/domain/src/index.ts"
+      ],
       "@optimistic-tanuki/payments-ui": ["libs/payments-ui/src/index.ts"],
       "@optimistic-tanuki/permission-lib": ["libs/permission-lib/src/index.ts"],
       "@optimistic-tanuki/permissions-domain": [
