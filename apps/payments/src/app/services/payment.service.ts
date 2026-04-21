@@ -15,36 +15,17 @@ import {
 } from '../../entities/community-sponsorship.entity';
 import { Transaction } from '../../entities/transaction.entity';
 import { LemonSqueezyProduct } from '../../entities/lemon-squeezy-product.entity';
-import { ConfigService } from '@nestjs/config';
 import { calculateNetAmount } from '../utils/platform-fee.util';
-import type { LemonSqueezyStoreConfig } from '../../config';
+import {
+  BillingProviderAdapter,
+  ProviderCatalogStore,
+} from '@optimistic-tanuki/payments-domain';
+import { PAYMENT_PROVIDER_ADAPTER } from './payment-provider.tokens';
+import { BillingReconciliationService } from './billing-reconciliation.service';
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly defaultStoreConfig: LemonSqueezyStoreConfig;
-  private readonly storeConfigs: Record<string, LemonSqueezyStoreConfig>;
-
-  private getStoreConfig(appScope: string): LemonSqueezyStoreConfig {
-    if (appScope && this.storeConfigs[appScope]) {
-      return this.storeConfigs[appScope];
-    }
-    return this.defaultStoreConfig;
-  }
-
-  private getStoreConfigByStoreId(
-    storeId: string
-  ): LemonSqueezyStoreConfig | null {
-    if (this.defaultStoreConfig.storeId === storeId) {
-      return this.defaultStoreConfig;
-    }
-    for (const scope of Object.keys(this.storeConfigs)) {
-      if (this.storeConfigs[scope].storeId === storeId) {
-        return this.storeConfigs[scope];
-      }
-    }
-    return null;
-  }
 
   private normalizeMonthYear(month?: number | string, year?: number | string) {
     const now = new Date();
@@ -93,22 +74,10 @@ export class PaymentService {
     private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(LemonSqueezyProduct)
     private readonly lsProductRepository: Repository<LemonSqueezyProduct>,
-    @Inject(ConfigService)
-    private readonly configService: ConfigService
-  ) {
-    const defaultConfig = this.configService.get('lemonSqueezy.default') as
-      | LemonSqueezyStoreConfig
-      | undefined;
-    const storesConfig = this.configService.get('lemonSqueezy.stores') as
-      | Record<string, LemonSqueezyStoreConfig>
-      | undefined;
-
-    this.defaultStoreConfig = defaultConfig || {
-      apiKey: '',
-      storeId: '',
-    };
-    this.storeConfigs = storesConfig || {};
-  }
+    @Inject(PAYMENT_PROVIDER_ADAPTER)
+    private readonly providerAdapter: BillingProviderAdapter,
+    private readonly billingReconciliationService: BillingReconciliationService
+  ) {}
 
   async getDonationGoal(month?: number | string, year?: number | string) {
     const period = this.normalizeMonthYear(month, year);
@@ -176,13 +145,17 @@ export class PaymentService {
 
     const savedDonation = await this.donationRepository.save(donation);
 
-    const storeConfig = this.getStoreConfig(appScope);
-    const checkoutUrl = isRecurring
-      ? `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}&checkout[custom][app_scope]=${appScope}`
-      : `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][donation_id]=${savedDonation.id}&checkout[custom][user_id]=${userId}&checkout[custom][profile_id]=${profileId}&checkout[custom][app_scope]=${appScope}`;
+    const checkout = await this.providerAdapter.createCheckoutSession({
+      appScope,
+      customData: {
+        donation_id: savedDonation.id,
+        user_id: userId,
+        profile_id: profileId,
+      },
+    });
 
     return {
-      checkoutUrl,
+      checkoutUrl: checkout.checkoutUrl,
       donationId: savedDonation.id,
     };
   }
@@ -361,7 +334,7 @@ export class PaymentService {
         tier: tier as BusinessTier,
         subscriptionStatus: 'inactive',
       });
-      await this.businessPageRepository.save(businessPage);
+      businessPage = await this.businessPageRepository.save(businessPage);
     }
 
     const lsProduct = await this.lsProductRepository.findOne({
@@ -376,15 +349,19 @@ export class PaymentService {
       );
     }
 
-    const storeConfig = this.getStoreConfig(appScope);
-    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${
-      variantId || storeConfig.storeId
-    }?checkout[custom][business_page_id]=${
-      businessPage.id
-    }&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][tier]=${tier}&checkout[custom][app_scope]=${appScope}`;
+    const checkout = await this.providerAdapter.createCheckoutSession({
+      appScope,
+      providerPriceRef: variantId,
+      customData: {
+        business_page_id: businessPage.id,
+        community_id: communityId,
+        user_id: userId,
+        tier,
+      },
+    });
 
     return {
-      checkoutUrl,
+      checkoutUrl: checkout.checkoutUrl,
       businessPageId: businessPage.id,
     };
   }
@@ -463,11 +440,18 @@ export class PaymentService {
 
     const savedSponsorship = await this.sponsorshipRepository.save(sponsorship);
 
-    const storeConfig = this.getStoreConfig(appScope);
-    const checkoutUrl = `https://store.lemonsqueezy.com/checkout/buy/${storeConfig.storeId}?checkout[custom][sponsorship_id]=${savedSponsorship.id}&checkout[custom][community_id]=${communityId}&checkout[custom][user_id]=${userId}&checkout[custom][type]=${type}&checkout[custom][app_scope]=${appScope}`;
+    const checkout = await this.providerAdapter.createCheckoutSession({
+      appScope,
+      customData: {
+        sponsorship_id: savedSponsorship.id,
+        community_id: communityId,
+        user_id: userId,
+        type,
+      },
+    });
 
     return {
-      checkoutUrl,
+      checkoutUrl: checkout.checkoutUrl,
       sponsorshipId: savedSponsorship.id,
     };
   }
@@ -767,11 +751,14 @@ export class PaymentService {
     payload: Record<string, unknown>
   ): Promise<{ received: boolean }> {
     try {
-      const meta = (payload?.meta as Record<string, unknown>) ?? {};
-      const customData =
-        (meta?.custom_data as Record<string, string>) ??
-        (meta?.customData as Record<string, string>) ??
-        {};
+      const providerEvent = await this.providerAdapter.processWebhook({
+        eventType,
+        payload,
+      });
+      const customData = providerEvent.customData;
+      await this.billingReconciliationService.publishProviderEvent(
+        providerEvent
+      );
 
       this.logger.log(`Lemon Squeezy webhook: event=${eventType}`);
 
@@ -826,16 +813,8 @@ export class PaymentService {
   }
 
   async syncLemonSqueezyProducts(appScope?: string): Promise<void> {
-    const configsToSync =
-      appScope && this.storeConfigs[appScope]
-        ? [{ appScope, config: this.storeConfigs[appScope] }]
-        : [
-            { appScope: 'default', config: this.defaultStoreConfig },
-            ...Object.entries(this.storeConfigs).map(([scope, config]) => ({
-              appScope: scope,
-              config,
-            })),
-          ];
+    const configsToSync: ProviderCatalogStore[] =
+      this.providerAdapter.listCatalogStores(appScope);
 
     for (const { appScope, config } of configsToSync) {
       if (!config.apiKey || !config.storeId) {

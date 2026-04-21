@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@nestjs/config';
 
 import { AppController } from './app.controller';
 import { ConfigModule } from '@nestjs/config';
-import loadConfig, { TcpServiceConfig } from '../config';
+import loadConfig from '../config';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import loadDatabase from './loadDatabase';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -22,6 +21,9 @@ import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 import { PaymentService } from './services/payment.service';
 import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
+import { LemonSqueezyAdapter } from '@optimistic-tanuki/payments-domain';
+import { PAYMENT_PROVIDER_ADAPTER } from './services/payment-provider.tokens';
+import { BillingReconciliationService } from './services/billing-reconciliation.service';
 
 @Module({
   imports: [
@@ -37,6 +39,19 @@ import { OfferService } from './services/offer.service';
   controllers: [AppController],
   providers: [
     PaymentService,
+    {
+      provide: PAYMENT_PROVIDER_ADAPTER,
+      useFactory: (configService: ConfigService) => {
+        return new LemonSqueezyAdapter({
+          default: configService.get('lemonSqueezy.default') || {
+            apiKey: '',
+            storeId: '',
+          },
+          stores: configService.get('lemonSqueezy.stores') || {},
+        });
+      },
+      inject: [ConfigService],
+    },
     {
       provide: getRepositoryToken(Donation),
       useFactory: (ds: DataSource) => ds.getRepository(Donation),
@@ -88,6 +103,7 @@ import { OfferService } from './services/offer.service';
       inject: ['PAYMENTS_CONNECTION'],
     },
     BusinessThemeService,
+    BillingReconciliationService,
     OfferService,
   ],
 })
