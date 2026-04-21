@@ -2,8 +2,12 @@ import {
   UsageBlockGrant,
   UsageEvent,
 } from '@optimistic-tanuki/billing-contracts';
+import {
+  UsageBlockRepository,
+  UsageEventRepository,
+} from './billing.repositories';
 
-export class InMemoryUsageEventRepository {
+export class InMemoryUsageEventRepository implements UsageEventRepository {
   private readonly events: UsageEvent[] = [];
 
   async findByEventKey(
@@ -42,7 +46,7 @@ export class InMemoryUsageEventRepository {
   }
 }
 
-export class InMemoryUsageBlockRepository {
+export class InMemoryUsageBlockRepository implements UsageBlockRepository {
   private readonly grants: UsageBlockGrant[] = [];
 
   async save(grant: UsageBlockGrant): Promise<UsageBlockGrant> {
