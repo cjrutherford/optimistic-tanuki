@@ -15,3 +15,13 @@ export interface RecordUsageDto extends BillingScope {
   occurredAt?: Date;
   metadata?: Record<string, unknown>;
 }
+
+export interface BatchRecordUsageDto {
+  events: RecordUsageDto[];
+}
+
+export interface RecordUsageResult {
+  accepted: boolean;
+  duplicate: boolean;
+  event: UsageEvent;
+}

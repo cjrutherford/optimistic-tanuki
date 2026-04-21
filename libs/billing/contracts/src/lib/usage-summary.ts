@@ -6,3 +6,9 @@ export interface UsageSummary extends BillingScope {
   periodEnd: Date;
   quantity: number;
 }
+
+export interface UsageSummaryRequest extends BillingScope {
+  meterId: string;
+  periodStart: Date;
+  periodEnd: Date;
+}
