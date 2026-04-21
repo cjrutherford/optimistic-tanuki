@@ -707,7 +707,20 @@ services:
       - '8086:4000'
     depends_on:
       - gateway
-
+  video-client:
+    container_name: ot_video_client
+    build:
+      context: .
+      dockerfile: ./apps/video-client/Dockerfile
+    ports:
+      - '8093:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - videos
 volumes:
   postgres_data:
   video-processing-data:
