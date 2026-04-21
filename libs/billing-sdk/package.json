@@ -1,0 +1,13 @@
+{
+  "name": "@optimistic-tanuki/billing-sdk",
+  "version": "0.0.1",
+  "private": false,
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "dependencies": {
+    "@optimistic-tanuki/billing-contracts": "0.0.1",
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
