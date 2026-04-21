@@ -1,0 +1,68 @@
+{
+  "$schema": "./app-catalog.schema.json",
+  "entries": [
+    {
+      "name": "@optimistic-tanuki/billing-contracts",
+      "ownerDomain": "billing",
+      "releaseChannel": "beta",
+      "deploymentMode": "publishable-lib",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "@optimistic-tanuki/billing-sdk",
+      "ownerDomain": "billing",
+      "releaseChannel": "beta",
+      "deploymentMode": "publishable-lib",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "@optimistic-tanuki/app-catalog-contracts",
+      "ownerDomain": "platform",
+      "releaseChannel": "beta",
+      "deploymentMode": "publishable-lib",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "apps/billing",
+      "ownerDomain": "billing",
+      "releaseChannel": "alpha",
+      "deploymentMode": "deployable-app",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "apps/payments",
+      "ownerDomain": "payments",
+      "releaseChannel": "stable",
+      "deploymentMode": "deployable-app",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "apps/local-hub",
+      "ownerDomain": "local-hub",
+      "releaseChannel": "stable",
+      "deploymentMode": "app-service",
+      "billingEligibility": ["seat", "metered", "usage-block"]
+    },
+    {
+      "name": "apps/leads-app",
+      "ownerDomain": "leads",
+      "releaseChannel": "stable",
+      "deploymentMode": "app-service",
+      "billingEligibility": ["metered"]
+    },
+    {
+      "name": "libs/leads/data-access",
+      "ownerDomain": "leads",
+      "releaseChannel": "alpha",
+      "deploymentMode": "internal-lib",
+      "billingEligibility": ["none"]
+    },
+    {
+      "name": "libs/payments/domain",
+      "ownerDomain": "payments",
+      "releaseChannel": "alpha",
+      "deploymentMode": "internal-lib",
+      "billingEligibility": ["none"]
+    }
+  ]
+}

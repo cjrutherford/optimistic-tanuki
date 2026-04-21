@@ -24,3 +24,28 @@ export function createCatalogEntry(
     billingEligibility: [...entry.billingEligibility],
   };
 }
+
+export function validateCatalogEntries(
+  entries: DeveloperCatalogEntry[],
+): DeveloperCatalogEntry[] {
+  const names = new Set<string>();
+
+  return entries.map((entry) => {
+    if (names.has(entry.name)) {
+      throw new Error(`Duplicate developer catalog entry: ${entry.name}`);
+    }
+
+    names.add(entry.name);
+
+    if (
+      entry.deploymentMode === 'app-service' &&
+      !entry.billingEligibility.some((eligibility) => eligibility !== 'none')
+    ) {
+      throw new Error(
+        `${entry.name} app-service entries must declare billable eligibility`,
+      );
+    }
+
+    return createCatalogEntry(entry);
+  });
+}
