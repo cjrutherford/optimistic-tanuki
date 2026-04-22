@@ -23,26 +23,24 @@
       "@optimistic-tanuki/ag-grid-ui/*": [
         "libs/ag-grid-ui/src/lib/ag-grid-ui/*"
       ],
-      "@optimistic-tanuki/app-config-models": [
-        "libs/app-config-models/src/index.ts"
-      ],
       "@optimistic-tanuki/app-catalog-contracts": [
         "libs/app-catalog-contracts/src/index.ts"
       ],
-      "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
+      "@optimistic-tanuki/app-config-models": [
+        "libs/app-config-models/src/index.ts"
+      ],
       "@optimistic-tanuki/auth-domain": ["libs/auth/domain/src/index.ts"],
       "@optimistic-tanuki/auth-feature-account-bootstrap": [
         "libs/auth/feature-account-bootstrap/src/index.ts"
       ],
+      "@optimistic-tanuki/auth-ui": ["libs/auth-ui/src/index.ts"],
       "@optimistic-tanuki/billing-contracts": [
         "libs/billing/contracts/src/index.ts"
       ],
       "@optimistic-tanuki/billing-data-access": [
         "libs/billing/data-access/src/index.ts"
       ],
-      "@optimistic-tanuki/billing-domain": [
-        "libs/billing/domain/src/index.ts"
-      ],
+      "@optimistic-tanuki/billing-domain": ["libs/billing/domain/src/index.ts"],
       "@optimistic-tanuki/billing-sdk": ["libs/billing-sdk/src/index.ts"],
       "@optimistic-tanuki/blogging-ui": ["libs/blogging-ui/src/index.ts"],
       "@optimistic-tanuki/business-ui": ["libs/business-ui/src/index.ts"],
@@ -55,12 +53,17 @@
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],
       "@optimistic-tanuki/encryption": ["libs/encryption/src/index.ts"],
+      "@optimistic-tanuki/fin-commander-data-access": [
+        "libs/fin-commander-data-access/src/index.ts"
+      ],
+      "@optimistic-tanuki/fin-commander-imports": [
+        "libs/fin-commander-imports/src/index.ts"
+      ],
+      "@optimistic-tanuki/finance-ui": ["libs/finance-ui/src/index.ts"],
       "@optimistic-tanuki/form-ui": ["libs/form-ui/src/index.ts"],
       "@optimistic-tanuki/form-ui/*": ["libs/form-ui/src/lib/form-ui/*"],
       "@optimistic-tanuki/forum-ui": ["libs/forum-ui/src/index.ts"],
-      "@optimistic-tanuki/finance-ui": ["libs/finance-ui/src/index.ts"],
       "@optimistic-tanuki/hai-ui": ["libs/hai-ui/src/index.ts"],
-      "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
       "@optimistic-tanuki/leads-contracts": [
         "libs/leads/contracts/src/index.ts"
       ],
@@ -76,11 +79,9 @@
       "@optimistic-tanuki/leads-feature-topics": [
         "libs/leads/feature-topics/src/index.ts"
       ],
-      "@optimistic-tanuki/fin-commander-data-access": [
-        "libs/fin-commander-data-access/src/index.ts"
-      ],
-      "@optimistic-tanuki/fin-commander-imports": [
-        "libs/fin-commander-imports/src/index.ts"
+      "@optimistic-tanuki/leads-ui": ["libs/leads-ui/src/index.ts"],
+      "@optimistic-tanuki/learning-domain": [
+        "libs/learning-domain/src/index.ts"
       ],
       "@optimistic-tanuki/logger": ["libs/logger/src/index.ts"],
       "@optimistic-tanuki/message-ui": ["libs/message-ui/src/index.ts"],

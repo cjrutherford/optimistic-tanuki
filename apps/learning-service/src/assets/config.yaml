@@ -1,0 +1,7 @@
+listenPort: 3024
+database:
+  host: db
+  port: 5432
+  username: postgres
+  password: postgres
+  database: ot_learning_service

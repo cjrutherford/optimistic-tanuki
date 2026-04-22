@@ -137,3 +137,5 @@ export {
   FinanceTenantCommands,
   FinanceBankingCommands,
 } from './lib/libs/finance';
+
+export { LearningCommands } from './lib/libs/learning';

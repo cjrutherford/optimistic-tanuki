@@ -105,6 +105,11 @@ services:
     transport: TCP
     host: ot_videos
     port: 3022
+  learning_service:
+    name: learning_service
+    transport: TCP
+    host: ot_learning_service
+    port: 3024
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

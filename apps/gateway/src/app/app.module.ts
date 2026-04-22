@@ -63,6 +63,7 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
+import { LearningController } from '../controllers/learning/learning.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -128,6 +129,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     DonationsController,
     LeadsController,
     HardwareController,
+    LearningController,
   ],
   providers: [
     {
@@ -480,6 +482,22 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
           configService.get<TcpServiceConfig>('services.videos');
+        return ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: serviceConfig.host,
+            port: serviceConfig.port,
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: ServiceTokens.LEARNING_SERVICE,
+      useFactory: (configService: ConfigService) => {
+        const serviceConfig = configService.get<TcpServiceConfig>(
+          'services.learning_service',
+        );
         return ClientProxyFactory.create({
           transport: Transport.TCP,
           options: {
