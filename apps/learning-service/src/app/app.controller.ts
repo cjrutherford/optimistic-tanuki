@@ -1,4 +1,6 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { LearningCommands } from '@optimistic-tanuki/constants';
 import { ActivityType, Evaluation } from '@optimistic-tanuki/learning-domain';
 import { AppService } from './app.service';
 
@@ -22,25 +24,26 @@ interface RecordEvaluationDto {
   humanOverride?: boolean;
 }
 
-@Controller('learning')
+@Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  @Get('programs')
+  @MessagePattern({ cmd: LearningCommands.ListPrograms })
   listPrograms() {
     return this.appService.listPrograms();
   }
 
-  @Post('attempts')
-  submitAttempt(@Body() body: SubmitAttemptDto) {
+  @MessagePattern({ cmd: LearningCommands.SubmitAttempt })
+  submitAttempt(@Payload() body: SubmitAttemptDto) {
     return this.appService.submitAttempt(body);
   }
 
-  @Post('evaluations')
-  recordEvaluation(@Body() body: RecordEvaluationDto) {
+  @MessagePattern({ cmd: LearningCommands.RecordEvaluation })
+  recordEvaluation(@Payload() body: RecordEvaluationDto) {
     return this.appService.recordEvaluation({
       ...body,
       humanOverride: body.humanOverride ?? false,
     });
   }
 }
+

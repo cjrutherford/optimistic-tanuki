@@ -679,6 +679,25 @@ services:
       - gateway
       - videos
 
+  learning-service:
+    container_name: ot_learning_service
+    build:
+      context: .
+      dockerfile: ./apps/learning-service/Dockerfile
+    ports:
+      - '3024:3024'
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=ot_learning_service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
 
 volumes:
   postgres_data:

@@ -72,12 +72,21 @@ Variant strategy is captured in lesson metadata (`strategy`, `sourcePath`, `lang
   - thin persistence boundary via repository interface + in-memory implementation
   - unit tests for contract behavior
 
-### Milestone 2
+### Milestone 2 ✅
 
-- Add persistent storage adapters (database tables for offerings, attempts, evaluations, credit ledger).
-- Add async evaluation job orchestration and reviewer workflow.
+- Converted `learning-service` to TCP microservice transport (aligned with all other services).
+- Added TypeORM entities (`ProgramTrackEntity`, `AttemptEntity`, `EvaluationEntity`, `CreditLedgerEntryEntity`).
+- Added `config.ts`, `assets/config.yaml`, `loadDatabase.ts`, and `staticDatabase.ts` following repo conventions.
+- Added initial TypeORM migration (`1770000000000-initial-schema`) for all learning tables.
+- Replaced in-memory repository with `TypeOrmLearningRepository` backed by PostgreSQL.
+- Added `LearningCommands` to shared constants library and `LEARNING_SERVICE` to ServiceTokens.
+- Registered `learning-service` in `setup-and-migrate.sh` (database `ot_learning_service`) and `docker-compose.yaml` (port 3024).
+- Added `LearningController` to gateway and LEARNING_SERVICE TCP client factory.
+- Async evaluation workflow: attempts are created with `state: submitted`, evaluation grader field supports `auto | llm | human`, and `humanOverride` flag is preserved for reviewer override flow.
 
 ### Milestone 3
 
 - Integrate with gateway and client applications.
 - Add learner dashboard for requirement progress and credit ledger visibility.
+- Implement evaluation queue for async review: LLM pre-grade worker, human reviewer UI, override flow with audit trail.
+- Add credit ledger service operations: award credits after successful evaluation, query credit totals per user per track.
