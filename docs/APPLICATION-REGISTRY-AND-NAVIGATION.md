@@ -14,6 +14,10 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - Runtime gateway read endpoints:
   - `GET /api/registry/apps`
   - `GET /api/registry/apps/:appId`
+- Runtime gateway navigation link endpoints:
+  - `GET /api/registry/links`
+  - `GET /api/registry/links/:sourceAppId`
+  - `POST /api/registry/links`
 - Go registry CLI in `tools/registry` with `generate`, `validate`, `add`, `remove`, and `export` commands.
 - Generated `libs/app-registry/src/lib/default-registry.json` from `tools/registry/apps.yaml`.
 - Initial app integration:
@@ -23,8 +27,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 ### Remaining
 
-- Persist runtime registry/admin updates instead of serving only the bundled default registry through gateway.
-- Add registry link write/update API support, including `POST /api/registry/links`.
+- Persist runtime registry/admin updates instead of serving only in-memory values initialized from bundled defaults.
 - Add cache headers, polling policy, and version-based cache busting behavior.
 - Implement deeper return-link handling, SSO token validation/exchange, auth redirects, and session management.
 - Build an admin registry management UI with link editing, validation, and audit history.
@@ -983,6 +986,30 @@ Returns specific application.
 }
 ```
 
+### GET /api/registry/links
+
+Returns all registered navigation links.
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
+}
+```
+
+### GET /api/registry/links/:sourceAppId
+
+Returns navigation links for a registered source application.
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
+}
+```
+
 ### POST /api/registry/links
 
 Create or update navigation links.
@@ -991,6 +1018,14 @@ Create or update navigation links.
 ```typescript
 {
   links: NavigationLink[]
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
 }
 ```
 
