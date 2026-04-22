@@ -150,6 +150,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     serviceId: 'videos',
     configKey: 'videos',
   },
+  {
+    token: ServiceTokens.LEARNING_SERVICE,
+    serviceId: 'learning-service',
+    configKey: 'learning_service',
+  },
 ];
 
 type ModuleImport = Type<any> | DynamicModule;

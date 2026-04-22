@@ -85,6 +85,7 @@ import { DonationsController } from '../controllers/donations/donations.controll
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
+import { LearningController } from '../controllers/learning/learning.controller';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -124,6 +125,7 @@ const gatewayServices = [
   'lead-tracker',
   'system-configurator-api',
   'videos',
+  'learning-service',
 ] as const;
 
 const gatewayComposition = normalizeGatewayComposition(
@@ -306,6 +308,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'hardware',
         requiredServices: ['system-configurator-api'],
         value: HardwareController,
+      },
+      {
+        id: 'learning',
+        requiredServices: ['learning-service'],
+        value: LearningController,
       },
       {
         id: 'trainer',
