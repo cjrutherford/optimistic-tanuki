@@ -64,6 +64,7 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
+import { RegistryController } from '../controllers/registry/registry.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -130,6 +131,7 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     DonationsController,
     LeadsController,
     HardwareController,
+    RegistryController,
   ],
   providers: [
     {

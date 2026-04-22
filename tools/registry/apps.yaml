@@ -1,0 +1,51 @@
+version: "1.0.0"
+apps:
+  - appId: hai
+    name: HAI Company Website
+    domain: haidev.com
+    uiBaseUrl: https://haidev.com
+    apiBaseUrl: https://api.haidev.com
+    appType: client
+    visibility: public
+    description: Company website and HAI ecosystem entry point.
+    sortOrder: 1
+
+  - appId: system-configurator
+    name: HAI Computer
+    domain: haicomputer.com
+    uiBaseUrl: https://haicomputer.com
+    apiBaseUrl: https://api.haidev.com
+    appType: client
+    visibility: public
+    description: Build-to-order personal cloud and homelab configurator.
+    sortOrder: 2
+
+  - appId: store
+    name: HAI Store
+    domain: haidev.com
+    subdomain: store
+    apiBaseUrl: https://api.haidev.com
+    appType: client
+    visibility: public
+    description: Public store for HAI products and services.
+    sortOrder: 3
+
+  - appId: opportunity-compass
+    name: Opportunity Compass
+    domain: haidev.com
+    subdomain: opportunities
+    apiBaseUrl: https://api.haidev.com
+    appType: client
+    visibility: public
+    description: Opportunity discovery from interests, locality, and skills.
+    sortOrder: 4
+
+  - appId: owner-console
+    name: Owner Console
+    domain: haidev.com
+    subdomain: owner
+    apiBaseUrl: https://api.haidev.com
+    appType: admin
+    visibility: internal
+    description: Internal HAI operator console.
+    sortOrder: 100

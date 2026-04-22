@@ -2,6 +2,9 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
 import { AuthStateService } from './state/auth-state.service';
+import { NavigationService } from '@optimistic-tanuki/app-registry';
+import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
+import { of } from 'rxjs';
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -20,6 +23,17 @@ describe('AppComponent', () => {
               subscribe: () => ({ unsubscribe: () => undefined }),
             }),
           },
+        },
+        {
+          provide: NavigationService,
+          useValue: {
+            generateUrl: jest.fn().mockReturnValue('https://haidev.com'),
+            navigate: jest.fn(),
+          },
+        },
+        {
+          provide: HaiAppDirectoryService,
+          useValue: { getResolvedApps: jest.fn().mockReturnValue(of([])) },
         },
       ],
     }).compileComponents();

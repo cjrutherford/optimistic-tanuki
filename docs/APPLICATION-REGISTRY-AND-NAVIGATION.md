@@ -6,6 +6,32 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 ---
 
+## Current Implementation Status
+
+### Completed
+
+- Shared `libs/app-registry` library with registry types, navigation types, default registry data, default links, Angular services, Angular module, and navigation link/menu components.
+- Runtime gateway read endpoints:
+  - `GET /api/registry/apps`
+  - `GET /api/registry/apps/:appId`
+- Go registry CLI in `tools/registry` with `generate`, `validate`, `add`, `remove`, and `export` commands.
+- Generated `libs/app-registry/src/lib/default-registry.json` from `tools/registry/apps.yaml`.
+- Initial app integration:
+  - `hai` title bar uses the shared navigation service for the HAI Computer link.
+  - `system-configurator` top nav uses the shared registry navigation link back to HAI.
+- Focused unit coverage for registry service, navigation service, navigation link component, gateway registry controller, and registry CLI.
+
+### Remaining
+
+- Persist runtime registry/admin updates instead of serving only the bundled default registry through gateway.
+- Add registry link write/update API support, including `POST /api/registry/links`.
+- Add cache headers, polling policy, and version-based cache busting behavior.
+- Implement deeper return-link handling, SSO token validation/exchange, auth redirects, and session management.
+- Build an admin registry management UI with link editing, validation, and audit history.
+- Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
+
+---
+
 ## Overview
 
 ### Problem Statement
@@ -37,34 +63,35 @@ The registry JSON is generated and managed via a Go CLI tool in `tools/`.
 
 ```
 tools/
-└── cmd/
-    └── registry/
-        ├── main.go           # CLI entry point
-        ├── generate.go        # Generate command
-        ├── validate.go        # Validate command
-        ├── add.go            # Add app command
-        ├── remove.go         # Remove app command
-        └── templates/
-            └── registry.tmpl  # Output template
+└── registry/
+    ├── apps.yaml
+    ├── go.mod
+    ├── go.sum
+    └── cmd/
+        └── registry/
+            ├── main.go
+            └── main_test.go
 ```
 
 ### Commands
 
 ```bash
 # Generate registry JSON
-registry generate --output libs/app-registry/src/lib/default-registry.json
+go run ./cmd/registry generate \
+  --input apps.yaml \
+  --output ../../libs/app-registry/src/lib/default-registry.json
 
 # Validate registry
-registry validate --file libs/app-registry/src/lib/default-registry.json
+go run ./cmd/registry validate --input apps.yaml
 
 # Add new application
-registry add --appId store --name "HAI Store" --domain haidev.com --subdomain store
+go run ./cmd/registry add --input apps.yaml --appId store --name "HAI Store" --domain haidev.com --subdomain store
 
 # Remove application
-registry remove --appId legacy-app
+go run ./cmd/registry remove --input apps.yaml --appId legacy-app
 
 # Export for gateway
-registry export --format env > .env.registry
+go run ./cmd/registry export --input apps.yaml --format env
 ```
 
 ### Registry Source
@@ -1008,28 +1035,28 @@ libs/app-registry/
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure
-- [ ] Create `libs/app-registry` library
-- [ ] Define TypeScript interfaces
-- [ ] Create default registry JSON
-- [ ] Implement `AppRegistryService`
-- [ ] Add Angular module
+- [x] Create `libs/app-registry` library
+- [x] Define TypeScript interfaces
+- [x] Create default registry JSON
+- [x] Implement `AppRegistryService`
+- [x] Add Angular module
 
 ### Phase 2: Gateway Integration
-- [ ] Create gateway endpoints
+- [x] Create gateway endpoints
 - [ ] Add caching layer
 - [ ] Implement version-based cache busting
 - [ ] Add admin endpoint for updates
 
 ### Phase 3: Navigation
-- [ ] Implement `NavigationService`
-- [ ] Create navigation components
-- [ ] Add default links
+- [x] Implement `NavigationService`
+- [x] Create navigation components
+- [x] Add default links
 - [ ] Implement return link handling
 
 ### Phase 4: Angular Integration
-- [ ] Integrate into hai app
-- [ ] Integrate into system-configurator app
-- [ ] Update navigation components
+- [x] Integrate into hai app
+- [x] Integrate into system-configurator app
+- [x] Update navigation components
 - [ ] Add polling with refresh
 
 ### Phase 5: SSO Integration
