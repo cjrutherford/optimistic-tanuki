@@ -9,9 +9,9 @@ export type CreateAttemptInput = Omit<Attempt, 'id' | 'state' | 'submittedAt' | 
 export type RecordEvaluationInput = Omit<Evaluation, 'id' | 'evaluatedAt'>;
 
 export interface LearningRepository {
-  listPrograms(): ProgramTrack[];
-  createAttempt(input: Attempt): Attempt;
-  getAttempt(attemptId: string): Attempt | undefined;
-  saveAttempt(attempt: Attempt): Attempt;
-  recordEvaluation(input: Evaluation): Evaluation;
+  listPrograms(): Promise<ProgramTrack[]> | ProgramTrack[];
+  createAttempt(input: Attempt): Promise<Attempt> | Attempt;
+  getAttempt(attemptId: string): Promise<Attempt | undefined> | Attempt | undefined;
+  saveAttempt(attempt: Attempt): Promise<Attempt> | Attempt;
+  recordEvaluation(input: Evaluation): Promise<Evaluation> | Evaluation;
 }
