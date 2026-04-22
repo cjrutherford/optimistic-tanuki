@@ -140,3 +140,5 @@ export {
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
 } from './lib/libs/finance';
+
+export { LearningCommands } from './lib/libs/learning';
