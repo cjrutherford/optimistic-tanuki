@@ -68,6 +68,7 @@ The current branch has a few operational surfaces that matter more than the olde
 
 - [Architecture Overview](./architecture/README.md) - High-level system architecture and design
 - [Workspace Map](./architecture/workspace-map.md) - Repo layout, ownership boundaries, and navigation guide
+- [Learning Platform Plan](./learning-platform/README.md) - Learning/training module architecture and phased implementation
 - [Permissions System](./architecture/permissions.md) - RBAC implementation and usage
 - [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions
 - [Theme System](./architecture/theme-system.md) - Theme system architecture and reference
