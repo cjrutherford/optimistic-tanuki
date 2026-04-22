@@ -1,8 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, OnInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  OnInit,
+  inject,
+} from '@angular/core';
 import { ModalComponent, Tab, TabsComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutConfig } from '../hai-types/hai-app.config';
-import { getHaiAppLinks } from '../hai-types/hai-app.directory';
+import { HaiAppDirectoryService } from '../hai-types/hai-app-directory.service';
 import { getRandomHaiExpansion } from '../hai-types/hai-expansions';
 
 @Component({
@@ -16,6 +23,7 @@ export class HaiAboutModalComponent implements OnInit {
   @Input({ required: true }) config!: HaiAboutConfig;
   @Input() visible = false;
   @Output() close = new EventEmitter<void>();
+  private readonly appDirectory = inject(HaiAppDirectoryService);
 
   readonly tabs: Tab[] = [
     { id: 'app', label: 'About This App' },
@@ -25,13 +33,11 @@ export class HaiAboutModalComponent implements OnInit {
 
   activeTab = 'app';
   currentExpansion = '';
+  appLinks$ = this.appDirectory.getResolvedApps();
 
   ngOnInit() {
     this.currentExpansion = getRandomHaiExpansion();
-  }
-
-  get appLinks() {
-    return getHaiAppLinks(this.config?.appId);
+    this.appLinks$ = this.appDirectory.getResolvedApps(this.config?.appId);
   }
 
   setActiveTab(tabId: string) {

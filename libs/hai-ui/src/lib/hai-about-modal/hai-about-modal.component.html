@@ -59,14 +59,17 @@
 
       @if (activeTab === 'directory') {
       <div class="directory-grid">
-        @for (app of appLinks; track app.appId) {
+        @for (app of appLinks$ | async; track app.appId) {
         <a
           class="directory-card"
-          [href]="app.href"
+          [href]="app.resolvedHref"
           data-testid="hai-app-link"
         >
           <span class="directory-name">{{ app.name }}</span>
           <span class="directory-tagline">{{ app.tagline }}</span>
+          <span class="directory-link-state">{{
+            app.isPublic ? 'Open app' : 'View repository'
+          }}</span>
         </a>
         }
       </div>

@@ -151,16 +151,19 @@
     </div>
 
     <div class="ecosystem-grid">
-      @for (app of ecosystem; track app.name; let i = $index) {
+      @for (app of ecosystem$ | async; track app.name; let i = $index) {
       <a
         class="ecosystem-card"
         [class.ecosystem-card-featured]="i === 0"
-        [href]="app.href"
+        [href]="app.resolvedHref"
         data-theme-surface="card"
       >
         <span class="card-label">{{ app.category }}</span>
         <span class="app-name">{{ app.name }}</span>
         <span class="app-tagline">{{ app.tagline }}</span>
+        <span class="app-link-state">{{
+          app.isPublic ? 'Open app' : 'View repository'
+        }}</span>
       </a>
       }
     </div>
