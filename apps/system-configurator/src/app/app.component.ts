@@ -11,12 +11,18 @@ import { RouterModule } from '@angular/router';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
+import { NavigationLinkComponent } from '@optimistic-tanuki/app-registry';
 import { AuthStateService } from './state/auth-state.service';
 import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
   standalone: true,
-  imports: [RouterModule, HaiAboutTagComponent, SignalMeshComponent],
+  imports: [
+    RouterModule,
+    HaiAboutTagComponent,
+    SignalMeshComponent,
+    NavigationLinkComponent,
+  ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',

@@ -1,0 +1,21 @@
+{
+  "name": "app-registry",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/app-registry/src",
+  "prefix": "ot-registry",
+  "projectType": "library",
+  "tags": ["type:ui", "scope:app-registry", "platform:shared"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/app-registry/jest.config.ts",
+        "tsConfig": "libs/app-registry/tsconfig.spec.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
