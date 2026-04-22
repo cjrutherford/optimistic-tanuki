@@ -12,7 +12,7 @@
 
 <div class="app-shell">
   <nav class="app-nav">
-    <a [routerLink]="brandRoute" class="nav-brand">Lead Command</a>
+    <a [routerLink]="brandRoute" class="nav-brand">Opportunity Compass</a>
     <div *ngIf="!isOnboardingRoute && isAuthenticated" class="nav-links">
       <a
         routerLink="/dashboard"
@@ -142,4 +142,5 @@
   <main class="app-main">
     <router-outlet></router-outlet>
   </main>
+  <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
 </div>

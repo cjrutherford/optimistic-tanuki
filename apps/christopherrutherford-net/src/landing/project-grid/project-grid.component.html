@@ -2,59 +2,18 @@
   <otui-heading [text]="'Projects'" [size]="'2em'"></otui-heading>
 </otui-tile>
 <div class="projectGrid">
+  @for (project of portfolioProjects((projects$ | async) ?? []); track
+  project.title) {
   <lib-blog-post-card
-    [title]="'Optimistic Tanuki'"
-    [bannerImage]="'assets/images/tanuki.png'"
-    [excerpt]="
-      'An on-going effort to create a microservice based collaboration and training hub for self employed individuals to connect and collaborate with complementary skills, services, and solutions.'
-    "
-    [readMoreText]="'View the Repository'"
-    [readMoreLink]="'https://github.com/cjrutherford/optimistic-tanuki'"
+    [title]="project.title"
+    [bannerImage]="project.bannerImage"
+    [excerpt]="project.excerpt"
+    [readMoreText]="project.readMoreText"
+    [readMoreLink]="project.readMoreLink"
+    [secondaryButtonText]="project.secondaryButtonText"
+    (secondaryButtonAction)="linkTo(project.secondaryButtonLink)"
     [authorName]="''"
     [publishDate]="''"
   ></lib-blog-post-card>
-
-  <lib-blog-post-card
-    [title]="'Checkit'"
-    [bannerImage]="'assets/images/checkit.png'"
-    [excerpt]="
-      'A self-hosted task management tool that assists in the creation of template checklists, and the &quot;runs&quot; of those checklists.'
-    "
-    [readMoreText]="'View the Repository'"
-    [readMoreLink]="'https://github.com/cjrutherford/checkit'"
-    [secondaryButtonText]="'View the Demo'"
-    (secondaryButtonAction)="
-      linkTo('https://checkit.christopherrutherford.net')
-    "
-    [authorName]="''"
-    [publishDate]="''"
-  ></lib-blog-post-card>
-
-  <lib-blog-post-card
-    [title]="'D6'"
-    [bannerImage]="'assets/images/d6.png'"
-    [excerpt]="
-      'A self hosted daily journalling tool that allows the user to follow a predetermined set of prompts in order to facilitate reflection, emotional resilience, and personal growth.'
-    "
-    [readMoreLink]="'https://github.com/cjrutherford/d6'"
-    [readMoreText]="'View the Repository'"
-    [secondaryButtonText]="'View the Demo'"
-    (secondaryButtonAction)="linkTo('https://d6.christopherrutherford.net')"
-    [authorName]="''"
-    [publishDate]="''"
-  ></lib-blog-post-card>
-
-  <lib-blog-post-card
-    [title]="'S3M'"
-    [bannerImage]="'assets/images/s3m.png'"
-    [excerpt]="
-      'Super small text only social media application with rudimentary follow and voting functionality.'
-    "
-    [readMoreLink]="'https://github.com/cjrutherford/s3m'"
-    [readMoreText]="'View the Repository'"
-    [secondaryButtonText]="'View the Demo'"
-    (secondaryButtonAction)="linkTo('https://s3m.christopherrutherford.net')"
-    [authorName]="''"
-    [publishDate]="''"
-  ></lib-blog-post-card>
+  }
 </div>

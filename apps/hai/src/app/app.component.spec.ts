@@ -1,13 +1,21 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { RouterModule } from '@angular/router';
+import { of } from 'rxjs';
+import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, RouterModule.forRoot([])],
-      providers: [{ provide: PLATFORM_ID, useValue: 'browser' }],
+      providers: [
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: HaiAppDirectoryService,
+          useValue: { getResolvedApps: jest.fn().mockReturnValue(of([])) },
+        },
+      ],
     }).compileComponents();
   });
 
