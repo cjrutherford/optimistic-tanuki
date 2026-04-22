@@ -119,3 +119,5 @@ See [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [do
 - `docs/`: curated project documentation
 
 Use [docs/README.md](./docs/README.md) as the documentation index.
+
+Learning platform planning and implementation docs live at [docs/learning-platform/README.md](./docs/learning-platform/README.md).
