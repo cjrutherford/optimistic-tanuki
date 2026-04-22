@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,12 +14,22 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
     index: false,
     redirect: false,
+  })
+);
+
+app.use(
+  '/api',
+  createProxyMiddleware({
+    target: `${gatewayUrl}/api`,
+    ws: true,
+    changeOrigin: true,
   })
 );
 

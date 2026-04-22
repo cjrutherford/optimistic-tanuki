@@ -64,7 +64,13 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
-import { RegistryController } from '../controllers/registry/registry.controller';
+import {
+  GATEWAY_APP_REGISTRY,
+  GATEWAY_NAVIGATION_LINKS,
+  RegistryController,
+} from '../controllers/registry/registry.controller';
+import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
+import { DEFAULT_NAVIGATION_LINKS } from '../../../../libs/app-registry/src/lib/default-links';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -137,6 +143,14 @@ import { RegistryController } from '../controllers/registry/registry.controller'
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: GATEWAY_APP_REGISTRY,
+      useFactory: () => loadConfiguredRegistry(process.env.APP_REGISTRY_PATH),
+    },
+    {
+      provide: GATEWAY_NAVIGATION_LINKS,
+      useFactory: () => DEFAULT_NAVIGATION_LINKS,
     },
     AuthGuard,
     PermissionsGuard,

@@ -3,15 +3,20 @@ import {
   Body,
   Controller,
   Get,
+  Inject,
   NotFoundException,
   Param,
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AppRegistration } from '../../../../../libs/app-registry/src/lib/app-registry.types';
-import { DEFAULT_APP_REGISTRY } from '../../../../../libs/app-registry/src/lib/default-registry';
-import { DEFAULT_NAVIGATION_LINKS } from '../../../../../libs/app-registry/src/lib/default-links';
+import {
+  AppRegistration,
+  AppRegistry,
+} from '../../../../../libs/app-registry/src/lib/app-registry.types';
 import { NavigationLink } from '../../../../../libs/app-registry/src/lib/navigation.types';
+
+export const GATEWAY_APP_REGISTRY = 'GATEWAY_APP_REGISTRY';
+export const GATEWAY_NAVIGATION_LINKS = 'GATEWAY_NAVIGATION_LINKS';
 
 interface NavigationLinksPayload {
   links: NavigationLink[];
@@ -20,7 +25,14 @@ interface NavigationLinksPayload {
 @ApiTags('registry')
 @Controller('registry')
 export class RegistryController {
-  private navigationLinks = [...DEFAULT_NAVIGATION_LINKS];
+  private navigationLinks: NavigationLink[];
+
+  constructor(
+    @Inject(GATEWAY_APP_REGISTRY) private readonly registry: AppRegistry,
+    @Inject(GATEWAY_NAVIGATION_LINKS) navigationLinks: NavigationLink[]
+  ) {
+    this.navigationLinks = [...navigationLinks];
+  }
 
   @ApiOperation({ summary: 'Get the application registry' })
   @ApiResponse({ status: 200, description: 'Application registry retrieved' })
@@ -28,7 +40,7 @@ export class RegistryController {
   getApps() {
     return {
       success: true,
-      data: DEFAULT_APP_REGISTRY,
+      data: this.registry,
     };
   }
 
@@ -115,7 +127,7 @@ export class RegistryController {
   }
 
   private assertRegisteredApp(appId: string): AppRegistration {
-    const app = DEFAULT_APP_REGISTRY.apps.find(
+    const app = this.registry.apps.find(
       (registration) => registration.appId === appId
     );
 
@@ -127,7 +139,7 @@ export class RegistryController {
   }
 
   private isRegisteredApp(appId: string): boolean {
-    return DEFAULT_APP_REGISTRY.apps.some(
+    return this.registry.apps.some(
       (registration) => registration.appId === appId
     );
   }

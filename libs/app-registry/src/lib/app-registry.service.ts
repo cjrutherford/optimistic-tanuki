@@ -8,6 +8,7 @@ import {
   of,
   shareReplay,
   switchMap,
+  tap,
 } from 'rxjs';
 import {
   AppRegistration,
@@ -25,6 +26,7 @@ export const APP_REGISTRY_URL = new InjectionToken<string>('APP_REGISTRY_URL', {
 export class AppRegistryService {
   private readonly refreshTrigger$ = new BehaviorSubject<void>(undefined);
   private readonly registry$: Observable<AppRegistry>;
+  private latestRegistry = DEFAULT_APP_REGISTRY;
 
   readonly registryVersion = DEFAULT_APP_REGISTRY.version;
 
@@ -34,8 +36,12 @@ export class AppRegistryService {
   ) {
     this.registry$ = this.refreshTrigger$.pipe(
       switchMap(() => this.fetchFromGateway()),
+      tap((registry) => {
+        this.latestRegistry = registry;
+      }),
       shareReplay(1)
     );
+    this.registry$.subscribe();
   }
 
   getAllApps(): Observable<AppRegistration[]> {
@@ -80,7 +86,7 @@ export class AppRegistryService {
     path?: string,
     queryParams?: Record<string, string>
   ): string {
-    const app = DEFAULT_APP_REGISTRY.apps.find((entry) => entry.appId === appId);
+    const app = this.latestRegistry.apps.find((entry) => entry.appId === appId);
     if (!app) {
       return '/';
     }
@@ -98,7 +104,7 @@ export class AppRegistryService {
   }
 
   isAppAccessible(appId: string): boolean {
-    return DEFAULT_APP_REGISTRY.apps.some((app) => app.appId === appId);
+    return this.latestRegistry.apps.some((app) => app.appId === appId);
   }
 
   private fetchFromGateway(): Observable<AppRegistry> {

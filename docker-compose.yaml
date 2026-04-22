@@ -156,6 +156,8 @@ services:
       dockerfile: ./apps/hai/Dockerfile
     ports:
       - '8088:4000'
+    environment:
+      - GATEWAY_URL=http://gateway:3000
 
   fin-commander:
     container_name: ot_fin_commander
@@ -215,6 +217,10 @@ services:
     build:
       context: .
       dockerfile: ./apps/gateway/Dockerfile
+    environment:
+      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+    volumes:
+      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
     ports:
       - '3000:3000'
       - '3300:3300' # Chat WebSocket

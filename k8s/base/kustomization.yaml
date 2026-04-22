@@ -38,3 +38,8 @@ resources:
   - clients/leads-app.yaml
   - ingress.yaml
   - tailscale-ingress.yaml
+
+configMapGenerator:
+  - name: app-registry-config
+    files:
+      - app-registry.json=config/app-registry.json
