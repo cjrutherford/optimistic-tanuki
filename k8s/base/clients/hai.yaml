@@ -24,6 +24,8 @@ spec:
               value: 'production'
             - name: PORT
               value: '4000'
+            - name: GATEWAY_URL
+              value: 'http://gateway:3000'
           resources:
             requests:
               memory: '64Mi'

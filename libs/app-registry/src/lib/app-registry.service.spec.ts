@@ -1,8 +1,28 @@
 import { of, throwError } from 'rxjs';
 import { AppRegistryService } from './app-registry.service';
 import { DEFAULT_APP_REGISTRY } from './default-registry';
+import generatedRegistry from './default-registry.json';
 
 describe('AppRegistryService', () => {
+  it('uses the generated registry JSON as the build-time fallback', () => {
+    expect(DEFAULT_APP_REGISTRY).toEqual(generatedRegistry);
+  });
+
+  it('loads the runtime registry on service creation', () => {
+    const http = {
+      get: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: DEFAULT_APP_REGISTRY,
+        })
+      ),
+    };
+
+    new AppRegistryService(http as any);
+
+    expect(http.get).toHaveBeenCalledWith('/api/registry/apps');
+  });
+
   it('returns bundled apps when the runtime registry is unavailable', (done) => {
     const service = new AppRegistryService({
       get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),

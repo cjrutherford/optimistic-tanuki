@@ -178,6 +178,7 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
 
   fin-commander:
     container_name: ot_fin_commander
@@ -341,6 +342,7 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
+      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
@@ -358,6 +360,7 @@ services:
       - '9000:9000' # Expose the debugging port
     environment:
       - NODE_ENV=development
+      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
     deploy:
       resources:
         limits:

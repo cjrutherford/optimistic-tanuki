@@ -20,6 +20,11 @@ Centralized application registry providing cross-app navigation for all HAI clie
   - `POST /api/registry/links`
 - Go registry CLI in `tools/registry` with `generate`, `validate`, `add`, `remove`, and `export` commands.
 - Generated `libs/app-registry/src/lib/default-registry.json` from `tools/registry/apps.yaml`.
+- The generated registry is deterministic: `tools/registry/apps.yaml` carries `generatedAt`, and repeated `generate` runs produce byte-identical JSON for the same source.
+- Angular apps consume `libs/app-registry/src/lib/default-registry.json` as their build-time fallback and the shared registry service fetches `/api/registry/apps` on first service creation.
+- Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
+- Docker Compose mounts the generated registry JSON into gateway and sets `APP_REGISTRY_PATH`.
+- K8s packages `k8s/base/config/app-registry.json` through `app-registry-config` and mounts it into gateway.
 - Initial app integration:
   - `hai` title bar uses the shared navigation service for the HAI Computer link.
   - `system-configurator` top nav uses the shared registry navigation link back to HAI.
@@ -27,7 +32,8 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 ### Remaining
 
-- Persist runtime registry/admin updates instead of serving only in-memory values initialized from bundled defaults.
+- Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
+- Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
 - Add cache headers, polling policy, and version-based cache busting behavior.
 - Implement deeper return-link handling, SSO token validation/exchange, auth redirects, and session management.
 - Build an admin registry management UI with link editing, validation, and audit history.

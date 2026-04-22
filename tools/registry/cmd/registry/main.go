@@ -28,8 +28,9 @@ type appConfig struct {
 }
 
 type registryConfig struct {
-	Version string      `json:"version" yaml:"version"`
-	Apps    []appConfig `json:"apps" yaml:"apps"`
+	Version     string      `json:"version" yaml:"version"`
+	GeneratedAt string      `json:"generatedAt" yaml:"generatedAt"`
+	Apps        []appConfig `json:"apps" yaml:"apps"`
 }
 
 type outputRegistry struct {
@@ -84,7 +85,7 @@ func generate(args []string) error {
 
 	registry := outputRegistry{
 		Version:     cfg.Version,
-		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		GeneratedAt: cfg.GeneratedAt,
 		Apps:        normalizeApps(cfg.Apps),
 	}
 	data, err := json.MarshalIndent(registry, "", "  ")
@@ -223,6 +224,12 @@ func writeConfig(path string, cfg registryConfig) error {
 func validateConfig(cfg registryConfig) error {
 	if cfg.Version == "" {
 		return errors.New("version is required")
+	}
+	if cfg.GeneratedAt == "" {
+		return errors.New("generatedAt is required")
+	}
+	if _, err := time.Parse(time.RFC3339, cfg.GeneratedAt); err != nil {
+		return fmt.Errorf("generatedAt must be RFC3339: %w", err)
 	}
 	seen := map[string]bool{}
 	for _, app := range cfg.Apps {
