@@ -7,20 +7,23 @@ export POSTGRES_PASSWORD=postgres
 export POSTGRES_HOST=${POSTGRES_HOST:-127.0.0.1}
 export POSTGRES_PORT=5432
 export NODE_ENV=development
-export ADDITIONAL_DBS=${ADDITIONAL_DBS:-ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_finance,ot_wellness,ot_classifieds,ot_payments,ot_lead_tracker,ot_system_configurator,ot_videos}
+export ADDITIONAL_DBS=${ADDITIONAL_DBS:-ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_finance,ot_wellness,ot_classifieds,classifieds_db,ot_payments,ot_lead_tracker,ot_system_configurator,ot_videos}
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 resolve_app_name() {
-  db_name="$1"
-  case "$db_name" in
-    ot_system_configurator)
-      echo "system-configurator-api"
-      ;;
-    *)
-      echo "$db_name" | sed 's/^ot_//' | tr '_' '-'
-      ;;
-  esac
+    db_name="$1"
+    case "$db_name" in
+      ot_system_configurator)
+        echo "system-configurator-api"
+        ;;
+      classifieds_db)
+        echo "classifieds"
+        ;;
+      *)
+        echo "$db_name" | sed 's/^ot_//' | tr '_' '-'
+        ;;
+    esac
 }
 
 if [ ! -d "$ROOT_DIR/node_modules" ]; then

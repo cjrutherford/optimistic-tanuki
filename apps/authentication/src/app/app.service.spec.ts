@@ -3,6 +3,11 @@ import * as qrcode from 'qrcode';
 
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
+import {
+  MfaService,
+  PasswordPolicyService,
+  TokenIssuerService,
+} from '@optimistic-tanuki/auth-domain';
 
 import { AppService } from './app.service';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
@@ -28,6 +33,18 @@ let jwtService: JwtService;
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
 }));
+
+const expectRpcError = async (promise: Promise<unknown>, message: string) => {
+  let rejected: unknown;
+  try {
+    await promise;
+  } catch (error) {
+    rejected = error;
+  }
+
+  expect(rejected).toBeInstanceOf(RpcException);
+  expect((rejected as RpcException).message).toBe(message);
+};
 
 describe('AppService', () => {
   beforeEach(async () => {
@@ -62,10 +79,11 @@ describe('AppService', () => {
           useValue: {
             validateHash: jest.fn((p, h, s) => Promise.resolve(true)),
             createNewHash: jest.fn((p) =>
-              Promise.resolve({ hash: 'mockHash', salt: 'mockSalt' })
+              Promise.resolve({ hash: 'mockHash', salt: 'mockSalt' }),
             ),
           },
         },
+        PasswordPolicyService,
         {
           provide: KeyService,
           useValue: {
@@ -82,6 +100,22 @@ describe('AppService', () => {
             generateSecret: jest.fn().mockReturnValue('test-secret'),
             keyuri: jest.fn().mockReturnValue('otpauth://totp/test'),
           },
+        },
+        {
+          provide: MfaService,
+          useFactory: (totp: any) => new MfaService(totp),
+          inject: ['totp'],
+        },
+        {
+          provide: TokenIssuerService,
+          useFactory: (jwtService: JwtService) =>
+            new TokenIssuerService(
+              {
+                sign: (payload, options) => jwtService.sign(payload, options),
+              },
+              'test-secret',
+            ),
+          inject: [JwtService],
         },
         {
           provide: 'JWT_SECRET',
@@ -110,10 +144,10 @@ describe('AppService', () => {
 
     service = module.get<AppService>(AppService);
     userRepo = module.get<Repository<UserEntity>>(
-      getRepositoryToken(UserEntity)
+      getRepositoryToken(UserEntity),
     );
     tokenRepo = module.get<Repository<TokenEntity>>(
-      getRepositoryToken(TokenEntity)
+      getRepositoryToken(TokenEntity),
     );
     keyRepo = module.get<Repository<KeyDatum>>(getRepositoryToken(KeyDatum));
     saltedHashService = module.get<SaltedHashService>(SaltedHashService);
@@ -162,7 +196,7 @@ describe('AppService', () => {
       expect(saltedHashService.validateHash).toHaveBeenCalledWith(
         'password',
         'hashedPassword',
-        'someSalt'
+        'someSalt',
       );
       expect(signSpy).toHaveBeenCalledWith(
         {
@@ -171,7 +205,7 @@ describe('AppService', () => {
           email: 'test@example.com',
           profileId: '',
         },
-        { secret: 'test-secret', expiresIn: '1h' }
+        { secret: 'test-secret', expiresIn: '1h' },
       );
       expect(tokenRepo.save).toHaveBeenCalled();
     });
@@ -194,7 +228,7 @@ describe('AppService', () => {
       const result = await service.login(
         'test@example.com',
         'password',
-        '123456'
+        '123456',
       );
       expect(result).toEqual({
         message: 'Login successful',
@@ -203,7 +237,7 @@ describe('AppService', () => {
       });
       expect(authenticator.check).toHaveBeenCalledWith(
         '123456',
-        'someTotpSecret'
+        'someTotpSecret',
       );
     });
 
@@ -211,12 +245,10 @@ describe('AppService', () => {
       jest
         .spyOn(userRepo, 'findOne')
         .mockResolvedValue(null as unknown as UserEntity);
-      await expect(
-        service.login('nonexistent@example.com', 'password')
-      ).rejects.toThrow(RpcException);
-      await expect(
-        service.login('nonexistent@example.com', 'password')
-      ).rejects.toThrow('User not found');
+      await expectRpcError(
+        service.login('nonexistent@example.com', 'password'),
+        'User not found',
+      );
     });
 
     it('should throw RpcException if password is invalid', async () => {
@@ -224,19 +256,10 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(false as boolean);
-      await expect(
-        service.login('test@example.com', 'wrongpassword')
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'wrongpassword');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'Invalid password' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')"
-        ).toBeTruthy();
-      }
+      await expectRpcError(
+        service.login('test@example.com', 'wrongpassword'),
+        'Invalid password',
+      );
     });
 
     it('should throw RpcException if MFA is required but not provided', async () => {
@@ -251,19 +274,10 @@ describe('AppService', () => {
       jest
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(true as boolean);
-      await expect(
-        service.login('test@example.com', 'password')
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'password');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'MFA token is required for this user.' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')"
-        ).toBeTruthy();
-      }
+      await expectRpcError(
+        service.login('test@example.com', 'password'),
+        'MFA token is required for this user.',
+      );
     });
 
     it('should throw RpcException if MFA token is invalid', async () => {
@@ -279,19 +293,10 @@ describe('AppService', () => {
         .spyOn(saltedHashService, 'validateHash')
         .mockReturnValue(true as boolean);
       jest.spyOn(authenticator, 'check').mockReturnValue(false as boolean);
-      await expect(
-        service.login('test@example.com', 'password', 'wrongMfa')
-      ).rejects.toThrow(RpcException);
-      try {
-        await service.login('test@example.com', 'password', 'wrongMfa');
-      } catch (e: unknown) {
-        const err = e as Error;
-        expect(
-          err.message === 'Invalid MFA token' ||
-            err.message ===
-              "Cannot read properties of undefined (reading 'salt')"
-        ).toBeTruthy();
-      }
+      await expectRpcError(
+        service.login('test@example.com', 'password', 'wrongMfa'),
+        'Invalid MFA token',
+      );
     });
 
     it('should throw RpcException on generic error during login', async () => {
@@ -299,7 +304,7 @@ describe('AppService', () => {
         .spyOn(userRepo, 'findOne')
         .mockRejectedValue(new Error('Database error'));
       await expect(
-        service.login('test@example.com', 'password')
+        service.login('test@example.com', 'password'),
       ).rejects.toThrow(RpcException);
     });
   });
@@ -350,7 +355,7 @@ describe('AppService', () => {
         registerRequest.ln,
         registerRequest.password,
         registerRequest.confirm,
-        registerRequest.bio
+        registerRequest.bio,
       );
 
       expect(result).toEqual({
@@ -370,14 +375,14 @@ describe('AppService', () => {
         where: { email: registerRequest.email },
       });
       expect(saltedHashService.createNewHash).toHaveBeenCalledWith(
-        registerRequest.password
+        registerRequest.password,
       );
       expect(userRepo.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ email: registerRequest.email })
+        expect.objectContaining({ email: registerRequest.email }),
       );
       expect(keyService.generateUserKeys).toHaveBeenCalledWith(
         'newUserId',
-        'newHashedPassword'
+        'newHashedPassword',
       );
       expect(keyRepo.save).toHaveBeenCalled();
       expect(userRepo.save).toHaveBeenCalled();
@@ -391,8 +396,8 @@ describe('AppService', () => {
           registerRequest.ln,
           'password123',
           'password456',
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.registerUser(
@@ -401,8 +406,8 @@ describe('AppService', () => {
           registerRequest.ln,
           'password123',
           'password456',
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow('Passwords do not match');
     });
 
@@ -414,8 +419,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.registerUser(
@@ -424,8 +429,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow('Invalid Email invalid-email');
     });
 
@@ -440,8 +445,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.registerUser(
@@ -450,8 +455,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow('User already exists');
     });
 
@@ -469,8 +474,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.registerUser(
@@ -479,8 +484,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow('Error creating hash');
     });
 
@@ -506,8 +511,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.registerUser(
@@ -516,8 +521,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow('Error retrieving new user');
     });
 
@@ -532,8 +537,8 @@ describe('AppService', () => {
           registerRequest.ln,
           registerRequest.password,
           registerRequest.confirm,
-          registerRequest.bio
-        )
+          registerRequest.bio,
+        ),
       ).rejects.toThrow(RpcException);
     });
   });
@@ -565,7 +570,7 @@ describe('AppService', () => {
         'test@example.com',
         'newPass1234!',
         'newPass1234!',
-        'oldPass'
+        'oldPass',
       );
       expect(result).toEqual({ message: 'Password reset successful', code: 0 });
       expect(userRepo.findOne).toHaveBeenCalledWith({
@@ -575,16 +580,16 @@ describe('AppService', () => {
       expect(saltedHashService.validateHash).toHaveBeenCalledWith(
         'oldPass',
         'oldHashedPassword',
-        'oldSalt'
+        'oldSalt',
       );
       expect(saltedHashService.createNewHash).toHaveBeenCalledWith(
-        'newPass1234!'
+        'newPass1234!',
       );
       expect(userRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
           password: 'newHashedPassword',
           keyData: { salt: 'newSalt' },
-        })
+        }),
       );
     });
 
@@ -607,12 +612,12 @@ describe('AppService', () => {
         'newPass1234!',
         'newPass1234!',
         'oldPass',
-        '123456'
+        '123456',
       );
       expect(result).toEqual({ message: 'Password reset successful', code: 0 });
       expect(authenticator.check).toHaveBeenCalledWith(
         '123456',
-        'someTotpSecret'
+        'someTotpSecret',
       );
     });
 
@@ -622,16 +627,16 @@ describe('AppService', () => {
           'test@example.com',
           'newPass1234!',
           'mismatchPass',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.resetPassword(
           'test@example.com',
           'newPass1234',
           'mismatchPass',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow('Passwords do not match');
     });
 
@@ -642,16 +647,16 @@ describe('AppService', () => {
           'nonexistent@example.com',
           'newPass',
           'newPass',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.resetPassword(
           'nonexistent@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow('User not found');
     });
 
@@ -665,16 +670,16 @@ describe('AppService', () => {
           'test@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'wrongOldPass'
-        )
+          'wrongOldPass',
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.resetPassword(
           'test@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'wrongOldPass'
-        )
+          'wrongOldPass',
+        ),
       ).rejects.toThrow('Invalid old password');
     });
 
@@ -691,16 +696,16 @@ describe('AppService', () => {
           'test@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.resetPassword(
           'test@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow('MFA token is required for this user.');
     });
 
@@ -719,8 +724,8 @@ describe('AppService', () => {
           'newStrongPass1!',
           'newStrongPass1!',
           'oldPass',
-          'wrongMfa'
-        )
+          'wrongMfa',
+        ),
       ).rejects.toThrow(RpcException);
       await expect(
         service.resetPassword(
@@ -728,8 +733,8 @@ describe('AppService', () => {
           'newStrongPass1!',
           'newStrongPass1!',
           'oldPass',
-          'wrongMfa'
-        )
+          'wrongMfa',
+        ),
       ).rejects.toThrow('Invalid MFA token');
     });
 
@@ -743,8 +748,8 @@ describe('AppService', () => {
           'test@example.com',
           'newStrongPass1!',
           'newStrongPass1!',
-          'oldPass'
-        )
+          'oldPass',
+        ),
       ).rejects.toThrow(Error);
     });
   });
@@ -780,10 +785,10 @@ describe('AppService', () => {
         .spyOn(jwtService, 'verifyAsync')
         .mockRejectedValue(new Error('Invalid signature'));
       await expect(service.validateToken('invalidToken')).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       await expect(service.validateToken('invalidToken')).rejects.toThrow(
-        'Invalid token'
+        'Invalid token',
       );
     });
 
@@ -791,11 +796,11 @@ describe('AppService', () => {
       jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue(mockDecoded);
       jest.spyOn(tokenRepo, 'findOne').mockResolvedValue(null);
       await expect(service.validateToken(mockToken)).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       // The service throws 'Invalid token' for all errors, so match that
       await expect(service.validateToken(mockToken)).rejects.toThrow(
-        'Invalid token'
+        'Invalid token',
       );
     });
 
@@ -806,11 +811,11 @@ describe('AppService', () => {
         revoked: true,
       } as TokenEntity);
       await expect(service.validateToken(mockToken)).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       // The service throws 'Invalid token' for all errors, so match that
       await expect(service.validateToken(mockToken)).rejects.toThrow(
-        'Invalid token'
+        'Invalid token',
       );
     });
   });
@@ -825,13 +830,13 @@ describe('AppService', () => {
       jest.spyOn(authenticator, 'generateSecret').mockReturnValue('newSecret');
       // Match the actual otpauth URI generated by the service
       const expectedUri = expect.stringContaining(
-        'otpauth://totp/optomistic-tanuki:'
+        'otpauth://totp/optomistic-tanuki:',
       );
       jest
         .spyOn(authenticator, 'keyuri')
         .mockImplementation(
           (userId, issuer, secret) =>
-            `otpauth://totp/optomistic-tanuki:${userId}?secret=${secret}&period=30&digits=6&algorithm=SHA1&issuer=optomistic-tanuki`
+            `otpauth://totp/optomistic-tanuki:${userId}?secret=${secret}&period=30&digits=6&algorithm=SHA1&issuer=optomistic-tanuki`,
         );
       const qrcodeSpy = jest
         .spyOn(qrcode, 'toDataURL')
@@ -862,7 +867,7 @@ describe('AppService', () => {
       await expect(service.setupTotp(userId)).rejects.toThrow(RpcException);
       // The service throws 'TOTP setup failed' for all errors, so match that
       await expect(service.setupTotp(userId)).rejects.toThrow(
-        'TOTP setup failed'
+        'TOTP setup failed',
       );
     });
 
@@ -874,7 +879,7 @@ describe('AppService', () => {
       await expect(service.setupTotp(userId)).rejects.toThrow(RpcException);
       // The service throws 'TOTP setup failed' for all errors, so match that
       await expect(service.setupTotp(userId)).rejects.toThrow(
-        'TOTP setup failed'
+        'TOTP setup failed',
       );
     });
 
@@ -884,7 +889,7 @@ describe('AppService', () => {
         .mockRejectedValue(new Error('Database error'));
       await expect(service.setupTotp(userId)).rejects.toThrow(RpcException);
       await expect(service.setupTotp(userId)).rejects.toThrow(
-        'TOTP setup failed'
+        'TOTP setup failed',
       );
     });
   });
@@ -909,10 +914,10 @@ describe('AppService', () => {
         .spyOn(userRepo, 'findOne')
         .mockResolvedValue(null as unknown as UserEntity);
       await expect(service.validateTotp(userId, token)).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       await expect(service.validateTotp(userId, token)).rejects.toThrow(
-        'User not found or TOTP not set up'
+        'User not found or TOTP not set up',
       );
     });
 
@@ -922,10 +927,10 @@ describe('AppService', () => {
         .spyOn(userRepo, 'findOne')
         .mockResolvedValue(userWithoutTotp as UserEntity);
       await expect(service.validateTotp(userId, token)).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       await expect(service.validateTotp(userId, token)).rejects.toThrow(
-        'User not found or TOTP not set up'
+        'User not found or TOTP not set up',
       );
     });
 
@@ -933,10 +938,10 @@ describe('AppService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as UserEntity);
       jest.spyOn(authenticator, 'check').mockReturnValue(false as boolean);
       await expect(service.validateTotp(userId, 'wrongToken')).rejects.toThrow(
-        RpcException
+        RpcException,
       );
       await expect(service.validateTotp(userId, 'wrongToken')).rejects.toThrow(
-        'Invalid TOTP token'
+        'Invalid TOTP token',
       );
     });
   });

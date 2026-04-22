@@ -20,6 +20,7 @@ import {
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
 import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   selector: 'video-client-root',
@@ -30,6 +31,7 @@ import { TopographicDriftComponent } from '@optimistic-tanuki/motion-ui';
     AppBarComponent,
     NavSidebarComponent,
     TopographicDriftComponent,
+    HaiAboutTagComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -46,6 +48,15 @@ export class AppComponent implements OnInit, OnDestroy {
   foreground = '';
   accent = '';
   backgroundGradient = '';
+
+  haiAboutConfig = {
+    appId: 'video-platform',
+    appName: 'Video Platform',
+    appTagline: 'Share and discover video content with communities.',
+    appDescription:
+      'The Video Platform enables creators to share content, build channels, and engage with communities through video.',
+    appUrl: '/video-platform',
+  };
 
   themeName = signal('light-theme');
   isNavExpanded = signal(false);

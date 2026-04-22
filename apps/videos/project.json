@@ -23,7 +23,7 @@
       "executor": "@nx/js:prune-lockfile",
       "outputs": [
         "{workspaceRoot}/dist/apps/videos/package.json",
-        "{workspaceRoot}/dist/apps/videos/package-lock.json"
+        "{workspaceRoot}/dist/apps/videos/pnpm-lock.yaml"
       ],
       "options": {
         "buildTarget": "build"
@@ -69,5 +69,10 @@
       }
     }
   },
-  "tags": ["scope:backend", "type:service"]
+  "tags": [
+    "type:app",
+    "scope:videos",
+    "platform:server",
+    "visibility:internal"
+  ]
 }

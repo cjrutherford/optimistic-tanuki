@@ -1,11 +1,11 @@
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
-import { MicroserviceOptions } from '@nestjs/microservices';
 import { NestFactory } from '@nestjs/core';
 import { bootstrap } from './main';
 
 describe('bootstrap', () => {
   let appMock: any;
+  let createSpy: jest.SpyInstance;
   let createMicroserviceSpy: jest.SpyInstance;
   let listenSpy: jest.SpyInstance;
 
@@ -26,7 +26,7 @@ describe('bootstrap', () => {
       }),
     };
 
-    jest.spyOn(NestFactory, 'create').mockResolvedValue(appMock);
+    createSpy = jest.spyOn(NestFactory, 'create').mockResolvedValue(appMock);
     createMicroserviceSpy = jest
       .spyOn(NestFactory, 'createMicroservice')
       .mockResolvedValue(appMock);
@@ -38,6 +38,11 @@ describe('bootstrap', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  it('does not auto-bootstrap when the module is imported', async () => {
+    expect(createSpy).not.toHaveBeenCalled();
+    expect(createMicroserviceSpy).not.toHaveBeenCalled();
   });
 
   it('should bootstrap the application and start listening', async () => {

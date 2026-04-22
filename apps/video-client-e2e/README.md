@@ -55,13 +55,13 @@ nx run video-client-e2e:down
 
 ```bash
 # Run specific test file
-npx playwright test apps/video-client-e2e/src/video-platform.spec.ts
+pnpm exec playwright test apps/video-client-e2e/src/video-platform.spec.ts
 
 # Run with UI
-npx playwright test apps/video-client-e2e/src/video-platform.spec.ts --ui
+pnpm exec playwright test apps/video-client-e2e/src/video-platform.spec.ts --ui
 
 # Run in debug mode
-npx playwright test apps/video-client-e2e/src/video-platform.spec.ts --debug
+pnpm exec playwright test apps/video-client-e2e/src/video-platform.spec.ts --debug
 ```
 
 ## Test Workflows
@@ -186,7 +186,7 @@ lsof -i :3000
 After running tests:
 ```bash
 # View HTML report
-npx playwright show-report
+pnpm exec playwright show-report
 
 # Report location
 dist/.playwright/apps/video-client-e2e/playwright-report

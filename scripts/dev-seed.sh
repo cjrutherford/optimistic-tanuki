@@ -6,6 +6,8 @@ COMPOSE_FILES="-f docker-compose.yaml -f docker-compose.dev.yaml"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
+APP_RUNTIME_DIR="/usr/src/app"
+CLASSIFIEDS_RUNTIME_DIR="/app/classifieds"
 
 if [ -n "${HOST_GATEWAY_READY_URL:-}" ]; then
   :
@@ -89,21 +91,43 @@ wait_for_gateway() {
   return 1
 }
 
-run_seed telos-docs-service /usr/src/app node ./seed-persona.js
-run_seed permissions /usr/src/app node ./seed-permissions.js
+run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
+run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 restart_service gateway
-run_seed store /usr/src/app node ./seed-store.js
+run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js
 wait_for_gateway
 restart_service authentication
 restart_service profile
 restart_service social
 restart_service payments
+restart_service assets
 restart_service gateway
 sleep 15
-run_seed_with_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
-run_seed_with_run social /usr/src/app node ./seed-local-communities.js
-run_seed_with_env social /usr/src/app GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
-# Skip classifieds seed - path issue needs resolution
-# run_seed_with_env classifieds /app/classifieds GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
-run_seed_with_run payments /usr/src/app node ./seed-products.js
-run_seed_with_run videos /usr/src/app node ./seed-videos.js
+run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
+run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
+run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
+run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
+run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
+
+run_seed_with_media_volume() {
+  service="$1"
+  workdir="$2"
+  shift 2
+
+  echo "Seeding ${service} with media volume..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" \
+    -v /mnt/valhalla/media:/media:ro \
+    -e "ASSETS_HOST=assets" \
+    "$service" "$@"
+}
+
+run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
+# Optional: clear videos db before seeding to avoid duplicate slug issues
+# docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
+
+run_seed_assets() {
+  echo "Seeding assets..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps \
+    -v /mnt/valhalla/media:/media:ro \
+    assets node ./seed-assets.js || true
+}

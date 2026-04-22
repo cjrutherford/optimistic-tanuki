@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { LeadFlagsService } from '@optimistic-tanuki/leads-feature-flags';
+import { LeadOnboardingService } from '@optimistic-tanuki/leads-feature-onboarding';
+import { LeadTopicsService } from '@optimistic-tanuki/leads-feature-topics';
+import { LeadsApiService } from '@optimistic-tanuki/leads-data-access';
 import {
   Lead,
   LeadStats,
@@ -27,159 +30,129 @@ import {
 
 @Injectable({ providedIn: 'root' })
 export class LeadsService {
-  private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/leads';
+  private readonly leadsApi = inject(LeadsApiService);
+  private readonly topics = inject(LeadTopicsService);
+  private readonly flags = inject(LeadFlagsService);
+  private readonly onboarding = inject(LeadOnboardingService);
 
   private localLeads: Lead[] = [];
 
   getLeads(): Observable<Lead[]> {
-    return this.http
-      .get<Lead[]>(this.baseUrl)
+    return this.leadsApi
+      .getLeads()
       .pipe(tap((leads) => (this.localLeads = leads)));
   }
 
   getLead(id: string): Observable<Lead> {
-    return this.http.get<Lead>(`${this.baseUrl}/${id}`);
+    return this.leadsApi.getLead(id);
   }
 
   createLead(dto: CreateLeadDto): Observable<Lead> {
-    return this.http.post<Lead>(this.baseUrl, dto).pipe(
+    return this.leadsApi.createLead(dto).pipe(
       tap((newLead) => {
         this.localLeads = [newLead, ...this.localLeads];
-      })
+      }),
     );
   }
 
   updateLead(id: string, dto: UpdateLeadDto): Observable<Lead> {
-    return this.http.patch<Lead>(`${this.baseUrl}/${id}`, dto).pipe(
+    return this.leadsApi.updateLead(id, dto).pipe(
       tap((updatedLead) => {
         this.localLeads = this.localLeads.map((lead) =>
-          lead.id === id ? updatedLead : lead
+          lead.id === id ? updatedLead : lead,
         );
-      })
+      }),
     );
   }
 
   deleteLead(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`).pipe(
+    return this.leadsApi.deleteLead(id).pipe(
       tap(() => {
         this.localLeads = this.localLeads.filter((l) => l.id !== id);
-      })
+      }),
     );
   }
 
   getStats(): Observable<LeadStats> {
-    return this.http.get<LeadStats>(`${this.baseUrl}/stats/overview`);
+    return this.leadsApi.getStats();
   }
 
   getTopics(): Observable<Topic[]> {
-    return this.http.get<Topic[]>(`${this.baseUrl}/topics`);
+    return this.topics.getTopics();
   }
 
   getTopicDiscoveryStatus(topicId: string): Observable<TopicDiscoveryResult> {
-    return this.http.get<TopicDiscoveryResult>(
-      `${this.baseUrl}/topics/${topicId}/discovery-status`
-    );
+    return this.topics.getTopicDiscoveryStatus(topicId);
   }
 
   createTopic(dto: CreateTopicDto): Observable<Topic> {
-    return this.http.post<Topic>(`${this.baseUrl}/topics`, dto);
+    return this.topics.createTopic(dto);
   }
 
   updateTopic(topicId: string, dto: UpdateTopicDto): Observable<Topic> {
-    return this.http.patch<Topic>(`${this.baseUrl}/topics/${topicId}`, dto);
+    return this.topics.updateTopic(topicId, dto);
   }
 
   deleteTopic(topicId: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/topics/${topicId}`);
+    return this.topics.deleteTopic(topicId);
   }
 
   toggleTopic(topic: Topic): Observable<Topic> {
-    return this.updateTopic(topic.id, { enabled: !topic.enabled });
+    return this.topics.toggleTopic(topic);
   }
 
   runTopicDiscovery(topicId: string): Observable<TopicDiscoveryResult> {
-    return this.http.post<TopicDiscoveryResult>(
-      `${this.baseUrl}/topics/${topicId}/discover`,
-      {}
-    );
+    return this.topics.runTopicDiscovery(topicId);
   }
 
   getLeadFlags(leadId: string): Observable<LeadFlag[]> {
-    return this.http.get<LeadFlag[]>(`${this.baseUrl}/${leadId}/flags`);
+    return this.flags.getLeadFlags(leadId);
   }
 
   flagLead(leadId: string, dto: CreateLeadFlagDto): Observable<LeadFlag> {
-    return this.http
-      .post<LeadFlag>(`${this.baseUrl}/${leadId}/flags`, dto)
-      .pipe(
-        tap((flag) => {
-          this.localLeads = this.localLeads.map((lead) =>
-            lead.id === leadId
-              ? {
-                  ...lead,
-                  isFlagged: true,
-                  flags: [flag, ...(lead.flags || [])],
-                }
-              : lead
-          );
-        })
-      );
+    return this.flags.flagLead(leadId, dto).pipe(
+      tap((flag) => {
+        this.localLeads = this.localLeads.map((lead) =>
+          lead.id === leadId
+            ? {
+                ...lead,
+                isFlagged: true,
+                flags: [flag, ...(lead.flags || [])],
+              }
+            : lead,
+        );
+      }),
+    );
   }
 
   analyzeOnboarding(
-    profile: UserOnboardingProfile
+    profile: UserOnboardingProfile,
   ): Observable<{ topics: GeneratedTopicSuggestion[] }> {
-    return this.http.post<{ topics: GeneratedTopicSuggestion[] }>(
-      `${this.baseUrl}/onboarding/analyze`,
-      profile
-    );
+    return this.onboarding.analyzeOnboarding(profile);
   }
 
   analyzeMadLib(text: string): Observable<MadLibAnalysisResult> {
-    return this.http.post<MadLibAnalysisResult>(
-      `${this.baseUrl}/onboarding/mad-lib/analyze`,
-      { text }
-    );
+    return this.onboarding.analyzeMadLib(text);
   }
 
   parseResume(file: File): Observable<ResumeParseResult> {
-    const formData = new FormData();
-    formData.append('file', file);
-    return this.http.post<ResumeParseResult>(
-      `${this.baseUrl}/onboarding/resume/parse`,
-      formData
-    );
+    return this.onboarding.parseResume(file);
   }
 
   searchLocations(query: string): Observable<LocationAutocompleteSuggestion[]> {
-    return this.http.get<LocationAutocompleteSuggestion[]>(
-      `${this.baseUrl}/locations/autocomplete`,
-      {
-        params: {
-          q: query,
-        },
-      }
-    );
+    return this.onboarding.searchLocations(query);
   }
 
   advanceDiscInterview(
-    request: DiscInterviewRequest
+    request: DiscInterviewRequest,
   ): Observable<DiscInterviewResponse> {
-    return this.http.post<DiscInterviewResponse>(
-      `${this.baseUrl}/onboarding/disc/advance`,
-      request
-    );
+    return this.onboarding.advanceDiscInterview(request);
   }
 
   confirmOnboarding(
     profile: UserOnboardingProfile,
-    topics: GeneratedTopicSuggestion[]
+    topics: GeneratedTopicSuggestion[],
   ): Observable<{ topics: Topic[] }> {
-    const payload: ConfirmOnboardingRequest = { profile, topics };
-    return this.http.post<{ topics: Topic[] }>(
-      `${this.baseUrl}/onboarding/confirm`,
-      payload
-    );
+    return this.onboarding.confirmOnboarding(profile, topics);
   }
 }

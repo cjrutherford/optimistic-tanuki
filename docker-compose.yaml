@@ -670,7 +670,7 @@ services:
       context: .
       dockerfile: ./apps/video-client/Dockerfile
     ports:
-      - '8092:4000'
+      - '8093:4000'
     environment:
       - NODE_ENV=production
       - PORT=4000
@@ -682,3 +682,4 @@ services:
 
 volumes:
   postgres_data:
+  video-processing-data:
