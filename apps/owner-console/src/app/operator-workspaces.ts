@@ -36,7 +36,8 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
       },
       {
         title: 'Roles',
-        description: 'Maintain reusable role bundles for platform and app operators.',
+        description:
+          'Maintain reusable role bundles for platform and app operators.',
         route: '/dashboard/roles',
         highlight: 'Role catalog',
       },
@@ -97,6 +98,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/theme',
         highlight: 'Brand control',
       },
+      {
+        title: 'Application Registry',
+        description:
+          'Maintain cross-app destinations, navigation links, and change history.',
+        route: '/dashboard/registry',
+        highlight: 'Registry control',
+      },
     ],
   },
   {
@@ -139,7 +147,8 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
       },
       {
         title: 'Availability',
-        description: 'Adjust booking capacity and operator-controlled openings.',
+        description:
+          'Adjust booking capacity and operator-controlled openings.',
         route: '/dashboard/store/availability',
         highlight: 'Capacity planning',
       },
@@ -160,13 +169,15 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
     cards: [
       {
         title: 'Communities',
-        description: 'Manage active communities and inspect their moderation surface.',
+        description:
+          'Manage active communities and inspect their moderation surface.',
         route: '/dashboard/communities',
         highlight: 'Community lifecycle',
       },
       {
         title: 'Cities',
-        description: 'Control city-level locality records and rollout readiness.',
+        description:
+          'Control city-level locality records and rollout readiness.',
         route: '/dashboard/cities',
         highlight: 'Locality coverage',
       },
