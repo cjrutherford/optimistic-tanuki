@@ -26,7 +26,10 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
-import { RoleInitService } from '@optimistic-tanuki/permission-lib';
+import {
+  RoleInitBuilder,
+  RoleInitService,
+} from '@optimistic-tanuki/permission-lib';
 import {
   LoginAccountBootstrapService,
   RegisterAccountBootstrapService,
@@ -47,7 +50,7 @@ export class AuthenticationController {
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly loginBootstrap: LoginAccountBootstrapService,
-    private readonly registerBootstrap: RegisterAccountBootstrapService,
+    private readonly registerBootstrap: RegisterAccountBootstrapService
   ) {
     this.authClient
       .connect()
@@ -69,7 +72,7 @@ export class AuthenticationController {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
         `Login failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -81,23 +84,75 @@ export class AuthenticationController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async issueTokenForProfile(
     @User() user: UserDetails,
-    @Body() body: { profileId?: string },
+    @Body() body: { profileId?: string }
   ) {
     try {
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
-          { userId: user.userId, profileId: body.profileId || user.profileId },
-        ),
+          { userId: user.userId, profileId: body.profileId || user.profileId }
+        )
       );
     } catch (error) {
       this.logger.error(
         'Error in issueTokenForProfile:',
-        error?.message || error,
+        error?.message || error
       );
       throw new HttpException(
         `Token issue failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('exchange')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Exchange current token for a target app token' })
+  @ApiResponse({ status: 201, description: 'Token exchanged successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid exchange request.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async exchangeTokenForApp(
+    @User() user: UserDetails,
+    @Body() body: { targetAppId?: string }
+  ) {
+    const targetAppId = body.targetAppId?.trim();
+    if (!targetAppId) {
+      throw new HttpException(
+        'targetAppId is required',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    try {
+      const profile = await this.getOrCreateAppScopedProfile(user, targetAppId);
+      const issueResult = await firstValueFrom(
+        this.authClient.send(
+          { cmd: AuthCommands.Issue },
+          { userId: user.userId, profileId: profile.id }
+        )
+      );
+      const token =
+        issueResult?.data?.newToken ||
+        issueResult?.newToken ||
+        issueResult?.token;
+
+      if (!token) {
+        throw new Error('Authentication service did not return a token');
+      }
+
+      return {
+        token,
+        targetAppId,
+        profileId: profile.id,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error in exchangeTokenForApp:',
+        error?.message || error
+      );
+      throw new HttpException(
+        `Token exchange failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -109,7 +164,7 @@ export class AuthenticationController {
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   async registerUser(
     @Body() data: RegisterRequest,
-    @AppScope() appScope: string,
+    @AppScope() appScope: string
   ) {
     try {
       this.logger.debug('registerUser called');
@@ -118,11 +173,11 @@ export class AuthenticationController {
     } catch (error) {
       this.logger.error(
         'Error in registerUser:',
-        error?.message || JSON.stringify(error),
+        error?.message || JSON.stringify(error)
       );
       throw new HttpException(
         `Registration failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -134,13 +189,13 @@ export class AuthenticationController {
   async resetPassword(@Body() data: ResetPasswordRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.ResetPassword }, data),
+        this.authClient.send({ cmd: AuthCommands.ResetPassword }, data)
       );
     } catch (error) {
       console.error('Error in resetPassword:', error);
       throw new HttpException(
         `Password reset failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -152,13 +207,13 @@ export class AuthenticationController {
   async enableMfa(@Body() data: EnableMultiFactorRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.EnableMultiFactor }, data),
+        this.authClient.send({ cmd: AuthCommands.EnableMultiFactor }, data)
       );
     } catch (error) {
       console.error('Error in enableMfa:', error);
       throw new HttpException(
         `Enable MFA failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -170,13 +225,13 @@ export class AuthenticationController {
   async validateToken(@Body() data: ValidateTokenRequest) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Validate }, data),
+        this.authClient.send({ cmd: AuthCommands.Validate }, data)
       );
     } catch (error) {
       console.error('Error in validateToken:', error);
       throw new HttpException(
         `Token validation failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -191,13 +246,13 @@ export class AuthenticationController {
   async validateMfa(@Body() data: { userId: string; token: string }) {
     try {
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.ValidateTotp }, data),
+        this.authClient.send({ cmd: AuthCommands.ValidateTotp }, data)
       );
     } catch (error) {
       console.error('Error in validateMfa:', error);
       throw new HttpException(
         `MFA validation failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
   }
@@ -254,14 +309,74 @@ export class AuthenticationController {
     try {
       this.logger.debug('logoutUser called');
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.Logout }, data),
+        this.authClient.send({ cmd: AuthCommands.Logout }, data)
       );
     } catch (error) {
       console.error('Error in logoutUser:', error);
       throw new HttpException(
         `Logout failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
+        HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  private async getOrCreateAppScopedProfile(
+    user: UserDetails,
+    targetAppId: string
+  ): Promise<ProfileDto> {
+    const effectiveAppScope =
+      targetAppId === 'owner-console' ? 'global' : targetAppId;
+    const profiles = (await firstValueFrom(
+      this.profileClient.send(
+        { cmd: ProfileCommands.GetAll },
+        { where: { userId: user.userId } }
+      )
+    )) as ProfileDto[];
+    const appScopedProfile = profiles.find(
+      (profile) => profile.appScope === effectiveAppScope
+    );
+    if (appScopedProfile) {
+      return appScopedProfile;
+    }
+
+    const globalProfile = profiles.find(
+      (profile) => !profile.appScope || profile.appScope === 'global'
+    );
+    const seedProfile = globalProfile || profiles[0] || null;
+    if (!seedProfile) {
+      throw new Error('No profile available for user');
+    }
+
+    const newProfile: CreateProfileDto & {
+      appScope: string;
+      copyPermissionsFromGlobalProfile?: boolean;
+    } = {
+      userId: seedProfile.userId,
+      name: seedProfile.profileName || user.email,
+      description: '',
+      profilePic: seedProfile.avatarUrl || '',
+      coverPic: '',
+      bio: seedProfile.bio || '',
+      location: '',
+      occupation: '',
+      interests: '',
+      skills: '',
+      appScope: effectiveAppScope,
+      copyPermissionsFromGlobalProfile: false,
+    };
+
+    const createdProfile = (await firstValueFrom(
+      this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
+    )) as ProfileDto;
+    const roleInitOptions = new RoleInitBuilder()
+      .setScopeName(effectiveAppScope)
+      .setProfile(createdProfile.id)
+      .addDefaultProfileOwner(createdProfile.id, effectiveAppScope)
+      .addAppScopeDefaults()
+      .addAssetOwnerPermissions()
+      .build();
+
+    await this.roleInit.processNow(roleInitOptions);
+    return createdProfile;
   }
 }
