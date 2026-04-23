@@ -7,6 +7,7 @@ import {
 } from '@angular/platform-browser';
 import { appRoutes } from './app.routes';
 import { FontLoadingService, ThemeService } from '@optimistic-tanuki/theme-lib';
+import { provideReturnLinkHandling } from '@optimistic-tanuki/app-registry';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideHttpClient(withFetch()),
     provideRouter(appRoutes),
+    provideReturnLinkHandling(),
     ThemeService,
     FontLoadingService,
   ],
