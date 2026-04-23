@@ -342,12 +342,12 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
+      - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
       - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         'dist/apps/gateway',
         '--exec',

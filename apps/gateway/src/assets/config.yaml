@@ -3,107 +3,107 @@ services:
   authentication:
     name: authentication
     transport: TCP
-    host: ot_authentication
+    host: authentication
     port: 3001
   profile:
     name: profile
     transport: TCP
-    host: ot_profile
+    host: profile
     port: 3002
   social:
     name: social
     transport: TCP
-    host: ot_social
+    host: social
     port: 3003
   tasks:
     name: tasks
     transport: TCP
-    host: ot_tasks
+    host: tasks
     port: 3004
   asset:
     name: asset
     transport: TCP
-    host: ot_assets
+    host: assets
     port: 3005
   project_planning:
     name: project_planning
     transport: TCP
-    host: ot_project_planning
+    host: project-planning
     port: 3006
   chat_collector:
     name: chat_collector
     transport: TCP
-    host: ot_chat_collector
+    host: chat-collector
     port: 3007
   telos_docs_service:
     name: telos_docs_service
     transport: TCP
-    host: ot_telos_docs_service
+    host: telos-docs-service
     port: 3008
   ai_orchestration:
     name: ai_orchestration
     transport: TCP
-    host: ot_ai_orchestration
+    host: ai-orchestration
     port: 3010
   blogging:
     name: blogging
     transport: TCP
-    host: ot_blogging
+    host: blogging
     port: 3011
   permissions:
     name: permissions
     transport: TCP
-    host: ot_permissions
+    host: permissions
     port: 3012
   store:
     name: store
     transport: TCP
-    host: ot_store
+    host: store
     port: 3013
   app_configurator:
     name: app_configurator
     transport: TCP
-    host: ot_app_configurator
+    host: app-configurator
     port: 3014
   forum:
     name: forum
     transport: TCP
-    host: ot_forum
+    host: forum
     port: 3015
   finance:
     name: finance
     transport: TCP
-    host: ot_finance
+    host: finance
     port: 3016
   wellness:
     name: wellness
     transport: TCP
-    host: ot_wellness
+    host: wellness
     port: 3017
   classifieds:
     name: classifieds
     transport: TCP
-    host: ot_classifieds
+    host: classifieds
     port: 3018
   payments:
     name: payments
     transport: TCP
-    host: ot_payments
+    host: payments
     port: 3019
   lead_tracker:
     name: lead_tracker
     transport: TCP
-    host: ot_lead_tracker
+    host: lead-tracker
     port: 3020
   system_configurator:
     name: system_configurator
     transport: TCP
-    host: ot_system_configurator_api
+    host: system-configurator-api
     port: 3021
   videos:
     name: videos
     transport: TCP
-    host: ot_videos
+    host: videos
     port: 3022
 auth:
   jwtSecret: |

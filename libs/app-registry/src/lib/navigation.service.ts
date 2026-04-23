@@ -1,5 +1,6 @@
-import { Injectable, InjectionToken } from '@angular/core';
+import { Injectable, InjectionToken, PLATFORM_ID, inject } from '@angular/core';
 import { map, Observable } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
 import { AppRegistryService } from './app-registry.service';
 import { DEFAULT_NAVIGATION_LINKS } from './default-links';
 import {
@@ -13,6 +14,8 @@ const RETURN_TO_STORAGE_KEY = 'ot.registry.returnTo';
 
 @Injectable({ providedIn: 'root' })
 export class NavigationService {
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+
   constructor(private readonly registry: AppRegistryService) {}
 
   getLinks(appId: string): Observable<NavigationLink[]> {
@@ -42,6 +45,9 @@ export class NavigationService {
     path?: string,
     options: NavigationOptions = {}
   ): void {
+    if (!this.isBrowser) {
+      return;
+    }
     const queryParams = this.returnParams(options);
     const url = this.generateUrl(targetAppId, path, queryParams);
 
@@ -58,16 +64,22 @@ export class NavigationService {
     path?: string,
     queryParams?: Record<string, string>
   ): void {
+    if (!this.isBrowser) {
+      return;
+    }
     window.open(this.generateUrl(targetAppId, path, queryParams), '_blank');
   }
 
   getReturnLink(context: NavigationContext): string {
     return this.registry.getAppUrl(context.currentAppId, context.currentPath, {
-      returnTo: this.currentBrowserUrl(),
+      returnTo: this.isBrowser ? this.currentBrowserUrl() : '',
     });
   }
 
   captureReturnTo(): string | null {
+    if (!this.isBrowser) {
+      return null;
+    }
     const returnTo = this.currentSearchParams().get('returnTo');
     if (!returnTo) {
       return null;
@@ -136,6 +148,9 @@ export class NavigationService {
   private returnParams(
     options: NavigationOptions
   ): Record<string, string> | undefined {
+    if (!this.isBrowser) {
+      return undefined;
+    }
     if (options.preserveQuery) {
       return { returnTo: window.location.pathname + window.location.search };
     }
@@ -148,10 +163,16 @@ export class NavigationService {
   }
 
   private currentBrowserUrl(): string {
+    if (!this.isBrowser) {
+      return '';
+    }
     return `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
   }
 
   private currentSearchParams(): URLSearchParams {
+    if (!this.isBrowser) {
+      return new URLSearchParams();
+    }
     return new URLSearchParams(window.location.search);
   }
 }

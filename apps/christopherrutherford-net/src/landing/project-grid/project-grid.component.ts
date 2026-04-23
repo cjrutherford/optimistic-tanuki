@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 
 import { HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
@@ -25,6 +25,7 @@ interface PortfolioProject {
   styleUrl: './project-grid.component.scss',
 })
 export class ProjectGridComponent {
+  private readonly appDirectory = inject(HaiAppDirectoryService);
   readonly projects$ = this.appDirectory.getResolvedApps();
 
   private readonly bannerImages: Record<string, string> = {
@@ -34,8 +35,6 @@ export class ProjectGridComponent {
     'fin-commander': 'assets/images/firefly-iii.svg',
     'opportunity-compass': 'assets/images/process-analytics.png',
   };
-
-  constructor(private readonly appDirectory: HaiAppDirectoryService) {}
 
   portfolioProjects(apps: HaiResolvedAppLink[]): PortfolioProject[] {
     return apps.map((app) => ({
