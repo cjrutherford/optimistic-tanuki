@@ -14,12 +14,25 @@ describe('RegistryController', () => {
   });
 
   it('returns the bundled application registry response', () => {
-    const response = controller.getApps();
+    const responseHeaders = { setHeader: jest.fn() };
+    const response = controller.getApps(responseHeaders as any);
 
     expect(response.success).toBe(true);
     expect(response.data.apps.map((app) => app.appId)).toContain('hai');
     expect(response.data.apps.map((app) => app.appId)).toContain(
       'system-configurator'
+    );
+    expect(responseHeaders.setHeader).toHaveBeenCalledWith(
+      'Cache-Control',
+      'public, max-age=60, stale-while-revalidate=300'
+    );
+    expect(responseHeaders.setHeader).toHaveBeenCalledWith(
+      'X-App-Registry-Version',
+      DEFAULT_APP_REGISTRY.version
+    );
+    expect(responseHeaders.setHeader).toHaveBeenCalledWith(
+      'ETag',
+      `W/"app-registry-${DEFAULT_APP_REGISTRY.version}"`
     );
   });
 
@@ -41,6 +54,38 @@ describe('RegistryController', () => {
     expect(configured.getApps().data.apps.map((app) => app.appId)).toEqual([
       'configured-hai',
     ]);
+  });
+
+  it('updates the runtime registry cache through the admin endpoint', () => {
+    const nextRegistry = {
+      ...DEFAULT_APP_REGISTRY,
+      version: '1.0.1',
+      apps: [
+        ...DEFAULT_APP_REGISTRY.apps,
+        {
+          ...DEFAULT_APP_REGISTRY.apps[0],
+          appId: 'configured-hai',
+          name: 'Configured HAI',
+        },
+      ],
+    };
+
+    const response = controller.updateApps({ registry: nextRegistry });
+
+    expect(response.success).toBe(true);
+    expect(controller.getApps().data.version).toBe('1.0.1');
+    expect(controller.getApp('configured-hai').data.name).toBe('Configured HAI');
+  });
+
+  it('rejects admin registry updates with duplicate app ids', () => {
+    expect(() =>
+      controller.updateApps({
+        registry: {
+          ...DEFAULT_APP_REGISTRY,
+          apps: [DEFAULT_APP_REGISTRY.apps[0], DEFAULT_APP_REGISTRY.apps[0]],
+        },
+      })
+    ).toThrow(BadRequestException);
   });
 
   it('does not mutate the passed in navigation link array', () => {

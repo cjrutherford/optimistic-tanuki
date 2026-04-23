@@ -23,6 +23,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - The generated registry is deterministic: `tools/registry/apps.yaml` carries `generatedAt`, and repeated `generate` runs produce byte-identical JSON for the same source.
 - Angular apps consume `libs/app-registry/src/lib/default-registry.json` as their build-time fallback and the shared registry service fetches `/api/registry/apps` on first service creation.
 - Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
+- Gateway serves registry responses from an in-memory runtime cache, adds `Cache-Control`, `ETag`, and `X-App-Registry-Version` headers, and exposes `POST /api/registry/apps` for runtime registry replacement.
 - Docker Compose mounts the generated registry JSON into gateway and sets `APP_REGISTRY_PATH`.
 - K8s packages `k8s/base/config/app-registry.json` through `app-registry-config` and mounts it into gateway.
 - Initial app integration:
@@ -34,7 +35,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 - Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
 - Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
-- Add cache headers, polling policy, and version-based cache busting behavior.
+- Add frontend polling policy for registry refresh.
 - Implement deeper return-link handling, SSO token validation/exchange, auth redirects, and session management.
 - Build an admin registry management UI with link editing, validation, and audit history.
 - Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
@@ -1084,9 +1085,9 @@ libs/app-registry/
 
 ### Phase 2: Gateway Integration
 - [x] Create gateway endpoints
-- [ ] Add caching layer
-- [ ] Implement version-based cache busting
-- [ ] Add admin endpoint for updates
+- [x] Add caching layer
+- [x] Implement version-based cache busting
+- [x] Add admin endpoint for updates
 
 ### Phase 3: Navigation
 - [x] Implement `NavigationService`
