@@ -22,6 +22,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - Generated `libs/app-registry/src/lib/default-registry.json` from `tools/registry/apps.yaml`.
 - The generated registry is deterministic: `tools/registry/apps.yaml` carries `generatedAt`, and repeated `generate` runs produce byte-identical JSON for the same source.
 - Angular apps consume `libs/app-registry/src/lib/default-registry.json` as their build-time fallback and the shared registry service fetches `/api/registry/apps` on first service creation.
+- The shared registry service polls `/api/registry/apps` every five minutes by default, with `APP_REGISTRY_REFRESH_INTERVAL_MS` available for overrides or disabling.
 - Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
 - Gateway serves registry responses from an in-memory runtime cache, adds `Cache-Control`, `ETag`, and `X-App-Registry-Version` headers, and exposes `POST /api/registry/apps` for runtime registry replacement.
 - Docker Compose mounts the generated registry JSON into gateway and sets `APP_REGISTRY_PATH`.
@@ -36,7 +37,6 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 - Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
 - Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
-- Add frontend polling policy for registry refresh.
 - Implement SSO token validation/exchange, auth redirects, and session management.
 - Build an admin registry management UI with link editing, validation, and audit history.
 - Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
@@ -1100,7 +1100,7 @@ libs/app-registry/
 - [x] Integrate into hai app
 - [x] Integrate into system-configurator app
 - [x] Update navigation components
-- [ ] Add polling with refresh
+- [x] Add polling with refresh
 
 ### Phase 5: SSO Integration
 - [ ] Add token validation service
