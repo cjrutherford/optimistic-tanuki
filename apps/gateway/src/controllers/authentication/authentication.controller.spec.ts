@@ -98,7 +98,7 @@ describe('AuthenticationController', () => {
       password: 'test',
     };
     await expect(controller.loginUser(loginRequest, 'test')).resolves.toBe(
-      true,
+      true
     );
     expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
   });
@@ -110,12 +110,12 @@ describe('AuthenticationController', () => {
     };
 
     await expect(
-      controller.loginUser(loginRequest, 'forgeofwill'),
+      controller.loginUser(loginRequest, 'forgeofwill')
     ).resolves.toBe(true);
 
     expect(loginBootstrap.login).toHaveBeenCalledWith(
       loginRequest,
-      'forgeofwill',
+      'forgeofwill'
     );
   });
 
@@ -129,25 +129,25 @@ describe('AuthenticationController', () => {
     });
     loginBootstrap.login.mockRejectedValueOnce(new Error('login error'));
     await expect(controller.loginUser(loginRequest, 'test')).rejects.toThrow(
-      HttpException,
+      HttpException
     );
   });
 
   it('should issue a fresh token for the requested profile', async () => {
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
-      of({ data: { newToken: 'fresh-token' } }),
+      of({ data: { newToken: 'fresh-token' } })
     );
 
     await expect(
       controller.issueTokenForProfile(
         { userId: 'user-1', email: 'u@example.com', name: 'U' } as any,
-        { profileId: 'profile-2' },
-      ),
+        { profileId: 'profile-2' }
+      )
     ).resolves.toEqual({ data: { newToken: 'fresh-token' } });
 
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Issue },
-      { userId: 'user-1', profileId: 'profile-2' },
+      { userId: 'user-1', profileId: 'profile-2' }
     );
   });
 
@@ -172,11 +172,11 @@ describe('AuthenticationController', () => {
     };
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
     await expect(
-      controller.registerUser(registerRequest, 'test'),
+      controller.registerUser(registerRequest, 'test')
     ).resolves.toEqual(mockResult);
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'test',
+      'test'
     );
   });
 
@@ -203,12 +203,12 @@ describe('AuthenticationController', () => {
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'leads-app'),
+      controller.registerUser(registerRequest, 'leads-app')
     ).resolves.toEqual(mockResult);
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'leads-app',
+      'leads-app'
     );
   });
 
@@ -235,12 +235,12 @@ describe('AuthenticationController', () => {
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
 
     await expect(
-      controller.registerUser(registerRequest, 'finance'),
+      controller.registerUser(registerRequest, 'finance')
     ).resolves.toEqual(mockResult);
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'finance',
+      'finance'
     );
   });
 
@@ -257,10 +257,10 @@ describe('AuthenticationController', () => {
       throw new Error('register error');
     });
     registerBootstrap.register.mockRejectedValueOnce(
-      new Error('register error'),
+      new Error('register error')
     );
     await expect(
-      controller.registerUser(registerRequest, 'test'),
+      controller.registerUser(registerRequest, 'test')
     ).rejects.toThrow(HttpException);
   });
 
@@ -272,11 +272,11 @@ describe('AuthenticationController', () => {
       email: 'test@test.com',
     };
     await expect(controller.resetPassword(resetPasswordRequest)).resolves.toBe(
-      true,
+      true
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.ResetPassword },
-      resetPasswordRequest,
+      resetPasswordRequest
     );
   });
 
@@ -291,7 +291,7 @@ describe('AuthenticationController', () => {
       throw new Error('reset error');
     });
     await expect(
-      controller.resetPassword(resetPasswordRequest),
+      controller.resetPassword(resetPasswordRequest)
     ).rejects.toThrow(HttpException);
   });
 
@@ -304,7 +304,7 @@ describe('AuthenticationController', () => {
     await expect(controller.enableMfa(enableMfaRequest)).resolves.toBe(true);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.EnableMultiFactor },
-      enableMfaRequest,
+      enableMfaRequest
     );
   });
 
@@ -318,7 +318,7 @@ describe('AuthenticationController', () => {
       throw new Error('mfa error');
     });
     await expect(controller.enableMfa(enableMfaRequest)).rejects.toThrow(
-      HttpException,
+      HttpException
     );
   });
 
@@ -328,12 +328,122 @@ describe('AuthenticationController', () => {
       userId: 'userId',
     };
     await expect(controller.validateToken(validateTokenRequest)).resolves.toBe(
-      true,
+      true
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Validate },
-      validateTokenRequest,
+      validateTokenRequest
     );
+  });
+
+  it('should exchange a token for an existing app-scoped profile', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([
+        {
+          id: 'profile-target',
+          userId: 'user-1',
+          appScope: 'hai',
+        },
+      ])
+    );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ data: { newToken: 'target-token' } })
+    );
+
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-source',
+          exp: 1,
+          iat: 1,
+        },
+        { targetAppId: 'hai' }
+      )
+    ).resolves.toEqual({
+      token: 'target-token',
+      targetAppId: 'hai',
+      profileId: 'profile-target',
+    });
+    expect(profileService.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetAll },
+      { where: { userId: 'user-1' } }
+    );
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.Issue },
+      { userId: 'user-1', profileId: 'profile-target' }
+    );
+  });
+
+  it('should create a target app profile before exchanging when missing', async () => {
+    (profileService.send as jest.Mock)
+      .mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-global',
+            userId: 'user-1',
+            profileName: 'User',
+            avatarUrl: 'avatar.png',
+            bio: 'Bio',
+            appScope: 'global',
+          },
+        ])
+      )
+      .mockReturnValueOnce(
+        of({
+          id: 'profile-target',
+          userId: 'user-1',
+          appScope: 'forgeofwill',
+        })
+      );
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ data: { newToken: 'target-token' } })
+    );
+
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-source',
+          exp: 1,
+          iat: 1,
+        },
+        { targetAppId: 'forgeofwill' }
+      )
+    ).resolves.toEqual({
+      token: 'target-token',
+      targetAppId: 'forgeofwill',
+      profileId: 'profile-target',
+    });
+    expect(profileService.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Create },
+      expect.objectContaining({
+        userId: 'user-1',
+        name: 'User',
+        appScope: 'forgeofwill',
+      })
+    );
+    expect(roleInitService.processNow).toHaveBeenCalled();
+  });
+
+  it('should reject token exchange without a target app', async () => {
+    await expect(
+      controller.exchangeTokenForApp(
+        {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-source',
+          exp: 1,
+          iat: 1,
+        },
+        {}
+      )
+    ).rejects.toThrow(HttpException);
   });
 
   it('should throw HttpException if validateToken fails', async () => {
@@ -345,18 +455,18 @@ describe('AuthenticationController', () => {
       throw new Error('validate error');
     });
     await expect(
-      controller.validateToken(validateTokenRequest),
+      controller.validateToken(validateTokenRequest)
     ).rejects.toThrow(HttpException);
   });
 
   it('should validate MFA', async () => {
     const validateMfaRequest = { userId: '123', token: '123456' };
     await expect(controller.validateMfa(validateMfaRequest)).resolves.toBe(
-      true,
+      true
     );
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.ValidateTotp },
-      validateMfaRequest,
+      validateMfaRequest
     );
   });
 
@@ -366,7 +476,7 @@ describe('AuthenticationController', () => {
       throw new Error('validate mfa error');
     });
     await expect(controller.validateMfa(validateMfaRequest)).rejects.toThrow(
-      HttpException,
+      HttpException
     );
   });
 });

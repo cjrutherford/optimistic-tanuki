@@ -1103,10 +1103,10 @@ libs/app-registry/
 - [x] Add polling with refresh
 
 ### Phase 5: SSO Integration
-- [ ] Add token validation service
-- [ ] Implement token exchange
-- [ ] Create auth redirect interceptor
-- [ ] Add session management
+- [x] Add token validation service
+- [x] Implement token exchange
+- [x] Create auth redirect interceptor
+- [x] Add session management
 
 ### Phase 6: Admin Interface
 - [ ] Create registry management UI
