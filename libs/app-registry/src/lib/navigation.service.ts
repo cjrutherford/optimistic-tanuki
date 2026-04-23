@@ -9,6 +9,8 @@ import {
   NavigationOptions,
 } from './navigation.types';
 
+const RETURN_TO_STORAGE_KEY = 'ot.registry.returnTo';
+
 @Injectable({ providedIn: 'root' })
 export class NavigationService {
   constructor(private readonly registry: AppRegistryService) {}
@@ -61,8 +63,28 @@ export class NavigationService {
 
   getReturnLink(context: NavigationContext): string {
     return this.registry.getAppUrl(context.currentAppId, context.currentPath, {
-      returnTo: `${window.location.origin}${window.location.pathname}`,
+      returnTo: this.currentBrowserUrl(),
     });
+  }
+
+  captureReturnTo(): string | null {
+    const returnTo = this.currentSearchParams().get('returnTo');
+    if (!returnTo) {
+      return null;
+    }
+
+    sessionStorage.setItem(RETURN_TO_STORAGE_KEY, returnTo);
+    return returnTo;
+  }
+
+  consumeReturnTo(): string | null {
+    const returnTo = sessionStorage.getItem(RETURN_TO_STORAGE_KEY);
+    if (!returnTo) {
+      return null;
+    }
+
+    sessionStorage.removeItem(RETURN_TO_STORAGE_KEY);
+    return returnTo;
   }
 
   private getFilteredRawLinks(
@@ -123,6 +145,14 @@ export class NavigationService {
     }
 
     return undefined;
+  }
+
+  private currentBrowserUrl(): string {
+    return `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+  }
+
+  private currentSearchParams(): URLSearchParams {
+    return new URLSearchParams(window.location.search);
   }
 }
 

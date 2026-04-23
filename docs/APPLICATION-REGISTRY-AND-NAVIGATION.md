@@ -29,6 +29,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - Initial app integration:
   - `hai` title bar uses the shared navigation service for the HAI Computer link.
   - `system-configurator` top nav uses the shared registry navigation link back to HAI.
+- Return-link handling captures incoming `returnTo` values on app startup and exposes one-time consumption through the shared navigation service.
 - Focused unit coverage for registry service, navigation service, navigation link component, gateway registry controller, and registry CLI.
 
 ### Remaining
@@ -36,7 +37,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
 - Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
 - Add frontend polling policy for registry refresh.
-- Implement deeper return-link handling, SSO token validation/exchange, auth redirects, and session management.
+- Implement SSO token validation/exchange, auth redirects, and session management.
 - Build an admin registry management UI with link editing, validation, and audit history.
 - Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
 
@@ -1093,7 +1094,7 @@ libs/app-registry/
 - [x] Implement `NavigationService`
 - [x] Create navigation components
 - [x] Add default links
-- [ ] Implement return link handling
+- [x] Implement return link handling
 
 ### Phase 4: Angular Integration
 - [x] Integrate into hai app

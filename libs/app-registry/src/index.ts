@@ -4,5 +4,6 @@ export * from './lib/default-registry';
 export * from './lib/app-registry.service';
 export * from './lib/navigation.service';
 export * from './lib/app-registry.module';
+export * from './lib/return-link.initializer';
 export * from './lib/components/navigation-link.component';
 export * from './lib/components/navigation-menu.component';

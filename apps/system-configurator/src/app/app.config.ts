@@ -12,6 +12,7 @@ import {
 } from '@angular/common/http';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { provideReturnLinkHandling } from '@optimistic-tanuki/app-registry';
 import { appRoutes } from './app.routes';
 import { authenticationInterceptor } from './auth/auth.interceptor';
 import { AuthenticationService } from './services/authentication.service';
@@ -26,6 +27,7 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideHttpClient(withInterceptors([authenticationInterceptor]), withFetch()),
+    provideReturnLinkHandling(),
     {
       provide: API_BASE_URL,
       useValue: '/api',
