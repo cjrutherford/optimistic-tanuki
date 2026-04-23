@@ -136,6 +136,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'registry',
+        loadComponent: () =>
+          import('./components/registry-management.component').then(
+            (m) => m.RegistryManagementComponent
+          ),
+      },
+      {
         path: 'store/overview',
         loadComponent: () =>
           import('./components/store-overview.component').then(

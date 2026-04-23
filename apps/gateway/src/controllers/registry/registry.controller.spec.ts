@@ -74,7 +74,29 @@ describe('RegistryController', () => {
 
     expect(response.success).toBe(true);
     expect(controller.getApps().data.version).toBe('1.0.1');
-    expect(controller.getApp('configured-hai').data.name).toBe('Configured HAI');
+    expect(controller.getApp('configured-hai').data.name).toBe(
+      'Configured HAI'
+    );
+  });
+
+  it('records registry updates in the audit log', () => {
+    const nextRegistry = {
+      ...DEFAULT_APP_REGISTRY,
+      version: '1.0.1',
+    };
+
+    controller.updateApps({ registry: nextRegistry });
+
+    expect(controller.getAuditLog().data).toEqual([
+      expect.objectContaining({
+        action: 'apps.updated',
+        summary: 'Updated application registry to version 1.0.1',
+        metadata: {
+          version: '1.0.1',
+          appCount: nextRegistry.apps.length,
+        },
+      }),
+    ]);
   });
 
   it('rejects admin registry updates with duplicate app ids', () => {
@@ -83,6 +105,36 @@ describe('RegistryController', () => {
         registry: {
           ...DEFAULT_APP_REGISTRY,
           apps: [DEFAULT_APP_REGISTRY.apps[0], DEFAULT_APP_REGISTRY.apps[0]],
+        },
+      })
+    ).toThrow(BadRequestException);
+  });
+
+  it('rejects registry apps with invalid domains or UI URLs', () => {
+    expect(() =>
+      controller.updateApps({
+        registry: {
+          ...DEFAULT_APP_REGISTRY,
+          apps: [
+            {
+              ...DEFAULT_APP_REGISTRY.apps[0],
+              domain: 'not a domain',
+            },
+          ],
+        },
+      })
+    ).toThrow(BadRequestException);
+
+    expect(() =>
+      controller.updateApps({
+        registry: {
+          ...DEFAULT_APP_REGISTRY,
+          apps: [
+            {
+              ...DEFAULT_APP_REGISTRY.apps[0],
+              uiBaseUrl: 'https://store.example.com',
+            },
+          ],
         },
       })
     ).toThrow(BadRequestException);
@@ -145,6 +197,13 @@ describe('RegistryController', () => {
     expect(response.data).toHaveLength(1);
     expect(controller.getLinksForApp('hai').data[0].linkId).toBe(
       'hai-to-store'
+    );
+    expect(controller.getAuditLog().data[0]).toEqual(
+      expect.objectContaining({
+        action: 'links.updated',
+        summary: 'Updated 1 navigation link',
+        metadata: { linkCount: 1 },
+      })
     );
   });
 

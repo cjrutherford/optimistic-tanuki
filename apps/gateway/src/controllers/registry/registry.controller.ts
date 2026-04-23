@@ -27,6 +27,14 @@ interface AppRegistryPayload {
   registry: AppRegistry;
 }
 
+export interface RegistryAuditEntry {
+  id: number;
+  occurredAt: string;
+  action: 'apps.updated' | 'links.updated';
+  summary: string;
+  metadata: Record<string, string | number | boolean>;
+}
+
 interface HeaderResponse {
   setHeader(name: string, value: string): void;
 }
@@ -34,6 +42,8 @@ interface HeaderResponse {
 @ApiTags('registry')
 @Controller('registry')
 export class RegistryController {
+  private auditLog: RegistryAuditEntry[] = [];
+  private nextAuditId = 1;
   private navigationLinks: NavigationLink[];
   private registry: AppRegistry;
 
@@ -61,9 +71,10 @@ export class RegistryController {
   @ApiResponse({ status: 201, description: 'Application registry updated' })
   @ApiResponse({ status: 400, description: 'Application registry is invalid' })
   @Post('apps')
-  updateApps(
-    @Body() payload: AppRegistryPayload
-  ): { success: true; data: AppRegistry } {
+  updateApps(@Body() payload: AppRegistryPayload): {
+    success: true;
+    data: AppRegistry;
+  } {
     const registry = payload?.registry;
 
     this.validateRegistry(registry);
@@ -72,6 +83,14 @@ export class RegistryController {
       ...registry,
       apps: [...registry.apps],
     };
+    this.recordAudit(
+      'apps.updated',
+      `Updated application registry to version ${this.registry.version}`,
+      {
+        version: this.registry.version,
+        appCount: this.registry.apps.length,
+      }
+    );
 
     return {
       success: true,
@@ -105,13 +124,24 @@ export class RegistryController {
     };
   }
 
+  @ApiOperation({ summary: 'Get application registry audit log' })
+  @ApiResponse({ status: 200, description: 'Registry audit log retrieved' })
+  @Get('audit-log')
+  getAuditLog(): { success: true; data: RegistryAuditEntry[] } {
+    return {
+      success: true,
+      data: [...this.auditLog],
+    };
+  }
+
   @ApiOperation({ summary: 'Get navigation links for an application' })
   @ApiResponse({ status: 200, description: 'Navigation links retrieved' })
   @ApiResponse({ status: 404, description: 'Application is not registered' })
   @Get('links/:sourceAppId')
-  getLinksForApp(
-    @Param('sourceAppId') sourceAppId: string
-  ): { success: true; data: NavigationLink[] } {
+  getLinksForApp(@Param('sourceAppId') sourceAppId: string): {
+    success: true;
+    data: NavigationLink[];
+  } {
     this.assertRegisteredApp(sourceAppId);
 
     return {
@@ -126,9 +156,10 @@ export class RegistryController {
   @ApiResponse({ status: 201, description: 'Navigation links updated' })
   @ApiResponse({ status: 400, description: 'Navigation links are invalid' })
   @Post('links')
-  updateLinks(
-    @Body() payload: NavigationLinksPayload
-  ): { success: true; data: NavigationLink[] } {
+  updateLinks(@Body() payload: NavigationLinksPayload): {
+    success: true;
+    data: NavigationLink[];
+  } {
     const links = payload?.links;
 
     if (!Array.isArray(links)) {
@@ -137,6 +168,13 @@ export class RegistryController {
 
     links.forEach((link) => this.validateLink(link));
     this.navigationLinks = [...links];
+    this.recordAudit(
+      'links.updated',
+      `Updated ${links.length} navigation ${
+        links.length === 1 ? 'link' : 'links'
+      }`,
+      { linkCount: links.length }
+    );
 
     return {
       success: true,
@@ -164,7 +202,9 @@ export class RegistryController {
     }
   }
 
-  private validateRegistry(registry: AppRegistry | undefined): asserts registry is AppRegistry {
+  private validateRegistry(
+    registry: AppRegistry | undefined
+  ): asserts registry is AppRegistry {
     if (!registry || !registry.version || !Array.isArray(registry.apps)) {
       throw new BadRequestException(
         'Application registry requires version and apps'
@@ -186,6 +226,10 @@ export class RegistryController {
           'Registered apps require appId, name, domain, uiBaseUrl, apiBaseUrl, appType, and visibility'
         );
       }
+
+      this.validateDomain(app);
+      this.validateAppUrl(app.uiBaseUrl, app, 'uiBaseUrl');
+      this.validateAbsoluteUrl(app.apiBaseUrl, `${app.appId} apiBaseUrl`);
 
       if (appIds.has(app.appId)) {
         throw new BadRequestException(
@@ -212,9 +256,67 @@ export class RegistryController {
     appId: string,
     registry: AppRegistry = this.registry
   ): boolean {
-    return registry.apps.some(
-      (registration) => registration.appId === appId
-    );
+    return registry.apps.some((registration) => registration.appId === appId);
+  }
+
+  private validateDomain(app: AppRegistration): void {
+    const domain = app.domain.trim();
+    const isLocalhost = domain === 'localhost';
+    const domainPattern =
+      /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+    if (!isLocalhost && !domainPattern.test(domain)) {
+      throw new BadRequestException(
+        `Registered app ${app.appId} has invalid domain ${app.domain}`
+      );
+    }
+  }
+
+  private validateAppUrl(
+    value: string,
+    app: AppRegistration,
+    fieldName: string
+  ): void {
+    const url = this.validateAbsoluteUrl(value, `${app.appId} ${fieldName}`);
+    const expectedHost = app.subdomain
+      ? `${app.subdomain}.${app.domain}`
+      : app.domain;
+
+    if (url.hostname !== expectedHost) {
+      throw new BadRequestException(
+        `Registered app ${app.appId} ${fieldName} host must match ${expectedHost}`
+      );
+    }
+  }
+
+  private validateAbsoluteUrl(value: string, label: string): URL {
+    let url: URL;
+    try {
+      url = new URL(value);
+    } catch {
+      throw new BadRequestException(`${label} must be an absolute URL`);
+    }
+
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new BadRequestException(`${label} must use http or https`);
+    }
+
+    return url;
+  }
+
+  private recordAudit(
+    action: RegistryAuditEntry['action'],
+    summary: string,
+    metadata: RegistryAuditEntry['metadata']
+  ): void {
+    this.auditLog.unshift({
+      id: this.nextAuditId,
+      occurredAt: new Date().toISOString(),
+      action,
+      summary,
+      metadata,
+    });
+    this.nextAuditId += 1;
   }
 
   private setRegistryCacheHeaders(response?: HeaderResponse): void {
