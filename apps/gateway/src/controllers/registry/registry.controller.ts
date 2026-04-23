@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Res,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -22,22 +23,56 @@ interface NavigationLinksPayload {
   links: NavigationLink[];
 }
 
+interface AppRegistryPayload {
+  registry: AppRegistry;
+}
+
+interface HeaderResponse {
+  setHeader(name: string, value: string): void;
+}
+
 @ApiTags('registry')
 @Controller('registry')
 export class RegistryController {
   private navigationLinks: NavigationLink[];
+  private registry: AppRegistry;
 
   constructor(
-    @Inject(GATEWAY_APP_REGISTRY) private readonly registry: AppRegistry,
+    @Inject(GATEWAY_APP_REGISTRY) registry: AppRegistry,
     @Inject(GATEWAY_NAVIGATION_LINKS) navigationLinks: NavigationLink[]
   ) {
+    this.registry = registry;
     this.navigationLinks = [...navigationLinks];
   }
 
   @ApiOperation({ summary: 'Get the application registry' })
   @ApiResponse({ status: 200, description: 'Application registry retrieved' })
   @Get('apps')
-  getApps() {
+  getApps(@Res({ passthrough: true }) response?: HeaderResponse) {
+    this.setRegistryCacheHeaders(response);
+
+    return {
+      success: true,
+      data: this.registry,
+    };
+  }
+
+  @ApiOperation({ summary: 'Replace the runtime application registry' })
+  @ApiResponse({ status: 201, description: 'Application registry updated' })
+  @ApiResponse({ status: 400, description: 'Application registry is invalid' })
+  @Post('apps')
+  updateApps(
+    @Body() payload: AppRegistryPayload
+  ): { success: true; data: AppRegistry } {
+    const registry = payload?.registry;
+
+    this.validateRegistry(registry);
+    this.navigationLinks.forEach((link) => this.validateLink(link, registry));
+    this.registry = {
+      ...registry,
+      apps: [...registry.apps],
+    };
+
     return {
       success: true,
       data: this.registry,
@@ -109,7 +144,10 @@ export class RegistryController {
     };
   }
 
-  private validateLink(link: NavigationLink): void {
+  private validateLink(
+    link: NavigationLink,
+    registry: AppRegistry = this.registry
+  ): void {
     if (!link.linkId || !link.sourceAppId || !link.targetAppId || !link.label) {
       throw new BadRequestException(
         'Navigation links require linkId, sourceAppId, targetAppId, and label'
@@ -117,12 +155,44 @@ export class RegistryController {
     }
 
     if (
-      !this.isRegisteredApp(link.sourceAppId) ||
-      !this.isRegisteredApp(link.targetAppId)
+      !this.isRegisteredApp(link.sourceAppId, registry) ||
+      !this.isRegisteredApp(link.targetAppId, registry)
     ) {
       throw new BadRequestException(
         'Navigation links must reference registered applications'
       );
+    }
+  }
+
+  private validateRegistry(registry: AppRegistry | undefined): asserts registry is AppRegistry {
+    if (!registry || !registry.version || !Array.isArray(registry.apps)) {
+      throw new BadRequestException(
+        'Application registry requires version and apps'
+      );
+    }
+
+    const appIds = new Set<string>();
+    for (const app of registry.apps) {
+      if (
+        !app.appId ||
+        !app.name ||
+        !app.domain ||
+        !app.uiBaseUrl ||
+        !app.apiBaseUrl ||
+        !app.appType ||
+        !app.visibility
+      ) {
+        throw new BadRequestException(
+          'Registered apps require appId, name, domain, uiBaseUrl, apiBaseUrl, appType, and visibility'
+        );
+      }
+
+      if (appIds.has(app.appId)) {
+        throw new BadRequestException(
+          `Duplicate registered app id ${app.appId}`
+        );
+      }
+      appIds.add(app.appId);
     }
   }
 
@@ -138,9 +208,25 @@ export class RegistryController {
     return app;
   }
 
-  private isRegisteredApp(appId: string): boolean {
-    return this.registry.apps.some(
+  private isRegisteredApp(
+    appId: string,
+    registry: AppRegistry = this.registry
+  ): boolean {
+    return registry.apps.some(
       (registration) => registration.appId === appId
     );
+  }
+
+  private setRegistryCacheHeaders(response?: HeaderResponse): void {
+    if (!response) {
+      return;
+    }
+
+    response.setHeader(
+      'Cache-Control',
+      'public, max-age=60, stale-while-revalidate=300'
+    );
+    response.setHeader('X-App-Registry-Version', this.registry.version);
+    response.setHeader('ETag', `W/"app-registry-${this.registry.version}"`);
   }
 }
