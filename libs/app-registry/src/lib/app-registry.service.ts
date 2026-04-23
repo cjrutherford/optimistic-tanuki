@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable, InjectionToken } from '@angular/core';
+import { Inject, Injectable, InjectionToken, OnDestroy } from '@angular/core';
 import {
   BehaviorSubject,
   Observable,
@@ -22,17 +22,28 @@ export const APP_REGISTRY_URL = new InjectionToken<string>('APP_REGISTRY_URL', {
   factory: () => '/api/registry/apps',
 });
 
+export const APP_REGISTRY_REFRESH_INTERVAL_MS = new InjectionToken<number>(
+  'APP_REGISTRY_REFRESH_INTERVAL_MS',
+  {
+    providedIn: 'root',
+    factory: () => 300000,
+  }
+);
+
 @Injectable({ providedIn: 'root' })
-export class AppRegistryService {
+export class AppRegistryService implements OnDestroy {
   private readonly refreshTrigger$ = new BehaviorSubject<void>(undefined);
   private readonly registry$: Observable<AppRegistry>;
   private latestRegistry = DEFAULT_APP_REGISTRY;
+  private refreshTimer?: ReturnType<typeof setInterval>;
 
   readonly registryVersion = DEFAULT_APP_REGISTRY.version;
 
   constructor(
     private readonly http: HttpClient,
-    @Inject(APP_REGISTRY_URL) private readonly registryUrl = '/api/registry/apps'
+    @Inject(APP_REGISTRY_URL) private readonly registryUrl = '/api/registry/apps',
+    @Inject(APP_REGISTRY_REFRESH_INTERVAL_MS)
+    private readonly refreshIntervalMs = 300000
   ) {
     this.registry$ = this.refreshTrigger$.pipe(
       switchMap(() => this.fetchFromGateway()),
@@ -42,6 +53,13 @@ export class AppRegistryService {
       shareReplay(1)
     );
     this.registry$.subscribe();
+    this.startPolling();
+  }
+
+  ngOnDestroy(): void {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+    }
   }
 
   getAllApps(): Observable<AppRegistration[]> {
@@ -112,6 +130,16 @@ export class AppRegistryService {
       map((response) => (response.success ? response.data : DEFAULT_APP_REGISTRY)),
       catchError(() => of(DEFAULT_APP_REGISTRY))
     );
+  }
+
+  private startPolling(): void {
+    if (this.refreshIntervalMs <= 0) {
+      return;
+    }
+
+    this.refreshTimer = setInterval(() => {
+      this.refreshTrigger$.next();
+    }, this.refreshIntervalMs);
   }
 }
 

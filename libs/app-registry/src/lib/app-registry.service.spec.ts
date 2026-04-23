@@ -23,6 +23,49 @@ describe('AppRegistryService', () => {
     expect(http.get).toHaveBeenCalledWith('/api/registry/apps');
   });
 
+  it('polls the runtime registry on the configured refresh interval', () => {
+    jest.useFakeTimers();
+    const http = {
+      get: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: DEFAULT_APP_REGISTRY,
+        })
+      ),
+    };
+
+    const service = new AppRegistryService(http as any, '/api/registry/apps', 1000);
+
+    expect(http.get).toHaveBeenCalledTimes(1);
+
+    jest.advanceTimersByTime(1000);
+
+    expect(http.get).toHaveBeenCalledTimes(2);
+
+    service.ngOnDestroy();
+    jest.useRealTimers();
+  });
+
+  it('does not poll when the refresh interval is disabled', () => {
+    jest.useFakeTimers();
+    const http = {
+      get: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: DEFAULT_APP_REGISTRY,
+        })
+      ),
+    };
+
+    new AppRegistryService(http as any, '/api/registry/apps', 0);
+
+    jest.advanceTimersByTime(5000);
+
+    expect(http.get).toHaveBeenCalledTimes(1);
+
+    jest.useRealTimers();
+  });
+
   it('returns bundled apps when the runtime registry is unavailable', (done) => {
     const service = new AppRegistryService({
       get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),
