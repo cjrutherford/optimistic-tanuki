@@ -494,16 +494,18 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     volumes:
-      - ./dist/apps/wellness:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./apps/wellness/src/assets/config.yaml:/app/wellness/assets/config.yaml:ro
+      - /app/node_modules
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/wellness',
         '--exec',
         'node --inspect=0.0.0.0:9206',
         '-L',
-        'wellness/main.js',
+        '/app/wellness/main.js',
       ]
     ports:
       - '9206:9206'
