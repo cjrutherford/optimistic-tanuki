@@ -1,0 +1,29 @@
+{{define "article-content"}}
+<main class="article-main">
+  <aside class="article-sidebar">
+    <p class="section-kicker">Guide map</p>
+    <ul class="tree-nav">
+      {{range .Site.NonLanding}}
+      <li><a class="{{if eq .RelPath $.CurrentPath}}current{{end}}" href="{{link $.CurrentPath .RelPath}}">{{.Meta.Title}}</a></li>
+      {{end}}
+    </ul>
+  </aside>
+  <article class="article-panel">
+    <nav class="breadcrumbs" aria-label="Breadcrumbs">
+      {{range $index, $crumb := .Page.Breadcrumbs}}
+      {{if gt $index 0}}<span>/</span>{{end}}
+      <a href="{{link $.CurrentPath $crumb.RelPath}}">{{$crumb.Meta.Title}}</a>
+      {{end}}
+    </nav>
+    <header class="article-header">
+      <h1>{{.Page.Meta.Title}}</h1>
+      {{if .Page.Meta.Summary}}<p class="article-summary">{{.Page.Meta.Summary}}</p>{{end}}
+    </header>
+    <div class="article-body">{{.Page.BodyHTML}}</div>
+    <footer class="pager">
+      {{if .Page.Prev}}<a class="pager-link" href="{{link .CurrentPath .Page.Prev.RelPath}}">Previous: {{.Page.Prev.Meta.Title}}</a>{{end}}
+      {{if .Page.Next}}<a class="pager-link" href="{{link .CurrentPath .Page.Next.RelPath}}">Next: {{.Page.Next.Meta.Title}}</a>{{end}}
+    </footer>
+  </article>
+</main>
+{{end}}
