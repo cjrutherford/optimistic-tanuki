@@ -29,4 +29,10 @@ describe('MainPageComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('wraps the landing sections in a personality shell', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.main-page.personality-shell')).toBeTruthy();
+  });
 });

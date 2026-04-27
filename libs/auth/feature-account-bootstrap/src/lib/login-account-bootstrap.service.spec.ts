@@ -1,4 +1,8 @@
-import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  ProfileCommands,
+  RoleCommands,
+} from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { LoginAccountBootstrapService } from './login-account-bootstrap.service';
 
@@ -42,10 +46,14 @@ describe('LoginAccountBootstrapService', () => {
           }),
         ),
     };
+    const permissionsClient = {
+      send: jest.fn().mockReturnValue(of([])),
+    };
     const roleInit = { processNow: jest.fn().mockResolvedValue(undefined) };
     const service = new LoginAccountBootstrapService(
       authClient as any,
       profileClient as any,
+      permissionsClient as any,
       roleInit as any,
     );
 
@@ -108,10 +116,16 @@ describe('LoginAccountBootstrapService', () => {
         ]),
       ),
     };
+    const permissionsClient = {
+      send: jest.fn().mockReturnValueOnce(
+        of([{ role: { name: 'owner' } }]),
+      ),
+    };
     const roleInit = { processNow: jest.fn() };
     const service = new LoginAccountBootstrapService(
       authClient as any,
       profileClient as any,
+      permissionsClient as any,
       roleInit as any,
     );
 
@@ -129,5 +143,53 @@ describe('LoginAccountBootstrapService', () => {
       },
     );
     expect(roleInit.processNow).not.toHaveBeenCalled();
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.GetUserRoles },
+      { profileId: 'profile-global', appScope: 'global' },
+    );
+  });
+
+  it('rejects owner-console login when the profile lacks owner-console roles', async () => {
+    const authClient = {
+      send: jest.fn().mockReturnValueOnce(of('user-1')),
+    };
+    const profileClient = {
+      send: jest.fn().mockReturnValueOnce(
+        of([
+          {
+            id: 'profile-global',
+            userId: 'user-1',
+            profileName: 'Global User',
+            email: 'member@app.com',
+            bio: '',
+            avatarUrl: '',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            appScope: 'global',
+          },
+        ]),
+      ),
+    };
+    const permissionsClient = {
+      send: jest.fn().mockReturnValueOnce(
+        of([{ role: { name: 'community_member' } }]),
+      ),
+    };
+    const roleInit = { processNow: jest.fn() };
+    const service = new LoginAccountBootstrapService(
+      authClient as any,
+      profileClient as any,
+      permissionsClient as any,
+      roleInit as any,
+    );
+
+    await expect(
+      service.login(
+        { email: 'member@app.com', password: 'secret' },
+        'owner-console',
+      ),
+    ).rejects.toThrow(
+      'This account is not authorized for Owner Console access.',
+    );
   });
 });

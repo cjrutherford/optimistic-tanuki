@@ -30,4 +30,10 @@ describe('LandingComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the landing page inside the personality shell', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.landing-container.personality-shell')).toBeTruthy();
+  });
 });

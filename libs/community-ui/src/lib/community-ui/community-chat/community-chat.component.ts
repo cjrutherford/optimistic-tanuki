@@ -211,6 +211,11 @@ export class CommunityChatComponent implements OnInit {
       ]);
     } catch (err) {
       console.error('Failed to load chat room:', err);
+      if (this.isOwnerOrManager()) {
+        await this.createChatRoom();
+        return;
+      }
+      this.error.set('Failed to load community chat.');
     }
   }
 
@@ -219,12 +224,10 @@ export class CommunityChatComponent implements OnInit {
     if (!community) return;
 
     try {
-      const chatRoom = await firstValueFrom(
-        this.http.post<{ id: string }>(`/api/chat/conversations/community`, {
-          communityId: community.id,
-          ownerId: this.currentUserId,
-          name: community.name,
-        })
+      const chatRoom = await this.communityService.ensureCommunityChatRoom(
+        community.id,
+        this.currentUserId,
+        community.name
       );
       this.chatRoomId.set(chatRoom.id);
       await this.loadChatRoom(chatRoom.id, community);

@@ -197,4 +197,13 @@ describe('LandingComponent', () => {
     expect(component.canScrollCitiesForward).toBe(false);
     expect(component.canScrollCitiesBackward).toBe(true);
   });
+
+  it('renders a how-it-works band for the public landing page', async () => {
+    jest.spyOn(communityService, 'getCommunities').mockResolvedValue([]);
+
+    await renderComponent();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('How Towne Square works');
+  });
 });

@@ -1,7 +1,8 @@
 import { Component, computed, inject, signal, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { PLATFORM_ID } from '@angular/core';
 import {
   CommunityService,
   City,
@@ -22,6 +23,7 @@ export class CitiesComponent implements OnInit {
   private router = inject(Router);
   private communityService = inject(CommunityService);
   private authState = inject(AuthStateService);
+  private platformId = inject(PLATFORM_ID);
 
   cities = signal<City[]>([]);
   communities = signal<LocalCommunity[]>([]);
@@ -32,6 +34,7 @@ export class CitiesComponent implements OnInit {
   selectedCommunityTypes = signal<LocalCommunity['localityType'][]>([]);
   searchQuery = signal('');
   isAuthenticated = signal(false);
+  userLocation = signal<{ lat: number; lng: number } | null>(null);
 
   sections = signal({
     filters: true,
@@ -40,7 +43,16 @@ export class CitiesComponent implements OnInit {
     communities: true,
   });
 
-  states = ['GA', 'SC', 'FL', 'NC'];
+  availableStates = computed(() =>
+    Array.from(
+      new Set(
+        this.communities()
+          .map((community) => community.adminArea?.trim())
+          .filter((state): state is string => !!state)
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  );
+
   communityTypes: LocalCommunity['localityType'][] = [
     'city',
     'county',
@@ -145,6 +157,7 @@ export class CitiesComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.isAuthenticated.set(this.authState.isAuthenticated);
+    this.loadUserLocation();
 
     try {
       const communitiesData = await this.communityService.getCommunities();
@@ -245,6 +258,33 @@ export class CitiesComponent implements OnInit {
     return this.filteredCities().reduce(
       (sum, city) => sum + city.communities,
       0
+    );
+  }
+
+  private loadUserLocation(): void {
+    if (
+      !isPlatformBrowser(this.platformId) ||
+      typeof navigator === 'undefined' ||
+      !navigator.geolocation
+    ) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.userLocation.set({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        this.userLocation.set(null);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000,
+      }
     );
   }
 }

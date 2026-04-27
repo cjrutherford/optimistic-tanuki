@@ -25,8 +25,15 @@ import { firstValueFrom } from 'rxjs';
   template: `
     <div class="messages-page">
       <div class="page-header">
-        <h1>Messages</h1>
-        <p class="subtitle">Your conversations</p>
+        <div>
+          <h1>Messages</h1>
+          <p class="subtitle">Your conversations</p>
+        </div>
+        @if (chatContacts().length > 0) {
+        <button class="clear-button" type="button" (click)="clearAll()">
+          Clear all
+        </button>
+        }
       </div>
 
       @if (loading()) {
@@ -34,10 +41,12 @@ import { firstValueFrom } from 'rxjs';
       } @else if (error()) {
       <div class="error">{{ error() }}</div>
       } @else {
-      <lib-chat-ui
-        [contacts]="chatContacts()"
-        [conversations]="chatConversations()"
-      ></lib-chat-ui>
+      <div class="messages-shell">
+        <lib-chat-ui
+          [contacts]="chatContacts()"
+          [conversations]="chatConversations()"
+        ></lib-chat-ui>
+      </div>
       }
     </div>
   `,
@@ -50,6 +59,10 @@ import { firstValueFrom } from 'rxjs';
       }
 
       .page-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
         margin-bottom: 2rem;
 
         h1 {
@@ -63,6 +76,21 @@ import { firstValueFrom } from 'rxjs';
           color: var(--muted);
           margin: 0;
         }
+      }
+
+      .clear-button {
+        padding: 0.625rem 0.9rem;
+        border-radius: var(--border-radius-md, 0.75rem);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+        color: var(--foreground);
+        cursor: pointer;
+      }
+
+      .messages-shell {
+        overflow: auto;
+        min-height: 28rem;
+        max-height: calc(100vh - 14rem);
       }
 
       .loading,
@@ -104,6 +132,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.socketChatService.destroy();
+  }
+
+  clearAll() {
+    this.chatContacts.set([]);
+    this.chatConversations.set([]);
   }
 
   private async loadConversations() {

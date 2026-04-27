@@ -5,6 +5,7 @@ import {
   Input,
   signal,
   inject,
+  computed,
 } from '@angular/core';
 
 import {
@@ -30,9 +31,10 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
 import { filter, firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { PostProfileStub } from '@optimistic-tanuki/social-ui';
 import { SocialWebSocketService } from '../../social-websocket.service';
 import { AssetService } from '../../asset.service';
@@ -152,8 +154,12 @@ export class FeedComponent implements OnInit, OnDestroy {
   voteService = inject(VoteService);
   reactionService = inject(ReactionService);
   activityService = inject(ActivityService);
+  private readonly route = inject(ActivatedRoute);
   private readonly http = inject(HttpClient);
   private readonly gatewayUrl = 'http://localhost:3000/social';
+  readonly focusedPostId = computed(
+    () => this.route.snapshot.paramMap.get('postId') ?? ''
+  );
 
   ngOnInit() {
     this.themeService.themeColors$
@@ -171,6 +177,21 @@ export class FeedComponent implements OnInit, OnDestroy {
 
     const currentProfile = this.profileService.currentUserProfile();
     if (currentProfile) {
+      if (this.focusedPostId()) {
+        this.postService
+          .getPost(this.focusedPostId())
+          .pipe(map((post) => (post ? [post] : [])))
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((posts) => {
+            this.posts.set(posts);
+            this.loading.set(false);
+            this.loadProfiles(posts);
+            this.loadReactionData(posts);
+            this.loadCommunityInfo(posts);
+          });
+        return;
+      }
+
       // Load initial following list for the current profile
       this.loadFollowing(currentProfile.id);
       this.loadOwnedCommunities();
@@ -213,16 +234,21 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.posts().length === 0
         ) {
           console.log('WebSocket not connected, falling back to HTTP');
-          this.postService
-            .searchPosts({}, { orderBy: 'createdAt', orderDirection: 'desc' })
-            .pipe(takeUntil(this.destroy$))
-            .subscribe((posts) => {
-              this.posts.set(posts);
-              this.loading.set(false);
-              this.loadProfiles(posts);
-              this.loadCommunityInfo(posts);
-              this.loadReactionData(posts);
-            });
+          const feedRequest = this.focusedPostId()
+            ? this.postService
+                .getPost(this.focusedPostId())
+                .pipe(map((post) => (post ? [post] : [])))
+            : this.postService.searchPosts(
+                {},
+                { orderBy: 'createdAt', orderDirection: 'desc' }
+              );
+          feedRequest.pipe(takeUntil(this.destroy$)).subscribe((posts) => {
+            this.posts.set(posts);
+            this.loading.set(false);
+            this.loadProfiles(posts);
+            this.loadCommunityInfo(posts);
+            this.loadReactionData(posts);
+          });
         }
       }, 5000);
     } else {
@@ -799,22 +825,38 @@ export class FeedComponent implements OnInit, OnDestroy {
       this.voteService
         .getVotesByPostId(post.id)
         .pipe(takeUntil(this.destroy$))
-        .subscribe((votes) => {
-          const netCount = votes.reduce((sum, v) => sum + (v.value || 0), 0);
-          this.voteCounts.update((counts) => ({
-            ...counts,
-            [post.id]: netCount,
-          }));
+        .subscribe({
+          next: (votes) => {
+            const netCount = votes.reduce((sum, v) => sum + (v.value || 0), 0);
+            this.voteCounts.update((counts) => ({
+              ...counts,
+              [post.id]: netCount,
+            }));
+          },
+          error: () => {
+            this.voteCounts.update((counts) => ({
+              ...counts,
+              [post.id]: counts[post.id] || 0,
+            }));
+          },
         });
 
       this.voteService
         .getUserVoteForPost(post.id, this.getCurrentUserId())
         .pipe(takeUntil(this.destroy$))
-        .subscribe((vote) => {
-          this.userVotes.update((votes) => ({
-            ...votes,
-            [post.id]: vote ? vote.value : 0,
-          }));
+        .subscribe({
+          next: (vote) => {
+            this.userVotes.update((votes) => ({
+              ...votes,
+              [post.id]: vote ? vote.value : 0,
+            }));
+          },
+          error: () => {
+            this.userVotes.update((votes) => ({
+              ...votes,
+              [post.id]: votes[post.id] || 0,
+            }));
+          },
         });
     }
   }
@@ -824,17 +866,20 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.currentVisibility = 'public';
     this.currentPage = 0;
     this.hasMorePosts.set(true);
-    this.postService
-      .searchPosts(
-        { visibility: 'public', communityId: null as any },
-        {
-          orderBy: 'createdAt',
-          orderDirection: 'desc',
-          limit: this.pageSize,
-          offset: 0,
-        }
-      )
-      .subscribe((posts: PostDto[]) => {
+    const feedRequest = this.focusedPostId()
+      ? this.postService
+          .getPost(this.focusedPostId())
+          .pipe(map((post) => (post ? [post] : [])))
+      : this.postService.searchPosts(
+          { visibility: 'public', communityId: null as any },
+          {
+            orderBy: 'createdAt',
+            orderDirection: 'desc',
+            limit: this.pageSize,
+            offset: 0,
+          }
+        );
+    feedRequest.subscribe((posts: PostDto[]) => {
         this.posts.set(posts);
         this.hasMorePosts.set(posts.length >= this.pageSize);
         this.loadReactionData(posts);

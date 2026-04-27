@@ -177,16 +177,19 @@ import { DEFAULT_NAVIGATION_LINKS } from '../../../../libs/app-registry/src/lib/
       useFactory: (
         authClient: ClientProxy,
         profileClient: ClientProxy,
+        permissionsClient: ClientProxy,
         roleInitService: RoleInitService,
       ) =>
         new LoginAccountBootstrapService(
           authClient,
           profileClient,
+          permissionsClient,
           roleInitService,
         ),
       inject: [
         ServiceTokens.AUTHENTICATION_SERVICE,
         ServiceTokens.PROFILE_SERVICE,
+        ServiceTokens.PERMISSIONS_SERVICE,
         RoleInitService,
       ],
     },

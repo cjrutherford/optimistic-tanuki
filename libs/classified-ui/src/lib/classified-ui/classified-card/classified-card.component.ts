@@ -23,6 +23,21 @@ import { ClassifiedAdDto } from '../models/index';
       </div>
       }
       <div class="card-body">
+        <div class="seller-row">
+          <div class="seller-avatar" [class.has-image]="!!ad.sellerProfilePic">
+            @if (ad.sellerProfilePic) {
+            <img [src]="ad.sellerProfilePic" [alt]="ad.sellerProfileName || 'Seller'" />
+            } @else {
+            <span>{{ sellerInitials }}</span>
+            }
+          </div>
+          <div class="seller-meta">
+            <span class="seller-label">Listed by</span>
+            <strong class="seller-name">{{
+              ad.sellerProfileName || 'Community member'
+            }}</strong>
+          </div>
+        </div>
         <h3 class="card-title">{{ ad.title }}</h3>
         @if (ad.category) {
         <span class="card-category">{{ ad.category }}</span>
@@ -63,25 +78,37 @@ import { ClassifiedAdDto } from '../models/index';
   styles: [
     `
       .classified-card {
-        border: 1px solid var(--border, #e0e0e0);
-        border-radius: 8px;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+        border-radius: 18px;
         overflow: hidden;
-        background: var(--surface, #fff);
-        transition: box-shadow 0.2s;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        transition:
+          box-shadow 0.2s ease,
+          transform 0.2s ease,
+          border-color 0.2s ease;
         &:hover {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          box-shadow: var(--shadow-card, 0 18px 40px rgba(15, 23, 42, 0.12));
+          transform: translateY(-3px);
+          border-color: color-mix(in srgb, var(--primary) 35%, var(--border, var(--muted)));
         }
         &.featured {
-          border-color: var(--primary, #3f51b5);
-          box-shadow: 0 2px 8px rgba(63, 81, 181, 0.2);
+          border-color: color-mix(in srgb, var(--primary) 55%, var(--secondary, var(--primary)));
+          box-shadow: 0 20px 44px rgba(var(--primary-rgb, 63, 81, 181), 0.18);
         }
       }
       .featured-badge {
         display: block;
-        background: var(--primary, #3f51b5);
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--primary) 88%, white),
+          color-mix(in srgb, var(--secondary, var(--primary)) 82%, white)
+        );
         color: var(--on-primary, #fff);
-        font-size: 0.75rem;
-        padding: 2px 10px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 6px 10px;
         text-align: center;
       }
       .card-image {
@@ -95,12 +122,52 @@ import { ClassifiedAdDto } from '../models/index';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--surface-variant, #f5f5f5);
-        color: var(--on-surface-variant, #757575);
+        background: color-mix(in srgb, var(--surface) 65%, var(--background));
+        color: var(--foreground-muted, #757575);
         font-size: 0.9rem;
       }
       .card-body {
-        padding: 12px;
+        padding: 16px;
+      }
+      .seller-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .seller-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, var(--secondary, var(--primary)) 22%, var(--surface));
+        color: var(--foreground);
+        font-size: 0.8rem;
+        font-weight: 700;
+        overflow: hidden;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+      }
+      .seller-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .seller-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .seller-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--foreground-muted, #666);
+      }
+      .seller-name {
+        font-size: 0.92rem;
+        color: var(--foreground, #212121);
       }
       .card-title {
         font-size: 1rem;
@@ -111,11 +178,12 @@ import { ClassifiedAdDto } from '../models/index';
       .card-category {
         display: inline-block;
         font-size: 0.75rem;
-        background: var(--tertiary, #9c27b0);
-        color: var(--on-tertiary, #fff);
-        padding: 2px 8px;
-        border-radius: 12px;
+        background: color-mix(in srgb, var(--secondary, var(--primary)) 18%, var(--surface));
+        color: var(--foreground, #fff);
+        padding: 4px 10px;
+        border-radius: 999px;
         margin-bottom: 6px;
+        border: 1px solid color-mix(in srgb, var(--secondary, var(--primary)) 28%, transparent);
       }
       .card-description {
         font-size: 0.85rem;
@@ -137,10 +205,11 @@ import { ClassifiedAdDto } from '../models/index';
         display: inline-block;
         font-size: 0.7rem;
         font-weight: 500;
-        color: var(--on-surface, #fff);
-        background: var(--surface-variant, #e0e0e0);
-        padding: 2px 8px;
-        border-radius: 10px;
+        color: var(--foreground, #fff);
+        background: color-mix(in srgb, var(--surface) 75%, var(--background));
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
       }
       .card-footer {
         display: flex;
@@ -154,6 +223,10 @@ import { ClassifiedAdDto } from '../models/index';
       }
       .status-active {
         color: var(--success, #388e3c);
+      }
+      .card-status {
+        font-weight: 700;
+        text-transform: capitalize;
       }
       .card-actions {
         display: flex;
@@ -175,11 +248,11 @@ import { ClassifiedAdDto } from '../models/index';
         }
       }
       .btn-secondary {
-        background: transparent;
-        border: 1px solid var(--primary, #3f51b5);
+        background: color-mix(in srgb, var(--surface) 82%, transparent);
+        border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border, var(--muted)));
         color: var(--primary, #3f51b5);
         &:hover {
-          background: var(--hover-bg, rgba(63, 81, 181, 0.05));
+          background: color-mix(in srgb, var(--primary) 8%, var(--surface));
         }
       }
     `,
@@ -191,4 +264,13 @@ export class ClassifiedCardComponent {
   @Input() showContact = false;
   @Output() view = new EventEmitter<ClassifiedAdDto>();
   @Output() contact = new EventEmitter<ClassifiedAdDto>();
+
+  get sellerInitials(): string {
+    const source = this.ad?.sellerProfileName?.trim() || 'CM';
+    return source
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || '')
+      .join('');
+  }
 }

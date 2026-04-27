@@ -61,6 +61,23 @@ describe('CommunityService', () => {
                 timezone: 'America/New_York',
             },
             {
+                id: 'statesboro',
+                name: 'Statesboro, GA',
+                slug: 'statesboro-ga',
+                description: 'Statesboro',
+                localityType: 'town',
+                countryCode: 'US',
+                adminArea: 'GA',
+                city: 'Statesboro',
+                memberCount: 3,
+                createdAt: '2024-01-01T00:00:00.000Z',
+                lat: 32.4488,
+                lng: -81.7832,
+                population: 33813,
+                imageUrl: 'https://example.com/statesboro.jpg',
+                timezone: 'America/New_York',
+            },
+            {
                 id: 'makers',
                 name: 'Starland Makers',
                 slug: 'starland-makers',
@@ -71,6 +88,7 @@ describe('CommunityService', () => {
                 city: 'Savannah',
                 memberCount: 12,
                 createdAt: '2024-01-01T00:00:00.000Z',
+                parentId: 'savannah',
             },
         ];
 
@@ -107,9 +125,74 @@ describe('CommunityService', () => {
                 population: 147088,
                 timezone: 'America/New_York',
                 highlights: [],
+                communities: 2,
+            },
+            {
+                id: 'statesboro',
+                name: 'Statesboro',
+                slug: 'statesboro-ga',
+                countryCode: 'US',
+                adminArea: 'GA',
+                description: 'Statesboro',
+                imageUrl: 'https://example.com/statesboro.jpg',
+                coordinates: {
+                    lat: 32.4488,
+                    lng: -81.7832,
+                },
+                population: 33813,
+                timezone: 'America/New_York',
+                highlights: [],
                 communities: 1,
             },
         ]);
+    });
+
+    it('returns a root locality slug for child communities', async () => {
+        const lookupPromise = service.getCitySlugForCommunity('starland-makers');
+
+        httpMock.expectOne('/api/communities/slug/starland-makers').flush({
+            id: 'makers',
+            name: 'Starland Makers',
+            slug: 'starland-makers',
+            description: 'Neighborhood',
+            localityType: 'neighborhood',
+            parentId: 'savannah',
+            countryCode: 'US',
+            adminArea: 'GA',
+            city: 'Savannah',
+            memberCount: 12,
+            createdAt: '2024-01-01T00:00:00.000Z',
+        });
+
+        httpMock.expectOne('/api/communities').flush([
+            {
+                id: 'savannah',
+                name: 'Savannah, GA',
+                slug: 'savannah-ga',
+                description: 'Savannah',
+                localityType: 'city',
+                countryCode: 'US',
+                adminArea: 'GA',
+                city: 'Savannah',
+                memberCount: 5,
+                createdAt: '2024-01-01T00:00:00.000Z',
+            },
+            {
+                id: 'makers',
+                name: 'Starland Makers',
+                slug: 'starland-makers',
+                description: 'Neighborhood',
+                localityType: 'neighborhood',
+                parentId: 'savannah',
+                countryCode: 'US',
+                adminArea: 'GA',
+                city: 'Savannah',
+                memberCount: 12,
+                createdAt: '2024-01-01T00:00:00.000Z',
+            },
+        ]);
+
+        await expect(lookupPromise).resolves.toBe('savannah-ga');
     });
 
     it('creates communities through the social community endpoint', async () => {

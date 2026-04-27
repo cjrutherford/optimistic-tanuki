@@ -1,48 +1,137 @@
-.content-overlay {
-  width: 100%;
-  height: 100vh;
+.homestead-hero {
   position: relative;
-  z-index: 1;
-  color: white;
-  text-align: center;
-  margin: 0;
-  padding: 0;
-  background-image: url('/assets/dh.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  display: flex;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3vw, 2.5rem) 0 1rem;
+}
+
+.hero-kicker {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: color-mix(in srgb, var(--text) 82%, var(--accent) 18%);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.content-overlay::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(0, 0, 0, 0.7) 0%,
-    rgba(20, 20, 30, 0.9) 100%
-  );
-  z-index: -1;
+.hero-stage {
+  animation: homestead-rise 0.8s 0.1s var(--personality-transition, ease)
+    both;
 }
 
-.content-body {
-  max-width: 800px;
-  padding: var(--spacing-lg);
-  text-align: center;
-  animation: fadeInUp 1s ease-out;
+lib-hero {
+  display: block;
 }
 
-@keyframes fadeInUp {
+:host ::ng-deep lib-hero otui-glass-container {
+  display: block;
+}
+
+:host ::ng-deep lib-hero .background-image {
+  min-height: min(74vh, 46rem);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border) 75%);
+  border-radius: var(--personality-border-radius, 1.5rem);
+  overflow: hidden;
+  box-shadow: 0 28px 80px color-mix(in srgb, black 45%, transparent);
+}
+
+:host ::ng-deep lib-hero .background-filter {
+  min-height: min(74vh, 46rem);
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: clamp(1.5rem, 3vw, 2.75rem);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, black 14%, transparent) 0%,
+      color-mix(in srgb, black 62%, transparent) 58%,
+      color-mix(in srgb, var(--surface) 92%, transparent) 100%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 58%
+    );
+  text-align: left;
+}
+
+:host ::ng-deep lib-hero otui-heading:first-of-type .heading {
+  max-width: 11ch;
+  margin-bottom: 0.6rem;
+  font-family: var(--font-heading, 'Playfair Display', serif);
+  font-size: clamp(2.5rem, 5vw, 4.8rem) !important;
+  line-height: 0.95;
+}
+
+:host ::ng-deep lib-hero otui-heading:nth-of-type(2) .heading {
+  margin-bottom: 0.8rem;
+  font-size: clamp(1.1rem, 2vw, 1.5rem) !important;
+  color: color-mix(in srgb, white 88%, var(--accent) 12%);
+}
+
+:host ::ng-deep lib-hero p {
+  max-width: 38rem;
+  margin: 0 0 1.25rem;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
+}
+
+:host ::ng-deep lib-hero otui-button button,
+:host ::ng-deep lib-hero otui-button .button {
+  border-radius: 999px;
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.hero-manifesto {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+  animation: homestead-rise 0.8s 0.18s var(--personality-transition, ease)
+    both;
+}
+
+.manifesto-card {
+  min-height: 100%;
+  padding: 1.2rem 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
+  border-radius: calc(var(--personality-border-radius, 1.2rem) * 0.85);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-light) 88%, transparent),
+      color-mix(in srgb, var(--surface) 96%, transparent)
+    );
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 50px color-mix(in srgb, black 26%, transparent);
+}
+
+.manifesto-card p {
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 88%, white 12%);
+  line-height: 1.6;
+}
+
+.manifesto-label {
+  display: inline-block;
+  margin-bottom: 0.9rem;
+  color: var(--accent-light, var(--accent));
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@keyframes homestead-rise {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(22px);
   }
   to {
     opacity: 1;
@@ -50,145 +139,27 @@
   }
 }
 
-.content-body h1 {
-  font-size: clamp(2rem, 5vw, 3rem);
-  margin-bottom: var(--spacing-md);
-  color: white;
-  font-weight: 700;
-}
-
-.content-body p {
-  font-size: clamp(1rem, 2vw, 1.1rem);
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: var(--spacing-lg);
-  line-height: 1.6;
-}
-
-.cta-container {
-  display: flex;
-  gap: var(--spacing-sm);
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.cta-button {
-  background: var(--gradient);
-  color: white;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: 50px;
-  font-family: 'Playfair Display', serif;
-  font-weight: 700;
-  font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px var(--shadow-heavy);
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  min-width: 140px;
-}
-
-.cta-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--shadow-heavy);
-  background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
-}
-
-.cta-button.secondary {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-.cta-button.secondary:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.scroll-indicator {
-  position: absolute;
-  bottom: var(--spacing-md);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 25px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: pulse 2s infinite;
-}
-
-.scroll-indicator::after {
-  content: '';
-  width: 4px;
-  height: 4px;
-  background: white;
-  border-radius: 50%;
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
+@media (max-width: 900px) {
+  .hero-manifesto {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (max-width: 768px) {
-  .content-body {
-    padding: var(--spacing-md);
+@media (max-width: 600px) {
+  .homestead-hero {
+    width: min(100%, calc(100% - 1rem));
+    padding-top: 1rem;
   }
 
-  .cta-container {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .cta-button {
-    width: 100%;
-    max-width: 200px;
-    margin-bottom: var(--spacing-sm);
-  }
-
-  .scroll-indicator {
-    display: none;
+  :host ::ng-deep lib-hero .background-image,
+  :host ::ng-deep lib-hero .background-filter {
+    min-height: 32rem;
   }
 }
 
-@media (max-height: 600px) {
-  .content-overlay {
-    height: 100vh;
-  }
-
-  .scroll-indicator {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .content-body {
-    padding: var(--spacing-sm);
-  }
-
-  .content-body h1 {
-    font-size: clamp(1.75rem, 6vw, 2.5rem);
-  }
-
-  .content-body p {
-    font-size: clamp(0.875rem, 3vw, 1rem);
-  }
-
-  .cta-container {
-    gap: var(--spacing-xs);
-  }
-
-  .cta-button {
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-size: 0.9rem;
-    min-width: 120px;
+@media (prefers-reduced-motion: reduce) {
+  .hero-stage,
+  .hero-manifesto {
+    animation: none;
   }
 }

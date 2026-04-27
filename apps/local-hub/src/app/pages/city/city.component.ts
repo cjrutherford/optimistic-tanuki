@@ -31,7 +31,11 @@ import {
   BadgeComponent,
 } from '@optimistic-tanuki/common-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
-import { API_BASE_URL, CreateAssetDto } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  CreateAssetDto,
+  ProfileDto,
+} from '@optimistic-tanuki/ui-models';
 import {
   ClassifiedListComponent,
   ClassifiedService,
@@ -154,7 +158,7 @@ export class CityComponent implements OnInit, OnDestroy {
       const cityData = await this.communityService.getCityBySlug(slug);
 
       if (!cityData) {
-        this.error.set('City not found');
+        this.error.set('Locality not found');
         this.loading.set(false);
         return;
       }
@@ -168,9 +172,7 @@ export class CityComponent implements OnInit, OnDestroy {
       this.communities.set(communitiesData);
 
       // Separate the root locality from user-created interest communities
-      const rootLocality = communitiesData.find(
-        (c) => c.localityType === 'city' && !c.parentId
-      );
+      const rootLocality = this.getRootLocality(communitiesData);
       const interest = communitiesData.filter((c) => {
         if (rootLocality && c.id === rootLocality.id) return false;
         return true;
@@ -216,7 +218,9 @@ export class CityComponent implements OnInit, OnDestroy {
             rootLocality.id,
             { pageSize: 12 }
           );
-          this.classifieds.set(classifiedsData.data ?? []);
+          this.classifieds.set(
+            await this.enrichClassifiedSellerProfiles(classifiedsData.data ?? [])
+          );
         } catch {
           // Non-fatal - classifieds are optional
         } finally {
@@ -254,19 +258,16 @@ export class CityComponent implements OnInit, OnDestroy {
   private buildCommunityTree(
     communities: LocalCommunity[]
   ): CommunityTreeNode[] {
-    // City community is the one with localityType === 'city' (no parentId)
-    const cityCommunity = communities.find(
-      (c) => c.localityType === 'city' && !c.parentId
-    );
-    if (!cityCommunity) return [];
+    const rootLocality = this.getRootLocality(communities);
+    if (!rootLocality) return [];
 
     const subCommunities = communities.filter((c) => {
-      if (c.id === cityCommunity.id) return false;
-      return c.parentId === cityCommunity.id || !c.parentId;
+      if (c.id === rootLocality.id) return false;
+      return c.parentId === rootLocality.id || !c.parentId;
     });
 
     const rootNode: CommunityTreeNode = {
-      community: cityCommunity,
+      community: rootLocality,
       children: subCommunities.map((comm) => ({
         community: comm,
         children: [],
@@ -549,9 +550,7 @@ export class CityComponent implements OnInit, OnDestroy {
 
   async selfNominate(): Promise<void> {
     const communities = this.communities();
-    const rootLocality = communities.find(
-      (c) => c.localityType === 'city' && !c.parentId
-    );
+    const rootLocality = this.getRootLocality(communities);
     if (!rootLocality) return;
 
     try {
@@ -574,9 +573,7 @@ export class CityComponent implements OnInit, OnDestroy {
 
   async voteForCandidate(candidateUserId: string): Promise<void> {
     const communities = this.communities();
-    const rootLocality = communities.find(
-      (c) => c.localityType === 'city' && !c.parentId
-    );
+    const rootLocality = this.getRootLocality(communities);
     if (!rootLocality) return;
 
     this.votingInProgress.set(true);
@@ -609,9 +606,7 @@ export class CityComponent implements OnInit, OnDestroy {
   }
 
   getRootLocalityId(): string | null {
-    const rootLocality = this.communities().find(
-      (c) => c.localityType === 'city' && !c.parentId
-    );
+    const rootLocality = this.getRootLocality(this.communities());
     return rootLocality?.id ?? null;
   }
 
@@ -646,9 +641,7 @@ export class CityComponent implements OnInit, OnDestroy {
 
   private async reloadClassifieds(): Promise<void> {
     const communities = this.communities();
-    const rootLocality = communities.find(
-      (c) => c.localityType === 'city' && !c.parentId
-    );
+    const rootLocality = this.getRootLocality(communities);
     if (!rootLocality) return;
     this.classifiedsLoading.set(true);
     try {
@@ -656,9 +649,51 @@ export class CityComponent implements OnInit, OnDestroy {
         rootLocality.id,
         { pageSize: 12 }
       );
-      this.classifieds.set(classifiedsData.data ?? []);
+      this.classifieds.set(
+        await this.enrichClassifiedSellerProfiles(classifiedsData.data ?? [])
+      );
     } finally {
       this.classifiedsLoading.set(false);
     }
+  }
+
+  private async enrichClassifiedSellerProfiles(
+    ads: ClassifiedAdDto[]
+  ): Promise<ClassifiedAdDto[]> {
+    const profileIds = Array.from(
+      new Set(ads.map((ad) => ad.profileId).filter(Boolean))
+    );
+    if (profileIds.length === 0) {
+      return ads;
+    }
+
+    try {
+      const profiles = await firstValueFrom(
+        this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+      );
+      const profileMap = new Map(
+        profiles.map((profile) => [profile.id, profile])
+      );
+
+      return ads.map((ad) => {
+        const profile = profileMap.get(ad.profileId);
+        return {
+          ...ad,
+          sellerProfileName: ad.sellerProfileName || profile?.profileName || null,
+          sellerProfilePic: ad.sellerProfilePic || profile?.profilePic || null,
+        };
+      });
+    } catch {
+      return ads;
+    }
+  }
+
+  private getRootLocality(
+    communities: LocalCommunity[]
+  ): LocalCommunity | undefined {
+    return communities.find(
+      (community) =>
+        !community.parentId && community.localityType !== 'neighborhood'
+    );
   }
 }

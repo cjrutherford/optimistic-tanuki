@@ -155,7 +155,14 @@ export class CreateCommunityComponent extends Variantable {
       };
 
       const community = await this.communityService.create(dto);
-      this.router.navigate(['/communities/manage', community.id, 'members']);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ot-community-membership-changed'));
+      }
+      this.router.navigate([
+        '/communities/manage',
+        community.slug || community.id,
+        'members',
+      ]);
     } catch (err: any) {
       this.error.set(err.message || 'Failed to create community');
       console.error('Error creating community:', err);

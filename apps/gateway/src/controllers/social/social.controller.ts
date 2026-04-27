@@ -316,6 +316,43 @@ export class SocialController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiTags('vote')
+  @ApiOperation({
+    summary: 'Find votes for a post or the current user vote for a post',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Votes have been successfully retrieved.',
+  })
+  @Post('vote/find')
+  async findVotes(
+    @User() user: UserDetails,
+    @Body() body: { postId?: string; userId?: string; profileId?: string }
+  ): Promise<VoteDto[] | VoteDto | null> {
+    if (!body?.postId) {
+      return [];
+    }
+
+    const votes = await firstValueFrom(
+      this.socialClient.send({ cmd: VoteCommands.GET }, { postid: body.postId })
+    );
+
+    if (!body.userId && !body.profileId) {
+      return votes;
+    }
+
+    const requestedProfileId = body.profileId || body.userId || user.profileId;
+    return (
+      votes.find(
+        (vote: VoteDto & { profileId?: string; userId?: string }) =>
+          vote.profileId === requestedProfileId ||
+          vote.userId === body.userId ||
+          vote.userId === user.userId
+      ) || null
+    );
+  }
+
+  @UseGuards(AuthGuard)
   @ApiTags('attachment')
   @ApiOperation({ summary: 'Get an attachment by ID' })
   @ApiResponse({

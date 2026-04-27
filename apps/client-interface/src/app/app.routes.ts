@@ -73,6 +73,12 @@ export const appRoutes: Route[] = [
     canActivate: [AuthGuard, ProfileGuard], // Protect the feed route
   },
   {
+    path: 'feed/post/:postId',
+    loadComponent: () =>
+      import('./components/social/feed.component').then((m) => m.FeedComponent),
+    canActivate: [AuthGuard, ProfileGuard],
+  },
+  {
     path: 'profile',
     loadComponent: () =>
       import('./components/profile.component').then((m) => m.ProfileComponent),

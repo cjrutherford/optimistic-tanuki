@@ -201,6 +201,9 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
       const updatedMemberships = new Map(this.userMemberships());
       updatedMemberships.set(community.id, membership);
       this.userMemberships.set(updatedMemberships);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ot-community-membership-changed'));
+      }
     } catch (err: any) {
       this.error.set(err.message || 'Failed to join community');
       console.error('Error joining community:', err);
