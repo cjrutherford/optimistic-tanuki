@@ -98,6 +98,11 @@
       } @empty {
       <div class="no-posts">
         <p>No posts yet. Be the first to create one!</p>
+        @if (currentProfileId) {
+        <otui-button variant="primary" (action)="setActiveTab('create')">
+          Create the first post
+        </otui-button>
+        }
       </div>
       }
     </div>

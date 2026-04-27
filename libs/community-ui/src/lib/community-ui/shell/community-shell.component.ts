@@ -9,7 +9,11 @@ import {
 } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
-import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CardComponent,
+  ButtonComponent,
+  IconComponent,
+} from '@optimistic-tanuki/common-ui';
 import { Variantable, VariantOptions } from '@optimistic-tanuki/common-ui';
 import {
   ThemeColors,
@@ -29,6 +33,7 @@ import { CommunityDto } from '../models';
     RouterLinkActive,
     CardComponent,
     ButtonComponent,
+    IconComponent,
   ],
   host: {
     '[class.theme]': 'theme',
@@ -63,6 +68,8 @@ export class CommunityShellComponent
   sidebarCollapsed = signal(false);
   userCommunities = signal<CommunityDto[]>([]);
   currentCommunityId = signal<string | null>(null);
+  private readonly communityMembershipChangedHandler = () =>
+    this.loadUserCommunities();
 
   variant!: string;
   backgroundFilter!: string;
@@ -97,6 +104,13 @@ export class CommunityShellComponent
   }
 
   override ngOnInit() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener(
+        'ot-community-membership-changed',
+        this.communityMembershipChangedHandler
+      );
+    }
+
     this.route.data.pipe(takeUntil(this.destroy$)).subscribe((data) => {
       this.userValidPermissions = data['userValidPermissions'] || [];
       this.userLoggedIn = data['userLoggedIn'] || false;
@@ -133,6 +147,12 @@ export class CommunityShellComponent
   }
 
   override ngOnDestroy(): void {
+    if (typeof window !== 'undefined') {
+      window.removeEventListener(
+        'ot-community-membership-changed',
+        this.communityMembershipChangedHandler
+      );
+    }
     this.destroy$.next();
     this.destroy$.complete();
     super.ngOnDestroy();

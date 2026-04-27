@@ -1,13 +1,74 @@
+.main-page.personality-shell {
+  position: relative;
+  padding-bottom: 8rem;
+}
+
+.main-page.personality-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--accent) 12%, transparent),
+      transparent 42%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      color-mix(in srgb, var(--primary-light) 18%, transparent),
+      transparent 38%
+    );
+  pointer-events: none;
+}
+
 .main-body {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
-  margin: 0;
-  padding: 0;
+  gap: 1.25rem;
   width: 100%;
   min-height: 100vh;
-  padding-bottom: var(--spacing-xl);
+  padding: 0 0 var(--spacing-xl);
   position: relative;
+}
+
+.main-body > * {
+  display: block;
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  animation: homestead-panel-rise 0.7s var(--personality-transition, ease)
+    both;
+}
+
+.main-body > :not(dh-hero-section) {
+  border: 1px solid color-mix(in srgb, var(--accent) 14%, var(--border) 86%);
+  border-radius: calc(var(--personality-border-radius, 1.3rem) * 0.92);
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  box-shadow: 0 18px 48px color-mix(in srgb, black 22%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.main-body > dh-about {
+  animation-delay: 0.05s;
+}
+
+.main-body > dh-benefits {
+  animation-delay: 0.1s;
+}
+
+.main-body > dh-community {
+  animation-delay: 0.15s;
+}
+
+.main-body > dh-resources {
+  animation-delay: 0.2s;
+}
+
+.main-body > dh-blog-section {
+  animation-delay: 0.25s;
+}
+
+.main-body > dh-contact {
+  animation-delay: 0.3s;
 }
 
 .main-footer {
@@ -15,77 +76,47 @@
   left: 0;
   bottom: 0;
   width: 100%;
-  background: inherit;
+  background: color-mix(in srgb, var(--background) 82%, transparent);
   max-height: 8rem;
   margin-top: 0;
   z-index: 100;
+  backdrop-filter: blur(14px);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
-hr {
-  border: none;
-  border-top: 2px solid var(--border);
-  margin: 0 var(--spacing-sm);
-}
-
-.section {
-  padding: var(--spacing-lg) 0;
-  position: relative;
-}
-
-.section:nth-child(even) {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-}
-
-.section-title {
-  text-align: center;
-  margin-bottom: var(--spacing-md);
-  position: relative;
-  padding-bottom: var(--spacing-sm);
-}
-
-.section-title::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 2px;
-  background: var(--gradient);
-  border-radius: 1px;
+@keyframes homestead-panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
+  .main-page.personality-shell {
+    padding-bottom: 6rem;
+  }
+
   .main-body {
-    gap: var(--spacing-xs);
-    padding-bottom: var(--spacing-lg);
+    gap: 0.85rem;
   }
 
-  .section {
-    padding: var(--spacing-md) 0;
-  }
-
-  .section-title {
-    margin-bottom: var(--spacing-sm);
-    padding-bottom: var(--spacing-xs);
-  }
-
-  hr {
-    margin: 0 var(--spacing-xs);
+  .main-body > * {
+    width: min(100%, calc(100% - 1rem));
   }
 }
 
 @media (max-width: 480px) {
-  .main-body {
-    padding-bottom: var(--spacing-md);
-  }
-
-  .section {
-    padding: var(--spacing-sm) 0;
-  }
-
   .main-footer {
     max-height: 6rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-body > * {
+    animation: none;
   }
 }

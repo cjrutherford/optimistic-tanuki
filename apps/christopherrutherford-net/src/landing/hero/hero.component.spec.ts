@@ -18,4 +18,18 @@ describe('HeroComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the editorial hero wrapper and value pillar grid', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.hero-shell')).toBeTruthy();
+    expect(compiled.querySelector('.hero-pillars')).toBeTruthy();
+  });
+
+  it('renders the hero blurb card and icon-backed value pillars', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.hero-blurb-card')).toBeTruthy();
+    expect(compiled.querySelector('.hero-pillars')).toBeTruthy();
+  });
 });

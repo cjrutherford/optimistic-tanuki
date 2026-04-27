@@ -24,48 +24,48 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
 
   features = [
     {
-      icon: '⚡',
-      title: 'Lightning Fast',
+      icon: '🧭',
+      title: 'Plan with direction',
       description:
-        'Get things done quickly with our optimized workflow tools that respond instantly to your will.',
+        'Keep projects, tasks, and next actions in one workspace so priorities stay visible.',
     },
     {
-      icon: '🎯',
-      title: 'Goal Focused',
+      icon: '🔥',
+      title: 'Execute in rhythm',
       description:
-        'Set objectives and track progress with precision. Every milestone is a forge triumph.',
+        'Move from backlog to active work with timers, notes, and decision points built into the flow.',
+    },
+    {
+      icon: '🛡️',
+      title: 'Track risk before drift',
+      description:
+        'Capture blockers, tradeoffs, and course corrections before momentum turns into rework.',
+    },
+    {
+      icon: '📓',
+      title: 'Keep the work legible',
+      description:
+        'Journal context, decisions, and outcomes so the team can understand why the work moved.',
     },
     {
       icon: '🤖',
-      title: 'AI Powered',
+      title: 'Use AI where it helps',
       description:
-        'Intelligent assistance that adapts to your needs, like having a master smith at your side.',
+        'Bring in assistance for drafting, planning, and analysis without letting the workflow disappear into chat.',
     },
     {
-      icon: '📊',
-      title: 'Data Driven',
+      icon: '⚒️',
+      title: 'Ship with intent',
       description:
-        'Make informed decisions with powerful analytics that reveal the patterns in your work.',
-    },
-    {
-      icon: '👥',
-      title: 'Team Ready',
-      description:
-        'Collaborate seamlessly with your entire team. Many hands make light work.',
-    },
-    {
-      icon: '🔒',
-      title: 'Secure & Reliable',
-      description:
-        'Your data is protected with enterprise-grade security. Guarded like treasure.',
+        'Turn scattered effort into visible progress with a system that keeps the whole craft in view.',
     },
   ];
 
   stats = [
-    { value: '10K+', label: 'Active Smiths' },
-    { value: '50M+', label: 'Tasks Forged' },
-    { value: '99.9%', label: 'Uptime' },
-    { value: '4.9★', label: 'Rating' },
+    { value: 'Plan', label: 'Projects and priorities stay visible' },
+    { value: 'Work', label: 'Tasks, notes, and timers stay connected' },
+    { value: 'Adapt', label: 'Risks and changes stay reviewable' },
+    { value: 'Ship', label: 'Progress stays clear enough to finish' },
   ];
 
   ngAfterViewInit() {

@@ -28,4 +28,11 @@ describe('HeroSectionComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the personality-driven hero shell', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('.homestead-hero')).toBeTruthy();
+    expect(compiled.textContent).toContain('Own your corner of the internet');
+  });
 });

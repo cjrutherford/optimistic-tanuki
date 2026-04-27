@@ -1,4 +1,8 @@
-import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  ProfileCommands,
+  RoleCommands,
+} from '@optimistic-tanuki/constants';
 import {
   CreateProfileDto,
   LoginRequest,
@@ -17,6 +21,7 @@ export class LoginAccountBootstrapService {
   constructor(
     private readonly authClient: Pick<ClientProxy, 'send'>,
     private readonly profileClient: Pick<ClientProxy, 'send'>,
+    private readonly permissionsClient: Pick<ClientProxy, 'send'>,
     private readonly roleInit: Pick<RoleInitService, 'processNow'>,
   ) {}
 
@@ -100,6 +105,31 @@ export class LoginAccountBootstrapService {
 
     if (!profileToUse) {
       throw new Error('No profile available for user');
+    }
+
+    if (appScope === 'owner-console') {
+      const roles = (await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId: profileToUse.id, appScope: 'global' },
+        ),
+      )) as Array<{ role?: { name?: string } }>;
+
+      const allowedRoleNames = new Set([
+        'owner_console_owner',
+        'owner',
+        'global_admin',
+        'system_admin',
+      ]);
+      const hasOwnerConsoleAccess = roles.some((assignment) =>
+        allowedRoleNames.has(assignment.role?.name || ''),
+      );
+
+      if (!hasOwnerConsoleAccess) {
+        throw new Error(
+          'This account is not authorized for Owner Console access.',
+        );
+      }
     }
 
     return firstValueFrom(

@@ -5,6 +5,8 @@ export interface ClassifiedAdDto {
   communityId: string | null;
   profileId: string;
   userId: string;
+  sellerProfileName?: string | null;
+  sellerProfilePic?: string | null;
   title: string;
   description: string;
   price: number;

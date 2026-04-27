@@ -67,6 +67,27 @@
 
         <p class="description">{{ ad()!.description }}</p>
 
+        <div class="seller-panel">
+          <div class="seller-avatar" [class.has-image]="!!ad()!.sellerProfilePic">
+            @if (ad()!.sellerProfilePic) {
+            <img
+              [src]="ad()!.sellerProfilePic!"
+              [alt]="ad()!.sellerProfileName || 'Seller'"
+            />
+            } @else {
+            <span>{{
+              (ad()!.sellerProfileName || 'CM').slice(0, 2).toUpperCase()
+            }}</span>
+            }
+          </div>
+          <div class="seller-copy">
+            <span class="seller-label">Seller</span>
+            <strong>{{
+              ad()!.sellerProfileName || 'Community member'
+            }}</strong>
+          </div>
+        </div>
+
         <div class="ad-meta">
           <span>Posted {{ ad()!.createdAt | date : 'mediumDate' }}</span>
           @if (ad()!.updatedAt !== ad()!.createdAt) {

@@ -9,7 +9,13 @@
           sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'
         "
       >
-        <span class="toggle-icon">{{ sidebarCollapsed() ? '→' : '←' }}</span>
+        <otui-icon
+          [name]="
+            sidebarCollapsed()
+              ? 'keyboard-arrow-right'
+              : 'keyboard-arrow-left'
+          "
+        ></otui-icon>
       </button>
     </div>
 

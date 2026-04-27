@@ -52,22 +52,24 @@
           </h2>
           <p class="section-subtitle">
             Always-on navigation for the current result set. Select a marker to
-            jump directly into a city hub.
+            jump directly into a locality hub.
           </p>
         </div>
         <div class="map-frame">
           <app-map
             [cities]="filteredCities()"
-            [centerLat]="31.9"
-            [centerLng]="-81.1"
+            [centerLat]="userLocation()?.lat ?? 31.9"
+            [centerLng]="userLocation()?.lng ?? -81.1"
             [zoom]="6"
             [showRadius]="false"
+            [preferUserLocation]="true"
+            [userLocation]="userLocation()"
             (citySelected)="onMapCitySelect($event)"
           ></app-map>
         </div>
         <div class="map-note">
           <span class="map-note-kicker">Visible now</span>
-          <strong>{{ filteredCities().length }}</strong> cities and
+          <strong>{{ filteredCities().length }}</strong> localities and
           <strong>{{ filteredCommunities().length }}</strong> communities
         </div>
       </div>
@@ -111,7 +113,7 @@
             <div class="filter-block">
               <span class="filter-label">States</span>
               <div class="filter-buttons">
-                @for (state of states; track state) {
+                @for (state of availableStates(); track state) {
                 <button
                   class="filter-chip"
                   [class.active]="selectedStates().includes(state)"
@@ -254,7 +256,7 @@
             <p class="eyebrow">Browse</p>
             <h2 class="section-title">
               <span class="title-icon">🏛️</span>
-              Supported Cities
+              Supported Localities
             </h2>
           </div>
           <span
@@ -274,7 +276,7 @@
               class="city-card"
               (click)="navigateToCity(city.slug)"
               role="button"
-              [attr.aria-label]="'View ' + city.name + ' city hub'"
+              [attr.aria-label]="'View ' + city.name + ' locality hub'"
               (mouseenter)="onCityHover(city)"
               (mouseleave)="onCityHover(null)"
               [style.animation-delay]="i * 40 + 'ms'"
@@ -318,7 +320,7 @@
           </div>
           } @else {
           <div class="empty-state">
-            <h3>No cities match the current filters</h3>
+            <h3>No localities match the current filters</h3>
             <p>Broaden the search or clear one of the active filters.</p>
           </div>
           }

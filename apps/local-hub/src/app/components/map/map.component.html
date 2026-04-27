@@ -24,13 +24,15 @@
   </div>
 
   <div class="map-legend">
+    @if (showRadius) {
     <div class="legend-item">
       <span class="legend-dot center"></span>
       <span>{{ centerLabel }}</span>
     </div>
+    }
     <div class="legend-item">
       <span class="legend-dot city"></span>
-      <span>Supported City</span>
+      <span>Supported Locality</span>
     </div>
     @if (showRadius) {
     <div class="legend-item">

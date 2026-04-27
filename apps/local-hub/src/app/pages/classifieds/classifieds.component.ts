@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   CommunityService,
@@ -18,6 +19,7 @@ import {
   CreateClassifiedAdDto,
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-classifieds',
@@ -34,6 +36,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
   private authState = inject(AuthStateService);
   private assetService = inject(AssetService);
   private messageService = inject(MessageService);
+  private http = inject(HttpClient);
   private destroy$ = new Subject<void>();
 
   community = signal<LocalCommunity | null>(null);
@@ -91,7 +94,7 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
           community.id
         );
         const ads = Array.isArray(result) ? result : result.data;
-        this.classifieds.set(ads);
+        this.classifieds.set(await this.enrichSellerProfiles(ads));
       } catch (classifiedErr) {
         console.warn('Failed to load classifieds:', classifiedErr);
         this.classifieds.set([]);
@@ -155,7 +158,8 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
       const created = await this.classifiedService.create(
         dto as CreateClassifiedAdDto
       );
-      this.classifieds.update((ads) => [created, ...ads]);
+      const [enrichedCreated] = await this.enrichSellerProfiles([created]);
+      this.classifieds.update((ads) => [enrichedCreated || created, ...ads]);
       this.showPostForm.set(false);
       this.messageService.addMessage({
         content: 'Your classified has been posted!',
@@ -178,6 +182,37 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
     const slug = this.community()?.slug;
     if (slug) {
       this.router.navigate(['/c', slug, 'classifieds', classified.id]);
+    }
+  }
+
+  private async enrichSellerProfiles(
+    ads: ClassifiedAdDto[]
+  ): Promise<ClassifiedAdDto[]> {
+    const profileIds = Array.from(
+      new Set(ads.map((ad) => ad.profileId).filter(Boolean))
+    );
+    if (profileIds.length === 0) {
+      return ads;
+    }
+
+    try {
+      const profiles = await firstValueFrom(
+        this.http.post<ProfileDto[]>('/api/profile/by-ids', { ids: profileIds })
+      );
+      const profileMap = new Map(
+        profiles.map((profile) => [profile.id, profile])
+      );
+
+      return ads.map((ad) => {
+        const profile = profileMap.get(ad.profileId);
+        return {
+          ...ad,
+          sellerProfileName: ad.sellerProfileName || profile?.profileName || null,
+          sellerProfilePic: ad.sellerProfilePic || profile?.profilePic || null,
+        };
+      });
+    } catch {
+      return ads;
     }
   }
 }
