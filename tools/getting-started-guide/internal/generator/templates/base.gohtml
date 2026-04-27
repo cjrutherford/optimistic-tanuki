@@ -1,0 +1,29 @@
+{{define "base"}}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Page.Meta.Title}} | {{.Site.Title}}</title>
+  <meta name="description" content="{{.Page.Meta.Summary}}">
+  <link rel="stylesheet" href="{{.Stylesheet}}">
+</head>
+<body class="audience-{{.Site.Accent}}">
+  <div class="page-shell">
+    <header class="site-header">
+      <a class="site-badge" href="{{.AudienceHome}}">{{.Site.Title}}</a>
+      <nav class="site-nav" aria-label="Guide sections">
+        {{range .Site.NonLanding}}
+        <a class="site-nav-link{{if eq .RelPath $.CurrentPath}} current{{end}}" href="{{link $.CurrentPath .RelPath}}">{{.Meta.Title}}</a>
+        {{end}}
+      </nav>
+    </header>
+    {{if .Page.Meta.Landing}}
+    {{template "landing-content" .}}
+    {{else}}
+    {{template "article-content" .}}
+    {{end}}
+  </div>
+</body>
+</html>
+{{end}}
