@@ -1,4 +1,4 @@
-module github.com/cjrutherford/optimistic-tanuki/getting-started-guide
+module github.com/cjrutherford/optimistic-tanuki/tools/getting-started-guide
 
 go 1.24.2
 

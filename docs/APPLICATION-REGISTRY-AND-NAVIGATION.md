@@ -37,8 +37,6 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 - Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
 - Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
-- Implement SSO token validation/exchange, auth redirects, and session management.
-- Build an admin registry management UI with link editing, validation, and audit history.
 - Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
 
 ---
@@ -102,7 +100,7 @@ go run ./cmd/registry add --input apps.yaml --appId store --name "HAI Store" --d
 go run ./cmd/registry remove --input apps.yaml --appId legacy-app
 
 # Export for gateway
-go run ./cmd/registry export --input apps.yaml --format env
+go run ./cmd/registry export --input apps.yaml
 ```
 
 ### Registry Source

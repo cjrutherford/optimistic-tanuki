@@ -1,12 +1,19 @@
 import * as fs from 'fs';
-import { AppRegistry } from '../../../../../libs/app-registry/src/lib/app-registry.types';
-import { DEFAULT_APP_REGISTRY } from '../../../../../libs/app-registry/src/lib/default-registry';
+import { AppRegistry, DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry';
 
 export function loadConfiguredRegistry(path?: string): AppRegistry {
   if (!path) {
     return DEFAULT_APP_REGISTRY;
   }
 
-  const registry = JSON.parse(fs.readFileSync(path, 'utf8')) as AppRegistry;
-  return registry;
+  try {
+    const registry = JSON.parse(fs.readFileSync(path, 'utf8')) as AppRegistry;
+    return registry;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `Failed to load app registry from "${path}". Falling back to default app registry. ${message}`
+    );
+    return DEFAULT_APP_REGISTRY;
+  }
 }

@@ -70,7 +70,7 @@ import {
   RegistryController,
 } from '../controllers/registry/registry.controller';
 import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
-import { DEFAULT_NAVIGATION_LINKS } from '../../../../libs/app-registry/src/lib/default-links';
+import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry';
 @Module({
   imports: [
     ConfigModule.forRoot({

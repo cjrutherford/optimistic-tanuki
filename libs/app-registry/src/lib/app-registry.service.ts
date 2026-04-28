@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
-import { Inject, Injectable, InjectionToken, OnDestroy } from '@angular/core';
+import { Inject, Injectable, InjectionToken, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import {
   BehaviorSubject,
   Observable,
@@ -43,7 +44,8 @@ export class AppRegistryService implements OnDestroy {
     private readonly http: HttpClient,
     @Inject(APP_REGISTRY_URL) private readonly registryUrl = '/api/registry/apps',
     @Inject(APP_REGISTRY_REFRESH_INTERVAL_MS)
-    private readonly refreshIntervalMs = 300000
+    private readonly refreshIntervalMs = 300000,
+    @Inject(PLATFORM_ID) private readonly platformId: object
   ) {
     this.registry$ = this.refreshTrigger$.pipe(
       switchMap(() => this.fetchFromGateway()),
@@ -52,8 +54,10 @@ export class AppRegistryService implements OnDestroy {
       }),
       shareReplay(1)
     );
-    this.registry$.subscribe();
-    this.startPolling();
+    if (isPlatformBrowser(this.platformId)) {
+      this.registry$.subscribe();
+      this.startPolling();
+    }
   }
 
   ngOnDestroy(): void {
@@ -123,6 +127,10 @@ export class AppRegistryService implements OnDestroy {
 
   isAppAccessible(appId: string): boolean {
     return this.latestRegistry.apps.some((app) => app.appId === appId);
+  }
+
+  getAppSync(appId: string): AppRegistration | null {
+    return this.latestRegistry.apps.find((app) => app.appId === appId) ?? null;
   }
 
   private fetchFromGateway(): Observable<AppRegistry> {
