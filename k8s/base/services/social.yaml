@@ -15,11 +15,7 @@ spec:
     spec:
       containers:
         - name: social
-<<<<<<< HEAD
-          image: cjrutherford/optimistic_tanuki_social:sha-2850755da05286086a098d1dbdaf74f339af2a62
-=======
           image: cjrutherford/optimistic_tanuki_social:sha-92b0c5c58f8bd553138f1bfb09fedc1d92c221d5
->>>>>>> mvp-polish
           imagePullPolicy: Always
           ports:
             - containerPort: 3003

@@ -37,6 +37,8 @@ export interface SeedCity {
   timezone: string;
 }
 
+type SeedLocality = SeedCity;
+
 export interface SeedCommunity {
   name: string;
   slug: string;
@@ -400,10 +402,8 @@ const USER_COMMUNITIES: UserCommunityConfig[] = [
   },
 ];
 
-const CITY_COMMUNITIES: SeedCity[] =
-  (seedData as any).cities ||
-  (seedData as any).localities?.filter((l: any) => l.localityType === 'city') ||
-  [];
+const ALL_LOCALITIES: SeedLocality[] =
+  (seedData as any).localities || (seedData as any).cities || [];
 
 interface NeighborhoodData {
   name: string;
@@ -415,31 +415,31 @@ interface NeighborhoodData {
 const NEIGHBORHOOD_COMMUNITIES: Record<string, NeighborhoodData[]> =
   (seedData as any).communities || {};
 
+const NEIGHBORHOOD_PARENT_BY_SLUG = new Map<string, string>(
+  Object.entries(NEIGHBORHOOD_COMMUNITIES).flatMap(
+    ([parentSlug, neighborhoods]) =>
+      neighborhoods.map((neighborhood) => [neighborhood.slug, parentSlug] as const)
+  )
+);
+
 const SLEEP_MS = 100;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function hasCityChanges(existing: Community, cityData: SeedCity): boolean {
-  return (
-    existing.description !== cityData.description ||
-    existing.imageUrl !== cityData.imageUrl ||
-    existing.timezone !== cityData.timezone ||
-    JSON.stringify(existing.highlights ?? []) !==
-    JSON.stringify(cityData.highlights ?? [])
-  );
-}
-
-function hasNeighborhoodChanges(
+function hasLocalityChanges(
   existing: Community,
-  neighborhood: NeighborhoodData,
-  parentId: string
+  localityData: SeedLocality,
+  parentId?: string
 ): boolean {
   return (
-    existing.description !== neighborhood.description ||
-    existing.imageUrl !== neighborhood.imageUrl ||
-    existing.parentId !== parentId
+    existing.description !== localityData.description ||
+    existing.imageUrl !== localityData.imageUrl ||
+    existing.timezone !== localityData.timezone ||
+    existing.parentId !== (parentId ?? null) ||
+    JSON.stringify(existing.highlights ?? []) !==
+    JSON.stringify(localityData.highlights ?? [])
   );
 }
 
@@ -568,128 +568,85 @@ async function main() {
   }
   console.log(`\n✓ Authenticated ${users.length} users`);
 
-  // Step 2: Ensure city communities exist
-  console.log('\n=== Step 2: Ensure City Communities ===');
+  // Step 2: Ensure every JSON-defined locality exists
+  console.log('\n=== Step 2: Ensure JSON Localities ===');
   const cityCommunities: Map<string, Community> = new Map();
+  const localitiesBySlug = new Map(
+    ALL_LOCALITIES.map((locality) => [locality.slug, locality] as const)
+  );
+  const pendingLocalities = [...ALL_LOCALITIES].sort((a, b) => {
+    const rank = (locality: SeedLocality) => {
+      if (locality.localityType === 'region') return 0;
+      if (locality.localityType === 'county') return 1;
+      if (locality.localityType === 'city') return 2;
+      if (locality.localityType === 'town') return 3;
+      if (locality.localityType === 'neighborhood') return 4;
+      return 5;
+    };
+    return rank(a) - rank(b);
+  });
+  let stalledPasses = 0;
 
-  for (const cityData of CITY_COMMUNITIES) {
-    try {
-      const existing = await http.get(`/communities/${cityData.slug}`);
-      const c = existing.data?.data || existing.data;
-      if (c?.id) {
-        if (hasCityChanges(c, cityData)) {
-          try {
-            const updated = await http.put(
-              `/social/community/${c.id}`,
-              {
-                description: cityData.description,
-                highlights: cityData.highlights,
-                imageUrl: cityData.imageUrl,
-                localityType: cityData.localityType,
-                countryCode: 'US',
-                adminArea: cityData.state,
-                city: cityData.city,
-                lat: cityData.lat,
-                lng: cityData.lng,
-                population: cityData.population,
-                timezone: cityData.timezone,
-              },
-              { headers: { Authorization: `Bearer ${users[0].token}` } }
-            );
-            const updatedCommunity: Community =
-              updated.data?.data || updated.data;
-            cityCommunities.set(cityData.slug, updatedCommunity);
-            console.log(`  ✓ Updated: ${cityData.name}`);
-            await sleep(SLEEP_MS);
-            continue;
-          } catch (err: any) {
-            console.warn(`  ! Update failed for ${cityData.name}: ${err.message}`);
-          }
-        }
-        cityCommunities.set(cityData.slug, c);
-        console.log(`  ✓ Exists: ${c.name}`);
+  while (pendingLocalities.length > 0 && stalledPasses < 2) {
+    let processedThisPass = 0;
+
+    for (let i = 0; i < pendingLocalities.length; ) {
+      const localityData = pendingLocalities[i];
+      const parentSlug = NEIGHBORHOOD_PARENT_BY_SLUG.get(localityData.slug);
+      const parentLocality = parentSlug ? localitiesBySlug.get(parentSlug) : null;
+      const parentCommunity = parentSlug ? cityCommunities.get(parentSlug) : null;
+
+      if (parentSlug && parentLocality && !parentCommunity) {
+        i++;
         continue;
       }
-    } catch {
-      /* doesn't exist */
-    }
 
-    try {
-      const res = await http.post(
-        '/social/community',
-        {
-          name: cityData.name,
-          slug: cityData.slug,
-          description: cityData.description,
-          highlights: cityData.highlights,
-          localityType: cityData.localityType,
-          countryCode: 'US',
-          adminArea: cityData.state,
-          city: cityData.city,
-          lat: cityData.lat,
-          lng: cityData.lng,
-          population: cityData.population,
-          isPrivate: false,
-          joinPolicy: 'public',
-          tags: ['Community', 'Local', 'Events'],
-          imageUrl: cityData.imageUrl,
-          timezone: cityData.timezone,
-          appScope,
-        },
-        { headers: { Authorization: `Bearer ${users[0].token}` } }
-      );
-      const c: Community = res.data?.data || res.data;
-      cityCommunities.set(cityData.slug, c);
-      console.log(`  ✓ Created: ${c.name}`);
-    } catch (err: any) {
-      console.warn(`  ✗ Failed to create ${cityData.name}: ${err.message}`);
-    }
-    await sleep(SLEEP_MS);
-  }
-
-  // Step 2b: Create neighborhood communities
-  console.log('\n=== Step 2b: Create Neighborhood Communities ===');
-  const neighborhoodCommunities: Map<string, Community> = new Map();
-
-  for (const cityData of CITY_COMMUNITIES) {
-    const neighborhoods = NEIGHBORHOOD_COMMUNITIES[cityData.slug];
-    if (!neighborhoods) continue;
-
-    const parentCity = cityCommunities.get(cityData.slug);
-    if (!parentCity) continue;
-
-    for (const neighborhood of neighborhoods) {
       try {
-        const existing = await http.get(`/communities/${neighborhood.slug}`);
-        const n = existing.data?.data || existing.data;
-        if (n?.id) {
-          if (hasNeighborhoodChanges(n, neighborhood, parentCity.id)) {
+        const existing = await http.get(`/communities/${localityData.slug}`);
+        const c = existing.data?.data || existing.data;
+        if (c?.id) {
+          if (hasLocalityChanges(c, localityData, parentCommunity?.id)) {
             try {
               const updated = await http.put(
-                `/social/community/${n.id}`,
+                `/social/community/${c.id}`,
                 {
-                  description: neighborhood.description,
-                  imageUrl: neighborhood.imageUrl,
-                  localityType: 'neighborhood',
+                  description: localityData.description,
+                  highlights: localityData.highlights,
+                  imageUrl: localityData.imageUrl,
+                  localityType: localityData.localityType,
                   countryCode: 'US',
-                  adminArea: cityData.state,
-                  city: cityData.city,
-                  parentId: parentCity.id,
+                  adminArea: localityData.state,
+                  city: localityData.city,
+                  lat: localityData.lat,
+                  lng: localityData.lng,
+                  population: localityData.population,
+                  timezone: localityData.timezone,
+                  parentId: parentCommunity?.id ?? null,
                 },
                 { headers: { Authorization: `Bearer ${users[0].token}` } }
               );
-              const updatedNeighborhood: Community =
+              const updatedCommunity: Community =
                 updated.data?.data || updated.data;
-              neighborhoodCommunities.set(neighborhood.slug, updatedNeighborhood);
-              console.log(`  ✓ Updated: ${neighborhood.name}`);
+              cityCommunities.set(localityData.slug, updatedCommunity);
+              console.log(
+                `  ✓ Updated: ${localityData.name} (${localityData.localityType})`
+              );
+              pendingLocalities.splice(i, 1);
+              processedThisPass++;
               await sleep(SLEEP_MS);
               continue;
             } catch (err: any) {
-              console.warn(`  ! Update failed for ${neighborhood.name}: ${err.message}`);
+              console.warn(
+                `  ! Update failed for ${localityData.name}: ${err.message}`
+              );
             }
           }
-          neighborhoodCommunities.set(neighborhood.slug, n);
-          console.log(`  ✓ Exists: ${neighborhood.name}`);
+          cityCommunities.set(localityData.slug, c);
+          console.log(
+            `  ✓ Exists: ${c.name} (${localityData.localityType})`
+          );
+          pendingLocalities.splice(i, 1);
+          processedThisPass++;
           continue;
         }
       } catch {
@@ -697,39 +654,70 @@ async function main() {
       }
 
       try {
-        const latOffset = (Math.random() - 0.5) * 0.1;
-        const lngOffset = (Math.random() - 0.5) * 0.1;
         const res = await http.post(
           '/social/community',
           {
-            name: neighborhood.name,
-            slug: neighborhood.slug,
-            description: neighborhood.description,
-            localityType: 'neighborhood',
+            name: localityData.name,
+            slug: localityData.slug,
+            description: localityData.description,
+            highlights: localityData.highlights,
+            localityType: localityData.localityType,
             countryCode: 'US',
-            adminArea: cityData.state,
-            city: cityData.city,
-            lat: cityData.lat + latOffset,
-            lng: cityData.lng + lngOffset,
-            population: Math.floor(Math.random() * 30000) + 5000,
+            adminArea: localityData.state,
+            city: localityData.city,
+            lat: localityData.lat,
+            lng: localityData.lng,
+            population: localityData.population,
             isPrivate: false,
             joinPolicy: 'public',
-            tags: ['Community', 'Neighborhood', 'Local'],
-            imageUrl: neighborhood.imageUrl,
-            parentId: parentCity.id,
+            tags: [
+              'Community',
+              'Local',
+              localityData.localityType === 'neighborhood'
+                ? 'Neighborhood'
+                : localityData.localityType === 'town'
+                  ? 'Town'
+                  : localityData.localityType === 'county'
+                    ? 'County'
+                    : localityData.localityType === 'region'
+                      ? 'Region'
+                      : 'City',
+            ],
+            imageUrl: localityData.imageUrl,
+            timezone: localityData.timezone,
+            parentId: parentCommunity?.id,
             appScope,
           },
           { headers: { Authorization: `Bearer ${users[0].token}` } }
         );
-        const n: Community = res.data?.data || res.data;
-        neighborhoodCommunities.set(neighborhood.slug, n);
-        console.log(`  ✓ Created: ${neighborhood.name} (${cityData.city})`);
-      } catch (err: any) {
-        console.warn(
-          `  ✗ Failed to create ${neighborhood.name}: ${err.message}`
+        const c: Community = res.data?.data || res.data;
+        cityCommunities.set(localityData.slug, c);
+        console.log(
+          `  ✓ Created: ${c.name} (${localityData.localityType})`
         );
+      } catch (err: any) {
+        console.warn(`  ✗ Failed to create ${localityData.name}: ${err.message}`);
       }
       await sleep(SLEEP_MS);
+      pendingLocalities.splice(i, 1);
+      processedThisPass++;
+    }
+
+    if (processedThisPass === 0) {
+      stalledPasses++;
+    } else {
+      stalledPasses = 0;
+    }
+  }
+
+  if (pendingLocalities.length > 0) {
+    console.warn(`\n⚠ Unseeded localities remaining: ${pendingLocalities.length}`);
+    for (const locality of pendingLocalities) {
+      console.warn(
+        `  - ${locality.slug} (${locality.localityType}) parent=${
+          NEIGHBORHOOD_PARENT_BY_SLUG.get(locality.slug) || 'none'
+        }`
+      );
     }
   }
 
@@ -915,7 +903,7 @@ async function main() {
   // Summary
   console.log('\n=== Seed Complete ===');
   console.log(`Users created: ${users.length}`);
-  console.log(`City communities: ${cityCommunities.size}`);
+  console.log(`Localities seeded: ${cityCommunities.size}`);
   console.log('\n=== Test Credentials ===');
   for (const user of users) {
     console.log(`  ${user.email} / TestPassword123!`);

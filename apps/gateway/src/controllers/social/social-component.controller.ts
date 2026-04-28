@@ -21,6 +21,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
+import { Public } from '../../decorators/public.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -67,6 +68,7 @@ export class SocialComponentController {
   }
 
   @Get('post/:postId')
+  @Public()
   async getSocialComponents(@Param('postId') postId: string) {
     try {
       this.l.log('Getting social components for post:', postId);
@@ -86,6 +88,7 @@ export class SocialComponentController {
   }
 
   @Get(':id')
+  @Public()
   async getSocialComponent(@Param('id') id: string) {
     try {
       this.l.log('Getting social component:', id);
@@ -169,6 +172,7 @@ export class SocialComponentController {
   }
 
   @Get('')
+  @Public()
   async findComponentsByQuery(@Query() query: SocialComponentQueryDto) {
     try {
       this.l.log('Finding social components by query:', query);

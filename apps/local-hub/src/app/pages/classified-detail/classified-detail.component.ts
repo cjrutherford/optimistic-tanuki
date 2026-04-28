@@ -1,8 +1,9 @@
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   ClassifiedFormComponent,
@@ -21,6 +22,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { PaymentService, Offer } from '../../services/payment.service';
 import { MakeOfferModalComponent } from '../../components/make-offer-modal/make-offer-modal.component';
 import { OfferListComponent } from '../../components/offer-list/offer-list.component';
+import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-classified-detail',
@@ -47,6 +49,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   readonly authState = inject(AuthStateService);
   private messageService = inject(MessageService);
   private paymentService = inject(PaymentService);
+  private http = inject(HttpClient);
   private destroy$ = new Subject<void>();
 
   ad = signal<ClassifiedAdDto | null>(null);
@@ -93,7 +96,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         this.classifiedService.findById(id),
       ]);
       this.community.set(community);
-      this.ad.set(ad);
+      this.ad.set(await this.enrichSellerProfile(ad));
 
       if (this.isAuthenticated()) {
         const myId = this.authState.getActingProfileId();
@@ -395,5 +398,27 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       return;
     }
     this.showMakeOfferModal.set(true);
+  }
+
+  private async enrichSellerProfile(ad: ClassifiedAdDto): Promise<ClassifiedAdDto> {
+    if (!ad.profileId) {
+      return ad;
+    }
+
+    try {
+      const profiles = await firstValueFrom(
+        this.http.post<ProfileDto[]>('/api/profile/by-ids', {
+          ids: [ad.profileId],
+        })
+      );
+      const profile = profiles[0];
+      return {
+        ...ad,
+        sellerProfileName: ad.sellerProfileName || profile?.profileName || null,
+        sellerProfilePic: ad.sellerProfilePic || profile?.profilePic || null,
+      };
+    } catch {
+      return ad;
+    }
   }
 }

@@ -1,0 +1,58 @@
+{{define "landing-content"}}
+<main class="landing-main">
+  <section class="hero">
+    {{if .Page.Meta.HeroEyebrow}}<p class="eyebrow">{{.Page.Meta.HeroEyebrow}}</p>{{end}}
+    <h1>{{.Page.Meta.Title}}</h1>
+    {{if .Page.Meta.HeroLead}}<p class="hero-lead">{{.Page.Meta.HeroLead}}</p>{{end}}
+    <div class="article-body">{{.Page.BodyHTML}}</div>
+  </section>
+
+  {{if .Page.Meta.QuickLinks}}
+  <section class="link-row" aria-labelledby="quick-links-title">
+    <div class="section-heading">
+      <p class="section-kicker">Quick start</p>
+      <h2 id="quick-links-title">Start here</h2>
+    </div>
+    <div class="chip-grid">
+      {{range .Page.Meta.QuickLinks}}
+      <a class="chip-card" href="{{pageLink $.Page $.Site .Page}}">
+        <strong>{{.Label}}</strong>
+        {{if .Body}}<span>{{.Body}}</span>{{end}}
+      </a>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{if .Page.Meta.Featured}}
+  <section class="feature-grid" aria-labelledby="featured-title">
+    <div class="section-heading">
+      <p class="section-kicker">Featured paths</p>
+      <h2 id="featured-title">Core journeys</h2>
+    </div>
+    <div class="cards">
+      {{range .Page.Meta.Featured}}
+      <a class="feature-card" href="{{pageLink $.Page $.Site .Page}}">
+        <strong>{{.Title}}</strong>
+        <p>{{.Body}}</p>
+      </a>
+      {{end}}
+    </div>
+  </section>
+  {{end}}
+
+  {{if .Page.Meta.NextSteps}}
+  <section class="next-steps" aria-labelledby="next-steps-title">
+    <div class="section-heading">
+      <p class="section-kicker">Continue</p>
+      <h2 id="next-steps-title">Next steps</h2>
+    </div>
+    <ul class="step-list">
+      {{range .Page.Meta.NextSteps}}
+      <li><a href="{{pageLink $.Page $.Site .Page}}">{{.Label}}</a>{{if .Body}}<span>{{.Body}}</span>{{end}}</li>
+      {{end}}
+    </ul>
+  </section>
+  {{end}}
+</main>
+{{end}}

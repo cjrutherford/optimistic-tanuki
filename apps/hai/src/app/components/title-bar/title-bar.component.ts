@@ -5,6 +5,7 @@ import {
   NavItem,
   NavSidebarComponent,
 } from '@optimistic-tanuki/navigation-ui';
+import { NavigationService } from '@optimistic-tanuki/app-registry';
 
 @Component({
   selector: 'hai-title-bar',
@@ -15,6 +16,7 @@ import {
 })
 export class TitleBarComponent {
   private readonly router = inject(Router);
+  private readonly navigation = inject(NavigationService);
 
   readonly menuOpen = signal(false);
   readonly navItems: NavItem[] = [
@@ -22,7 +24,7 @@ export class TitleBarComponent {
     { label: 'Personal Cloud', action: () => this.jump('#personal-cloud') },
     { label: 'Ecosystem', action: () => this.jump('#ecosystem') },
     { label: 'Contact', action: () => this.jump('#contact') },
-    { label: 'HAI Computer', action: () => this.leave('/hai-computer') },
+    { label: 'HAI Computer', action: () => this.leave('system-configurator') },
   ];
 
   toggleMenu() {
@@ -40,7 +42,7 @@ export class TitleBarComponent {
     this.menuOpen.set(false);
   }
 
-  leave(path: string) {
-    window.location.href = path;
+  leave(appId: string) {
+    this.navigation.navigate(appId);
   }
 }

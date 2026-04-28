@@ -156,14 +156,17 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         max-width: 560px;
         margin: 0 auto;
         padding: 24px;
-        background: var(--surface, #fff);
-        border-radius: 10px;
-        border: 1px solid var(--border, #e0e0e0);
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        border-radius: 24px;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+        box-shadow: var(--shadow-card, 0 18px 40px rgba(15, 23, 42, 0.12));
+        backdrop-filter: blur(14px);
       }
       h2 {
         margin-top: 0;
-        font-size: 1.3rem;
+        font-size: 1.35rem;
         margin-bottom: 20px;
+        color: var(--foreground);
       }
       .form-group {
         margin-bottom: 16px;
@@ -178,20 +181,22 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
       }
       label {
         font-size: 0.9rem;
-        font-weight: 500;
+        font-weight: 600;
+        color: var(--foreground);
       }
       input,
       textarea,
       select {
-        padding: 8px 12px;
-        border: 1px solid var(--border, #ccc);
-        border-radius: 6px;
+        padding: 10px 12px;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
+        border-radius: 12px;
         font-size: 0.9rem;
         font-family: inherit;
-        background: var(--input-bg, #fafafa);
+        color: var(--foreground);
+        background: color-mix(in srgb, var(--background) 78%, var(--surface));
         &:focus {
-          outline: 2px solid var(--primary, #3f51b5);
-          border-color: transparent;
+          outline: 2px solid color-mix(in srgb, var(--primary) 32%, transparent);
+          border-color: var(--primary, #3f51b5);
         }
       }
       textarea {
@@ -218,15 +223,15 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         width: 72px;
         height: 72px;
         object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid var(--border, #ccc);
+        border-radius: 12px;
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
       }
       .remove-image {
         position: absolute;
         top: -6px;
         right: -6px;
-        background: #d32f2f;
-        color: #fff;
+        background: var(--error, #d32f2f);
+        color: var(--surface, #fff);
         border: none;
         border-radius: 50%;
         width: 18px;
@@ -248,11 +253,12 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         margin-top: 20px;
       }
       .btn {
-        padding: 8px 20px;
-        border-radius: 6px;
+        padding: 10px 20px;
+        border-radius: 999px;
         border: none;
         font-size: 0.9rem;
         cursor: pointer;
+        font-weight: 600;
       }
       .btn-primary {
         background: var(--primary, #3f51b5);
@@ -266,11 +272,11 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         }
       }
       .btn-secondary {
-        background: transparent;
-        border: 1px solid var(--primary, #3f51b5);
+        background: color-mix(in srgb, var(--surface) 82%, transparent);
+        border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border, var(--muted)));
         color: var(--primary, #3f51b5);
         &:hover {
-          background: rgba(63, 81, 181, 0.05);
+          background: color-mix(in srgb, var(--primary) 8%, var(--surface));
         }
       }
     `,

@@ -6,6 +6,41 @@ Centralized application registry providing cross-app navigation for all HAI clie
 
 ---
 
+## Current Implementation Status
+
+### Completed
+
+- Shared `libs/app-registry` library with registry types, navigation types, default registry data, default links, Angular services, Angular module, and navigation link/menu components.
+- Runtime gateway read endpoints:
+  - `GET /api/registry/apps`
+  - `GET /api/registry/apps/:appId`
+- Runtime gateway navigation link endpoints:
+  - `GET /api/registry/links`
+  - `GET /api/registry/links/:sourceAppId`
+  - `POST /api/registry/links`
+- Go registry CLI in `tools/registry` with `generate`, `validate`, `add`, `remove`, and `export` commands.
+- Generated `libs/app-registry/src/lib/default-registry.json` from `tools/registry/apps.yaml`.
+- The generated registry is deterministic: `tools/registry/apps.yaml` carries `generatedAt`, and repeated `generate` runs produce byte-identical JSON for the same source.
+- Angular apps consume `libs/app-registry/src/lib/default-registry.json` as their build-time fallback and the shared registry service fetches `/api/registry/apps` on first service creation.
+- The shared registry service polls `/api/registry/apps` every five minutes by default, with `APP_REGISTRY_REFRESH_INTERVAL_MS` available for overrides or disabling.
+- Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
+- Gateway serves registry responses from an in-memory runtime cache, adds `Cache-Control`, `ETag`, and `X-App-Registry-Version` headers, and exposes `POST /api/registry/apps` for runtime registry replacement.
+- Docker Compose mounts the generated registry JSON into gateway and sets `APP_REGISTRY_PATH`.
+- K8s packages `k8s/base/config/app-registry.json` through `app-registry-config` and mounts it into gateway.
+- Initial app integration:
+  - `hai` title bar uses the shared navigation service for the HAI Computer link.
+  - `system-configurator` top nav uses the shared registry navigation link back to HAI.
+- Return-link handling captures incoming `returnTo` values on app startup and exposes one-time consumption through the shared navigation service.
+- Focused unit coverage for registry service, navigation service, navigation link component, gateway registry controller, and registry CLI.
+
+### Remaining
+
+- Keep `k8s/base/config/app-registry.json` synchronized whenever `libs/app-registry/src/lib/default-registry.json` is regenerated.
+- Persist runtime registry/admin updates instead of serving only in-memory values initialized from configured defaults.
+- Add cross-app E2E coverage for HAI to HAI Computer and return-navigation flows.
+
+---
+
 ## Overview
 
 ### Problem Statement
@@ -37,34 +72,35 @@ The registry JSON is generated and managed via a Go CLI tool in `tools/`.
 
 ```
 tools/
-└── cmd/
-    └── registry/
-        ├── main.go           # CLI entry point
-        ├── generate.go        # Generate command
-        ├── validate.go        # Validate command
-        ├── add.go            # Add app command
-        ├── remove.go         # Remove app command
-        └── templates/
-            └── registry.tmpl  # Output template
+└── registry/
+    ├── apps.yaml
+    ├── go.mod
+    ├── go.sum
+    └── cmd/
+        └── registry/
+            ├── main.go
+            └── main_test.go
 ```
 
 ### Commands
 
 ```bash
 # Generate registry JSON
-registry generate --output libs/app-registry/src/lib/default-registry.json
+go run ./cmd/registry generate \
+  --input apps.yaml \
+  --output ../../libs/app-registry/src/lib/default-registry.json
 
 # Validate registry
-registry validate --file libs/app-registry/src/lib/default-registry.json
+go run ./cmd/registry validate --input apps.yaml
 
 # Add new application
-registry add --appId store --name "HAI Store" --domain haidev.com --subdomain store
+go run ./cmd/registry add --input apps.yaml --appId store --name "HAI Store" --domain haidev.com --subdomain store
 
 # Remove application
-registry remove --appId legacy-app
+go run ./cmd/registry remove --input apps.yaml --appId legacy-app
 
 # Export for gateway
-registry export --format env > .env.registry
+go run ./cmd/registry export --input apps.yaml
 ```
 
 ### Registry Source
@@ -956,6 +992,30 @@ Returns specific application.
 }
 ```
 
+### GET /api/registry/links
+
+Returns all registered navigation links.
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
+}
+```
+
+### GET /api/registry/links/:sourceAppId
+
+Returns navigation links for a registered source application.
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
+}
+```
+
 ### POST /api/registry/links
 
 Create or update navigation links.
@@ -964,6 +1024,14 @@ Create or update navigation links.
 ```typescript
 {
   links: NavigationLink[]
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: NavigationLink[]
 }
 ```
 
@@ -1008,41 +1076,41 @@ libs/app-registry/
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure
-- [ ] Create `libs/app-registry` library
-- [ ] Define TypeScript interfaces
-- [ ] Create default registry JSON
-- [ ] Implement `AppRegistryService`
-- [ ] Add Angular module
+- [x] Create `libs/app-registry` library
+- [x] Define TypeScript interfaces
+- [x] Create default registry JSON
+- [x] Implement `AppRegistryService`
+- [x] Add Angular module
 
 ### Phase 2: Gateway Integration
-- [ ] Create gateway endpoints
-- [ ] Add caching layer
-- [ ] Implement version-based cache busting
-- [ ] Add admin endpoint for updates
+- [x] Create gateway endpoints
+- [x] Add caching layer
+- [x] Implement version-based cache busting
+- [x] Add admin endpoint for updates
 
 ### Phase 3: Navigation
-- [ ] Implement `NavigationService`
-- [ ] Create navigation components
-- [ ] Add default links
-- [ ] Implement return link handling
+- [x] Implement `NavigationService`
+- [x] Create navigation components
+- [x] Add default links
+- [x] Implement return link handling
 
 ### Phase 4: Angular Integration
-- [ ] Integrate into hai app
-- [ ] Integrate into system-configurator app
-- [ ] Update navigation components
-- [ ] Add polling with refresh
+- [x] Integrate into hai app
+- [x] Integrate into system-configurator app
+- [x] Update navigation components
+- [x] Add polling with refresh
 
 ### Phase 5: SSO Integration
-- [ ] Add token validation service
-- [ ] Implement token exchange
-- [ ] Create auth redirect interceptor
-- [ ] Add session management
+- [x] Add token validation service
+- [x] Implement token exchange
+- [x] Create auth redirect interceptor
+- [x] Add session management
 
 ### Phase 6: Admin Interface
-- [ ] Create registry management UI
-- [ ] Add link editor
-- [ ] Add validation for domains
-- [ ] Audit log for changes
+- [x] Create registry management UI
+- [x] Add link editor
+- [x] Add validation for domains
+- [x] Audit log for changes
 
 ---
 

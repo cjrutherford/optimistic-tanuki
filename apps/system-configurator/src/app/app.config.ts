@@ -3,7 +3,6 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
-import { provideClientHydration } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
 import {
   provideHttpClient,
@@ -21,7 +20,6 @@ import { ReturnIntentService } from './state/return-intent.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideClientHydration(),
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),

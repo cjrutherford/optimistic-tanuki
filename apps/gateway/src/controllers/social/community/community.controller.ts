@@ -639,6 +639,53 @@ export class CommunityController {
     }
   }
 
+  @Post(':id/chat-room')
+  @ApiOperation({ summary: 'Create or repair a community chat room' })
+  async ensureChatRoom(
+    @Param('id') communityId: string,
+    @Body() body: { ownerId: string; name?: string }
+  ): Promise<{ id: string }> {
+    const community = await firstValueFrom(
+      this.socialClient.send({ cmd: CommunityCommands.FIND }, { id: communityId })
+    );
+
+    if (community?.chatRoomId) {
+      try {
+        await firstValueFrom(
+          this.chatClient.send(
+            { cmd: ChatCommands.GET_CONVERSATION },
+            { conversationId: community.chatRoomId }
+          )
+        );
+        return { id: community.chatRoomId };
+      } catch {
+        this.logger.warn(
+          `Stored chat room ${community.chatRoomId} for community ${communityId} is stale; recreating`
+        );
+      }
+    }
+
+    const chatRoom = await firstValueFrom(
+      this.chatClient.send(
+        { cmd: 'CREATE_COMMUNITY_CHAT' },
+        {
+          communityId,
+          ownerId: body.ownerId,
+          name: body.name || community?.name || 'Community Chat',
+        }
+      )
+    );
+
+    await firstValueFrom(
+      this.socialClient.send(
+        { cmd: 'SET_COMMUNITY_CHAT_ROOM' },
+        { communityId, chatRoomId: chatRoom.id }
+      )
+    );
+
+    return { id: chatRoom.id };
+  }
+
   private async assignCommunityPostingRole(
     profileId: string,
     communityId: string,

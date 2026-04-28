@@ -29,6 +29,8 @@ spec:
               value: 'production'
             - name: LISTEN_PORT
               value: '3000'
+            - name: APP_REGISTRY_PATH
+              value: '/etc/optimistic-tanuki/app-registry/app-registry.json'
             - name: AUTHENTICATION_HOST
               value: 'authentication'
             - name: AUTHENTICATION_PORT
@@ -110,6 +112,10 @@ spec:
             limits:
               memory: '1Gi'
               cpu: '1000m'
+          volumeMounts:
+            - name: app-registry-config
+              mountPath: /etc/optimistic-tanuki/app-registry
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /api/mcp/sse
@@ -122,6 +128,10 @@ spec:
               port: 3000
             initialDelaySeconds: 30
             periodSeconds: 5
+      volumes:
+        - name: app-registry-config
+          configMap:
+            name: app-registry-config
       restartPolicy: Always
 ---
 apiVersion: v1

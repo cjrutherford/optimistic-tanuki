@@ -13,7 +13,10 @@ body {
 }
 
 body {
-  font-family: var(--font-body, 'Inter', system-ui, -apple-system, sans-serif);
+  font-family: var(
+    --personality-font-family,
+    var(--font-body, 'Alegreya Sans', system-ui, sans-serif)
+  );
   background-color: var(--background, #ffffff);
   background-image: var(--page-background-pattern, none);
   background-repeat: repeat;
@@ -27,8 +30,17 @@ body {
 
 /* Smooth transitions for theme changes */
 * {
-  transition: background-color 0.2s ease, color 0.2s ease,
-    border-color 0.2s ease;
+  transition:
+    background-color var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease),
+    color var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease),
+    border-color var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease),
+    box-shadow var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease),
+    transform var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease);
 }
 
 /* Focus styles - energetic and visible */
@@ -70,7 +82,10 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-heading, 'Poppins', system-ui, sans-serif);
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, 'Bebas Neue', system-ui, sans-serif)
+  );
   font-weight: 600;
   line-height: 1.2;
   color: var(--foreground);
@@ -107,7 +122,10 @@ a {
 
 /* Button reset for consistency */
 button {
-  font-family: var(--font-body, 'Inter', system-ui, sans-serif);
+  font-family: var(
+    --personality-font-family,
+    var(--font-body, 'Alegreya Sans', system-ui, sans-serif)
+  );
   font-weight: 500;
 }
 
@@ -117,17 +135,19 @@ button[variant='primary'] {
   background: var(--accent, #0ea5e9);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--personality-button-radius, 8px);
   padding: 12px 24px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.2);
+  box-shadow: var(
+    --personality-card-shadow,
+    0 4px 6px -1px rgba(14, 165, 233, 0.2)
+  );
 
   &:hover {
     background: var(--secondary, #0284c7);
     transform: translateY(-1px);
-    box-shadow: 0 6px 8px -1px rgba(14, 165, 233, 0.3);
+    box-shadow: 0 10px 18px -6px rgba(14, 165, 233, 0.35);
   }
 
   &:active {
@@ -140,9 +160,8 @@ button[variant='primary'] {
 otui-card {
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
-  border-radius: 12px;
-  box-shadow: var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05));
-  transition: all 0.2s ease;
+  border-radius: var(--personality-border-radius, 12px);
+  box-shadow: var(--personality-card-shadow, var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05)));
 
   &:hover {
     box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));

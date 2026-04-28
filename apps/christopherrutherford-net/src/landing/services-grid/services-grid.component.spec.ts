@@ -18,4 +18,10 @@ describe('ServicesGridComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('positions the services grid as outcome-driven consulting', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('How I help teams move forward');
+  });
 });

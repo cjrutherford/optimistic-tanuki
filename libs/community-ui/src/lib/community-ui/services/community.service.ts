@@ -191,6 +191,19 @@ export class CommunityService {
       .toPromise() as Promise<{ id: string } | null>;
   }
 
+  ensureCommunityChatRoom(
+    communityId: string,
+    ownerId: string,
+    name: string
+  ): Promise<{ id: string }> {
+    return this.http
+      .post<{ id: string }>(`${this.baseUrl}/${communityId}/chat-room`, {
+        ownerId,
+        name,
+      })
+      .toPromise() as Promise<{ id: string }>;
+  }
+
   getCommunityById(communityId: string): Promise<any> {
     return this.http
       .get<any>(`${this.baseUrl}/${communityId}`)

@@ -10,6 +10,7 @@ import { LeadsService } from './leads.service';
 import { OnboardingGateService } from './onboarding-gate.service';
 import { AuthStateService } from './auth-state.service';
 import { HomeRedirectComponent } from './home-redirect.component';
+import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 
 describe('AppComponent', () => {
   const themeServiceStub = {
@@ -71,6 +72,10 @@ describe('AppComponent', () => {
           provide: AuthStateService,
           useValue: authStateStub,
         },
+        {
+          provide: HaiAppDirectoryService,
+          useValue: { getResolvedApps: jest.fn().mockReturnValue(of([])) },
+        },
       ],
     }).compileComponents();
   });
@@ -80,7 +85,7 @@ describe('AppComponent', () => {
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('.nav-brand')?.textContent).toContain(
-      'Lead Command'
+      'Opportunity Compass'
     );
     expect(compiled.textContent).toContain('Dashboard');
     expect(compiled.textContent).toContain('Leads');
@@ -89,6 +94,18 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Settings');
     expect(compiled.textContent).toContain('Account');
     expect(compiled.textContent).toContain('Closer One');
+  });
+
+  it('configures the HAI about tag for Opportunity Compass', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.haiAboutConfig).toMatchObject({
+      appId: 'opportunity-compass',
+      appName: 'Opportunity Compass',
+      appUrl: '/opportunity-compass',
+    });
+    expect(fixture.nativeElement.textContent).toContain('Opportunity Compass');
   });
 
   it('hides the primary navigation while onboarding is active', async () => {

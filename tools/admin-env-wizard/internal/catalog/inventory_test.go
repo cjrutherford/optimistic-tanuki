@@ -15,6 +15,7 @@ func TestDeployableAppsIncludesExpectedServicesAndClients(t *testing.T) {
 		"lead-tracker": {},
 		"leads-app":    {},
 		"local-hub":    {},
+		"marketing-generator": {},
 		"payments":     {},
 	}
 
@@ -55,6 +56,11 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 			id:             "local-hub",
 			composeService: "local-hub-client-interface",
 			manifestPath:   "k8s/base/clients/local-hub.yaml",
+		},
+		{
+			id:             "marketing-generator",
+			composeService: "marketing-generator",
+			manifestPath:   "k8s/base/clients/marketing-generator.yaml",
 		},
 		{
 			id:             "lead-tracker",

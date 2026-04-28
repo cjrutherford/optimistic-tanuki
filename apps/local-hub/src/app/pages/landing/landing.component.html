@@ -1,12 +1,13 @@
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-badge">Welcome to Towne Square</div>
+    <div class="hero-badge">Local connection, built for everyday use</div>
     <h1 class="hero-title">
-      Your Local Community, <span class="highlight">Online</span>
+      Find your people, your market, and your
+      <span class="highlight">neighborhood rhythm</span>
     </h1>
     <p class="hero-subtitle">
-      Browse local communities, discover classifieds, and connect with your
-      neighbors. Sign in to join the conversation.
+      Towne Square brings neighborhood conversation, local commerce, and civic
+      participation into one place so nearby life feels easier to coordinate.
     </p>
     <div class="hero-actions">
       <button class="btn btn-primary" (click)="navigateToCities()">
@@ -25,13 +26,27 @@
         Explore Map
       </button>
       <button class="btn btn-outline" (click)="navigateToRegister()">
-        Join Towne Square
+        Join your community
       </button>
+    </div>
+    <div class="hero-trust-strip">
+      <div class="trust-item">
+        <strong>Belong locally</strong>
+        <span>Join real place-based communities instead of generic feeds.</span>
+      </div>
+      <div class="trust-item">
+        <strong>Trade nearby</strong>
+        <span>Buy, sell, and message within a neighborhood-scale network.</span>
+      </div>
+      <div class="trust-item">
+        <strong>Coordinate together</strong>
+        <span>Support projects, events, and everyday local needs in one hub.</span>
+      </div>
     </div>
     <div class="hero-stats">
       <div class="stat">
         <span class="stat-value">{{ totalCities() }}</span>
-        <span class="stat-label">Cities</span>
+        <span class="stat-label">Localities</span>
       </div>
       <div class="stat">
         <span class="stat-value">{{ totalCommunities() }}</span>
@@ -52,18 +67,18 @@
     <div class="visual-carousel">
       <div class="carousel-header">
         <div>
-          <p class="carousel-eyebrow">Featured cities</p>
+          <p class="carousel-eyebrow">Featured localities</p>
           <p class="carousel-meta">
             Showing {{ visibleCities.length }} of {{ cities().length }}
           </p>
         </div>
-        <div class="carousel-controls" aria-label="City carousel controls">
+        <div class="carousel-controls" aria-label="Locality carousel controls">
           <button
             type="button"
             class="carousel-control"
             [disabled]="!canScrollCitiesBackward"
             (click)="scrollCities('previous')"
-            aria-label="Show previous cities"
+            aria-label="Show previous localities"
           >
             <svg
               width="18"
@@ -81,7 +96,7 @@
             class="carousel-control"
             [disabled]="!canScrollCitiesForward"
             (click)="scrollCities('next')"
-            aria-label="Show next cities"
+            aria-label="Show next localities"
           >
             <svg
               width="18"
@@ -124,9 +139,23 @@
     </div>
     } @else {
     <div class="loading-placeholder">
-      <p>No cities available yet.</p>
+      <p>No localities available yet.</p>
     </div>
     }
+  </div>
+</section>
+
+<section class="how-it-works public-story">
+  <div class="section-container">
+    <div class="story-header">
+      <p class="story-eyebrow">How Towne Square works</p>
+      <h2 class="section-title">Belong, trade, and coordinate locally</h2>
+      <p class="section-subtitle">
+        The platform is designed to feel useful before it feels complicated:
+        find your place, join the conversation, and take part in neighborhood
+        life as it happens.
+      </p>
+    </div>
   </div>
 </section>
 
@@ -148,10 +177,10 @@
           <line x1="16" y1="6" x2="16" y2="22" />
         </svg>
       </div>
-      <h3>City & Town Communities</h3>
+      <h3>City, Town & Regional Communities</h3>
       <p>
-        Every community is tied to a real place. Find your city, join your town,
-        and connect with people nearby.
+        Every community is tied to a real place so belonging starts with the
+        people and neighborhoods around you.
       </p>
     </div>
     <div class="feature-card">
@@ -170,8 +199,8 @@
       </div>
       <h3>Local Classifieds</h3>
       <p>
-        Buy and sell locally within your community. Browse listings or post your
-        own — for free.
+        Keep more exchanges local with listings that help neighbors buy, sell,
+        and share without leaving the community context.
       </p>
     </div>
     <div class="feature-card">
@@ -191,8 +220,8 @@
       </div>
       <h3>Direct Messaging</h3>
       <p>
-        Contact sellers directly through in-app messaging. No third-party apps
-        needed.
+        Move from discovery to conversation without pushing people into
+        third-party channels immediately.
       </p>
     </div>
     <div class="feature-card">
@@ -210,8 +239,8 @@
       </div>
       <h3>Safe & Moderated</h3>
       <p>
-        Community moderators and a reputation-based system keep Towne Square
-        safe for everyone.
+        Moderation, reputation, and local accountability help the space stay
+        useful and trustworthy.
       </p>
     </div>
   </div>

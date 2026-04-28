@@ -1,0 +1,6 @@
+ollama:
+  host: prompt-proxy
+  port: 11434
+  model: gemma3
+  temperature: 0.3
+  timeoutMs: 120000

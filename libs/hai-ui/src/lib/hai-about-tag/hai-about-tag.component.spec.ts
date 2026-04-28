@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { of } from 'rxjs';
 import { HaiAboutTagComponent } from './hai-about-tag.component';
+import { HaiAppDirectoryService } from '../hai-types/hai-app-directory.service';
 
 describe('HaiAboutTagComponent', () => {
   let fixture: ComponentFixture<HaiAboutTagComponent>;
@@ -8,6 +10,12 @@ describe('HaiAboutTagComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HaiAboutTagComponent],
+      providers: [
+        {
+          provide: HaiAppDirectoryService,
+          useValue: { getResolvedApps: jest.fn().mockReturnValue(of([])) },
+        },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HaiAboutTagComponent);

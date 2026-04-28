@@ -128,6 +128,8 @@ services:
       dockerfile: ./apps/hai/Dockerfile
     ports:
       - '8088:4000'
+    environment:
+      - GATEWAY_URL=http://gateway:3000
 
   fin-commander:
     container_name: ot_fin_commander
@@ -136,6 +138,20 @@ services:
       dockerfile: ./apps/fin-commander/Dockerfile
     ports:
       - '8089:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+    ports:
+      - '8092:4000'
     environment:
       - NODE_ENV=production
       - PORT=4000
@@ -187,6 +203,10 @@ services:
     build:
       context: .
       dockerfile: ./apps/gateway/Dockerfile
+    environment:
+      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+    volumes:
+      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
     ports:
       - '3000:3000'
       - '3300:3300' # Chat WebSocket

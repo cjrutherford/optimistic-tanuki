@@ -99,7 +99,7 @@ echo ""
 run_phase "Phase 9: Client interfaces" 0 \
     ot-client-interface forgeofwill-client-interface digital-homestead-client-interface \
     hai-client-interface local-hub-client-interface crdn-client-interface leads-app \
-    store-client configurable-client fin-commander owner-console d6 system-configurator \
+    store-client configurable-client fin-commander marketing-generator owner-console d6 system-configurator \
     video-client
 
 echo "=== Startup complete ==="

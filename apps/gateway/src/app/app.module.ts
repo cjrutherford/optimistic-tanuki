@@ -63,6 +63,13 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
+import {
+  GATEWAY_APP_REGISTRY,
+  GATEWAY_NAVIGATION_LINKS,
+  RegistryController,
+} from '../controllers/registry/registry.controller';
+import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
+import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -128,11 +135,20 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
     DonationsController,
     LeadsController,
     HardwareController,
+    RegistryController,
   ],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: GATEWAY_APP_REGISTRY,
+      useFactory: () => loadConfiguredRegistry(process.env.APP_REGISTRY_PATH),
+    },
+    {
+      provide: GATEWAY_NAVIGATION_LINKS,
+      useFactory: () => DEFAULT_NAVIGATION_LINKS,
     },
     AuthGuard,
     PermissionsGuard,
@@ -159,16 +175,19 @@ import { HardwareController } from '../controllers/hardware/hardware.controller'
       useFactory: (
         authClient: ClientProxy,
         profileClient: ClientProxy,
+        permissionsClient: ClientProxy,
         roleInitService: RoleInitService,
       ) =>
         new LoginAccountBootstrapService(
           authClient,
           profileClient,
+          permissionsClient,
           roleInitService,
         ),
       inject: [
         ServiceTokens.AUTHENTICATION_SERVICE,
         ServiceTokens.PROFILE_SERVICE,
+        ServiceTokens.PERMISSIONS_SERVICE,
         RoleInitService,
       ],
     },

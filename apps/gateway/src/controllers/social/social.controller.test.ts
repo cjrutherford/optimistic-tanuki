@@ -180,6 +180,39 @@ describe('SocialController', () => {
     );
   });
 
+  it('should find the current user vote for a post', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of([
+        { id: 'vote-1', postId: 'post-1', userId: '1', profileId: '1', value: 1 },
+        { id: 'vote-2', postId: 'post-1', userId: '2', profileId: '2', value: -1 },
+      ])
+    );
+
+    const result = await socialController.findVotes(mockUser as any, {
+      postId: 'post-1',
+      profileId: mockUser.profileId,
+    });
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: VoteCommands.GET },
+      { postid: 'post-1' }
+    );
+    expect(result).toEqual(
+      expect.objectContaining({ id: 'vote-1', profileId: mockUser.profileId })
+    );
+  });
+
+  it('should return all votes when no user filter is provided', async () => {
+    const votes = [{ id: 'vote-1', postId: 'post-1', userId: '1', value: 1 }];
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(of(votes));
+
+    const result = await socialController.findVotes(mockUser as any, {
+      postId: 'post-1',
+    });
+
+    expect(result).toEqual(votes);
+  });
+
   it('should get an attachment by id', async () => {
     const id = '1';
     await socialController.getAttachment(id);

@@ -13,6 +13,7 @@ import { AuthStateService } from './auth-state.service';
 import { Subscription, filter } from 'rxjs';
 import { NotificationBellComponent } from '@optimistic-tanuki/notification-ui';
 import { ParallaxGridWarpComponent } from '@optimistic-tanuki/motion-ui';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   imports: [
@@ -20,13 +21,22 @@ import { ParallaxGridWarpComponent } from '@optimistic-tanuki/motion-ui';
     RouterModule,
     NotificationBellComponent,
     ParallaxGridWarpComponent,
+    HaiAboutTagComponent,
   ],
   selector: 'app-root',
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
 export class AppComponent implements OnInit, OnDestroy {
-  protected title = 'leads-app';
+  protected title = 'opportunity-compass';
+  readonly haiAboutConfig = {
+    appId: 'opportunity-compass',
+    appName: 'Opportunity Compass',
+    appTagline: 'Opportunity discovery from interests, locality, and skills.',
+    appDescription:
+      'Opportunity Compass helps users discover potential opportunities by combining their interests, local context, skills, and onboarding profile into a focused discovery workspace.',
+    appUrl: '/opportunity-compass',
+  };
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);

@@ -17,6 +17,21 @@ export class RegisterAccountBootstrapService {
   ) {}
 
   async register(data: RegisterRequest, appScope: string) {
+    if (appScope === 'owner-console') {
+      const existingGlobalProfiles = (await firstValueFrom(
+        this.profileClient.send(
+          { cmd: ProfileCommands.GetAll },
+          { where: { appScope: 'global' } },
+        ),
+      )) as Array<{ id: string }>;
+
+      if (existingGlobalProfiles.length > 0) {
+        throw new Error(
+          'Owner Console registration is closed. An existing owner must invite or provision additional operators.',
+        );
+      }
+    }
+
     const result = await firstValueFrom(
       this.authClient.send({ cmd: AuthCommands.Register }, data),
     );

@@ -20,10 +20,10 @@ RUN apk add --no-cache dumb-init
 ENV NODE_ENV=development
 ENV PORT=3000
 WORKDIR /usr/src/app
-RUN corepack enable && pnpm add nodemon
 COPY --from=base /usr/src/app/node_modules ./node_modules
 COPY --from=base /usr/src/app/dist/apps/gateway ./dist/apps/gateway
 COPY --from=base /usr/src/app/package.json ./package.json
+RUN corepack enable && pnpm add nodemon
 
 USER node
 EXPOSE 3000

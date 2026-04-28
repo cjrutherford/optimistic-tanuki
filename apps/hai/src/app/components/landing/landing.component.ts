@@ -1,19 +1,15 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
-import { HaiExpansionComponent } from '@optimistic-tanuki/hai-ui';
+import {
+  HaiAppDirectoryService,
+  HaiExpansionComponent,
+} from '@optimistic-tanuki/hai-ui';
 import {
   AuroraRibbonComponent,
   PulseRingsComponent,
   ShimmerBeamComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
-
-interface EcosystemLink {
-  name: string;
-  tagline: string;
-  href: string;
-  category: string;
-}
 
 @Component({
   selector: 'hai-landing',
@@ -31,33 +27,9 @@ interface EcosystemLink {
 })
 export class LandingComponent {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly appDirectory = inject(HaiAppDirectoryService);
 
-  readonly ecosystem: EcosystemLink[] = [
-    {
-      name: 'Digital Grange',
-      tagline: 'Digital homesteading for owned and calm computing.',
-      href: '/digital-grange',
-      category: 'Platform',
-    },
-    {
-      name: 'HAI Computer',
-      tagline: 'Pre-configured personal cloud and homelab systems.',
-      href: '/hai-computer',
-      category: 'Hardware',
-    },
-    {
-      name: 'Towne Square',
-      tagline: 'Local commerce and community software.',
-      href: '/towne-square',
-      category: 'Community',
-    },
-    {
-      name: 'Forge of Will',
-      tagline: 'Deliberate systems for productive personal workflows.',
-      href: '/forge-of-will',
-      category: 'Productivity',
-    },
-  ];
+  readonly ecosystem$ = this.appDirectory.getResolvedApps('hai');
 
   readonly servicePillars = [
     {

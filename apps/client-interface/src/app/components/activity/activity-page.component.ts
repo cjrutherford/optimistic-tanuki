@@ -151,6 +151,11 @@ import { ProfileService } from '../../profile.service';
       }
       .page-header {
         margin-bottom: 24px;
+        padding: 24px;
+        border-radius: 24px;
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 80%, transparent);
+        box-shadow: var(--shadow-card, 0 18px 40px rgba(15, 23, 42, 0.12));
         h1 {
           margin-bottom: 8px;
         }
@@ -160,6 +165,11 @@ import { ProfileService } from '../../profile.service';
       }
       .activity-list {
         padding-top: 0;
+        margin-top: 16px;
+        border-radius: 24px;
+        overflow: hidden;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 80%, transparent);
       }
       .activity-item {
         display: flex;
@@ -179,29 +189,30 @@ import { ProfileService } from '../../profile.service';
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        background: var(--hover-bg);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--surface) 60%, var(--background));
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
         svg {
           width: 20px;
           height: 20px;
         }
         &.post {
-          color: #2196f3;
+          color: color-mix(in srgb, var(--primary) 82%, white);
         }
         &.comment {
-          color: #4caf50;
+          color: color-mix(in srgb, var(--success, #22c55e) 82%, white);
         }
         &.like {
-          color: #f44336;
+          color: color-mix(in srgb, var(--error, #ef4444) 82%, white);
         }
         &.follow {
-          color: #9c27b0;
+          color: color-mix(in srgb, var(--secondary, var(--primary)) 82%, white);
         }
         &.mention {
-          color: #ff9800;
+          color: color-mix(in srgb, var(--warning, #f59e0b) 82%, white);
         }
         &.share {
-          color: #00bcd4;
+          color: color-mix(in srgb, var(--tertiary, var(--secondary, var(--primary))) 82%, white);
         }
       }
       .activity-content {
@@ -229,6 +240,7 @@ import { ProfileService } from '../../profile.service';
         border-bottom: 1px solid var(--border);
         cursor: pointer;
         transition: background 0.2s;
+        background: color-mix(in srgb, var(--surface) 94%, transparent);
         &:hover {
           background: var(--hover-bg);
         }
@@ -273,6 +285,9 @@ import { ProfileService } from '../../profile.service';
         padding: 48px;
         text-align: center;
         color: var(--muted);
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        border: 1px dashed color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
+        border-radius: 18px;
       }
     `,
   ],

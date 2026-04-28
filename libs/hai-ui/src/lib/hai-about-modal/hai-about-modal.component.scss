@@ -131,6 +131,19 @@
   color: #4a5f53;
 }
 
+.directory-link-state {
+  width: fit-content;
+  margin-top: 0.25rem;
+  padding: 0.28rem 0.58rem;
+  border-radius: 999px;
+  background: rgba(33, 66, 50, 0.08);
+  color: #214232;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 640px) {
   .about-hero {
     grid-template-columns: 1fr;

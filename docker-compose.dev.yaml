@@ -178,6 +178,7 @@ services:
       ]
     environment:
       - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
 
   fin-commander:
     container_name: ot_fin_commander
@@ -205,6 +206,38 @@ services:
         '2',
         '--exec',
         "sh -c 'while [ ! -f /app/dist/apps/fin-commander/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9246 /app/dist/apps/fin-commander/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/marketing-generator:/app/apps/marketing-generator
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '8092:4000'
+      - '9249:9249'
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/marketing-generator/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/marketing-generator/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9249 /app/dist/apps/marketing-generator/server/server.mjs'",
       ]
     environment:
       - NODE_ENV=development
@@ -341,11 +374,12 @@ services:
       dockerfile: ./apps/gateway/Dockerfile.dev
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
-      - /usr/src/app/node_modules # Ensures node_modules from the image are used
+      - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
+      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         'dist/apps/gateway',
         '--exec',
@@ -358,6 +392,7 @@ services:
       - '9000:9000' # Expose the debugging port
     environment:
       - NODE_ENV=development
+      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
     deploy:
       resources:
         limits:
@@ -541,16 +576,18 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     volumes:
-      - ./dist/apps/wellness:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./apps/wellness/src/assets/config.yaml:/app/wellness/assets/config.yaml:ro
+      - /app/node_modules
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/wellness',
         '--exec',
         'node --inspect=0.0.0.0:9206',
         '-L',
-        'wellness/main.js',
+        '/app/wellness/main.js',
       ]
     ports:
       - '9206:9206'

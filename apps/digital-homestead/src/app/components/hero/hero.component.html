@@ -1,21 +1,29 @@
-<lib-hero
-  [imageUrl]="'/assets/dh.png'"
-  [title]="'Digital Homesteading'"
-  [subtitle]="'Your place on the internet, owned by you.'"
-  [description]="
-    'Take control of your digital presence and ensure your voice is heard. Digital Homesteading is the practice of owning your presence and place online. Just like you would want to own your own home, you would want to own your own place on the internet for you and your things.'
-  "
-  [buttonText]="'Learn More!'"
-></lib-hero>
-<!-- <div class="content-overlay">
-        <div class="content-body">
-            <otui-heading [size]="'3rem'" text="Digital Homesteading"></otui-heading>
-            <br />
-            <otui-heading [size]="'1rem'" text="Ownership of your online world."></otui-heading>
-            <br />
-            <br />
-            <p>Take control of your digital presence and ensure your voice is heard. Digital Homesteading is the practice of owning your presence and place online. Just like you would want to own your own home, you would want to own your own place on the internet for you and your things.</p>
-            <br />
-            <otui-button><a href="#about">Learn More!</a></otui-button>
-        </div>
-    </div> -->
+<section class="homestead-hero">
+  <div class="hero-stage">
+    <span class="hero-kicker">Digital independence for real people</span>
+    <lib-hero
+      [imageUrl]="'/assets/dh.png'"
+      [title]="'Own your corner of the internet'"
+      [subtitle]="'Digital Homesteading for durable, self-directed presence.'"
+      [description]="
+        'Build a durable digital home with tools, guidance, and community support that reinforce autonomy instead of platform dependency. Own your publishing surface, your audience relationship, and the systems that carry your work.'
+      "
+      [buttonText]="'Learn More'"
+    ></lib-hero>
+  </div>
+
+  <div class="hero-manifesto" aria-label="Digital Homesteading proof points">
+    <article class="manifesto-card">
+      <span class="manifesto-label">Own the surface</span>
+      <p>Publish on infrastructure you understand instead of renting your voice from a platform.</p>
+    </article>
+    <article class="manifesto-card">
+      <span class="manifesto-label">Choose the stack</span>
+      <p>Adopt self-hosted and ownership-friendly tools that match your values, workflow, and pace.</p>
+    </article>
+    <article class="manifesto-card">
+      <span class="manifesto-label">Grow with others</span>
+      <p>Build alongside people creating a more resilient, neighborly, and durable web.</p>
+    </article>
+  </div>
+</section>
