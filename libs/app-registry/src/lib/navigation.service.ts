@@ -121,9 +121,7 @@ export class NavigationService {
   }
 
   private toGeneratedLink(link: NavigationLink): GeneratedLink | null {
-    const target = (this.registry as any).defaultRegistry?.apps?.find(
-      (app: { appId: string }) => app.appId === link.targetAppId
-    );
+    const target = this.registry.getAppSync(link.targetAppId);
     const fallbackTarget = {
       appId: link.targetAppId,
       name: link.label,
@@ -141,6 +139,7 @@ export class NavigationService {
         label: link.label,
         iconName: link.iconName,
         opensNewTab: false,
+        position: link.position,
       },
     };
   }

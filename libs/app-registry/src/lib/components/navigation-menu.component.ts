@@ -1,5 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BehaviorSubject, switchMap } from 'rxjs';
 import { GeneratedLink, NavigationPosition } from '../navigation.types';
 import { NavigationService } from '../navigation.service';
 
@@ -8,7 +10,7 @@ import { NavigationService } from '../navigation.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <nav class="registry-nav-menu" [class]="'registry-nav-menu--' + position">
+    <nav class="registry-nav-menu" [ngClass]="'registry-nav-menu--' + position">
       @for (link of links; track link.url) {
       <a [href]="link.url" class="registry-nav-menu__link">
         @if (link.meta.iconName) {
@@ -27,21 +29,31 @@ export class NavigationMenuComponent implements OnChanges {
 
   links: GeneratedLink[] = [];
 
-  constructor(private readonly navigation: NavigationService) {}
+  private readonly inputChange$ = new BehaviorSubject<void>(undefined);
+  private readonly destroyRef = inject(DestroyRef);
 
-  ngOnChanges(): void {
-    this.navigation
-      .getFilteredLinks({
-        currentAppId: this.appId,
-        currentPath: '/',
-        isAuthenticated: this.isAuthenticated,
-      })
+  constructor(private readonly navigation: NavigationService) {
+    this.inputChange$
+      .pipe(
+        switchMap(() =>
+          this.navigation.getFilteredLinks({
+            currentAppId: this.appId,
+            currentPath: '/',
+            isAuthenticated: this.isAuthenticated,
+          })
+        ),
+        takeUntilDestroyed(this.destroyRef)
+      )
       .subscribe((links) => {
-        this.links = links.filter((link) =>
-          this.position === 'primary'
-            ? true
-            : link.meta.label.toLowerCase().includes(this.position)
+        this.links = links.filter(
+          (link) =>
+            this.position === 'primary' ||
+            link.meta.position === this.position
         );
       });
+  }
+
+  ngOnChanges(): void {
+    this.inputChange$.next();
   }
 }

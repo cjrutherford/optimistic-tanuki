@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RegistryController } from './registry.controller';
-import { DEFAULT_APP_REGISTRY } from '../../../../../libs/app-registry/src/lib/default-registry';
-import { DEFAULT_NAVIGATION_LINKS } from '../../../../../libs/app-registry/src/lib/default-links';
+import { DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry';
+import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry';
 
 describe('RegistryController', () => {
   let controller: RegistryController;
@@ -32,7 +32,7 @@ describe('RegistryController', () => {
     );
     expect(responseHeaders.setHeader).toHaveBeenCalledWith(
       'ETag',
-      `W/"app-registry-${DEFAULT_APP_REGISTRY.version}"`
+      `W/"app-registry-${DEFAULT_APP_REGISTRY.version}-${DEFAULT_APP_REGISTRY.generatedAt}"`
     );
   });
 

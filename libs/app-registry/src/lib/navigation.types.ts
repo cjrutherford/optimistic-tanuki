@@ -34,6 +34,7 @@ export interface GeneratedLink {
     label: string;
     iconName?: string;
     opensNewTab: boolean;
+    position?: NavigationPosition;
   };
 }
 

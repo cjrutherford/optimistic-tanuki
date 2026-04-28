@@ -18,7 +18,7 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    new AppRegistryService(http as any);
+    new AppRegistryService(http as any, '/api/registry/apps', 300000, 'browser');
 
     expect(http.get).toHaveBeenCalledWith('/api/registry/apps');
   });
@@ -34,7 +34,7 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    const service = new AppRegistryService(http as any, '/api/registry/apps', 1000);
+    const service = new AppRegistryService(http as any, '/api/registry/apps', 1000, 'browser');
 
     expect(http.get).toHaveBeenCalledTimes(1);
 
@@ -57,7 +57,7 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    new AppRegistryService(http as any, '/api/registry/apps', 0);
+    new AppRegistryService(http as any, '/api/registry/apps', 0, 'browser');
 
     jest.advanceTimersByTime(5000);
 
@@ -69,7 +69,7 @@ describe('AppRegistryService', () => {
   it('returns bundled apps when the runtime registry is unavailable', (done) => {
     const service = new AppRegistryService({
       get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),
-    } as any);
+    } as any, '/api/registry/apps', 300000, 'browser');
 
     service.getAllApps().subscribe((apps) => {
       expect(apps.map((app) => app.appId)).toContain('hai');
@@ -95,7 +95,7 @@ describe('AppRegistryService', () => {
           },
         })
       ),
-    } as any);
+    } as any, '/api/registry/apps', 300000, 'browser');
 
     service.getApp('runtime-app').subscribe((app) => {
       expect(app?.name).toBe('Runtime App');
@@ -104,7 +104,7 @@ describe('AppRegistryService', () => {
   });
 
   it('generates app URLs with path and query params', () => {
-    const service = new AppRegistryService({ get: jest.fn() } as any);
+    const service = new AppRegistryService({ get: jest.fn() } as any, '/api/registry/apps', 300000, 'server');
 
     expect(
       service.getAppUrl('system-configurator', '/build/new', {

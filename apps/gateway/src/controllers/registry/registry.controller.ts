@@ -8,13 +8,17 @@ import {
   Param,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   AppRegistration,
   AppRegistry,
-} from '../../../../../libs/app-registry/src/lib/app-registry.types';
-import { NavigationLink } from '../../../../../libs/app-registry/src/lib/navigation.types';
+  NavigationLink,
+} from '@optimistic-tanuki/app-registry';
+import { AuthGuard } from '../../auth/auth.guard';
+import { PermissionsGuard } from '../../guards/permissions.guard';
+import { RequirePermissions } from '../../decorators/permissions.decorator';
 
 export const GATEWAY_APP_REGISTRY = 'GATEWAY_APP_REGISTRY';
 export const GATEWAY_NAVIGATION_LINKS = 'GATEWAY_NAVIGATION_LINKS';
@@ -70,6 +74,8 @@ export class RegistryController {
   @ApiOperation({ summary: 'Replace the runtime application registry' })
   @ApiResponse({ status: 201, description: 'Application registry updated' })
   @ApiResponse({ status: 400, description: 'Application registry is invalid' })
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('registry.manage')
   @Post('apps')
   updateApps(@Body() payload: AppRegistryPayload): {
     success: true;
@@ -155,6 +161,8 @@ export class RegistryController {
   @ApiOperation({ summary: 'Replace registered navigation links' })
   @ApiResponse({ status: 201, description: 'Navigation links updated' })
   @ApiResponse({ status: 400, description: 'Navigation links are invalid' })
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('registry.manage')
   @Post('links')
   updateLinks(@Body() payload: NavigationLinksPayload): {
     success: true;
@@ -329,6 +337,7 @@ export class RegistryController {
       'public, max-age=60, stale-while-revalidate=300'
     );
     response.setHeader('X-App-Registry-Version', this.registry.version);
-    response.setHeader('ETag', `W/"app-registry-${this.registry.version}"`);
+    const etagValue = `${this.registry.version}-${this.registry.generatedAt}`;
+    response.setHeader('ETag', `W/"app-registry-${etagValue}"`);
   }
 }

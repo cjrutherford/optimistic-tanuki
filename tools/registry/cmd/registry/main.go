@@ -104,12 +104,12 @@ func generate(args []string) error {
 
 func validate(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
-	file := fs.String("file", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 
-	cfg, err := readConfig(*file)
+	cfg, err := readConfig(*input)
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func validate(args []string) error {
 
 func add(args []string) error {
 	fs := flag.NewFlagSet("add", flag.ContinueOnError)
-	file := fs.String("file", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
 	appID := fs.String("appId", "", "Application ID")
 	name := fs.String("name", "", "Application name")
 	domain := fs.String("domain", "", "Domain")
@@ -130,7 +130,7 @@ func add(args []string) error {
 		return err
 	}
 
-	cfg, err := readConfig(*file)
+	cfg, err := readConfig(*input)
 	if err != nil {
 		return err
 	}
@@ -146,12 +146,12 @@ func add(args []string) error {
 	if err := validateConfig(cfg); err != nil {
 		return err
 	}
-	return writeConfig(*file, cfg)
+	return writeConfig(*input, cfg)
 }
 
 func remove(args []string) error {
 	fs := flag.NewFlagSet("remove", flag.ContinueOnError)
-	file := fs.String("file", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
 	appID := fs.String("appId", "", "Application ID")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -160,7 +160,7 @@ func remove(args []string) error {
 		return errors.New("--appId is required")
 	}
 
-	cfg, err := readConfig(*file)
+	cfg, err := readConfig(*input)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func remove(args []string) error {
 		}
 	}
 	cfg.Apps = next
-	return writeConfig(*file, cfg)
+	return writeConfig(*input, cfg)
 }
 
 func exportEnv(args []string) error {

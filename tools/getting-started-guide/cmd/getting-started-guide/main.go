@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cjrutherford/optimistic-tanuki/getting-started-guide/internal/generator"
+	"github.com/cjrutherford/optimistic-tanuki/tools/getting-started-guide/internal/generator"
 )
 
 func main() {

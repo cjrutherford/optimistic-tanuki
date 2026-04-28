@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, Inject, Input, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { NavigationService } from '../navigation.service';
 
 @Component({
@@ -31,9 +32,17 @@ export class NavigationLinkComponent {
   @Input() openInNewTab = false;
   @Input() includeReturn = true;
 
-  constructor(private readonly navigation: NavigationService) {}
+  constructor(
+    private readonly navigation: NavigationService,
+    @Inject(PLATFORM_ID) private readonly platformId: object
+  ) {}
 
   get url(): string {
+    if (this.includeReturn && isPlatformBrowser(this.platformId)) {
+      return this.navigation.generateUrl(this.targetAppId, this.path, {
+        returnTo: window.location.pathname,
+      });
+    }
     return this.navigation.generateUrl(this.targetAppId, this.path);
   }
 
