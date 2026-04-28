@@ -38,12 +38,12 @@ export class NavigationLinkComponent {
   ) {}
 
   get url(): string {
-    if (this.includeReturn && isPlatformBrowser(this.platformId)) {
-      return this.navigation.generateUrl(this.targetAppId, this.path, {
-        returnTo: window.location.pathname,
-      });
-    }
-    return this.navigation.generateUrl(this.targetAppId, this.path);
+    const returnTo =
+      this.includeReturn && isPlatformBrowser(this.platformId)
+        ? window.location.pathname
+        : undefined;
+    const queryParams = returnTo ? { returnTo } : undefined;
+    return this.navigation.generateUrl(this.targetAppId, this.path, queryParams);
   }
 
   handleClick(event: Event): void {

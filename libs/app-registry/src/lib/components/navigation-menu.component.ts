@@ -48,7 +48,7 @@ export class NavigationMenuComponent implements OnChanges {
         this.links = links.filter(
           (link) =>
             this.position === 'primary' ||
-            link.meta.position === this.position
+            (link.meta.position ?? 'primary') === this.position
         );
       });
   }
