@@ -58,6 +58,8 @@ images:
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_local-hub
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_marketing-generator
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_owner-console
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_payments

@@ -187,6 +187,38 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
 
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/marketing-generator:/app/apps/marketing-generator
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '8092:4000'
+      - '9249:9249'
+    command:
+      [
+        'dumb-init',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/marketing-generator/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/marketing-generator/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9249 /app/dist/apps/marketing-generator/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   crdn-client-interface:
     container_name: crdn_client_interface # Added
     build:

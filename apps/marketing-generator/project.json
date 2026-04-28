@@ -1,0 +1,103 @@
+{
+  "name": "marketing-generator",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/marketing-generator/src",
+  "tags": ["type:app", "scope:marketing", "platform:web", "visibility:public"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/marketing-generator",
+        "browser": "apps/marketing-generator/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/marketing-generator/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/marketing-generator/public"
+          },
+          {
+            "glob": "**/*",
+            "input": "apps/marketing-generator/src/app/assets",
+            "output": "assets"
+          }
+        ],
+        "styles": ["apps/marketing-generator/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/marketing-generator/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/marketing-generator/src/server.ts"
+        },
+        "prerender": false,
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "marketing-generator:build:production"
+        },
+        "development": {
+          "buildTarget": "marketing-generator:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "marketing-generator:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/marketing-generator/jest.config.ts",
+        "tsConfig": "apps/marketing-generator/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "marketing-generator:build",
+        "port": 4213,
+        "staticFilePath": "dist/apps/marketing-generator/browser",
+        "spa": true
+      }
+    }
+  }
+}

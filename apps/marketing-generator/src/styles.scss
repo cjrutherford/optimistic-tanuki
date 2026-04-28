@@ -1,0 +1,52 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body, 'Bricolage Grotesque', sans-serif);
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary, #d97706) 18%, transparent), transparent 28%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--secondary, #2563eb) 14%, transparent), transparent 24%),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background, #0b1220) 94%, black),
+      color-mix(in srgb, var(--surface, #10151c) 92%, black)
+    );
+  color: var(--foreground, #f7f1e6);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--border, rgba(255, 255, 255, 0.12)) 55%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      color-mix(in srgb, var(--border, rgba(255, 255, 255, 0.12)) 40%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 72px 72px;
+  opacity: 0.08;
+}

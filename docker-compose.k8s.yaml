@@ -140,6 +140,20 @@ services:
     ports:
       - '8084:4000'
 
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+    ports:
+      - '8092:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
   gateway:
     container_name: ot_gateway
     build:

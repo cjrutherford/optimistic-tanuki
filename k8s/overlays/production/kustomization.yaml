@@ -58,6 +58,8 @@ images:
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_local-hub
     newTag: latest
+  - name: cjrutherford/optimistic_tanuki_marketing-generator
+    newTag: latest
   - name: cjrutherford/optimistic_tanuki_owner-console
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_payments

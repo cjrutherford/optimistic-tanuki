@@ -770,6 +770,33 @@ func (c *Catalog) initClients() {
 			},
 		},
 		{
+			ID:       "marketing-generator",
+			Name:     "Marketing Generator",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/marketing-generator/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  8092,
+				DependsOn:     []string{"gateway"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_marketing-generator", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
 			ID:       "store-client",
 			Name:     "Store Client",
 			Category: CategoryClient,

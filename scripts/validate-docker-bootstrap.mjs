@@ -20,6 +20,49 @@ const packageJson = JSON.parse(
 const dockerScripts = Object.entries(packageJson.scripts).filter(([name]) =>
   name.startsWith('docker:'),
 );
+
+assert.equal(
+  packageJson.scripts['docker:dev'],
+  'pnpm run build:docker:dev && pnpm run docker:build:dev && pnpm run docker:dev:up',
+  'docker:dev must use the docker-specific development build set',
+);
+
+assert.equal(
+  packageJson.scripts['docker:dev:reset'],
+  'pnpm run build:docker:dev && pnpm run docker:build:dev && ./scripts/docker-start-phased.sh 5 --force-recreate --renew-anon-volumes',
+  'docker:dev:reset must use the docker-specific development build set',
+);
+
+assert.equal(
+  packageJson.scripts['docker:dev:watch'],
+  'pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev',
+  'docker:dev:watch must use the docker-specific development build set',
+);
+
+assert.match(
+  packageJson.scripts['build:docker:dev'],
+  /--projects=.*video-client --configuration=development$/,
+  'build:docker:dev must define the docker development project list',
+);
+
+assert.match(
+  packageJson.scripts['build:docker:dev'],
+  /marketing-generator/,
+  'build:docker:dev must include apps in the docker dev compose stack',
+);
+
+assert.match(
+  packageJson.scripts['watch:docker:dev'],
+  /--projects=.*video-client --configuration=development --watch$/,
+  'watch:docker:dev must define the docker development project watch list',
+);
+
+assert.match(
+  packageJson.scripts['watch:docker:dev'],
+  /marketing-generator/,
+  'watch:docker:dev must include apps in the docker dev compose stack',
+);
+
 const referencedScripts = new Set();
 const directlyInvokedScripts = new Set();
 
@@ -118,6 +161,7 @@ const phasedStartupServices = [
   'store-client',
   'configurable-client',
   'fin-commander',
+  'marketing-generator',
   'owner-console',
   'd6',
   'system-configurator',
@@ -298,7 +342,7 @@ for (const token of [
   'run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js',
   'run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js',
   'run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js',
-  'run_seed_with_run videos "${APP_RUNTIME_DIR}" node ./seed-videos.js',
+  'run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js',
 ]) {
   assert.equal(
     devSeedScript.includes(token),

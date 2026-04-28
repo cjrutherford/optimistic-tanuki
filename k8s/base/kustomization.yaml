@@ -30,6 +30,7 @@ resources:
   - clients/hai.yaml
   - clients/christopherrutherford-net.yaml
   - clients/owner-console.yaml
+  - clients/marketing-generator.yaml
   - clients/store-client.yaml
   - clients/configurable-client.yaml
   - clients/system-configurator.yaml
