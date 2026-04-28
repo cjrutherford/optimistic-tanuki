@@ -10,9 +10,9 @@ export function loadConfiguredRegistry(path?: string): AppRegistry {
     const registry = JSON.parse(fs.readFileSync(path, 'utf8')) as AppRegistry;
     return registry;
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.warn(
-      `Failed to load app registry from "${path}". Falling back to default app registry. ${message}`
+      `Failed to load app registry from "${path}". Falling back to default app registry. ${errorMessage}`
     );
     return DEFAULT_APP_REGISTRY;
   }
