@@ -145,6 +145,20 @@ services:
     depends_on:
       - gateway
 
+  marketing-generator:
+    container_name: ot_marketing_generator
+    build:
+      context: .
+      dockerfile: ./apps/marketing-generator/Dockerfile
+    ports:
+      - '8092:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
   crdn-client-interface:
     container_name: crdn_client_interface # Added
     build:

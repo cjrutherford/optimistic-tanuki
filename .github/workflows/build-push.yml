@@ -140,6 +140,8 @@ jobs:
             type: client
           - app: local-hub
             type: client
+          - app: marketing-generator
+            type: client
           - app: owner-console
             type: client
           - app: store-client

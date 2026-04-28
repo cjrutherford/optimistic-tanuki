@@ -80,7 +80,7 @@ func NewModel(env *domain.EnvironmentDefinition, generate generateFunc) Model {
 				"chat-collector", "assets", "ai-orchestration", "prompt-proxy", "telos-docs-service", "blogging",
 				"permissions", "project-planning", "forum", "wellness", "classifieds", "payments", "store",
 				"lead-tracker", "client-interface", "forgeofwill", "digital-homestead", "hai",
-				"christopherrutherford-net", "owner-console", "store-client", "configurable-client",
+				"christopherrutherford-net", "owner-console", "marketing-generator", "store-client", "configurable-client",
 				"system-configurator", "d6", "local-hub", "leads-app",
 			},
 			env.Services,
