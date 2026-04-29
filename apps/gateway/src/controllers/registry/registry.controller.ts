@@ -15,7 +15,7 @@ import {
   AppRegistration,
   AppRegistry,
   NavigationLink,
-} from '@optimistic-tanuki/app-registry';
+} from '@optimistic-tanuki/app-registry-backend';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';

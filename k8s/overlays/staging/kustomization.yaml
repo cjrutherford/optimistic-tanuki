@@ -44,6 +44,10 @@ images:
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_digital-homestead
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_fin-commander
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_finance
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_forgeofwill
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_forum

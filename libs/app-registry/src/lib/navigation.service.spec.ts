@@ -1,7 +1,21 @@
+import { PLATFORM_ID } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
 import { NavigationService } from './navigation.service';
 
 describe('NavigationService', () => {
   const originalWindow = global.window;
+
+  function createService(registry: object, platformId = 'browser') {
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: PLATFORM_ID, useValue: platformId },
+      ],
+    });
+
+    return TestBed.runInInjectionContext(
+      () => new NavigationService(registry as any)
+    );
+  }
 
   afterEach(() => {
     Object.defineProperty(global, 'window', {
@@ -9,14 +23,15 @@ describe('NavigationService', () => {
       value: originalWindow,
     });
     sessionStorage.clear();
+    TestBed.resetTestingModule();
   });
 
   it('generates cross-app URLs through the registry service', () => {
-    const service = new NavigationService({
+    const service = createService({
       getAppUrl: jest
         .fn()
         .mockReturnValue('https://haicomputer.com/build/new?source=hai'),
-    } as any);
+    });
 
     expect(
       service.generateUrl('system-configurator', '/build/new', {
@@ -40,7 +55,7 @@ describe('NavigationService', () => {
     const registry = {
       getAppUrl: jest.fn().mockReturnValue('https://haidev.com?returnTo=value'),
     };
-    const service = new NavigationService(registry as any);
+    const service = createService(registry);
 
     const link = service.getReturnLink({
       currentAppId: 'hai',
@@ -67,7 +82,7 @@ describe('NavigationService', () => {
         },
       },
     });
-    const service = new NavigationService({ getAppUrl: jest.fn() } as any);
+    const service = createService({ getAppUrl: jest.fn() });
 
     expect(service.captureReturnTo()).toBe(
       'https://haidev.com/services?source=configurator'

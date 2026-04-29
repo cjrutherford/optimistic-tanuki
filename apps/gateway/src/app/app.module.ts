@@ -69,8 +69,8 @@ import {
   GATEWAY_NAVIGATION_LINKS,
   RegistryController,
 } from '../controllers/registry/registry.controller';
+import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry-backend';
 import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
-import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry';
 @Module({
   imports: [
     ConfigModule.forRoot({

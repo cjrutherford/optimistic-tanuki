@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { DEFAULT_APP_REGISTRY } from '../../../../../libs/app-registry/src/lib/default-registry';
+import { DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry-backend';
 import { loadConfiguredRegistry } from './registry.config';
 
 describe('registry config', () => {

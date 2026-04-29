@@ -44,6 +44,10 @@ images:
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_digital-homestead
     newTag: latest
+  - name: cjrutherford/optimistic_tanuki_fin-commander
+    newTag: latest
+  - name: cjrutherford/optimistic_tanuki_finance
+    newTag: latest
   - name: cjrutherford/optimistic_tanuki_forgeofwill
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_forum

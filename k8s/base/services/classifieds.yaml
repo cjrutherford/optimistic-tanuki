@@ -18,12 +18,12 @@ spec:
           image: cjrutherford/optimistic_tanuki_classifieds:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3017
+            - containerPort: 3018
           env:
             - name: NODE_ENV
               value: 'production'
             - name: PORT
-              value: '3017'
+              value: '3018'
             - name: POSTGRES_HOST
               value: 'postgres'
             - name: POSTGRES_PORT
@@ -40,12 +40,12 @@ spec:
               cpu: '500m'
           livenessProbe:
             tcpSocket:
-              port: 3017
+              port: 3018
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 3017
+              port: 3018
             initialDelaySeconds: 10
             periodSeconds: 5
       restartPolicy: Always
@@ -59,6 +59,6 @@ spec:
   selector:
     app: classifieds
   ports:
-    - port: 3017
-      targetPort: 3017
+    - port: 3018
+      targetPort: 3018
   clusterIP: None

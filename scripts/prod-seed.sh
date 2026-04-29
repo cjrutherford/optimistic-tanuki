@@ -69,6 +69,9 @@ sleep 5
 
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 
+echo "Seeding social service (including local communities)..."
+run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
+
 echo ""
 echo "=========================================="
 echo "Production seeding complete!"

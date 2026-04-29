@@ -2,6 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { Inject, Injectable, InjectionToken, OnDestroy, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
+  AppRegistration,
+  AppRegistry,
+  AppRegistryResponse,
+  DEFAULT_APP_REGISTRY,
+} from '@optimistic-tanuki/app-registry-backend';
+import {
   BehaviorSubject,
   Observable,
   catchError,
@@ -11,12 +17,6 @@ import {
   switchMap,
   tap,
 } from 'rxjs';
-import {
-  AppRegistration,
-  AppRegistry,
-  AppRegistryResponse,
-} from './app-registry.types';
-import { DEFAULT_APP_REGISTRY } from './default-registry';
 
 export const APP_REGISTRY_URL = new InjectionToken<string>('APP_REGISTRY_URL', {
   providedIn: 'root',

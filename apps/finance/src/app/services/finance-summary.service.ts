@@ -59,6 +59,36 @@ export class FinanceSummaryService {
     return Number.isFinite(numeric) ? numeric : 0;
   }
 
+  private normalizeCategory(value: unknown): string {
+    return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  }
+
+  private budgetSpentFromTransactions(
+    budget: { category?: string; workspace?: FinanceWorkspace },
+    transactions: Array<{
+      amount?: number;
+      category?: string | null;
+      type?: string;
+      workspace?: FinanceWorkspace;
+    }>
+  ): number {
+    const normalizedBudgetCategory = this.normalizeCategory(budget.category);
+    if (!normalizedBudgetCategory) {
+      return 0;
+    }
+
+    return transactions
+      .filter((transaction) => {
+        return (
+          transaction.type === 'debit' &&
+          this.matchesWorkspace(transaction, budget.workspace ?? 'personal') &&
+          this.normalizeCategory(transaction.category) ===
+            normalizedBudgetCategory
+        );
+      })
+      .reduce((sum, transaction) => sum + this.numberValue(transaction.amount), 0);
+  }
+
   private pushRule(
     items: FinanceCoachCardDto[],
     rule: FinanceCoachCardDto | null
@@ -255,7 +285,7 @@ export class FinanceSummaryService {
 
     const nearLimitBudgets = activeBudgets.filter((budget) => {
       const limit = this.numberValue(budget.limit);
-      const spent = this.numberValue(budget.spent);
+      const spent = this.budgetSpentFromTransactions(budget, transactions);
       return limit > 0 && spent / limit >= 0.8 && spent / limit < 1;
     });
     this.pushRule(
@@ -282,7 +312,7 @@ export class FinanceSummaryService {
 
     const overLimitBudgets = activeBudgets.filter((budget) => {
       const limit = this.numberValue(budget.limit);
-      const spent = this.numberValue(budget.spent);
+      const spent = this.budgetSpentFromTransactions(budget, transactions);
       return limit > 0 && spent / limit >= 1;
     });
     this.pushRule(
@@ -433,7 +463,7 @@ export class FinanceSummaryService {
         0
       );
     const budgetsAtRiskCount = scopedBudgets.filter((budget) => {
-      const spent = this.numberValue(budget.spent);
+      const spent = this.budgetSpentFromTransactions(budget, scopedTransactions);
       const limit = this.numberValue(budget.limit);
       return limit > 0 && spent / limit >= 0.8;
     }).length;
@@ -468,12 +498,17 @@ export class FinanceSummaryService {
   async getOnboardingState(
     scope: FinanceScope
   ): Promise<FinanceOnboardingStateDto> {
-    const [accountsResult, budgetsResult] = await Promise.all([
+    const [accountsResult, budgetsResult, transactionsResult] = await Promise.all([
       this.accountService.findAll(scope),
       this.budgetService.findAll(scope),
+      this.transactionService.findAll(scope),
     ]);
     const accounts = accountsResult ?? [];
     const budgets = budgetsResult ?? [];
+    const transactions = transactionsResult ?? [];
+    const uncategorizedTransactions = transactions.filter(
+      (transaction) => !this.normalizeCategory(transaction.category)
+    );
 
     const availableWorkspaces = (
       ['personal', 'business'] as FinanceWorkspace[]
@@ -499,6 +534,11 @@ export class FinanceSummaryService {
           id: 'create-budget',
           label: 'Add at least one budget',
           complete: budgets.length > 0,
+        },
+        {
+          id: 'categorize-transactions',
+          label: 'Categorize early transactions',
+          complete: uncategorizedTransactions.length === 0,
         },
       ],
     };

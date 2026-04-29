@@ -76,6 +76,26 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/settings']);
   });
 
+  it('normalizes the submitted email before logging in', async () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    const authStateService = TestBed.inject(AuthStateService) as unknown as {
+      login: jest.Mock;
+    };
+
+    profileService.getCurrentUserProfile.mockReturnValue(null);
+    profileService.getEffectiveProfile.mockReturnValue(null);
+
+    await fixture.componentInstance.onSubmit({
+      email: 'Captain@Example.COM',
+      password: 'secret',
+    });
+
+    expect(authStateService.login).toHaveBeenCalledWith({
+      email: 'captain@example.com',
+      password: 'secret',
+    });
+  });
+
   it('routes users with a profile but no active tenant to onboarding', async () => {
     const fixture = TestBed.createComponent(LoginComponent);
 
@@ -91,7 +111,7 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/onboarding']);
   });
 
-  it('routes users with incomplete finance setup to the setup checklist', async () => {
+  it('routes users with incomplete finance setup back into onboarding', async () => {
     const fixture = TestBed.createComponent(LoginComponent);
 
     profileService.getCurrentUserProfile.mockReturnValue({ id: 'profile-1' });
@@ -108,11 +128,7 @@ describe('LoginComponent', () => {
       password: 'secret',
     });
 
-    expect(router.navigate).toHaveBeenCalledWith([
-      '/finance',
-      'personal',
-      'setup',
-    ]);
+    expect(router.navigate).toHaveBeenCalledWith(['/onboarding']);
   });
 
   it('routes fully set up users to finance landing', async () => {

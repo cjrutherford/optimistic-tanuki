@@ -299,4 +299,98 @@ describe('TenantContextService', () => {
       profileId: 'profile-1',
     });
   });
+
+  it('creates a tenant, reloads context, and selects the new tenant', async () => {
+    const currentProfile = signal<ProfileDto | null>(financeProfile);
+    const isAuthenticated = signal(true);
+    const financeService = {
+      getTenants: jest
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            id: 'tenant-1',
+            name: 'Household',
+            profileId: 'profile-1',
+            appScope: 'finance',
+            type: 'household',
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: 'tenant-1',
+            name: 'Household',
+            profileId: 'profile-1',
+            appScope: 'finance',
+            type: 'household',
+          },
+          {
+            id: 'tenant-2',
+            name: 'Studio',
+            profileId: 'profile-1',
+            appScope: 'finance',
+            type: 'business',
+          },
+        ]),
+      getCurrentTenant: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'tenant-1',
+          name: 'Household',
+          profileId: 'profile-1',
+          appScope: 'finance',
+          type: 'household',
+        }),
+      createTenant: jest.fn().mockResolvedValue({
+        id: 'tenant-2',
+        name: 'Studio',
+        profileId: 'profile-1',
+        appScope: 'finance',
+        type: 'business',
+      }),
+      getTenantMembers: jest.fn().mockResolvedValue([]),
+    };
+    const setScope = jest.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        TenantContextService,
+        { provide: FinanceService, useValue: financeService },
+        {
+          provide: ProfileContext,
+          useValue: {
+            currentProfile,
+            currentProfileId: computed(() => currentProfile()?.id ?? null),
+            isAuthenticated,
+          },
+        },
+        {
+          provide: FinCommanderPlanStore,
+          useValue: {
+            setScope,
+          },
+        },
+      ],
+    });
+
+    const service = TestBed.inject(TenantContextService);
+
+    await service.loadTenantContext();
+    await service.createTenant({
+      name: 'Studio',
+      type: 'business',
+    });
+
+    expect(financeService.createTenant).toHaveBeenCalledWith({
+      name: 'Studio',
+      type: 'business',
+    });
+    expect(service.activeTenant()?.id).toBe('tenant-2');
+    expect(setScope).toHaveBeenLastCalledWith({
+      tenantId: 'tenant-2',
+      profileId: 'profile-1',
+    });
+    expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
+      'tenant-2',
+    );
+  });
 });

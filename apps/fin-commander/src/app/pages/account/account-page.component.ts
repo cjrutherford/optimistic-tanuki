@@ -27,16 +27,31 @@ import { TenantContextService } from '../../tenant-context.service';
       <section class="grid">
         <article class="card">
           <h2>Context</h2>
-          <p><strong>Type:</strong> {{ tenantType() }}</p>
-          <p><strong>Active workspaces:</strong> Personal, Business, Net Worth</p>
+          <div class="metric-pair">
+            <span>Type</span>
+            <strong>{{ tenantType() }}</strong>
+          </div>
+          <div class="metric-pair">
+            <span>Workspaces</span>
+            <strong>Personal, Business, Net Worth</strong>
+          </div>
         </article>
 
         <article class="card">
           <h2>Finance health</h2>
           @if (summary()) {
-            <p><strong>Total balance:</strong> \${{ summary()?.metrics?.totalBalance ?? 0 }}</p>
-            <p><strong>Net worth:</strong> \${{ summary()?.metrics?.netWorth ?? 0 }}</p>
-            <p><strong>Budgets at risk:</strong> {{ summary()?.metrics?.budgetsAtRiskCount ?? 0 }}</p>
+            <div class="metric-pair">
+              <span>Total balance</span>
+              <strong>\${{ summary()?.metrics?.totalBalance ?? 0 }}</strong>
+            </div>
+            <div class="metric-pair">
+              <span>Net worth</span>
+              <strong>\${{ summary()?.metrics?.netWorth ?? 0 }}</strong>
+            </div>
+            <div class="metric-pair">
+              <span>Budgets at risk</span>
+              <strong>{{ summary()?.metrics?.budgetsAtRiskCount ?? 0 }}</strong>
+            </div>
           } @else {
             <p>Loading account health…</p>
           }
@@ -72,10 +87,10 @@ import { TenantContextService } from '../../tenant-context.service';
       box-shadow: var(--fc-card-shadow, 0 20px 40px rgba(4, 16, 28, 0.24));
     }
     .hero {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(220px, 0.9fr);
       gap: 1rem;
-      align-items: start;
+      align-items: center;
     }
     .eyebrow {
       display: inline-flex;
@@ -111,10 +126,30 @@ import { TenantContextService } from '../../tenant-context.service';
       display: grid;
       gap: 0.75rem;
     }
+    .metric-pair {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+    }
+    .metric-pair:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .metric-pair span {
+      color: var(--muted);
+    }
     a {
       color: var(--primary);
       text-decoration: none;
       font-weight: 600;
+    }
+    @media (max-width: 800px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
     }
   `],
 })
