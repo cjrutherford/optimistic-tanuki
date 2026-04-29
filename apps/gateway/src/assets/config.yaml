@@ -79,17 +79,17 @@ services:
     name: wellness
     transport: TCP
     host: wellness
-    port: 3017
+    port: 3018
   classifieds:
     name: classifieds
     transport: TCP
     host: classifieds
-    port: 3018
+    port: 3017
   payments:
     name: payments
     transport: TCP
     host: payments
-    port: 3019
+    port: 3004
   lead_tracker:
     name: lead_tracker
     transport: TCP
