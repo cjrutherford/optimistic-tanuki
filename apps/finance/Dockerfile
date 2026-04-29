@@ -10,7 +10,7 @@ RUN pnpm exec nx build finance --configuration=development
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
-ENV PORT=3019
+ENV PORT=3016
 WORKDIR /usr/src/app
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
@@ -22,5 +22,5 @@ COPY --from=builder /usr/src/app/dist/apps/finance/ ./
 RUN node -e "const fs=require('fs'); const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.dependencies={...(pkg.dependencies||{}), pg:'8.20.0', tslib:'2.8.1', typeorm:'0.3.28'}; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n');"
 RUN corepack enable && pnpm install --prod --no-frozen-lockfile
 USER node
-EXPOSE 3019
+EXPOSE 3016
 CMD ["dumb-init", "node", "main.js"]

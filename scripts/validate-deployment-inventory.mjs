@@ -44,6 +44,30 @@ function compareList(label, expected, actual) {
   return errors;
 }
 
+function compareRequiredList(label, expected, actual) {
+  const missing = expected.filter((item) => !actual.includes(item));
+  if (missing.length === 0) {
+    return [];
+  }
+  return [`${label} missing: ${missing.join(', ')}`];
+}
+
+function parseSpaceLoopScript(script) {
+  const match = script.match(/for service in (.*); do/);
+  if (!match) {
+    throw new Error(`Unable to parse service loop from script: ${script}`);
+  }
+  return match[1].trim().split(/\s+/);
+}
+
+function parseNxProjectsScript(script) {
+  const match = script.match(/--projects=([^\s]+)/);
+  if (!match) {
+    throw new Error(`Unable to parse --projects list from script: ${script}`);
+  }
+  return match[1].split(',');
+}
+
 const buildPush = readYaml(
   path.join(repoRoot, '.github/workflows/build-push.yml')
 );
@@ -78,6 +102,37 @@ const errors = [
     actualResources
   ),
 ];
+
+const packageJson = JSON.parse(
+  fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
+);
+const expectedComposeServices = inventory.apps
+  .map((app) => app.ComposeServiceName || app.ID)
+  .sort();
+
+errors.push(
+  ...compareRequiredList(
+    'package.json docker:build:slow services',
+    expectedComposeServices,
+    parseSpaceLoopScript(packageJson.scripts['docker:build:slow']).sort()
+  )
+);
+
+for (const scriptName of [
+  'build:dev',
+  'build:docker:dev',
+  'build',
+  'watch:build',
+  'watch:docker:dev',
+]) {
+  errors.push(
+    ...compareRequiredList(
+      `package.json ${scriptName} projects`,
+      expectedApps,
+      parseNxProjectsScript(packageJson.scripts[scriptName]).sort()
+    )
+  );
+}
 
 for (const overlayFile of overlayFiles) {
   const overlay = readYaml(overlayFile);

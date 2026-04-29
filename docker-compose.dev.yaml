@@ -678,7 +678,7 @@ services:
       - '9209:9209'
     environment:
       - NODE_ENV=development
-      - PORT=3019
+      - PORT=3016
     depends_on:
       postgres:
         condition: service_healthy

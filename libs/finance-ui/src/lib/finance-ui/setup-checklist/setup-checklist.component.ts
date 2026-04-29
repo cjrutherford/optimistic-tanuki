@@ -102,6 +102,8 @@ export class SetupChecklistComponent implements OnInit {
 
   checklistItems(state: FinanceOnboardingState) {
     const workspace = this.workspace();
+    const checklistStatus = (id: string) =>
+      state.checklist.find((item) => item.id === id)?.complete ?? false;
     const items = [
       {
         id: 'accounts',
@@ -113,16 +115,14 @@ export class SetupChecklistComponent implements OnInit {
       {
         id: 'transactions',
         label: 'Categorize early transactions',
-        complete: false,
+        complete: checklistStatus('categorize-transactions'),
         action: 'Review transactions',
         route: `/finance/${workspace}/transactions`,
       },
       {
         id: 'budget',
         label: 'Create at least one active budget',
-        complete:
-          state.checklist.find((item) => item.id === 'create-budget')
-            ?.complete ?? false,
+        complete: checklistStatus('create-budget'),
         action: 'Open budgets',
         route: `/finance/${workspace}/budgets`,
       },

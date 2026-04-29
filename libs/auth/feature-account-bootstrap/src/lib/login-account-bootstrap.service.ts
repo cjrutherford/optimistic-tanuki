@@ -26,11 +26,15 @@ export class LoginAccountBootstrapService {
   ) {}
 
   async login(data: LoginRequest, appScope: string) {
+    const normalizedRequest: LoginRequest = {
+      ...data,
+      email: data.email.trim().toLowerCase(),
+    };
     const userIdResult: string | { userId?: string; id?: string } =
       await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
-          { email: data.email },
+          { email: normalizedRequest.email },
         ),
       );
     const userId =
@@ -39,7 +43,9 @@ export class LoginAccountBootstrapService {
         : userIdResult?.userId || userIdResult?.id;
 
     if (!userId) {
-      throw new Error(`Unable to resolve userId for email=${data.email}`);
+      throw new Error(
+        `Unable to resolve userId for email=${normalizedRequest.email}`,
+      );
     }
 
     const profiles = (await firstValueFrom(
@@ -69,7 +75,7 @@ export class LoginAccountBootstrapService {
         copyPermissionsFromGlobalProfile?: boolean;
       } = {
         userId: seedProfile.userId,
-        name: seedProfile.profileName || data.email,
+        name: seedProfile.profileName || normalizedRequest.email,
         description: '',
         profilePic: seedProfile.avatarUrl || '',
         coverPic: '',
@@ -135,7 +141,7 @@ export class LoginAccountBootstrapService {
     return firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Login },
-        { ...data, profileId: profileToUse.id },
+        { ...normalizedRequest, profileId: profileToUse.id },
       ),
     );
   }

@@ -1,14 +1,14 @@
 import { Injectable, InjectionToken, PLATFORM_ID, inject } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
-import { AppRegistryService } from './app-registry.service';
-import { DEFAULT_NAVIGATION_LINKS } from './default-links';
 import {
+  DEFAULT_NAVIGATION_LINKS,
   GeneratedLink,
   NavigationContext,
   NavigationLink,
   NavigationOptions,
-} from './navigation.types';
+} from '@optimistic-tanuki/app-registry-backend';
+import { AppRegistryService } from './app-registry.service';
 
 const RETURN_TO_STORAGE_KEY = 'ot.registry.returnTo';
 

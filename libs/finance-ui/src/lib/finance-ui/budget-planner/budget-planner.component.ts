@@ -19,7 +19,20 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
 
       <form class="editor" (ngSubmit)="saveBudget()">
         <input [(ngModel)]="draft.name" name="name" placeholder="Budget name" required />
-        <input [(ngModel)]="draft.category" name="category" placeholder="Category" required />
+        <div class="category-field">
+          <input
+            [(ngModel)]="draft.category"
+            name="category"
+            placeholder="Category"
+            list="budget-category-options"
+            required
+          />
+          <datalist id="budget-category-options">
+            @for (category of categoryOptions(); track category) {
+              <option [value]="category"></option>
+            }
+          </datalist>
+        </div>
         <input [(ngModel)]="draft.limit" name="limit" type="number" placeholder="Limit" required />
         <select [(ngModel)]="draft.period" name="period">
           <option value="monthly">Monthly</option>
@@ -63,6 +76,7 @@ export class BudgetPlannerComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
 
   readonly budgets = signal<Budget[]>([]);
+  readonly categoryOptions = signal<string[]>([]);
   readonly workspace = signal<FinanceWorkspace>('personal');
   readonly editingId = signal<string | null>(null);
   draft: Partial<CreateBudget> = this.emptyDraft();
@@ -70,7 +84,7 @@ export class BudgetPlannerComponent implements OnInit {
   async ngOnInit() {
     this.workspace.set((this.route.snapshot.paramMap.get('workspace') ?? 'personal') as FinanceWorkspace);
     this.draft = this.emptyDraft();
-    await this.loadBudgets();
+    await Promise.all([this.loadBudgets(), this.loadCategoryOptions()]);
   }
 
   emptyDraft(): Partial<CreateBudget> {
@@ -98,6 +112,20 @@ export class BudgetPlannerComponent implements OnInit {
     }
   }
 
+  async loadCategoryOptions() {
+    try {
+      this.categoryOptions.set(
+        await this.financeService.getCategorySuggestions(this.workspace())
+      );
+    } catch (error) {
+      if (isAbortLikeHttpError(error)) {
+        return;
+      }
+
+      throw error;
+    }
+  }
+
   editBudget(budget: Budget) {
     this.editingId.set(budget.id);
     this.draft = { ...budget };
@@ -106,6 +134,7 @@ export class BudgetPlannerComponent implements OnInit {
   async saveBudget() {
     const payload = {
       ...this.draft,
+      category: this.draft.category?.trim(),
       workspace: this.workspace(),
       startDate: this.draft.startDate ?? new Date(),
       endDate: this.draft.endDate ?? new Date(new Date().setMonth(new Date().getMonth() + 1)),
@@ -119,11 +148,11 @@ export class BudgetPlannerComponent implements OnInit {
 
     this.editingId.set(null);
     this.draft = this.emptyDraft();
-    await this.loadBudgets();
+    await Promise.all([this.loadBudgets(), this.loadCategoryOptions()]);
   }
 
   async deleteBudget(id: string) {
     await this.financeService.deleteBudget(id);
-    await this.loadBudgets();
+    await Promise.all([this.loadBudgets(), this.loadCategoryOptions()]);
   }
 }

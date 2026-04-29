@@ -29,8 +29,10 @@ export class LoginComponent {
   private readonly router = inject(Router);
 
   async onSubmit(event: LoginType) {
+    const email = event.email.trim().toLowerCase();
+
     await this.authStateService.login({
-      email: event.email,
+      email,
       password: event.password,
     });
 

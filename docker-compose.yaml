@@ -579,7 +579,7 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     ports:
-      - '3017:3017'
+      - '3016:3016'
     depends_on:
       postgres:
         condition: service_healthy
@@ -605,7 +605,7 @@ services:
       context: .
       dockerfile: ./apps/payments/Dockerfile
     ports:
-      - '3019:3019'
+      - '3018:3018'
     depends_on:
       postgres:
         condition: service_healthy

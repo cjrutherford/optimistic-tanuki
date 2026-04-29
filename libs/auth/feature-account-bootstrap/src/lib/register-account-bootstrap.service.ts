@@ -17,6 +17,11 @@ export class RegisterAccountBootstrapService {
   ) {}
 
   async register(data: RegisterRequest, appScope: string) {
+    const normalizedRequest: RegisterRequest = {
+      ...data,
+      email: data.email.trim().toLowerCase(),
+    };
+
     if (appScope === 'owner-console') {
       const existingGlobalProfiles = (await firstValueFrom(
         this.profileClient.send(
@@ -33,7 +38,7 @@ export class RegisterAccountBootstrapService {
     }
 
     const result = await firstValueFrom(
-      this.authClient.send({ cmd: AuthCommands.Register }, data),
+      this.authClient.send({ cmd: AuthCommands.Register }, normalizedRequest),
     );
 
     const newProfile: CreateProfileDto & { appScope: string } = {

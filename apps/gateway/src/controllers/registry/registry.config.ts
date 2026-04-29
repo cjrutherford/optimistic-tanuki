@@ -1,5 +1,8 @@
 import * as fs from 'fs';
-import { AppRegistry, DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry';
+import {
+  AppRegistry,
+  DEFAULT_APP_REGISTRY,
+} from '@optimistic-tanuki/app-registry-backend';
 
 export function loadConfiguredRegistry(path?: string): AppRegistry {
   if (!path) {

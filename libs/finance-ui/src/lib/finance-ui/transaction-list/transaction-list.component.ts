@@ -60,7 +60,19 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
           <option value="debit">Debit</option>
           <option value="credit">Credit</option>
         </select>
-        <input [(ngModel)]="draft.category" name="category" placeholder="Category" />
+        <div class="category-field">
+          <input
+            [(ngModel)]="draft.category"
+            name="category"
+            placeholder="Category"
+            list="transaction-category-options"
+          />
+          <datalist id="transaction-category-options">
+            @for (category of categoryOptions(); track category) {
+              <option [value]="category"></option>
+            }
+          </datalist>
+        </div>
         <input
           [(ngModel)]="draft.payeeOrVendor"
           name="payeeOrVendor"
@@ -207,6 +219,7 @@ export class TransactionListComponent implements OnInit {
 
   transactions = signal<Transaction[]>([]);
   accounts = signal<Account[]>([]);
+  categoryOptions = signal<string[]>([]);
   loading = signal(false);
   workspace = signal<FinanceWorkspace>('personal');
   editingId = signal<string | null>(null);
@@ -222,12 +235,14 @@ export class TransactionListComponent implements OnInit {
     this.draft = this.emptyDraft();
     this.loading.set(true);
     try {
-      const [transactions, accounts] = await Promise.all([
+      const [transactions, accounts, categoryOptions] = await Promise.all([
         this.financeService.getTransactions(workspace),
         this.financeService.getAccounts(workspace),
+        this.financeService.getCategorySuggestions(workspace),
       ]);
       this.transactions.set(transactions);
       this.accounts.set(accounts);
+      this.categoryOptions.set(categoryOptions);
       this.draft.accountId = accounts[0]?.id ?? '';
     } catch (error) {
       if (isAbortLikeHttpError(error)) {
@@ -299,6 +314,7 @@ export class TransactionListComponent implements OnInit {
   async saveTransaction() {
     const payload: CreateTransaction = {
       ...this.draft,
+      category: this.draft.category?.trim(),
       transactionDate: new Date(this.draft.transactionDate),
       workspace: this.workspace(),
       transferType: this.draft.transferType || undefined,

@@ -9,7 +9,7 @@ import {
   NavigationLink,
   NavigationLinkType,
   NavigationPosition,
-} from '@optimistic-tanuki/app-registry';
+} from '@optimistic-tanuki/app-registry-backend';
 import { forkJoin } from 'rxjs';
 import {
   RegistryAuditEntry,

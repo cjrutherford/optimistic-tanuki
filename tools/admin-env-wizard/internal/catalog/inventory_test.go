@@ -11,6 +11,8 @@ func TestDeployableAppsIncludesExpectedServicesAndClients(t *testing.T) {
 	}
 
 	want := map[string]struct{}{
+		"finance":      {},
+		"fin-commander": {},
 		"classifieds":  {},
 		"lead-tracker": {},
 		"leads-app":    {},
@@ -56,6 +58,16 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 			id:             "local-hub",
 			composeService: "local-hub-client-interface",
 			manifestPath:   "k8s/base/clients/local-hub.yaml",
+		},
+		{
+			id:             "finance",
+			composeService: "finance",
+			manifestPath:   "k8s/base/services/finance.yaml",
+		},
+		{
+			id:             "fin-commander",
+			composeService: "fin-commander",
+			manifestPath:   "k8s/base/clients/fin-commander.yaml",
 		},
 		{
 			id:             "marketing-generator",

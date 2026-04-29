@@ -18,6 +18,7 @@ resources:
   - services/permissions.yaml
   - services/project-planning.yaml
   - services/classifieds.yaml
+  - services/finance.yaml
   - services/payments.yaml
   - services/lead-tracker.yaml
   - services/store.yaml
@@ -30,6 +31,7 @@ resources:
   - clients/hai.yaml
   - clients/christopherrutherford-net.yaml
   - clients/owner-console.yaml
+  - clients/fin-commander.yaml
   - clients/marketing-generator.yaml
   - clients/store-client.yaml
   - clients/configurable-client.yaml

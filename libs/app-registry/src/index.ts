@@ -1,7 +1,3 @@
-export * from './lib/app-registry.types';
-export * from './lib/navigation.types';
-export * from './lib/default-registry';
-export * from './lib/default-links';
 export * from './lib/app-registry.service';
 export * from './lib/navigation.service';
 export * from './lib/app-registry.module';

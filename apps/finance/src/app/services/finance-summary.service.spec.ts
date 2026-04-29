@@ -129,6 +129,50 @@ describe('FinanceSummaryService', () => {
     ).toBe(true);
   });
 
+  it('derives budget pressure from categorized transactions that match the budget category', async () => {
+    accountService.findAll.mockResolvedValue([
+      {
+        id: 'a1',
+        balance: 1200,
+        workspace: 'personal',
+        lastReviewedAt: new Date(),
+      },
+    ]);
+    transactionService.findAll.mockResolvedValue([
+      {
+        id: 't1',
+        type: 'debit',
+        amount: 85,
+        workspace: 'personal',
+        category: 'Groceries',
+        transactionDate: new Date(),
+      },
+    ]);
+    budgetService.findAll.mockResolvedValue([
+      {
+        id: 'b1',
+        workspace: 'personal',
+        category: 'Groceries',
+        limit: 100,
+        spent: 0,
+        isActive: true,
+      },
+    ]);
+    inventoryItemService.findAll.mockResolvedValue([]);
+    recurringItemService.findAll.mockResolvedValue([]);
+
+    const queue = await service.getWorkQueue(
+      { userId: 'user-1', profileId: 'profile-1', appScope: 'finance' },
+      'personal'
+    );
+
+    expect(
+      queue.items.some(
+        (item: { ruleId: string }) => item.ruleId === 'budget-near-limit'
+      )
+    ).toBe(true);
+  });
+
   it('resolves tenantId before bootstrapping starter finance records', async () => {
     financeTenantService.getCurrentTenant.mockResolvedValue({
       id: 'tenant-1',

@@ -183,7 +183,7 @@ describe('AppService', () => {
         .spyOn(jwtService, 'sign')
         .mockImplementation(() => 'mockToken' as any);
 
-      const result = await service.login('test@example.com', 'password');
+      const result = await service.login('Test@Example.com', 'password');
       expect(result).toEqual({
         message: 'Login successful',
         code: 0,
@@ -350,7 +350,7 @@ describe('AppService', () => {
       jest.spyOn(userRepo, 'save').mockResolvedValue(undefined);
 
       const result = await service.registerUser(
-        registerRequest.email,
+        'NewUser@Example.COM',
         registerRequest.fn,
         registerRequest.ln,
         registerRequest.password,
@@ -365,7 +365,7 @@ describe('AppService', () => {
           pub: 'newPubKey',
           user: expect.objectContaining({
             id: 'newUserId',
-            email: registerRequest.email,
+            email: 'newuser@example.com',
           }),
           privKey: 'newPrivLocation',
           inventory: undefined,
@@ -378,7 +378,7 @@ describe('AppService', () => {
         registerRequest.password,
       );
       expect(userRepo.insert).toHaveBeenCalledWith(
-        expect.objectContaining({ email: registerRequest.email }),
+        expect.objectContaining({ email: 'newuser@example.com' }),
       );
       expect(keyService.generateUserKeys).toHaveBeenCalledWith(
         'newUserId',
@@ -458,6 +458,27 @@ describe('AppService', () => {
           registerRequest.bio,
         ),
       ).rejects.toThrow('User already exists');
+    });
+
+    it('checks duplicate users with a lowercase normalized email', async () => {
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue(registerRequest as unknown as UserEntity);
+
+      await expect(
+        service.registerUser(
+          'NewUser@Example.COM',
+          registerRequest.fn,
+          registerRequest.ln,
+          registerRequest.password,
+          registerRequest.confirm,
+          registerRequest.bio,
+        ),
+      ).rejects.toThrow('User already exists');
+
+      expect(userRepo.findOne).toHaveBeenCalledWith({
+        where: { email: 'newuser@example.com' },
+      });
     });
 
     it('should throw RpcException if hash creation fails', async () => {

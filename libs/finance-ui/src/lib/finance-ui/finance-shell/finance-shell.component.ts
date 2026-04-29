@@ -96,7 +96,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
   styles: [
     `
       .finance-shell {
-        padding: 24px;
+        padding: 20px 24px 28px;
         background: var(--background, #f8fafc);
         min-height: 100%;
         color: var(--foreground, #1f2937);
@@ -104,10 +104,14 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
       }
       .hero {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
-        gap: 20px;
-        align-items: start;
-        margin-bottom: 24px;
+        grid-template-columns: minmax(0, 1.5fr) minmax(240px, 300px);
+        gap: 16px;
+        align-items: center;
+        margin-bottom: 18px;
+        padding: 1rem 1.1rem;
+        border-radius: var(--border-radius-lg, 18px);
+        background: color-mix(in srgb, var(--surface, #ffffff) 92%, transparent);
+        border: 1px solid var(--border, rgba(148, 163, 184, 0.18));
       }
       .eyebrow {
         margin: 0 0 8px;
@@ -118,18 +122,19 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
       }
       h1 {
         margin: 0;
-        font-size: clamp(32px, 4vw, 52px);
-        line-height: 1.02;
-        max-width: 10ch;
+        font-size: clamp(28px, 3vw, 38px);
+        line-height: 1.04;
+        max-width: 18ch;
         font-family: var(--font-heading, 'Helvetica Neue', Arial, sans-serif);
       }
       .lede {
-        max-width: 56ch;
+        max-width: 62ch;
         color: var(--muted, #6b7280);
-        font-size: 16px;
+        font-size: 15px;
+        margin: 0.4rem 0 0;
       }
       .status-card {
-        padding: 18px;
+        padding: 14px 16px;
         border-radius: var(--border-radius-lg, 18px);
         background: var(--surface, #ffffff);
         border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
@@ -262,7 +267,9 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
     const state = this.onboardingState();
     if (
       state &&
-      (state.requiresOnboarding || state.availableWorkspaces.length === 0)
+      (state.requiresOnboarding ||
+        state.availableWorkspaces.length === 0 ||
+        state.checklist.some((item) => !item.complete))
     ) {
       return ['/onboarding'];
     }

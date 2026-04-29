@@ -18,15 +18,25 @@ export class AuthenticationService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly baseUrl = `${this.apiBaseUrl}/authentication`;
 
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
   register(data: RegisterRequest) {
-    return this.http.post(`${this.baseUrl}/register`, data);
+    return this.http.post(`${this.baseUrl}/register`, {
+      ...data,
+      email: this.normalizeEmail(data.email),
+    });
   }
 
   login(data: LoginRequest) {
     return firstValueFrom(
       this.http.post<{ data: { newToken: string } }>(
         `${this.baseUrl}/login`,
-        data
+        {
+          ...data,
+          email: this.normalizeEmail(data.email),
+        }
       )
     );
   }

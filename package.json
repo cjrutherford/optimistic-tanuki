@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "docker:build:slow": "for service in authentication client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestrator telos-docs-service blogging crdn-client-interface digital-homestead-client-interface hai-client-interface fin-commander marketing-generator permissions owner-console store store-client app-configurator configurable-client forum d6 wellness classifieds payments finance local-hub-client-interface leads-app lead-tracker system-configurator system-configurator-api videos video-client; do docker compose build $service; done",
+    "docker:build:slow": "for service in authentication ot-client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestration telos-docs-service blogging crdn-client-interface digital-homestead-client-interface hai-client-interface fin-commander marketing-generator permissions owner-console store store-client app-configurator configurable-client forum d6 wellness classifieds payments finance local-hub-client-interface leads-app lead-tracker system-configurator system-configurator-api videos video-client; do docker compose build $service; done",
     "docker:build": "./scripts/docker-build-batched.sh",
     "docker:build:batched": "./scripts/docker-build-batched.sh",
     "docker:build:batched:dev": "./scripts/docker-build-batched.sh 4 docker-compose.dev.yaml",
