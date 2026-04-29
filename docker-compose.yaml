@@ -699,7 +699,6 @@ services:
       - gateway
       - videos
 
-
 volumes:
   postgres_data:
   video-processing-data:

@@ -529,14 +529,14 @@ func (c *Catalog) initServices() {
 			Compose: ComposeMetadata{
 				BuildContext:  ".",
 				Dockerfile:    "./apps/classifieds/Dockerfile",
-				ContainerPort: 3017,
-				ExternalPort:  3017,
+				ContainerPort: 3018,
+				ExternalPort:  3018,
 				DependsOn:     []string{"postgres"},
 				EnvDefaults:   map[string]string{},
 			},
 			K8s: K8sMetadata{
 				Replicas:     2,
-				InternalPort: 3017,
+				InternalPort: 3018,
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
