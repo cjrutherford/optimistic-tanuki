@@ -46,4 +46,47 @@ describe('SetupChecklistComponent', () => {
       'Create at least one active budget'
     );
   });
+
+  it('marks transaction categorization complete when onboarding state reports it', async () => {
+    await TestBed.configureTestingModule({
+      imports: [SetupChecklistComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ workspace: 'personal' }),
+            },
+          },
+        },
+        {
+          provide: FinanceService,
+          useValue: {
+            getOnboardingState: jest.fn().mockResolvedValue({
+              requiresOnboarding: false,
+              availableWorkspaces: ['personal'],
+              checklist: [
+                {
+                  id: 'categorize-transactions',
+                  label: 'Categorize early transactions',
+                  complete: true,
+                },
+              ],
+            }),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(SetupChecklistComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Categorize early transactions'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Done');
+  });
 });

@@ -45,6 +45,10 @@ export class FinanceService {
     return workspace ? `?workspace=${workspace}` : '';
   }
 
+  private normalizeCategory(category: string | null | undefined): string {
+    return category?.trim().toLowerCase() ?? '';
+  }
+
   // Account methods
   async createAccount(account: CreateAccount): Promise<Account> {
     return firstValueFrom(
@@ -271,11 +275,31 @@ export class FinanceService {
   }
 
   async getBudgets(workspace?: FinanceWorkspace): Promise<Budget[]> {
-    return firstValueFrom(
-      this.http.get<Budget[]>(
-        `${this.baseUrl}/budgets${this.workspaceQuery(workspace)}`
-      )
-    );
+    const [budgets, transactions] = await Promise.all([
+      firstValueFrom(
+        this.http.get<Budget[]>(
+          `${this.baseUrl}/budgets${this.workspaceQuery(workspace)}`
+        )
+      ),
+      this.getTransactions(workspace),
+    ]);
+
+    return budgets.map((budget) => {
+      const normalizedBudgetCategory = this.normalizeCategory(budget.category);
+      const spent = transactions
+        .filter(
+          (transaction) =>
+            transaction.type === 'debit' &&
+            this.normalizeCategory(transaction.category) ===
+              normalizedBudgetCategory
+        )
+        .reduce((sum, transaction) => sum + Number(transaction.amount), 0);
+
+      return {
+        ...budget,
+        spent,
+      };
+    });
   }
 
   async updateBudget(id: string, budget: UpdateBudget): Promise<Budget> {
@@ -283,7 +307,6 @@ export class FinanceService {
       name: budget.name,
       category: budget.category,
       limit: budget.limit,
-      spent: budget.spent,
       period: budget.period,
       isActive: budget.isActive,
       alertOnExceed: budget.alertOnExceed,
@@ -408,5 +431,23 @@ export class FinanceService {
     return firstValueFrom(
       this.http.get<FinanceTenantMember[]>(`${this.baseUrl}/tenant/members`)
     );
+  }
+
+  async getCategorySuggestions(
+    workspace: FinanceWorkspace
+  ): Promise<string[]> {
+    const [transactions, budgets, recurringItems] = await Promise.all([
+      this.getTransactions(workspace),
+      this.getBudgets(workspace),
+      workspace === 'net-worth' ? Promise.resolve([]) : this.getRecurringItems(workspace),
+    ]);
+
+    return Array.from(
+      new Set(
+        [...transactions, ...budgets, ...recurringItems]
+          .map((item) => item.category?.trim())
+          .filter((category): category is string => !!category)
+      )
+    ).sort((left, right) => left.localeCompare(right));
   }
 }

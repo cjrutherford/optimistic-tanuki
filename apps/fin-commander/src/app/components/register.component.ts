@@ -23,9 +23,11 @@ export class RegisterComponent {
   private readonly router = inject(Router);
 
   onSubmit(event: RegisterSubmitType) {
+    const email = event.email.trim().toLowerCase();
+
     this.authenticationService
       .register({
-        email: event.email,
+        email,
         password: event.password,
         confirm: event.confirmation,
         fn: event.firstName,

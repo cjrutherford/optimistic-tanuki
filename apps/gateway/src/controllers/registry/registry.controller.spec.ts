@@ -1,7 +1,9 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RegistryController } from './registry.controller';
-import { DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry';
-import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry';
+import {
+  DEFAULT_APP_REGISTRY,
+  DEFAULT_NAVIGATION_LINKS,
+} from '@optimistic-tanuki/app-registry-backend';
 
 describe('RegistryController', () => {
   let controller: RegistryController;

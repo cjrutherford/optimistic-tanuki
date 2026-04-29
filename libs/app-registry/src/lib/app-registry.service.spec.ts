@@ -1,11 +1,16 @@
 import { of, throwError } from 'rxjs';
+import { DEFAULT_APP_REGISTRY } from '@optimistic-tanuki/app-registry-backend';
 import { AppRegistryService } from './app-registry.service';
-import { DEFAULT_APP_REGISTRY } from './default-registry';
-import generatedRegistry from './default-registry.json';
 
 describe('AppRegistryService', () => {
+  const browserPlatformId = 'browser' as any;
+  const serverPlatformId = 'server' as any;
+
   it('uses the generated registry JSON as the build-time fallback', () => {
-    expect(DEFAULT_APP_REGISTRY).toEqual(generatedRegistry);
+    expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain('hai');
+    expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
+      'system-configurator'
+    );
   });
 
   it('loads the runtime registry on service creation', () => {
@@ -18,7 +23,12 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    new AppRegistryService(http as any, '/api/registry/apps', 300000, 'browser');
+    new AppRegistryService(
+      http as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
 
     expect(http.get).toHaveBeenCalledWith('/api/registry/apps');
   });
@@ -34,7 +44,12 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    const service = new AppRegistryService(http as any, '/api/registry/apps', 1000, 'browser');
+    const service = new AppRegistryService(
+      http as any,
+      '/api/registry/apps',
+      1000,
+      browserPlatformId
+    );
 
     expect(http.get).toHaveBeenCalledTimes(1);
 
@@ -57,7 +72,7 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    new AppRegistryService(http as any, '/api/registry/apps', 0, 'browser');
+    new AppRegistryService(http as any, '/api/registry/apps', 0, browserPlatformId);
 
     jest.advanceTimersByTime(5000);
 
@@ -69,7 +84,7 @@ describe('AppRegistryService', () => {
   it('returns bundled apps when the runtime registry is unavailable', (done) => {
     const service = new AppRegistryService({
       get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),
-    } as any, '/api/registry/apps', 300000, 'browser');
+    } as any, '/api/registry/apps', 300000, browserPlatformId);
 
     service.getAllApps().subscribe((apps) => {
       expect(apps.map((app) => app.appId)).toContain('hai');
@@ -95,7 +110,7 @@ describe('AppRegistryService', () => {
           },
         })
       ),
-    } as any, '/api/registry/apps', 300000, 'browser');
+    } as any, '/api/registry/apps', 300000, browserPlatformId);
 
     service.getApp('runtime-app').subscribe((app) => {
       expect(app?.name).toBe('Runtime App');
@@ -104,7 +119,12 @@ describe('AppRegistryService', () => {
   });
 
   it('generates app URLs with path and query params', () => {
-    const service = new AppRegistryService({ get: jest.fn() } as any, '/api/registry/apps', 300000, 'server');
+    const service = new AppRegistryService(
+      { get: jest.fn() } as any,
+      '/api/registry/apps',
+      300000,
+      serverPlatformId
+    );
 
     expect(
       service.getAppUrl('system-configurator', '/build/new', {

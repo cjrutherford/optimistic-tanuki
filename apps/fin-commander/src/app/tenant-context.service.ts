@@ -1,5 +1,9 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { FinanceService, FinanceTenant } from '@optimistic-tanuki/finance-ui';
+import {
+  FinanceAccountType,
+  FinanceService,
+  FinanceTenant,
+} from '@optimistic-tanuki/finance-ui';
 import { FinCommanderPlanStore } from '@optimistic-tanuki/fin-commander-data-access';
 import { ProfileContext } from './profile.context';
 
@@ -91,6 +95,16 @@ export class TenantContextService {
           }
         : null,
     );
+  }
+
+  async createTenant(input: {
+    name: string;
+    type?: FinanceAccountType;
+  }): Promise<FinanceTenant> {
+    const createdTenant = await this.financeService.createTenant(input);
+    await this.loadTenantContext();
+    this.selectTenant(createdTenant.id);
+    return createdTenant;
   }
 
   private resolveActiveTenant(

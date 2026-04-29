@@ -18,12 +18,12 @@ spec:
           image: cjrutherford/optimistic_tanuki_payments:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3018
+            - containerPort: 3004
           env:
             - name: NODE_ENV
               value: 'production'
             - name: PORT
-              value: '3018'
+              value: '3004'
             - name: POSTGRES_HOST
               value: 'postgres'
             - name: POSTGRES_PORT
@@ -40,12 +40,12 @@ spec:
               cpu: '500m'
           livenessProbe:
             tcpSocket:
-              port: 3018
+              port: 3004
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 3018
+              port: 3004
             initialDelaySeconds: 10
             periodSeconds: 5
       restartPolicy: Always
@@ -59,6 +59,6 @@ spec:
   selector:
     app: payments
   ports:
-    - port: 3018
-      targetPort: 3018
+    - port: 3004
+      targetPort: 3004
   clusterIP: None

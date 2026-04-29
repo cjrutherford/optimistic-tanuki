@@ -200,7 +200,7 @@ export class TitleBarComponent implements OnInit, OnDestroy {
     ) {
       return {
         label: 'Finish setup checklist',
-        route: `/finance/${this.setupWorkspace()}/setup`,
+        route: '/onboarding',
         description:
           'Add your first financial account and finish the ledger basics.',
       };

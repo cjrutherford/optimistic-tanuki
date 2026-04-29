@@ -1,22 +1,13 @@
 import {
   FinanceOnboardingState,
   FinanceService,
-  FinanceWorkspace,
 } from '@optimistic-tanuki/finance-ui';
 import { ProfileService } from './profile.service';
 import { TenantContextService } from './tenant-context.service';
 
 export type SetupRoute =
   | ['/settings']
-  | ['/onboarding']
-  | ['/finance', FinanceWorkspace, 'setup'];
-
-function getSetupWorkspace(state: FinanceOnboardingState): FinanceWorkspace {
-  return (
-    state.availableWorkspaces.find((workspace) => workspace !== 'net-worth') ??
-    'personal'
-  );
-}
+  | ['/onboarding'];
 
 function needsFinanceSetup(state: FinanceOnboardingState): boolean {
   return (
@@ -55,7 +46,7 @@ export async function resolveNextSetupRoute(
   }
 
   if (needsFinanceSetup(onboardingState)) {
-    return ['/finance', getSetupWorkspace(onboardingState), 'setup'];
+    return ['/onboarding'];
   }
 
   return null;

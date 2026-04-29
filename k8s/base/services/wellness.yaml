@@ -18,12 +18,12 @@ spec:
           image: cjrutherford/optimistic_tanuki_wellness:sha-92b0c5c58f8bd553138f1bfb09fedc1d92c221d5
           imagePullPolicy: Always
           ports:
-            - containerPort: 3016
+            - containerPort: 3018
           env:
             - name: NODE_ENV
               value: "production"
             - name: PORT
-              value: "3016"
+              value: "3018"
             - name: POSTGRES_HOST
               value: "postgres"
             - name: POSTGRES_PORT
@@ -50,12 +50,12 @@ spec:
               cpu: "500m"
           livenessProbe:
             tcpSocket:
-              port: 3016
+              port: 3018
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 3016
+              port: 3018
             initialDelaySeconds: 10
             periodSeconds: 5
       restartPolicy: Always
@@ -69,6 +69,6 @@ spec:
   selector:
     app: wellness
   ports:
-    - port: 3016
-      targetPort: 3016
+    - port: 3018
+      targetPort: 3018
   clusterIP: None

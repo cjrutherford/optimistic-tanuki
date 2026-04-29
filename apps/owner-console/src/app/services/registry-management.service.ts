@@ -1,11 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
 import {
   AppRegistry,
   AppRegistryResponse,
-} from '@optimistic-tanuki/app-registry';
-import { NavigationLink } from '@optimistic-tanuki/app-registry';
+  NavigationLink,
+} from '@optimistic-tanuki/app-registry-backend';
+import { Observable } from 'rxjs';
 
 export interface NavigationLinksResponse {
   success: boolean;

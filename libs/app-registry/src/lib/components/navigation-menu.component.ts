@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, Input, OnChanges, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  GeneratedLink,
+  NavigationPosition,
+} from '@optimistic-tanuki/app-registry-backend';
 import { BehaviorSubject, switchMap } from 'rxjs';
-import { GeneratedLink, NavigationPosition } from '../navigation.types';
 import { NavigationService } from '../navigation.service';
 
 @Component({

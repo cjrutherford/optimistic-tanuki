@@ -52,7 +52,7 @@ func TestCatalogIncludesInfraPresets(t *testing.T) {
 func TestCatalogIncludesServicePresets(t *testing.T) {
 	catalog := DefaultCatalog()
 
-	tests := []string{"gateway", "authentication", "profile", "app-configurator", "system-configurator-api"}
+	tests := []string{"gateway", "authentication", "profile", "app-configurator", "system-configurator-api", "finance"}
 
 	for _, id := range tests {
 		t.Run(id, func(t *testing.T) {
@@ -70,7 +70,7 @@ func TestCatalogIncludesServicePresets(t *testing.T) {
 func TestCatalogIncludesClientPresets(t *testing.T) {
 	catalog := DefaultCatalog()
 
-	tests := []string{"client-interface", "configurable-client", "system-configurator"}
+	tests := []string{"client-interface", "configurable-client", "system-configurator", "fin-commander"}
 
 	for _, id := range tests {
 		t.Run(id, func(t *testing.T) {

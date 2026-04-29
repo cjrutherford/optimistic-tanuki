@@ -506,14 +506,14 @@ func (c *Catalog) initServices() {
 			Compose: ComposeMetadata{
 				BuildContext:  ".",
 				Dockerfile:    "./apps/wellness/Dockerfile",
-				ContainerPort: 3016,
-				ExternalPort:  3016,
+				ContainerPort: 3018,
+				ExternalPort:  3018,
 				DependsOn:     []string{"postgres"},
 				EnvDefaults:   map[string]string{},
 			},
 			K8s: K8sMetadata{
 				Replicas:     2,
-				InternalPort: 3016,
+				InternalPort: 3018,
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
@@ -529,18 +529,51 @@ func (c *Catalog) initServices() {
 			Compose: ComposeMetadata{
 				BuildContext:  ".",
 				Dockerfile:    "./apps/classifieds/Dockerfile",
-				ContainerPort: 3017,
-				ExternalPort:  3017,
+				ContainerPort: 3018,
+				ExternalPort:  3018,
 				DependsOn:     []string{"postgres"},
 				EnvDefaults:   map[string]string{},
 			},
 			K8s: K8sMetadata{
 				Replicas:     2,
-				InternalPort: 3017,
+				InternalPort: 3018,
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
 			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_classifieds", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
+			},
+		},
+		{
+			ID:       "finance",
+			Name:     "Finance Service",
+			Category: CategoryService,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/finance/Dockerfile",
+				ContainerPort: 3016,
+				ExternalPort:  3016,
+				DependsOn:     []string{"postgres"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV": "production",
+					"PORT":     "3016",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 3016,
+				ServiceType:  "ClusterIP",
+				Resources: ResourceLimits{
+					Requests: MemoryCPU{Memory: "128Mi", CPU: "100m"},
+					Limits:   MemoryCPU{Memory: "512Mi", CPU: "500m"},
+				},
+				Probes: ProbesConfig{
+					Liveness:  ProbeConfig{Port: 3016, Initial: 30, Period: 10},
+					Readiness: ProbeConfig{Port: 3016, Initial: 10, Period: 5},
+				},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_finance", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
 			},
@@ -552,14 +585,14 @@ func (c *Catalog) initServices() {
 			Compose: ComposeMetadata{
 				BuildContext:  ".",
 				Dockerfile:    "./apps/payments/Dockerfile",
-				ContainerPort: 3018,
-				ExternalPort:  3018,
+				ContainerPort: 3004,
+				ExternalPort:  3004,
 				DependsOn:     []string{"postgres"},
 				EnvDefaults:   map[string]string{},
 			},
 			K8s: K8sMetadata{
 				Replicas:     2,
-				InternalPort: 3018,
+				InternalPort: 3004,
 				ServiceType:  "ClusterIP",
 				Resources:    ResourceLimits{},
 			},
@@ -765,6 +798,40 @@ func (c *Catalog) initClients() {
 				Resources:    ResourceLimits{},
 			},
 			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_owner-console", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
+			ID:       "fin-commander",
+			Name:     "Fin Commander",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/fin-commander/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  8089,
+				DependsOn:     []string{"gateway"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "LoadBalancer",
+				Resources: ResourceLimits{
+					Requests: MemoryCPU{Memory: "64Mi", CPU: "50m"},
+					Limits:   MemoryCPU{Memory: "256Mi", CPU: "250m"},
+				},
+				Probes: ProbesConfig{
+					Liveness:  ProbeConfig{Port: 4000, Initial: 30, Period: 10},
+					Readiness: ProbeConfig{Port: 4000, Initial: 10, Period: 5},
+				},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_fin-commander", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "gateway", Required: true, ServicePoint: true},
 			},

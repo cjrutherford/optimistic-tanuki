@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -9,7 +9,18 @@ import {
 } from '@optimistic-tanuki/finance-ui';
 import { TenantContextService } from '../../tenant-context.service';
 
-type OnboardingStep = 'account' | 'workspace' | 'finance-account';
+type OnboardingStep =
+  | 'account'
+  | 'workspace'
+  | 'finance-account'
+  | 'categorize-transactions'
+  | 'create-budget'
+  | 'complete';
+type SetupStep =
+  | 'finance-account'
+  | 'categorize-transactions'
+  | 'create-budget'
+  | 'complete';
 
 @Component({
   selector: 'fc-onboarding',
@@ -24,7 +35,7 @@ type OnboardingStep = 'account' | 'workspace' | 'finance-account';
       <div class="step-container">
         @switch (currentStep()) { @case ('account') {
         <section class="step-panel">
-          <span class="eyebrow">Step 1 of 3</span>
+          <span class="eyebrow">Step 1 of 6</span>
           <h1>Create your account</h1>
           <p class="description">
             Start by naming the account you want to manage in Fin Commander.
@@ -72,7 +83,7 @@ type OnboardingStep = 'account' | 'workspace' | 'finance-account';
         </section>
         } @case ('workspace') {
         <section class="step-panel">
-          <span class="eyebrow">Step 2 of 3</span>
+          <span class="eyebrow">Step 2 of 6</span>
           <h1>Choose your workspaces</h1>
           <p class="description">
             Pick the ledgers you want to set up for this account.
@@ -110,20 +121,107 @@ type OnboardingStep = 'account' | 'workspace' | 'finance-account';
         </section>
         } @case ('finance-account') {
         <section class="step-panel">
-          <span class="eyebrow">Step 3 of 3</span>
-          <h1>Add your first financial account</h1>
+          <span class="eyebrow">Step 3 of 6</span>
+          <h1>Review your finance accounts</h1>
           <p class="description">
-            Your account is ready. Finish the setup checklist to add your first
-            financial account and continue into Commander.
+            Your account is ready. Open the accounts surface to review the
+            starter ledger and add any real accounts you want to track first.
           </p>
 
-          <button
-            type="button"
-            class="primary-btn"
-            (click)="finishFinanceAccountSetup()"
-          >
-            Open setup checklist
-          </button>
+          <div class="button-stack">
+            <button
+              type="button"
+              class="primary-btn"
+              (click)="finishFinanceAccountSetup()"
+            >
+              Open accounts
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="continueFromFinanceAccountStep()"
+            >
+              Continue onboarding
+            </button>
+          </div>
+        </section>
+        } @case ('categorize-transactions') {
+        <section class="step-panel">
+          <span class="eyebrow">Step 4 of 6</span>
+          <h1>Categorize your first transactions</h1>
+          <p class="description">
+            Assign categories to your uncategorized transactions so budgets and
+            coaching can work reliably.
+          </p>
+
+          <div class="button-stack">
+            <button
+              type="button"
+              class="primary-btn"
+              (click)="openTransactionCategorization()"
+            >
+              Open transactions
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="refreshSetupProgress()"
+            >
+              Check progress
+            </button>
+          </div>
+        </section>
+        } @case ('create-budget') {
+        <section class="step-panel">
+          <span class="eyebrow">Step 5 of 6</span>
+          <h1>Create your first budget</h1>
+          <p class="description">
+            Add a budget for your main spending category so Fin Commander can
+            show budget pressure and tradeoffs.
+          </p>
+
+          <div class="button-stack">
+            <button
+              type="button"
+              class="primary-btn"
+              (click)="openBudgetSetup()"
+            >
+              Open budgets
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="refreshSetupProgress()"
+            >
+              Check progress
+            </button>
+          </div>
+        </section>
+        } @case ('complete') {
+        <section class="step-panel">
+          <span class="eyebrow">Step 6 of 6</span>
+          <h1>Start in Fin Commander</h1>
+          <p class="description">
+            Your account, workspaces, and finance setup are ready. Move into the
+            ledger or start planning in Commander.
+          </p>
+
+          <div class="button-stack">
+            <button
+              type="button"
+              class="primary-btn"
+              (click)="openLedger()"
+            >
+              Open ledger
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="openCommander()"
+            >
+              Open Commander
+            </button>
+          </div>
         </section>
         } }
       </div>
@@ -340,6 +438,24 @@ type OnboardingStep = 'account' | 'workspace' | 'finance-account';
         cursor: not-allowed;
       }
 
+      .button-stack {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .secondary-btn {
+        width: 100%;
+        padding: 0.875rem 1.5rem;
+        background: color-mix(in srgb, var(--surface) 82%, transparent);
+        color: var(--foreground);
+        border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+        border-radius: var(--fc-button-radius, 9999px);
+        font-family: var(--fc-font-heading, 'Sora', sans-serif);
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
       .error-copy {
         color: var(--danger, #b91c1c);
         margin: 0 0 1rem;
@@ -347,7 +463,7 @@ type OnboardingStep = 'account' | 'workspace' | 'finance-account';
     `,
   ],
 })
-export class OnboardingComponent {
+export class OnboardingComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly tenantContext = inject(TenantContextService);
   private readonly financeService = inject(FinanceService);
@@ -402,11 +518,20 @@ export class OnboardingComponent {
       'account',
       'workspace',
       'finance-account',
+      'categorize-transactions',
+      'create-budget',
+      'complete',
     ];
     return (
       ((stepOrder.indexOf(this.currentStep()) + 1) / stepOrder.length) * 100
     );
   });
+
+  async ngOnInit(): Promise<void> {
+    if (this.tenantContext.activeTenant()) {
+      await this.refreshSetupProgress();
+    }
+  }
 
   toggleWorkspace(workspace: FinanceWorkspace): void {
     const current = this.workspaces();
@@ -434,12 +559,11 @@ export class OnboardingComponent {
     this.creating.set(true);
 
     try {
-      const tenant = await this.financeService.createTenant({
+      const tenant = await this.tenantContext.createTenant({
         name,
         type: this.accountType(),
       });
       this.createdTenantId.set(tenant.id);
-      await this.tenantContext.loadTenantContext();
       this.currentStep.set('workspace');
     } catch {
       this.accountError.set(
@@ -472,7 +596,7 @@ export class OnboardingComponent {
       if (tenantId) {
         this.tenantContext.selectTenant(tenantId);
       }
-      this.currentStep.set('finance-account');
+      await this.refreshSetupProgress('finance-account');
     } catch {
       this.workspaceError.set(
         'We could not save your workspace choices. Please try again.'
@@ -483,6 +607,62 @@ export class OnboardingComponent {
   }
 
   async finishFinanceAccountSetup(): Promise<void> {
-    await this.router.navigate(['/finance', this.primaryWorkspace(), 'setup']);
+    await this.router.navigate(['/finance', this.primaryWorkspace(), 'accounts']);
+  }
+
+  async continueFromFinanceAccountStep(): Promise<void> {
+    await this.refreshSetupProgress('categorize-transactions');
+  }
+
+  async openTransactionCategorization(): Promise<void> {
+    await this.router.navigate([
+      '/finance',
+      this.primaryWorkspace(),
+      'transactions',
+    ]);
+  }
+
+  async openBudgetSetup(): Promise<void> {
+    await this.router.navigate(['/finance', this.primaryWorkspace(), 'budgets']);
+  }
+
+  async refreshSetupProgress(preferredStep?: SetupStep): Promise<void> {
+    const state = await this.financeService.getOnboardingState();
+    if (state.requiresOnboarding || state.availableWorkspaces.length === 0) {
+      this.currentStep.set('workspace');
+      return;
+    }
+
+    const categorizeTransactionsComplete =
+      state.checklist.find((item) => item.id === 'categorize-transactions')
+        ?.complete ?? true;
+    const createBudgetComplete =
+      state.checklist.find((item) => item.id === 'create-budget')?.complete ??
+      true;
+
+    if (preferredStep === 'finance-account') {
+      this.currentStep.set('finance-account');
+      return;
+    }
+
+    if (!categorizeTransactionsComplete) {
+      this.currentStep.set('categorize-transactions');
+      return;
+    }
+
+    if (!createBudgetComplete) {
+      this.currentStep.set('create-budget');
+      return;
+    }
+
+    this.currentStep.set('complete');
+  }
+
+  async openLedger(): Promise<void> {
+    await this.router.navigate(['/finance', this.primaryWorkspace()]);
+  }
+
+  async openCommander(): Promise<void> {
+    await this.router.navigate(['/commander', 'new', 'overview']);
   }
 }

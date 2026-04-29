@@ -38,13 +38,20 @@ export class AppService {
     private readonly jsonWebToken: JwtService,
   ) {}
 
+  private normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
   async getUserIdFromEmail(email: string): Promise<string> {
     try {
-      const user = await this.userRepo.findOne({ where: { email } });
+      const normalizedEmail = this.normalizeEmail(email);
+      const user = await this.userRepo.findOne({
+        where: { email: normalizedEmail },
+      });
       if (!user) {
         throw new RpcException('User not found');
       }
-      this.l.debug(`Found user ID ${user.id} for email ${email}`);
+      this.l.debug(`Found user ID ${user.id} for email ${normalizedEmail}`);
       return user.id;
     } catch (e) {
       if (e instanceof RpcException) {
@@ -61,8 +68,9 @@ export class AppService {
     profileId?: string,
   ) {
     try {
+      const normalizedEmail = this.normalizeEmail(email);
       const user = await this.userRepo.findOne({
-        where: { email },
+        where: { email: normalizedEmail },
         relations: ['keyData'],
       });
       if (!user) {
@@ -92,7 +100,7 @@ export class AppService {
           userId,
           firstName: user.firstName,
           lastName: user.lastName,
-          email,
+          email: normalizedEmail,
         },
         profileId,
       );
@@ -127,10 +135,11 @@ export class AppService {
     bio = '',
   ) {
     try {
+      const normalizedEmail = this.normalizeEmail(email);
       if (typeof password !== 'string' || typeof confirm !== 'string') {
         throw new RpcException('Invalid data');
       }
-      this.l.log('Registering user:', email, fn, ln, bio);
+      this.l.log('Registering user:', normalizedEmail, fn, ln, bio);
       this.l.log('Checking passwords', password, confirm);
       try {
         this.passwordPolicyService.ensurePasswordConfirmation(
@@ -141,9 +150,9 @@ export class AppService {
         throw new RpcException((e as Error).message);
       }
       this.l.log('Passwords match, proceeding with registration');
-      if (typeof email !== 'string' || !validator.isEmail(email)) {
-        this.l.error(`Invalid Email: ${email}`);
-        throw new RpcException('Invalid Email ' + email);
+      if (typeof normalizedEmail !== 'string' || !validator.isEmail(normalizedEmail)) {
+        this.l.error(`Invalid Email: ${normalizedEmail}`);
+        throw new RpcException('Invalid Email ' + normalizedEmail);
       }
       if (!fn) {
         this.l.error('First name is required');
@@ -155,7 +164,7 @@ export class AppService {
       }
       this.l.log('Email is valid, checking for existing user');
       const existingUser = await this.userRepo.findOne({
-        where: { email: email.toLowerCase() },
+        where: { email: normalizedEmail },
       });
       this.l.log('Existing user check complete:', existingUser);
       if (existingUser) {
@@ -170,7 +179,7 @@ export class AppService {
       }
       this.l.log('Hash created successfully:', hashData);
       const insertResult = await this.userRepo.insert({
-        email,
+        email: normalizedEmail,
         firstName: fn,
         lastName: ln,
         password: hashData.hash,
@@ -235,8 +244,9 @@ export class AppService {
       throw new RpcException((e as Error).message);
     }
 
+    const normalizedEmail = this.normalizeEmail(email);
     const user = await this.userRepo.findOne({
-      where: { email },
+      where: { email: normalizedEmail },
       relations: ['keyData'],
     });
     if (!user || !user.keyData) {
