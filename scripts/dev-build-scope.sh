@@ -7,6 +7,7 @@ PROJECTS=""
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --)
+      break
       ;;
     --watch)
       WATCH=1

@@ -281,37 +281,49 @@ async function logRuntimeBundleContext(page: Page, diagnostics: BrowserDiagnosti
     return;
   }
 
-  const debug = await page.evaluate(async () => {
-    const chunkUrl = '/chunk-TBT5BTUI.js';
-    const source = await fetch(chunkUrl).then((response) => response.text());
-    const offset = 16318;
-    const sourceMappingMatch = source.match(
-      /\/\/# sourceMappingURL=(.+)$/m
-    )?.[1];
+  try {
+    const debug = await page.evaluate(async () => {
+      // Discover loaded JS chunk URLs from the page's performance entries
+      const scriptEntries = performance
+        .getEntriesByType('resource')
+        .filter((e) => e.name.match(/\/chunk-[A-Z0-9]+\.js$/))
+        .map((e) => e.name);
 
-    return {
-      chunkUrl,
-      sourceMappingMatch: sourceMappingMatch ?? null,
-      slice: source.slice(Math.max(0, offset - 600), offset + 600),
-      consoleErrors: (
-        (window as Window & {
-          __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
-        }).__otConsoleErrors ?? []
-      ).slice(-5),
-      pageErrors: (
-        (window as Window & {
-          __otPageErrors?: Array<unknown>;
-        }).__otPageErrors ?? []
-      ).slice(-5),
-      unhandledRejections: (
-        (window as Window & {
-          __otUnhandledRejections?: Array<unknown>;
-        }).__otUnhandledRejections ?? []
-      ).slice(-5),
-    };
-  });
+      const chunkResults: Array<{ chunkUrl: string; sourceMappingMatch: string | null }> = [];
+      for (const chunkUrl of scriptEntries) {
+        try {
+          const source = await fetch(chunkUrl).then((r) => r.text());
+          const sourceMappingMatch = source.match(/\/\/# sourceMappingURL=(.+)$/m)?.[1] ?? null;
+          chunkResults.push({ chunkUrl, sourceMappingMatch });
+        } catch {
+          chunkResults.push({ chunkUrl, sourceMappingMatch: null });
+        }
+      }
 
-  console.log(`BUNDLE_DEBUG ${JSON.stringify(debug)}`);
+      return {
+        discoveredChunks: chunkResults,
+        consoleErrors: (
+          (window as Window & {
+            __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
+          }).__otConsoleErrors ?? []
+        ).slice(-5),
+        pageErrors: (
+          (window as Window & {
+            __otPageErrors?: Array<unknown>;
+          }).__otPageErrors ?? []
+        ).slice(-5),
+        unhandledRejections: (
+          (window as Window & {
+            __otUnhandledRejections?: Array<unknown>;
+          }).__otUnhandledRejections ?? []
+        ).slice(-5),
+      };
+    });
+
+    console.log(`BUNDLE_DEBUG ${JSON.stringify(debug)}`);
+  } catch (err) {
+    console.log(`BUNDLE_DEBUG_ERROR ${String(err)}`);
+  }
 }
 
 function logDiagnosticsCheckpoint(

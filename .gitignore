@@ -55,7 +55,8 @@ storybook-static
 /tools/screenshots/test-results
 /tools/screenshots/playwright-report
 apps/*/e2e/test-results
-apps/local-hub-e2e/test-results
+apps/*-e2e/test-results
+playwright-report/
 
 # Generated features breakdown report (regenerate with generate-features-report.sh)
 /FEATURES_BREAKDOWN.md.env
