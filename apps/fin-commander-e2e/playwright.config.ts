@@ -6,7 +6,7 @@ const isCI = process.env['CI'] === 'true';
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
-  testIgnore: ['**/*.spec.ts'],
+  testIgnore: ['**/support/*.spec.ts'],
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL,

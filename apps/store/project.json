@@ -3,9 +3,6 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/store/src",
   "projectType": "application",
-  "dependencies": {
-    "pg": "^8.16.0"
-  },
   "tags": [],
   "targets": {
     "build": {
@@ -40,8 +37,7 @@
       "dependsOn": ["build"],
       "options": {
         "buildTarget": "store:build",
-        "runBuildTargetDependencies": false,
-        "externalDependencies": ["pg"]
+        "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {

@@ -155,47 +155,33 @@ describe('FinanceTenantService', () => {
     ]);
   });
 
-  it('provisions a default finance tenant and membership for a new profile', async () => {
+  it('surfaces a missing current tenant for a new profile instead of auto-provisioning one', async () => {
     tenantRepo.findOne.mockResolvedValue(null);
+
+    await expect(
+      service.getCurrentTenant({
+        profileId: 'profile-1',
+        appScope: 'finance',
+      }),
+    ).rejects.toMatchObject({
+      constructor: RpcException,
+    });
+
+    expect(tenantRepo.save).not.toHaveBeenCalled();
+    expect(tenantMemberRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('returns no tenants for a new profile instead of creating a synthetic default', async () => {
     tenantRepo.find.mockResolvedValue([]);
-    tenantRepo.save.mockResolvedValue({
-      id: 'tenant-1',
-      name: 'Primary Finance Workspace',
-      profileId: 'profile-1',
-      appScope: 'finance',
-      isActive: true,
-    } as FinanceTenant);
-    tenantMemberRepo.save.mockResolvedValue({
-      id: 'member-1',
-      tenantId: 'tenant-1',
-      profileId: 'profile-1',
-      role: 'finance_admin',
-      isActive: true,
-    } as FinanceTenantMember);
 
-    const tenant = await service.getCurrentTenant({
+    const tenants = await service.listTenants({
       profileId: 'profile-1',
       appScope: 'finance',
     });
 
-    expect(tenantRepo.save).toHaveBeenCalledWith({
-      name: 'Primary Finance Workspace',
-      profileId: 'profile-1',
-      appScope: 'finance',
-      isActive: true,
-    });
-    expect(tenantMemberRepo.save).toHaveBeenCalledWith({
-      tenantId: 'tenant-1',
-      profileId: 'profile-1',
-      role: 'finance_admin',
-      isActive: true,
-    });
-    expect(tenant).toEqual({
-      id: 'tenant-1',
-      name: 'Primary Finance Workspace',
-      profileId: 'profile-1',
-      appScope: 'finance',
-    });
+    expect(tenants).toEqual([]);
+    expect(tenantRepo.save).not.toHaveBeenCalled();
+    expect(tenantMemberRepo.save).not.toHaveBeenCalled();
   });
 
   it('creates an explicit finance tenant with the requested account type', async () => {
@@ -273,12 +259,13 @@ describe('FinanceTenantService', () => {
       });
   });
 
-  it('wraps tenant provisioning failures as rpc internal server errors', async () => {
-    tenantRepo.findOne.mockResolvedValue(null);
+  it('wraps explicit tenant creation failures as rpc internal server errors', async () => {
     tenantRepo.save.mockRejectedValue(new Error('insert failed'));
 
     await service
-      .getCurrentTenant({
+      .createTenant({
+        name: 'Primary Household',
+        type: 'household',
         profileId: 'profile-1',
         appScope: 'finance',
       })

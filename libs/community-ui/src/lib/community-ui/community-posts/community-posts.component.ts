@@ -70,6 +70,7 @@ export class CommunityPostsComponent extends Variantable {
   @Input() showCommunityHeader = true;
   @Input() showNavigation = true;
   @Input() showComposer = false;
+  @Input() canCreatePosts = true;
 
   setActiveTab(tab: 'posts' | 'create' | 'manage') {
     this.activeTab.set(tab);

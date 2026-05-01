@@ -15,17 +15,14 @@ This directory contains the infrastructure and deployment docs for the active re
 
 ### Local Development Stack
 
+Use `docs/devops/docker-compose.md` as the canonical local-workflow guide.
+
 ```bash
-# Build dist/ and start the full Docker dev stack
 pnpm run docker:dev
-
-# First-time bootstrap with seed data
 pnpm run docker:dev:bootstrap
-
-# Keep hot reload active
 pnpm run watch:build
-
-# Inspect or stop the stack
+pnpm run docker:infra:up
+pnpm run watch:build:scope -- --projects=gateway
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 pnpm run docker:dev:down

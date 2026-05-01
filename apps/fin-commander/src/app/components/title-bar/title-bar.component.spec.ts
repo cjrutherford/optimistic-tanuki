@@ -69,7 +69,11 @@ describe('TitleBarComponent', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: signal({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: signal({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
             activeTenantId: signal('tenant-1'),
             availableTenants: signal([
               { id: 'tenant-1', name: 'North Household' },
@@ -136,7 +140,11 @@ describe('TitleBarComponent', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: signal({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: signal({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
             activeTenantId: signal('tenant-1'),
             availableTenants: signal([
               { id: 'tenant-1', name: 'North Household' },
@@ -196,7 +204,11 @@ describe('TitleBarComponent', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: signal({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: signal({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
             activeTenantId: signal('tenant-1'),
             availableTenants: signal([
               { id: 'tenant-1', name: 'North Household' },
@@ -256,7 +268,11 @@ describe('TitleBarComponent', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: signal({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: signal({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
             activeTenantId: signal('tenant-1'),
             availableTenants: signal([
               { id: 'tenant-1', name: 'North Household' },
@@ -589,7 +605,11 @@ describe('TitleBarComponent', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: signal({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: signal({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
             activeTenantId: signal('tenant-1'),
             availableTenants: signal([
               { id: 'tenant-1', name: 'North Household' },

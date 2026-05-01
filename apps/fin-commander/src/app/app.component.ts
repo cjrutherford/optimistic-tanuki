@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
 
       if (!hasStoredPersonalityTheme) {
         this.themeService.setTheme('light');
-        this.themeService.setPersonality('fin-commander-shark');
+        this.themeService.setPersonality('classic');
         this.themeService.setPrimaryColor('#0d5f73');
         return;
       }
@@ -48,7 +48,7 @@ export class AppComponent implements OnInit {
     this.themeService.setTheme(this.themeService.getTheme());
 
     if (this.profileContext.isAuthenticated()) {
-      void this.profileContext.loadProfile();
+      void this.profileContext.loadProfile().catch(() => undefined);
     }
   }
 }

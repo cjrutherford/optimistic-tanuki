@@ -16,6 +16,12 @@ import {
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { City } from '../../services/community.service';
+import {
+  MapCoordinates,
+  MapMode,
+  buildAtlasNearbySelection,
+  isRenderableCoordinate,
+} from './map.utils';
 
 @Component({
   selector: 'app-map',
@@ -26,14 +32,13 @@ import { City } from '../../services/community.service';
 })
 export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
+  @Input() mode: MapMode = 'single-location';
   @Input() cities: City[] = [];
   @Input() centerLat = 31.9;
   @Input() centerLng = -81.1;
   @Input() zoom = 7;
   @Input() centerLabel = 'Savannah, GA';
-  @Input() showRadius = false;
-  @Input() preferUserLocation = false;
-  @Input() userLocation: { lat: number; lng: number } | null = null;
+  @Input() userLocation: MapCoordinates | null = null;
   @Output() citySelected = new EventEmitter<City>();
 
   private platformId = inject(PLATFORM_ID);
@@ -58,9 +63,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
         !changes['centerLat'] &&
         !changes['centerLng'] &&
         !changes['centerLabel'] &&
-        !changes['showRadius'] &&
         !changes['zoom'] &&
-        !changes['preferUserLocation'] &&
+        !changes['mode'] &&
         !changes['userLocation'])
     ) {
       return;
@@ -168,13 +172,18 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     this.clearOverlays();
 
-    const primaryColor = this.getCssVariable('--primary', '#3b82f6');
-    if (this.showRadius) {
-      this.addRadiusCircle(this.leaflet, primaryColor);
-      this.addCenterMarker(this.leaflet);
+    switch (this.mode) {
+      case 'atlas-nearby':
+        this.renderAtlasNearbyMode(this.leaflet);
+        break;
+      case 'radius-focus':
+        this.renderRadiusFocusMode(this.leaflet);
+        break;
+      case 'single-location':
+      default:
+        this.renderSingleLocationMode(this.leaflet);
+        break;
     }
-    this.addMarkers(this.leaflet);
-    this.focusMapView();
   }
 
   private clearOverlays(): void {
@@ -220,65 +229,63 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.radiusOverlays.push(outline, fill);
   }
 
-  private addCenterMarker(L: any): void {
-    const centerIcon = L.divIcon({
-      className: 'center-marker',
-      html: `<div class="center-marker-inner"></div>`,
+  private addFocusMarker(L: any): void {
+    const focusCoordinates = this.getFocusCoordinates();
+    if (!focusCoordinates) {
+      return;
+    }
+
+    const marker = this.createMarker(L, {
+      className: 'focus-marker map-marker map-marker--focus',
+      html: `
+        <div class="focus-marker-inner" data-map-marker-role="focus"></div>
+      `,
+      coordinates: focusCoordinates,
       iconSize: [16, 16],
       iconAnchor: [8, 8],
     });
 
-    const centerMarker = L.marker([this.centerLat, this.centerLng], {
-      icon: centerIcon,
-    }).addTo(this.map);
-
-    const centerLabel = L.divIcon({
+    const label = L.divIcon({
       className: 'map-label',
       html: `<span class="label-text">${this.centerLabel}</span>`,
       iconAnchor: [50, 0],
     });
 
-    const centerLabelMarker = L.marker([this.centerLat, this.centerLng], {
-      icon: centerLabel,
+    const labelMarker = L.marker([focusCoordinates.lat, focusCoordinates.lng], {
+      icon: label,
+      interactive: false,
     }).addTo(this.map);
 
-    this.centerOverlays.push(centerMarker, centerLabelMarker);
+    this.centerOverlays.push(marker, labelMarker);
   }
 
-  private addMarkers(L: any): void {
-    this.cities
-      .filter(
-        (city) =>
-          Number.isFinite(city.coordinates?.lat) &&
-          Number.isFinite(city.coordinates?.lng)
-      )
+  private addLocalityMarkers(L: any, cities: City[]): void {
+    cities
+      .filter((city) => isRenderableCoordinate(city.coordinates))
       .forEach((city) => {
-      const icon = L.divIcon({
-        className: 'city-marker',
-        html: `
-          <div class="marker-pulse"></div>
-          <div class="marker-dot"></div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        const marker = this.createMarker(L, {
+          className: 'locality-marker map-marker map-marker--locality',
+          html: `
+            <div class="marker-pulse" data-map-marker-role="locality"></div>
+            <div class="marker-dot" data-map-marker-id="${city.id}"></div>
+          `,
+          coordinates: city.coordinates,
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+        });
+
+        marker.bindTooltip(city.name, {
+          className: 'city-tooltip',
+          direction: 'top',
+          offset: [0, -10],
+        });
+
+        marker.on('click', () => {
+          this.citySelected.emit(city);
+        });
+
+        this.markers.push(marker);
       });
-
-      const marker = L.marker([city.coordinates.lat, city.coordinates.lng], {
-        icon,
-      }).addTo(this.map);
-
-      marker.bindTooltip(city.name, {
-        className: 'city-tooltip',
-        direction: 'top',
-        offset: [0, -10],
-      });
-
-      marker.on('click', () => {
-        this.citySelected.emit(city);
-      });
-
-      this.markers.push(marker);
-    });
   }
 
   private addUserMarker(L: any): void {
@@ -286,19 +293,16 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       return;
     }
 
-    const userIcon = L.divIcon({
-      className: 'user-marker',
+    const marker = this.createMarker(L, {
+      className: 'user-marker map-marker map-marker--user',
       html: `
-        <div class="user-marker-ring"></div>
+        <div class="user-marker-ring" data-map-marker-role="user"></div>
         <div class="user-marker-dot"></div>
       `,
+      coordinates: this.userLocation,
       iconSize: [28, 28],
       iconAnchor: [14, 14],
     });
-
-    const marker = L.marker([this.userLocation.lat, this.userLocation.lng], {
-      icon: userIcon,
-    }).addTo(this.map);
 
     marker.bindTooltip('Your location', {
       className: 'city-tooltip',
@@ -309,30 +313,82 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.userOverlays.push(marker);
   }
 
-  private focusMapView(): void {
-    if (this.preferUserLocation && this.userLocation) {
+  private renderAtlasNearbyMode(L: any): void {
+    const selection = buildAtlasNearbySelection({
+      cities: this.cities,
+      userLocation: this.userLocation,
+    });
+
+    this.addLocalityMarkers(
+      L,
+      this.cities.filter((city) =>
+        selection.markers.some((marker) => marker.id === city.id)
+      )
+    );
+
+    if (this.userLocation) {
       this.addUserMarker(this.leaflet);
-      this.map.setView(
-        [this.userLocation.lat, this.userLocation.lng],
-        Math.max(this.zoom, 7)
-      );
+    }
+
+    const viewportCoordinates = [
+      ...selection.markers.map((marker) => ({
+        lat: marker.lat,
+        lng: marker.lng,
+      })),
+      ...(this.userLocation ? [this.userLocation] : []),
+    ];
+
+    this.fitMapToCoordinates(viewportCoordinates, this.userLocation ?? null);
+  }
+
+  private renderSingleLocationMode(L: any): void {
+    this.addFocusMarker(L);
+    const focusCoordinates = this.getFocusCoordinates();
+    if (!focusCoordinates) {
       this.scheduleInvalidateSize();
       return;
     }
 
-    this.fitMapToCities();
+    this.map.setView(
+      [focusCoordinates.lat, focusCoordinates.lng],
+      Math.max(this.zoom, 9)
+    );
+    this.scheduleInvalidateSize();
   }
 
-  private fitMapToCities(): void {
-    const validCoordinates = this.cities
-      .map((city) => city.coordinates)
-      .filter(
-        (coordinates): coordinates is { lat: number; lng: number } =>
-          Number.isFinite(coordinates?.lat) && Number.isFinite(coordinates?.lng)
-      );
+  private renderRadiusFocusMode(L: any): void {
+    const primaryColor = this.getCssVariable('--primary', '#3b82f6');
+    this.addRadiusCircle(L, primaryColor);
+    this.addFocusMarker(L);
+
+    const focusCoordinates = this.getFocusCoordinates();
+    if (!focusCoordinates) {
+      this.scheduleInvalidateSize();
+      return;
+    }
+
+    this.map.setView([focusCoordinates.lat, focusCoordinates.lng], this.zoom);
+    this.scheduleInvalidateSize();
+  }
+
+  private fitMapToCoordinates(
+    coordinates: MapCoordinates[],
+    userLocation: MapCoordinates | null
+  ): void {
+    const validCoordinates = coordinates.filter((coordinate) =>
+      isRenderableCoordinate(coordinate)
+    );
 
     if (validCoordinates.length === 0) {
-      this.map.setView([this.centerLat, this.centerLng], this.zoom);
+      const focusCoordinates = userLocation ?? this.getFocusCoordinates();
+      if (focusCoordinates) {
+        this.map.setView(
+          [focusCoordinates.lat, focusCoordinates.lng],
+          Math.max(this.zoom, 7)
+        );
+      } else {
+        this.map.setView([this.centerLat, this.centerLng], this.zoom);
+      }
       this.scheduleInvalidateSize();
       return;
     }
@@ -366,15 +422,31 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   resetView(): void {
     if (this.map) {
-      if (this.preferUserLocation && this.userLocation) {
-        this.map.flyTo([this.userLocation.lat, this.userLocation.lng], 7, {
-          duration: 1,
-        });
-        this.scheduleInvalidateSize();
-        return;
+      if (this.mode === 'single-location' || this.mode === 'radius-focus') {
+        const focusCoordinates = this.getFocusCoordinates();
+        if (focusCoordinates) {
+          this.map.flyTo([focusCoordinates.lat, focusCoordinates.lng], this.zoom, {
+            duration: 1,
+          });
+          this.scheduleInvalidateSize();
+          return;
+        }
       }
 
-      this.fitMapToCities();
+      const selection = buildAtlasNearbySelection({
+        cities: this.cities,
+        userLocation: this.userLocation,
+      });
+      this.fitMapToCoordinates(
+        [
+          ...selection.markers.map((marker) => ({
+            lat: marker.lat,
+            lng: marker.lng,
+          })),
+          ...(this.userLocation ? [this.userLocation] : []),
+        ],
+        this.userLocation
+      );
     }
   }
 
@@ -412,5 +484,32 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const computedStyle =
       root.ownerDocument.defaultView?.getComputedStyle(root);
     return computedStyle?.getPropertyValue(variable).trim() || fallback;
+  }
+
+  private getFocusCoordinates(): MapCoordinates | null {
+    const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
+    return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+  }
+
+  private createMarker(
+    L: any,
+    input: {
+      className: string;
+      html: string;
+      coordinates: MapCoordinates;
+      iconSize: [number, number];
+      iconAnchor: [number, number];
+    }
+  ): any {
+    const icon = L.divIcon({
+      className: input.className,
+      html: input.html,
+      iconSize: input.iconSize,
+      iconAnchor: input.iconAnchor,
+    });
+
+    return L.marker([input.coordinates.lat, input.coordinates.lng], {
+      icon,
+    }).addTo(this.map);
   }
 }

@@ -1,11 +1,6 @@
 # Docker Compose Development
 
-This repository has two Compose paths:
-
-- `docker compose up -d`: the standard container stack
-- `pnpm run docker:dev`: the full development stack with debug ports, rebuilt `dist/`, and dev-oriented overrides
-
-For day-to-day local work, use `pnpm run docker:dev`.
+This page is the canonical local-stack guide for this repository. Other docs should link here instead of restating the workflow.
 
 ## Relationship to the Deployment Inventory
 
@@ -22,36 +17,141 @@ That means adding a new deployable app usually requires coordinated changes acro
 - `k8s/base/`
 - the overlay image lists
 
-## Why `docker:dev` Needs a Build First
+## Local Development Modes
 
-The development override mounts built application output from `dist/` into many containers and runs those artifacts under `nodemon`.
+### 1. Full Compose Dev Stack
 
-That means `docker compose up -d` on its own is not enough for a reliable full-stack startup:
-
-- SSR frontends wait for built server bundles in `dist/apps/*/server`
-- Nest services run built entrypoints from `dist/apps/*`
-- if `dist/` is missing or stale, containers can come up but not actually serve the app you expect
-
-The root `docker:dev` script handles that by running `build:dev` before Compose startup.
-
-## Full-Stack Commands
+Use this when you need the integrated platform running inside Docker.
 
 ```bash
-# Start the full development stack
 pnpm run docker:dev
-
-# First-time bootstrap with seed data
-pnpm run docker:dev:bootstrap
-
-# Keep hot reload active
 pnpm run watch:build
+```
 
-# Inspect and control the stack
+What `docker:dev` actually does:
+
+- runs `build:docker:dev`
+- builds the dev images with `docker:build:dev`
+- starts the stack with `docker:dev:up`, which uses `scripts/docker-start-phased.sh`
+
+This is intentionally slower than a local single-app loop because it rebuilds a large Nx project set, rebuilds Docker images, and starts the stack in phases.
+
+Common commands:
+
+```bash
+pnpm run docker:dev:bootstrap
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 pnpm run docker:dev:down
 pnpm run docker:dev:reset
 ```
+
+### 2. Hybrid Inner Loop
+
+Use this when you are actively editing one app and want the fastest turnaround.
+
+- keep shared dependencies in Docker
+- run the active app locally with `pnpm exec nx serve <project>`
+- use targeted build/watch commands instead of rebuilding the whole workspace
+
+Backend recipe:
+
+```bash
+pnpm run docker:infra:up
+pnpm exec nx serve authentication
+```
+
+Frontend or SSR recipe:
+
+1. Start the full stack once if peer services are needed.
+2. Stop the container for the app you are editing.
+3. Run that app locally with `pnpm exec nx serve <project>`.
+
+Example:
+
+```bash
+pnpm run docker:dev
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml stop ot-client-interface
+pnpm exec nx serve client-interface
+```
+
+Scoped build helpers for container-backed iteration:
+
+```bash
+pnpm run build:dev:scope -- --projects=gateway
+pnpm run watch:build:scope -- --projects=gateway,authentication
+pnpm run watch:build:scope -- --projects=client-interface
+```
+
+Use `watch:build:scope` when you are iterating on one app or a small dependency set. Use `watch:build` only when you intentionally need the whole Docker dev stack to stay rebuildable.
+
+### 3. Plain Production-Like Compose
+
+Use this when you want the non-debug image startup path.
+
+```bash
+docker compose up -d
+```
+
+## Dist-Driven Restart Flow
+
+The Docker dev stack does not compile TypeScript inside containers. Source changes only appear after Nx rebuilds the affected project into `dist/`, and the container restarts when `nodemon` sees the compiled output change.
+
+```text
+src/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart
+```
+
+This is restart on compiled-output change, not HMR and not source-level reload inside containers.
+
+## Choosing A Workflow
+
+| Goal                                       | Recommended path                                  |
+| ------------------------------------------ | ------------------------------------------------- |
+| Validate the integrated stack              | `pnpm run docker:dev` plus `pnpm run watch:build` |
+| Iterate on one app quickly                 | hybrid inner loop                                 |
+| Verify image or container startup behavior | `docker compose up -d`                            |
+
+## Dev Restart Support Matrix
+
+The dev stack already has restart-on-compiled-output support for several services beyond the ones fixed in this change. The key question is whether the service has all three pieces wired together:
+
+- an override in `docker-compose.dev.yaml`
+- a mounted `dist/` path that matches the runtime path
+- a `nodemon` command watching compiled output
+
+The services called out below are the ones this cleanup verified directly because they were previously misleading or incomplete:
+
+| Service                                              | Dev restart support | Notes                                             |
+| ---------------------------------------------------- | ------------------- | ------------------------------------------------- |
+| `wellness`                                           | supported           | watches mounted `dist/apps/wellness`              |
+| `assets`                                             | supported           | nodemon watches compiled output in `/usr/src/app` |
+| `videos`                                             | supported           | nodemon watches compiled output in `/usr/src/app` |
+| `video-client`                                       | supported           | nodemon watches the SSR server bundle             |
+| `video-transcoder-worker`                            | unsupported         | separate workflow, no repo-wide watch integration |
+| services not overridden in `docker-compose.dev.yaml` | unsupported         | use hybrid inner loop or rebuild the image        |
+
+## Recommended Turnaround Strategy
+
+1. Use the hybrid inner loop while actively changing one app.
+2. Use `watch:build:scope` for the active app or a very small dependency set.
+3. Use the full Compose dev stack only when validating cross-service integration.
+4. Fall back to `pnpm run docker:dev:reset` only when image, volume, or broad shared-library drift makes targeted iteration unreliable.
+
+Do not default to `pnpm run docker:dev` when:
+
+- you are editing only one frontend
+- you are editing only one Nest service
+- you only need Postgres or Redis
+
+## Infra-Only Commands
+
+```bash
+pnpm run docker:infra:up
+pnpm run docker:infra:logs
+pnpm run docker:infra:down
+```
+
+These commands are meant for the hybrid inner loop. They only start shared infrastructure and the `db-setup` job.
 
 ## Primary Local URLs
 
@@ -93,13 +193,29 @@ If `dist/` is incomplete, rerun:
 pnpm run docker:dev
 ```
 
+Remember that `docker:dev:up` is phased startup, not a raw `docker compose up -d`, so reproducing the same behavior means using the repo scripts.
+
 ### Source changes do not appear in the running stack
 
-The containers do not build TypeScript for you. Make sure the watch process is running:
+The containers do not build TypeScript for you. Make sure the relevant watch process is running:
 
 ```bash
 pnpm run watch:build
 ```
+
+If only one app is changing, prefer:
+
+```bash
+pnpm run watch:build:scope -- --projects=<project>
+```
+
+Then confirm the service is either listed in the verified matrix above or has the same `dist` mount plus `nodemon` pattern in `docker-compose.dev.yaml`.
+
+### Rebuild latency is too high
+
+- switch from `watch:build` to `watch:build:scope`
+- run the active app locally with `pnpm exec nx serve <project>`
+- reserve `pnpm run docker:dev:reset` for stale-image or stale-volume problems
 
 ### Seed commands fail
 

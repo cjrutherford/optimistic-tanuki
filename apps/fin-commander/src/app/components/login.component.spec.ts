@@ -111,12 +111,35 @@ describe('LoginComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/onboarding']);
   });
 
+  it('still routes users to onboarding when tenant context hydration fails after login', async () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+
+    profileService.getCurrentUserProfile.mockReturnValue({ id: 'profile-1' });
+    profileService.getEffectiveProfile.mockReturnValue({ id: 'profile-1' });
+    tenantContext.loadTenantContext.mockRejectedValueOnce(
+      new Error('Active finance tenant not found')
+    );
+    tenantContext.activeTenant.mockReturnValue(null);
+
+    await expect(
+      fixture.componentInstance.onSubmit({
+        email: 'captain@example.com',
+        password: 'secret',
+      })
+    ).resolves.toBeUndefined();
+
+    expect(router.navigate).toHaveBeenCalledWith(['/onboarding']);
+  });
+
   it('routes users with incomplete finance setup back into onboarding', async () => {
     const fixture = TestBed.createComponent(LoginComponent);
 
     profileService.getCurrentUserProfile.mockReturnValue({ id: 'profile-1' });
     profileService.getEffectiveProfile.mockReturnValue({ id: 'profile-1' });
-    tenantContext.activeTenant.mockReturnValue({ id: 'tenant-1' });
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      type: 'household',
+    });
     financeService.getOnboardingState.mockResolvedValue({
       requiresOnboarding: false,
       availableWorkspaces: ['personal'],
@@ -136,7 +159,10 @@ describe('LoginComponent', () => {
 
     profileService.getCurrentUserProfile.mockReturnValue({ id: 'profile-1' });
     profileService.getEffectiveProfile.mockReturnValue({ id: 'profile-1' });
-    tenantContext.activeTenant.mockReturnValue({ id: 'tenant-1' });
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      type: 'household',
+    });
     financeService.getOnboardingState.mockResolvedValue({
       requiresOnboarding: false,
       availableWorkspaces: ['personal'],

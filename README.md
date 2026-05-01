@@ -34,25 +34,44 @@ Prerequisites:
 
 ## Local Development
 
-The day-to-day development path is the Docker dev stack, not plain `docker compose up`.
+Use [docs/devops/docker-compose.md](./docs/devops/docker-compose.md) as the canonical local-workflow guide.
+
+The repo supports three local development modes:
+
+- full Compose dev stack for cross-service validation
+- hybrid inner loop for fast single-app iteration
+- plain production-like Compose for image startup checks
+
+The Docker dev stack is intentionally expensive: `pnpm run docker:dev` does a full Nx build, Docker image builds, and phased startup before the stack is usable.
+
+The dist-driven container loop is:
+
+```text
+src/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart
+```
+
+Recommended turnaround strategy:
+
+1. Use the hybrid inner loop while actively changing one app.
+2. Use `pnpm run watch:build:scope -- --projects=<project>` for the active app.
+3. Use the full Compose dev stack only when validating cross-service integration.
+4. Use `pnpm run docker:dev:reset` only when image or volume drift makes targeted iteration unreliable.
 
 ```bash
-# Build dist/ and start the development stack
+# Full Compose dev stack
 pnpm run docker:dev
-
-# First-time bootstrap with seed data
-pnpm run docker:dev:bootstrap
-
-# Keep dist/ updated for hot reload in a second terminal
 pnpm run watch:build
 
-# Inspect or stop the dev stack
+# Hybrid inner loop
+pnpm run docker:infra:up
+pnpm exec nx serve authentication
+pnpm run watch:build:scope -- --projects=gateway
+
+# Inspect or stop the Docker dev stack
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 pnpm run docker:dev:down
 ```
-
-Why this matters: the dev containers run built output from `dist/`, so `pnpm run docker:dev` performs the required build before bringing services up. The full workflow is documented in [docs/devops/docker-compose.md](./docs/devops/docker-compose.md).
 
 ## Deployment Model
 

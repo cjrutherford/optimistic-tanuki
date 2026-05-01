@@ -24,13 +24,9 @@ export const onboardingCompleteGuard: CanActivateFn = async (_route, state) => {
 
   let activeTenant = tenantContext.activeTenant();
 
-  if (state.url.startsWith('/commander/new') && profile && !activeTenant) {
+  if (profile && !activeTenant) {
     await tenantContext.loadTenantContext();
     activeTenant = tenantContext.activeTenant();
-  }
-
-  if (state.url.startsWith('/commander/new') && profile && activeTenant) {
-    return true;
   }
 
   const nextRoute = await resolveNextSetupRoute(

@@ -108,9 +108,14 @@
   height: 10px;
   border-radius: 50%;
 
-  &.center {
+  &.focus {
     background: var(--primary);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+  }
+
+  &.user {
+    background: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent);
   }
 
   &.city {
@@ -175,12 +180,15 @@
     }
   }
 
-  .center-marker {
+  .focus-marker {
     background: none;
     border: none;
+    position: relative;
+    width: 16px !important;
+    height: 16px !important;
   }
 
-  .center-marker-inner {
+  .focus-marker-inner {
     width: 16px;
     height: 16px;
     background: var(--map-primary, var(--primary));
@@ -189,14 +197,20 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
-  .city-marker {
+  .locality-marker {
     background: none;
     border: none;
+    position: relative;
+    width: 24px !important;
+    height: 24px !important;
   }
 
   .user-marker {
     background: none;
     border: none;
+    position: relative;
+    width: 28px !important;
+    height: 28px !important;
   }
 
   .marker-pulse {
@@ -272,6 +286,7 @@
   .map-label {
     background: none;
     border: none;
+    position: relative;
   }
 
   .label-text {

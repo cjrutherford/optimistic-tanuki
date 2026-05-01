@@ -57,19 +57,23 @@
         </div>
         <div class="map-frame">
           <app-map
+            mode="atlas-nearby"
             [cities]="filteredCities()"
             [centerLat]="userLocation()?.lat ?? 31.9"
             [centerLng]="userLocation()?.lng ?? -81.1"
             [zoom]="6"
-            [showRadius]="false"
-            [preferUserLocation]="true"
             [userLocation]="userLocation()"
             (citySelected)="onMapCitySelect($event)"
           ></app-map>
         </div>
         <div class="map-note">
           <span class="map-note-kicker">Visible now</span>
-          <strong>{{ filteredCities().length }}</strong> localities and
+          @if (userLocation()) {
+          nearby localities from
+          } @else {
+          total localities from
+          }
+          <strong>{{ filteredCities().length }}</strong> results and
           <strong>{{ filteredCommunities().length }}</strong> communities
         </div>
       </div>

@@ -3,7 +3,7 @@
   top: 0;
   z-index: 20;
   display: block;
-  padding: 0 clamp(0.65rem, 2vw, 1.2rem);
+  padding: 0 clamp(0.55rem, 1.8vw, 1rem);
   backdrop-filter: blur(24px);
   background: color-mix(in srgb, var(--background) 78%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
@@ -13,8 +13,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.3rem 0 0.45rem;
+  gap: 0.5rem;
+  padding: 0.15rem 0 0.3rem;
 }
 
 .command-bar-left {
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.25rem 0.65rem;
+  padding: 0.2rem 0.55rem;
   border-radius: var(--fc-button-radius, 9999px);
   border: 1px solid color-mix(in srgb, var(--border) 50%, transparent);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
@@ -62,7 +62,7 @@
 
 .state-chip strong {
   font-family: var(--fc-font-heading, var(--font-heading, 'Sora', sans-serif));
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
   color: var(--foreground);
   white-space: nowrap;
@@ -89,8 +89,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.85rem;
+  height: 1.85rem;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--surface);
