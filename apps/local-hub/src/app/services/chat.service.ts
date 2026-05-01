@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 export interface ChatConversation {
   id: string;
@@ -10,8 +11,8 @@ export interface ChatConversation {
   ownerId?: string;
   participants: string[];
   isDeleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ChatMessage {
@@ -21,7 +22,7 @@ export interface ChatMessage {
   content: string;
   type: 'chat' | 'info' | 'warning' | 'system';
   recipients: string[];
-  createdAt: Date;
+  createdAt: string;
 }
 
 @Injectable({
@@ -29,7 +30,8 @@ export interface ChatMessage {
 })
 export class ChatService {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = '/api/chat';
+  private readonly apiBaseUrl = inject(API_BASE_URL);
+  private get baseUrl() { return `${this.apiBaseUrl}/chat`; }
 
   /**
    * Get or create a 1-to-1 direct conversation between the two participants.
@@ -41,7 +43,7 @@ export class ChatService {
         `${this.baseUrl}/conversations/direct/get-or-create`,
         { participantIds }
       )
-    ) as Promise<ChatConversation>;
+    );
   }
 
   /**
@@ -51,7 +53,7 @@ export class ChatService {
   getMessages(conversationId: string): Promise<ChatMessage[]> {
     return firstValueFrom(
       this.http.get<ChatMessage[]>(`${this.baseUrl}/messages/${conversationId}`)
-    ) as Promise<ChatMessage[]>;
+    );
   }
 
   /**
@@ -69,6 +71,6 @@ export class ChatService {
   }): Promise<ChatMessage> {
     return firstValueFrom(
       this.http.post<ChatMessage>(`${this.baseUrl}/messages`, payload)
-    ) as Promise<ChatMessage>;
+    );
   }
 }

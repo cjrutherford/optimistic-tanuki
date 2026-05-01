@@ -13,9 +13,7 @@ ENV NODE_ENV=production
 ENV PORT=3009
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/videos/ ./
-RUN corepack enable && pnpm install --prod --no-frozen-lockfile && \
-    pnpm add nodemon && \
-    npm cache clean --force || true
+RUN corepack enable && pnpm install --prod --no-frozen-lockfile
 RUN corepack enable && pnpm add pg typeorm
 RUN rm -rf node_modules/.cache || true
 RUN chown -R node:node .
