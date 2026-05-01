@@ -42,11 +42,14 @@ export class AccountComponent implements OnInit {
     this.currentPersonalityId.set(this.themeService.getCurrentPersonality().id);
   }
 
-  async changeTheme(personalityId: string): Promise<void> {
+  async changePersonality(personalityId: string): Promise<void> {
     await this.themeService.setPersonality(personalityId);
     this.currentPersonalityId.set(personalityId);
+    const personality = this.availablePersonalities().find(
+      (entry) => entry.id === personalityId
+    );
     this.messageService.addMessage({
-      content: `Theme changed to ${personalityId}`,
+      content: `Personality changed to ${personality?.name || personalityId}.`,
       type: 'success',
     });
   }
