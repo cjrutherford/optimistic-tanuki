@@ -1,15 +1,19 @@
 <div *ngIf="useTile; else cardTemplate">
   <otui-tile style="width: 100%; display: block">
-    <div class="title-bar" [class.compact]="density === 'compact'">
+    <div
+      class="title-bar"
+      [class.compact]="isCompact"
+      [class.small]="isSmall"
+    >
       <img
         *ngIf="logoSrc"
         [src]="logoSrc"
         [alt]="logoAlt"
-        [attr.width]="density === 'compact' ? 52 : 75"
+        [attr.width]="isSmall ? 40 : isCompact ? 52 : 75"
       />
       <otui-heading
         [text]="appTitle"
-        [size]="density === 'compact' ? '1.5em' : '2em'"
+        [size]="isSmall ? '1.25em' : isCompact ? '1.5em' : '2em'"
       ></otui-heading>
       <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
       <otui-button class="menu-btn" (click)="onMenuClick()">{{
@@ -21,13 +25,17 @@
 
 <ng-template #cardTemplate>
   <otui-card>
-    <div class="title-bar" [class.compact]="density === 'compact'">
+    <div
+      class="title-bar"
+      [class.compact]="isCompact"
+      [class.small]="isSmall"
+    >
       <otui-button variant="rounded" (click)="onMenuClick()">
         <img
           *ngIf="logoSrc"
           [src]="logoSrc"
           [alt]="logoAlt"
-          [style.maxWidth.px]="density === 'compact' ? 52 : 75"
+          [style.maxWidth.px]="isSmall ? 40 : isCompact ? 52 : 75"
           [style.borderRadius]="'50%'"
         />
       </otui-button>

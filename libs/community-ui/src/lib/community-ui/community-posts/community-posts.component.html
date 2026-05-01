@@ -38,6 +38,7 @@
     >
       Posts
     </button>
+    @if (canCreatePosts) {
     <button
       class="nav-tab"
       [class.active]="activeTab() === 'create'"
@@ -45,6 +46,7 @@
     >
       Create Post
     </button>
+    }
     @if (isOwnerOrManager()) {
     <button
       class="nav-tab"
@@ -63,7 +65,7 @@
     <div class="loading">Loading posts...</div>
     } @else if (error()) {
     <div class="error-message">{{ error() }}</div>
-    } @else { @if (showComposer || activeTab() === 'create') {
+    } @else { @if (showComposer || (canCreatePosts && activeTab() === 'create')) {
     <div class="create-post">
       @if (currentProfileId) {
       <lib-social-compose
@@ -98,7 +100,7 @@
       } @empty {
       <div class="no-posts">
         <p>No posts yet. Be the first to create one!</p>
-        @if (currentProfileId) {
+        @if (currentProfileId && canCreatePosts) {
         <otui-button variant="primary" (action)="setActiveTab('create')">
           Create the first post
         </otui-button>

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { CommunityComponent } from './community.component';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -8,6 +9,8 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ActivatedRoute } from '@angular/router';
 import { PaymentService } from '../../services/payment.service';
 import { of } from 'rxjs';
+import { CommunityPostsComponent } from '@optimistic-tanuki/community-ui';
+import { MapComponent } from '../../components/map/map.component';
 
 const authStateMock = {
   isAuthenticated$: of(false),
@@ -27,6 +30,7 @@ const communityServiceMock = {
     countryCode: 'US',
     adminArea: 'TX',
     city: 'Test City',
+    coordinates: { lat: 32.0809, lng: -81.0912 },
     joinPolicy: 'public',
     memberCount: 0,
     createdAt: new Date().toISOString(),
@@ -47,6 +51,11 @@ const messageServiceMock = {
 const paymentServiceMock = {
   getBusinessPage: jest.fn().mockResolvedValue(null),
   getActiveSponsorships: jest.fn().mockResolvedValue([]),
+  getDonationGoal: jest.fn().mockResolvedValue({
+    raised: 0,
+    goal: 0,
+    donorCount: 0,
+  }),
   createBusinessPage: jest.fn(),
   updateBusinessPage: jest.fn(),
   createSponsorship: jest.fn(),
@@ -82,5 +91,31 @@ describe('CommunityComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('passes the membership gate into the post composer', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const postsComponent = fixture.debugElement.query(
+      By.directive(CommunityPostsComponent)
+    )?.componentInstance as CommunityPostsComponent | undefined;
+
+    expect(postsComponent).toBeDefined();
+    expect(component.canCompose()).toBe(false);
+    expect(postsComponent?.showComposer).toBe(false);
+    expect(postsComponent?.canCreatePosts).toBe(false);
+  });
+
+  it('uses single-location mode for the community map', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const mapComponent = fixture.debugElement.query(
+      By.directive(MapComponent)
+    )?.componentInstance as MapComponent | undefined;
+
+    expect(mapComponent).toBeDefined();
+    expect(mapComponent?.mode).toBe('single-location');
   });
 });

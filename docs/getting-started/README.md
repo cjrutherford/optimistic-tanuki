@@ -37,13 +37,13 @@ This will install all dependencies for the monorepo using Nx's optimized install
 
 ## Running the Application
 
-### Option 1: Full Docker Development Stack (Recommended)
+### Option 1: Full Compose Dev Stack
 
-Use the pnpm entrypoints that match the current Docker Compose dev stack:
+Use this when you need the integrated platform running in Docker.
 
 ```bash
-# Build the development artifacts and start the full stack
 pnpm run docker:dev
+pnpm run watch:build
 ```
 
 For a first-time bootstrap that also seeds the shared local data:
@@ -55,16 +55,14 @@ pnpm run docker:dev:bootstrap
 This flow:
 
 1. Builds the development artifacts into `dist/`
-2. Starts the full Docker Compose stack from `docker-compose.yaml` + `docker-compose.dev.yaml`
-3. Brings up the database, gateway, backend services, and frontend containers
-4. Leaves the stack ready for an optional watch process
+2. Builds the dev images
+3. Starts the Docker Compose dev stack in phases from `docker-compose.yaml` + `docker-compose.dev.yaml`
+4. Brings up the database, gateway, backend services, and frontend containers
+5. Leaves the stack ready for an optional watch process
 
 **Common Follow-Up Commands**
 
 ```bash
-# Keep dist/ updated for hot reload in a separate terminal
-pnpm run watch:build
-
 # See running containers
 pnpm run docker:dev:ps
 
@@ -86,7 +84,41 @@ pnpm run docker:dev:seed
 - Owner Console: http://localhost:8084
 - API Gateway: http://localhost:3000
 
-### Option 2: Production-Like Docker Compose
+The Docker dev stack uses restart on compiled-output change:
+
+```text
+src/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart
+```
+
+### Option 2: Hybrid Inner Loop
+
+Use this when you are iterating on one app and want the fastest turnaround.
+
+Backend recipe:
+
+```bash
+pnpm run docker:infra:up
+pnpm exec nx serve authentication
+```
+
+Frontend or SSR recipe:
+
+```bash
+pnpm run docker:dev
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml stop ot-client-interface
+pnpm exec nx serve client-interface
+```
+
+Scoped watch commands:
+
+```bash
+pnpm run watch:build:scope -- --projects=gateway
+pnpm run watch:build:scope -- --projects=client-interface
+```
+
+Use `watch:build:scope` when you only need one app or a small dependency set.
+
+### Option 3: Production-Like Docker Compose
 
 Run the non-debug Compose stack:
 
@@ -96,9 +128,9 @@ docker compose up -d
 
 This is useful when you want the standard container startup path without the development nodemon/watch behavior.
 
-### Option 3: Individual Services with Nx
+### Option 4: Individual Services with Nx
 
-Run specific services independently:
+Run specific services independently when Docker is unnecessary:
 
 ```bash
 # Run gateway
@@ -147,9 +179,20 @@ Once the services are running:
 
 ### Making Changes
 
-1. **Edit Code**: Make changes to files in `apps/` or `libs/`
-2. **Build**: Nx will automatically rebuild affected projects
-3. **Test**: Run tests for your changes (see Testing section below)
+Use the canonical workflow guide at `docs/devops/docker-compose.md` for local-stack details.
+
+Recommended turnaround strategy:
+
+1. Use the hybrid inner loop while actively changing one app.
+2. Use `watch:build:scope` for the active app or a very small dependency set.
+3. Use the full Compose dev stack only when validating cross-service integration.
+4. Use `pnpm run docker:dev:reset` only for stale-image or stale-volume problems.
+
+Do not default to `pnpm run docker:dev` when:
+
+- you are editing only one frontend
+- you are editing only one Nest service
+- you only need Postgres or Redis
 
 ### Building Applications
 
@@ -158,7 +201,7 @@ Once the services are running:
 nx run-many --target=build --all
 
 # Build specific application
-nx build client-interface
+pnpm exec nx build client-interface
 ```
 
 ### Running Tests
@@ -261,18 +304,18 @@ kill -9 <PID>
 
 ```bash
 # Restart database
-docker-compose restart postgres
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml restart postgres
 
 # Check database logs
-docker-compose logs postgres
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs postgres
 ```
 
 ### Build Failures
 
 ```bash
-# Clear cache and rebuild
-nx reset
-nx run-many --target=build --all
+# Clear cache and rebuild the active project or restart the dev stack
+pnpm exec nx reset
+pnpm run build:dev:scope -- --projects=client-interface
 ```
 
 ## Next Steps
@@ -283,7 +326,8 @@ Now that you have the application running:
 2. **Read the Architecture Docs**: Understand how the system works - [Architecture Overview](../architecture/)
 3. **Review the MVP Plan**: See the project roadmap - [MVP Overview](./mvp-overview.md)
 4. **Set Up Debugging**: Configure VS Code debugging - [Debugging Guide](../development/debugging.md)
-5. **Learn About Testing**: Write and run tests - [Testing Guide](../testing/e2e-testing.md)
+5. **Use the Canonical Local Workflow**: [Docker Compose Development](../devops/docker-compose.md)
+6. **Learn About Testing**: Write and run tests - [Testing Guide](../testing/e2e-testing.md)
 
 ## Getting Help
 
@@ -291,4 +335,4 @@ Now that you have the application running:
 - **Issues**: Report bugs on [GitHub Issues](https://github.com/cjrutherford/optimistic-tanuki/issues)
 - **Contributing**: See the [Contributing Guide](../../README.md#-contributing)
 
-Happy coding! 🚀
+Use `docs/devops/docker-compose.md` as the source of truth for the current local-stack workflow.

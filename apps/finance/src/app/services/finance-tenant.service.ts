@@ -69,47 +69,8 @@ export class FinanceTenantService {
     };
   }
 
-  private async ensureDefaultTenant(
-    scope: FinanceScope,
-  ): Promise<FinanceTenant | null> {
-    if (!scope.profileId) {
-      return null;
-    }
-
-    const existingTenant = await this.tenantRepo.findOne({
-      where: {
-        profileId: scope.profileId,
-        ...(scope.appScope ? { appScope: scope.appScope } : {}),
-        isActive: true,
-      },
-      order: {
-        createdAt: 'ASC',
-      },
-    });
-
-    if (existingTenant) {
-      return existingTenant;
-    }
-
-    const tenant = await this.tenantRepo.save({
-      name: 'Primary Finance Workspace',
-      profileId: scope.profileId,
-      appScope: scope.appScope ?? 'finance',
-      isActive: true,
-    });
-
-    await this.tenantMemberRepo.save({
-      tenantId: tenant.id,
-      profileId: scope.profileId,
-      role: 'finance_admin',
-      isActive: true,
-    });
-
-    return tenant;
-  }
-
   private async resolveTenant(scope: FinanceScope): Promise<FinanceTenant> {
-    let tenant = await this.tenantRepo.findOne({
+    const tenant = await this.tenantRepo.findOne({
       where: {
         ...(scope.tenantId ? { id: scope.tenantId } : {}),
         ...(scope.profileId ? { profileId: scope.profileId } : {}),
@@ -120,10 +81,6 @@ export class FinanceTenantService {
         createdAt: 'ASC',
       },
     });
-
-    if (!tenant && !scope.tenantId) {
-      tenant = await this.ensureDefaultTenant(scope);
-    }
 
     if (!tenant) {
       throw new NotFoundException('Active finance tenant not found');
@@ -173,7 +130,7 @@ export class FinanceTenantService {
 
   async listTenants(scope: FinanceScope): Promise<FinanceTenantDto[]> {
     try {
-      let tenants = await this.tenantRepo.find({
+      const tenants = await this.tenantRepo.find({
         where: {
           ...(scope.profileId ? { profileId: scope.profileId } : {}),
           ...(scope.appScope ? { appScope: scope.appScope } : {}),
@@ -183,11 +140,6 @@ export class FinanceTenantService {
           createdAt: 'ASC',
         },
       });
-
-      if (tenants.length === 0) {
-        const tenant = await this.ensureDefaultTenant(scope);
-        tenants = tenant ? [tenant] : [];
-      }
 
       return tenants.map((tenant) => this.toTenantDto(tenant));
     } catch (error) {

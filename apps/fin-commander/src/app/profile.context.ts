@@ -39,7 +39,10 @@ export class ProfileContext {
     this.authState.isAuthenticated$.subscribe((isAuthenticated) => {
       this.isAuthenticated.set(isAuthenticated);
       if (isAuthenticated) {
-        void this.loadProfile();
+        void this.loadProfile().catch(() => {
+          this.currentProfile.set(null);
+          this.currentProfiles.set([]);
+        });
       } else {
         this.currentProfile.set(null);
         this.currentProfiles.set([]);

@@ -254,12 +254,12 @@
           <h2 class="sidebar-title">Location</h2>
           <div class="map-container sidebar-map-container">
             <app-map
+              mode="single-location"
               [cities]="[]"
               [centerLat]="community()!.coordinates!.lat"
               [centerLng]="community()!.coordinates!.lng"
               [zoom]="12"
               [centerLabel]="community()!.name"
-              [showRadius]="false"
             ></app-map>
             <div class="map-details">
               <div class="detail-card">
@@ -572,6 +572,7 @@
               [showCommunityHeader]="false"
               [showNavigation]="false"
               [showComposer]="canCompose()"
+              [canCreatePosts]="canCompose()"
             ></lib-community-posts>
           </div>
           } @if (activeTab() === 'chat') {

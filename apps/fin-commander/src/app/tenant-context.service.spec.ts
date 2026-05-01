@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { computed, signal } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FinanceService } from '@optimistic-tanuki/finance-ui';
 import {
   FinCommanderPlanStore,
@@ -392,5 +393,92 @@ describe('TenantContextService', () => {
     expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
       'tenant-2',
     );
+  });
+
+  it('treats a missing current tenant as an empty context instead of throwing', async () => {
+    const currentProfile = signal<ProfileDto | null>(financeProfile);
+    const isAuthenticated = signal(true);
+    const setScope = jest.fn();
+    const financeService = {
+      getTenants: jest.fn().mockResolvedValue([]),
+      getCurrentTenant: jest.fn().mockRejectedValue(
+        new HttpErrorResponse({
+          status: 404,
+          error: {
+            message: 'Active finance tenant not found',
+          },
+        })
+      ),
+      getTenantMembers: jest.fn().mockResolvedValue([]),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        TenantContextService,
+        { provide: FinanceService, useValue: financeService },
+        {
+          provide: ProfileContext,
+          useValue: {
+            currentProfile,
+            currentProfileId: computed(() => currentProfile()?.id ?? null),
+            isAuthenticated,
+          },
+        },
+        {
+          provide: FinCommanderPlanStore,
+          useValue: {
+            setScope,
+          },
+        },
+      ],
+    });
+
+    const service = TestBed.inject(TenantContextService);
+
+    await expect(service.loadTenantContext()).resolves.toBeUndefined();
+    expect(service.activeTenant()).toBeNull();
+    expect(service.availableTenants()).toEqual([]);
+    expect(setScope).toHaveBeenLastCalledWith(null);
+  });
+
+  it('does not request the current tenant when the account list is empty', async () => {
+    const currentProfile = signal<ProfileDto | null>(financeProfile);
+    const isAuthenticated = signal(true);
+    const setScope = jest.fn();
+    const financeService = {
+      getTenants: jest.fn().mockResolvedValue([]),
+      getCurrentTenant: jest.fn(),
+      getTenantMembers: jest.fn().mockResolvedValue([]),
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        TenantContextService,
+        { provide: FinanceService, useValue: financeService },
+        {
+          provide: ProfileContext,
+          useValue: {
+            currentProfile,
+            currentProfileId: computed(() => currentProfile()?.id ?? null),
+            isAuthenticated,
+          },
+        },
+        {
+          provide: FinCommanderPlanStore,
+          useValue: {
+            setScope,
+          },
+        },
+      ],
+    });
+
+    const service = TestBed.inject(TenantContextService);
+
+    await service.loadTenantContext();
+
+    expect(financeService.getTenants).toHaveBeenCalled();
+    expect(financeService.getCurrentTenant).not.toHaveBeenCalled();
+    expect(service.activeTenant()).toBeNull();
+    expect(setScope).toHaveBeenLastCalledWith(null);
   });
 });

@@ -1,20 +1,13 @@
 # Development Docker Compose Override
-# This file configures services for development with debugging and hot-reload support.
+# Preferred full-stack flow:
+# 1. pnpm run docker:dev
+# 2. pnpm run watch:build
 #
-# USAGE:
-# 1. Build all applications: pnpm run build:dev
-# 2. Start containers: docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-# 3. For hot-reload on source changes: pnpm run watch:build (in a separate terminal)
+# Restart-on-change is dist-driven:
+# src/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart
 #
-# DEBUGGING:
-# - All services expose inspector ports (9000-9244) for attaching debuggers
-# - Use VS Code launch configurations in .vscode/launch.json to attach to services
-# - Source maps are enabled in all tsconfig.app.json files for breakpoint debugging
-#
-# HOT RELOAD:
-# - Containers use nodemon to restart when dist files change
-# - Run 'pnpm run watch:build' to rebuild on source file changes
-# - Changes flow: src/ → nx watch → dist/ → nodemon detects → service restarts
+# Not every service in this file currently supports restart-on-change.
+# See docs/devops/docker-compose.md for the supported-service matrix.
 #
 services:
   authentication:
@@ -450,6 +443,10 @@ services:
       [
         'dumb-init',
         'nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
         '--exec',
         'node --inspect=0.0.0.0:9231',
         '-L',
@@ -526,6 +523,7 @@ services:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
     volumes:
+      - ./dist/apps/wellness:/app/wellness
       - ./apps/wellness/src/assets/config.yaml:/app/wellness/assets/config.yaml:ro
       - /app/node_modules
     command:
@@ -534,6 +532,8 @@ services:
         './node_modules/.bin/nodemon',
         '--watch',
         '/app/wellness',
+        '--ext',
+        'js,json',
         '--exec',
         'node --inspect=0.0.0.0:9206',
         '-L',
@@ -588,6 +588,10 @@ services:
       [
         'dumb-init',
         'nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
         '--exec',
         'node --inspect=0.0.0.0:9208',
         '-L',
@@ -645,7 +649,19 @@ services:
       - /usr/src/app/node_modules
       - asset-data:/usr/src/app/storage
       - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
-    command: ['dumb-init', 'node', '--inspect=0.0.0.0:9235', 'main.js']
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node --inspect=0.0.0.0:9235',
+        '-L',
+        'main.js',
+      ]
     ports:
       - '9235:9235'
     environment:
@@ -826,6 +842,19 @@ services:
       - /mnt/valhalla/media:/media:ro
     environment:
       - VIDEO_SEED_SOURCE_DIR=/media/Tv
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
 
   video-transcoder-worker:
     container_name: ot_video_transcoder_worker
@@ -837,14 +866,17 @@ services:
       - video-processing-data:/tmp/video-processing
   video-client:
     volumes:
-      - ./dist/apps/video-client:/app
-      - /app/node_modules
+      - ./dist/apps/video-client:/app/dist/apps/video-client
     command:
       [
         'dumb-init',
-        'sh',
-        '-c',
-        'while [ ! -f /app/dist/apps/video-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9248 /app/dist/apps/video-client/server/server.mjs',
+        'nodemon',
+        '--watch',
+        '/app/dist/apps/video-client/server',
+        '--ext',
+        'mjs,js,json',
+        '--exec',
+        'node --inspect=0.0.0.0:9248 /app/dist/apps/video-client/server/server.mjs',
       ]
     ports:
       - '8093:4000'

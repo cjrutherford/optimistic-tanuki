@@ -163,18 +163,20 @@
 .condition-badge {
   display: inline-block;
   font-size: 0.75rem;
+  font-weight: 600;
   padding: 2px 8px;
   border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
 }
 
 .category-badge {
-  background: var(--surface-variant, var(--secondary-light, #f3e5f5));
-  color: var(--tertiary, var(--secondary, #9c27b0));
+  background: color-mix(in srgb, var(--secondary, var(--primary)) 18%, var(--surface));
+  color: var(--foreground);
 }
 
 .condition-badge {
-  background: var(--surface-variant);
-  color: var(--foreground-muted);
+  background: color-mix(in srgb, var(--surface-variant, var(--surface)) 88%, var(--surface));
+  color: var(--foreground);
 }
 
 .description {
@@ -305,11 +307,17 @@
   margin-left: 8px;
 }
 .btn-secondary {
-  background: var(--surface-variant);
+  background: color-mix(in srgb, var(--surface-variant, var(--surface)) 88%, var(--surface));
   color: var(--foreground);
+  border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 78%, transparent);
   &:hover:not(:disabled) {
-    background: var(--hover-bg);
+    background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   }
+}
+
+.btn-offer {
+  color: var(--foreground);
+  border-color: color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
 }
 
 .edit-form-wrapper {

@@ -48,7 +48,11 @@ export class LoginComponent {
 
     this.profileService.selectProfile(selectedProfile);
 
-    await this.tenantContext.loadTenantContext();
+    try {
+      await this.tenantContext.loadTenantContext();
+    } catch {
+      // A brand-new finance user may not have an account yet.
+    }
     const nextRoute = await resolveNextSetupRoute(
       this.profileService,
       this.tenantContext,

@@ -343,15 +343,11 @@ See: [CI/CD Pipeline](./cicd-pipeline.md)
 ### Local Development
 
 ```bash
-# Full Docker development stack
 pnpm run docker:dev
-
-# Optional first-time bootstrap with seeds
-pnpm run docker:dev:bootstrap
-
-# In a second terminal for hot reload
 pnpm run watch:build
 ```
+
+For the current local-stack workflow, hybrid inner loop, and supported restart-on-change services, use `docs/devops/docker-compose.md`.
 
 ### Testing
 

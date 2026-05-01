@@ -29,8 +29,16 @@ export class AppBarComponent {
   @Input() showThemeToggle = true;
   @Input() useTile = false; // Use tile for landing pages, card for full apps
   @Input() menuIcon = '☰'; // Menu button icon/text
-  @Input() density: 'default' | 'compact' = 'default';
+  @Input() density: 'default' | 'compact' | 'small' = 'default';
   @Output() menuToggle = new EventEmitter<void>();
+
+  get isCompact(): boolean {
+    return this.density === 'compact' || this.density === 'small';
+  }
+
+  get isSmall(): boolean {
+    return this.density === 'small';
+  }
 
   onMenuClick() {
     this.menuToggle.emit();

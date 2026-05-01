@@ -20,7 +20,7 @@ function uniqueEmail(prefix = 'fc-e2e'): string {
   )}@example.com`;
 }
 
-function startDiagnostics(page: Page): BrowserDiagnostics {
+async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
   const diagnostics: BrowserDiagnostics = {
     consoleErrors: [],
     pageErrors: [],
@@ -28,15 +28,166 @@ function startDiagnostics(page: Page): BrowserDiagnostics {
     requestFailures: [],
   };
 
+  await page.addInitScript(() => {
+    const summarize = (value: unknown): unknown => {
+      if (value instanceof Error) {
+        return {
+          name: value.name,
+          message: value.message,
+          stack: value.stack,
+        };
+      }
+
+      if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) {
+        return value;
+      }
+
+      if (Array.isArray(value)) {
+        return value.map((entry) => summarize(entry));
+      }
+
+      if (typeof value === 'object') {
+        const input = value as Record<string, unknown>;
+        const keys = [
+          'name',
+          'message',
+          'status',
+          'statusText',
+          'url',
+          'type',
+          'error',
+        ];
+        const summary: Record<string, unknown> = {
+          constructor: input.constructor?.name ?? typeof input,
+          tag: Object.prototype.toString.call(input),
+        };
+
+        for (const key of keys) {
+          if (!(key in input)) {
+            continue;
+          }
+
+          summary[key] = summarize(input[key]);
+        }
+
+        return summary;
+      }
+
+      return String(value);
+    };
+
+    const originalConsoleError = console.error.bind(console);
+    const debugWindow = window as Window & {
+      __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
+      __otPageErrors?: Array<unknown>;
+      __otUnhandledRejections?: Array<unknown>;
+    };
+    debugWindow.__otConsoleErrors = [];
+    debugWindow.__otPageErrors = [];
+    debugWindow.__otUnhandledRejections = [];
+
+    window.addEventListener('error', (event) => {
+      debugWindow.__otPageErrors?.push({
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: summarize(event.error),
+      });
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      debugWindow.__otUnhandledRejections?.push({
+        reason: summarize(event.reason),
+      });
+    });
+
+    console.error = (...args: unknown[]) => {
+      debugWindow.__otConsoleErrors?.push({
+        args: args.map((arg) => summarize(arg)),
+        stack: new Error().stack,
+      });
+
+      originalConsoleError(...args);
+    };
+  });
+
   page.on('console', async (message) => {
     if (message.type() === 'error') {
       let text = message.text();
-      if (text === 'ERROR HttpErrorResponse') {
+
+      if (text === 'ERROR HttpErrorResponse' || text === 'ERROR rt') {
         try {
           const values = await Promise.all(
             message.args().map(async (arg) => {
               try {
-                return await arg.jsonValue();
+                return await arg.evaluate((value: unknown) => {
+                  const summarizeObject = (input: Record<string, unknown>) => {
+                    const keys = [
+                      'name',
+                      'message',
+                      'status',
+                      'statusText',
+                      'url',
+                      'type',
+                      'error',
+                    ];
+                    const summary: Record<string, unknown> = {
+                      constructor:
+                        input.constructor?.name ?? typeof input,
+                      tag: Object.prototype.toString.call(input),
+                    };
+
+                    for (const key of keys) {
+                      if (!(key in input)) {
+                        continue;
+                      }
+
+                      const property = input[key];
+                      if (
+                        property === null ||
+                        ['string', 'number', 'boolean'].includes(
+                          typeof property
+                        )
+                      ) {
+                        summary[key] = property;
+                        continue;
+                      }
+
+                      if (Array.isArray(property)) {
+                        summary[key] = property.map((entry) =>
+                          typeof entry === 'object' && entry !== null
+                            ? Object.prototype.toString.call(entry)
+                            : entry
+                        );
+                        continue;
+                      }
+
+                      if (typeof property === 'object') {
+                        summary[key] = Object.prototype.toString.call(property);
+                        continue;
+                      }
+
+                      summary[key] = String(property);
+                    }
+
+                    return summary;
+                  };
+
+                  if (value instanceof Error) {
+                    return {
+                      name: value.name,
+                      message: value.message,
+                      stack: value.stack,
+                    };
+                  }
+
+                  if (typeof value === 'object' && value !== null) {
+                    return summarizeObject(value as Record<string, unknown>);
+                  }
+
+                  return value;
+                });
               } catch {
                 return '<unserializable>';
               }
@@ -56,6 +207,10 @@ function startDiagnostics(page: Page): BrowserDiagnostics {
       if (text === 'ERROR HttpErrorResponse ["ERROR","<unserializable>"]') {
         return;
       }
+      const location = message.location();
+      if (location.url) {
+        text = `${text} @ ${location.url}:${location.lineNumber}:${location.columnNumber}`;
+      }
       diagnostics.consoleErrors.push(text);
     }
   });
@@ -65,7 +220,7 @@ function startDiagnostics(page: Page): BrowserDiagnostics {
   });
 
   page.on('response', async (response) => {
-    if (!response.url().includes('/api/finance') || response.ok()) {
+    if (!response.url().includes('/api/') || response.ok()) {
       return;
     }
 
@@ -84,7 +239,7 @@ function startDiagnostics(page: Page): BrowserDiagnostics {
   });
 
   page.on('requestfailed', (request) => {
-    if (!request.url().includes('/api/finance')) {
+    if (!request.url().includes('/api/')) {
       return;
     }
 
@@ -119,6 +274,58 @@ function expectNoBrowserErrors(diagnostics: BrowserDiagnostics) {
     diagnostics.pageErrors,
     `Page errors:\n${diagnostics.pageErrors.join('\n')}`
   ).toEqual([]);
+}
+
+async function logRuntimeBundleContext(page: Page, diagnostics: BrowserDiagnostics) {
+  if (!diagnostics.consoleErrors.some((entry) => entry.includes('ERROR rt'))) {
+    return;
+  }
+
+  const debug = await page.evaluate(async () => {
+    const chunkUrl = '/chunk-TBT5BTUI.js';
+    const source = await fetch(chunkUrl).then((response) => response.text());
+    const offset = 16318;
+    const sourceMappingMatch = source.match(
+      /\/\/# sourceMappingURL=(.+)$/m
+    )?.[1];
+
+    return {
+      chunkUrl,
+      sourceMappingMatch: sourceMappingMatch ?? null,
+      slice: source.slice(Math.max(0, offset - 600), offset + 600),
+      consoleErrors: (
+        (window as Window & {
+          __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
+        }).__otConsoleErrors ?? []
+      ).slice(-5),
+      pageErrors: (
+        (window as Window & {
+          __otPageErrors?: Array<unknown>;
+        }).__otPageErrors ?? []
+      ).slice(-5),
+      unhandledRejections: (
+        (window as Window & {
+          __otUnhandledRejections?: Array<unknown>;
+        }).__otUnhandledRejections ?? []
+      ).slice(-5),
+    };
+  });
+
+  console.log(`BUNDLE_DEBUG ${JSON.stringify(debug)}`);
+}
+
+function logDiagnosticsCheckpoint(
+  label: string,
+  diagnostics: BrowserDiagnostics
+) {
+  console.log(
+    `DIAGNOSTICS ${label} ${JSON.stringify({
+      consoleErrors: diagnostics.consoleErrors,
+      pageErrors: diagnostics.pageErrors,
+      failedResponses: diagnostics.failedResponses,
+      requestFailures: diagnostics.requestFailures,
+    })}`
+  );
 }
 
 async function openMenu(page: Page) {
@@ -236,13 +443,22 @@ async function ensureProfileSaved(page: Page) {
   await page.waitForLoadState('networkidle');
 }
 
-async function bootstrapFinanceWorkspaces(page: Page) {
+async function bootstrapFinanceWorkspaces(
+  page: Page,
+  options?: {
+    accountName?: string;
+    includeBusinessWorkspace?: boolean;
+  }
+) {
+  const accountName = options?.accountName ?? 'Household Command';
+  const includeBusinessWorkspace = options?.includeBusinessWorkspace ?? true;
+
   await page.goto('/onboarding', { waitUntil: 'networkidle' });
   await expect(
     page.getByRole('heading', { name: 'Create your account' })
   ).toBeVisible();
 
-  await page.getByLabel('Account name').fill('Household Command');
+  await page.getByLabel('Account name').fill(accountName);
   await expectResponseOk(
     page,
     (response) =>
@@ -256,11 +472,14 @@ async function bootstrapFinanceWorkspaces(page: Page) {
   await expect(
     page.getByRole('heading', { name: 'Choose your workspaces' })
   ).toBeVisible();
-  await page
-    .getByRole('button', {
-      name: 'Business Operating cash, expenses, and revenue',
-    })
-    .click();
+
+  if (includeBusinessWorkspace) {
+    await page
+      .getByRole('button', {
+        name: 'Business Operating cash, expenses, and revenue',
+      })
+      .click();
+  }
 
   await expectResponseOk(
     page,
@@ -273,10 +492,10 @@ async function bootstrapFinanceWorkspaces(page: Page) {
   );
 
   await expect(
-    page.getByRole('heading', { name: 'Add your first financial account' })
+    page.getByRole('heading', { name: 'Review your finance accounts' })
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Open setup checklist' }).click();
-  await page.waitForURL(/\/finance\/personal\/setup$/, { timeout: 20000 });
+  await page.getByRole('button', { name: 'Open accounts' }).click();
+  await page.waitForURL(/\/finance\/personal\/accounts$/, { timeout: 20000 });
 }
 
 async function createAndUpdateAccount(
@@ -606,7 +825,7 @@ test.describe('Fin Commander user journey', () => {
     page,
     baseURL,
   }) => {
-    const diagnostics = startDiagnostics(page);
+    const diagnostics = await startDiagnostics(page);
 
     await page.goto(`${baseURL}/`, { waitUntil: 'networkidle' });
     await openMenu(page);
@@ -647,7 +866,7 @@ test.describe('Fin Commander user journey', () => {
     page,
     baseURL,
   }) => {
-    const diagnostics = startDiagnostics(page);
+    const diagnostics = await startDiagnostics(page);
     const user: BrowserUser = {
       email: uniqueEmail(),
       password: 'TestPassword123!',
@@ -666,28 +885,23 @@ test.describe('Fin Commander user journey', () => {
       }
     );
 
-    await openMenu(page);
-    await expect(
-      page.locator('otui-modal button').filter({ hasText: 'Ledger' })
-    ).toBeVisible();
-    await expect(
-      page.locator('otui-modal button').filter({ hasText: 'Commander' })
-    ).toBeVisible();
-    await expect(
-      page.locator('otui-modal button').filter({ hasText: 'Settings' })
-    ).toBeVisible();
-    await closeMenu(page);
-
-    await expect(page.locator('#fin-tenant-selector')).toHaveCount(1);
-    await expect(page.locator('#fin-tenant-selector option')).toHaveCount(1);
-    await expect(page.locator('#fin-profile-selector')).toHaveCount(1);
-
     await ensureProfileSaved(page);
+    await bootstrapFinanceWorkspaces(page, {
+      accountName: 'Personal Command',
+      includeBusinessWorkspace: false,
+    });
+    logDiagnosticsCheckpoint('after-bootstrap-personal', diagnostics);
     await createAndUpdateAccount(page, 'personal', 'Checking');
+    logDiagnosticsCheckpoint('after-account-personal', diagnostics);
+    await logRuntimeBundleContext(page, diagnostics);
     await createUpdateDeleteTransaction(page, 'personal', 'category');
+    logDiagnosticsCheckpoint('after-transaction-personal', diagnostics);
     await createUpdateDeleteBudget(page, 'personal');
+    logDiagnosticsCheckpoint('after-budget-personal', diagnostics);
     await createUpdateDeleteRecurring(page, 'personal');
+    logDiagnosticsCheckpoint('after-recurring-personal', diagnostics);
 
+    await logRuntimeBundleContext(page, diagnostics);
     expectNoBrowserErrors(diagnostics);
   });
 
@@ -695,7 +909,7 @@ test.describe('Fin Commander user journey', () => {
     page,
     baseURL,
   }) => {
-    const diagnostics = startDiagnostics(page);
+    const diagnostics = await startDiagnostics(page);
     const user: BrowserUser = {
       email: uniqueEmail('fc-rich'),
       password: 'TestPassword123!',
@@ -713,7 +927,12 @@ test.describe('Fin Commander user journey', () => {
     );
 
     await ensureProfileSaved(page);
-    await bootstrapFinanceWorkspaces(page);
+    await bootstrapFinanceWorkspaces(page, {
+      accountName: 'Household Command',
+      includeBusinessWorkspace: true,
+    });
+    logDiagnosticsCheckpoint('after-bootstrap-canonical', diagnostics);
+    await logRuntimeBundleContext(page, diagnostics);
 
     await openMenu(page);
     await expect(
@@ -731,10 +950,15 @@ test.describe('Fin Commander user journey', () => {
     await closeMenu(page);
 
     await createAndUpdateAccount(page, 'business', 'Operating');
+    logDiagnosticsCheckpoint('after-account-business', diagnostics);
     await createUpdateDeleteTransaction(page, 'business', 'biz-category');
+    logDiagnosticsCheckpoint('after-transaction-business', diagnostics);
     await createUpdateDeleteBudget(page, 'business');
+    logDiagnosticsCheckpoint('after-budget-business', diagnostics);
     await createUpdateDeleteRecurring(page, 'business');
+    logDiagnosticsCheckpoint('after-recurring-business', diagnostics);
     await createUpdateDeleteAsset(page);
+    logDiagnosticsCheckpoint('after-asset', diagnostics);
 
     await clickMenuItem(page, 'Commander');
     await expect(page).toHaveURL(/\/commander\/new\/overview$/);
@@ -762,7 +986,7 @@ test.describe('Fin Commander user journey', () => {
     });
     await expect(page).toHaveURL(new RegExp(`/commander/${planId}/cash-flow$`));
     await expect(
-      page.getByRole('heading', { name: 'Navigate your finance workspaces' })
+      page.getByRole('heading', { name: 'Finance workspaces' })
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Accounts' }).first()
@@ -842,7 +1066,9 @@ test.describe('Fin Commander user journey', () => {
     await expect(
       page.locator('tr:has-text("Neighborhood Market")')
     ).toBeVisible();
+    logDiagnosticsCheckpoint('after-import-verification', diagnostics);
 
+    await logRuntimeBundleContext(page, diagnostics);
     expectNoBrowserErrors(diagnostics);
   });
 });
