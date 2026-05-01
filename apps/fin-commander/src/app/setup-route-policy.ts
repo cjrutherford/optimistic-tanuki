@@ -9,10 +9,20 @@ export type SetupRoute =
   | ['/settings']
   | ['/onboarding'];
 
+function hasCompleteTenant(
+  tenant: Pick<NonNullable<ReturnType<TenantContextService['activeTenant']>>, 'type'> | null
+): boolean {
+  return Boolean(tenant?.type);
+}
+
 function needsFinanceSetup(state: FinanceOnboardingState): boolean {
+  const blockingChecklist = state.checklist.filter(
+    (item) => !item.id.startsWith('setup-')
+  );
+
   return (
     state.checklist.length === 0 ||
-    state.checklist.some((item) => !item.complete)
+    blockingChecklist.some((item) => !item.complete)
   );
 }
 
@@ -32,7 +42,7 @@ export async function resolveNextSetupRoute(
     return ['/settings'];
   }
 
-  if (!tenantContext.activeTenant()) {
+  if (!hasCompleteTenant(tenantContext.activeTenant())) {
     return ['/onboarding'];
   }
 

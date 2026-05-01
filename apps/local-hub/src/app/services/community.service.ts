@@ -219,6 +219,19 @@ export class CommunityService {
     );
   }
 
+  ensureCommunityChatRoom(
+    communityId: string,
+    ownerId: string,
+    name: string
+  ): Promise<{ id: string }> {
+    return firstValueFrom(
+      this.http.post<{ id: string }>(`${this.baseUrl}/${communityId}/chat-room`, {
+        ownerId,
+        name,
+      })
+    );
+  }
+
   /**
    * Create a new LOCAL INTEREST COMMUNITY connected to a locality.
    * `parentId` is required — root localities are system-managed and cannot be

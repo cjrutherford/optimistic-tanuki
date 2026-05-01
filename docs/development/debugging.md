@@ -1,12 +1,11 @@
 # Development & Debugging Guide
 
-This guide provides detailed instructions for developing, debugging, and hot-reloading applications in the Optimistic Tanuki monorepo.
+This guide is for debugger attachment, inspector ports, and debugging-specific troubleshooting. For the canonical local-stack workflow, use `docs/devops/docker-compose.md`.
 
 ## Table of Contents
 
 - [Development Environment Setup](#development-environment-setup)
 - [Debugging Services with VS Code](#debugging-services-with-vs-code)
-- [Hot Reload Development Workflow](#hot-reload-development-workflow)
 - [Inspector Port Mappings](#inspector-port-mappings)
 - [Troubleshooting](#troubleshooting)
 
@@ -19,29 +18,27 @@ This guide provides detailed instructions for developing, debugging, and hot-rel
 - pnpm package manager
 - Visual Studio Code (recommended for debugging)
 
-### Initial Setup
+### Start The Stack
 
-1. Install dependencies:
+Use the repo entrypoints instead of raw Compose commands:
 
-   ```bash
-   pnpm install
-   ```
+```bash
+pnpm install
+pnpm run docker:dev
+pnpm run watch:build
+```
 
-2. Build all applications:
+The dev stack uses a dist-driven restart flow:
 
-   ```bash
-   pnpm run build:dev
-   ```
+```text
+src/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart
+```
 
-3. Start the development stack:
+Containers do not compile TypeScript for you. If you only need one app to rebuild while debugging, use scoped watch instead:
 
-   ```bash
-   # For the main stack
-   docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
-
-   # OR for the Forge of Will stack
-   docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml up -d
-   ```
+```bash
+pnpm run watch:build:scope -- --projects=authentication
+```
 
 ## Debugging Services with VS Code
 
@@ -95,64 +92,6 @@ All TypeScript applications are configured to generate source maps:
 
 This enables seamless breakpoint debugging in TypeScript source files!
 
-## Hot Reload Development Workflow
-
-The development stack supports automatic service restarts when code changes are detected.
-
-### How It Works
-
-```
-Source Change → Nx Watch → Rebuild → Dist Update → Nodemon Detects → Service Restarts
-```
-
-1. **Source files** in `apps/` and `libs/` are monitored by `nx watch`
-2. **Nx rebuilds** the changed application automatically
-3. **Compiled output** is written to `dist/apps/`
-4. **Docker volumes** mount `dist/` directories into containers
-5. **Nodemon** detects file changes in the container
-6. **Service restarts** automatically with the new code
-
-### Enable Hot Reload
-
-To enable hot reload, run the watch script in a **separate terminal**:
-
-```bash
-pnpm run watch:build
-```
-
-This command uses `nx watch --all` to monitor all applications and rebuild them on changes.
-
-### Alternative: Combined Workflow
-
-For convenience, you can use the combined script that starts both the dev stack and watch mode:
-
-```bash
-pnpm run docker:dev:watch
-```
-
-This runs:
-
-1. `pnpm run build:dev` - Initial build
-2. `docker compose up` - Starts the dev stack
-3. `pnpm run watch:build` - Enables hot reload
-
-**Note**: This uses `concurrently` to run multiple commands, which may be harder to debug. Consider running the commands separately during active development.
-
-### What Gets Reloaded
-
-When you make changes to:
-
-- **Backend services** (NestJS apps in `apps/*`): Service automatically restarts
-- **Shared libraries** (`libs/*`): All apps using the library rebuild and restart
-- **Configuration files**: May require manual restart of affected containers
-
-### What Doesn't Trigger Reload
-
-- **Dockerfile changes**: Requires rebuild with `docker compose build`
-- **docker-compose.yaml changes**: Requires restart with `docker compose up -d`
-- **Environment variables**: Requires container restart
-- **Node modules**: Requires rebuild of Docker images
-
 ## Inspector Port Mappings
 
 All services expose Node.js inspector ports for debugging. Ports are mapped consistently across both development stacks.
@@ -165,7 +104,7 @@ All services expose Node.js inspector ports for debugging. Ports are mapped cons
 | Social                | ot_social             | 9232           | Attach to Social (Docker)                             |
 | Chat-Collector        | ot_chat_collector     | 9233           | Attach to Chat-Collector (Docker)                     |
 | Profile               | ot_profile            | 9234           | Attach to Profile (Docker)                            |
-| Blogging              | ot_blogging           | 9235           | Attach to Blogging (Docker)                           |
+| Assets                | ot_assets             | 9235           | Attach to Assets (Docker)                             |
 | AI-Orchestration      | ot_ai_orchestration   | 9236           | Attach to AI-Orchestration (Docker)                   |
 | Prompt-Proxy          | ot_prompt_proxy       | 9237           | Attach to Prompt-Proxy (Docker)                       |
 | Telos-Docs-Service    | ot_telos_docs_service | 9238           | Attach to Telos-Docs-Service (Docker)                 |
@@ -174,7 +113,8 @@ All services expose Node.js inspector ports for debugging. Ports are mapped cons
 | ForgeOfWill           | fow_client_interface  | 9241           | Attach to ForgeOfWill Client Interface (Docker)       |
 | Digital Homestead     | dh_client_interface   | 9242           | Attach to Digital Homestead Client Interface (Docker) |
 | CRDN                  | crdn_client_interface | 9243           | Attach to CRDN Client Interface (Docker)              |
-| Assets                | ot_assets             | 9244           | Attach to Assets (Docker)                             |
+| Leads App             | ot_leads_app          | 9244           | Attach by port 9244                                   |
+| Video Client          | ot_video_client       | 9248           | Attach by port 9248                                   |
 
 ### Verifying Inspector Ports
 
@@ -208,20 +148,22 @@ Debugger listening on ws://0.0.0.0:9000/...
 4. Rebuild the application: `pnpm run build:dev`
 5. Restart the container: `docker compose restart <service-name>`
 
-### Hot Reload Not Working
+### Dist-Driven Restart Not Working
 
 **Problem**: Code changes don't trigger rebuilds or restarts
 
 **Solutions**:
 
 1. Verify `pnpm run watch:build` is running
-2. Check that the changed file is included in the Nx project
-3. Look for build errors in the watch output
-4. Verify nodemon is monitoring the correct files in the container:
+2. If you only changed one app, switch to `pnpm run watch:build:scope -- --projects=<project>`
+3. Check that the changed file is included in the Nx project
+4. Look for build errors in the watch output
+5. Verify nodemon is monitoring the correct files in the container:
    ```bash
-   docker compose logs <service-name> | grep nodemon
+   docker compose -f docker-compose.yaml -f docker-compose.dev.yaml logs <service-name> | grep nodemon
    ```
-5. Check volume mounts in `docker-compose.dev.yaml` are correct
+6. Check volume mounts in `docker-compose.dev.yaml` are correct
+7. Confirm the service is one of the restart-supported entries in `docs/devops/docker-compose.md`
 
 ### Cannot Connect to Debugger
 
@@ -260,7 +202,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
 ## Tips & Best Practices
 
-1. **Use the watch mode**: Keep `pnpm run watch:build` running in a dedicated terminal for the best development experience
+1. **Use the smallest loop that works**: prefer `watch:build:scope` or `nx serve` before falling back to the full Docker loop
 
 2. **Debug one service at a time**: Multiple debuggers can slow down your IDE and system
 
@@ -270,9 +212,7 @@ Debugger listening on ws://0.0.0.0:9000/...
 
    ```bash
    rm -rf dist/ node_modules/.cache
-   pnpm run build:dev
-   docker compose down
-   docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+    pnpm run docker:dev
    ```
 
 5. **Use VS Code workspaces**: Consider creating a multi-root workspace to organize your development environment

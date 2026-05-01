@@ -6,8 +6,9 @@ import { TenantContextService } from '../tenant-context.service';
 import { ProfileService } from '../profile.service';
 
 describe('onboardingCompleteGuard', () => {
-  it('allows the new commander route when a profile and account exist', async () => {
-    const createUrlTree = jest.fn();
+  it('redirects the new commander route until setup is complete', async () => {
+    const redirectTree = { redirected: true };
+    const createUrlTree = jest.fn().mockReturnValue(redirectTree);
 
     await TestBed.configureTestingModule({
       providers: [
@@ -52,17 +53,21 @@ describe('onboardingCompleteGuard', () => {
       )
     );
 
-    expect(result).toBe(true);
-    expect(createUrlTree).not.toHaveBeenCalled();
+    expect(result).toBe(redirectTree);
+    expect(createUrlTree).toHaveBeenCalledWith(['/onboarding']);
   });
 
-  it('hydrates tenant context before allowing the new commander route', async () => {
+  it('hydrates tenant context before enforcing setup for the new commander route', async () => {
     const createUrlTree = jest.fn();
     const loadTenantContext = jest.fn().mockResolvedValue(undefined);
     const activeTenant = jest
       .fn()
       .mockReturnValueOnce(null)
-      .mockReturnValue({ id: 'tenant-1', name: 'North Household' });
+      .mockReturnValue({
+        id: 'tenant-1',
+        name: 'North Household',
+        type: 'household',
+      });
 
     await TestBed.configureTestingModule({
       providers: [
@@ -84,9 +89,9 @@ describe('onboardingCompleteGuard', () => {
           provide: FinanceService,
           useValue: {
             getOnboardingState: jest.fn().mockResolvedValue({
-              requiresOnboarding: true,
-              availableWorkspaces: [],
-              checklist: [],
+              requiresOnboarding: false,
+              availableWorkspaces: ['personal'],
+              checklist: [{ id: 'create-budget', complete: true }],
             }),
           },
         },
@@ -130,7 +135,11 @@ describe('onboardingCompleteGuard', () => {
         {
           provide: TenantContextService,
           useValue: {
-            activeTenant: () => ({ id: 'tenant-1', name: 'North Household' }),
+            activeTenant: () => ({
+              id: 'tenant-1',
+              name: 'North Household',
+              type: 'household',
+            }),
           },
         },
         {
@@ -145,9 +154,9 @@ describe('onboardingCompleteGuard', () => {
           provide: FinanceService,
           useValue: {
             getOnboardingState: jest.fn().mockResolvedValue({
-              requiresOnboarding: true,
-              availableWorkspaces: [],
-              checklist: [],
+              requiresOnboarding: false,
+              availableWorkspaces: ['personal'],
+              checklist: [{ id: 'create-budget', complete: true }],
             }),
           },
         },

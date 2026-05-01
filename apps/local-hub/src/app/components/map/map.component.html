@@ -24,17 +24,23 @@
   </div>
 
   <div class="map-legend">
-    @if (showRadius) {
+    @if (mode === 'single-location' || mode === 'radius-focus') {
     <div class="legend-item">
-      <span class="legend-dot center"></span>
+      <span class="legend-dot focus"></span>
       <span>{{ centerLabel }}</span>
     </div>
     }
+    @if (mode === 'atlas-nearby') {
+    <div class="legend-item">
+      <span class="legend-dot user"></span>
+      <span>Your location</span>
+    </div>
     <div class="legend-item">
       <span class="legend-dot city"></span>
-      <span>Supported Locality</span>
+      <span>Nearby Locality</span>
     </div>
-    @if (showRadius) {
+    }
+    @if (mode === 'radius-focus') {
     <div class="legend-item">
       <span class="legend-circle"></span>
       <span>250mi Radius</span>

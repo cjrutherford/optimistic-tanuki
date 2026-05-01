@@ -15,6 +15,7 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/videos/ ./
 RUN corepack enable && pnpm install --prod --no-frozen-lockfile
 RUN corepack enable && pnpm add pg typeorm
+RUN rm -rf node_modules/.cache || true
 RUN chown -R node:node .
 USER node
 EXPOSE 3009

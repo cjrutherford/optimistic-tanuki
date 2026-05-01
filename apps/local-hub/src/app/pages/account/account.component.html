@@ -17,14 +17,14 @@
 
   <div class="account-inner">
     <section class="theme-section">
-      <h2>Theme</h2>
-      <p class="theme-description">Choose your preferred visual style</p>
+      <h2>Personality</h2>
+      <p class="theme-description">Choose the visual personality for your local hub experience</p>
       <div class="theme-grid">
         @for (personality of availablePersonalities(); track personality.id) {
         <button
           class="theme-option"
           [class.active]="currentPersonalityId() === personality.id"
-          (click)="changeTheme(personality.id)"
+          (click)="changePersonality(personality.id)"
           [attr.aria-pressed]="currentPersonalityId() === personality.id"
         >
           <span class="theme-name">{{ personality.name }}</span>

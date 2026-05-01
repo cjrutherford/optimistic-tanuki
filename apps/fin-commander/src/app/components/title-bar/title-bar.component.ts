@@ -32,6 +32,13 @@ type GuidanceAction = {
   description: string;
 };
 
+function hasBlockingChecklistItems(
+  checklist: Array<{ id: string; complete: boolean }>
+): boolean {
+  const blockingChecklist = checklist.filter((item) => !item.id.startsWith('setup-'));
+  return blockingChecklist.length === 0 || blockingChecklist.some((item) => !item.complete);
+}
+
 @Component({
   selector: 'fc-title-bar',
   standalone: true,
@@ -81,6 +88,9 @@ export class TitleBarComponent implements OnInit, OnDestroy {
   });
   readonly activeTenantName = computed(
     () => this.tenantContext.activeTenant()?.name ?? 'Loading account'
+  );
+  readonly hasCompleteTenant = computed(() =>
+    Boolean(this.tenantContext.activeTenant()?.type)
   );
 
   toggleHelp() {
@@ -171,7 +181,7 @@ export class TitleBarComponent implements OnInit, OnDestroy {
       };
     }
 
-    if (!this.tenantContext.activeTenant()) {
+    if (!this.hasCompleteTenant()) {
       return {
         label: 'Create your account',
         route: '/onboarding',
@@ -195,8 +205,7 @@ export class TitleBarComponent implements OnInit, OnDestroy {
 
     if (
       onboardingState &&
-      (onboardingState.checklist.length === 0 ||
-        onboardingState.checklist.some((item) => !item.complete))
+      hasBlockingChecklistItems(onboardingState.checklist)
     ) {
       return {
         label: 'Finish setup checklist',

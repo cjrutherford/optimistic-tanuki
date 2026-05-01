@@ -14,6 +14,13 @@ type LandingAction = {
   route: string[];
 };
 
+function hasBlockingChecklistItems(
+  checklist: Array<{ id: string; complete: boolean }>
+): boolean {
+  const blockingChecklist = checklist.filter((item) => !item.id.startsWith('setup-'));
+  return blockingChecklist.length === 0 || blockingChecklist.some((item) => !item.complete);
+}
+
 @Component({
   selector: 'fc-landing',
   standalone: true,
@@ -82,8 +89,7 @@ export class LandingComponent {
 
     if (
       onboardingState &&
-      (onboardingState.checklist.length === 0 ||
-        onboardingState.checklist.some((item) => !item.complete))
+      hasBlockingChecklistItems(onboardingState.checklist)
     ) {
       return {
         label: 'Finish setup',

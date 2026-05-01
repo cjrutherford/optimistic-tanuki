@@ -333,15 +333,16 @@
 .tag {
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--on-surface);
+  background: color-mix(in srgb, var(--surface-variant) 82%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   padding: 4px 10px;
   border-radius: 20px;
   transition: all 0.2s ease;
 
   &:hover {
-    background: var(--primary);
-    color: white;
+    background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+    color: var(--foreground);
   }
 }
 

@@ -33,6 +33,8 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN npm install -g nodemon && \
+    (npm cache clean --force || true)
 
 COPY --from=builder /usr/src/app/dist/apps/video-client ./dist/apps/video-client
 

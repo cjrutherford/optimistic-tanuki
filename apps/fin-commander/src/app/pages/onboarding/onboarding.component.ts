@@ -528,7 +528,7 @@ export class OnboardingComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    if (this.tenantContext.activeTenant()) {
+    if (this.tenantContext.activeTenant()?.type) {
       await this.refreshSetupProgress();
     }
   }

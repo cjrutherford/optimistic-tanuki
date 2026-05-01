@@ -3,9 +3,6 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/authentication/src",
   "projectType": "application",
-  "dependencies": {
-    "pg": "^8.16.0"
-  },
   "tags": ["type:app", "scope:auth", "platform:server", "visibility:internal"],
   "targets": {
     "build": {
@@ -39,8 +36,7 @@
       "dependsOn": ["build"],
       "options": {
         "buildTarget": "authentication:build",
-        "runBuildTargetDependencies": false,
-        "externalDependencies": ["pg"]
+        "runBuildTargetDependencies": false
       },
       "configurations": {
         "development": {

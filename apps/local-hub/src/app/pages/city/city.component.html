@@ -22,6 +22,7 @@
         <div class="map-container">
           @if (city()) {
           <app-map
+            mode="single-location"
             [cities]="[city()!]"
             [centerLat]="city()!.coordinates.lat"
             [centerLng]="city()!.coordinates.lng"

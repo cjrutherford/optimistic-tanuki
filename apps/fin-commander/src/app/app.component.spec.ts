@@ -1,4 +1,4 @@
-import { Component, PLATFORM_ID } from '@angular/core';
+import { Component, Input, PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -7,6 +7,7 @@ import { AppComponent } from './app.component';
 import { ProfileContext } from './profile.context';
 import { TitleBarComponent } from './components/title-bar/title-bar.component';
 import { TenantContextService } from './tenant-context.service';
+import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 
 @Component({
   selector: 'fc-title-bar',
@@ -15,14 +16,23 @@ import { TenantContextService } from './tenant-context.service';
 })
 class StubTitleBarComponent {}
 
+@Component({
+  selector: 'hai-about-tag',
+  standalone: true,
+  template: '',
+})
+class StubHaiAboutTagComponent {
+  @Input() config: unknown;
+}
+
 describe('AppComponent', () => {
   beforeEach(async () => {
     TestBed.overrideComponent(AppComponent, {
       remove: {
-        imports: [TitleBarComponent],
+        imports: [TitleBarComponent, HaiAboutTagComponent],
       },
       add: {
-        imports: [StubTitleBarComponent],
+        imports: [StubTitleBarComponent, StubHaiAboutTagComponent],
       },
     });
 
@@ -70,15 +80,13 @@ describe('AppComponent', () => {
     expect(fixture.nativeElement.querySelector('.app-content')).not.toBeNull();
   });
 
-  it('defaults Fin Commander to the shark personality when no theme is stored', () => {
+  it('defaults Fin Commander to the classic personality when no theme is stored', () => {
     const themeService = TestBed.inject(ThemeService);
     const fixture = TestBed.createComponent(AppComponent);
 
     fixture.detectChanges();
 
-    expect(themeService.setPersonality).toHaveBeenCalledWith(
-      'fin-commander-shark'
-    );
+    expect(themeService.setPersonality).toHaveBeenCalledWith('classic');
     expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#0d5f73');
   });
 });

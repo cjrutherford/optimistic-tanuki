@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import {
   FinanceAccountType,
@@ -22,6 +23,10 @@ export class TenantContextService {
   readonly availableTenants = signal<FinanceTenant[]>([]);
   readonly activeTenantId = computed(() => this.activeTenant()?.id ?? null);
 
+  private isMissingCurrentTenantError(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 404;
+  }
+
   constructor() {
     effect(() => {
       const isAuthenticated = this.profileContext.isAuthenticated();
@@ -37,20 +42,40 @@ export class TenantContextService {
       this.availableTenants.set([]);
       this.planStore.setScope(null);
 
-      void this.loadTenantContext(loadVersion);
+      void this.loadTenantContext(loadVersion).catch(() => {
+        if (loadVersion !== this.loadVersion) {
+          return;
+        }
+
+        this.resetContext();
+      });
     });
   }
 
   async loadTenantContext(
     expectedLoadVersion = this.loadVersion,
   ): Promise<void> {
-    const tenant = await this.financeService.getCurrentTenant();
+    const tenants = await this.financeService.getTenants();
 
     if (expectedLoadVersion !== this.loadVersion) {
       return;
     }
 
-    const tenants = await this.financeService.getTenants();
+    if (tenants.length === 0) {
+      this.availableTenants.set([]);
+      this.activeTenant.set(null);
+      this.planStore.setScope(null);
+      return;
+    }
+
+    let tenant: FinanceTenant | null = null;
+    try {
+      tenant = await this.financeService.getCurrentTenant();
+    } catch (error) {
+      if (!this.isMissingCurrentTenantError(error)) {
+        throw error;
+      }
+    }
 
     if (expectedLoadVersion !== this.loadVersion) {
       return;
@@ -115,8 +140,18 @@ export class TenantContextService {
       typeof localStorage !== 'undefined'
         ? localStorage.getItem(TenantContextService.activeTenantStorageKey)
         : null;
+    const persistedTenant =
+      tenants.find((tenant) => tenant.id === persistedId) ?? null;
+    const typedPersistedTenant =
+      persistedTenant && persistedTenant.type ? persistedTenant : null;
+    const typedFallbackTenant =
+      fallbackTenant && fallbackTenant.type ? fallbackTenant : null;
+
     return (
-      tenants.find((tenant) => tenant.id === persistedId) ??
+      typedPersistedTenant ??
+      typedFallbackTenant ??
+      tenants.find((tenant) => tenant.type) ??
+      persistedTenant ??
       fallbackTenant ??
       tenants[0] ??
       null

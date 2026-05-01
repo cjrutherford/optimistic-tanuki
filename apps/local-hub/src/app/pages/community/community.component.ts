@@ -242,7 +242,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
     }
   }
 
-  setActiveTab(tab: 'posts' | 'chat' | 'manage'): void {
+  async setActiveTab(tab: 'posts' | 'chat' | 'manage'): Promise<void> {
     if (tab === 'chat' && !this.isMember()) {
       return;
     }
@@ -251,7 +251,30 @@ export class CommunityComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (tab === 'chat') {
+      await this.ensureChatRoomExists();
+    }
+
     this.activeTab.set(tab);
+  }
+
+  private async ensureChatRoomExists(): Promise<void> {
+    const community = this.community();
+    const userId = this.authState.getUserData()?.userId;
+
+    if (!community || !userId) {
+      return;
+    }
+
+    try {
+      await this.communityService.ensureCommunityChatRoom(
+        community.id,
+        userId,
+        community.name
+      );
+    } catch {
+      // Non-fatal: the chat component will still render its own error state.
+    }
   }
 
   private async loadManagementAccess(): Promise<void> {
@@ -479,6 +502,7 @@ export class CommunityComponent implements OnInit, OnDestroy {
       const membership = await this.communityService.joinCommunity(communityId);
       if (membership?.status === 'approved') {
         this.isMember.set(true);
+        await this.ensureChatRoomExists();
         this.messageService.addMessage({
           content: 'You have joined the community!',
           type: 'success',
