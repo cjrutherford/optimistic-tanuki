@@ -148,23 +148,7 @@ describe('CommunityService', () => {
     });
 
     it('returns a root locality slug for child communities', async () => {
-        const lookupPromise = service.getCitySlugForCommunity('starland-makers');
-
-        httpMock.expectOne('/api/communities/slug/starland-makers').flush({
-            id: 'makers',
-            name: 'Starland Makers',
-            slug: 'starland-makers',
-            description: 'Neighborhood',
-            localityType: 'neighborhood',
-            parentId: 'savannah',
-            countryCode: 'US',
-            adminArea: 'GA',
-            city: 'Savannah',
-            memberCount: 12,
-            createdAt: '2024-01-01T00:00:00.000Z',
-        });
-
-        httpMock.expectOne('/api/communities').flush([
+        jest.spyOn(service, 'getCommunities').mockResolvedValue([
             {
                 id: 'savannah',
                 name: 'Savannah, GA',
@@ -191,6 +175,22 @@ describe('CommunityService', () => {
                 createdAt: '2024-01-01T00:00:00.000Z',
             },
         ]);
+
+        const lookupPromise = service.getCitySlugForCommunity('starland-makers');
+
+        httpMock.expectOne('/api/communities/slug/starland-makers').flush({
+            id: 'makers',
+            name: 'Starland Makers',
+            slug: 'starland-makers',
+            description: 'Neighborhood',
+            localityType: 'neighborhood',
+            parentId: 'savannah',
+            countryCode: 'US',
+            adminArea: 'GA',
+            city: 'Savannah',
+            memberCount: 12,
+            createdAt: '2024-01-01T00:00:00.000Z',
+        });
 
         await expect(lookupPromise).resolves.toBe('savannah-ga');
     });
@@ -241,5 +241,24 @@ describe('CommunityService', () => {
             id: 'community-123',
             slug: 'starland-makers',
         });
+    });
+
+    it('repairs or creates a community chat room through the community endpoint', async () => {
+        const ensurePromise = service.ensureCommunityChatRoom(
+            'community-123',
+            'user-123',
+            'Starland Makers'
+        );
+
+        const request = httpMock.expectOne('/api/communities/community-123/chat-room');
+        expect(request.request.method).toBe('POST');
+        expect(request.request.body).toEqual({
+            ownerId: 'user-123',
+            name: 'Starland Makers',
+        });
+
+        request.flush({ id: 'chat-room-123' });
+
+        await expect(ensurePromise).resolves.toEqual({ id: 'chat-room-123' });
     });
 });

@@ -15,7 +15,12 @@ import { MapComponent } from '../../components/map/map.component';
 const authStateMock = {
   isAuthenticated$: of(false),
   isAuthenticated: false,
-  getUserData: jest.fn().mockReturnValue(null),
+  getUserData: jest.fn().mockReturnValue({
+    userId: 'user-1',
+    profileId: 'profile-1',
+    name: 'Test User',
+    email: 'test@example.com',
+  }),
   getActingProfileId: jest.fn().mockReturnValue(null),
   logout: jest.fn(),
 };
@@ -37,6 +42,7 @@ const communityServiceMock = {
   }),
   isMember: jest.fn().mockResolvedValue(false),
   joinCommunity: jest.fn().mockResolvedValue({ status: 'approved' }),
+  ensureCommunityChatRoom: jest.fn().mockResolvedValue({ id: 'chat-room-1' }),
   leaveCommunity: jest.fn().mockResolvedValue(undefined),
   getUserRoles: jest.fn().mockResolvedValue([]),
   getCommunityManager: jest.fn().mockResolvedValue(null),
@@ -64,6 +70,10 @@ const paymentServiceMock = {
 describe('CommunityComponent', () => {
   let component: CommunityComponent;
   let fixture: ComponentFixture<CommunityComponent>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -117,5 +127,32 @@ describe('CommunityComponent', () => {
 
     expect(mapComponent).toBeDefined();
     expect(mapComponent?.mode).toBe('single-location');
+  });
+
+  it('creates a persistent chat room after an approved join', async () => {
+    await fixture.whenStable();
+
+    await component.joinCommunity('1');
+
+    expect(communityServiceMock.ensureCommunityChatRoom).toHaveBeenCalledWith(
+      '1',
+      'user-1',
+      'Test City'
+    );
+    expect(component.isMember()).toBe(true);
+  });
+
+  it('repairs the community chat room before opening the chat tab for members', async () => {
+    await fixture.whenStable();
+    component.isMember.set(true);
+
+    await component.setActiveTab('chat');
+
+    expect(communityServiceMock.ensureCommunityChatRoom).toHaveBeenCalledWith(
+      '1',
+      'user-1',
+      'Test City'
+    );
+    expect(component.activeTab()).toBe('chat');
   });
 });
