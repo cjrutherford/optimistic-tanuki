@@ -35,10 +35,6 @@ export const appConfig: ApplicationConfig = {
       useValue: '/api',
     },
     provideAnimationsAsync(),
-    {
-      provide: API_BASE_URL,
-      useValue: '/api',
-    },
     provideClientHydration(),
     {
       provide: APP_INITIALIZER,

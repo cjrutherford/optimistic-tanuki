@@ -1,11 +1,11 @@
 export * from './lib/auth-ui';
+export * from './lib/auth-ui/index';
 export {
   OAuthService,
 } from './lib/services/oauth.service';
 export type {
   OAuthLoginResult,
-  OAuthProviderConfig,
   OAuthPopupResult,
+  OAuthProviderConfig,
   OAuthUserInfo,
 } from './lib/services/oauth.service';
-export * from './lib/auth-ui/index';

@@ -1,5 +1,5 @@
-version: '1.0.0'
-generatedAt: '2026-04-22T00:00:00Z'
+version: "1.0.0"
+generatedAt: "2026-04-22T00:00:00Z"
 apps:
   - appId: hai
     name: HAI Company Website
@@ -10,17 +10,6 @@ apps:
     visibility: public
     description: Company website and HAI ecosystem entry point.
     sortOrder: 1
-
-  - appId: client-interface
-    name: Optimistic Tanuki
-    domain: https://optimistic-tanuki.com
-    subdomain: app
-    uiBaseUrl: https://optimistic-tanuki.com
-    apiBaseUrl: https://optimistic-tanuki.com/api
-    appType: client
-    visibility: public
-    description: Social Media application with community and personal focus.
-    sortOrder: 1.5
 
   - appId: system-configurator
     name: HAI Computer

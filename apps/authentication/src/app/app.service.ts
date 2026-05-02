@@ -39,7 +39,7 @@ export class AppService {
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
     private readonly jsonWebToken: JwtService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -472,7 +472,6 @@ export class AppService {
 
     return result;
   }
-
   async logout(token: string) {
     try {
       this.l.debug(`Logging out token`);
@@ -499,5 +498,4 @@ export class AppService {
       throw new RpcException(e.message || e);
     }
   }
-
 }

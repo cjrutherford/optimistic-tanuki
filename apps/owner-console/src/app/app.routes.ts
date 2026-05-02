@@ -18,13 +18,6 @@ export const appRoutes: Route[] = [
   },
   { path: 'oauth/callback', component: OAuthCallbackComponent },
   {
-    path: 'oauth/callback',
-    loadComponent: () =>
-      import('@optimistic-tanuki/auth-ui').then(
-        (m) => m.OAuthCallbackComponent
-      ),
-  },
-  {
     path: 'dashboard',
     loadComponent: () =>
       import('./components/dashboard.component').then(

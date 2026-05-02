@@ -35,8 +35,7 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('authentication', 'Authentication service', true),
 ('profile', 'Profile service', true),
 ('local-hub', 'Local Hub - classifieds, communities, and city pages', true),
-('video-client', 'Video platform and channel communities', true),
-('finance', 'Finance application', true)
+('video-client', 'Video platform and channel communities', true)
 ON CONFLICT ("name") DO UPDATE SET
   "description" = EXCLUDED."description",
   "active" = EXCLUDED."active";
@@ -100,6 +99,7 @@ VALUES
   ('video_client_member', 'Standard member for the video platform community experience', (SELECT id FROM app_scope WHERE name = 'video-client')),
   ('video_channel_creator', 'Creator role for managing a video channel, schedule, and live feed', (SELECT id FROM app_scope WHERE name = 'video-client'))
 ON CONFLICT ("name") DO NOTHING;
+
 
 -- Global scope roles
 INSERT INTO "role" (name, description, "appScopeId")
@@ -297,32 +297,6 @@ VALUES
   ('social.reaction.read', 'Read reaction (local-hub)', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
--- Video client permissions
-INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
-VALUES
-  ('videos.channel.create', 'Create a video channel community', 'videos.channel', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.channel.update', 'Update a video channel community', 'videos.channel', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.channel.delete', 'Delete a video channel community', 'videos.channel', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.video.create', 'Create a video entry', 'videos.video', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.video.update', 'Update a video entry', 'videos.video', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.video.delete', 'Delete a video entry', 'videos.video', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.schedule.create', 'Create a scheduled feed block', 'videos.schedule', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.schedule.update', 'Update a scheduled feed block', 'videos.schedule', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.schedule.delete', 'Delete a scheduled feed block', 'videos.schedule', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.live.start', 'Start a live on-air session', 'videos.live', 'start', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('videos.live.stop', 'Stop a live on-air session', 'videos.live', 'stop', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('community.join', 'Join a video channel community', 'community', 'join', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('community.leave', 'Leave a video channel community', 'community', 'leave', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('community.read', 'Read a video channel community', 'community', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.post.create', 'Create a channel community post', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.post.read', 'Read a channel community post', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.comment.create', 'Create a channel community comment', 'comment', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.vote.create', 'Vote in a channel community', 'vote', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.reaction.create', 'Create a channel community reaction', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
-  ('social.reaction.read', 'Read a channel community reaction', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client'))
-ON CONFLICT (name, "appScopeId") DO NOTHING;
-
--- Map permissions to roles (role_permission)
 -- Map permissions to roles (role_permissions)
 -- Note: when mapping, choose the permission row that matches the role's app scope.
 -- digital_homesteader (digital-homestead scope) should map to blogging permissions (blogging scope)
@@ -638,8 +612,40 @@ FROM role r JOIN permission p ON p.name IN (
 WHERE r.name = 'local_hub_standard_user'
 ON CONFLICT DO NOTHING;
 
+COMMIT;
+SQL
+
+echo "App scopes seeded."
+
+# Seed video-client permissions
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+BEGIN;
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('videos.channel.create', 'Create a video channel community', 'videos.channel', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.channel.update', 'Update a video channel community', 'videos.channel', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.channel.delete', 'Delete a video channel community', 'videos.channel', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.video.create', 'Create a video entry', 'videos.video', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.video.update', 'Update a video entry', 'videos.video', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.video.delete', 'Delete a video entry', 'videos.video', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.schedule.create', 'Create a scheduled feed block', 'videos.schedule', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.schedule.update', 'Update a scheduled feed block', 'videos.schedule', 'update', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.schedule.delete', 'Delete a scheduled feed block', 'videos.schedule', 'delete', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.live.start', 'Start a live on-air session', 'videos.live', 'start', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('videos.live.stop', 'Stop a live on-air session', 'videos.live', 'stop', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('community.join', 'Join a video channel community', 'community', 'join', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('community.leave', 'Leave a video channel community', 'community', 'leave', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('community.read', 'Read a video channel community', 'community', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.post.create', 'Create a channel community post', 'post', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.post.read', 'Read a channel community post', 'post', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.comment.create', 'Create a channel community comment', 'comment', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.vote.create', 'Vote in a channel community', 'vote', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.reaction.create', 'Create a channel community reaction', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='video-client')),
+  ('social.reaction.read', 'Read a channel community reaction', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='video-client'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
 -- video_client_member - community participation permissions for channel communities
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'community.join',
@@ -656,7 +662,7 @@ WHERE r.name = 'video_client_member'
 ON CONFLICT DO NOTHING;
 
 -- video_channel_creator - creator permissions for channel, video, schedule, live, and community participation
-INSERT INTO "role_permission" ("roleId", "permissionId")
+INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'videos.channel.create',
@@ -686,4 +692,30 @@ ON CONFLICT DO NOTHING;
 COMMIT;
 SQL
 
-echo "App scopes seeded."
+echo "Video-client permissions seeded."
+
+# Seed role assignments for video-client seed users
+# Note: profile IDs are assigned on user registration, so we do a fuzzy match approach
+# This will assign video_channel_creator role to any seed users in video-client scope
+# Run as separate script after users are registered
+psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
+SELECT 
+  p."profileId",
+  r.id,
+  s.id,
+  NOW()
+FROM "user" p
+JOIN "role" r ON r.name = 'video_channel_creator'
+JOIN "app_scope" s ON s.name = 'video-client'
+WHERE p.email IN ('alice@example.com', 'bob@example.com', 'charlie@example.com')
+  AND NOT EXISTS (
+    SELECT 1 FROM "role_assignment" ra 
+    WHERE ra."profileId" = p."profileId" 
+      AND ra."roleId" = r.id 
+      AND ra."appScopeId" = s.id
+  )
+ON CONFLICT DO NOTHING;
+SQL
+
+echo "Video-client role assignments seeded."

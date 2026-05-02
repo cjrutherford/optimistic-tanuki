@@ -22,7 +22,7 @@ export interface ChatMessage {
   content: string;
   type: 'chat' | 'info' | 'warning' | 'system';
   recipients: string[];
-  createdAt: string;
+  createdAt: string | Date;
 }
 
 @Injectable({

@@ -79,9 +79,6 @@ tf/*.tfstate
 tf/*.tfstate.*
 tf/tfplan
 tmp/
-.env
-.kilo/
-.opencode/
 .ruff_cache/
 worktrees/*
 apps/local-hub-e2e/test-results/

@@ -44,9 +44,9 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
-import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { OAuthController } from '../controllers/oauth/oauth.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
+import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
 import { WellnessController } from '../controllers/wellness/wellness.controller';
 import { ClassifiedsController } from '../controllers/classifieds/classifieds.controller';
@@ -119,8 +119,8 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
     AppConfigController,
     ForumController,
     OAuthController,
-    VideosController,
     FinanceController,
+    VideosController,
     WellnessController,
     ClassifiedsController,
     CommunitiesController,
@@ -419,22 +419,6 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
       inject: [ConfigService],
     },
     {
-      provide: ServiceTokens.VIDEOS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.videos'
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
       provide: ServiceTokens.FINANCE_SERVICE,
       useFactory: (configService: ConfigService) => {
         const serviceConfig =
@@ -529,4 +513,4 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

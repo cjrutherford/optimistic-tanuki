@@ -99,7 +99,6 @@ Step-by-step guides for specific tasks:
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
 ## Library Documentation
-## Library Documentation
 
 Shared libraries used across applications:
 
@@ -137,7 +136,6 @@ Shared libraries used across applications:
 - [Theme Lib](../libs/theme-lib/README.md) - Theme utilities
 - [Compose Lib](../libs/compose-lib/README.md) - Composition utilities
 - [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation
-
 ## Quick Links
 
 - [Main README](../README.md) - Project overview and quick start

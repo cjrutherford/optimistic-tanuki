@@ -498,13 +498,12 @@ export function generateThemeResponsiveColors(
   const background = rgbToHex(hslToRgb(backgroundHsl));
 
   // Surface: slightly different from background
-  const luminosityOffset = mode === 'light' ? params.surfaceLuminosityOffset : -params.surfaceLuminosityOffset;
   const surfaceHsl: HSL = {
     h: primaryHsl.h,
     s: backgroundHsl.s,
     l: Math.max(
       0,
-      Math.min(100, baseLuminosity + luminosityOffset)
+      Math.min(100, baseLuminosity + params.surfaceLuminosityOffset)
     ),
   };
   const surface = rgbToHex(hslToRgb(surfaceHsl));

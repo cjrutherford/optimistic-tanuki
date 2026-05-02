@@ -253,7 +253,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
       this.conversationId.set(conversation.id);
       this.chatMessages.set(
-        messages.map((m) => ({ ...m, createdAt: m.createdAt }))
+        messages.map((m) => ({ ...m, createdAt: new Date(m.createdAt) }))
       );
       this.showChat.set(true);
     } catch {
@@ -295,7 +295,7 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       });
       this.chatMessages.update((msgs) => [
         ...msgs,
-        { ...sent, createdAt: sent.createdAt },
+        { ...sent, createdAt: new Date(sent.createdAt) },
       ]);
       this.chatInput.set('');
     } catch {
