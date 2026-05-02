@@ -1,6 +1,6 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   DEFAULT_TRAINER_SITE_CONFIG,
@@ -31,7 +31,12 @@ import {
         </nav>
 
         <div class="auth-actions">
-          <a class="ghost" routerLink="/client">Client Login</a>
+          @if (isClientAuthenticated()) {
+            <a class="ghost" routerLink="/client/dashboard">Client Portal</a>
+            <button class="ghost" (click)="signOutClient()">Sign Out (Client)</button>
+          } @else {
+            <a class="ghost" routerLink="/client/login">Client Login</a>
+          }
           @if (auth.isAuthenticated()) {
             <a class="ghost" routerLink="/trainer/dashboard">Workspace</a>
             <button class="solid" (click)="logout()">Sign Out</button>
@@ -198,9 +203,12 @@ export class AppComponent {
   readonly site = signal<TrainerSiteConfig>(DEFAULT_TRAINER_SITE_CONFIG);
   readonly configId = signal<string | null>(null);
   readonly auth = inject(TrainerAuthService);
+  readonly isClientAuthenticated = this.auth.isClientAuthenticated;
+  readonly clientUser = this.auth.clientUser;
   private readonly api = inject(TrainerApiService);
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly router = inject(Router);
 
   constructor() {
     this.api.getSiteConfig().subscribe({
@@ -233,5 +241,10 @@ export class AppComponent {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  signOutClient(): void {
+    this.auth.logoutClient();
+    this.router.navigate(['/client/login']);
   }
 }
