@@ -1,8 +1,15 @@
 import { Component, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { RegisterRequest, RegisterSubmitType } from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../services/authentication.service';
-import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  OAuthProviderEvent,
+  OAuthService,
+  RegisterBlockComponent,
+} from '@optimistic-tanuki/auth-ui';
+import { AuthStateService } from '../state/auth-state.service';
+import { ProfileService } from '../services/profile.service';
 
 @Component({
   selector: 'app-register',
@@ -13,7 +20,10 @@ import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
       <div class="register-content">
         <h1>Create Your Account</h1>
         <p>Join the video platform community</p>
-        <lib-register-block (submitEvent)="onSubmit($event)"></lib-register-block>
+        <lib-register-block
+          (submitEvent)="onSubmit($event)"
+          (oauthProviderSelected)="onOAuthProvider($event)"
+        ></lib-register-block>
       </div>
     </div>
   `,
@@ -46,7 +56,26 @@ import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
 })
 export class RegisterComponent {
   private readonly authenticationService = inject(AuthenticationService);
+  private readonly authStateService = inject(AuthStateService);
+  private readonly http = inject(HttpClient);
+  private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
+  private readonly oauthService = new OAuthService(this.http, '/api');
+
+  constructor() {
+    void this.loadOAuthConfig();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      const config: any = await this.http.get('/api/oauth/config').toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch {
+      // Keep default provider config when the endpoint is unavailable.
+    }
+  }
 
   onSubmit($event: RegisterSubmitType) {
     const formValue = $event as any;
@@ -68,5 +97,57 @@ export class RegisterComponent {
         console.error('Registration error:', error);
       },
     });
+  }
+
+  async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    const result = await this.oauthService.initiateOAuthLogin(
+      event.provider,
+      'video-client'
+    );
+
+    if (result.success && result.token) {
+      this.authStateService.setToken(result.token);
+      await this.handlePostLogin();
+      return;
+    }
+
+    if (result.needsRegistration && result.userData) {
+      const names = result.userData.displayName.split(' ');
+      const regResult = await this.oauthService.completeOAuthRegistration(
+        result.userData.provider,
+        result.userData.providerUserId,
+        result.userData.email,
+        names[0] || '',
+        names.slice(1).join(' ') || '',
+        ''
+      );
+
+      if (regResult.success && regResult.token) {
+        this.authStateService.setToken(regResult.token);
+        await this.handlePostLogin();
+      }
+    }
+  }
+
+  private async handlePostLogin(): Promise<void> {
+    if (!this.authStateService.isAuthenticated) {
+      return;
+    }
+
+    const decoded = this.authStateService.getDecodedTokenValue();
+
+    if (decoded && decoded.profileId === '') {
+      await this.router.navigate(['/profile']);
+      return;
+    }
+
+    await this.profileService.getAllProfiles();
+    const currentProfiles = this.profileService.getCurrentUserProfiles();
+
+    if (currentProfiles.length > 0) {
+      this.profileService.selectProfile(currentProfiles[0]);
+    }
+
+    await this.router.navigate(['/']);
   }
 }

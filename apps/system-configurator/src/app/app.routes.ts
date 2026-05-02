@@ -7,6 +7,7 @@ import { ConfirmationComponent } from './pages/confirmation/confirmation.compone
 import { AuthenticationGuard } from './auth/authentication.guard';
 import { AlreadyAuthenticatedGuard } from './auth/already-authenticated.guard';
 import { ProfileReadyGuard } from './auth/profile-ready.guard';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
   { path: '', component: LandingComponent, title: 'HAI Computer' },
@@ -22,6 +23,11 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/login/login.component').then((m) => m.LoginComponent),
     title: 'Log In',
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+    title: 'OAuth Callback',
   },
   {
     path: 'profile-gate',

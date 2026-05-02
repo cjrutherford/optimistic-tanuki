@@ -2,12 +2,13 @@ import { ConfigService } from '@nestjs/config';
 import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
+import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
   console.log(`Database configuration: ${JSON.stringify(database)}`);
-  const entities = [KeyDatum, UserEntity, TokenEntity];
+  const entities = [KeyDatum, UserEntity, TokenEntity, OAuthProviderEntity];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`
   );

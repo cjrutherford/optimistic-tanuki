@@ -50,7 +50,11 @@ The current branch has a few operational surfaces that matter more than the olde
 
 ### Guides
 
-- [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub app and supporting services
+Step-by-step guides for specific tasks:
+
+- [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers
+- [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login
+- [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage
@@ -94,6 +98,44 @@ The current branch has a few operational surfaces that matter more than the olde
 - [Forge of Will](../apps/forgeofwill/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
+## Library Documentation
+
+Shared libraries used across applications:
+
+### UI Libraries
+
+- [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration
+- [Auth UI](../libs/auth-ui/README.md) - Authentication UI components
+- [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components
+  - [Component Injection](../libs/blogging-ui/COMPONENT_INJECTION.md)
+- [Chat UI](../libs/chat-ui/README.md) - Chat UI components
+- [Common UI](../libs/common-ui/README.md) - Common UI components
+- [Form UI](../libs/form-ui/README.md) - Form components
+- [Message UI](../libs/message-ui/README.md) - Message UI components
+- [Navigation UI](../libs/navigation-ui/README.md) - Navigation components
+- [Persona UI](../libs/persona-ui/README.md) - Persona/avatar components
+- [Profile UI](../libs/profile-ui/README.md) - Profile UI components
+- [Project UI](../libs/project-ui/README.md) - Project management UI
+- [Social UI](../libs/social-ui/README.md) - Social feature UI
+- [Store UI](../libs/store-ui/README.md) - Store/shopping UI
+- [Theme UI](../libs/theme-ui/README.md) - Theme management UI
+  - [Theme System](../libs/theme-ui/THEME_SYSTEM.md)
+  - [Host Binding Migration](../libs/theme-ui/HOST_BINDING_MIGRATION.md)
+
+### Core Libraries
+
+- [Constants](../libs/constants/README.md) - Shared constants and tokens
+- [Database](../libs/database/README.md) - Database connection and TypeORM setup
+- [Email](./guides/email-providers.md) - Email service with plugin architecture
+- [Encryption](../libs/encryption/README.md) - Cryptographic operations
+- [Logger](../libs/logger/README.md) - Logging service
+- [Models](../libs/models/README.md) - Shared data models
+- [UI Models](../libs/ui-models/README.md) - UI-specific data models
+- [Storage](../libs/storage/README.md) - Storage utilities
+- [Permission Lib](../libs/permission-lib/README.md) - Permission utilities
+- [Theme Lib](../libs/theme-lib/README.md) - Theme utilities
+- [Compose Lib](../libs/compose-lib/README.md) - Composition utilities
+- [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation
 ## Quick Links
 
 - [Main README](../README.md) - Project overview and quick start

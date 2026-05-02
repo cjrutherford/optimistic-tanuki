@@ -1,8 +1,14 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  OAuthProviderEvent,
+  OAuthService,
+  RegisterBlockComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthenticationService } from '../../services/authentication.service';
+import { AuthStateService } from '../../services/auth-state.service';
 
 interface RegisterSubmitType {
   email: string;
@@ -27,6 +33,7 @@ interface RegisterSubmitType {
           'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80'
         "
         (submitEvent)="onRegister($event)"
+        (oauthProviderSelected)="onOAuthProvider($event)"
       >
       </lib-register-block>
 
@@ -74,8 +81,26 @@ interface RegisterSubmitType {
 export class RegisterComponent {
   private readonly router = inject(Router);
   private readonly authService = inject(AuthenticationService);
+  private readonly authState = inject(AuthStateService);
+  private readonly http = inject(HttpClient);
+  private readonly oauthService = new OAuthService(this.http, '/api');
 
   error = signal<string | null>(null);
+
+  constructor() {
+    void this.loadOAuthConfig();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      const config: any = await this.http.get('/api/oauth/config').toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch {
+      // Keep default provider config when the endpoint is unavailable.
+    }
+  }
 
   onRegister(data: RegisterSubmitType): void {
     this.error.set(null);
@@ -114,5 +139,48 @@ export class RegisterComponent {
         setTimeout(() => this.error.set(null), 5000);
       },
     });
+  }
+
+  async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.error.set(null);
+
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'd6'
+      );
+
+      if (result.success && result.token) {
+        this.authState.setToken(result.token);
+        await this.router.navigate(['/dashboard']);
+        return;
+      }
+
+      if (result.needsRegistration && result.userData) {
+        const names = result.userData.displayName.split(' ');
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          names[0] || '',
+          names.slice(1).join(' ') || '',
+          ''
+        );
+
+        if (regResult.success && regResult.token) {
+          this.authState.setToken(regResult.token);
+          await this.router.navigate(['/dashboard']);
+          return;
+        }
+
+        this.error.set(
+          regResult.error || 'Registration failed. Please try again.'
+        );
+      }
+    } catch (err: any) {
+      this.error.set(
+        err.error?.message || err.message || 'Registration failed.'
+      );
+    }
   }
 }

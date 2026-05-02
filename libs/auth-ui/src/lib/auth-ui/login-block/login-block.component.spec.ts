@@ -172,4 +172,26 @@ describe('LoginBlockComponent', () => {
     component.onFormChange('test');
     expect(consoleSpy).toHaveBeenCalledWith('test');
   });
+
+  it('should have showOAuth true by default', () => {
+    expect(component.showOAuth).toBe(true);
+  });
+
+  it('should have all providers enabled by default', () => {
+    expect(component.enabledOAuthProviders).toEqual([
+      'google',
+      'github',
+      'microsoft',
+      'facebook',
+      'x',
+    ]);
+  });
+
+  it('should emit oauthProviderSelected on onOAuthProvider', () => {
+    jest.spyOn(component.oauthProviderSelected, 'emit');
+    component.onOAuthProvider({ provider: 'google' });
+    expect(component.oauthProviderSelected.emit).toHaveBeenCalledWith({
+      provider: 'google',
+    });
+  });
 });

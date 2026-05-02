@@ -44,6 +44,7 @@ import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
+import { OAuthController } from '../controllers/oauth/oauth.controller';
 import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
@@ -117,6 +118,7 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
     StoreController,
     AppConfigController,
     ForumController,
+    OAuthController,
     FinanceController,
     VideosController,
     WellnessController,

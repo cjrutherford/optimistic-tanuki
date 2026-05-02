@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -9,15 +9,18 @@ import {
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 import { LoginType } from '@optimistic-tanuki/ui-models';
+import { OAuthButtonsComponent, OAuthProviderEvent } from '../oauth-buttons/oauth-buttons.component';
 
 @Component({
   selector: 'lib-login-block',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     CardComponent,
     ButtonComponent,
     TextInputComponent,
+    OAuthButtonsComponent,
   ],
   templateUrl: './login-block.component.html',
   styleUrl: './login-block.component.scss',
@@ -38,7 +41,15 @@ export class LoginBlockComponent extends Themeable {
   @Input() heroSrc =
     'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGxvZ298ZW58MHx8fHwxNjg3NTY5NzA1&ixlib=rb-4.0.3&q=80&w=1080';
   @Input() heroAlt = 'login-block works!';
+  @Input() showOAuth = true;
+  @Input() enabledOAuthProviders: string[] = [
+    'google',
+    'github',
+    'microsoft',
+    'facebook',
+  ];
   @Output() submitEvent = new EventEmitter<LoginType>();
+  @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();
   loginForm: FormGroup;
   constructor(private readonly fb: FormBuilder) {
     super();
@@ -74,5 +85,9 @@ export class LoginBlockComponent extends Themeable {
   onSubmit() {
     console.log(this.loginForm.value);
     this.submitEvent.emit(this.loginForm.value);
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent) {
+    this.oauthProviderSelected.emit(event);
   }
 }

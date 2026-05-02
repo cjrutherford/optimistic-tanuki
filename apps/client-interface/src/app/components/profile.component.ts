@@ -5,7 +5,6 @@ import {
 } from '@optimistic-tanuki/message-ui';
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
 import {
   BannerComponent,
   ProfileEditorComponent,
@@ -42,13 +41,12 @@ import { PostDto } from '@optimistic-tanuki/social-ui';
 export class ProfileComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly messageService = inject(MessageService);
+  private readonly profileService = inject(ProfileService);
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   private readonly communityService = inject(CommunityService);
   private readonly postService = inject(PostService);
   private readonly followService = inject(FollowService);
-
-  profileService: ProfileService;
   showProfileEditor = false;
   viewingUserId: string | null = null;
   isViewingOther = false;
@@ -60,14 +58,15 @@ export class ProfileComponent implements OnInit {
   isBlocked = signal(false);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
 
-  constructor(readonly _profileService: ProfileService) {
-   if(isPlatformBrowser(this.platformId)) {
-    this.profileService = _profileService;
-    const profile = localStorage.getItem('selectedProfile');
-    if (profile) {
-      this.profileService.selectProfile(JSON.parse(profile));
+  constructor() {
+    if (isPlatformBrowser(this.platformId)) {
+      if (isPlatformBrowser(this.platformId)) {
+        const profile = localStorage.getItem('selectedProfile');
+        if (profile) {
+          this.profileService.selectProfile(JSON.parse(profile));
+        }
+      }
     }
-  }
   }
 
   ngOnInit(): void {
@@ -89,19 +88,23 @@ export class ProfileComponent implements OnInit {
     this.isViewingOther = false;
     this.viewingUserProfile.set(null);
     this.profileService.getAllProfiles().then(() => {
-      const profile = localStorage.getItem('selectedProfile');
-      if (profile) {
-        this.profileService.selectProfile(JSON.parse(profile));
+      if (isPlatformBrowser(this.platformId)) {
+        const profile = localStorage.getItem('selectedProfile');
+        if (profile) {
+          this.profileService.selectProfile(JSON.parse(profile));
+        }
       }
     });
-    const nav = window?.history?.state;
-    if (nav?.showProfileModal) {
-      setTimeout(() => {
-        window.location.href = '/settings';
-        if (nav.profileMessage) {
-          this.showMessage(nav.profileMessage, 'warning');
-        }
-      }, 100);
+    if (isPlatformBrowser(this.platformId)) {
+      const nav = window?.history?.state;
+      if (nav?.showProfileModal) {
+        setTimeout(() => {
+          window.location.href = '/settings';
+          if (nav.profileMessage) {
+            this.showMessage(nav.profileMessage, 'warning');
+          }
+        }, 100);
+      }
     }
   }
 
@@ -220,6 +223,16 @@ export class ProfileComponent implements OnInit {
       });
   }
 
+  selectProfile(profile: ProfileDto) {
+    this.profileService.selectProfile(profile);
+    this.showMessage('Profile selected!', 'success');
+    setTimeout(() => {
+      if (isPlatformBrowser(this.platformId)) {
+        window.location.href = '/feed';
+      }
+    }, 500);
+  }
+
   createProfile(newProfile: CreateProfileDto) {
     this.profileService.createProfile(newProfile).then(() => {
       this.profileService.getAllProfiles().then(() => {
@@ -230,7 +243,9 @@ export class ProfileComponent implements OnInit {
   }
 
   goToSettings() {
-    window.location.href = '/settings';
+    if (isPlatformBrowser(this.platformId)) {
+      window.location.href = '/settings';
+    }
   }
 
   onFollowToggle() {

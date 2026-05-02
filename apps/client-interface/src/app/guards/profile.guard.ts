@@ -1,4 +1,5 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { CanActivate, Router } from '@angular/router';
 import { AuthStateService } from '../state/auth-state.service';
 import { ProfileService } from '../profile.service';
@@ -9,6 +10,7 @@ import { ProfileService } from '../profile.service';
 export class ProfileGuard implements CanActivate {
   private router = inject(Router);
   private authStateService = inject(AuthStateService);
+  private platformId = inject(PLATFORM_ID);
   private isAuthenticated = false;
 
   constructor(private readonly profileService: ProfileService) {
@@ -21,9 +23,11 @@ export class ProfileGuard implements CanActivate {
     if (this.isAuthenticated) {
       try {
         await this.profileService.getAllProfiles();
-        const selectedProfile = localStorage.getItem('selectedProfile');
-        if (selectedProfile) {
-          this.profileService.selectProfile(JSON.parse(selectedProfile));
+        if (isPlatformBrowser(this.platformId)) {
+          const selectedProfile = localStorage.getItem('selectedProfile');
+          if (selectedProfile) {
+            this.profileService.selectProfile(JSON.parse(selectedProfile));
+          }
         }
         return true;
       } catch (error) {

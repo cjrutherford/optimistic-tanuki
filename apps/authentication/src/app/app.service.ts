@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from '../user/entities/user.entity';
@@ -10,6 +11,7 @@ import {
   TokenIssuerService,
 } from '@optimistic-tanuki/auth-domain';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
+import { EmailService } from '@optimistic-tanuki/email';
 import { RpcException } from '@nestjs/microservices';
 import * as qrcode from 'qrcode';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -22,6 +24,7 @@ import { authenticator } from 'otplib';
 export class AppService {
   constructor(
     private readonly l: Logger,
+    private readonly configService: ConfigService,
     @Inject(getRepositoryToken(UserEntity))
     private readonly userRepo: Repository<UserEntity>,
     @Inject(getRepositoryToken(TokenEntity))
@@ -36,6 +39,7 @@ export class AppService {
     @Inject('JWT_SECRET') private readonly jwtSecret: string,
     @Inject('totp') private readonly totp: typeof authenticator,
     private readonly jsonWebToken: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   private normalizeEmail(email: string): string {
@@ -312,6 +316,16 @@ export class AppService {
       if (existingUser.totpSecret)
         throw new RpcException('TOTP already set up');
       await this.userRepo.update(userId, { totpSecret: newSecret });
+
+      // Send MFA setup confirmation email
+      const safeName = validator.escape(existingUser.firstName || '');
+      await this.emailService.sendEmail({
+        to: existingUser.email,
+        subject: 'Multi-Factor Authentication Enabled',
+        text: `Hello ${existingUser.firstName || ''},\n\nMulti-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.\n\nIf you did not initiate this, please contact support immediately.`,
+        html: `<h2>MFA Enabled</h2><p>Hello ${safeName},</p><p>Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.</p><p>If you did not initiate this, please contact support immediately.</p>`,
+      });
+
       return {
         message: 'TOTP setup successful',
         code: 0,
@@ -340,8 +354,50 @@ export class AppService {
     return { message: 'TOTP token is valid', code: 0 };
   }
 
-  async issueToken(userId: string, profileId?: string) {
+  async sendMfaSetupEmail(userId: string) {
     try {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new RpcException('User not found');
+
+      const safeName = validator.escape(user.firstName || '');
+
+      const result = await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Multi-Factor Authentication Setup',
+        text: `Hello ${user.firstName || ''},\n\nA request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.\n\nIf you did not request this, please secure your account immediately.`,
+        html: `<h2>MFA Setup Requested</h2><p>Hello ${safeName},</p><p>A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.</p><p>If you did not request this, please secure your account immediately.</p>`,
+      });
+
+      return { message: 'MFA setup email sent', code: 0, data: { sent: result.success } };
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
+  }
+
+  async sendMfaVerificationEmail(userId: string, action: string) {
+    try {
+      const user = await this.userRepo.findOne({ where: { id: userId } });
+      if (!user) throw new RpcException('User not found');
+
+      const safeAction = validator.escape(action);
+      const safeName = validator.escape(user.firstName || '');
+
+      const result = await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Security Alert: MFA Verification',
+        text: `Hello ${user.firstName || ''},\n\nA multi-factor authentication verification was performed on your account for: ${action}.\n\nIf this was not you, please change your password immediately.`,
+        html: `<h2>Security Alert</h2><p>Hello ${safeName},</p><p>A multi-factor authentication verification was performed on your account for: <strong>${safeAction}</strong>.</p><p>If this was not you, please change your password immediately.</p>`,
+      });
+
+      return { message: 'MFA verification email sent', code: 0, data: { sent: result.success } };
+    } catch (e) {
+      if (e instanceof RpcException) throw e;
+      throw new RpcException(e.message || e);
+    }
+  }
+
+  async issueToken(userId: string, profileId?: string) {    try {
       this.l.debug(
         `Issuing token for userId: ${userId}, profileId: ${profileId}`,
       );
@@ -382,6 +438,40 @@ export class AppService {
     }
   }
 
+  /**
+   * Returns sanitized public OAuth provider config (no secrets).
+   * If a domain is provided and per-domain overrides exist in config,
+   * those are merged on top of the global provider settings.
+   */
+  getPublicOAuthConfig(domain?: string): Record<string, unknown> {
+    const providers = ['google', 'github', 'microsoft', 'facebook'];
+    const result: Record<string, unknown> = {};
+
+    const apps: Array<any> = this.configService.get('oauth.apps') ?? [];
+    const domainEntry = domain
+      ? apps.find((entry) => entry?.domain === domain)
+      : undefined;
+
+    for (const provider of providers) {
+      const global = this.configService.get<Record<string, any>>(`oauth.${provider}`);
+      if (!global) continue;
+
+      const domainOverride = domainEntry?.[provider] ?? {};
+      const merged = { ...global, ...domainOverride };
+
+      if (!merged.enabled || !merged.clientId) continue;
+
+      result[provider] = {
+        clientId: merged.clientId,
+        redirectUri: merged.redirectUri,
+        scopes: merged.scopes,
+        authorizationEndpoint: merged.authorizationEndpoint,
+        enabled: true,
+      };
+    }
+
+    return result;
+  }
   async logout(token: string) {
     try {
       this.l.debug(`Logging out token`);

@@ -1,5 +1,6 @@
 import { Route, ResolveFn } from '@angular/router';
 import { inject } from '@angular/core';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 import { AuthStateService } from './auth-state.service';
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
@@ -31,6 +32,10 @@ export const appRoutes: Route[] = [
       import('./components/login-page/login-page.component').then(
         (m) => m.LoginPageComponent
       ),
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'blog',

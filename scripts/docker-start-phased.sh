@@ -88,7 +88,8 @@ run_phase "Phase 4: Essential APIs" "$PHASE_DELAY" \
 run_phase "Phase 5: Feature services" "$PHASE_DELAY" \
     finance payments store assets project-planning chat-collector prompt-proxy \
     telos-docs-service blogging forum wellness classifieds
-run_phase "Phase 6: Heavy services" "$PHASE_DELAY" ai-orchestration lead-tracker
+run_phase "Phase 6: Heavy services" "$PHASE_DELAY" \
+    ai-orchestration lead-tracker video-transcoder-worker videos
 run_phase "Phase 7: Gateway" "$PHASE_DELAY" gateway
 
 echo "=== Phase 8: Seed jobs ==="

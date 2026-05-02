@@ -1,4 +1,5 @@
-import { Injectable, OnDestroy, inject } from '@angular/core';
+import { Injectable, OnDestroy, inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
@@ -31,6 +32,7 @@ export class SocialWebSocketService implements OnDestroy {
   private apiBaseUrl = inject(API_BASE_URL);
   private authStateService = inject(AuthStateService);
   private router = inject(Router);
+  private platformId = inject(PLATFORM_ID);
 
   constructor() {
     // Service initializes on demand via connect()
@@ -40,6 +42,9 @@ export class SocialWebSocketService implements OnDestroy {
    * Initialize and connect to the Social WebSocket server
    */
   connect(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
     if (this.socket?.connected) {
       console.log('Already connected to Social WebSocket');
       return;

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-
+import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { TextInputComponent } from '@optimistic-tanuki/form-ui';
@@ -9,15 +9,21 @@ import {
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
+import {
+  OAuthButtonsComponent,
+  OAuthProviderEvent,
+} from '../oauth-buttons/oauth-buttons.component';
 
 @Component({
   selector: 'lib-register-block',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     CardComponent,
     ButtonComponent,
     TextInputComponent,
+    OAuthButtonsComponent,
   ],
   templateUrl: './register-block.component.html',
   styleUrls: ['./register-block.component.scss'],
@@ -38,7 +44,15 @@ export class RegisterBlockComponent extends Themeable {
   @Input() callToAction = 'Join us on your journey';
   @Input() heroSource =
     'https://source.unsplash.com/random/800x600/?nature,water';
+  @Input() showOAuth = true;
+  @Input() enabledOAuthProviders: string[] = [
+    'google',
+    'github',
+    'microsoft',
+    'facebook',
+  ];
   @Output() submitEvent = new EventEmitter<RegisterSubmitType>();
+  @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();
   registerForm: FormGroup;
   constructor(private readonly fb: FormBuilder) {
     super();
@@ -76,5 +90,9 @@ export class RegisterBlockComponent extends Themeable {
 
   onSubmit() {
     this.submitEvent.emit(this.registerForm.value);
+  }
+
+  onOAuthProvider(event: OAuthProviderEvent) {
+    this.oauthProviderSelected.emit(event);
   }
 }

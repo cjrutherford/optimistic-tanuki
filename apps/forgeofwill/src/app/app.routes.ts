@@ -5,6 +5,7 @@ import { AlreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './user-permissions.service';
 import { AuthStateService } from './auth-state.service';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver = async () => {
   const permissionsService = inject(UserPermissionsService);
@@ -99,6 +100,10 @@ export const appRoutes: Route[] = [
       ),
     title: 'Register',
     canActivate: [AlreadyAuthenticatedGuard],
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: '**',

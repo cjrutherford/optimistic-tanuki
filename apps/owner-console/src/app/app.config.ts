@@ -3,7 +3,6 @@ import {
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
   APP_INITIALIZER,
-  inject,
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import {
@@ -15,6 +14,7 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideClientHydration } from '@angular/platform-browser';
 import { appRoutes } from './app.routes';
 import { authInterceptor } from './interceptors/auth.interceptor';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 function initializeTheme() {
   // Lazy load ThemeService to avoid SSR issues
@@ -30,6 +30,10 @@ export const appConfig: ApplicationConfig = {
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
+    {
+      provide: API_BASE_URL,
+      useValue: '/api',
+    },
     provideAnimationsAsync(),
     provideClientHydration(),
     {

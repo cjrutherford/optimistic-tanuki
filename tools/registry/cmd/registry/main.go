@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -69,7 +70,7 @@ func run(args []string) error {
 
 func generate(args []string) error {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
-	input := fs.String("input", "tools/registry/apps.yaml", "Input YAML file")
+	input := fs.String("input", defaultInputPath(), "Input YAML file")
 	output := fs.String("output", "", "Output JSON file")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -104,7 +105,7 @@ func generate(args []string) error {
 
 func validate(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
-	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", defaultInputPath(), "Registry YAML file")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func validate(args []string) error {
 
 func add(args []string) error {
 	fs := flag.NewFlagSet("add", flag.ContinueOnError)
-	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", defaultInputPath(), "Registry YAML file")
 	appID := fs.String("appId", "", "Application ID")
 	name := fs.String("name", "", "Application name")
 	domain := fs.String("domain", "", "Domain")
@@ -151,7 +152,7 @@ func add(args []string) error {
 
 func remove(args []string) error {
 	fs := flag.NewFlagSet("remove", flag.ContinueOnError)
-	input := fs.String("input", "tools/registry/apps.yaml", "Registry YAML file")
+	input := fs.String("input", defaultInputPath(), "Registry YAML file")
 	appID := fs.String("appId", "", "Application ID")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -177,7 +178,7 @@ func remove(args []string) error {
 
 func exportEnv(args []string) error {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
-	input := fs.String("input", "tools/registry/apps.yaml", "Input YAML file")
+	input := fs.String("input", defaultInputPath(), "Input YAML file")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -196,6 +197,21 @@ func exportEnv(args []string) error {
 		fmt.Printf("APP_%s_API_BASE_URL=%s\n", key, app.APIBaseURL)
 	}
 	return nil
+}
+
+func defaultInputPath() string {
+	candidates := []string{
+		"apps.yaml",
+		filepath.Join("tools", "registry", "apps.yaml"),
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate
+		}
+	}
+
+	return filepath.Join("tools", "registry", "apps.yaml")
 }
 
 func readConfig(path string) (registryConfig, error) {

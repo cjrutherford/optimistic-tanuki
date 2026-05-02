@@ -4,6 +4,7 @@ import { ProfileGuard } from './guards/profile.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver: ResolveFn<string[]> = async () => {
   const permissionsService = inject(UserPermissionsService);
@@ -60,6 +61,14 @@ export const appRoutes: Route[] = [
     path: 'login',
     loadComponent: () =>
       import('./components/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
+  },
+  {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'feed',

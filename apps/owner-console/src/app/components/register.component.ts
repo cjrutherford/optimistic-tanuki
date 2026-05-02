@@ -1,9 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { RegisterBlockComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  RegisterBlockComponent,
+  OAuthProviderEvent,
+  OAuthService,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthService } from '../services/auth.service';
 import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -19,6 +24,7 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
           'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070'
         "
         (submitEvent)="onRegister($event)"
+        (oauthProviderSelected)="onOAuthProvider($event)"
       ></lib-register-block>
       <div class="login-link">
         <a routerLink="/login">Already have an account? Login</a>
@@ -73,11 +79,31 @@ import { RegisterSubmitType } from '@optimistic-tanuki/ui-models';
     `,
   ],
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   error = '';
   success = '';
+  private oauthService: OAuthService;
+  private http = inject(HttpClient);
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router) {
+    this.oauthService = new OAuthService(this.http, '/api');
+  }
+
+  ngOnInit(): void {
+    this.loadOAuthConfig();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      const domain = window.location.hostname;
+      const config: any = await this.http.get(`/api/oauth/config?domain=${encodeURIComponent(domain)}`).toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch (e) {
+      console.log('OAuth config not loaded from server, using defaults');
+    }
+  }
 
   onRegister(registerData: RegisterSubmitType): void {
     this.error = '';
@@ -104,5 +130,56 @@ export class RegisterComponent {
             err.error?.message || 'Registration failed. Please try again.';
         },
       });
+  }
+
+  async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.error = '';
+    this.success = '';
+
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'owner-console'
+      );
+
+      if (result.success && result.token) {
+        this.authService.setToken(result.token);
+        this.success = 'Registration and login successful! Redirecting...';
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 1500);
+      } else if (result.needsRegistration && result.userData) {
+        // Handle auto-registration for new OAuth users
+        const names = result.userData.displayName.split(' ');
+        const firstName = names[0] || '';
+        const lastName = names.slice(1).join(' ') || '';
+
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          firstName,
+          lastName,
+          ''
+        );
+
+        if (regResult.success && regResult.token) {
+          this.authService.setToken(regResult.token);
+          this.success = 'Registration and login successful! Redirecting...';
+          setTimeout(() => {
+            this.router.navigate(['/dashboard']);
+          }, 1500);
+        } else {
+          this.error =
+            regResult.error || 'Registration failed. Please try again.';
+        }
+      } else {
+        this.error =
+          result.error || 'OAuth registration failed. Please try again.';
+      }
+    } catch (err: any) {
+      this.error =
+        err.message || 'OAuth registration failed. Please try again.';
+    }
   }
 }

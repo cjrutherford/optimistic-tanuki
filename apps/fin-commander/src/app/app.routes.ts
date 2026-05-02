@@ -1,5 +1,6 @@
 import { Route } from '@angular/router';
 import { financeRoutes } from '@optimistic-tanuki/finance-ui';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { onboardingCompleteGuard } from './guards/onboarding-complete.guard';
 import { ProfileGuard } from './guards/profile.guard';
@@ -86,6 +87,10 @@ export const appRoutes: Route[] = [
       import('./components/register.component').then(
         (m) => m.RegisterComponent
       ),
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'settings',
