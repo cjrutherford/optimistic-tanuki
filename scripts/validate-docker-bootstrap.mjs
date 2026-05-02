@@ -149,6 +149,8 @@ const phasedStartupServices = [
   'classifieds',
   'ai-orchestration',
   'lead-tracker',
+  'video-transcoder-worker',
+  'videos',
   'gateway',
   'app-configurator-seed',
   'ot-client-interface',
@@ -284,6 +286,10 @@ assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
 assert.match(
   startupOutput,
   /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/,
+);
+assert.match(
+  startupOutput,
+  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/,
 );
 
 const seedRuntimeEntries = [

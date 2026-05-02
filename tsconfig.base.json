@@ -145,9 +145,6 @@
       "@optimistic-tanuki/search-ui": [
         "libs/search-ui/src/index.ts"
       ],
-      "@optimistic-tanuki/email": [
-        "libs/email/src/index.ts"
-      ],
       "@optimistic-tanuki/video-ui": [
         "libs/video-ui/src/index.ts"
       ]

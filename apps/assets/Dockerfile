@@ -13,9 +13,10 @@ ENV NODE_ENV=production
 ENV PORT=3005
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/assets/ ./
-RUN corepack enable && pnpm install --prod --no-frozen-lockfile && \
-    pnpm add pg typeorm nodemon && \
-    npm cache clean --force || true
+RUN corepack enable && pnpm add nodemon
+RUN corepack enable && pnpm install --prod --no-frozen-lockfile
+RUN corepack enable && pnpm add pg typeorm
+RUN npm cache clean --force || true
 RUN rm -rf node_modules/.cache || true
 RUN chown -R node:node .
 USER node

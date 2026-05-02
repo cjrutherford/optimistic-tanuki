@@ -548,16 +548,16 @@ services:
     depends_on:
       - gateway
 
-  video-client:
-    container_name: ot_video_client
-    build:
-      context: .
-      dockerfile: ./apps/video-client/Dockerfile
-    ports:
-      - '8089:4000'
-    depends_on:
-      - gateway
-      - videos
+  # video-client:
+  #   container_name: ot_video_client
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/video-client/Dockerfile
+  #   ports:
+  #     - '8089:4000'
+  #   depends_on:
+  #     - gateway
+  #     - videos
 
   store:
     container_name: ot_store
@@ -639,11 +639,11 @@ services:
       - app-configurator
       - app-configurator-seed
 
-  videos:
-    container_name: ot_videos
-    build:
-      context: .
-      dockerfile: ./apps/videos/Dockerfile
+  # videos:
+  #   container_name: ot_videos
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/videos/Dockerfile
   wellness:
     container_name: ot_wellness
     build:

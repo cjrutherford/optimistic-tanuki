@@ -500,30 +500,4 @@ export class AppService {
     }
   }
 
-  /**
-   * Returns sanitized public OAuth provider config (no secrets).
-   */
-  getPublicOAuthConfig(_domain?: string): Record<string, unknown> {
-    const providers = ['google', 'github', 'microsoft', 'facebook'];
-    const result: Record<string, unknown> = {};
-
-    for (const provider of providers) {
-      const merged = this.configService.get<Record<string, any>>(
-        `oauth.${provider}`
-      );
-      if (!merged) continue;
-
-      if (!merged.enabled || !merged.clientId) continue;
-
-      result[provider] = {
-        clientId: merged.clientId,
-        redirectUri: merged.redirectUri,
-        scopes: merged.scopes,
-        authorizationEndpoint: merged.authorizationEndpoint,
-        enabled: true,
-      };
-    }
-
-    return result;
-  }
 }
