@@ -7,8 +7,25 @@ import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 
+const resolveConfigPath = () => {
+  const candidates = [
+    path.resolve('./src/assets/config.yaml'),
+    path.resolve('./src/assets/config.yaml.sample'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(
+    `Authentication staticDatabase config not found. Expected one of: ${candidates.join(', ')}`
+  );
+};
+
 const config = yaml.load(
-  fs.readFileSync(path.resolve('./src/assets/config.yaml'), 'utf8')
+  fs.readFileSync(resolveConfigPath(), 'utf8')
 ) as Record<string, any>;
 const {
   database: {

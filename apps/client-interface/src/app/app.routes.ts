@@ -67,6 +67,10 @@ export const appRoutes: Route[] = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'feed',
     loadComponent: () =>
       import('./components/social/feed.component').then((m) => m.FeedComponent),

@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
 
@@ -91,6 +92,10 @@ export const appRoutes: Route[] = [
       import('./pages/register/register.component').then(
         (m) => m.RegisterComponent
       ),
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'account',

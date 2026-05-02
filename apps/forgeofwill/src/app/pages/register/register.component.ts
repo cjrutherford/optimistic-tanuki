@@ -78,7 +78,10 @@ export class RegisterComponent implements OnInit {
 
   async onOAuthProvider(event: OAuthProviderEvent) {
     try {
-      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'forgeofwill'
+      );
 
       if (result.success && result.token) {
         this.authState.setToken(result.token);

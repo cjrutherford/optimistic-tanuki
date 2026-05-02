@@ -118,7 +118,10 @@ export class LoginComponent implements OnInit {
     this.error = '';
 
     try {
-      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'owner-console'
+      );
 
       if (result.success && result.token) {
         // Store the token and navigate to dashboard

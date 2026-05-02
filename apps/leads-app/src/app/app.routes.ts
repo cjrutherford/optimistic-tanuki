@@ -1,4 +1,5 @@
 import { Route } from '@angular/router';
+import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 import { authGuard } from './auth.guard';
 import { alreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { profileGuard } from './profile.guard';
@@ -21,6 +22,10 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./login.component').then((m) => m.LoginComponent),
     canActivate: [alreadyAuthenticatedGuard],
+  },
+  {
+    path: 'oauth/callback',
+    component: OAuthCallbackComponent,
   },
   {
     path: 'profile/setup',

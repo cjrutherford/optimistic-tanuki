@@ -1,6 +1,7 @@
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'lib-oauth-callback',
@@ -78,6 +79,8 @@ import { ActivatedRoute } from '@angular/router';
 export class OAuthCallbackComponent implements OnInit {
   error: string | null = null;
   private platformId = inject(PLATFORM_ID);
+  private readonly router = inject(Router);
+  private readonly apiBaseUrl = inject(API_BASE_URL);
 
   constructor(private route: ActivatedRoute) {}
 
@@ -87,10 +90,21 @@ export class OAuthCallbackComponent implements OnInit {
     }
     // Parse query parameters from URL
     this.route.queryParams.subscribe((params) => {
+      const provider = this.route.snapshot.paramMap.get('provider');
+      const token = params['token'];
+      const returnTo = params['returnTo'];
       const code = params['code'];
       const state = params['state'];
       const error = params['error'];
       const errorDescription = params['error_description'];
+
+      if (provider && (code || error)) {
+        const query = new URLSearchParams(window.location.search);
+        window.location.replace(
+          `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(provider)}?${query.toString()}`
+        );
+        return;
+      }
 
       if (error) {
         this.error = errorDescription || error;
@@ -98,6 +112,7 @@ export class OAuthCallbackComponent implements OnInit {
           type: 'oauth-callback',
           payload: {
             success: false,
+            token: undefined,
             error: error,
             errorDescription: errorDescription,
           },
@@ -105,27 +120,38 @@ export class OAuthCallbackComponent implements OnInit {
         return;
       }
 
-      if (!code) {
-        this.error = 'No authorization code received';
+      if (!token) {
+        this.error = 'No authentication token received';
         this.sendMessageToParent({
           type: 'oauth-callback',
           payload: {
             success: false,
-            error: 'No authorization code received',
+            error: 'No authentication token received',
           },
         });
         return;
       }
 
-      // Send successful result to parent window
       this.sendMessageToParent({
         type: 'oauth-callback',
         payload: {
           success: true,
-          code: code,
-          state: state,
+          token,
         },
       });
+
+      if (!window.opener && returnTo) {
+        try {
+          const target = new URL(returnTo, window.location.origin);
+          if (target.origin === window.location.origin) {
+            this.router.navigateByUrl(
+              `${target.pathname}${target.search}${target.hash}`
+            );
+          }
+        } catch {
+          // Non-popup callback fallback can remain on the status page.
+        }
+      }
     });
   }
 
@@ -136,7 +162,7 @@ export class OAuthCallbackComponent implements OnInit {
       setTimeout(() => {
         window.close();
       }, 1000);
-    } else {
+    } else if (!message?.payload?.success) {
       this.error = 'Unable to communicate with parent window';
     }
   }

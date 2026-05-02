@@ -502,24 +502,16 @@ export class AppService {
 
   /**
    * Returns sanitized public OAuth provider config (no secrets).
-   * If a domain is provided and per-domain overrides exist in config,
-   * those are merged on top of the global provider settings.
    */
-  getPublicOAuthConfig(domain?: string): Record<string, unknown> {
+  getPublicOAuthConfig(_domain?: string): Record<string, unknown> {
     const providers = ['google', 'github', 'microsoft', 'facebook'];
     const result: Record<string, unknown> = {};
 
-    const apps: Array<any> = this.configService.get('oauth.apps') ?? [];
-    const domainEntry = domain
-      ? apps.find((entry) => entry?.domain === domain)
-      : undefined;
-
     for (const provider of providers) {
-      const global = this.configService.get<Record<string, any>>(`oauth.${provider}`);
-      if (!global) continue;
-
-      const domainOverride = domainEntry?.[provider] ?? {};
-      const merged = { ...global, ...domainOverride };
+      const merged = this.configService.get<Record<string, any>>(
+        `oauth.${provider}`
+      );
+      if (!merged) continue;
 
       if (!merged.enabled || !merged.clientId) continue;
 

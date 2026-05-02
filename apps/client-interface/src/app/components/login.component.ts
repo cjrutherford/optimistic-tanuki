@@ -129,7 +129,10 @@ export class LoginComponent implements OnDestroy, OnInit {
 
   async onOAuthProvider(event: OAuthProviderEvent) {
     try {
-      const result = await this.oauthService?.initiateOAuthLogin(event.provider);
+      const result = await this.oauthService?.initiateOAuthLogin(
+        event.provider,
+        'client-interface'
+      );
       if (!result) {
         this.messageService.addMessage({
           content: 'OAuth login failed. Please try again.',
@@ -177,35 +180,11 @@ export class LoginComponent implements OnDestroy, OnInit {
             });
           }
         }
-      } else if (result.needsRegistration && result.userData) {
-        // Handle auto-registration for new OAuth users
-        const names = result.userData.displayName.split(' ');
-        const firstName = names[0] || '';
-        const lastName = names.slice(1).join(' ') || '';
-
-        const regResult = await this.oauthService?.completeOAuthRegistration(
-          result.userData.provider,
-          result.userData.providerUserId,
-          result.userData.email,
-          firstName,
-          lastName,
-          ''
-        );
-
-        if (regResult && regResult.success && regResult.token) {
-          this.authStateService.setToken(regResult.token);
-          this.router.navigate(['/feed']);
-          this.messageService.addMessage({
-            content: 'Account created and login successful! Welcome!',
-            type: 'success',
-          });
-        } else {
-          this.messageService.addMessage({
-            content:
-              regResult?.error || 'Registration failed. Please try again.',
-            type: 'error',
-          });
-        }
+      } else if (result.needsRegistration) {
+        this.messageService.addMessage({
+          content: 'OAuth login did not complete. Please try again.',
+          type: 'error',
+        });
       } else {
         this.messageService.addMessage({
           content: result.error || 'OAuth login failed. Please try again.',

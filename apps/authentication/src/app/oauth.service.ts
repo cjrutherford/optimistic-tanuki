@@ -261,7 +261,7 @@ export class OAuthService {
     return {
       message: 'OAuth login successful',
       code: 0,
-      data: { newToken: tk },
+      data: { newToken: tk, userId: user.id },
     };
   }
 

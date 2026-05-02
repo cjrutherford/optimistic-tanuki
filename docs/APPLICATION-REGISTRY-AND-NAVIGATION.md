@@ -66,13 +66,14 @@ Two-tier configuration system:
 
 ## Registry Generation CLI
 
-The registry JSON is generated and managed via a Go CLI tool in `tools/`.
+The registry JSON is generated and managed via the Go CLI in `tools/registry`.
 
 ### Tool Structure
 
-```
+```text
 tools/
 └── registry/
+    ├── README.md
     ├── apps.yaml
     ├── go.mod
     ├── go.sum
@@ -82,26 +83,100 @@ tools/
             └── main_test.go
 ```
 
-### Commands
+### Working Directory
+
+Run the tool from `tools/registry`:
 
 ```bash
-# Generate registry JSON
+cd tools/registry
+```
+
+The CLI now resolves the default input path from either the repo root or
+`tools/registry`, but this directory is still the intended module root.
+
+### Generate And Validate
+
+```bash
+# Generate registry JSON to stdout
+go run ./cmd/registry generate
+
+# Generate the bundled Angular fallback registry
 go run ./cmd/registry generate \
-  --input apps.yaml \
   --output ../../libs/app-registry/src/lib/default-registry.json
 
-# Validate registry
-go run ./cmd/registry validate --input apps.yaml
+# Validate the YAML source
+go run ./cmd/registry validate
+```
 
+If your environment needs an explicit Go build cache path:
+
+```bash
+GOCACHE=/tmp/go-build go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+```
+
+### Edit The Source Registry
+
+```bash
 # Add new application
-go run ./cmd/registry add --input apps.yaml --appId store --name "HAI Store" --domain haidev.com --subdomain store
+go run ./cmd/registry add \
+  --appId store \
+  --name "HAI Store" \
+  --domain haidev.com \
+  --subdomain store
 
 # Remove application
-go run ./cmd/registry remove --input apps.yaml --appId legacy-app
+go run ./cmd/registry remove --appId legacy-app
 
-# Export for gateway
-go run ./cmd/registry export --input apps.yaml
+# Export app URL env lines
+go run ./cmd/registry export
 ```
+
+### Inject The Generated Registry Into The Platform
+
+After updating `tools/registry/apps.yaml`, regenerate the JSON used by the
+platform:
+
+```bash
+cd tools/registry
+go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+```
+
+That generated file is consumed in two layers:
+
+1. Build-time Angular fallback
+   `libs/app-registry/src/lib/default-registry.json` is bundled into the shared
+   registry library and used when runtime fetches are unavailable.
+2. Gateway runtime registry
+   Docker Compose mounts the same file into gateway and gateway reads it from
+   `APP_REGISTRY_PATH`.
+
+For local Docker use, restart gateway after regeneration so it reloads the
+mounted registry file:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml restart gateway
+```
+
+For Kubernetes, sync the generated file into the K8s source config before your
+normal deploy/apply flow:
+
+```bash
+cp libs/app-registry/src/lib/default-registry.json \
+  k8s/base/config/app-registry.json
+```
+
+### Injection Paths
+
+- Angular fallback file:
+  `libs/app-registry/src/lib/default-registry.json`
+- Docker Compose mount target:
+  `/usr/src/app/config/app-registry.json`
+- Gateway env var:
+  `APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json`
+- Kubernetes config source:
+  `k8s/base/config/app-registry.json`
 
 ### Registry Source
 
@@ -141,163 +216,15 @@ apps:
     sortOrder: 3
 ```
 
-### Go Implementation
+### Implementation Notes
 
-```go
-// File: tools/cmd/registry/main.go
+The current CLI is a small `flag`-based Go program using `gopkg.in/yaml.v3`.
+The previous Cobra-based sketch is obsolete.
 
-package main
+Use the actual implementation and tool-local README as the source of truth:
 
-import (
-    "fmt"
-    "os"
-
-    "github.com/spf13/cobra"
-)
-
-func main() {
-    root := &cobra.Command{
-        Use:   "registry",
-        Short: "Application registry management CLI",
-    }
-
-    root.AddCommand(generateCmd())
-    root.AddCommand(validateCmd())
-    root.AddCommand(addCmd())
-    root.AddCommand(removeCmd())
-
-    if err := root.Execute(); err != nil {
-        fmt.Fprintln(os.Stderr, err)
-        os.Exit(1)
-    }
-}
-```
-
-```go
-// File: tools/cmd/registry/generate.go
-
-package main
-
-import (
-    "encoding/json"
-    "fmt"
-    "os"
-    "text/template"
-    "time"
-
-    "github.com/spf13/cobra"
-    "gopkg.in/yaml.v3"
-)
-
-type AppConfig struct {
-    AppID    string `yaml:"appId"`
-    Name    string `yaml:"name"`
-    Domain  string `yaml:"domain"`
-    Subdomain string `yaml:"subdomain,omitempty"`
-    UiBaseUrl string `yaml:"uiBaseUrl"`
-    ApiBaseUrl string `yaml:"apiBaseUrl"`
-    AppType string `yaml:"appType"`
-    Visibility string `yaml:"visibility"`
-    Description string `yaml:"description,omitempty"`
-    IconUrl string `yaml:"iconUrl,omitempty"`
-    SortOrder int `yaml:"sortOrder,omitempty"`
-}
-
-type RegistryConfig struct {
-    Version string `yaml:"version"`
-    Apps []AppConfig `yaml:"apps"`
-}
-
-type OutputRegistry struct {
-    Version string `json:"version"`
-    GeneratedAt string `json:"generatedAt"`
-    Apps []OutputApp `json:"apps"`
-}
-
-type OutputApp struct {
-    AppID string `json:"appId"`
-    Name string `json:"name"`
-    Domain string `json:"domain"`
-    Subdomain string `json:"subdomain,omitempty"`
-    UiBaseUrl string `json:"uiBaseUrl"`
-    ApiBaseUrl string `json:"apiBaseUrl"`
-    AppType string `json:"appType"`
-    Visibility string `json:"visibility"`
-    Description string `json:"description,omitempty"`
-    IconUrl string `json:"iconUrl,omitempty"`
-    SortOrder int `json:"sortOrder,omitempty"`
-}
-
-var generateCmd = func() *cobra.Command {
-    var inputFile string
-    var outputFile string
-
-    cmd := &cobra.Command{
-        Use:   "generate",
-        Short: "Generate registry JSON from YAML source",
-        RunE: func(cmd *cobra.Command, args []string) error {
-            data, err := os.ReadFile(inputFile)
-            if err != nil {
-                return fmt.Errorf("reading input: %w", err)
-            }
-
-            var cfg RegistryConfig
-            if err := yaml.Unmarshal(data, &cfg); err != nil {
-                return fmt.Errorf("parsing YAML: %w", err)
-            }
-
-            output := OutputRegistry{
-                Version: cfg.Version,
-                GeneratedAt: time.Now().UTC().Format(time.RFC3339),
-                Apps: make([]OutputApp, len(cfg.Apps)),
-            }
-
-            for i, app := range cfg.Apps {
-                output.Apps[i] = OutputApp{
-                    AppID: app.AppID,
-                    Name: app.Name,
-                    Domain: app.Domain,
-                    Subdomain: app.Subdomain,
-                    UiBaseUrl: computeUiBaseUrl(app),
-                    ApiBaseUrl: app.ApiBaseUrl,
-                    AppType: app.AppType,
-                    Visibility: app.Visibility,
-                    Description: app.Description,
-                    IconUrl: app.IconUrl,
-                    SortOrder: app.SortOrder,
-                }
-            }
-
-            jsonData, err := json.MarshalIndent(output, "", "  ")
-            if err != nil {
-                return fmt.Errorf("marshaling JSON: %w", err)
-            }
-
-            if outputFile != "" {
-                return os.WriteFile(outputFile, jsonData, 0644)
-            }
-
-            fmt.Println(string(jsonData))
-            return nil
-        },
-    }
-
-    cmd.Flags().StringVar(&inputFile, "input", "tools/registry/apps.yaml", "Input YAML file")
-    cmd.Flags().StringVar(&outputFile, "output", "", "Output JSON file (empty for stdout)")
-
-    return cmd
-}
-
-func computeUiBaseUrl(app AppConfig) string {
-    if app.UiBaseUrl != "" {
-        return app.UiBaseUrl
-    }
-    if app.Subdomain != "" {
-        return fmt.Sprintf("https://%s.%s", app.Subdomain, app.Domain)
-    }
-    return fmt.Sprintf("https://%s", app.Domain)
-}
-```
+- [tools/registry/cmd/registry/main.go](/home/cjrutherford/workspace/optimistic-tanuki/tools/registry/cmd/registry/main.go)
+- [tools/registry/README.md](/home/cjrutherford/workspace/optimistic-tanuki/tools/registry/README.md)
 
 ### Workflow
 
@@ -305,14 +232,21 @@ func computeUiBaseUrl(app AppConfig) string {
 # 1. Edit YAML source
 vim tools/registry/apps.yaml
 
-# 2. Generate registry JSON
-go run tools/cmd/registry/main.go generate \
-    --input tools/registry/apps.yaml \
-    --output libs/app-registry/src/lib/default-registry.json
+# 2. Regenerate the bundled registry
+cd tools/registry
+go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
 
-# 3. Commit changes
-git add libs/app-registry/src/lib/default-registry.json
-git commit -m "chore: update app registry"
+# 3. If deploying to Kubernetes, sync the K8s source copy
+cd ../..
+cp libs/app-registry/src/lib/default-registry.json \
+  k8s/base/config/app-registry.json
+
+# 4. Commit the source and generated artifacts
+git add \
+  tools/registry/apps.yaml \
+  libs/app-registry/src/lib/default-registry.json \
+  k8s/base/config/app-registry.json
 ```
 
 ---

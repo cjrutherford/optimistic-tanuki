@@ -80,39 +80,19 @@ export class RegisterComponent implements OnInit {
 
   async onOAuthProvider(event: OAuthProviderEvent) {
     try {
-      const result = await this.oauthService.initiateOAuthLogin(event.provider);
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'client-interface'
+      );
 
       if (result.success && result.token) {
         this.authStateService.setToken(result.token);
         await this.handlePostLogin();
-      } else if (result.needsRegistration && result.userData) {
-        const names = result.userData.displayName.split(' ');
-        const firstName = names[0] || '';
-        const lastName = names.slice(1).join(' ') || '';
-
-        const regResult = await this.oauthService.completeOAuthRegistration(
-          result.userData.provider,
-          result.userData.providerUserId,
-          result.userData.email,
-          firstName,
-          lastName,
-          ''
-        );
-
-        if (regResult.success && regResult.token) {
-          this.authStateService.setToken(regResult.token);
-          this.messageService.addMessage({
-            content: 'Account created successfully! Welcome!',
-            type: 'success',
-          });
-          await this.handlePostLogin();
-        } else {
-          this.messageService.addMessage({
-            content:
-              regResult.error || 'Registration failed. Please try again.',
-            type: 'error',
-          });
-        }
+      } else if (result.needsRegistration) {
+        this.messageService.addMessage({
+          content: 'OAuth login did not complete. Please try again.',
+          type: 'error',
+        });
       } else {
         this.messageService.addMessage({
           content:

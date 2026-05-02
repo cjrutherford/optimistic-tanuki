@@ -56,24 +56,3 @@ oauth:
     authorizationEndpoint: https://www.facebook.com/v18.0/dialog/oauth
     tokenEndpoint: https://graph.facebook.com/v18.0/oauth/access_token
     userInfoEndpoint: https://graph.facebook.com/v18.0/me
-  # Per-domain app overrides (optional).
-  # Add entries to override provider config for specific app domains.
-  # The 'domain' field is matched against the hostname of the incoming request.
-  apps:
-    - domain: ${CLIENT_INTERFACE_DOMAIN}
-      google:
-        clientId: ${CI_GOOGLE_CLIENT_ID}
-        clientSecret: ${CI_GOOGLE_CLIENT_SECRET}
-        redirectUri: ${CI_GOOGLE_REDIRECT_URI}
-      github:
-        clientId: ${CI_GITHUB_CLIENT_ID}
-        clientSecret: ${CI_GITHUB_CLIENT_SECRET}
-        redirectUri: ${CI_GITHUB_REDIRECT_URI}
-      microsoft:
-        clientId: ${CI_MICROSOFT_CLIENT_ID}
-        clientSecret: ${CI_MICROSOFT_CLIENT_SECRET}
-        redirectUri: ${CI_MICROSOFT_REDIRECT_URI}
-      facebook:
-        clientId: ${CI_FACEBOOK_CLIENT_ID}
-        clientSecret: ${CI_FACEBOOK_CLIENT_SECRET}
-        redirectUri: ${CI_FACEBOOK_REDIRECT_URI}

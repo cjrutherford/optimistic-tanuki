@@ -1,8 +1,13 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Router, RouterModule } from '@angular/router';
 
-import { LoginBlockComponent, OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
+import {
+  LoginBlockComponent,
+  OAuthProviderEvent,
+  OAuthService,
+} from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from '../../auth-state.service';
 
@@ -75,12 +80,29 @@ const LOGIN_HERO_IMAGE = 'assets/digital-independence.png';
 })
 export class LoginPageComponent {
   private authState: AuthStateService = inject(AuthStateService);
+  private http: HttpClient = inject(HttpClient);
   private router: Router = inject(Router);
+  private oauthService = new OAuthService(this.http, '/api');
 
   /** Hero image URL for the login block */
   heroImage = LOGIN_HERO_IMAGE;
 
   error: string | null = null;
+
+  constructor() {
+    void this.loadOAuthConfig();
+  }
+
+  private async loadOAuthConfig(): Promise<void> {
+    try {
+      const config: any = await this.http.get('/api/oauth/config').toPromise();
+      if (config) {
+        this.oauthService.configureProviders(config);
+      }
+    } catch {
+      // Keep default provider config when the endpoint is unavailable.
+    }
+  }
 
   /**
    * Handles login submission from the login-block component.
@@ -105,8 +127,42 @@ export class LoginPageComponent {
     }
   }
 
-  onOAuthProvider(event: OAuthProviderEvent): void {
-    console.log('OAuth provider selected:', event.provider);
-    this.error = `OAuth login with ${event.provider} is not yet configured. Please use email/password login.`;
+  async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
+    this.error = null;
+
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'digital-homestead'
+      );
+
+      if (result.success && result.token) {
+        this.authState.setToken(result.token);
+        await this.router.navigate(['/blog']);
+        return;
+      }
+
+      if (result.needsRegistration && result.userData) {
+        const names = result.userData.displayName.split(' ');
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          names[0] || '',
+          names.slice(1).join(' ') || '',
+          ''
+        );
+
+        if (regResult.success && regResult.token) {
+          this.authState.setToken(regResult.token);
+          await this.router.navigate(['/blog']);
+          return;
+        }
+      }
+
+      this.error = 'OAuth login failed. Please try again.';
+    } catch (err: any) {
+      this.error = err?.message || 'OAuth login failed. Please try again.';
+    }
   }
 }
