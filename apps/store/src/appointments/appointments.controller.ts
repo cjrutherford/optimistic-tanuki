@@ -27,6 +27,11 @@ export class AppointmentsController {
     return this.appointmentsService.findUserAppointments(userId);
   }
 
+  @MessagePattern({ cmd: 'findUserInvoices' })
+  findUserInvoices(@Payload() userId: string) {
+    return this.appointmentsService.findUserInvoices(userId);
+  }
+
   @MessagePattern({ cmd: 'findOneAppointment' })
   findOne(@Payload() id: string) {
     return this.appointmentsService.findOne(id);
@@ -64,5 +69,10 @@ export class AppointmentsController {
   @MessagePattern({ cmd: 'generateInvoice' })
   generateInvoice(@Payload() id: string) {
     return this.appointmentsService.generateInvoice(id);
+  }
+
+  @MessagePattern({ cmd: 'payInvoice' })
+  payInvoice(@Payload() data: { id: string; userId: string }) {
+    return this.appointmentsService.payInvoice(data.id, data.userId);
   }
 }

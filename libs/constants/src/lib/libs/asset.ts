@@ -3,4 +3,5 @@ export const AssetCommands = {
   REMOVE: 'asset.remove',
   RETRIEVE: 'asset.retrieve',
   READ: 'asset.read',
+  LIST: 'asset.list',
 };

@@ -71,6 +71,18 @@
       "visibility": "internal",
       "description": "Internal HAI operator console.",
       "sortOrder": 100
+    },
+    {
+      "appId": "trainer-site",
+      "name": "Forge Training Co.",
+      "domain": "localhost",
+      "subdomain": "trainer-site",
+      "uiBaseUrl": "http://trainer-site.localhost",
+      "apiBaseUrl": "http://trainer-site.localhost/api",
+      "appType": "client",
+      "visibility": "public",
+      "description": "Personal trainer marketing, scheduling, client portal, and owner operations app.",
+      "sortOrder": 20
     }
   ]
 }

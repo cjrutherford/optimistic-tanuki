@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import {
+  AvailabilityOverrideMode,
   CreateAppointmentDto,
   UpdateAppointmentDto,
   ApproveAppointmentDto,
@@ -10,6 +11,7 @@ import {
 import { AppointmentEntity } from './entities/appointment.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { AvailabilityEntity } from './entities/availability.entity';
+import { AvailabilityOverrideEntity } from './entities/availability-override.entity';
 
 @Injectable()
 export class AppointmentsService {
@@ -19,17 +21,101 @@ export class AppointmentsService {
     @InjectRepository(InvoiceEntity)
     private readonly invoiceRepository: Repository<InvoiceEntity>,
     @InjectRepository(AvailabilityEntity)
-    private readonly availabilityRepository: Repository<AvailabilityEntity>
+    private readonly availabilityRepository: Repository<AvailabilityEntity>,
+    @InjectRepository(AvailabilityOverrideEntity)
+    private readonly availabilityOverrideRepository: Repository<AvailabilityOverrideEntity>
   ) {}
 
   async create(
     createAppointmentDto: CreateAppointmentDto
   ): Promise<AppointmentEntity> {
+    await this.assertAvailableWindow(createAppointmentDto);
+
     const appointment = this.appointmentRepository.create({
       ...createAppointmentDto,
       status: 'pending',
     });
     return this.appointmentRepository.save(appointment);
+  }
+
+  private async assertAvailableWindow(
+    createAppointmentDto: CreateAppointmentDto
+  ): Promise<void> {
+    const start = new Date(createAppointmentDto.startTime);
+    const end = new Date(createAppointmentDto.endTime);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      throw new BadRequestException('Booking window is invalid.');
+    }
+
+    const overrides = await this.availabilityOverrideRepository.find({
+      where: {
+        isActive: true,
+        startTime: LessThanOrEqual(end),
+        endTime: MoreThanOrEqual(start),
+      },
+      order: { startTime: 'ASC' },
+    });
+
+    const blockingOverride = overrides.find(
+      (entry) => entry.mode === AvailabilityOverrideMode.BLOCKED
+    );
+    if (blockingOverride) {
+      throw new BadRequestException('Selected time is unavailable.');
+    }
+
+    const openingOverride = overrides.find(
+      (entry) => entry.mode === AvailabilityOverrideMode.AVAILABLE
+    );
+    if (openingOverride) {
+      return;
+    }
+
+    const dayOfWeek = start.getDay();
+    const matchingAvailabilities = await this.availabilityRepository.find({
+      where: {
+        dayOfWeek,
+        isActive: true,
+      },
+      order: { startTime: 'ASC' },
+    });
+
+    const startClock = this.toTimeString(start);
+    const endClock = this.toTimeString(end);
+    const match = matchingAvailabilities.find(
+      (entry) => entry.startTime <= startClock && entry.endTime >= endClock
+    );
+
+    if (!match) {
+      throw new BadRequestException('Selected time is outside the published availability.');
+    }
+
+    const conflictingAppointments = await this.appointmentRepository.find({
+      where: {
+        startTime: LessThanOrEqual(end),
+        endTime: MoreThanOrEqual(start),
+      } as never,
+    });
+    const hasConflict = conflictingAppointments.some((appointment) => {
+      if (appointment.status === 'cancelled' || appointment.status === 'denied') {
+        return false;
+      }
+
+      const appointmentStart = new Date(appointment.startTime);
+      const appointmentEnd = new Date(appointment.endTime);
+      return appointmentStart < end && appointmentEnd > start;
+    });
+
+    if (hasConflict) {
+      throw new BadRequestException('Selected time is no longer available.');
+    }
+  }
+
+  private toTimeString(date: Date): string {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
   }
 
   async findAll(): Promise<AppointmentEntity[]> {
@@ -43,6 +129,13 @@ export class AppointmentsService {
     return this.appointmentRepository.find({
       where: { userId },
       relations: ['product', 'resource'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findUserInvoices(userId: string): Promise<InvoiceEntity[]> {
+    return this.invoiceRepository.find({
+      where: { userId },
       order: { createdAt: 'DESC' },
     });
   }
@@ -67,22 +160,22 @@ export class AppointmentsService {
     approveDto: ApproveAppointmentDto
   ): Promise<AppointmentEntity> {
     const appointment = await this.findOne(id);
-    
+
     // Calculate duration in hours
     const startTime = new Date(appointment.startTime);
     const endTime = new Date(appointment.endTime);
-    
+
     // Validate that endTime is after startTime
     if (endTime <= startTime) {
       throw new Error('End time must be after start time');
     }
-    
+
     const durationMs = endTime.getTime() - startTime.getTime();
     const durationHours = durationMs / (1000 * 60 * 60);
 
     // Determine hourly rate
     let hourlyRate = approveDto.hourlyRate;
-    
+
     // If no hourly rate provided and not a free consultation, try to get from availability
     if (!hourlyRate && !appointment.isFreeConsultation) {
       const dayOfWeek = startTime.getDay();
@@ -164,5 +257,24 @@ export class AppointmentsService {
     });
 
     return this.invoiceRepository.save(invoice);
+  }
+
+  async payInvoice(id: string, userId: string): Promise<InvoiceEntity> {
+    const invoice = await this.invoiceRepository.findOne({
+      where: { id, userId },
+    });
+
+    if (!invoice) {
+      throw new Error('Invoice not found');
+    }
+
+    await this.invoiceRepository.update(id, {
+      status: 'paid',
+      paidAt: new Date(),
+    });
+
+    return this.invoiceRepository.findOne({
+      where: { id },
+    });
   }
 }

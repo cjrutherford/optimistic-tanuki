@@ -12,7 +12,7 @@ COPY nx.json ./
 COPY libs ./libs
 COPY apps/marketing-generator ./apps/marketing-generator
 
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build marketing-generator --configuration=production
 
 FROM node:lts-alpine
@@ -30,7 +30,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/marketing-generator ./dist/apps/marketing-generator
 

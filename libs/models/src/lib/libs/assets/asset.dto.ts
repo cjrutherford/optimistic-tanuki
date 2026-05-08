@@ -107,3 +107,15 @@ export class AssetHandle {
   @IsUUID()
   profileId?: string;
 }
+
+export class AssetListQuery {
+  @ApiProperty({ description: 'Profile ID to filter assets by' })
+  @IsString()
+  @IsUUID()
+  profileId!: string;
+
+  @ApiProperty({ description: 'Optional asset type filter', enum: AssetType, required: false })
+  @IsOptional()
+  @IsEnum(AssetType)
+  type?: AssetType;
+}

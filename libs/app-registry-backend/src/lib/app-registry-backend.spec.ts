@@ -9,6 +9,9 @@ describe('app-registry-backend', () => {
     expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
       'system-configurator'
     );
+    expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
+      'trainer-site'
+    );
   });
 
   it('exposes bundled navigation links without any Angular runtime dependency', () => {

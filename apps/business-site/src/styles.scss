@@ -1,0 +1,50 @@
+:root {
+  --background-color: var(--background);
+  --foreground-color: var(--foreground);
+  --primary-color: var(--primary);
+  --text-color: var(--foreground);
+  --surface-color: color-mix(in srgb, var(--background, #ffffff) 92%, white);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--primary, #1f7a63) 9%, transparent),
+      transparent 30%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background, #ffffff) 98%, white),
+      color-mix(in srgb, var(--background, #ffffff) 92%, #eef2f7)
+    );
+  color: var(--foreground, #0f172a);
+  font-family: var(--personality-font-family, var(--font-body, 'Source Sans Pro', system-ui, sans-serif));
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary, #1f7a63) 24%, white);
+}

@@ -1,0 +1,101 @@
+{
+  "name": "business-configurator",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/business-configurator/src",
+  "tags": ["type:app", "scope:business", "platform:web"],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/business-configurator",
+        "index": "apps/business-configurator/src/index.html",
+        "browser": "apps/business-configurator/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/business-configurator/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/business-configurator/public"
+          }
+        ],
+        "styles": ["apps/business-configurator/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/business-configurator/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/business-configurator/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/business-configurator/proxy.conf.json"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "business-configurator:build:production"
+        },
+        "development": {
+          "buildTarget": "business-configurator:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "business-configurator:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/business-configurator/jest.config.ts",
+        "tsConfig": "apps/business-configurator/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "business-configurator:build",
+        "port": 4205,
+        "staticFilePath": "dist/apps/business-configurator/browser",
+        "spa": true
+      }
+    }
+  }
+}

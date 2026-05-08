@@ -102,4 +102,19 @@ describe('AssetController', () => {
     expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
     expect(mockRes.send).toHaveBeenCalled();
   });
+
+  it('should list assets by profile and type', async () => {
+    const assets = [{ id: 'asset-1', profileId: 'profile-1', type: 'image' }];
+    assetService.send.mockReturnValue(of(assets));
+
+    const response = await controller.listAssets('profile-1', 'image' as any);
+
+    expect(assetService.send).toHaveBeenCalledWith(
+      { cmd: AssetCommands.LIST },
+      { profileId: 'profile-1', type: 'image' }
+    );
+    expect(response).toEqual([
+      { id: 'asset-1', profileId: 'profile-1', type: 'image', url: '/api/asset/asset-1' },
+    ]);
+  });
 });

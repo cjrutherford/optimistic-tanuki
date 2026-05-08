@@ -7,8 +7,12 @@ import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
 import { AvailabilityEntity } from '../appointments/entities/availability.entity';
+import { AvailabilityOverrideEntity } from '../appointments/entities/availability-override.entity';
 import { InvoiceEntity } from '../appointments/entities/invoice.entity';
 import { ResourceEntity } from '../appointments/entities/resource.entity';
+import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
+import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
+import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -21,8 +25,12 @@ const loadDatabase = (config: ConfigService) => {
     OrderItemEntity,
     AppointmentEntity,
     AvailabilityEntity,
+    AvailabilityOverrideEntity,
     InvoiceEntity,
     ResourceEntity,
+    TrainerRoutineAssignmentEntity,
+    TrainerProgressCheckInEntity,
+    TrainerSiteConfigEntity,
   ];
   console.log(
     `Using database configuration: host=${database.host}, port=${database.port}, username=${database.username}, database=${database.database}`

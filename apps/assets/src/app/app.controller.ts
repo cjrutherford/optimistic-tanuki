@@ -1,4 +1,4 @@
-import { AssetHandle, CreateAssetDto } from '@optimistic-tanuki/models';
+import { AssetHandle, AssetListQuery, CreateAssetDto } from '@optimistic-tanuki/models';
 import { Controller, Get } from '@nestjs/common';
 
 import { AppService } from './app.service';
@@ -34,6 +34,15 @@ export class AppController {
   async retrieveAsset(data: AssetHandle) {
     try {
       return await this.appService.retrieveAsset(data);
+    } catch (error) {
+      throw new RpcException(error);
+    }
+  }
+
+  @MessagePattern({ cmd: AssetCommands.LIST })
+  async listAssets(data: AssetListQuery) {
+    try {
+      return await this.appService.listAssets(data);
     } catch (error) {
       throw new RpcException(error);
     }

@@ -6,16 +6,16 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/classifieds/ ./apps/classifieds/
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build classifieds --configuration=development
 
 FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache dumb-init && corepack enable && pnpm add nodemon
+RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add nodemon
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
-RUN corepack enable && pnpm add typeorm
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add typeorm
 COPY --from=builder /app/dist/apps/classifieds ./classifieds
 COPY --from=builder /app/apps/classifieds/src/assets ./assets
 COPY --from=builder /app/node_modules ./node_modules

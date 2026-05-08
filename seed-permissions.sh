@@ -10,6 +10,7 @@ POSTGRES_PORT=${POSTGRES_PORT:-5432}
 POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
 POSTGRES_DB=${POSTGRES_DB:-ot_permissions}
+SKIP_PERMISSION_USER_ASSIGNMENTS=${SKIP_PERMISSION_USER_ASSIGNMENTS:-false}
 
 if ! command -v psql >/dev/null 2>&1; then
   echo "psql not found in PATH. Please install the Postgres client." >&2
@@ -35,7 +36,8 @@ INSERT INTO "app_scope" ("name", "description", "active") VALUES
 ('authentication', 'Authentication service', true),
 ('profile', 'Profile service', true),
 ('local-hub', 'Local Hub - classifieds, communities, and city pages', true),
-('video-client', 'Video platform and channel communities', true)
+('video-client', 'Video platform and channel communities', true),
+('business-site', 'Business site and client portal', true)
 ON CONFLICT ("name") DO UPDATE SET
   "description" = EXCLUDED."description",
   "active" = EXCLUDED."active";
@@ -98,6 +100,12 @@ INSERT INTO "role" (name, description, "appScopeId")
 VALUES
   ('video_client_member', 'Standard member for the video platform community experience', (SELECT id FROM app_scope WHERE name = 'video-client')),
   ('video_channel_creator', 'Creator role for managing a video channel, schedule, and live feed', (SELECT id FROM app_scope WHERE name = 'video-client'))
+ON CONFLICT ("name") DO NOTHING;
+
+INSERT INTO "role" (name, description, "appScopeId")
+VALUES
+  ('business_site_owner', 'Business workspace owner for site configuration and portal management', (SELECT id FROM app_scope WHERE name = 'business-site')),
+  ('business_site_client', 'Business-site client account with scoped portal access', (SELECT id FROM app_scope WHERE name = 'business-site'))
 ON CONFLICT ("name") DO NOTHING;
 
 
@@ -295,6 +303,13 @@ VALUES
   ('social.vote.create', 'Vote (local-hub)', 'vote', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('social.reaction.create', 'Create reaction (local-hub)', 'reaction', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('social.reaction.read', 'Read reaction (local-hub)', 'reaction', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub'))
+ON CONFLICT (name, "appScopeId") DO NOTHING;
+
+-- Business-site permissions
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+VALUES
+  ('app-config.read', 'Read business site configuration', 'app-config', 'read', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('app-config.update', 'Update business site configuration', 'app-config', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permissions)
@@ -612,6 +627,23 @@ FROM role r JOIN permission p ON p.name IN (
 WHERE r.name = 'local_hub_standard_user'
 ON CONFLICT DO NOTHING;
 
+-- business_site_owner - manage business site configuration
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN (
+  'app-config.read',
+  'app-config.update'
+) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='business-site')
+WHERE r.name = 'business_site_owner'
+ON CONFLICT DO NOTHING;
+
+-- business_site_client - read business site configuration
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name = 'app-config.read' AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='business-site')
+WHERE r.name = 'business_site_client'
+ON CONFLICT DO NOTHING;
+
 COMMIT;
 SQL
 
@@ -694,11 +726,14 @@ SQL
 
 echo "Video-client permissions seeded."
 
-# Seed role assignments for video-client seed users
-# Note: profile IDs are assigned on user registration, so we do a fuzzy match approach
-# This will assign video_channel_creator role to any seed users in video-client scope
-# Run as separate script after users are registered
-psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+if [ "$SKIP_PERMISSION_USER_ASSIGNMENTS" = "true" ]; then
+  echo "Skipping user-based role assignments in seed-permissions.sh."
+else
+  # Seed role assignments for video-client seed users
+  # Note: profile IDs are assigned on user registration, so we do a fuzzy match approach
+  # This will assign video_channel_creator role to any seed users in video-client scope
+  # Run as separate script after users are registered
+  psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
 INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
 SELECT 
   p."profileId",
@@ -718,4 +753,46 @@ WHERE p.email IN ('alice@example.com', 'bob@example.com', 'charlie@example.com')
 ON CONFLICT DO NOTHING;
 SQL
 
-echo "Video-client role assignments seeded."
+  echo "Video-client role assignments seeded."
+
+  # Seed role assignments for business-site seed users
+  psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
+INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
+SELECT
+  p."profileId",
+  r.id,
+  s.id,
+  NOW()
+FROM "user" p
+JOIN "role" r ON r.name = 'business_site_owner'
+JOIN "app_scope" s ON s.name = 'business-site'
+WHERE p.email = 'owner@localbusiness.test'
+  AND NOT EXISTS (
+    SELECT 1 FROM "role_assignment" ra
+    WHERE ra."profileId" = p."profileId"
+      AND ra."roleId" = r.id
+      AND ra."appScopeId" = s.id
+  )
+ON CONFLICT DO NOTHING;
+
+INSERT INTO "role_assignment" ("profileId", "roleId", "appScopeId", "created_at")
+SELECT
+  p."profileId",
+  r.id,
+  s.id,
+  NOW()
+FROM "user" p
+JOIN "role" r ON r.name = 'business_site_client'
+JOIN "app_scope" s ON s.name = 'business-site'
+WHERE p.email = 'client@localbusiness.test'
+  AND NOT EXISTS (
+    SELECT 1 FROM "role_assignment" ra
+    WHERE ra."profileId" = p."profileId"
+      AND ra."roleId" = r.id
+      AND ra."appScopeId" = s.id
+  )
+ON CONFLICT DO NOTHING;
+SQL
+
+  echo "Business-site role assignments seeded."
+fi

@@ -4,7 +4,7 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/gateway/ ./apps/gateway/
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build gateway --configuration=development
 
 FROM docker.io/node:lts-alpine AS runner
@@ -13,8 +13,8 @@ ENV NODE_ENV=production
 ENV PORT=3000
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/gateway/ ./
-RUN corepack enable && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && pnpm add typeorm
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --no-frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add typeorm
 RUN chown -R node:node .
 USER node
 EXPOSE 3000

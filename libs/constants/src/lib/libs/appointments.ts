@@ -9,6 +9,8 @@ const AppointmentCommands = {
   CANCEL_APPOINTMENT: { cmd: 'cancelAppointment' },
   COMPLETE_APPOINTMENT: { cmd: 'completeAppointment' },
   GENERATE_INVOICE: { cmd: 'generateInvoice' },
+  FIND_USER_INVOICES: { cmd: 'findUserInvoices' },
+  PAY_INVOICE: { cmd: 'payInvoice' },
 };
 
 const AvailabilityCommands = {
@@ -18,6 +20,12 @@ const AvailabilityCommands = {
   FIND_ONE_AVAILABILITY: { cmd: 'findOneAvailability' },
   UPDATE_AVAILABILITY: { cmd: 'updateAvailability' },
   REMOVE_AVAILABILITY: { cmd: 'removeAvailability' },
+  CREATE_AVAILABILITY_OVERRIDE: { cmd: 'createAvailabilityOverride' },
+  FIND_ALL_AVAILABILITY_OVERRIDES: { cmd: 'findAllAvailabilityOverrides' },
+  FIND_OWNER_AVAILABILITY_OVERRIDES: { cmd: 'findOwnerAvailabilityOverrides' },
+  FIND_ONE_AVAILABILITY_OVERRIDE: { cmd: 'findOneAvailabilityOverride' },
+  UPDATE_AVAILABILITY_OVERRIDE: { cmd: 'updateAvailabilityOverride' },
+  REMOVE_AVAILABILITY_OVERRIDE: { cmd: 'removeAvailabilityOverride' },
 };
 
 const ResourceCommands = {

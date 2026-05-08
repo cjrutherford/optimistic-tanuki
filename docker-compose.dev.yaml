@@ -236,6 +236,40 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
 
+  business-site:
+    container_name: ot_business_site
+    build:
+      context: .
+      dockerfile: ./apps/business-site/Dockerfile.dev
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/business-site:/app/apps/business-site
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '8094:4000'
+      - '9250:9250'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/business-site/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/business-site/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9250 /app/dist/apps/business-site/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   crdn-client-interface:
     container_name: crdn_client_interface # Added
     build:

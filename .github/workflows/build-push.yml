@@ -142,6 +142,8 @@ jobs:
             type: client
           - app: marketing-generator
             type: client
+          - app: business-site
+            type: client
           - app: owner-console
             type: client
           - app: store-client

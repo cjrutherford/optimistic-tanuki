@@ -18,6 +18,7 @@ describe('AppController', () => {
             createAsset: jest.fn(),
             removeAsset: jest.fn(),
             retrieveAsset: jest.fn(),
+            listAssets: jest.fn(),
             readAsset: jest.fn(),
           },
         },
@@ -106,6 +107,26 @@ describe('AppController', () => {
       (appService.readAsset as jest.Mock).mockRejectedValue(new Error('Read failed'));
 
       await expect(appController.readAsset(handle)).rejects.toThrow();
+    });
+  });
+
+  describe('listAssets', () => {
+    it('should call appService.listAssets with the correct data', async () => {
+      const query = { profileId: '11111111-1111-1111-1111-111111111111', type: 'image' } as any;
+      const result = [{ id: '1', name: 'test', type: 'image' }];
+      (appService.listAssets as jest.Mock).mockResolvedValue(result);
+
+      const response = await appController.listAssets(query);
+
+      expect(appService.listAssets).toHaveBeenCalledWith(query);
+      expect(response).toEqual(result);
+    });
+
+    it('should throw RpcException if appService.listAssets fails', async () => {
+      const query = { profileId: '11111111-1111-1111-1111-111111111111' } as any;
+      (appService.listAssets as jest.Mock).mockRejectedValue(new Error('List failed'));
+
+      await expect(appController.listAssets(query)).rejects.toThrow();
     });
   });
 });

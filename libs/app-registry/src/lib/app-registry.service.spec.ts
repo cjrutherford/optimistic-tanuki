@@ -11,6 +11,9 @@ describe('AppRegistryService', () => {
     expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
       'system-configurator'
     );
+    expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
+      'trainer-site'
+    );
   });
 
   it('loads the runtime registry on service creation', () => {
@@ -89,6 +92,7 @@ describe('AppRegistryService', () => {
     service.getAllApps().subscribe((apps) => {
       expect(apps.map((app) => app.appId)).toContain('hai');
       expect(apps.map((app) => app.appId)).toContain('system-configurator');
+      expect(apps.map((app) => app.appId)).toContain('trainer-site');
       done();
     });
   });

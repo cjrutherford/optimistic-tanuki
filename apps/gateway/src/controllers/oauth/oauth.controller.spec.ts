@@ -1,10 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { OAuthController } from './oauth.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { AuthCommands } from '@optimistic-tanuki/constants';
+import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature-account-bootstrap';
+import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
 
 describe('OAuthController', () => {
   let controller: OAuthController;
@@ -33,11 +36,29 @@ describe('OAuthController', () => {
           useValue: profileClient,
         },
         {
+          provide: GATEWAY_APP_REGISTRY,
+          useValue: {
+            apps: [],
+          },
+        },
+        {
           provide: RoleInitService,
           useValue: {
             initializeRoles: jest.fn().mockResolvedValue(undefined),
             enqueue: jest.fn().mockResolvedValue(undefined),
             processNow: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+          },
+        },
+        {
+          provide: RegisterAccountBootstrapService,
+          useValue: {
+            register: jest.fn(),
           },
         },
         Logger,
@@ -64,7 +85,7 @@ describe('OAuthController', () => {
         provider: 'google' as any,
         code: 'auth-code',
       };
-      const result = await controller.oauthCallback(callbackRequest, 'test');
+      const result = await controller.oauthCallback(callbackRequest);
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.OAuthLogin },
@@ -85,7 +106,7 @@ describe('OAuthController', () => {
         provider: 'google' as any,
         code: 'auth-code',
       };
-      const result = await controller.oauthCallback(callbackRequest, 'test');
+      const result = await controller.oauthCallback(callbackRequest);
 
       expect(result.data.needsRegistration).toBe(true);
     });
@@ -100,7 +121,7 @@ describe('OAuthController', () => {
         code: 'auth-code',
       };
       await expect(
-        controller.oauthCallback(callbackRequest, 'test')
+        controller.oauthCallback(callbackRequest)
       ).rejects.toThrow(HttpException);
     });
   });

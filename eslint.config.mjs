@@ -65,6 +65,14 @@ export default [
               onlyDependOnLibsWithTags: ['type:util'],
             },
             {
+              sourceTag: 'type:ui',
+              onlyDependOnLibsWithTags: [
+                'type:data-access',
+                'type:contracts',
+                'type:util',
+              ],
+            },
+            {
               sourceTag: 'scope:auth',
               onlyDependOnLibsWithTags: ['scope:auth', 'scope:shared'],
             },

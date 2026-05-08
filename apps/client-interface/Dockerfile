@@ -16,7 +16,7 @@ COPY libs ./libs
 COPY apps/client-interface ./apps/client-interface
 
 # Install all dependencies (including devDependencies needed for build)
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
 
 # Build the client-interface application for production with SSR
 # This will output to dist/apps/client-interface and include server/main.js
@@ -40,7 +40,7 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 # Install only production dependencies.
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
 
 # Copy the built application (server and browser bundles) from the builder stage
 # The structure should be dist/apps/client-interface/server/main.js and dist/apps/client-interface/browser/...

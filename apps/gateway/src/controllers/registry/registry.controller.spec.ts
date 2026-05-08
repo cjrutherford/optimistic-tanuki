@@ -24,6 +24,9 @@ describe('RegistryController', () => {
     expect(response.data.apps.map((app) => app.appId)).toContain(
       'system-configurator'
     );
+    expect(response.data.apps.map((app) => app.appId)).toContain(
+      'trainer-site'
+    );
     expect(responseHeaders.setHeader).toHaveBeenCalledWith(
       'Cache-Control',
       'public, max-age=60, stale-while-revalidate=300'

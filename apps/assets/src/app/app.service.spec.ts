@@ -34,6 +34,7 @@ describe('AppService', () => {
     assetRepo = {
       create: jest.fn(),
       save: jest.fn(),
+      find: jest.fn(),
       findOneBy: jest.fn(),
       remove: jest.fn(),
       // Add other methods as needed for your tests
@@ -495,6 +496,25 @@ describe('AppService', () => {
         'Read asset content length:',
         content.length,
       );
+    });
+  });
+
+  describe('listAssets', () => {
+    it('should list assets by profile and type', async () => {
+      const assets = [{ id: '1', profileId: 'profile-1', type: 'image' }] as AssetEntity[];
+      jest.spyOn(assetRepo, 'find').mockResolvedValue(assets);
+
+      const result = await appService.listAssets({
+        profileId: 'profile-1',
+        type: 'image' as any,
+      });
+
+      expect(result).toEqual(assets);
+      expect(assetRepo.find).toHaveBeenCalledWith({
+        where: { profileId: 'profile-1', type: 'image' },
+        order: { id: 'DESC' },
+        take: 48,
+      });
     });
   });
 });
