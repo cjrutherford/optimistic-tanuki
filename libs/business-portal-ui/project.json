@@ -1,0 +1,21 @@
+{
+  "name": "business-portal-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/business-portal-ui/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "tags": ["scope:business", "type:ui"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/business-portal-ui/jest.config.ts",
+        "tsConfig": "libs/business-portal-ui/tsconfig.spec.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

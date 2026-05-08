@@ -12,14 +12,14 @@ COPY nx.json ./
 COPY libs ./libs
 COPY apps/fin-commander ./apps/fin-commander
 
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build fin-commander --configuration=production
 
 FROM node:lts-alpine
 RUN apk add --no-cache dumb-init
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && pnpm add nodemon
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add nodemon
 
 WORKDIR /app
 
@@ -33,7 +33,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/fin-commander ./dist/apps/fin-commander
 

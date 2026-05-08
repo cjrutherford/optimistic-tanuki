@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import AssetEntity from '../entities/asset.entity';
 import {
   AssetHandle,
+  AssetListQuery,
   CreateAssetDto,
   StorageStrategy,
   AssetType,
@@ -246,6 +247,20 @@ export class AppService {
       throw new RpcException(`Asset with id ${data.id} not found`);
     }
     return asset;
+  }
+
+  async listAssets(data: AssetListQuery): Promise<AssetEntity[]> {
+    this.l.log('Listing assets with data:', data);
+    return this.assetRepo.find({
+      where: {
+        profileId: data.profileId,
+        ...(data.type ? { type: data.type } : {}),
+      },
+      order: {
+        id: 'DESC',
+      },
+      take: 48,
+    });
   }
 
   async readAsset(data: AssetHandle): Promise<string> {

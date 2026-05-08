@@ -22,6 +22,7 @@ jobs:
             christopherrutherford-net,
             digital-homestead,
             fin-commander,
+            business-site,
           ]
     steps:
       - name: Checkout repository

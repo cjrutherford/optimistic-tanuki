@@ -64,6 +64,7 @@ import { PaymentsController } from '../controllers/payments/payments.controller'
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
+import { TrainerController } from '../controllers/trainer/trainer.controller';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -137,6 +138,7 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
     DonationsController,
     LeadsController,
     HardwareController,
+    TrainerController,
     RegistryController,
   ],
   providers: [

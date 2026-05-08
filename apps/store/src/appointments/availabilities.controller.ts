@@ -2,7 +2,9 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
   CreateAvailabilityDto,
+  CreateAvailabilityOverrideDto,
   UpdateAvailabilityDto,
+  UpdateAvailabilityOverrideDto,
 } from '@optimistic-tanuki/models';
 import { AvailabilitiesService } from './availabilities.service';
 
@@ -46,5 +48,41 @@ export class AvailabilitiesController {
   @MessagePattern({ cmd: 'removeAvailability' })
   remove(@Payload() id: string) {
     return this.availabilitiesService.remove(id);
+  }
+
+  @MessagePattern({ cmd: 'createAvailabilityOverride' })
+  createOverride(@Payload() payload: CreateAvailabilityOverrideDto) {
+    return this.availabilitiesService.createOverride(payload);
+  }
+
+  @MessagePattern({ cmd: 'findAllAvailabilityOverrides' })
+  findAllOverrides() {
+    return this.availabilitiesService.findAllOverrides();
+  }
+
+  @MessagePattern({ cmd: 'findOwnerAvailabilityOverrides' })
+  findOwnerAvailabilityOverrides(@Payload() ownerId: string) {
+    return this.availabilitiesService.findOwnerAvailabilityOverrides(ownerId);
+  }
+
+  @MessagePattern({ cmd: 'findOneAvailabilityOverride' })
+  findOneOverride(@Payload() id: string) {
+    return this.availabilitiesService.findOneOverride(id);
+  }
+
+  @MessagePattern({ cmd: 'updateAvailabilityOverride' })
+  updateOverride(
+    @Payload()
+    data: { id: string; updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto }
+  ) {
+    return this.availabilitiesService.updateOverride(
+      data.id,
+      data.updateAvailabilityOverrideDto
+    );
+  }
+
+  @MessagePattern({ cmd: 'removeAvailabilityOverride' })
+  removeOverride(@Payload() id: string) {
+    return this.availabilitiesService.removeOverride(id);
   }
 }

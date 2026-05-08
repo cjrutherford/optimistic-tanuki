@@ -12,8 +12,14 @@ import { OrderEntity } from '../orders/entities/order.entity';
 import { OrderItemEntity } from '../orders/entities/order-item.entity';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
 import { AvailabilityEntity } from '../appointments/entities/availability.entity';
+import { AvailabilityOverrideEntity } from '../appointments/entities/availability-override.entity';
 import { InvoiceEntity } from '../appointments/entities/invoice.entity';
 import { ResourceEntity } from '../appointments/entities/resource.entity';
+import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
+import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
+import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
+import { TrainerConfigController } from '../trainer-config/trainer-config.controller';
+import { TrainerConfigService } from '../trainer-config/trainer-config.service';
 import { ProductsController } from '../products/products.controller';
 import { ProductsService } from '../products/products.service';
 import { SubscriptionsController } from '../subscriptions/subscriptions.controller';
@@ -28,6 +34,8 @@ import { AvailabilitiesController } from '../appointments/availabilities.control
 import { AvailabilitiesService } from '../appointments/availabilities.service';
 import { ResourcesController } from '../appointments/resources.controller';
 import { ResourcesService } from '../appointments/resources.service';
+import { TrainerRoutinesController } from '../appointments/trainer-routines.controller';
+import { TrainerRoutinesService } from '../appointments/trainer-routines.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import loadDatabase from './loadDatabase';
@@ -53,6 +61,8 @@ import loadDatabase from './loadDatabase';
     AppointmentsController,
     AvailabilitiesController,
     ResourcesController,
+    TrainerRoutinesController,
+    TrainerConfigController,
   ],
   providers: [
     AppService,
@@ -63,6 +73,8 @@ import loadDatabase from './loadDatabase';
     AppointmentsService,
     AvailabilitiesService,
     ResourcesService,
+    TrainerRoutinesService,
+    TrainerConfigService,
     {
       provide: getRepositoryToken(ProductEntity),
       useFactory: (ds: DataSource) => ds.getRepository(ProductEntity),
@@ -99,6 +111,11 @@ import loadDatabase from './loadDatabase';
       inject: ['STORE_CONNECTION'],
     },
     {
+      provide: getRepositoryToken(AvailabilityOverrideEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AvailabilityOverrideEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
       provide: getRepositoryToken(InvoiceEntity),
       useFactory: (ds: DataSource) => ds.getRepository(InvoiceEntity),
       inject: ['STORE_CONNECTION'],
@@ -106,6 +123,21 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(ResourceEntity),
       useFactory: (ds: DataSource) => ds.getRepository(ResourceEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TrainerRoutineAssignmentEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(TrainerRoutineAssignmentEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TrainerProgressCheckInEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(TrainerProgressCheckInEntity),
+      inject: ['STORE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(TrainerSiteConfigEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(TrainerSiteConfigEntity),
       inject: ['STORE_CONNECTION'],
     },
   ],

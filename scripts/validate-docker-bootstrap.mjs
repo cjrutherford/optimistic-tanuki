@@ -47,7 +47,7 @@ assert.match(
 
 assert.match(
   packageJson.scripts['build:docker:dev'],
-  /marketing-generator/,
+  /marketing-generator.*business-site|business-site.*marketing-generator/,
   'build:docker:dev must include apps in the docker dev compose stack',
 );
 
@@ -59,7 +59,7 @@ assert.match(
 
 assert.match(
   packageJson.scripts['watch:docker:dev'],
-  /marketing-generator/,
+  /marketing-generator.*business-site|business-site.*marketing-generator/,
   'watch:docker:dev must include apps in the docker dev compose stack',
 );
 
@@ -164,6 +164,7 @@ const phasedStartupServices = [
   'configurable-client',
   'fin-commander',
   'marketing-generator',
+  'business-site',
   'owner-console',
   'd6',
   'system-configurator',

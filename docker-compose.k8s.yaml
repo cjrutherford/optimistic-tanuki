@@ -154,6 +154,20 @@ services:
     depends_on:
       - gateway
 
+  business-site:
+    container_name: ot_business_site
+    build:
+      context: .
+      dockerfile: ./apps/business-site/Dockerfile
+    ports:
+      - '8094:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
   gateway:
     container_name: ot_gateway
     build:

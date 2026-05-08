@@ -1,6 +1,8 @@
 import {
+  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -14,27 +16,150 @@ import { firstValueFrom } from 'rxjs';
 import {
   AppointmentCommands,
   AvailabilityCommands,
-  AppConfigCommands,
+  LeadCommands,
   ServiceTokens,
+  TrainerConfigCommands,
 } from '@optimistic-tanuki/constants';
-import { ApproveAppointmentDto, CreateAppointmentDto } from '@optimistic-tanuki/models';
+import {
+  ApproveAppointmentDto,
+  AvailabilityOverrideMode,
+  CreateAppointmentDto,
+  CreateAvailabilityDto,
+  CreateAvailabilityOverrideDto,
+  CreateLeadDto,
+  LeadSource,
+  LeadStatus,
+  UpdateAvailabilityDto,
+  UpdateAvailabilityOverrideDto,
+} from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
+import { Public } from '../../decorators/public.decorator';
+import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 
-@Controller('trainer')
+type BusinessLeadIntakeDto = {
+  name: string;
+  email?: string;
+  phone?: string;
+  goal: string;
+  context?: string;
+  preferredStart?: string;
+  preferredEnd?: string;
+  userId?: string;
+  profileId?: string;
+};
+
+@Controller(['trainer', 'business'])
 export class TrainerController {
   constructor(
     @Inject(ServiceTokens.STORE_SERVICE)
     private readonly storeService: ClientProxy,
-    @Inject(ServiceTokens.APP_CONFIGURATOR_SERVICE)
-    private readonly appConfigService: ClientProxy
+    @Inject(ServiceTokens.LEAD_SERVICE)
+    private readonly leadService: ClientProxy
   ) {}
+
+  private getBusinessLeadContext(config: Record<string, any> | null | undefined) {
+    const profileId = config?.leadContext?.profileId;
+    const appScope = config?.leadContext?.appScope || 'business-site';
+
+    if (!profileId) {
+      throw new BadRequestException('Business lead intake is not configured yet.');
+    }
+
+    return { profileId, appScope };
+  }
+
+  private buildLeadNotes(payload: BusinessLeadIntakeDto, profileId?: string): string {
+    return [
+      `Goal: ${payload.goal}`,
+      payload.context ? `Context: ${payload.context}` : null,
+      payload.preferredStart ? `Preferred start: ${payload.preferredStart}` : null,
+      payload.preferredEnd ? `Preferred end: ${payload.preferredEnd}` : null,
+      profileId ? `Linked profile: ${profileId}` : null,
+      'Business-site intake',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private toProspectRecord(lead: any) {
+    const accountStatus =
+      lead?.userId && lead.userId !== 'anonymous-business-site'
+        ? 'Linked client'
+        : 'No account';
+
+    return {
+      ...lead,
+      accountStatus,
+    };
+  }
+
+  private isAcceptedLead(lead: any): boolean {
+    return lead?.status === LeadStatus.WON;
+  }
+
+  private async loadLeadContext() {
+    const result = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+    )) as { config?: Record<string, any> } | null;
+
+    return this.getBusinessLeadContext(result?.config);
+  }
+
+  private async loadSiteConfig() {
+    const result = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+    )) as { config?: Record<string, any> } | null;
+
+    return result?.config ?? {};
+  }
+
+  private async loadBusinessLeads() {
+    const leadContext = await this.loadLeadContext();
+    const leads = (await firstValueFrom(
+      this.leadService.send({ cmd: LeadCommands.FIND_ALL }, leadContext)
+    )) as any[];
+
+    return {
+      leadContext,
+      leads,
+    };
+  }
+
+  private async requireAcceptedClient(user: UserDetails) {
+    const { leads } = await this.loadBusinessLeads();
+    const acceptedLead =
+      leads.find((lead) => lead?.userId === user.userId && this.isAcceptedLead(lead)) ?? null;
+
+    if (!acceptedLead) {
+      throw new BadRequestException('Client must be accepted by the business before booking.');
+    }
+
+    return acceptedLead;
+  }
 
   // ─── Public endpoints ────────────────────────────────────────────────────────
 
   @Get('offers')
   async getOffers() {
+    const configResult = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+    )) as { config?: Record<string, any> } | null;
+    const configuredServices = Array.isArray(configResult?.config?.services)
+      ? configResult?.config?.services
+      : [];
+
+    if (configuredServices.length) {
+      return configuredServices.map((service: any) => ({
+        id: service.id,
+        label: service.name,
+        description: service.description || 'Owner-defined offer.',
+        serviceType: service.name,
+        startingRate: Number(service.price || 0),
+      }));
+    }
+
     const availabilities = (await firstValueFrom(
       this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITIES, {})
     )) as Array<any>;
@@ -54,8 +179,7 @@ export class TrainerController {
       .map((availability) => ({
         id: availability.id,
         label: availability.serviceType || 'Coaching Session',
-        description:
-          'Bookable session track derived from active trainer availability.',
+        description: 'Bookable service derived from active availability.',
         serviceType: availability.serviceType || 'general',
         startingRate: Number(availability.hourlyRate || 0),
       }));
@@ -68,16 +192,37 @@ export class TrainerController {
     );
   }
 
+  @Get('availability-overrides')
+  getAvailabilityOverrides() {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITY_OVERRIDES, {})
+    );
+  }
+
+  @Get('busy-windows')
+  async getBusyWindows() {
+    const appointments = (await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {})
+    )) as Array<any>;
+
+    return appointments
+      .filter(
+        (appointment) =>
+          appointment?.status !== 'cancelled' && appointment?.status !== 'denied'
+      )
+      .map((appointment) => ({
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+      }));
+  }
+
   @Get('site-config')
   async getSiteConfig() {
     try {
       const result = await firstValueFrom(
-        this.appConfigService.send(
-          { cmd: AppConfigCommands.GetByName },
-          { name: 'trainer-site' }
-        )
+        this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
       );
-      if (!result) {
+      if (!result || !result.config) {
         return { configId: null, config: null };
       }
       return result;
@@ -88,23 +233,107 @@ export class TrainerController {
 
   // ─── Client booking endpoints ─────────────────────────────────────────────
 
+  @UseGuards(AuthGuard)
   @Post('bookings')
-  createBooking(@Body() payload: CreateAppointmentDto) {
+  async createBooking(
+    @Body() payload: Omit<CreateAppointmentDto, 'userId'>,
+    @User() user: UserDetails
+  ) {
+    await this.requireAcceptedClient(user);
+
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.CREATE_APPOINTMENT, payload)
+      this.storeService.send(AppointmentCommands.CREATE_APPOINTMENT, {
+        ...payload,
+        userId: user.userId,
+      })
     );
   }
 
-  @Get('bookings')
-  getClientBookings(@Query('userId') userId: string) {
+  @Public()
+  @UseGuards(AuthGuard)
+  @Post('leads')
+  async createLeadIntake(
+    @Body() payload: BusinessLeadIntakeDto,
+    @User() user?: UserDetails | null
+  ) {
+    const result = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+    )) as { config?: Record<string, any> } | null;
+    const leadContext = this.getBusinessLeadContext(result?.config);
+    const linkedUserId = payload.userId || user?.userId || 'anonymous-business-site';
+    const linkedProfileId = payload.profileId || user?.profileId || '';
+    const dto: CreateLeadDto = {
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone,
+      source: LeadSource.OTHER,
+      status: LeadStatus.NEW,
+      notes: this.buildLeadNotes(payload, linkedProfileId),
+      isAutoDiscovered: false,
+      searchKeywords: ['business-site-intake'],
+    };
+
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, userId)
+      this.leadService.send({ cmd: LeadCommands.CREATE }, {
+        dto,
+        context: {
+          userId: linkedUserId,
+          profileId: leadContext.profileId,
+          appScope: leadContext.appScope,
+        },
+      })
     );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('bookings')
+  getClientBookings(@User() user: UserDetails) {
+    return firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, user.userId)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('client/invoices')
+  getClientInvoices(@User() user: UserDetails) {
+    return firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_USER_INVOICES, user.userId)
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('client/invoices/:id/pay')
+  async payClientInvoice(@Param('id') id: string, @User() user: UserDetails) {
+    const config = await this.loadSiteConfig();
+    if (config?.features?.booking?.allowOnlinePayment !== true) {
+      throw new BadRequestException('Online payment is disabled for this business.');
+    }
+
+    return firstValueFrom(
+      this.storeService.send(AppointmentCommands.PAY_INVOICE, {
+        id,
+        userId: user.userId,
+      })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('client-status')
+  async getClientBookingStatus(@User() user: UserDetails) {
+    const { leads } = await this.loadBusinessLeads();
+    const lead = leads.find((entry) => entry?.userId === user.userId) ?? null;
+
+    return {
+      accepted: !!lead && this.isAcceptedLead(lead),
+      leadId: lead?.id ?? null,
+      leadStatus: lead?.status ?? null,
+    };
   }
 
   // ─── Owner-protected endpoints ────────────────────────────────────────────
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Get('owner/bookings')
   getOwnerBookings() {
     return firstValueFrom(
@@ -112,7 +341,185 @@ export class TrainerController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/leads')
+  async getOwnerProspects(@User() user: UserDetails) {
+    const leads = (await firstValueFrom(
+      this.leadService.send({ cmd: LeadCommands.FIND_ALL }, {
+        profileId: user.profileId,
+        appScope: 'business-site',
+      })
+    )) as any[];
+
+    return leads
+      .filter((lead) => !this.isAcceptedLead(lead))
+      .map((lead) => this.toProspectRecord(lead));
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('owner/leads/:id/contacted')
+  async markOwnerProspectContacted(@Param('id') id: string, @User() user: UserDetails) {
+    const lead = await firstValueFrom(
+      this.leadService.send({ cmd: LeadCommands.UPDATE }, {
+        id,
+        profileId: user.profileId,
+        dto: {
+          status: LeadStatus.CONTACTED,
+        },
+      })
+    );
+
+    return this.toProspectRecord(lead);
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('owner/leads/:id/approve')
+  async approveOwnerProspect(@Param('id') id: string, @User() user: UserDetails) {
+    const lead = await firstValueFrom(
+      this.leadService.send({ cmd: LeadCommands.UPDATE }, {
+        id,
+        profileId: user.profileId,
+        dto: {
+          status: LeadStatus.WON,
+        },
+      })
+    );
+
+    return this.toProspectRecord(lead);
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/accepted-clients')
+  async getAcceptedClients(@User() user: UserDetails) {
+    const leads = (await firstValueFrom(
+      this.leadService.send({ cmd: LeadCommands.FIND_ALL }, {
+        profileId: user.profileId,
+        appScope: 'business-site',
+      })
+    )) as any[];
+
+    return leads
+      .filter(
+        (lead) =>
+          this.isAcceptedLead(lead) &&
+          !!lead?.userId &&
+          lead.userId !== 'anonymous-business-site'
+      )
+      .map((lead) => ({
+        leadId: lead.id,
+        userId: lead.userId,
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        leadStatus: lead.status,
+      }));
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/availabilities')
+  getOwnerAvailabilities(@User() user: UserDetails) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.FIND_OWNER_AVAILABILITIES, user.userId)
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('owner/availabilities')
+  createOwnerAvailability(
+    @Body() payload: CreateAvailabilityDto,
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.CREATE_AVAILABILITY, {
+        ...payload,
+        ownerId: payload.ownerId || user.userId,
+      })
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('owner/availabilities/:id')
+  updateOwnerAvailability(
+    @Param('id') id: string,
+    @Body() payload: UpdateAvailabilityDto
+  ) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY, {
+        id,
+        updateAvailabilityDto: payload,
+      })
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Delete('owner/availabilities/:id')
+  removeOwnerAvailability(@Param('id') id: string) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, id)
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/availability-overrides')
+  getOwnerAvailabilityOverrides(@User() user: UserDetails) {
+    return firstValueFrom(
+      this.storeService.send(
+        AvailabilityCommands.FIND_OWNER_AVAILABILITY_OVERRIDES,
+        user.userId
+      )
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('owner/availability-overrides')
+  createOwnerAvailabilityOverride(
+    @Body() payload: CreateAvailabilityOverrideDto,
+    @User() user: UserDetails
+  ) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.CREATE_AVAILABILITY_OVERRIDE, {
+        ...payload,
+        ownerId: payload.ownerId || user.userId,
+      })
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('owner/availability-overrides/:id')
+  updateOwnerAvailabilityOverride(
+    @Param('id') id: string,
+    @Body() payload: UpdateAvailabilityOverrideDto
+  ) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE, {
+        id,
+        updateAvailabilityOverrideDto: payload,
+      })
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Delete('owner/availability-overrides/:id')
+  removeOwnerAvailabilityOverride(@Param('id') id: string) {
+    return firstValueFrom(
+      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE, id)
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/bookings/:id/approve')
   approveBooking(
     @Param('id') id: string,
@@ -126,7 +533,8 @@ export class TrainerController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/bookings/:id/complete')
   completeBooking(@Param('id') id: string) {
     return firstValueFrom(
@@ -134,7 +542,8 @@ export class TrainerController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Post('owner/bookings/:id/invoice')
   generateInvoice(@Param('id') id: string) {
     return firstValueFrom(
@@ -146,21 +555,30 @@ export class TrainerController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('site-config')
   async updateSiteConfig(
-    @Body() payload: { configId?: string | null; config: Record<string, unknown> }
+    @Body() payload: { configId?: string | null; config: Record<string, unknown> },
+    @User() user: UserDetails
   ) {
+    const config = {
+      ...(payload.config ?? {}),
+      leadContext: {
+        profileId: user.profileId,
+        appScope: 'business-site',
+      },
+    };
+
     if (!payload.configId) {
       return firstValueFrom(
-        this.appConfigService.send(
-          { cmd: AppConfigCommands.Create },
-          { domain: 'trainer-site', name: 'trainer-site', config: payload.config }
-        )
+        this.storeService.send(TrainerConfigCommands.CREATE_CONFIG, {
+          configKey: 'default',
+          ...config,
+        })
       );
     }
     return firstValueFrom(
-      this.appConfigService.send(
-        { cmd: AppConfigCommands.Update },
-        { id: payload.configId, config: payload.config }
-      )
+      this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
+        id: payload.configId,
+        config,
+      })
     );
   }
 
@@ -171,6 +589,22 @@ export class TrainerController {
   getClientRoutines(@Query('clientId') clientId: string) {
     return firstValueFrom(
       this.storeService.send('trainer.client.routines.find', { clientId })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('client/routines/:id/complete')
+  async completeClientRoutine(@Param('id') id: string, @User() user: UserDetails) {
+    const config = await this.loadSiteConfig();
+    if (config?.features?.clientTasks?.allowClientCompletion !== true) {
+      throw new BadRequestException('Client completion is disabled for this business.');
+    }
+
+    return firstValueFrom(
+      this.storeService.send('trainer.client.routines.complete', {
+        id,
+        userId: user.userId,
+      })
     );
   }
 
@@ -192,7 +626,8 @@ export class TrainerController {
 
   // ─── Owner routine management ─────────────────────────────────────────────
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Get('owner/routines')
   getOwnerRoutines() {
     return firstValueFrom(
@@ -200,7 +635,17 @@ export class TrainerController {
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/check-ins')
+  getOwnerCheckIns() {
+    return firstValueFrom(
+      this.storeService.send('trainer.owner.checkins.findAll', {})
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @Post('owner/routines')
   assignRoutine(@Body() payload: Record<string, unknown>) {
     return firstValueFrom(

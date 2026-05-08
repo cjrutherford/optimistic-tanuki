@@ -108,6 +108,7 @@ run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
+run_seed_with_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
 run_seed_with_media_volume() {
   service="$1"

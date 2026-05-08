@@ -6,12 +6,13 @@ import {
   Inject,
   Param,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { CreateAssetDto } from '@optimistic-tanuki/models';
+import { AssetListQuery, AssetType, CreateAssetDto } from '@optimistic-tanuki/models';
 import { Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../decorators/permissions.decorator';
@@ -71,5 +72,24 @@ export class AssetController {
     } catch (error) {
       res.status(500).send(`Failed to get asset: ${error.message || error}`);
     }
+  }
+
+  @RequirePermissions('asset.read')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('/')
+  async listAssets(
+    @Query('profileId') profileId: string,
+    @Query('type') type?: AssetType
+  ) {
+    const assets = await firstValueFrom(
+      this.assetService.send(
+        { cmd: AssetCommands.LIST },
+        { profileId, type } as AssetListQuery
+      )
+    );
+    return assets.map((asset: { id: string }) => ({
+      ...asset,
+      url: `/api/asset/${asset.id}`,
+    }));
   }
 }

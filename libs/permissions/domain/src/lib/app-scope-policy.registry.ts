@@ -382,6 +382,12 @@ export class AppScopePolicyRegistry {
         ),
       ),
     ],
+    [
+      'trainer-site',
+      new StaticPolicy('trainer-site', (profileId) =>
+        withAssignments(['business_site_client'], profileId),
+      ),
+    ],
     ['social', new StaticPolicy('social', socialDefaults)],
     [
       'authentication',

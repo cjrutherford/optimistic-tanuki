@@ -67,6 +67,19 @@ services:
       dockerfile: ./apps/authentication/Dockerfile
     ports:
       - '3001:3001'
+    environment:
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - MICROSOFT_REDIRECT_URI=${MICROSOFT_REDIRECT_URI:-}
+      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
+      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
+      - FACEBOOK_REDIRECT_URI=${FACEBOOK_REDIRECT_URI:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -152,6 +165,20 @@ services:
       dockerfile: ./apps/marketing-generator/Dockerfile
     ports:
       - '8092:4000'
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
+  business-site:
+    container_name: ot_business_site
+    build:
+      context: .
+      dockerfile: ./apps/business-site/Dockerfile
+    ports:
+      - '8094:4000'
     environment:
       - NODE_ENV=production
       - PORT=4000

@@ -35,6 +35,7 @@ PORTS["christopherrutherford-net-e2e"]=8083
 PORTS["owner-console-e2e"]=8084
 PORTS["store-client-e2e"]=8085
 PORTS["configurable-client-e2e"]=8090
+PORTS["business-site-e2e"]=8094
 
 echo "Found E2E projects:"
 echo "$PROJECTS"

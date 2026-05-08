@@ -104,6 +104,11 @@
       "name": "video-client",
       "description": "Video platform and channel communities",
       "active": true
+    },
+    {
+      "name": "business-site",
+      "description": "Business site and client portal",
+      "active": true
     }
   ],
   "roles": [
@@ -351,6 +356,16 @@
       "name": "video_channel_creator",
       "description": "Creator role for managing a video channel, schedule, and live feed",
       "appScope": "video-client"
+    },
+    {
+      "name": "business_site_owner",
+      "description": "Business workspace owner for site configuration and portal management",
+      "appScope": "business-site"
+    },
+    {
+      "name": "business_site_client",
+      "description": "Business-site client account with scoped portal access",
+      "appScope": "business-site"
     }
   ],
   "permissions": [
@@ -2537,6 +2552,24 @@
       "appScope": "video-client"
     },
     {
+      "name": "app-config.read",
+      "description": "Read business site configuration",
+      "active": true,
+      "resource": "app-config",
+      "action": "read",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
+      "name": "app-config.update",
+      "description": "Update business site configuration",
+      "active": true,
+      "resource": "app-config",
+      "action": "update",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
       "name": "social.reaction.read",
       "description": "Read a channel community reaction",
       "active": true,
@@ -2775,6 +2808,21 @@
       "role": "community_owner",
       "permission": "community.manage",
       "permissionAppScope": "community"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "app-config.read",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "app-config.update",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_client",
+      "permission": "app-config.read",
+      "permissionAppScope": "business-site"
     },
     {
       "role": "community_manager",

@@ -43,4 +43,16 @@ describe('AppScopePolicyRegistry', () => {
       },
     ]);
   });
+
+  it('maps trainer-site defaults to the seeded business-site client role', () => {
+    const registry = new AppScopePolicyRegistry();
+    const policy = registry.get('trainer-site');
+
+    expect(policy.buildDefaults('profile-1').assignments).toEqual([
+      {
+        roleName: 'business_site_client',
+        profileId: 'profile-1',
+      },
+    ]);
+  });
 });

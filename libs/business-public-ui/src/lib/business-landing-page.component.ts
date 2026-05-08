@@ -1,0 +1,1010 @@
+import { CommonModule } from '@angular/common';
+import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  BusinessApiService,
+  BusinessSiteConfigStore,
+  LandingSection,
+  LandingSectionMediaItem,
+  LandingSectionMotionConfig,
+} from '@optimistic-tanuki/business-data-access';
+import { CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  AuroraRibbonComponent,
+  GlassFogComponent,
+  ParallaxGridWarpComponent,
+  ParticleVeilComponent,
+  PulseRingsComponent,
+  ShimmerBeamComponent,
+  SignalMeshComponent,
+  TopographicDriftComponent,
+} from '@optimistic-tanuki/motion-ui';
+
+@Component({
+  selector: 'business-landing-page',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterLink,
+    CardComponent,
+    ParticleVeilComponent,
+    ParallaxGridWarpComponent,
+    AuroraRibbonComponent,
+    GlassFogComponent,
+    PulseRingsComponent,
+    SignalMeshComponent,
+    TopographicDriftComponent,
+    ShimmerBeamComponent,
+  ],
+  template: `
+    <ng-template #renderMotion let-section>
+      @if (motion(section); as motionConfig) {
+        @switch (motionConfig.kind) {
+          @case ('particle-veil') {
+            <otui-particle-veil
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 18"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.65"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-particle-veil>
+          }
+          @case ('parallax-grid-warp') {
+            <otui-parallax-grid-warp
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 6"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.7"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-parallax-grid-warp>
+          }
+          @case ('aurora-ribbon') {
+            <otui-aurora-ribbon
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 3"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.72"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-aurora-ribbon>
+          }
+          @case ('glass-fog') {
+            <otui-glass-fog
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 4"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.66"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-glass-fog>
+          }
+          @case ('pulse-rings') {
+            <otui-pulse-rings
+              [height]="motionHeight(motionConfig)"
+              [ringCount]="motionConfig.ringCount ?? 4"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.7"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-pulse-rings>
+          }
+          @case ('signal-mesh') {
+            <otui-signal-mesh
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 5"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.68"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-signal-mesh>
+          }
+          @case ('topographic-drift') {
+            <otui-topographic-drift
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 6"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.64"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-topographic-drift>
+          }
+          @case ('shimmer-beam') {
+            <otui-shimmer-beam
+              [height]="motionHeight(motionConfig)"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.65"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+              [direction]="motionConfig.direction ?? 'diagonal'"
+            ></otui-shimmer-beam>
+          }
+        }
+      }
+    </ng-template>
+
+    <ng-template #renderSection let-section>
+      @switch (section.type) {
+        @case ('hero') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            <section class="hero" id="about">
+              <div class="hero-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+              <div class="hero-content">
+                <otui-card class="copy entrance" style="animation-delay: 0.1s">
+                  <p class="eyebrow">{{ site().brand.businessName }}</p>
+                  <h1>{{ site().brand.tagline }}</h1>
+                  <p class="lede">{{ site().brand.intro }}</p>
+                  <p class="body">{{ site().brand.longBio }}</p>
+                  <div class="actions">
+                    @if (site().features.booking.enabled) {
+                      <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+                    }
+                    @if (site().features.clientPortal.enabled) {
+                      <a class="cta-secondary" routerLink="/client">Client Portal</a>
+                    }
+                  </div>
+                </otui-card>
+                <otui-card class="profile entrance" style="animation-delay: 0.25s">
+                  <div class="profile-header">
+                    <span class="avatar-mark">{{ site().brand.monogram }}</span>
+                    <div>
+                      <p class="eyebrow">Owner</p>
+                      <h2>{{ ownerName() }}</h2>
+                    </div>
+                  </div>
+                  <ul class="credential-list">
+                    @for (credential of site().brand.credentials; track credential) {
+                      <li>{{ credential }}</li>
+                    }
+                  </ul>
+                  <div class="specialties">
+                    @for (item of site().brand.specializations; track item) {
+                      <span data-theme-aware="true">{{ item }}</span>
+                    }
+                  </div>
+                </otui-card>
+              </div>
+            </section>
+          </div>
+        }
+        @case ('about') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" style="animation-delay: 0.18s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ site().brand.businessName }}</h2>
+              </div>
+              <p class="body">{{ ownerName() }}</p>
+              <p class="body">{{ site().brand.longBio }}</p>
+            </otui-card>
+          </div>
+        }
+        @case ('services') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="entrance section-surface" id="results" style="animation-delay: 0.2s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Choose a starting point, then build the right engagement from there.</h2>
+              </div>
+              <div class="offer-stack">
+                @for (offer of offers(); track offer.id; let i = $index) {
+                  <div class="offer entrance" [style.animation-delay]="0.25 + i * 0.06 + 's'">
+                    <div class="offer-header">
+                      <span class="offer-badge">{{ offer.serviceType }}</span>
+                      <h3>{{ offer.label }}</h3>
+                    </div>
+                    <p>{{ offer.description }}</p>
+                    <div class="offer-rate">
+                      <span>From</span>
+                      <strong>{{ '$' + offer.startingRate }}<small>/hr</small></strong>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="offer entrance" style="animation-delay: 0.25s">
+                    <h3>Consultation-led services</h3>
+                    <p>Availability-backed service options will appear here as the schedule is published.</p>
+                  </div>
+                }
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('testimonials') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="entrance section-surface" style="animation-delay: 0.15s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Services that fit real schedules and still move the needle.</h2>
+              </div>
+              <div class="testimonial-stack">
+                @for (testimonial of site().testimonials; track testimonial.clientName; let i = $index) {
+                  <blockquote class="testimonial entrance" [style.animation-delay]="0.2 + i * 0.08 + 's'">
+                    <p>"{{ testimonial.quote }}"</p>
+                    <footer>
+                      <strong>{{ testimonial.clientName }}</strong>
+                      <span>{{ testimonial.clientDetail }}</span>
+                    </footer>
+                  </blockquote>
+                }
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('booking') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" style="animation-delay: 0.24s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Book the right starting point when you are ready.</h2>
+              </div>
+              <div class="actions">
+                <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('contact') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" id="contact" style="animation-delay: 0.3s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Reach out when you are ready to talk goals, schedule, and fit.</h2>
+              </div>
+              <div class="contact-grid">
+                <div class="contact-info">
+                  <div class="contact-row">
+                    <span class="contact-label">Email</span>
+                    <strong>{{ site().contact.email }}</strong>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Phone</span>
+                    <span>{{ site().contact.phone }}</span>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Location</span>
+                    <span>{{ site().contact.location }}</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  @if (site().features.booking.enabled) {
+                    <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+                  }
+                  @if (site().features.clientPortal.enabled) {
+                    <a class="cta-secondary" routerLink="/client">Client Login</a>
+                  }
+                </div>
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('custom') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="custom-section entrance section-surface" [attr.data-section-id]="section.id" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              @if (section.body) {
+                <p class="body">{{ section.body }}</p>
+              }
+              @if (section.ctaLabel && section.ctaHref) {
+                <div class="actions">
+                  <a class="cta-primary" [routerLink]="section.ctaHref">{{ section.ctaLabel }}</a>
+                </div>
+              }
+            </otui-card>
+          </div>
+        }
+        @case ('image') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="image-section entrance section-surface" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              @if (section.image?.src) {
+                <figure class="media-figure" [class]="'aspect-' + (section.image?.aspect ?? 'landscape')">
+                  <img
+                    [src]="section.image?.src"
+                    [alt]="section.image?.alt || section.title"
+                    [style.object-fit]="section.image?.fit ?? 'cover'"
+                    [style.object-position]="mediaObjectPosition(section.image)"
+                  />
+                  @if (section.image?.caption) {
+                    <figcaption>{{ section.image?.caption }}</figcaption>
+                  }
+                </figure>
+              }
+            </otui-card>
+          </div>
+        }
+        @case ('gallery') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="gallery-section entrance section-surface" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              <div
+                class="gallery-grid"
+                [class.gallery-masonry]="section.gallery?.style === 'masonry'"
+                [style.grid-template-columns]="'repeat(' + (section.gallery?.columns ?? 3) + ', minmax(0, 1fr))'"
+              >
+                @for (item of section.gallery?.items ?? []; track item.src + '-' + $index) {
+                  @if (item.src) {
+                    <figure class="gallery-item" [class]="'aspect-' + (item.aspect ?? 'square')">
+                      <img
+                        [src]="item.src"
+                        [alt]="item.alt || section.title"
+                        [style.object-fit]="item.fit ?? 'cover'"
+                        [style.object-position]="mediaObjectPosition(item)"
+                      />
+                      @if (item.caption) {
+                        <figcaption>{{ item.caption }}</figcaption>
+                      }
+                    </figure>
+                  }
+                }
+              </div>
+            </otui-card>
+          </div>
+        }
+      }
+    </ng-template>
+
+    @if (activeLayout() === 'single-column') {
+      <div class="landing-shell layout-single-column">
+        <div class="layout-column" data-layout-zone="single-column:main">
+          @for (section of visibleSections(); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
+      </div>
+    } @else if (activeLayout() === 'split') {
+      <div class="landing-shell layout-split">
+        <div class="layout-column" data-layout-zone="split:primary">
+          @for (section of sectionsForZone('split', 'primary'); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
+        <div class="layout-column" data-layout-zone="split:secondary">
+          @for (section of sectionsForZone('split', 'secondary'); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="landing-shell layout-grid">
+        @for (zone of gridZones; track zone) {
+          <div class="layout-column" [class]="'grid-zone-' + zone" [attr.data-layout-zone]="'grid:' + zone">
+            @for (section of sectionsForZone('grid', zone); track section.id) {
+              <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+            }
+          </div>
+        }
+      </div>
+    }
+  `,
+  styles: [
+    `
+      :host {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .landing-shell {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .layout-column {
+        display: grid;
+        gap: 1.5rem;
+        align-content: start;
+      }
+
+      .section-shell {
+        position: relative;
+        isolation: isolate;
+      }
+
+      .section-motion {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        border-radius: var(--personality-card-radius, 1.5rem);
+        pointer-events: none;
+      }
+
+      .section-motion ::ng-deep .particle-veil,
+      .section-motion ::ng-deep .parallax-grid-warp,
+      .section-motion ::ng-deep .aurora-ribbon,
+      .section-motion ::ng-deep .glass-fog,
+      .section-motion ::ng-deep .pulse-rings,
+      .section-motion ::ng-deep .signal-mesh,
+      .section-motion ::ng-deep .topographic-drift,
+      .section-motion ::ng-deep .shimmer-beam {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .section-surface {
+        position: relative;
+        z-index: 1;
+        background: color-mix(in srgb, var(--background, #ffffff) 90%, transparent);
+        backdrop-filter: blur(10px);
+      }
+
+      .layout-split {
+        grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+        align-items: start;
+      }
+
+      .layout-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+      }
+
+      .grid-zone-hero-wide {
+        grid-column: 1 / -1;
+      }
+
+      .layout-single-column {
+        grid-template-columns: 1fr;
+      }
+
+      @keyframes entrance-up {
+        from {
+          opacity: 0;
+          transform: translateY(28px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .entrance {
+        opacity: 0;
+        animation: entrance-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      .hero {
+        position: relative;
+        border-radius: var(--personality-card-radius, 1.5rem);
+        overflow: hidden;
+        border: var(--personality-border-width, 1px) solid var(--border);
+        box-shadow: var(--personality-card-shadow, 0 18px 44px rgba(15, 23, 42, 0.06));
+      }
+
+      .hero-motion {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+
+      .hero-motion ::ng-deep .particle-veil {
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+        gap: 1.25rem;
+        padding: 2rem;
+      }
+
+      .copy {
+        display: grid;
+        gap: 1rem;
+        align-content: start;
+        background: color-mix(in srgb, var(--background, #ffffff) 86%, transparent);
+        backdrop-filter: blur(12px);
+      }
+
+      .eyebrow,
+      .type,
+      .offer-badge {
+        margin: 0;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--primary, #1f7a63);
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-family: var(--font-heading, 'Source Sans Pro', system-ui, sans-serif);
+        font-weight: 700;
+        color: var(--foreground, #0f172a);
+      }
+
+      h1 {
+        font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+        line-height: 0.98;
+        max-width: 14ch;
+      }
+
+      h2 {
+        font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+        line-height: 1.15;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        line-height: 1.25;
+      }
+
+      .lede {
+        font-size: 1.15rem;
+        line-height: 1.55;
+        color: color-mix(in srgb, var(--foreground, #0f172a) 82%, transparent);
+      }
+
+      .body,
+      .offer p,
+      .testimonial p,
+      .contact p {
+        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        line-height: 1.6;
+      }
+
+      .actions {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+      }
+
+      .cta-primary,
+      .cta-secondary {
+        text-decoration: none;
+        padding: var(--personality-button-padding, 0.9rem 1.25rem);
+        border-radius: var(--personality-button-radius, 999px);
+        font-weight: 700;
+        font-size: 0.92rem;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease, background 0.2s ease;
+        will-change: transform;
+      }
+
+      .cta-primary:hover,
+      .cta-secondary:hover {
+        transform: translateY(-2px);
+      }
+
+      .cta-primary {
+        background: var(--primary, #1f7a63);
+        color: var(--primary-foreground, white);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 24%, transparent);
+      }
+
+      .cta-primary:hover {
+        box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 32%, transparent);
+        background: color-mix(in srgb, var(--primary) 92%, black);
+      }
+
+      .cta-secondary {
+        border: var(--personality-border-width, 1px) solid var(--border);
+        background: color-mix(in srgb, var(--background) 80%, transparent);
+        color: var(--foreground);
+      }
+
+      .cta-secondary:hover {
+        background: var(--surface);
+        border-color: var(--primary);
+      }
+
+      .profile {
+        display: grid;
+        gap: 1rem;
+        align-content: start;
+        background: color-mix(in srgb, var(--background, #ffffff) 86%, transparent);
+        backdrop-filter: blur(12px);
+      }
+
+      .profile-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .avatar-mark {
+        width: 3.2rem;
+        height: 3.2rem;
+        border-radius: var(--personality-border-radius, 1rem);
+        display: grid;
+        place-items: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        color: white;
+        background: linear-gradient(
+          135deg,
+          var(--primary, #1f7a63),
+          color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
+        );
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
+      }
+
+      .credential-list {
+        margin: 0;
+        padding-left: 1.1rem;
+        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        font-size: 0.92rem;
+        line-height: 1.7;
+      }
+
+      .specialties {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      .specialties span {
+        padding: 0.4rem 0.85rem;
+        border-radius: var(--personality-button-radius, 999px);
+        background: color-mix(in srgb, var(--surface, var(--background, #ffffff)) 82%, var(--primary, #1f7a63) 18%);
+        color: color-mix(in srgb, var(--foreground, #0f172a) 88%, transparent);
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: var(--personality-border-width, 1px) solid var(--border);
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--primary) 10%, transparent);
+      }
+
+      .proof-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .section-head {
+        display: grid;
+        gap: 0.6rem;
+      }
+
+      .testimonial-stack {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .testimonial {
+        margin: 0;
+        border: var(--personality-border-width, 1px) solid var(--border);
+        border-radius: var(--personality-card-radius, 1rem);
+        padding: var(--personality-card-padding, 1.15rem);
+        box-shadow: var(--personality-card-shadow, none);
+        background: var(--background);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .testimonial:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
+      }
+
+      .testimonial p {
+        font-style: italic;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 0.75rem;
+      }
+
+      .testimonial footer {
+        display: grid;
+        gap: 0.15rem;
+      }
+
+      .testimonial footer span {
+        font-size: 0.82rem;
+        color: color-mix(in srgb, var(--foreground, #0f172a) 58%, transparent);
+      }
+
+      .offer-stack {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .offer {
+        display: grid;
+        gap: 0.6rem;
+        padding: var(--personality-card-padding, 1.15rem);
+        border: var(--personality-border-width, 1px) solid var(--border);
+        border-radius: var(--personality-card-radius, 1rem);
+        background: var(--background);
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+      }
+
+      .offer:hover {
+        transform: translateY(-3px);
+        border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+        box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
+      }
+
+      .offer-header {
+        display: grid;
+        gap: 0.35rem;
+      }
+
+      .offer-badge {
+        width: fit-content;
+        padding: 0.25rem 0.65rem;
+        border-radius: var(--personality-button-radius, 999px);
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
+        border: var(--personality-border-width, 1px) solid color-mix(in srgb, var(--primary) 24%, transparent);
+      }
+
+      .offer-rate {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4rem;
+        margin-top: 0.25rem;
+      }
+
+      .offer-rate span {
+        font-size: 0.85rem;
+        color: color-mix(in srgb, var(--foreground) 62%, transparent);
+      }
+
+      .offer-rate strong {
+        font-size: 1.25rem;
+        color: var(--primary);
+      }
+
+      .offer-rate small {
+        font-size: 0.8rem;
+        color: color-mix(in srgb, var(--foreground) 58%, transparent);
+        font-weight: 500;
+      }
+
+      .contact {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .custom-section {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .image-section,
+      .gallery-section {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .media-figure,
+      .gallery-item {
+        margin: 0;
+        overflow: hidden;
+        border-radius: var(--personality-card-radius, 1rem);
+        border: var(--personality-border-width, 1px) solid var(--border);
+        background: color-mix(in srgb, var(--surface, #fff) 84%, var(--background, #fff));
+      }
+
+      .media-figure img,
+      .gallery-item img {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .media-figure figcaption,
+      .gallery-item figcaption {
+        padding: 0.8rem 0.95rem;
+        color: color-mix(in srgb, var(--foreground, #0f172a) 68%, transparent);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+
+      .gallery-grid {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .gallery-grid.gallery-masonry .gallery-item:nth-child(3n + 2) {
+        transform: translateY(0.75rem);
+      }
+
+      .aspect-landscape {
+        aspect-ratio: 16 / 9;
+      }
+
+      .aspect-square {
+        aspect-ratio: 1 / 1;
+      }
+
+      .aspect-portrait {
+        aspect-ratio: 4 / 5;
+      }
+
+      .aspect-auto {
+        aspect-ratio: auto;
+      }
+
+      .contact-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: end;
+        gap: 1.5rem;
+      }
+
+      .contact-info {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .contact-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.75rem;
+      }
+
+      .contact-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--foreground) 52%, transparent);
+        min-width: 5.5rem;
+      }
+
+      @media (max-width: 900px) {
+        .layout-grid,
+        .layout-split,
+        .hero-content,
+        .proof-grid,
+        .contact-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-content {
+          padding: 1.25rem;
+        }
+      }
+    `,
+  ],
+})
+export class BusinessLandingPageComponent {
+  private readonly api = inject(BusinessApiService);
+  private readonly siteConfig = inject(BusinessSiteConfigStore);
+  readonly site = this.siteConfig.site;
+  readonly activeLayout = computed(() => this.site().landingPage.layout);
+  readonly layoutClass = computed(() => `layout-${this.site().landingPage.layout}`);
+  readonly offers = toSignal(this.api.getOffers(), { initialValue: [] });
+  readonly gridZones = ['hero-wide', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
+  readonly visibleSections = computed(() =>
+    [...this.site().landingPage.sections]
+      .sort((a, b) => a.order - b.order)
+      .filter((section) => section.enabled)
+      .filter((section) => this.isSectionEnabled(section.type))
+  );
+
+  ownerName(): string {
+    return this.site().brand.ownerName || this.site().brand.trainerName || 'Business Owner';
+  }
+
+  motion(section: LandingSection): LandingSectionMotionConfig | null {
+    if (section.type === 'hero' && (!section.motion?.kind || section.motion.kind === 'none')) {
+      return {
+        kind: 'particle-veil',
+        density: 18,
+        speed: 0.8,
+        intensity: 0.55,
+        height: '100%',
+        reducedMotion: false,
+      };
+    }
+
+    return section.motion?.kind && section.motion.kind !== 'none' ? section.motion : null;
+  }
+
+  motionHeight(motion: LandingSectionMotionConfig): string {
+    return motion.height || '100%';
+  }
+
+  mediaObjectPosition(item: LandingSectionMediaItem): string {
+    return (
+      {
+        center: 'center center',
+        top: 'center top',
+        right: 'right center',
+        bottom: 'center bottom',
+        left: 'left center',
+      }[item.focalPoint ?? 'center'] ?? 'center center'
+    );
+  }
+
+  private isSectionEnabled(type: string): boolean {
+    if (type === 'booking') {
+      return this.site().features.booking.enabled;
+    }
+
+    if (type === 'testimonials') {
+      return this.site().features.testimonials.enabled;
+    }
+
+    if (type === 'custom') {
+      return true;
+    }
+
+    if (type === 'image' || type === 'gallery') {
+      return true;
+    }
+
+    return true;
+  }
+
+  sectionsForZone(layout: 'split' | 'grid', zoneId: string) {
+    return this.visibleSections().filter((section) =>
+      layout === 'split'
+        ? (section.layoutPlacement?.split ?? this.defaultSplitSlot(section.id)) === zoneId
+        : (section.layoutPlacement?.grid ?? this.defaultGridSlot(section.id)) === zoneId
+    );
+  }
+
+  constructor() {
+    this.siteConfig.fetch().subscribe();
+  }
+
+  private defaultSplitSlot(sectionId: string): 'primary' | 'secondary' {
+    return ['hero', 'about', 'services'].includes(sectionId) ? 'primary' : 'secondary';
+  }
+
+  private defaultGridSlot(sectionId: string): string {
+    return (
+      {
+        hero: 'hero-wide',
+        about: 'top-left',
+        services: 'top-right',
+        testimonials: 'bottom-left',
+        contact: 'bottom-right',
+        booking: 'bottom-right',
+      } as Record<string, string>
+    )[sectionId] ?? 'bottom-right';
+  }
+}

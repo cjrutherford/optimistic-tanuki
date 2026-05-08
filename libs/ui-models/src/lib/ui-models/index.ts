@@ -82,6 +82,7 @@ export { type PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';
 export * from './store';
 export * from './appointment';
 export * from './availability';
+export * from './availability-override';
 export * from './invoice';
 export * from './resource';
 export * from './video';
