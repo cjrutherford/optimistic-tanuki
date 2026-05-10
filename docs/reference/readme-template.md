@@ -6,7 +6,7 @@ Keep the first screen short and predictable. Put project-specific deep detail af
 
 ## App Template
 
-```md
+````md
 # Project Name
 
 One short paragraph explaining what the project is and where its source lives.
@@ -28,7 +28,7 @@ pnpm exec nx build <project>
 pnpm exec nx test <project>
 pnpm exec nx serve <project>
 ```
-```
+````
 
 Add extra sections only when the project needs them, for example:
 
@@ -40,7 +40,7 @@ Add extra sections only when the project needs them, for example:
 
 ## Library Template
 
-```md
+````md
 # Project Name
 
 One short paragraph explaining what the library is and where its source lives.
@@ -57,7 +57,7 @@ One short paragraph explaining what the library is and where its source lives.
 pnpm exec nx build <project>
 pnpm exec nx test <project>
 ```
-```
+````
 
 Add extra sections only when useful:
 
@@ -68,7 +68,7 @@ Add extra sections only when useful:
 
 ## E2E Project Template
 
-```md
+````md
 # Project Name
 
 One short paragraph explaining what the suite covers.
@@ -87,4 +87,4 @@ Commands for the default path.
 ```bash
 pnpm exec nx e2e <project>
 ```
-```
+````

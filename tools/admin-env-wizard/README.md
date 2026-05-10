@@ -197,9 +197,9 @@ GOCACHE=/tmp/go-build go run ./cmd/deployment-inventory
 
 ### Root deploy helper
 
-Every generated deployment now includes a root `deploy.sh`.
+Every generated deployment includes a root `deploy.sh`. The output directory defaults to `dist/admin-env/<env>` when using the TUI or when no `-output-dir` flag is given to the CLI. If you pass `-output-dir` to `admin-env generate`, replace the path below with your chosen directory.
 
-Examples:
+Examples (using the default output path):
 
 ```bash
 ./dist/admin-env/<env>/deploy.sh

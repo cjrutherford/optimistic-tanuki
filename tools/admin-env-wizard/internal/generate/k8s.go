@@ -338,8 +338,14 @@ spec:
               cpu: %s
               memory: %s
           livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
             initialDelaySeconds: %d
           readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
             initialDelaySeconds: %d
 ---
 apiVersion: apps/v1
@@ -360,8 +366,14 @@ spec:
               cpu: %s
               memory: %s
           livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
             initialDelaySeconds: %d
           readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
             initialDelaySeconds: %d
 `, profile.StorageClassName, profile.StorageSize, gatewayAnnotationKey, gatewayAnnotationValue, gateway.Replicas, gateway.RequestCPU, composeMemoryToK8s(gateway.RequestMemory), gateway.LimitCPU, composeMemoryToK8s(gateway.LimitMemory), gateway.LivenessInitial, gateway.ReadinessInitial, authentication.Replicas, authentication.RequestCPU, composeMemoryToK8s(authentication.RequestMemory), authentication.LimitCPU, composeMemoryToK8s(authentication.LimitMemory), authentication.LivenessInitial, authentication.ReadinessInitial)
 }

@@ -194,8 +194,8 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 	}, nil
 }
 
-func composeProviderServiceFragment(profile providerProfile, service string) map[string]any {
-	tuning := workloadTuningForProfile(profile, service, "service")
+func composeProviderServiceFragment(profile providerProfile, service string, category string) map[string]any {
+	tuning := workloadTuningForProfile(profile, service, category)
 	return map[string]any{
 		"restart": tuning.RestartPolicy,
 		"labels": map[string]string{
@@ -231,7 +231,7 @@ func composeProviderServicesFragment(env *domain.EnvironmentDefinition, profile 
 		if serviceName == "" {
 			serviceName = preset.ID
 		}
-		services[serviceName] = composeProviderServiceFragment(profile, preset.ID)
+		services[serviceName] = composeProviderServiceFragment(profile, preset.ID, string(preset.Category))
 	}
 
 	for _, infraKind := range env.IncludeInfra {
@@ -239,7 +239,7 @@ func composeProviderServicesFragment(env *domain.EnvironmentDefinition, profile 
 		if !ok {
 			continue
 		}
-		services[preset.ID] = composeProviderServiceFragment(profile, preset.ID)
+		services[preset.ID] = composeProviderServiceFragment(profile, preset.ID, string(preset.Category))
 	}
 
 	return services

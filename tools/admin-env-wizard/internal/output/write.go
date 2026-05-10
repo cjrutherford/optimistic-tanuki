@@ -78,6 +78,10 @@ func (w *Writer) WriteDeployScripts(targets []domain.Target) error {
 	hasCompose := containsTarget(targets, domain.TargetCompose)
 	hasK8s := containsTarget(targets, domain.TargetK8s)
 
+	if !hasCompose && !hasK8s {
+		return fmt.Errorf("no recognized deployment targets: must include %q and/or %q", domain.TargetCompose, domain.TargetK8s)
+	}
+
 	if hasCompose {
 		if err := w.WriteExecutable(filepath.Join("compose", "deploy.sh"), []byte(composeDeployScript)); err != nil {
 			return err
@@ -96,13 +100,11 @@ func (w *Writer) WriteDeployScripts(targets []domain.Target) error {
 func renderRootDeployScript(hasCompose, hasK8s bool) string {
 	targets := make([]string, 0, 2)
 	defaultTarget := "help"
-	defaultCommands := make([]string, 0, 2)
 	cases := make([]string, 0, 3)
 
 	if hasCompose {
 		targets = append(targets, "compose")
 		defaultTarget = "compose"
-		defaultCommands = append(defaultCommands, `  "$ROOT_DIR/compose/deploy.sh"`)
 		cases = append(cases, `  compose)
     "$ROOT_DIR/compose/deploy.sh"
     ;;`)
@@ -112,7 +114,6 @@ func renderRootDeployScript(hasCompose, hasK8s bool) string {
 		if defaultTarget == "help" {
 			defaultTarget = "k8s"
 		}
-		defaultCommands = append(defaultCommands, `  "$ROOT_DIR/k8s/deploy.sh"`)
 		cases = append(cases, `  k8s)
     "$ROOT_DIR/k8s/deploy.sh"
     ;;`)
