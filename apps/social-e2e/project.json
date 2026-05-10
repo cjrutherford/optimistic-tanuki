@@ -19,5 +19,8 @@
         "social:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

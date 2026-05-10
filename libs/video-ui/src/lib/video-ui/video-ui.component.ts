@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'lib-video-ui',
+  selector: 'video-ui',
   imports: [],
   templateUrl: './video-ui.component.html',
   styleUrl: './video-ui.component.css',

@@ -19,5 +19,8 @@
         "telos-docs-service:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

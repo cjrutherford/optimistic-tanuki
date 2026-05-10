@@ -19,5 +19,8 @@
         "chat-collector:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

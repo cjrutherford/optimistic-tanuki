@@ -1,17 +1,27 @@
 {
   "name": "videos-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "implicitDependencies": ["videos"],
+  "implicitDependencies": [
+    "videos"
+  ],
   "projectType": "application",
   "targets": {
     "e2e": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{e2eProjectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/videos-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": ["videos:build", "videos:serve"]
+      "dependsOn": [
+        "videos:build",
+        "videos:serve"
+      ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

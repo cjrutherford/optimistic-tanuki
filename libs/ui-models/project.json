@@ -4,7 +4,7 @@
   "sourceRoot": "libs/ui-models/src",
   "prefix": "lib",
   "projectType": "library",
-  "tags": [],
+  "tags": ["scope:shared", "type:contracts"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

@@ -4,11 +4,15 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/forgeofwill/src",
-  "tags": [],
+  "tags": [
+    "type:app"
+  ],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/forgeofwill",
         "index": "apps/forgeofwill/src/index.html",
@@ -18,7 +22,9 @@
           "xmlhttprequest-ssl",
           "@mixmark-io/domino"
         ],
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/forgeofwill/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -27,7 +33,9 @@
             "input": "apps/forgeofwill/public"
           }
         ],
-        "styles": ["apps/forgeofwill/src/styles.scss"],
+        "styles": [
+          "apps/forgeofwill/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/forgeofwill/src/main.server.ts",
         "ssr": {
@@ -84,7 +92,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/forgeofwill/jest.config.ts"
       }
@@ -115,7 +125,9 @@
     },
     "build-storybook": {
       "executor": "@storybook/angular:build-storybook",
-      "outputs": ["{options.outputDir}"],
+      "outputs": [
+        "{options.outputDir}"
+      ],
       "options": {
         "outputDir": "dist/storybook/forgeofwill",
         "configDir": "apps/forgeofwill/.storybook",
@@ -136,7 +148,9 @@
     },
     "static-storybook": {
       "executor": "@nx/web:file-server",
-      "dependsOn": ["build-storybook"],
+      "dependsOn": [
+        "build-storybook"
+      ],
       "options": {
         "buildTarget": "forgeofwill:build-storybook",
         "staticFilePath": "dist/storybook/forgeofwill",

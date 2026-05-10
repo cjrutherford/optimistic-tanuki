@@ -19,5 +19,8 @@
         "ai-orchestrator:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

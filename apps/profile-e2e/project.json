@@ -19,5 +19,8 @@
         "profile:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

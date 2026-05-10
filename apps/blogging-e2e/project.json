@@ -19,5 +19,8 @@
         "blogging:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

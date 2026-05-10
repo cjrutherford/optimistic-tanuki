@@ -27,9 +27,9 @@ describe('gateway service providers', () => {
 
     expect(proxy).toBeInstanceOf(DisabledClientProxy);
     await expect(proxy.connect()).resolves.toBeUndefined();
-    await expect(firstValueFrom(proxy.send({ cmd: 'noop' }, {}))).rejects.toThrow(
-      'Gateway service "store" is disabled'
-    );
+    await expect(
+      firstValueFrom(proxy.send({ cmd: 'noop' }, {}))
+    ).rejects.toThrow('Gateway service "store" is disabled');
   });
 
   it('creates real proxies for enabled services', () => {

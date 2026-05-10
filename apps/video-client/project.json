@@ -4,15 +4,21 @@
   "projectType": "application",
   "prefix": "video",
   "sourceRoot": "apps/video-client/src",
-  "tags": [],
+  "tags": [
+    "type:app"
+  ],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/video-client",
         "browser": "apps/video-client/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/video-client/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "sourceMap": true,
@@ -22,7 +28,9 @@
             "input": "apps/video-client/public"
           }
         ],
-        "styles": ["apps/video-client/src/styles.scss"],
+        "styles": [
+          "apps/video-client/src/styles.scss"
+        ],
         "server": "apps/video-client/src/main.server.ts",
         "ssr": {
           "entry": "apps/video-client/src/server.ts"
@@ -80,7 +88,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/video-client/jest.config.ts",
         "tsConfig": "apps/video-client/tsconfig.spec.json"

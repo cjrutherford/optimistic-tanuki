@@ -4,16 +4,22 @@
   "projectType": "application",
   "prefix": "fc",
   "sourceRoot": "apps/fin-commander/src",
-  "tags": [],
+  "tags": [
+    "type:app"
+  ],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": ["{options.outputPath}"],
+      "outputs": [
+        "{options.outputPath}"
+      ],
       "options": {
         "outputPath": "dist/apps/fin-commander",
         "index": "apps/fin-commander/src/index.html",
         "browser": "apps/fin-commander/src/main.ts",
-        "polyfills": ["zone.js"],
+        "polyfills": [
+          "zone.js"
+        ],
         "tsConfig": "apps/fin-commander/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -22,7 +28,9 @@
             "input": "apps/fin-commander/public"
           }
         ],
-        "styles": ["apps/fin-commander/src/styles.scss"],
+        "styles": [
+          "apps/fin-commander/src/styles.scss"
+        ],
         "scripts": [],
         "server": "apps/fin-commander/src/main.server.ts",
         "ssr": {
@@ -78,7 +86,9 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "outputs": [
+        "{workspaceRoot}/coverage/{projectRoot}"
+      ],
       "options": {
         "jestConfig": "apps/fin-commander/jest.config.ts"
       }

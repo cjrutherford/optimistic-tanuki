@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import seedData from '../../local-hub/src/data/seed-cities.json';
+import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
 

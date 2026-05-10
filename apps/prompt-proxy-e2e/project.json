@@ -19,5 +19,8 @@
         "prompt-proxy:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

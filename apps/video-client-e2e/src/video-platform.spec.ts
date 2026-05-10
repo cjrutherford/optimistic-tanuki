@@ -333,7 +333,7 @@ test.describe('Video Platform E2E Workflows', () => {
 
     if (buttonExists) {
       console.log('Subscribe button found');
-      expect(subscribeButton).toBeVisible();
+      await expect(subscribeButton).toBeVisible();
     } else {
       console.log('Subscribe button not found - UI may be different');
     }

@@ -3,7 +3,9 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/configurable-client-e2e/src",
-  "implicitDependencies": ["configurable-client"],
+  "implicitDependencies": [
+    "configurable-client"
+  ],
   "// targets": "to see all targets run: nx show project configurable-client-e2e --web",
   "targets": {
     "up": {
@@ -42,5 +44,8 @@
         "parallel": false
       }
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

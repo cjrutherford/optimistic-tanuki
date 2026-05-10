@@ -19,5 +19,8 @@
         "app-configurator:build"
       ]
     }
-  }
+  },
+  "tags": [
+    "type:e2e"
+  ]
 }

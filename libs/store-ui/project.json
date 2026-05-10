@@ -4,7 +4,7 @@
   "sourceRoot": "libs/store-ui/src",
   "prefix": "store",
   "projectType": "library",
-  "tags": [],
+  "tags": ["scope:shared", "type:ui"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

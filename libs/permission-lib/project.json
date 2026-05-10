@@ -5,7 +5,7 @@
   "projectType": "library",
   "tags": [
     "type:feature",
-    "scope:permissions",
+    "scope:shared",
     "platform:server",
     "visibility:internal"
   ],

@@ -21,20 +21,6 @@ export default [
         {
           enforceBuildableLibDependency: false,
           allowCircularSelfDependency: true,
-          allow: [
-            '@optimistic-tanuki/database',
-            '@optimistic-tanuki/encryption',
-            '@optimistic-tanuki/logger',
-            '@optimistic-tanuki/app-config-models',
-            '@optimistic-tanuki/theme-models',
-            '@optimistic-tanuki/auth-ui',
-            '@optimistic-tanuki/common-ui',
-            '@optimistic-tanuki/motion-ui',
-            '@optimistic-tanuki/notification-ui',
-            '@optimistic-tanuki/permission-lib',
-            '@optimistic-tanuki/theme-lib',
-            '@optimistic-tanuki/ui-models',
-          ],
           depConstraints: [
             {
               sourceTag: 'type:app',
@@ -48,9 +34,30 @@ export default [
               ],
             },
             {
+              sourceTag: 'type:e2e',
+              onlyDependOnLibsWithTags: [
+                'type:app',
+                'type:feature',
+                'type:data-access',
+                'type:domain',
+                'type:contracts',
+                'type:ui',
+                'type:util',
+              ],
+            },
+            {
               sourceTag: 'type:feature',
               onlyDependOnLibsWithTags: [
+                'type:feature',
                 'type:domain',
+                'type:data-access',
+                'type:contracts',
+                'type:util',
+              ],
+            },
+            {
+              sourceTag: 'type:data-access',
+              onlyDependOnLibsWithTags: [
                 'type:data-access',
                 'type:contracts',
                 'type:util',
@@ -65,8 +72,13 @@ export default [
               onlyDependOnLibsWithTags: ['type:util'],
             },
             {
+              sourceTag: 'type:util',
+              onlyDependOnLibsWithTags: ['type:contracts', 'type:util'],
+            },
+            {
               sourceTag: 'type:ui',
               onlyDependOnLibsWithTags: [
+                'type:ui',
                 'type:data-access',
                 'type:contracts',
                 'type:util',
