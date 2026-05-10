@@ -12,6 +12,7 @@ import (
 type Command struct {
 	Name        string
 	Environment *domain.EnvironmentDefinition
+	ConfigPath   string
 }
 
 func ParseArgs(args []string) (Command, error) {
@@ -36,6 +37,7 @@ func parseGenerate(args []string) (Command, error) {
 	var targets string
 	var infra string
 	var services string
+	var configPath string
 
 	fs.StringVar(&env.Name, "name", env.Name, "environment name")
 	fs.StringVar(&env.Namespace, "namespace", env.Namespace, "kubernetes namespace")
@@ -45,6 +47,7 @@ func parseGenerate(args []string) (Command, error) {
 	fs.StringVar(&targets, "targets", "compose,k8s", "comma-separated targets: compose,k8s")
 	fs.StringVar(&infra, "infra", "postgres,redis", "comma-separated infra: postgres,redis,seaweedfs")
 	fs.StringVar(&services, "services", "gateway,authentication,app-configurator", "comma-separated service ids")
+	fs.StringVar(&configPath, "config", "", "path to workspace config YAML")
 	fs.Func("compose-mode", "compose mode: build or image", func(v string) error {
 		env.ComposeMode = domain.ComposeMode(v)
 		return nil
@@ -58,7 +61,7 @@ func parseGenerate(args []string) (Command, error) {
 	env.IncludeInfra = parseInfra(infra)
 	env.Services = parseServices(services)
 
-	return Command{Name: "generate", Environment: env}, nil
+	return Command{Name: "generate", Environment: env, ConfigPath: configPath}, nil
 }
 
 func parseTargets(raw string) []domain.Target {

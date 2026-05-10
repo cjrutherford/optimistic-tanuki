@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build chat-collector
 pnpm exec nx test chat-collector
+pnpm exec nx serve chat-collector
 ```

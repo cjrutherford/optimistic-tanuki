@@ -35,7 +35,6 @@ import { PermissionsController } from '../controllers/permissions/permissions.co
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
-import { McpToolsModule } from './mcp/mcp-tools.module';
 import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -72,6 +71,237 @@ import {
 } from '../controllers/registry/registry.controller';
 import { DEFAULT_NAVIGATION_LINKS } from '@optimistic-tanuki/app-registry-backend';
 import { loadConfiguredRegistry } from '../controllers/registry/registry.config';
+import {
+  ComposableEntry,
+  filterEnabledEntries,
+  loadGatewayCompositionFromFile,
+  normalizeGatewayComposition,
+} from './gateway-composition';
+import {
+  createMcpToolImports,
+  createGatewayServiceProviders,
+} from './gateway-service-providers';
+
+const gatewayServices = [
+  'authentication',
+  'profile',
+  'social',
+  'assets',
+  'project-planning',
+  'chat-collector',
+  'telos-docs-service',
+  'ai-orchestration',
+  'blogging',
+  'permissions',
+  'store',
+  'app-configurator',
+  'forum',
+  'finance',
+  'wellness',
+  'classifieds',
+  'payments',
+  'lead-tracker',
+  'system-configurator-api',
+  'videos',
+] as const;
+
+const gatewayComposition = normalizeGatewayComposition(
+  loadGatewayCompositionFromFile(process.env.GATEWAY_COMPOSITION_PATH),
+  [...gatewayServices]
+);
+
+type ValueComposableEntry<T> = ComposableEntry<T> & { value: T };
+
+const controllerEntries: Array<ValueComposableEntry<any>> = filterEnabledEntries(
+  [
+    { id: 'palettes', value: PalettesController },
+    { id: 'personalities', value: PersonalitiesController },
+    {
+      id: 'authentication',
+      requiredServices: ['authentication', 'profile'],
+      value: AuthenticationController,
+    },
+    {
+      id: 'profile',
+      requiredServices: [
+        'profile',
+        'ai-orchestration',
+        'authentication',
+        'telos-docs-service',
+        'permissions',
+        'social',
+      ],
+      value: ProfileController,
+    },
+    { id: 'social', requiredServices: ['social'], value: SocialController },
+    {
+      id: 'social-components',
+      requiredServices: ['social'],
+      value: SocialComponentController,
+    },
+    {
+      id: 'community',
+      requiredServices: ['social', 'permissions', 'chat-collector'],
+      value: CommunityController,
+    },
+    {
+      id: 'follow',
+      requiredServices: ['social', 'profile'],
+      value: FollowController,
+    },
+    {
+      id: 'asset',
+      requiredServices: ['assets', 'authentication', 'permissions'],
+      value: AssetController,
+    },
+    {
+      id: 'project-planning',
+      requiredServices: ['project-planning'],
+      value: ProjectPlanningController,
+    },
+    { id: 'contact', requiredServices: ['blogging'], value: ContactController },
+    { id: 'post', requiredServices: ['blogging'], value: PostController },
+    { id: 'event', requiredServices: ['blogging'], value: EventController },
+    { id: 'blog', requiredServices: ['blogging'], value: BlogController },
+    {
+      id: 'blog-components',
+      requiredServices: ['blogging'],
+      value: BlogComponentController,
+    },
+    {
+      id: 'permissions',
+      requiredServices: ['permissions'],
+      value: PermissionsController,
+    },
+    {
+      id: 'persona',
+      requiredServices: ['telos-docs-service'],
+      value: PersonaController,
+    },
+    { id: 'store', requiredServices: ['store'], value: StoreController },
+    {
+      id: 'app-config',
+      requiredServices: ['app-configurator'],
+      value: AppConfigController,
+    },
+    { id: 'forum', requiredServices: ['forum'], value: ForumController },
+    {
+      id: 'oauth',
+      requiredServices: ['authentication', 'profile'],
+      value: OAuthController,
+    },
+    { id: 'finance', requiredServices: ['finance'], value: FinanceController },
+    { id: 'videos', requiredServices: ['videos'], value: VideosController },
+    {
+      id: 'wellness',
+      requiredServices: ['wellness', 'ai-orchestration'],
+      value: WellnessController,
+    },
+    {
+      id: 'classifieds',
+      requiredServices: ['classifieds', 'social'],
+      value: ClassifiedsController,
+    },
+    {
+      id: 'communities',
+      requiredServices: ['social', 'permissions'],
+      value: CommunitiesController,
+    },
+    {
+      id: 'notifications',
+      requiredServices: ['social'],
+      value: NotificationController,
+    },
+    {
+      id: 'search',
+      requiredServices: ['social'],
+      value: SearchController,
+    },
+    {
+      id: 'privacy',
+      requiredServices: ['social'],
+      value: PrivacyController,
+    },
+    {
+      id: 'activity',
+      requiredServices: ['social'],
+      value: ActivityController,
+    },
+    {
+      id: 'presence',
+      requiredServices: ['social'],
+      value: PresenceController,
+    },
+    {
+      id: 'profile-analytics',
+      requiredServices: ['social'],
+      value: ProfileAnalyticsController,
+    },
+    {
+      id: 'poll',
+      requiredServices: ['social'],
+      value: PollController,
+    },
+    {
+      id: 'post-share',
+      requiredServices: ['social'],
+      value: PostShareController,
+    },
+    {
+      id: 'social-event',
+      requiredServices: ['social'],
+      value: SocialEventController,
+    },
+    {
+      id: 'payments',
+      requiredServices: ['payments'],
+      value: PaymentsController,
+    },
+    {
+      id: 'donations',
+      requiredServices: ['payments'],
+      value: DonationsController,
+    },
+    {
+      id: 'leads',
+      requiredServices: ['lead-tracker'],
+      value: LeadsController,
+    },
+    {
+      id: 'hardware',
+      requiredServices: ['system-configurator-api'],
+      value: HardwareController,
+    },
+    {
+      id: 'trainer',
+      requiredServices: ['store', 'lead-tracker'],
+      value: TrainerController,
+    },
+    { id: 'registry', value: RegistryController },
+  ] as Array<ValueComposableEntry<any>>,
+  gatewayComposition
+) as Array<ValueComposableEntry<any>>;
+
+const realtimeProviderEntries: Array<ValueComposableEntry<any>> = filterEnabledEntries(
+  [
+    {
+      id: 'chat-gateway',
+      requiredServices: [
+        'chat-collector',
+        'ai-orchestration',
+        'telos-docs-service',
+        'profile',
+      ],
+      value: ChatGateway,
+    },
+    {
+      id: 'social-gateway',
+      requiredServices: ['social'],
+      value: SocialGateway,
+    },
+  ] as Array<ValueComposableEntry<any>>,
+  gatewayComposition
+) as Array<ValueComposableEntry<any>>;
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -96,51 +326,9 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
       },
     ]),
     LoggerModule,
-    McpToolsModule,
+    ...createMcpToolImports(gatewayComposition),
   ],
-  controllers: [
-    PalettesController,
-    PersonalitiesController,
-    AuthenticationController,
-    ProfileController,
-    SocialController,
-    SocialComponentController,
-    CommunityController,
-    FollowController,
-    AssetController,
-    ProjectPlanningController,
-    ContactController,
-    PostController,
-    EventController,
-    BlogController,
-    BlogComponentController,
-    PermissionsController,
-    PersonaController,
-    StoreController,
-    AppConfigController,
-    ForumController,
-    OAuthController,
-    FinanceController,
-    VideosController,
-    WellnessController,
-    ClassifiedsController,
-    CommunitiesController,
-    NotificationController,
-    SearchController,
-    PrivacyController,
-    ActivityController,
-    PresenceController,
-    ProfileAnalyticsController,
-    PollController,
-    PostShareController,
-    SocialEventController,
-    PaymentsController,
-    DonationsController,
-    LeadsController,
-    HardwareController,
-    TrainerController,
-    RegistryController,
-  ],
+  controllers: controllerEntries.map((entry) => entry.value),
   providers: [
     {
       provide: APP_GUARD,
@@ -213,306 +401,8 @@ import { loadConfiguredRegistry } from '../controllers/registry/registry.config'
         RoleInitService,
       ],
     },
-    {
-      provide: ServiceTokens.AUTHENTICATION_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.authentication',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.PROFILE_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.profile');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.SOCIAL_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.social');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.ASSETS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.asset');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.PROJECT_PLANNING_SERVICE,
-      useFactory: (config: ConfigService) => {
-        const serviceConfig = config.get<TcpServiceConfig>(
-          'services.project_planning',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.chat_collector',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.TELOS_DOCS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.telos_docs_service',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    ChatGateway,
-    SocialGateway,
-    {
-      provide: ServiceTokens.AI_ORCHESTRATION_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.ai_orchestration',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.BLOG_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.blogging');
-        console.log('Blog Service Config:', serviceConfig);
-        const client = ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-        console.log('Blog Service Client created:', client);
-        return client;
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.PERMISSIONS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.permissions',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.STORE_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.store');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.APP_CONFIGURATOR_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.app_configurator',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.FORUM_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.forum');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.FINANCE_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.finance');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.WELLNESS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.wellness');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.CLASSIFIEDS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.classifieds',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.LEAD_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.lead_tracker',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.SYSTEM_CONFIGURATOR_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig = configService.get<TcpServiceConfig>(
-          'services.system_configurator',
-        );
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
-    {
-      provide: ServiceTokens.VIDEOS_SERVICE,
-      useFactory: (configService: ConfigService) => {
-        const serviceConfig =
-          configService.get<TcpServiceConfig>('services.videos');
-        return ClientProxyFactory.create({
-          transport: Transport.TCP,
-          options: {
-            host: serviceConfig.host,
-            port: serviceConfig.port,
-          },
-        });
-      },
-      inject: [ConfigService],
-    },
+    ...createGatewayServiceProviders(gatewayComposition),
+    ...realtimeProviderEntries.map((entry) => entry.value),
   ],
 })
 export class AppModule {}

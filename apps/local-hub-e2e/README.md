@@ -2,6 +2,11 @@
 
 This project contains Playwright end-to-end tests for the Local Hub application.
 
+## Repo Role
+
+- validates major Local Hub user journeys in a browser context
+- primarily designed for Docker-backed local dependencies rather than pure mocks
+
 ## Coverage
 
 Current suites include:
@@ -14,7 +19,7 @@ Current suites include:
 - business directory
 - classifieds
 
-## Running Tests
+## Running The Suite
 
 ### Docker-based flow
 
@@ -59,3 +64,9 @@ BASE_URL=http://localhost:8087 pnpm exec playwright test --config=apps/local-hub
 - The suite is designed around Docker-backed dependencies.
 - The compose file lives at the repo root, not inside `apps/local-hub-e2e/`.
 - For the platform-wide local stack, see `pnpm run docker:dev` and the Docker docs in `docs/devops/docker-compose.md`.
+
+## Nx Commands
+
+```bash
+pnpm exec nx e2e local-hub-e2e
+```

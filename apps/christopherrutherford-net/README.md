@@ -25,3 +25,11 @@ pnpm exec nx build christopherrutherford-net
 
 - public-facing site frontend
 - deployed as part of the current client image matrix and k8s overlay surface
+
+## Nx Commands
+
+```bash
+pnpm exec nx serve christopherrutherford-net
+pnpm exec nx build christopherrutherford-net
+pnpm exec nx test christopherrutherford-net
+```

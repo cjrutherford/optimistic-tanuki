@@ -2,6 +2,11 @@
 
 This directory contains end-to-end tests for the store-client application using Playwright.
 
+## Repo Role
+
+- validates store-client browser flows including catalog, products, and donations
+- mixes mocked and real-backend cases depending on the suite
+
 ## Test Files
 
 - `example.spec.ts` - Main store functionality tests (catalog, donations, cart)
@@ -31,7 +36,7 @@ Before running the tests:
    - Seed the database with dummy products and subscriptions
    - Make the store API available at `http://localhost:3000/api/store`
 
-## Running Tests
+## Running The Suite
 
 ### Run all e2e tests:
 
@@ -126,3 +131,9 @@ These tests are designed to run in CI environments. The `playwright.config.ts` i
 - Verify API endpoint: `curl http://localhost:3000/api/store/products`
 - Check gateway logs: `docker compose logs gateway`
 - Ensure store service is running: `docker compose ps store`
+
+## Nx Commands
+
+```bash
+pnpm exec nx e2e store-client-e2e
+```

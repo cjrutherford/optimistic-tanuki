@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build assets
 pnpm exec nx test assets
+pnpm exec nx serve assets
 ```

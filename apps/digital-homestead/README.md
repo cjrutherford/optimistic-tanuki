@@ -25,3 +25,11 @@ pnpm exec nx build digital-homestead
 
 - one of the deployed client applications in the repo
 - included in the Docker and k8s image promotion flow
+
+## Nx Commands
+
+```bash
+pnpm exec nx serve digital-homestead
+pnpm exec nx build digital-homestead
+pnpm exec nx test digital-homestead
+```

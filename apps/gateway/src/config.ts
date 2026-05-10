@@ -60,29 +60,57 @@ const configValue = (value: string | undefined): string | undefined => {
   return value;
 };
 
+const hasOAuthProviderConfigValues = (
+  config?: GatewayOAuthProviderConfig
+): boolean => {
+  if (!config) {
+    return false;
+  }
+
+  return Boolean(
+    configValue(config.clientId) ||
+      configValue(config.clientSecret) ||
+      configValue(config.redirectUri) ||
+      config.scopes?.length ||
+      configValue(config.authorizationEndpoint) ||
+      configValue(config.tokenEndpoint) ||
+      configValue(config.userInfoEndpoint) ||
+      config.enabled !== undefined
+  );
+};
+
 const mergeOAuthProviderConfig = (
   provider: OAuthProviderName,
   config?: GatewayOAuthProviderConfig,
   prefixOverrides?: Record<OAuthProviderName, string>
 ): GatewayOAuthProviderConfig | undefined => {
-  if (!config) {
+  const baseConfig = config ?? {};
+
+  const prefix = (prefixOverrides || oauthEnvPrefixes)[provider];
+  const clientId =
+    envValue(`${prefix}_CLIENT_ID`) ?? configValue(baseConfig.clientId);
+  const clientSecret =
+    envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(baseConfig.clientSecret);
+  const redirectUri =
+    envValue(`${prefix}_REDIRECT_URI`) ?? configValue(baseConfig.redirectUri);
+
+  if (
+    !hasOAuthProviderConfigValues(config) &&
+    !clientId &&
+    !clientSecret &&
+    !redirectUri
+  ) {
     return undefined;
   }
 
-  const prefix = (prefixOverrides || oauthEnvPrefixes)[provider];
-  const clientId = envValue(`${prefix}_CLIENT_ID`) ?? configValue(config.clientId);
-  const clientSecret =
-    envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(config.clientSecret);
-  const redirectUri =
-    envValue(`${prefix}_REDIRECT_URI`) ?? configValue(config.redirectUri);
-
   return {
-    ...config,
+    ...baseConfig,
     clientId,
     clientSecret,
     redirectUri,
     enabled:
-      config.enabled !== false && Boolean(clientId && clientSecret && redirectUri),
+      baseConfig.enabled !== false &&
+      Boolean(clientId && clientSecret && redirectUri),
   };
 };
 
@@ -110,20 +138,17 @@ const mergeOAuthAppOverride = (
 const mergeOAuthConfig = (
   oauth?: GatewayOAuthConfig
 ): GatewayOAuthConfig | undefined => {
-  if (!oauth) {
-    return undefined;
-  }
-
+  const source = oauth ?? {};
   const merged: GatewayOAuthConfig = {};
 
   for (const provider of oauthProviders) {
-    const providerConfig = mergeOAuthProviderConfig(provider, oauth[provider]);
+    const providerConfig = mergeOAuthProviderConfig(provider, source[provider]);
     if (providerConfig) {
       merged[provider] = providerConfig;
     }
   }
 
-  const appOverrides = (oauth.apps || [])
+  const appOverrides = (source.apps || [])
     .map((entry) => mergeOAuthAppOverride(entry))
     .filter((entry) => {
       if (entry.domain) {
@@ -144,7 +169,7 @@ const mergeOAuthConfig = (
     merged.apps = appOverrides;
   }
 
-  return merged;
+  return Object.keys(merged).length > 0 ? merged : undefined;
 };
 
 export type TcpServiceConfig = {

@@ -1,0 +1,389 @@
+package generate
+
+import "github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/domain"
+
+type providerWorkloadTuning struct {
+	Replicas          int
+	LimitCPU          string
+	LimitMemory       string
+	RequestCPU        string
+	RequestMemory     string
+	ReservationMemory string
+	RestartPolicy     string
+	LivenessInitial   int
+	ReadinessInitial  int
+}
+
+type providerProfile struct {
+	Name                      string
+	StorageClassName          string
+	StorageSize               string
+	GatewayServiceAnnotations map[string]string
+	Workloads                 map[string]providerWorkloadTuning
+}
+
+func workloadTuningForProfile(profile providerProfile, presetID string, category string) providerWorkloadTuning {
+	if tuning, ok := profile.Workloads[presetID]; ok {
+		return tuning
+	}
+	if category == "infra" {
+		return profile.Workloads["_infra"]
+	}
+	return profile.Workloads["_service"]
+}
+
+func profileFor(provider domain.Provider) providerProfile {
+	switch provider {
+	case domain.ProviderOCI:
+		return providerProfile{
+			Name:             "oci",
+			StorageClassName: "oci-bv",
+			StorageSize:      "120Gi",
+			GatewayServiceAnnotations: map[string]string{
+				"service.beta.kubernetes.io/oci-load-balancer-shape": "flexible",
+			},
+			Workloads: map[string]providerWorkloadTuning{
+				"gateway": {
+					Replicas:          3,
+					LimitCPU:          "1500m",
+					LimitMemory:       "1536M",
+					RequestCPU:        "1000m",
+					RequestMemory:     "1024M",
+					ReservationMemory: "1024M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   45,
+					ReadinessInitial:  20,
+				},
+				"authentication": {
+					Replicas:          2,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "500m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"social": {
+					Replicas:          3,
+					LimitCPU:          "1250m",
+					LimitMemory:       "1280M",
+					RequestCPU:        "750m",
+					RequestMemory:     "896M",
+					ReservationMemory: "896M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"store": {
+					Replicas:          2,
+					LimitCPU:          "1250m",
+					LimitMemory:       "1280M",
+					RequestCPU:        "750m",
+					RequestMemory:     "768M",
+					ReservationMemory: "768M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"permissions": {
+					Replicas:          2,
+					LimitCPU:          "600m",
+					LimitMemory:       "640M",
+					RequestCPU:        "350m",
+					RequestMemory:     "384M",
+					ReservationMemory: "384M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   25,
+					ReadinessInitial:  15,
+				},
+				"blogging": {
+					Replicas:          3,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "600m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"wellness": {
+					Replicas:          2,
+					LimitCPU:          "900m",
+					LimitMemory:       "896M",
+					RequestCPU:        "500m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"postgres": {
+					Replicas:          1,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "750m",
+					RequestMemory:     "768M",
+					ReservationMemory: "768M",
+					RestartPolicy:     "unless-stopped",
+				},
+				"_service": {
+					Replicas:          2,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "500m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"_infra": {
+					Replicas:          1,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "400m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+				},
+			},
+		}
+	case domain.ProviderAkamai:
+		return providerProfile{
+			Name:             "akamai",
+			StorageClassName: "linode-block-storage",
+			StorageSize:      "80Gi",
+			GatewayServiceAnnotations: map[string]string{
+				"service.beta.kubernetes.io/linode-loadbalancer-default-protocol": "http",
+			},
+			Workloads: map[string]providerWorkloadTuning{
+				"gateway": {
+					Replicas:          2,
+					LimitCPU:          "1250m",
+					LimitMemory:       "1280M",
+					RequestCPU:        "750m",
+					RequestMemory:     "896M",
+					ReservationMemory: "896M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   60,
+					ReadinessInitial:  30,
+				},
+				"authentication": {
+					Replicas:          2,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "350m",
+					RequestMemory:     "384M",
+					ReservationMemory: "384M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"social": {
+					Replicas:          3,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1152M",
+					RequestCPU:        "600m",
+					RequestMemory:     "768M",
+					ReservationMemory: "768M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   40,
+					ReadinessInitial:  25,
+				},
+				"store": {
+					Replicas:          2,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "600m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"permissions": {
+					Replicas:          2,
+					LimitCPU:          "500m",
+					LimitMemory:       "576M",
+					RequestCPU:        "300m",
+					RequestMemory:     "320M",
+					ReservationMemory: "320M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   25,
+					ReadinessInitial:  15,
+				},
+				"blogging": {
+					Replicas:          2,
+					LimitCPU:          "900m",
+					LimitMemory:       "960M",
+					RequestCPU:        "500m",
+					RequestMemory:     "576M",
+					ReservationMemory: "576M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"wellness": {
+					Replicas:          2,
+					LimitCPU:          "800m",
+					LimitMemory:       "832M",
+					RequestCPU:        "450m",
+					RequestMemory:     "576M",
+					ReservationMemory: "576M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"postgres": {
+					Replicas:          1,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "500m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+				},
+				"_service": {
+					Replicas:          2,
+					LimitCPU:          "700m",
+					LimitMemory:       "768M",
+					RequestCPU:        "350m",
+					RequestMemory:     "384M",
+					ReservationMemory: "384M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"_infra": {
+					Replicas:          1,
+					LimitCPU:          "800m",
+					LimitMemory:       "768M",
+					RequestCPU:        "400m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+				},
+			},
+		}
+	default:
+		return providerProfile{
+			Name:             "vultr",
+			StorageClassName: "vultr-block-storage",
+			StorageSize:      "100Gi",
+			GatewayServiceAnnotations: map[string]string{
+				"service.beta.kubernetes.io/vultr-loadbalancer-protocol": "http",
+			},
+			Workloads: map[string]providerWorkloadTuning{
+				"gateway": {
+					Replicas:          3,
+					LimitCPU:          "1500m",
+					LimitMemory:       "1536M",
+					RequestCPU:        "750m",
+					RequestMemory:     "1024M",
+					ReservationMemory: "1024M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   50,
+					ReadinessInitial:  25,
+				},
+				"authentication": {
+					Replicas:          2,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "400m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"social": {
+					Replicas:          3,
+					LimitCPU:          "1250m",
+					LimitMemory:       "1280M",
+					RequestCPU:        "650m",
+					RequestMemory:     "896M",
+					ReservationMemory: "896M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"store": {
+					Replicas:          2,
+					LimitCPU:          "1100m",
+					LimitMemory:       "1152M",
+					RequestCPU:        "650m",
+					RequestMemory:     "768M",
+					ReservationMemory: "768M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"permissions": {
+					Replicas:          2,
+					LimitCPU:          "600m",
+					LimitMemory:       "640M",
+					RequestCPU:        "300m",
+					RequestMemory:     "384M",
+					ReservationMemory: "384M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   25,
+					ReadinessInitial:  15,
+				},
+				"blogging": {
+					Replicas:          3,
+					LimitCPU:          "950m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "550m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   35,
+					ReadinessInitial:  20,
+				},
+				"wellness": {
+					Replicas:          2,
+					LimitCPU:          "850m",
+					LimitMemory:       "896M",
+					RequestCPU:        "450m",
+					RequestMemory:     "640M",
+					ReservationMemory: "640M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"postgres": {
+					Replicas:          1,
+					LimitCPU:          "1000m",
+					LimitMemory:       "1024M",
+					RequestCPU:        "500m",
+					RequestMemory:     "768M",
+					ReservationMemory: "768M",
+					RestartPolicy:     "unless-stopped",
+				},
+				"_service": {
+					Replicas:          2,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "400m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+					LivenessInitial:   30,
+					ReadinessInitial:  15,
+				},
+				"_infra": {
+					Replicas:          1,
+					LimitCPU:          "750m",
+					LimitMemory:       "768M",
+					RequestCPU:        "400m",
+					RequestMemory:     "512M",
+					ReservationMemory: "512M",
+					RestartPolicy:     "unless-stopped",
+				},
+			},
+		}
+	}
+}

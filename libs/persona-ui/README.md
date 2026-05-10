@@ -1,6 +1,18 @@
 # persona-ui
 
-A library for AI persona selection UI components in the Optimistic Tanuki platform.
+`persona-ui` contains reusable persona-selection UI for the workspace. Its source lives under `libs/persona-ui/src/lib`.
+
+## Repo Role
+
+- shared AI persona-selection UI and persona-fetching support for frontend applications
+- intended for apps that expose conversational or assistant-driven user flows
+
+## Nx Commands
+
+```bash
+pnpm exec nx build persona-ui
+pnpm exec nx test persona-ui
+```
 
 ## Components
 

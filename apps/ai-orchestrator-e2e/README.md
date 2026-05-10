@@ -2,7 +2,12 @@
 
 This project contains end-to-end tests for the AI orchestrator service and its gateway-facing behavior.
 
-## Local Run
+## Repo Role
+
+- validates ai-orchestrator behavior through the gateway-facing surface
+- expects real local services rather than a mocked-only test harness
+
+## Running The Suite
 
 The tests expect the required services to be available locally.
 
@@ -31,3 +36,9 @@ If your local stack uses different endpoints, update the helper script or run th
 - The e2e project does not auto-start the ai-orchestrator service.
 - The helper script uses Docker Compose to bring up supporting services and waits for the required host ports.
 - If the helper script does not match your local environment, prefer documenting and using the exact manual stack you need rather than relying on implicit auto-start behavior.
+
+## Nx Commands
+
+```bash
+pnpm exec nx e2e ai-orchestrator-e2e --skip-nx-cache --testTimeout=30000
+```

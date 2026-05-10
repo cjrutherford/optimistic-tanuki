@@ -19,6 +19,14 @@ const (
 	ComposeModeImage ComposeMode = "image"
 )
 
+type Provider string
+
+const (
+	ProviderAkamai Provider = "akamai"
+	ProviderVultr  Provider = "vultr"
+	ProviderOCI    Provider = "oci"
+)
+
 type InfraKind string
 
 const (
@@ -60,6 +68,8 @@ type EnvironmentDefinition struct {
 	Namespace    string
 	Targets      []Target
 	ComposeMode  ComposeMode
+	Provider     Provider
+	Capabilities []string
 	ImageOwner   string
 	DefaultTag   string
 	IncludeInfra []InfraKind
@@ -82,6 +92,9 @@ func (e *EnvironmentDefinition) Normalize() {
 	if e.DefaultTag == "" {
 		e.DefaultTag = "latest"
 	}
+	if e.Provider == "" {
+		e.Provider = ProviderVultr
+	}
 }
 
 func (e *EnvironmentDefinition) Validate() error {
@@ -93,6 +106,12 @@ func (e *EnvironmentDefinition) Validate() error {
 	}
 	if e.ComposeMode != "" && e.ComposeMode != ComposeModeBuild && e.ComposeMode != ComposeModeImage {
 		return fmt.Errorf("invalid compose mode: must be 'build' or 'image'")
+	}
+	if e.Provider != "" &&
+		e.Provider != ProviderAkamai &&
+		e.Provider != ProviderVultr &&
+		e.Provider != ProviderOCI {
+		return fmt.Errorf("invalid provider: must be 'akamai', 'vultr', or 'oci'")
 	}
 	if e.ApplyCompose && !containsTarget(e.Targets, TargetCompose) {
 		return fmt.Errorf("cannot apply compose without selecting compose target")

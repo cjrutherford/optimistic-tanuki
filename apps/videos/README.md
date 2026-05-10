@@ -1,6 +1,32 @@
-# Video Streaming Platform
+# Videos
 
-A YouTube-like video streaming platform built with NestJS, Angular, and TypeORM, integrated into the Optimistic Tanuki ecosystem.
+The `videos` service owns video-platform backend workflows for the workspace. Its source lives under `apps/videos/src` and it handles channels, videos, subscriptions, and view analytics.
+
+## Local Development
+
+Run it through the main repo stack:
+
+```bash
+pnpm run docker:dev
+```
+
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/videos`
+
+## Repo Role
+
+- backend service for the video platform
+- depends on asset, profile, authentication, and gateway integration points
+- included in the workspace deployment surface and video e2e coverage
+
+## Nx Commands
+
+```bash
+pnpm exec nx build videos
+pnpm exec nx test videos
+pnpm exec nx serve videos
+```
 
 ## Features
 
@@ -142,11 +168,8 @@ PostgreSQL (videos database)
 
 #### Development
 ```bash
-# Start the service
-nx serve videos
-
-# Run with watch mode
-nx serve videos --watch
+pnpm exec nx serve videos
+pnpm exec nx serve videos --watch
 ```
 
 #### Docker
@@ -163,7 +186,7 @@ docker-compose up -d videos
 #### Development
 ```bash
 # Start the Angular app
-nx serve video-client
+pnpm exec nx serve video-client
 
 # Access at http://localhost:4200
 ```
@@ -191,7 +214,7 @@ docker-compose up -d video-client
 
 ```bash
 # Run the seed script
-nx run videos:seed
+pnpm exec nx run videos:seed
 
 # Or with Docker
 docker-compose exec videos node seed-videos.js
@@ -293,14 +316,14 @@ services:
 
 ```bash
 # Run unit tests
-nx test videos
-nx test video-ui
+pnpm exec nx test videos
+pnpm exec nx test video-ui
 
 # Run e2e tests
-nx e2e videos-e2e
+pnpm exec nx e2e videos-e2e
 
 # Run specific test suite
-nx test videos --test-file=channel.service.spec.ts
+pnpm exec nx test videos --test-file=channel.service.spec.ts
 ```
 
 ## API Examples

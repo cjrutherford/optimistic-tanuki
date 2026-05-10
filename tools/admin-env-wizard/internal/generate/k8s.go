@@ -82,6 +82,9 @@ type K8sDeployment struct {
 					PersistentVolumeClaim *struct {
 						ClaimName string `yaml:"claimName"`
 					} `yaml:"persistentVolumeClaim"`
+					ConfigMap *struct {
+						Name string `yaml:"name"`
+					} `yaml:"configMap"`
 				} `yaml:"volumes"`
 				RestartPolicy string `yaml:"restartPolicy"`
 			} `yaml:"spec"`
@@ -108,10 +111,11 @@ type K8sService struct {
 }
 
 type Kustomization struct {
-	APIVersion string   `yaml:"apiVersion"`
-	Kind       string   `yaml:"kind"`
-	Namespace  string   `yaml:"namespace"`
-	Resources  []string `yaml:"resources"`
+	APIVersion            string   `yaml:"apiVersion"`
+	Kind                  string   `yaml:"kind"`
+	Namespace             string   `yaml:"namespace"`
+	Resources             []string `yaml:"resources,omitempty"`
+	PatchesStrategicMerge []string `yaml:"patchesStrategicMerge,omitempty"`
 }
 
 func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[string][]byte, error) {
@@ -138,7 +142,7 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 		}
 	}
 
-	resources := []string{}
+	baseResources := []string{"namespace.yaml"}
 
 	for kind := range enabledInfra {
 		infra, ok := cat.Infra(kind)
@@ -147,8 +151,8 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 		}
 		infraFiles := generateInfraK8s(infra, env)
 		for name, data := range infraFiles {
-			files[name] = data
-			resources = append(resources, name)
+			files[filepathJoin("base", name)] = data
+			baseResources = append(baseResources, name)
 		}
 	}
 
@@ -163,24 +167,24 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 
 		serviceFiles := generateServiceK8s(preset, env)
 		for name, data := range serviceFiles {
-			files[name] = data
-			resources = append(resources, name)
+			files[filepathJoin("base", name)] = data
+			baseResources = append(baseResources, name)
 		}
 	}
 
-	sort.Strings(resources)
+	sort.Strings(baseResources)
 
-	kustomization := Kustomization{
+	baseKustomization := Kustomization{
 		APIVersion: "kustomize.config.k8s.io/v1beta1",
 		Kind:       "Kustomization",
 		Namespace:  env.Namespace,
-		Resources:  resources,
+		Resources:  baseResources,
 	}
-	kustomizationData, err := yaml.Marshal(kustomization)
+	baseKustomizationData, err := yaml.Marshal(baseKustomization)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal kustomization: %w", err)
+		return nil, fmt.Errorf("failed to marshal base kustomization: %w", err)
 	}
-	files["kustomization.yaml"] = kustomizationData
+	files["base/kustomization.yaml"] = baseKustomizationData
 
 	ns := K8sNamespace{
 		APIVersion: "v1",
@@ -191,9 +195,194 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal namespace: %w", err)
 	}
-	files["namespace.yaml"] = namespaceData
+	files["base/namespace.yaml"] = namespaceData
+
+	gatewayComposition, err := GenerateGatewayComposition(env, cat)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate gateway composition: %w", err)
+	}
+	files["base/gateway-composition-configmap.yaml"] = []byte(fmt.Sprintf(`apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-composition
+  namespace: %s
+data:
+  composition.yaml: |
+%s`, env.Namespace, indentYAML(string(gatewayComposition), 4)))
+	baseResources = append(baseResources, "gateway-composition-configmap.yaml")
+	sort.Strings(baseResources)
+	baseKustomization.Resources = baseResources
+	baseKustomizationData, err = yaml.Marshal(baseKustomization)
+	if err != nil {
+		return nil, fmt.Errorf("failed to remarshal base kustomization: %w", err)
+	}
+	files["base/kustomization.yaml"] = baseKustomizationData
+
+	overlayData, overlayErr := yaml.Marshal(Kustomization{
+		APIVersion: "kustomize.config.k8s.io/v1beta1",
+		Kind:       "Kustomization",
+		Namespace:  env.Namespace,
+		Resources:  []string{"../../base"},
+		PatchesStrategicMerge: []string{"provider-patch.yaml"},
+	})
+	if overlayErr != nil {
+		return nil, fmt.Errorf("failed to marshal provider overlay: %w", overlayErr)
+	}
+	files[fmt.Sprintf("overlays/%s/kustomization.yaml", env.Provider)] = overlayData
+	files[fmt.Sprintf("overlays/%s/provider-patch.yaml", env.Provider)] = []byte(providerPatch(env.Provider))
+
+	rootKustomizationData, err := yaml.Marshal(Kustomization{
+		APIVersion: "kustomize.config.k8s.io/v1beta1",
+		Kind:       "Kustomization",
+		Namespace:  env.Namespace,
+		Resources: []string{
+			fmt.Sprintf("overlays/%s", env.Provider),
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal root kustomization: %w", err)
+	}
+	files["kustomization.yaml"] = rootKustomizationData
 
 	return files, nil
+}
+
+func filepathJoin(parts ...string) string {
+	result := ""
+	for i, part := range parts {
+		if i == 0 {
+			result = part
+			continue
+		}
+		result = result + "/" + part
+	}
+	return result
+}
+
+func indentYAML(value string, spaces int) string {
+	prefix := ""
+	for i := 0; i < spaces; i++ {
+		prefix += " "
+	}
+
+	lines := ""
+	for _, line := range splitLines(value) {
+		lines += prefix + line + "\n"
+	}
+
+	return lines
+}
+
+func splitLines(value string) []string {
+	lines := []string{}
+	start := 0
+	for i := 0; i < len(value); i++ {
+		if value[i] == '\n' {
+			lines = append(lines, value[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(value) {
+		lines = append(lines, value[start:])
+	}
+	if len(lines) == 0 {
+		return []string{""}
+	}
+	return lines
+}
+
+func providerPatch(provider domain.Provider) string {
+	profile := profileFor(provider)
+	gatewayAnnotationKey := ""
+	gatewayAnnotationValue := ""
+	for key, value := range profile.GatewayServiceAnnotations {
+		gatewayAnnotationKey = key
+		gatewayAnnotationValue = value
+	}
+
+	gateway := profile.Workloads["gateway"]
+	authentication := profile.Workloads["authentication"]
+
+	return fmt.Sprintf(`apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  storageClassName: %s
+  resources:
+    requests:
+      storage: %s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  annotations:
+    %s: %s
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+spec:
+  replicas: %d
+  template:
+    spec:
+      containers:
+        - name: gateway
+          resources:
+            requests:
+              cpu: %s
+              memory: %s
+            limits:
+              cpu: %s
+              memory: %s
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: %d
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: %d
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: authentication
+spec:
+  replicas: %d
+  template:
+    spec:
+      containers:
+        - name: authentication
+          resources:
+            requests:
+              cpu: %s
+              memory: %s
+            limits:
+              cpu: %s
+              memory: %s
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: %d
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: %d
+`, profile.StorageClassName, profile.StorageSize, gatewayAnnotationKey, gatewayAnnotationValue, gateway.Replicas, gateway.RequestCPU, composeMemoryToK8s(gateway.RequestMemory), gateway.LimitCPU, composeMemoryToK8s(gateway.LimitMemory), gateway.LivenessInitial, gateway.ReadinessInitial, authentication.Replicas, authentication.RequestCPU, composeMemoryToK8s(authentication.RequestMemory), authentication.LimitCPU, composeMemoryToK8s(authentication.LimitMemory), authentication.LivenessInitial, authentication.ReadinessInitial)
+}
+
+func composeMemoryToK8s(memory string) string {
+	if len(memory) >= 2 && memory[len(memory)-1] == 'M' {
+		return memory[:len(memory)-1] + "Mi"
+	}
+	return memory
 }
 
 func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) map[string][]byte {
@@ -201,6 +390,7 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 
 	switch preset.ID {
 	case "postgres":
+		profile := profileFor(env.Provider)
 		pvc := K8sPVC{
 			APIVersion: "v1",
 			Kind:       "PersistentVolumeClaim",
@@ -208,8 +398,8 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 		pvc.Metadata.Name = "postgres-pvc"
 		pvc.Metadata.Namespace = env.Namespace
 		pvc.Spec.AccessModes = []string{"ReadWriteOnce"}
-		pvc.Spec.Resources.Requests.Storage = "10Gi"
-		pvc.Spec.StorageClassName = "microk8s-hostpath"
+		pvc.Spec.Resources.Requests.Storage = profile.StorageSize
+		pvc.Spec.StorageClassName = profile.StorageClassName
 		pvcData, _ := yaml.Marshal(pvc)
 		files["postgres-pvc.yaml"] = pvcData
 
@@ -227,6 +417,9 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 			PersistentVolumeClaim *struct {
 				ClaimName string `yaml:"claimName"`
 			} `yaml:"persistentVolumeClaim"`
+			ConfigMap *struct {
+				Name string `yaml:"name"`
+			} `yaml:"configMap"`
 		}{
 			{
 				Name: "postgres-data",
@@ -263,12 +456,17 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 
 func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) map[string][]byte {
 	files := make(map[string][]byte)
+	profile := profileFor(env.Provider)
+	tuning := workloadTuningForProfile(profile, preset.ID, string(preset.Category))
 
 	imageName := fmt.Sprintf("%s:%s", preset.Image.Name, env.DefaultTag)
 
 	replicas := preset.K8s.Replicas
 	if replicas == 0 {
 		replicas = 1
+	}
+	if tuning.Replicas > 0 {
+		replicas = tuning.Replicas
 	}
 
 	deployment := K8sDeployment{
@@ -321,6 +519,58 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 			Name  string `yaml:"name"`
 			Value string `yaml:"value"`
 		}{Name: k, Value: v})
+	}
+
+	if tuning.RequestMemory != "" {
+		container.Resources.Requests.Memory = composeMemoryToK8s(tuning.RequestMemory)
+	}
+	if tuning.RequestCPU != "" {
+		container.Resources.Requests.CPU = tuning.RequestCPU
+	}
+	if tuning.LimitMemory != "" {
+		container.Resources.Limits.Memory = composeMemoryToK8s(tuning.LimitMemory)
+	}
+	if tuning.LimitCPU != "" {
+		container.Resources.Limits.CPU = tuning.LimitCPU
+	}
+
+	if preset.ID == "gateway" {
+		container.Env = append(container.Env, struct {
+			Name  string `yaml:"name"`
+			Value string `yaml:"value"`
+		}{
+			Name:  "GATEWAY_COMPOSITION_PATH",
+			Value: "/etc/optimistic-tanuki/gateway/composition.yaml",
+		})
+		deployment.Spec.Template.Spec.Volumes = append(
+			deployment.Spec.Template.Spec.Volumes,
+			struct {
+				Name                  string `yaml:"name"`
+				PersistentVolumeClaim *struct {
+					ClaimName string `yaml:"claimName"`
+				} `yaml:"persistentVolumeClaim"`
+				ConfigMap *struct {
+					Name string `yaml:"name"`
+				} `yaml:"configMap"`
+			}{
+				Name: "gateway-composition",
+				ConfigMap: &struct {
+					Name string `yaml:"name"`
+				}{
+					Name: "gateway-composition",
+				},
+			},
+		)
+		container.VolumeMounts = append(
+			container.VolumeMounts,
+			struct {
+				Name      string `yaml:"name"`
+				MountPath string `yaml:"mountPath"`
+			}{
+				Name:      "gateway-composition",
+				MountPath: "/etc/optimistic-tanuki/gateway",
+			},
+		)
 	}
 
 	deployment.Spec.Template.Spec.Containers = []struct {

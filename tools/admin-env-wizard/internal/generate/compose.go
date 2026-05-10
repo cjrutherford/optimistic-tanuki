@@ -40,6 +40,15 @@ type ComposeFile struct {
 }
 
 func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([]byte, error) {
+	files, err := GenerateComposeFiles(env, cat)
+	if err != nil {
+		return nil, err
+	}
+	return files["docker-compose.yaml"], nil
+}
+
+func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[string][]byte, error) {
+	profile := profileFor(env.Provider)
 	cf := ComposeFile{
 		Services: make(map[string]ComposeService),
 		Volumes:  make(map[string]interface{}),
@@ -74,6 +83,10 @@ func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([
 			Environment:   make(map[string]string),
 			Restart:       "always",
 		}
+		tuning := workloadTuningForProfile(profile, preset.ID, string(preset.Category))
+		if tuning.RestartPolicy != "" {
+			service.Restart = tuning.RestartPolicy
+		}
 
 		for k, v := range preset.Compose.EnvDefaults {
 			service.Environment[k] = v
@@ -81,7 +94,7 @@ func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([
 
 		if env.ComposeMode == domain.ComposeModeBuild {
 			service.Build = &ComposeBuild{
-				Context:    preset.Compose.BuildContext,
+				Context:    "../../..",
 				Dockerfile: preset.Compose.Dockerfile,
 			}
 		} else {
@@ -100,6 +113,11 @@ func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([
 
 		if len(preset.Compose.Volumes) > 0 {
 			service.Volumes = preset.Compose.Volumes
+		}
+
+		if preset.ID == "gateway" {
+			service.Environment["GATEWAY_COMPOSITION_PATH"] = "/etc/optimistic-tanuki/gateway/composition.yaml"
+			service.Volumes = append(service.Volumes, "../gateway:/etc/optimistic-tanuki/gateway:ro")
 		}
 
 		serviceName := preset.Compose.ServiceName
@@ -140,15 +158,130 @@ func GenerateCompose(env *domain.EnvironmentDefinition, cat *catalog.Catalog) ([
 		return nil, fmt.Errorf("failed to marshal compose: %w", err)
 	}
 
-	return yamlData, nil
+	baseFragment, err := yaml.Marshal(ComposeFile{
+		Services: cf.Services,
+		Volumes:  cf.Volumes,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal compose base fragment: %w", err)
+	}
+
+	providerFragment, err := yaml.Marshal(map[string]any{
+		"provider": env.Provider,
+		"x-optimistic-tanuki-provider-profile": map[string]any{
+			"name":          profile.Name,
+			"storageClass":  profile.StorageClassName,
+		},
+		"services": composeProviderServicesFragment(env, profile, cat),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal compose provider fragment: %w", err)
+	}
+
+	capabilityFragment, err := yaml.Marshal(map[string]any{
+		"capabilities": env.Capabilities,
+		"services":     composeCapabilityServices(env),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal compose capabilities fragment: %w", err)
+	}
+
+	return map[string][]byte{
+		"docker-compose.yaml":                       yamlData,
+		"fragments/docker-compose.base.yaml":       baseFragment,
+		"fragments/docker-compose.provider.yaml":   providerFragment,
+		"fragments/docker-compose.capabilities.yaml": capabilityFragment,
+	}, nil
+}
+
+func composeProviderServiceFragment(profile providerProfile, service string, category string) map[string]any {
+	tuning := workloadTuningForProfile(profile, service, category)
+	return map[string]any{
+		"restart": tuning.RestartPolicy,
+		"labels": map[string]string{
+			"optimistic-tanuki.profile": profile.Name,
+		},
+		"deploy": map[string]any{
+			"replicas": tuning.Replicas,
+			"resources": map[string]any{
+				"reservations": map[string]string{
+					"memory": tuning.ReservationMemory,
+				},
+				"limits": map[string]string{
+					"cpus":   milliCPUToCompose(tuning.LimitCPU),
+					"memory": tuning.LimitMemory,
+				},
+			},
+		},
+	}
+}
+
+func composeProviderServicesFragment(env *domain.EnvironmentDefinition, profile providerProfile, cat *catalog.Catalog) map[string]any {
+	services := map[string]any{}
+
+	for _, selection := range env.Services {
+		if !selection.Enabled {
+			continue
+		}
+		preset, ok := cat.Get(selection.ServiceID)
+		if !ok {
+			continue
+		}
+		serviceName := preset.Compose.ServiceName
+		if serviceName == "" {
+			serviceName = preset.ID
+		}
+		services[serviceName] = composeProviderServiceFragment(profile, preset.ID, string(preset.Category))
+	}
+
+	for _, infraKind := range env.IncludeInfra {
+		preset, ok := cat.Infra(infraKind)
+		if !ok {
+			continue
+		}
+		services[preset.ID] = composeProviderServiceFragment(profile, preset.ID, string(preset.Category))
+	}
+
+	return services
+}
+
+func milliCPUToCompose(value string) string {
+	if len(value) > 1 && value[len(value)-1] == 'm' {
+		return fmt.Sprintf("%.2f", float64(parseMilliCPU(value))/1000)
+	}
+	return value
+}
+
+func parseMilliCPU(value string) int {
+	n := 0
+	for i := 0; i < len(value)-1; i++ {
+		n = n*10 + int(value[i]-'0')
+	}
+	return n
+}
+
+func composeCapabilityServices(env *domain.EnvironmentDefinition) []string {
+	services := make([]string, 0, len(env.Services))
+	for _, service := range env.Services {
+		if service.Enabled {
+			services = append(services, service.ServiceID)
+		}
+	}
+	sort.Strings(services)
+	return services
 }
 
 func buildInfraService(preset catalog.Preset, env *domain.EnvironmentDefinition) ComposeService {
+	profile := profileFor(env.Provider)
+	tuning := workloadTuningForProfile(profile, preset.ID, string(preset.Category))
 	service := ComposeService{
 		Image:         fmt.Sprintf("%s:%s", preset.Image.Name, preset.Image.Tag),
 		ContainerName: preset.ID,
 		Environment:   make(map[string]string),
 		Restart:       "always",
+	}
+	if tuning.RestartPolicy != "" {
+		service.Restart = tuning.RestartPolicy
 	}
 
 	for k, v := range preset.Compose.EnvDefaults {

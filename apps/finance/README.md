@@ -1,6 +1,32 @@
 # Finance Microservice
 
-Financial management microservice for the Optimistic Tanuki platform.
+The finance service owns financial-account, transaction, budget, and inventory workflows for the platform. Its source lives under `apps/finance/src`.
+
+## Local Development
+
+Run it through the main repo stack:
+
+```bash
+pnpm run docker:dev
+```
+
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/finance`
+
+## Repo Role
+
+- backend service for finance-oriented product flows
+- used by finance-facing UIs and e2e coverage in the workspace
+- part of the canonical deployment inventory used by CI and deployment validation
+
+## Nx Commands
+
+```bash
+pnpm exec nx build finance
+pnpm exec nx test finance
+pnpm exec nx serve finance
+```
 
 ## Features
 
@@ -98,17 +124,8 @@ docker compose exec finance node /usr/src/app/seed-finance.js
 
 ## Development
 
-### Build
-```bash
-nx build finance
-```
-
-### Run locally
-```bash
-nx serve finance
-```
-
 ### Run in Docker
+
 ```bash
 docker compose up finance
 ```

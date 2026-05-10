@@ -2,6 +2,36 @@
 
 End-to-end tests for the video streaming platform using Playwright.
 
+## Repo Role
+
+- validates end-to-end video platform behavior across frontend and backend services
+- expects Docker-backed real services for its main workflow
+
+## Running The Suite
+
+### Quick Start
+
+```bash
+# Run all e2e tests with Docker
+pnpm exec nx run video-client-e2e:e2e-docker
+```
+
+### Manual Steps
+
+```bash
+# Start backend services
+pnpm exec nx run video-client-e2e:up
+
+# Wait for services (45 seconds)
+sleep 45
+
+# Run tests
+pnpm exec nx run video-client-e2e:e2e
+
+# Stop services
+pnpm exec nx run video-client-e2e:down
+```
+
 ## Overview
 
 This test suite validates the complete video platform workflow including:
@@ -19,37 +49,6 @@ This test suite validates the complete video platform workflow including:
 - **Backend**: Real services via Docker Compose
 - **Frontend**: video-client Angular app
 - **Pattern**: Integration tests with real API calls
-
-## Running Tests
-
-### Quick Start
-
-```bash
-# Run all e2e tests with Docker
-nx run video-client-e2e:e2e-docker
-
-# This will:
-# 1. Start all backend services
-# 2. Wait for services to stabilize
-# 3. Run the e2e tests
-# 4. Tear down services
-```
-
-### Manual Steps
-
-```bash
-# Start backend services
-nx run video-client-e2e:up
-
-# Wait for services (45 seconds)
-sleep 45
-
-# Run tests
-nx run video-client-e2e:e2e
-
-# Stop services
-nx run video-client-e2e:down
-```
 
 ### Individual Tests
 
@@ -152,7 +151,7 @@ All services are orchestrated via Docker Compose.
 # Increase wait time in global-setup.ts
 # Or manually wait longer before running tests
 sleep 60
-nx run video-client-e2e:e2e
+pnpm exec nx run video-client-e2e:e2e
 ```
 
 ### Backend Services Not Starting
@@ -167,9 +166,9 @@ docker compose -f e2e/docker-compose.video-client-e2e.yaml up -d --build gateway
 ### Database Issues
 ```bash
 # Clean up and restart
-nx run video-client-e2e:down
+pnpm exec nx run video-client-e2e:down
 docker volume prune
-nx run video-client-e2e:up
+pnpm exec nx run video-client-e2e:up
 ```
 
 ### Port Conflicts
@@ -197,10 +196,17 @@ dist/.playwright/apps/video-client-e2e/playwright-report
 For continuous integration:
 ```bash
 # Set BASE_URL for deployed app
-BASE_URL=https://video.example.com nx run video-client-e2e:e2e
+BASE_URL=https://video.example.com pnpm exec nx run video-client-e2e:e2e
 
 # Or use CI configuration
-nx run video-client-e2e:e2e:ci
+pnpm exec nx run video-client-e2e:e2e:ci
+```
+
+## Nx Commands
+
+```bash
+pnpm exec nx e2e video-client-e2e
+pnpm exec nx run video-client-e2e:e2e-docker
 ```
 
 ## Development

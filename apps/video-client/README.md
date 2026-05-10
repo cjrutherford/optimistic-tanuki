@@ -1,6 +1,38 @@
 # Video Client
 
-A complete Angular application for the video streaming platform, providing a YouTube-like experience with authentication, profile management, and social features.
+`video-client` is the frontend for the workspace video platform. Its source lives under `apps/video-client/src/app` and it consumes the gateway plus video-oriented backend services.
+
+## Local Development
+
+Run it through the main repo stack:
+
+```bash
+pnpm run docker:dev
+```
+
+Primary local URL:
+
+- `http://localhost:8086`
+
+For direct Nx work:
+
+```bash
+pnpm exec nx serve video-client
+```
+
+## Repo Role
+
+- browser frontend for the video product surface
+- depends on the gateway plus video, asset, profile, and authentication flows
+- included in the workspace deployment and e2e surface
+
+## Nx Commands
+
+```bash
+pnpm exec nx serve video-client
+pnpm exec nx build video-client
+pnpm exec nx test video-client
+```
 
 ## Features
 
@@ -224,17 +256,10 @@ The video-client uses the `@optimistic-tanuki/theme-lib` with:
 ### Running Locally
 
 ```bash
-# Start the app
-nx serve video-client
-
-# Build for production
-nx build video-client --configuration=production
-
-# Run tests
-nx test video-client
-
-# Lint
-nx lint video-client
+pnpm exec nx serve video-client
+pnpm exec nx build video-client --configuration=production
+pnpm exec nx test video-client
+pnpm exec nx lint video-client
 ```
 
 The app will be available at `http://localhost:4200`
@@ -349,13 +374,13 @@ The app integrates with:
 
 ```bash
 # Unit tests
-nx test video-client
+pnpm exec nx test video-client
 
 # E2E tests
-nx e2e video-client-e2e
+pnpm exec nx e2e video-client-e2e
 
 # Coverage
-nx test video-client --coverage
+pnpm exec nx test video-client --coverage
 ```
 
 ## Contributing

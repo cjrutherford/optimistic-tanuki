@@ -1,6 +1,18 @@
 # Theme Lib
 
-This library contains services and utilities for managing themes. It provides a way to switch between different themes and to customize the appearance of the application.
+`theme-lib` contains runtime theme services and utilities used by frontend applications. Its source lives under `libs/theme-lib/src/lib`.
+
+## Repo Role
+
+- runtime theme selection and management
+- shared theming helpers reused across Angular applications
+
+## Nx Commands
+
+```bash
+pnpm exec nx build theme-lib
+pnpm exec nx test theme-lib
+```
 
 ## Usage
 
@@ -16,7 +28,3 @@ export class MyComponent {
   constructor(private readonly themeService: ThemeService) {}
 }
 ```
-
-## Running unit tests
-
-Run `nx test theme-lib` to execute the unit tests.

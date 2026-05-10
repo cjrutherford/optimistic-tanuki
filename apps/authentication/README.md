@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build authentication
 pnpm exec nx test authentication
+pnpm exec nx serve authentication
 ```

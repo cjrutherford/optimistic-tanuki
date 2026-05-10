@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build telos-docs-service
 pnpm exec nx test telos-docs-service
+pnpm exec nx serve telos-docs-service
 ```

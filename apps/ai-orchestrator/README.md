@@ -1,12 +1,33 @@
 # AI Orchestrator
 
-This service is responsible for orchestrating AI-related tasks and services. It acts as a central hub for managing and coordinating various AI models and services, providing a unified interface for interacting with them.
+The AI orchestrator manages AI-oriented backend workflows for the platform. Its source lives under `apps/ai-orchestrator/src` and it coordinates model selection, tool-calling flows, and MCP-backed orchestration behavior.
 
-## 🚀 Getting Started
+## Local Development
 
-This service is started as part of the main application stack. See the main [README.md](../../README.md) for instructions on how to start the application.
+Run it through the main repo stack:
 
-## 🤖 Model Configuration
+```bash
+pnpm run docker:dev
+```
+
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/ai-orchestrator`
+
+## Repo Role
+
+- AI orchestration entrypoint for gateway-facing workflows
+- central point for model selection, tool-calling, and MCP-assisted responses
+- part of the canonical deployment inventory used by CI and k8s validation
+
+## Nx Commands
+
+```bash
+pnpm exec nx build ai-orchestrator
+pnpm exec nx test ai-orchestrator
+```
+
+## Model Configuration
 
 The AI Orchestrator uses multiple specialized models for different tasks:
 - **Workflow Control Model**: Quickly detects if a prompt requires tool calling
@@ -15,11 +36,11 @@ The AI Orchestrator uses multiple specialized models for different tasks:
 
 For detailed information on model configuration, selection strategy, and best practices, see [MODEL_CONFIGURATION.md](./MODEL_CONFIGURATION.md).
 
-## 📝 API Reference
+## API Reference
 
 The AI Orchestrator service exposes a RESTful API for interacting with its features. The API is documented using Swagger, and the documentation can be accessed at `http://localhost:3000/api/ai-orchestrator`.
 
-## 🛠️ Features
+## Features
 
 - **Intelligent Workflow Detection**: Automatically routes prompts to appropriate models
 - **Multi-Model Support**: Uses specialized models for different tasks
@@ -28,7 +49,7 @@ The AI Orchestrator service exposes a RESTful API for interacting with its featu
 - **Automatic Model Management**: Pulls and initializes models on startup
 - **MCP Tool Integration**: Seamless integration with Model Context Protocol tools
 
-## 📚 Documentation
+## Related Docs
 
 - [Model Configuration Guide](./MODEL_CONFIGURATION.md) - Comprehensive guide on model setup and configuration
 - [LangChain Integration](./LANGCHAIN_INTEGRATION.md) - LangChain integration details
