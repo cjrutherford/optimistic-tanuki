@@ -4,22 +4,16 @@
   "projectType": "application",
   "prefix": "dh",
   "sourceRoot": "apps/digital-homestead/src",
-  "tags": [
-    "type:app"
-  ],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/digital-homestead",
         "index": "apps/digital-homestead/src/index.html",
         "browser": "apps/digital-homestead/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/digital-homestead/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -28,9 +22,7 @@
             "input": "apps/digital-homestead/public"
           }
         ],
-        "styles": [
-          "apps/digital-homestead/src/styles.scss"
-        ],
+        "styles": ["apps/digital-homestead/src/styles.scss"],
         "scripts": [],
         "server": "apps/digital-homestead/src/main.server.ts",
         "ssr": {
@@ -89,9 +81,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/digital-homestead/jest.config.ts"
       }
@@ -122,9 +112,7 @@
     },
     "build-storybook": {
       "executor": "@storybook/angular:build-storybook",
-      "outputs": [
-        "{options.outputDir}"
-      ],
+      "outputs": ["{options.outputDir}"],
       "options": {
         "outputDir": "dist/storybook/digital-homestead",
         "configDir": "apps/digital-homestead/.storybook",
@@ -145,9 +133,7 @@
     },
     "static-storybook": {
       "executor": "@nx/web:file-server",
-      "dependsOn": [
-        "build-storybook"
-      ],
+      "dependsOn": ["build-storybook"],
       "options": {
         "buildTarget": "digital-homestead:build-storybook",
         "staticFilePath": "dist/storybook/digital-homestead",

@@ -1,27 +1,18 @@
 {
   "name": "forum-e2e",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "implicitDependencies": [
-    "forum"
-  ],
+  "implicitDependencies": ["forum"],
   "projectType": "application",
   "targets": {
     "e2e": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{e2eProjectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
       "options": {
         "jestConfig": "apps/forum-e2e/jest.config.ts",
         "passWithNoTests": true
       },
-      "dependsOn": [
-        "forum:build",
-        "forum:serve"
-      ]
+      "dependsOn": ["forum:build", "forum:serve"]
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }

@@ -4,22 +4,16 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/system-configurator/src",
-  "tags": [
-    "type:app"
-  ],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/system-configurator",
         "index": "apps/system-configurator/src/index.html",
         "browser": "apps/system-configurator/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/system-configurator/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -28,9 +22,7 @@
             "input": "apps/system-configurator/public"
           }
         ],
-        "styles": [
-          "apps/system-configurator/src/styles.scss"
-        ],
+        "styles": ["apps/system-configurator/src/styles.scss"],
         "scripts": [],
         "server": "apps/system-configurator/src/main.server.ts",
         "ssr": {
@@ -89,9 +81,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/system-configurator/jest.config.ts",
         "tsConfig": "apps/system-configurator/tsconfig.spec.json"

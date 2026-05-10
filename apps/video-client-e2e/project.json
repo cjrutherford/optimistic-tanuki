@@ -3,9 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/video-client-e2e/src",
-  "implicitDependencies": [
-    "video-client"
-  ],
+  "implicitDependencies": ["video-client"],
   "targets": {
     "up": {
       "executor": "nx:run-commands",
@@ -44,7 +42,5 @@
       }
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }

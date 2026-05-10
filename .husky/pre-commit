@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+
+staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+[ -z "$staged_files" ] && exit 0
+
+pnpm exec nx format:write
+
+printf '%s\n' "$staged_files" | while IFS= read -r file; do
+  [ -e "$file" ] && git add -- "$file"
+done

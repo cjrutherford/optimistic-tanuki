@@ -4,21 +4,15 @@
   "projectType": "application",
   "prefix": "store",
   "sourceRoot": "apps/store-client/src",
-  "tags": [
-    "type:app"
-  ],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/store-client",
         "browser": "apps/store-client/src/main.ts",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/store-client/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -27,9 +21,7 @@
             "input": "apps/store-client/public"
           }
         ],
-        "styles": [
-          "apps/store-client/src/styles.scss"
-        ],
+        "styles": ["apps/store-client/src/styles.scss"],
         "server": "apps/store-client/src/main.server.ts",
         "ssr": {
           "entry": "apps/store-client/src/server.ts"
@@ -87,9 +79,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/store-client/jest.config.ts",
         "tsConfig": "apps/store-client/tsconfig.spec.json"

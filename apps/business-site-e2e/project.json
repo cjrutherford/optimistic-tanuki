@@ -3,15 +3,11 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/business-site-e2e/src",
-  "implicitDependencies": [
-    "business-site"
-  ],
+  "implicitDependencies": ["business-site"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/business-site-e2e/jest.config.ts"
       }
@@ -23,7 +19,5 @@
       }
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }

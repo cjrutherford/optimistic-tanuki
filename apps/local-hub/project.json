@@ -4,26 +4,17 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/local-hub/src",
-  "tags": [
-    "type:app"
-  ],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/local-hub",
         "index": "apps/local-hub/src/index.html",
         "browser": "apps/local-hub/src/main.ts",
-        "allowedCommonJsDependencies": [
-          "http-proxy-middleware",
-          "debug"
-        ],
-        "polyfills": [
-          "zone.js"
-        ],
+        "allowedCommonJsDependencies": ["http-proxy-middleware", "debug"],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/local-hub/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -32,9 +23,7 @@
             "input": "apps/local-hub/public"
           }
         ],
-        "styles": [
-          "apps/local-hub/src/styles.scss"
-        ],
+        "styles": ["apps/local-hub/src/styles.scss"],
         "scripts": [],
         "server": "apps/local-hub/src/main.server.ts",
         "ssr": {
@@ -90,9 +79,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/local-hub/jest.config.ts"
       }

@@ -51,15 +51,19 @@ type SeedLocality = {
   parentSlug?: string;
 };
 
-const rawLocalities = ((seedData as { localities?: RawLocality[] }).localities ??
-  []) as RawLocality[];
-const neighborhoodMap = ((seedData as {
-  communities?: Record<string, NeighborhoodSeed[]>;
-}).communities ?? {}) as Record<string, NeighborhoodSeed[]>;
+const rawLocalities = ((seedData as { localities?: RawLocality[] })
+  .localities ?? []) as RawLocality[];
+const neighborhoodMap = ((
+  seedData as {
+    communities?: Record<string, NeighborhoodSeed[]>;
+  }
+).communities ?? {}) as Record<string, NeighborhoodSeed[]>;
 
 const neighborhoodParentBySlug = new Map<string, string>(
   Object.entries(neighborhoodMap).flatMap(([parentSlug, neighborhoods]) =>
-    neighborhoods.map((neighborhood) => [neighborhood.slug, parentSlug] as const)
+    neighborhoods.map(
+      (neighborhood) => [neighborhood.slug, parentSlug] as const
+    )
   )
 );
 
@@ -121,10 +125,12 @@ function buildTags(locality: RawLocality): { id: string; name: string }[] {
     seed.push('Geography');
   }
 
-  return Array.from(new Set(seed)).slice(0, 4).map((name, index) => ({
-    id: `${toSeedFragment(locality.slug)}-${index + 1}`,
-    name,
-  }));
+  return Array.from(new Set(seed))
+    .slice(0, 4)
+    .map((name, index) => ({
+      id: `${toSeedFragment(locality.slug)}-${index + 1}`,
+      name,
+    }));
 }
 
 function toSeedLocality(locality: RawLocality): SeedLocality {
@@ -243,10 +249,13 @@ async function main() {
       }
     }
 
-    const totalByType = COMMUNITIES.reduce<Record<string, number>>((acc, item) => {
-      acc[item.localityType] = (acc[item.localityType] || 0) + 1;
-      return acc;
-    }, {});
+    const totalByType = COMMUNITIES.reduce<Record<string, number>>(
+      (acc, item) => {
+        acc[item.localityType] = (acc[item.localityType] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
 
     console.log(
       `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`

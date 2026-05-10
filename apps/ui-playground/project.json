@@ -4,34 +4,21 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/ui-playground/src",
-  "tags": [
-    "type:app",
-    "scope:motion",
-    "platform:web",
-    "visibility:internal"
-  ],
+  "tags": ["type:app", "scope:motion", "platform:web", "visibility:internal"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
-      "dependsOn": [
-        "^build"
-      ],
+      "outputs": ["{options.outputPath}"],
+      "dependsOn": ["^build"],
       "options": {
         "outputPath": "dist/apps/ui-playground",
         "browser": "apps/ui-playground/src/main.ts",
         "index": "apps/ui-playground/src/index.html",
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/ui-playground/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [],
-        "styles": [
-          "apps/ui-playground/src/styles.scss"
-        ]
+        "styles": ["apps/ui-playground/src/styles.scss"]
       },
       "configurations": {
         "production": {
@@ -78,9 +65,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/ui-playground/jest.config.ts",
         "tsConfig": "apps/ui-playground/tsconfig.spec.json"

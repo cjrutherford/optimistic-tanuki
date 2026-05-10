@@ -3,9 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/local-hub-e2e/src",
-  "implicitDependencies": [
-    "local-hub"
-  ],
+  "implicitDependencies": ["local-hub"],
   "targets": {
     "e2e": {
       "executor": "@nx/playwright:playwright",
@@ -40,12 +38,8 @@
     },
     "docker:test": {
       "command": "docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner",
-      "dependsOn": [
-        "docker:up"
-      ]
+      "dependsOn": ["docker:up"]
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }

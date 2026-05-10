@@ -215,7 +215,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
   ],
 })
 export class BusinessInfoComponent {
-  private readonly state = inject(BusinessConfigStateService);
+  readonly state = inject(BusinessConfigStateService);
   private readonly router = inject(Router);
 
   readonly brand = {

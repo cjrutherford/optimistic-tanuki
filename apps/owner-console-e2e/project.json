@@ -3,9 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/owner-console-e2e/src",
-  "implicitDependencies": [
-    "owner-console"
-  ],
+  "implicitDependencies": ["owner-console"],
   "// targets": "to see all targets run: nx show project owner-console-e2e --web",
   "targets": {
     "up": {
@@ -45,7 +43,5 @@
       }
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }

@@ -8,9 +8,7 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "webpack-cli build",
-        "args": [
-          "node-env=production"
-        ],
+        "args": ["node-env=production"],
         "packageJson": {
           "dependencies": {
             "pg": "^8.16.0"
@@ -19,9 +17,7 @@
       },
       "configurations": {
         "development": {
-          "args": [
-            "node-env=development"
-          ]
+          "args": ["node-env=development"]
         }
       }
     },
@@ -30,17 +26,13 @@
       "options": {
         "command": "node tools/scripts/add-pg-dep.js dist/apps/permissions"
       },
-      "dependsOn": [
-        "build"
-      ]
+      "dependsOn": ["build"]
     },
     "serve": {
       "continuous": true,
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": [
-        "build"
-      ],
+      "dependsOn": ["build"],
       "options": {
         "buildTarget": "permissions:build",
         "runBuildTargetDependencies": false
@@ -56,9 +48,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/permissions/jest.config.ts"
       }

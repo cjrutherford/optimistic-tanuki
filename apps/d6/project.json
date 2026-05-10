@@ -4,26 +4,17 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/d6/src",
-  "tags": [
-    "type:app",
-    "scope:d6",
-    "platform:web",
-    "visibility:public"
-  ],
+  "tags": ["type:app", "scope:d6", "platform:web", "visibility:public"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/d6",
         "index": "apps/d6/src/index.html",
         "browser": "apps/d6/src/main.ts",
         "allowedCommonJsDependencies": [],
-        "polyfills": [
-          "zone.js"
-        ],
+        "polyfills": ["zone.js"],
         "tsConfig": "apps/d6/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [
@@ -32,9 +23,7 @@
             "input": "apps/d6/public"
           }
         ],
-        "styles": [
-          "apps/d6/src/styles.scss"
-        ],
+        "styles": ["apps/d6/src/styles.scss"],
         "scripts": [],
         "server": "apps/d6/src/main.server.ts",
         "ssr": {
@@ -98,9 +87,7 @@
     },
     "test": {
       "executor": "@nx/jest:jest",
-      "outputs": [
-        "{workspaceRoot}/coverage/{projectRoot}"
-      ],
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
       "options": {
         "jestConfig": "apps/d6/jest.config.ts"
       }

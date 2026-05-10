@@ -4,6 +4,7 @@ import {
   BusinessFeatures,
   BusinessService,
   LandingSection,
+  mergeBusinessSiteConfig,
 } from '@optimistic-tanuki/business-data-access';
 
 export interface BusinessConfigState {
@@ -28,7 +29,7 @@ export class BusinessConfigStateService {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        return JSON.parse(stored);
+        return mergeBusinessSiteConfig(JSON.parse(stored));
       } catch {
         return this.getDefaultConfig();
       }
@@ -37,7 +38,7 @@ export class BusinessConfigStateService {
   }
 
   private getDefaultConfig(): BusinessSiteConfig {
-    return {
+    return mergeBusinessSiteConfig({
       businessType: 'general',
       brand: {
         businessName: '',
@@ -65,12 +66,48 @@ export class BusinessConfigStateService {
       services: [],
       landingPage: {
         sections: [
-          { id: 'hero', type: 'hero', title: 'Welcome', enabled: true, order: 0 },
-          { id: 'about', type: 'about', title: 'About', enabled: true, order: 1 },
-          { id: 'services', type: 'services', title: 'Services', enabled: false, order: 2 },
-          { id: 'testimonials', type: 'testimonials', title: 'Testimonials', enabled: true, order: 3 },
-          { id: 'contact', type: 'contact', title: 'Contact', enabled: true, order: 4 },
-          { id: 'booking', type: 'booking', title: 'Book Now', enabled: true, order: 5 },
+          {
+            id: 'hero',
+            type: 'hero',
+            title: 'Welcome',
+            enabled: true,
+            order: 0,
+          },
+          {
+            id: 'about',
+            type: 'about',
+            title: 'About',
+            enabled: true,
+            order: 1,
+          },
+          {
+            id: 'services',
+            type: 'services',
+            title: 'Services',
+            enabled: false,
+            order: 2,
+          },
+          {
+            id: 'testimonials',
+            type: 'testimonials',
+            title: 'Testimonials',
+            enabled: true,
+            order: 3,
+          },
+          {
+            id: 'contact',
+            type: 'contact',
+            title: 'Contact',
+            enabled: true,
+            order: 4,
+          },
+          {
+            id: 'booking',
+            type: 'booking',
+            title: 'Book Now',
+            enabled: true,
+            order: 5,
+          },
         ],
         layout: 'single-column',
       },
@@ -85,7 +122,7 @@ export class BusinessConfigStateService {
         personalityId: 'professional',
         primaryColor: '#1f7a63',
       },
-    };
+    });
   }
 
   private saveToStorage(): void {
@@ -116,7 +153,10 @@ export class BusinessConfigStateService {
   }
 
   updateContact(contact: Partial<BusinessSiteConfig['contact']>): void {
-    this._config.update((c) => ({ ...c, contact: { ...c.contact, ...contact } }));
+    this._config.update((c) => ({
+      ...c,
+      contact: { ...c.contact, ...contact },
+    }));
     this.saveToStorage();
   }
 
@@ -154,7 +194,9 @@ export class BusinessConfigStateService {
     this.saveToStorage();
   }
 
-  updateLandingLayout(layout: BusinessSiteConfig['landingPage']['layout']): void {
+  updateLandingLayout(
+    layout: BusinessSiteConfig['landingPage']['layout']
+  ): void {
     this._config.update((c) => ({
       ...c,
       landingPage: { ...c.landingPage, layout },

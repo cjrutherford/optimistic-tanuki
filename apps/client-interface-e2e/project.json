@@ -3,9 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "projectType": "application",
   "sourceRoot": "apps/client-interface-e2e/src",
-  "implicitDependencies": [
-    "client-interface"
-  ],
+  "implicitDependencies": ["client-interface"],
   "// targets": "to see all targets run: nx show project client-interface-e2e --web",
   "targets": {
     "up": {
@@ -45,7 +43,5 @@
       }
     }
   },
-  "tags": [
-    "type:e2e"
-  ]
+  "tags": ["type:e2e"]
 }
