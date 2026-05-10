@@ -4,18 +4,18 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/prompt-proxy/ ./apps/prompt-proxy/
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build prompt-proxy --configuration=development
 
 FROM docker.io/node:lts-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 ENV PORT=3009
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add nodemon pg @nestjs/axios zod
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add nodemon pg @nestjs/axios zod
 WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/dist/apps/prompt-proxy/ ./
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm add typeorm
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add typeorm
 RUN chown -R node:node .
 USER node
 EXPOSE 3009

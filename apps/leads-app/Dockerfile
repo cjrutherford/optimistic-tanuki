@@ -12,7 +12,7 @@ COPY nx.json ./
 COPY libs ./libs
 COPY apps/leads-app ./apps/leads-app
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 
 RUN pnpm exec nx build leads-app --configuration=production
 
@@ -30,7 +30,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/leads-app ./dist/apps/leads-app
 

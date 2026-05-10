@@ -14,7 +14,7 @@ COPY libs ./libs
 COPY apps/owner-console ./apps/owner-console
 
 # Install all dependencies (including devDependencies needed for build)
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 
 # Build the owner-console application for production with SSR
 # This will output to dist/apps/owner-console and include server/main.js
@@ -35,7 +35,7 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 # Install only production dependencies.
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 # Copy the built application (server and browser bundles) from the builder stage
 # The structure should be dist/apps/owner-console/server/main.js and dist/apps/owner-console/browser/...
