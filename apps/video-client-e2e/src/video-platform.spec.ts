@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * Video Platform E2E Tests
- * 
+ *
  * Tests the complete video streaming platform workflow:
  * 1. Creating a channel
  * 2. Posting/uploading a video
@@ -49,7 +49,9 @@ test.describe('Video Platform E2E Workflows', () => {
     console.log('Home page loaded successfully');
   });
 
-  test('2. Should display recommended videos on home page', async ({ page }) => {
+  test('2. Should display recommended videos on home page', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     // Wait for videos to load (either video grid or error message)
@@ -63,12 +65,12 @@ test.describe('Video Platform E2E Workflows', () => {
 
     if (isVisible) {
       console.log('Video grid is visible');
-      
+
       // Check if any videos are displayed
       const videoCards = page.locator('video-card');
       const count = await videoCards.count();
       console.log(`Found ${count} video cards`);
-      
+
       if (count > 0) {
         expect(count).toBeGreaterThan(0);
       }
@@ -82,17 +84,19 @@ test.describe('Video Platform E2E Workflows', () => {
 
     // In a real scenario, we'd go through the UI. For e2e testing,
     // we'll use the API directly to set up test data
-    const response = await request.post('/api/videos/channels', {
-      data: {
-        name: testChannel.name,
-        description: testChannel.description,
-        profileId: 'e2e-test-profile-id',
-        userId: 'e2e-test-user-id',
-      },
-    }).catch((err) => {
-      console.log('Channel creation failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .post('/api/videos/channels', {
+        data: {
+          name: testChannel.name,
+          description: testChannel.description,
+          profileId: 'e2e-test-profile-id',
+          userId: 'e2e-test-user-id',
+        },
+      })
+      .catch((err) => {
+        console.log('Channel creation failed:', err.message);
+        return null;
+      });
 
     if (response && (response.status() === 200 || response.status() === 201)) {
       const data = await response.json();
@@ -126,7 +130,7 @@ test.describe('Video Platform E2E Workflows', () => {
 
     if (isVisible) {
       console.log('Channel page loaded successfully');
-      
+
       // Verify channel name is displayed
       const channelName = page.locator('h1').first();
       await expect(channelName).toBeVisible({ timeout: 5000 });
@@ -145,21 +149,26 @@ test.describe('Video Platform E2E Workflows', () => {
     console.log('Creating a test video...');
 
     // Create a mock video asset first
-    const assetResponse = await request.post('/api/asset', {
-      data: {
-        name: 'test-video.mp4',
-        type: 'video',
-        content: 'base64encodedvideocontent', // Mock content
-        fileExtension: 'mp4',
-        profileId: 'e2e-test-profile-id',
-      },
-    }).catch((err) => {
-      console.log('Asset creation failed:', err.message);
-      return null;
-    });
+    const assetResponse = await request
+      .post('/api/asset', {
+        data: {
+          name: 'test-video.mp4',
+          type: 'video',
+          content: 'base64encodedvideocontent', // Mock content
+          fileExtension: 'mp4',
+          profileId: 'e2e-test-profile-id',
+        },
+      })
+      .catch((err) => {
+        console.log('Asset creation failed:', err.message);
+        return null;
+      });
 
     let assetId = null;
-    if (assetResponse && assetResponse.status() === 201 || assetResponse?.status() === 200) {
+    if (
+      (assetResponse && assetResponse.status() === 201) ||
+      assetResponse?.status() === 200
+    ) {
       const assetData = await assetResponse.json();
       assetId = assetData.id;
       console.log(`Asset created with ID: ${assetId}`);
@@ -169,20 +178,25 @@ test.describe('Video Platform E2E Workflows', () => {
     }
 
     // Create video
-    const videoResponse = await request.post('/api/videos', {
-      data: {
-        title: testVideo.title,
-        description: testVideo.description,
-        assetId: assetId,
-        channelId: channelId,
-        visibility: 'public',
-      },
-    }).catch((err) => {
-      console.log('Video creation failed:', err.message);
-      return null;
-    });
+    const videoResponse = await request
+      .post('/api/videos', {
+        data: {
+          title: testVideo.title,
+          description: testVideo.description,
+          assetId: assetId,
+          channelId: channelId,
+          visibility: 'public',
+        },
+      })
+      .catch((err) => {
+        console.log('Video creation failed:', err.message);
+        return null;
+      });
 
-    if (videoResponse && (videoResponse.status() === 200 || videoResponse.status() === 201)) {
+    if (
+      videoResponse &&
+      (videoResponse.status() === 200 || videoResponse.status() === 201)
+    ) {
       const data = await videoResponse.json();
       videoId = data.id;
       console.log(`Video created with ID: ${videoId}`);
@@ -221,7 +235,7 @@ test.describe('Video Platform E2E Workflows', () => {
 
       if (videoExists) {
         console.log('HTML5 video element found');
-        
+
         // Try to play video
         await videoElement.click().catch(() => {
           console.log('Could not click video element');
@@ -237,7 +251,10 @@ test.describe('Video Platform E2E Workflows', () => {
     }
   });
 
-  test('7. Should update video metadata (via API)', async ({ page, request }) => {
+  test('7. Should update video metadata (via API)', async ({
+    page,
+    request,
+  }) => {
     if (!videoId) {
       console.log('No video ID - skipping');
       test.skip();
@@ -246,15 +263,17 @@ test.describe('Video Platform E2E Workflows', () => {
 
     console.log('Updating video metadata...');
 
-    const response = await request.put(`/api/videos/${videoId}`, {
-      data: {
-        title: updatedVideo.title,
-        description: updatedVideo.description,
-      },
-    }).catch((err) => {
-      console.log('Video update failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .put(`/api/videos/${videoId}`, {
+        data: {
+          title: updatedVideo.title,
+          description: updatedVideo.description,
+        },
+      })
+      .catch((err) => {
+        console.log('Video update failed:', err.message);
+        return null;
+      });
 
     if (response && response.status() === 200) {
       const data = await response.json();
@@ -287,7 +306,10 @@ test.describe('Video Platform E2E Workflows', () => {
     }
   });
 
-  test('9. Should subscribe to channel (via API)', async ({ page, request }) => {
+  test('9. Should subscribe to channel (via API)', async ({
+    page,
+    request,
+  }) => {
     if (!channelId) {
       console.log('No channel ID - skipping');
       test.skip();
@@ -296,16 +318,18 @@ test.describe('Video Platform E2E Workflows', () => {
 
     console.log('Subscribing to channel...');
 
-    const response = await request.post('/api/videos/subscriptions', {
-      data: {
-        channelId: channelId,
-        userId: 'e2e-test-subscriber-id',
-        profileId: 'e2e-test-subscriber-profile-id',
-      },
-    }).catch((err) => {
-      console.log('Subscription failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .post('/api/videos/subscriptions', {
+        data: {
+          channelId: channelId,
+          userId: 'e2e-test-subscriber-id',
+          profileId: 'e2e-test-subscriber-profile-id',
+        },
+      })
+      .catch((err) => {
+        console.log('Subscription failed:', err.message);
+        return null;
+      });
 
     if (response && (response.status() === 200 || response.status() === 201)) {
       const data = await response.json();
@@ -317,7 +341,9 @@ test.describe('Video Platform E2E Workflows', () => {
     }
   });
 
-  test('10. Should display subscribe button on channel page', async ({ page }) => {
+  test('10. Should display subscribe button on channel page', async ({
+    page,
+  }) => {
     if (!channelId) {
       console.log('No channel ID - skipping');
       test.skip();
@@ -328,18 +354,23 @@ test.describe('Video Platform E2E Workflows', () => {
     await page.waitForSelector('channel-header, .error', { timeout: 10000 });
 
     // Look for subscribe button
-    const subscribeButton = page.locator('button').filter({ hasText: /subscribe/i });
+    const subscribeButton = page
+      .locator('button')
+      .filter({ hasText: /subscribe/i });
     const buttonExists = await subscribeButton.isVisible().catch(() => false);
 
     if (buttonExists) {
       console.log('Subscribe button found');
-      expect(subscribeButton).toBeVisible();
+      await expect(subscribeButton).toBeVisible();
     } else {
       console.log('Subscribe button not found - UI may be different');
     }
   });
 
-  test('11. Should post a comment on video (via social API)', async ({ page, request }) => {
+  test('11. Should post a comment on video (via social API)', async ({
+    page,
+    request,
+  }) => {
     if (!videoId) {
       console.log('No video ID - skipping');
       test.skip();
@@ -349,21 +380,23 @@ test.describe('Video Platform E2E Workflows', () => {
     console.log('Posting a comment on video...');
 
     // Using social service API for comments
-    const response = await request.post('/api/social/posts', {
-      data: {
-        content: 'This is an E2E test comment on the video!',
-        profileId: 'e2e-test-profile-id',
-        attachments: [
-          {
-            type: 'video',
-            id: videoId,
-          },
-        ],
-      },
-    }).catch((err) => {
-      console.log('Comment post failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .post('/api/social/posts', {
+        data: {
+          content: 'This is an E2E test comment on the video!',
+          profileId: 'e2e-test-profile-id',
+          attachments: [
+            {
+              type: 'video',
+              id: videoId,
+            },
+          ],
+        },
+      })
+      .catch((err) => {
+        console.log('Comment post failed:', err.message);
+        return null;
+      });
 
     if (response && (response.status() === 200 || response.status() === 201)) {
       console.log('Comment posted successfully');
@@ -373,7 +406,10 @@ test.describe('Video Platform E2E Workflows', () => {
     }
   });
 
-  test('12. Should post a comment on channel (via social API)', async ({ page, request }) => {
+  test('12. Should post a comment on channel (via social API)', async ({
+    page,
+    request,
+  }) => {
     if (!channelId) {
       console.log('No channel ID - skipping');
       test.skip();
@@ -382,21 +418,23 @@ test.describe('Video Platform E2E Workflows', () => {
 
     console.log('Posting a comment on channel...');
 
-    const response = await request.post('/api/social/posts', {
-      data: {
-        content: 'This is an E2E test comment on the channel!',
-        profileId: 'e2e-test-profile-id',
-        attachments: [
-          {
-            type: 'channel',
-            id: channelId,
-          },
-        ],
-      },
-    }).catch((err) => {
-      console.log('Channel comment post failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .post('/api/social/posts', {
+        data: {
+          content: 'This is an E2E test comment on the channel!',
+          profileId: 'e2e-test-profile-id',
+          attachments: [
+            {
+              type: 'channel',
+              id: channelId,
+            },
+          ],
+        },
+      })
+      .catch((err) => {
+        console.log('Channel comment post failed:', err.message);
+        return null;
+      });
 
     if (response && (response.status() === 200 || response.status() === 201)) {
       console.log('Channel comment posted successfully');
@@ -415,12 +453,14 @@ test.describe('Video Platform E2E Workflows', () => {
 
     console.log('Liking the video...');
 
-    const response = await request.post(`/api/videos/${videoId}/like`, {
-      data: {},
-    }).catch((err) => {
-      console.log('Like request failed:', err.message);
-      return null;
-    });
+    const response = await request
+      .post(`/api/videos/${videoId}/like`, {
+        data: {},
+      })
+      .catch((err) => {
+        console.log('Like request failed:', err.message);
+        return null;
+      });
 
     if (response && response.status() === 200) {
       console.log('Video liked successfully');
@@ -433,7 +473,10 @@ test.describe('Video Platform E2E Workflows', () => {
     await page.waitForSelector('video-player, .error', { timeout: 10000 });
 
     // Look for like button
-    const likeButton = page.locator('button').filter({ hasText: /like|👍/i }).first();
+    const likeButton = page
+      .locator('button')
+      .filter({ hasText: /like|👍/i })
+      .first();
     const buttonExists = await likeButton.isVisible().catch(() => false);
 
     if (buttonExists) {
@@ -471,9 +514,12 @@ test.describe('Video Platform E2E Workflows', () => {
     await page.goto('/watch/non-existent-video-id');
 
     // Should show error or loading state
-    const errorOrLoading = await page.waitForSelector('.error, .loading, video-player', {
-      timeout: 10000,
-    });
+    const errorOrLoading = await page.waitForSelector(
+      '.error, .loading, video-player',
+      {
+        timeout: 10000,
+      }
+    );
 
     expect(errorOrLoading).toBeTruthy();
     console.log('Error handling works for non-existent video');
@@ -495,13 +541,15 @@ test.describe('Video Platform E2E Workflows', () => {
 
     if (isVisible) {
       console.log('Video grid is visible on channel page');
-      
+
       // Count videos
       const videoCards = page.locator('video-card');
       const count = await videoCards.count();
       console.log(`Found ${count} videos on channel`);
     } else {
-      console.log('No video grid on channel page - may be empty or UI different');
+      console.log(
+        'No video grid on channel page - may be empty or UI different'
+      );
     }
   });
 });
@@ -509,7 +557,7 @@ test.describe('Video Platform E2E Workflows', () => {
 test.describe('Video Platform UI Components', () => {
   test('Should have proper page titles and headers', async ({ page }) => {
     await page.goto('/');
-    
+
     // Check for app header
     const header = page.locator('.app-header, header');
     await expect(header).toBeVisible({ timeout: 5000 });
@@ -517,7 +565,7 @@ test.describe('Video Platform UI Components', () => {
     // Check for logo/brand
     const logo = page.locator('.logo, .logo-text');
     const logoExists = await logo.isVisible().catch(() => false);
-    
+
     if (logoExists) {
       const logoText = await logo.textContent();
       console.log(`App logo text: ${logoText}`);
@@ -526,16 +574,19 @@ test.describe('Video Platform UI Components', () => {
 
   test('Should have navigation links', async ({ page }) => {
     await page.goto('/');
-    
+
     // Check for navigation
     const nav = page.locator('nav, .main-nav');
     const navExists = await nav.isVisible().catch(() => false);
 
     if (navExists) {
       // Check for home link
-      const homeLink = page.locator('a[href="/"], a').filter({ hasText: /home/i }).first();
+      const homeLink = page
+        .locator('a[href="/"], a')
+        .filter({ hasText: /home/i })
+        .first();
       const homeLinkExists = await homeLink.isVisible().catch(() => false);
-      
+
       if (homeLinkExists) {
         console.log('Home link found in navigation');
       }
@@ -544,23 +595,27 @@ test.describe('Video Platform UI Components', () => {
 
   test('Should display video cards with proper structure', async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('video-grid, .error, .loading', { timeout: 10000 });
+    await page.waitForSelector('video-grid, .error, .loading', {
+      timeout: 10000,
+    });
 
     const videoCards = page.locator('video-card');
     const count = await videoCards.count();
 
     if (count > 0) {
       const firstCard = videoCards.first();
-      
+
       // Check for thumbnail
       const thumbnail = firstCard.locator('img, .thumbnail');
       const thumbnailExists = await thumbnail.isVisible().catch(() => false);
-      
+
       // Check for title
       const title = firstCard.locator('h3, .video-title');
       const titleExists = await title.isVisible().catch(() => false);
 
-      console.log(`Video card has thumbnail: ${thumbnailExists}, title: ${titleExists}`);
+      console.log(
+        `Video card has thumbnail: ${thumbnailExists}, title: ${titleExists}`
+      );
     } else {
       console.log('No video cards to test structure');
     }

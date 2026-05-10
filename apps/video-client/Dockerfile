@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular SSR application
-FROM node:lts-alpine as builder
+FROM node:24-alpine as builder
 
 WORKDIR /usr/src/app
 
@@ -13,11 +13,11 @@ COPY nx.json ./
 COPY libs ./libs
 COPY apps/video-client ./apps/video-client
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build video-client --configuration=development
 
 # Stage 2: Runtime image
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app
@@ -32,7 +32,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 RUN npm install -g nodemon && \
     (npm cache clean --force || true)
 

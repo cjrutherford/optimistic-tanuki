@@ -4,7 +4,7 @@
   "sourceRoot": "libs/notification-ui/src",
   "prefix": "notif",
   "projectType": "library",
-  "tags": [],
+  "tags": ["scope:shared", "type:ui"],
   "targets": {
     "test": {
       "executor": "@nx/jest:jest",

@@ -77,7 +77,7 @@ export async function createFinanceDbPool(): Promise<Pool> {
 }
 
 export const test = base.extend<FinCommanderFixtureContext>({
-  apiContext: async ({}, use) => {
+  apiContext: async (_args, use) => {
     await waitForGateway();
     const apiContext = await playwrightRequest.newContext({
       baseURL: getGatewayUrl(),
@@ -97,7 +97,7 @@ export const test = base.extend<FinCommanderFixtureContext>({
     const user = await createTestUser(apiContext);
     await use(user);
   },
-  dbPool: async ({}, use) => {
+  dbPool: async (_args, use) => {
     let dbPool: Pool | null = null;
 
     try {

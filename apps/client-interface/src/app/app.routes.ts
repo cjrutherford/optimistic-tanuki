@@ -5,6 +5,7 @@ import { inject } from '@angular/core';
 import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
 import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
 
 const forumPermissionResolver: ResolveFn<string[]> = async () => {
   const permissionsService = inject(UserPermissionsService);
@@ -153,10 +154,7 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'explore',
-    loadComponent: () =>
-      import('@optimistic-tanuki/search-ui').then(
-        (m) => m.ExplorePageComponent
-      ),
+    component: ExplorePageComponent,
     canActivate: [AuthGuard, ProfileGuard],
   },
   {

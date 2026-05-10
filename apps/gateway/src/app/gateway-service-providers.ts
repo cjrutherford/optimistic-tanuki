@@ -158,7 +158,10 @@ export const createMcpToolImports = (
   composition: GatewayComposition
 ): ModuleImport[] => {
   const imports: ModuleImport[] = [];
-  const enableProjectPlanning = isServiceEnabled(composition, 'project-planning');
+  const enableProjectPlanning = isServiceEnabled(
+    composition,
+    'project-planning'
+  );
   const enableTelosDocs = isServiceEnabled(composition, 'telos-docs-service');
 
   if (!enableProjectPlanning && !enableTelosDocs) {

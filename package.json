@@ -1,9 +1,12 @@
 {
   "name": "@optimistic-tanuki/source",
   "version": "0.0.0",
-  "packageManager": "pnpm@10.29.1",
+  "packageManager": "pnpm@11.0.9",
   "license": "MIT",
   "scripts": {
+    "format": "pnpm exec nx format:write",
+    "format:check": "pnpm exec nx format:check",
+    "prepare": "[ -f ./scripts/setup-git-hooks.sh ] && ./scripts/setup-git-hooks.sh || true",
     "docker:build:slow": "for service in authentication ot-client-interface gateway profile social project-planning assets forgeofwill-client-interface chat-collector prompt-proxy ai-orchestration telos-docs-service blogging crdn-client-interface digital-homestead-client-interface hai-client-interface fin-commander marketing-generator business-site permissions owner-console store store-client app-configurator configurable-client forum d6 wellness classifieds payments finance local-hub-client-interface leads-app lead-tracker system-configurator system-configurator-api videos video-client; do docker compose build $service; done",
     "docker:build": "./scripts/docker-build-batched.sh",
     "docker:build:batched": "./scripts/docker-build-batched.sh",

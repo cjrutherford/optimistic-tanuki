@@ -13,5 +13,6 @@
       },
       "dependsOn": ["videos:build", "videos:serve"]
     }
-  }
+  },
+  "tags": ["type:e2e"]
 }

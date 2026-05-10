@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular SSR application
-FROM node:lts-alpine as builder
+FROM node:24-alpine as builder
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -14,14 +14,14 @@ COPY libs ./libs
 COPY apps/christopherrutherford-net ./apps/christopherrutherford-net
 
 # Install all dependencies (including devDependencies needed for build)
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 
 # Build the client-interface application for production with SSR
 # This will output to dist/apps/client-interface and include server/main.js
 RUN pnpm exec nx build christopherrutherford-net --configuration=production
 
 # Stage 2: Create the runtime image from a slim Node.js base
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app
@@ -35,7 +35,7 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 # Install only production dependencies.
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 # Copy the built application (server and browser bundles) from the builder stage
 # The structure should be dist/apps/client-interface/server/main.js and dist/apps/client-interface/browser/...

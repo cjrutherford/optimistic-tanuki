@@ -35,5 +35,6 @@
         "jestConfig": "apps/fin-commander-e2e/jest.config.ts"
       }
     }
-  }
+  },
+  "tags": ["type:e2e"]
 }

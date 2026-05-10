@@ -22,6 +22,18 @@ set -euo pipefail
 WORKFLOW_DIR="${1:-.github/workflows}"
 ERRORS=0
 WARNINGS=0
+PACKAGE_MANAGER=$(python3 - <<'PY'
+import json
+from pathlib import Path
+
+package_json = Path("package.json")
+if not package_json.exists():
+    print("")
+else:
+    data = json.loads(package_json.read_text())
+    print(data.get("packageManager", ""))
+PY
+)
 
 echo "Validating GitHub Actions workflows in '$WORKFLOW_DIR'..."
 echo ""
@@ -82,6 +94,16 @@ for file in "$WORKFLOW_DIR"/*.yml; do
      grep -qE '^\s+- \bnpm (ci|install)\b' "$file"; then
     echo "  ⚠️  $filename: uses the wrong package manager in a pnpm repo — use 'pnpm install --frozen-lockfile'"
     WARNINGS=$((WARNINGS + 1))
+  fi
+
+  if [ -n "$PACKAGE_MANAGER" ] && awk '
+    /uses: pnpm\/action-setup@/ { in_block=1; next }
+    in_block && /^[[:space:]]*uses:/ { in_block=0 }
+    in_block && /^[[:space:]]*version:/ { found=1 }
+    END { exit found ? 0 : 1 }
+  ' "$file"; then
+    echo "  ❌ $filename: declares pnpm/action-setup version while package.json sets packageManager ($PACKAGE_MANAGER) — remove the workflow override to avoid CI version mismatches"
+    ERRORS=$((ERRORS + 1))
   fi
 
   # Warn if no top-level permissions block

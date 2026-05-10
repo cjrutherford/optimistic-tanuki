@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/d6/src",
-  "tags": ["scope:d6", "type:frontend"],
+  "tags": ["type:app", "scope:d6", "platform:web", "visibility:public"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",

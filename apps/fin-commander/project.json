@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "fc",
   "sourceRoot": "apps/fin-commander/src",
-  "tags": [],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",

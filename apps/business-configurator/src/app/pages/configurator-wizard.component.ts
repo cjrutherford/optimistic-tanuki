@@ -1,12 +1,12 @@
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { BusinessConfigStateService } from '../state/business-config-state.service';
-import { BusinessInfoComponent } from './pages/business-info/business-info.component';
-import { FeaturesComponent } from './pages/features/features.component';
-import { ServicesComponent } from './pages/services/services.component';
-import { DesignComponent } from './pages/design/design.component';
-import { ReviewComponent } from './pages/review/review.component';
+import { BusinessInfoComponent } from './business-info/business-info.component';
+import { FeaturesComponent } from './features/features.component';
+import { ServicesComponent } from './services/services.component';
+import { DesignComponent } from './design/design.component';
+import { ReviewComponent } from './review/review.component';
 
 @Component({
   standalone: true,
@@ -26,40 +26,33 @@ import { ReviewComponent } from './pages/review/review.component';
         <h1>Business Site Builder</h1>
         <nav class="wizard-nav">
           @for (title of stepTitles; track title; let i = $index) {
-            <button
-              class="nav-step"
-              [class.active]="state.step() === i"
-              [class.completed]="state.step() > i"
-              (click)="state.goToStep(i)"
-            >
-              <span class="step-number">{{ i + 1 }}</span>
-              <span class="step-title">{{ title }}</span>
-            </button>
-            @if (i < stepTitles.length - 1) {
-              <span class="step-connector"></span>
-            }
-          }
+          <button
+            class="nav-step"
+            [class.active]="state.step() === i"
+            [class.completed]="state.step() > i"
+            (click)="state.goToStep(i)"
+          >
+            <span class="step-number">{{ i + 1 }}</span>
+            <span class="step-title">{{ title }}</span>
+          </button>
+          @if (i < stepTitles.length - 1) {
+          <span class="step-connector"></span>
+          } }
         </nav>
       </header>
 
       <main class="wizard-content">
-        @switch (state.step()) {
-          @case (0) {
-            <app-business-info />
-          }
-          @case (1) {
-            <app-features />
-          }
-          @case (2) {
-            <app-services />
-          }
-          @case (3) {
-            <app-design />
-          }
-          @case (4) {
-            <app-review />
-          }
-        }
+        @switch (state.step()) { @case (0) {
+        <app-business-info />
+        } @case (1) {
+        <app-features />
+        } @case (2) {
+        <app-services />
+        } @case (3) {
+        <app-design />
+        } @case (4) {
+        <app-review />
+        } }
       </main>
     </div>
   `,
@@ -149,9 +142,15 @@ import { ReviewComponent } from './pages/review/review.component';
   ],
 })
 export class ConfiguratorWizardComponent {
-  private readonly state = inject(BusinessConfigStateService);
+  readonly state = inject(BusinessConfigStateService);
 
-  readonly stepTitles = ['Business Info', 'Features', 'Services', 'Design', 'Review'];
+  readonly stepTitles = [
+    'Business Info',
+    'Features',
+    'Services',
+    'Design',
+    'Review',
+  ];
 }
 
 export const CONFIGURATOR_ROUTES = [

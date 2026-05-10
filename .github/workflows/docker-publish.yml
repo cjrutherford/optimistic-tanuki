@@ -14,6 +14,7 @@ jobs:
     name: Build and Push ${{ matrix.service }}
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         service:
           [
@@ -60,6 +61,7 @@ jobs:
     name: Build and Push ${{ matrix.service }}
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         service:
           [
@@ -82,13 +84,11 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'pnpm'
 
       - name: Set up Docker Buildx

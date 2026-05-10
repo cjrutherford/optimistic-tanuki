@@ -44,9 +44,7 @@ const clientInterfaceOauthEnvPrefixes: Record<OAuthProviderName, string> = {
 };
 
 const isPlaceholderValue = (value: unknown): value is string =>
-  typeof value === 'string' &&
-  value.startsWith('${') &&
-  value.endsWith('}');
+  typeof value === 'string' && value.startsWith('${') && value.endsWith('}');
 
 const envValue = (key: string): string | undefined => {
   const value = process.env[key]?.trim();
@@ -118,7 +116,8 @@ const mergeOAuthAppOverride = (
   appOverride: GatewayOAuthAppOverride
 ): GatewayOAuthAppOverride => {
   const merged: GatewayOAuthAppOverride = {
-    domain: envValue('CLIENT_INTERFACE_DOMAIN') ?? configValue(appOverride.domain),
+    domain:
+      envValue('CLIENT_INTERFACE_DOMAIN') ?? configValue(appOverride.domain),
   };
 
   for (const provider of oauthProviders) {

@@ -1,10 +1,7 @@
-import nx from '@nx/eslint-plugin';
 import baseConfig from '../../eslint.config.mjs';
 
 export default [
   ...baseConfig,
-  ...nx.configs['flat/angular'],
-  ...nx.configs['flat/angular-template'],
   {
     files: ['**/*.ts'],
     rules: {
@@ -12,7 +9,7 @@ export default [
         'error',
         {
           type: 'attribute',
-          prefix: 'videoClient',
+          prefix: ['app', 'video', 'store', 'videoClient'],
           style: 'camelCase',
         },
       ],
@@ -20,7 +17,7 @@ export default [
         'error',
         {
           type: 'element',
-          prefix: 'video-client',
+          prefix: ['app', 'video', 'store', 'video-client'],
           style: 'kebab-case',
         },
       ],

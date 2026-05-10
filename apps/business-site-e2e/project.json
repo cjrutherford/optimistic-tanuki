@@ -18,5 +18,6 @@
         "config": "apps/business-site-e2e/playwright.config.ts"
       }
     }
-  }
+  },
+  "tags": ["type:e2e"]
 }

@@ -1,5 +1,9 @@
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { AppConfigCommands } from '../../../app-configurator/src/configurations/configurations.controller';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
+import { AppConfigCommands } from '@optimistic-tanuki/constants';
 
 describe('AppConfigurator Microservice (TCP)', () => {
   let client: ClientProxy;
@@ -23,7 +27,9 @@ describe('AppConfigurator Microservice (TCP)', () => {
   });
 
   it('should get all configurations', async () => {
-    const res = await client.send({ cmd: AppConfigCommands.GetAll }, {}).toPromise();
+    const res = await client
+      .send({ cmd: AppConfigCommands.GetAll }, {})
+      .toPromise();
 
     expect(Array.isArray(res)).toBe(true);
     // There should be at least the demo config we seeded
@@ -32,7 +38,9 @@ describe('AppConfigurator Microservice (TCP)', () => {
   });
 
   it('should get a configuration by name (demo)', async () => {
-    const res = await client.send({ cmd: AppConfigCommands.GetByName }, { name: 'demo-app' }).toPromise();
+    const res = await client
+      .send({ cmd: AppConfigCommands.GetByName }, { name: 'demo-app' })
+      .toPromise();
 
     expect(res).toBeDefined();
     expect(res.name).toBe('demo-app');

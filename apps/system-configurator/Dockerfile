@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /usr/src/app
 
@@ -10,10 +10,10 @@ COPY nx.json ./
 COPY libs ./libs
 COPY apps/system-configurator ./apps/system-configurator
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build system-configurator --configuration=production
 
-FROM node:lts-alpine
+FROM node:24-alpine
 
 RUN apk add --no-cache dumb-init
 
@@ -26,7 +26,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@10.29.1 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/system-configurator ./dist/apps/system-configurator
 

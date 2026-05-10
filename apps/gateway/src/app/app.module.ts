@@ -112,196 +112,206 @@ const gatewayComposition = normalizeGatewayComposition(
 
 type ValueComposableEntry<T> = ComposableEntry<T> & { value: T };
 
-const controllerEntries: Array<ValueComposableEntry<any>> = filterEnabledEntries(
-  [
-    { id: 'palettes', value: PalettesController },
-    { id: 'personalities', value: PersonalitiesController },
-    {
-      id: 'authentication',
-      requiredServices: ['authentication', 'profile'],
-      value: AuthenticationController,
-    },
-    {
-      id: 'profile',
-      requiredServices: [
-        'profile',
-        'ai-orchestration',
-        'authentication',
-        'telos-docs-service',
-        'permissions',
-        'social',
-      ],
-      value: ProfileController,
-    },
-    { id: 'social', requiredServices: ['social'], value: SocialController },
-    {
-      id: 'social-components',
-      requiredServices: ['social'],
-      value: SocialComponentController,
-    },
-    {
-      id: 'community',
-      requiredServices: ['social', 'permissions', 'chat-collector'],
-      value: CommunityController,
-    },
-    {
-      id: 'follow',
-      requiredServices: ['social', 'profile'],
-      value: FollowController,
-    },
-    {
-      id: 'asset',
-      requiredServices: ['assets', 'authentication', 'permissions'],
-      value: AssetController,
-    },
-    {
-      id: 'project-planning',
-      requiredServices: ['project-planning'],
-      value: ProjectPlanningController,
-    },
-    { id: 'contact', requiredServices: ['blogging'], value: ContactController },
-    { id: 'post', requiredServices: ['blogging'], value: PostController },
-    { id: 'event', requiredServices: ['blogging'], value: EventController },
-    { id: 'blog', requiredServices: ['blogging'], value: BlogController },
-    {
-      id: 'blog-components',
-      requiredServices: ['blogging'],
-      value: BlogComponentController,
-    },
-    {
-      id: 'permissions',
-      requiredServices: ['permissions'],
-      value: PermissionsController,
-    },
-    {
-      id: 'persona',
-      requiredServices: ['telos-docs-service'],
-      value: PersonaController,
-    },
-    { id: 'store', requiredServices: ['store'], value: StoreController },
-    {
-      id: 'app-config',
-      requiredServices: ['app-configurator'],
-      value: AppConfigController,
-    },
-    { id: 'forum', requiredServices: ['forum'], value: ForumController },
-    {
-      id: 'oauth',
-      requiredServices: ['authentication', 'profile'],
-      value: OAuthController,
-    },
-    { id: 'finance', requiredServices: ['finance'], value: FinanceController },
-    { id: 'videos', requiredServices: ['videos'], value: VideosController },
-    {
-      id: 'wellness',
-      requiredServices: ['wellness', 'ai-orchestration'],
-      value: WellnessController,
-    },
-    {
-      id: 'classifieds',
-      requiredServices: ['classifieds', 'social'],
-      value: ClassifiedsController,
-    },
-    {
-      id: 'communities',
-      requiredServices: ['social', 'permissions'],
-      value: CommunitiesController,
-    },
-    {
-      id: 'notifications',
-      requiredServices: ['social'],
-      value: NotificationController,
-    },
-    {
-      id: 'search',
-      requiredServices: ['social'],
-      value: SearchController,
-    },
-    {
-      id: 'privacy',
-      requiredServices: ['social'],
-      value: PrivacyController,
-    },
-    {
-      id: 'activity',
-      requiredServices: ['social'],
-      value: ActivityController,
-    },
-    {
-      id: 'presence',
-      requiredServices: ['social'],
-      value: PresenceController,
-    },
-    {
-      id: 'profile-analytics',
-      requiredServices: ['social'],
-      value: ProfileAnalyticsController,
-    },
-    {
-      id: 'poll',
-      requiredServices: ['social'],
-      value: PollController,
-    },
-    {
-      id: 'post-share',
-      requiredServices: ['social'],
-      value: PostShareController,
-    },
-    {
-      id: 'social-event',
-      requiredServices: ['social'],
-      value: SocialEventController,
-    },
-    {
-      id: 'payments',
-      requiredServices: ['payments'],
-      value: PaymentsController,
-    },
-    {
-      id: 'donations',
-      requiredServices: ['payments'],
-      value: DonationsController,
-    },
-    {
-      id: 'leads',
-      requiredServices: ['lead-tracker'],
-      value: LeadsController,
-    },
-    {
-      id: 'hardware',
-      requiredServices: ['system-configurator-api'],
-      value: HardwareController,
-    },
-    {
-      id: 'trainer',
-      requiredServices: ['store', 'lead-tracker'],
-      value: TrainerController,
-    },
-    { id: 'registry', value: RegistryController },
-  ] as Array<ValueComposableEntry<any>>,
-  gatewayComposition
-) as Array<ValueComposableEntry<any>>;
+const controllerEntries: Array<ValueComposableEntry<any>> =
+  filterEnabledEntries(
+    [
+      { id: 'palettes', value: PalettesController },
+      { id: 'personalities', value: PersonalitiesController },
+      {
+        id: 'authentication',
+        requiredServices: ['authentication', 'profile'],
+        value: AuthenticationController,
+      },
+      {
+        id: 'profile',
+        requiredServices: [
+          'profile',
+          'ai-orchestration',
+          'authentication',
+          'telos-docs-service',
+          'permissions',
+          'social',
+        ],
+        value: ProfileController,
+      },
+      { id: 'social', requiredServices: ['social'], value: SocialController },
+      {
+        id: 'social-components',
+        requiredServices: ['social'],
+        value: SocialComponentController,
+      },
+      {
+        id: 'community',
+        requiredServices: ['social', 'permissions', 'chat-collector'],
+        value: CommunityController,
+      },
+      {
+        id: 'follow',
+        requiredServices: ['social', 'profile'],
+        value: FollowController,
+      },
+      {
+        id: 'asset',
+        requiredServices: ['assets', 'authentication', 'permissions'],
+        value: AssetController,
+      },
+      {
+        id: 'project-planning',
+        requiredServices: ['project-planning'],
+        value: ProjectPlanningController,
+      },
+      {
+        id: 'contact',
+        requiredServices: ['blogging'],
+        value: ContactController,
+      },
+      { id: 'post', requiredServices: ['blogging'], value: PostController },
+      { id: 'event', requiredServices: ['blogging'], value: EventController },
+      { id: 'blog', requiredServices: ['blogging'], value: BlogController },
+      {
+        id: 'blog-components',
+        requiredServices: ['blogging'],
+        value: BlogComponentController,
+      },
+      {
+        id: 'permissions',
+        requiredServices: ['permissions'],
+        value: PermissionsController,
+      },
+      {
+        id: 'persona',
+        requiredServices: ['telos-docs-service'],
+        value: PersonaController,
+      },
+      { id: 'store', requiredServices: ['store'], value: StoreController },
+      {
+        id: 'app-config',
+        requiredServices: ['app-configurator'],
+        value: AppConfigController,
+      },
+      { id: 'forum', requiredServices: ['forum'], value: ForumController },
+      {
+        id: 'oauth',
+        requiredServices: ['authentication', 'profile'],
+        value: OAuthController,
+      },
+      {
+        id: 'finance',
+        requiredServices: ['finance'],
+        value: FinanceController,
+      },
+      { id: 'videos', requiredServices: ['videos'], value: VideosController },
+      {
+        id: 'wellness',
+        requiredServices: ['wellness', 'ai-orchestration'],
+        value: WellnessController,
+      },
+      {
+        id: 'classifieds',
+        requiredServices: ['classifieds', 'social'],
+        value: ClassifiedsController,
+      },
+      {
+        id: 'communities',
+        requiredServices: ['social', 'permissions'],
+        value: CommunitiesController,
+      },
+      {
+        id: 'notifications',
+        requiredServices: ['social'],
+        value: NotificationController,
+      },
+      {
+        id: 'search',
+        requiredServices: ['social'],
+        value: SearchController,
+      },
+      {
+        id: 'privacy',
+        requiredServices: ['social'],
+        value: PrivacyController,
+      },
+      {
+        id: 'activity',
+        requiredServices: ['social'],
+        value: ActivityController,
+      },
+      {
+        id: 'presence',
+        requiredServices: ['social'],
+        value: PresenceController,
+      },
+      {
+        id: 'profile-analytics',
+        requiredServices: ['social'],
+        value: ProfileAnalyticsController,
+      },
+      {
+        id: 'poll',
+        requiredServices: ['social'],
+        value: PollController,
+      },
+      {
+        id: 'post-share',
+        requiredServices: ['social'],
+        value: PostShareController,
+      },
+      {
+        id: 'social-event',
+        requiredServices: ['social'],
+        value: SocialEventController,
+      },
+      {
+        id: 'payments',
+        requiredServices: ['payments'],
+        value: PaymentsController,
+      },
+      {
+        id: 'donations',
+        requiredServices: ['payments'],
+        value: DonationsController,
+      },
+      {
+        id: 'leads',
+        requiredServices: ['lead-tracker'],
+        value: LeadsController,
+      },
+      {
+        id: 'hardware',
+        requiredServices: ['system-configurator-api'],
+        value: HardwareController,
+      },
+      {
+        id: 'trainer',
+        requiredServices: ['store', 'lead-tracker'],
+        value: TrainerController,
+      },
+      { id: 'registry', value: RegistryController },
+    ] as Array<ValueComposableEntry<any>>,
+    gatewayComposition
+  ) as Array<ValueComposableEntry<any>>;
 
-const realtimeProviderEntries: Array<ValueComposableEntry<any>> = filterEnabledEntries(
-  [
-    {
-      id: 'chat-gateway',
-      requiredServices: [
-        'chat-collector',
-        'ai-orchestration',
-        'telos-docs-service',
-        'profile',
-      ],
-      value: ChatGateway,
-    },
-    {
-      id: 'social-gateway',
-      requiredServices: ['social'],
-      value: SocialGateway,
-    },
-  ] as Array<ValueComposableEntry<any>>,
-  gatewayComposition
-) as Array<ValueComposableEntry<any>>;
+const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
+  filterEnabledEntries(
+    [
+      {
+        id: 'chat-gateway',
+        requiredServices: [
+          'chat-collector',
+          'ai-orchestration',
+          'telos-docs-service',
+          'profile',
+        ],
+        value: ChatGateway,
+      },
+      {
+        id: 'social-gateway',
+        requiredServices: ['social'],
+        value: SocialGateway,
+      },
+    ] as Array<ValueComposableEntry<any>>,
+    gatewayComposition
+  ) as Array<ValueComposableEntry<any>>;
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -368,13 +378,13 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> = filterEnabledE
         authClient: ClientProxy,
         profileClient: ClientProxy,
         permissionsClient: ClientProxy,
-        roleInitService: RoleInitService,
+        roleInitService: RoleInitService
       ) =>
         new LoginAccountBootstrapService(
           authClient,
           profileClient,
           permissionsClient,
-          roleInitService,
+          roleInitService
         ),
       inject: [
         ServiceTokens.AUTHENTICATION_SERVICE,
@@ -388,12 +398,12 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> = filterEnabledE
       useFactory: (
         authClient: ClientProxy,
         profileClient: ClientProxy,
-        roleInitService: RoleInitService,
+        roleInitService: RoleInitService
       ) =>
         new RegisterAccountBootstrapService(
           authClient,
           profileClient,
-          roleInitService,
+          roleInitService
         ),
       inject: [
         ServiceTokens.AUTHENTICATION_SERVICE,

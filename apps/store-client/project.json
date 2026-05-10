@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "store",
   "sourceRoot": "apps/store-client/src",
-  "tags": [],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",

@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/local-hub/src",
-  "tags": [],
+  "tags": ["type:app"],
   "targets": {
     "build": {
       "executor": "@angular-devkit/build-angular:application",
@@ -13,10 +13,7 @@
         "outputPath": "dist/apps/local-hub",
         "index": "apps/local-hub/src/index.html",
         "browser": "apps/local-hub/src/main.ts",
-        "allowedCommonJsDependencies": [
-          "http-proxy-middleware",
-          "debug"
-        ],
+        "allowedCommonJsDependencies": ["http-proxy-middleware", "debug"],
         "polyfills": ["zone.js"],
         "tsConfig": "apps/local-hub/tsconfig.app.json",
         "inlineStyleLanguage": "scss",

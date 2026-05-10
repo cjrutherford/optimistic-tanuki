@@ -40,12 +40,12 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
         <h2>Primary Color</h2>
         <div class="color-options">
           @for (color of colorPresets; track color) {
-            <button
-              class="color-btn"
-              [style.background]="color"
-              [class.active]="theme.primaryColor === color"
-              (click)="setPrimaryColor(color)"
-            ></button>
+          <button
+            class="color-btn"
+            [style.background]="color"
+            [class.active]="theme.primaryColor === color"
+            (click)="setPrimaryColor(color)"
+          ></button>
           }
         </div>
         <div class="custom-color">
@@ -53,7 +53,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
           <input
             type="color"
             [value]="theme.primaryColor"
-            (input)="setPrimaryColor($any($event.target).value"
+            (input)="setPrimaryColor($any($event.target).value)"
           />
         </div>
       </section>
@@ -107,14 +107,14 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
         <p class="section-hint">Toggle sections and drag to reorder</p>
         <div class="sections-list">
           @for (section of sections; track section.id) {
-            <div class="section-item" [class.disabled]="!section.enabled">
-              <input
-                type="checkbox"
-                [checked]="section.enabled"
-                (change)="toggleSection(section.id)"
-              />
-              <span>{{ section.title }}</span>
-            </div>
+          <div class="section-item" [class.disabled]="!section.enabled">
+            <input
+              type="checkbox"
+              [checked]="section.enabled"
+              (change)="toggleSection(section.id)"
+            />
+            <span>{{ section.title }}</span>
+          </div>
           }
         </div>
       </section>
@@ -228,13 +228,25 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
         margin-bottom: 0.5rem;
       }
       .layout-preview.single {
-        background: linear-gradient(90deg, var(--border) 0%, var(--border) 30%, var(--border) 0%, var(--border) 30%);
+        background: linear-gradient(
+          90deg,
+          var(--border) 0%,
+          var(--border) 30%,
+          var(--border) 0%,
+          var(--border) 30%
+        );
       }
       .layout-preview.split {
         background: linear-gradient(90deg, var(--border) 50%, transparent 50%);
       }
       .layout-preview.grid {
-        background: repeating-linear-gradient(90deg, var(--border) 0, var(--border) 30%, transparent 30%, transparent 60%);
+        background: repeating-linear-gradient(
+          90deg,
+          var(--border) 0,
+          var(--border) 30%,
+          transparent 30%,
+          transparent 60%
+        );
       }
       .section-hint {
         font-size: 0.8125rem;

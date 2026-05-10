@@ -40,5 +40,6 @@
       "command": "docker compose -f docker-compose.local-hub-e2e.yaml run --rm e2e-test-runner",
       "dependsOn": ["docker:up"]
     }
-  }
+  },
+  "tags": ["type:e2e"]
 }

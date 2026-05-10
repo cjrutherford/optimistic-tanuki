@@ -4,7 +4,7 @@
   "projectType": "application",
   "prefix": "app",
   "sourceRoot": "apps/ui-playground/src",
-  "tags": ["scope:motion", "type:frontend"],
+  "tags": ["type:app", "scope:motion", "platform:web", "visibility:internal"],
   "targets": {
     "build": {
       "executor": "@angular/build:application",

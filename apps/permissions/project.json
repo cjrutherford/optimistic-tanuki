@@ -84,5 +84,10 @@
       }
     }
   },
-  "tags": ["api", "permissions"]
+  "tags": [
+    "type:app",
+    "scope:permissions",
+    "platform:server",
+    "visibility:internal"
+  ]
 }
