@@ -1,4 +1,4 @@
-FROM docker.io/node:lts-alpine AS base
+FROM docker.io/node:24-alpine AS base
 RUN apk add --no-cache libc6-compat dumb-init
 WORKDIR /usr/src/app
 
@@ -15,7 +15,7 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 RUN pnpm exec nx build gateway --configuration development --verbose
 
 # Production image
-FROM docker.io/node:lts-alpine AS runner
+FROM docker.io/node:24-alpine AS runner
 RUN apk add --no-cache dumb-init
 ENV NODE_ENV=development
 ENV PORT=3000
@@ -23,7 +23,7 @@ WORKDIR /usr/src/app
 COPY --from=base /usr/src/app/node_modules ./node_modules
 COPY --from=base /usr/src/app/dist/apps/gateway ./dist/apps/gateway
 COPY --from=base /usr/src/app/package.json ./package.json
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add nodemon
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 
 USER node
 EXPOSE 3000

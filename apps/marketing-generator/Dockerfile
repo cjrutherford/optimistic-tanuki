@@ -1,4 +1,4 @@
-FROM node:lts-alpine as builder
+FROM node:24-alpine as builder
 
 WORKDIR /usr/src/app
 
@@ -15,7 +15,7 @@ COPY apps/marketing-generator ./apps/marketing-generator
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build marketing-generator --configuration=production
 
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app

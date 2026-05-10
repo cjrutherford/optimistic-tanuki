@@ -11,7 +11,7 @@ RUN pnpm exec nx build wellness --configuration=development
 
 FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add nodemon
+RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs

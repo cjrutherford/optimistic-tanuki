@@ -28,7 +28,7 @@ services:
       retries: 12
 
   db-setup:
-    image: node:lts-alpine
+    image: node:24-alpine
     container_name: ot_db_setup_e2e
     working_dir: /workspace
     volumes:

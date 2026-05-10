@@ -11,11 +11,11 @@ RUN pnpm exec nx build classifieds --configuration=development
 
 FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add nodemon
+RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add typeorm
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w typeorm
 COPY --from=builder /app/dist/apps/classifieds ./classifieds
 COPY --from=builder /app/apps/classifieds/src/assets ./assets
 COPY --from=builder /app/node_modules ./node_modules

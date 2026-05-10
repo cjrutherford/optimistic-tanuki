@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular SSR application
-FROM node:lts-alpine as builder
+FROM node:24-alpine as builder
 
 # Set working directory
 WORKDIR /usr/src/app
@@ -23,7 +23,7 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 RUN pnpm exec nx build d6 --configuration=production
 
 # Stage 2: Create the runtime image from a slim Node.js base
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app

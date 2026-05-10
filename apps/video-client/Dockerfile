@@ -1,5 +1,5 @@
 # Stage 1: Build the Angular SSR application
-FROM node:lts-alpine as builder
+FROM node:24-alpine as builder
 
 WORKDIR /usr/src/app
 
@@ -17,7 +17,7 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 RUN pnpm exec nx build video-client --configuration=development
 
 # Stage 2: Runtime image
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 
 WORKDIR /app

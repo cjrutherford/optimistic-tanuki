@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /usr/src/app
 
@@ -15,11 +15,11 @@ COPY apps/fin-commander ./apps/fin-commander
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build fin-commander --configuration=production
 
-FROM node:lts-alpine
+FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add nodemon
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 
 WORKDIR /app
 

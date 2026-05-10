@@ -1,4 +1,4 @@
-FROM node:lts-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /usr/src/app
 
@@ -13,7 +13,7 @@ COPY apps/system-configurator ./apps/system-configurator
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build system-configurator --configuration=production
 
-FROM node:lts-alpine
+FROM node:24-alpine
 
 RUN apk add --no-cache dumb-init
 
