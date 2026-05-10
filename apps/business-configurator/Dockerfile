@@ -8,10 +8,10 @@ COPY pnpm-workspace.yaml ./
 COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
-COPY apps/system-configurator ./apps/system-configurator
+COPY apps/business-configurator ./apps/business-configurator
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
-RUN pnpm exec nx build system-configurator --configuration=production
+RUN pnpm exec nx build business-configurator --configuration=production
 
 FROM node:24-alpine
 
@@ -28,8 +28,8 @@ COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
-COPY --from=builder /usr/src/app/dist/apps/system-configurator ./dist/apps/system-configurator
+COPY --from=builder /usr/src/app/dist/apps/business-configurator ./dist/apps/business-configurator
 
 EXPOSE 4000
 
-CMD ["dumb-init", "node", "/app/dist/apps/system-configurator/server/server.mjs"]
+CMD ["dumb-init", "node", "/app/dist/apps/business-configurator/server/server.mjs"]
