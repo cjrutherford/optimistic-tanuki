@@ -1,11 +1,17 @@
 # Theme Styles Library
 
-Shared styles and mixins for Optimistic Tanuki UI components.
+`theme-styles` contains shared SCSS mixins, variables, and theme-oriented styles for workspace UI libraries and applications.
 
-## Installation
+## Repo Role
+
+- shared styling primitives for component libraries
+- reusable mixins and variables for theme-aware UI
+
+## Nx Commands
 
 ```bash
-pnpm install @optimistic-tanuki/theme-styles
+pnpm exec nx build theme-styles
+pnpm exec nx test theme-styles
 ```
 
 ## Usage
@@ -130,7 +136,3 @@ All styles respect user preferences:
 - Firefox 78+
 - Safari 14+
 - Supports CSS Grid, Flexbox, and Container Queries
-
-## License
-
-MIT

@@ -26,3 +26,11 @@ pnpm exec nx build forgeofwill
 - frontend for project and task workflows
 - depends on the gateway and project-planning backend
 - included in the deployment inventory and image promotion flow
+
+## Nx Commands
+
+```bash
+pnpm exec nx serve forgeofwill
+pnpm exec nx build forgeofwill
+pnpm exec nx test forgeofwill
+```

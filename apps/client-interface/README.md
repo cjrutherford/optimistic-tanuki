@@ -26,3 +26,11 @@ pnpm exec nx build client-interface
 - primary browser frontend for the broader platform
 - talks to the gateway as its backend entrypoint
 - included in the deployment inventory and k8s overlay image promotion flow
+
+## Nx Commands
+
+```bash
+pnpm exec nx serve client-interface
+pnpm exec nx build client-interface
+pnpm exec nx test client-interface
+```

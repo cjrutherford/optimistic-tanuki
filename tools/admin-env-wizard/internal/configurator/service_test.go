@@ -25,12 +25,30 @@ func TestGenerateEnvironmentWritesComposeAndK8sOutputs(t *testing.T) {
 	if result.K8sPath == "" {
 		t.Fatal("expected k8s output path")
 	}
+	if result.DeployScript == "" {
+		t.Fatal("expected deploy script path")
+	}
 
 	if _, err := os.Stat(filepath.Join(env.OutputDir, result.ComposePath)); err != nil {
 		t.Fatalf("expected compose file to exist: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(env.OutputDir, result.K8sPath)); err != nil {
 		t.Fatalf("expected k8s file to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(env.OutputDir, "compose", "fragments", "docker-compose.base.yaml")); err != nil {
+		t.Fatalf("expected compose base fragment to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(env.OutputDir, "k8s", "base", "kustomization.yaml")); err != nil {
+		t.Fatalf("expected k8s base kustomization to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(env.OutputDir, result.DeployScript)); err != nil {
+		t.Fatalf("expected root deploy script to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(env.OutputDir, "compose", "deploy.sh")); err != nil {
+		t.Fatalf("expected compose deploy script to exist: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(env.OutputDir, "k8s", "deploy.sh")); err != nil {
+		t.Fatalf("expected k8s deploy script to exist: %v", err)
 	}
 }
 

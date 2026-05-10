@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build prompt-proxy
 pnpm exec nx test prompt-proxy
+pnpm exec nx serve prompt-proxy
 ```

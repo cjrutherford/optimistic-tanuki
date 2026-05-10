@@ -2,6 +2,16 @@
 
 Optimistic Tanuki is an Nx monorepo for a multi-app platform built around NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
 
+## Start Here
+
+Use the entrypoint that matches the job:
+
+- first-time setup: [docs/getting-started/README.md](./docs/getting-started/README.md)
+- workspace navigation: [docs/architecture/workspace-map.md](./docs/architecture/workspace-map.md)
+- full project inventory: [docs/reference/workspace-catalog.md](./docs/reference/workspace-catalog.md)
+- deployment generation: [docs/devops/deployment-generation.md](./docs/devops/deployment-generation.md)
+- generated deployment tooling: [tools/admin-env-wizard/README.md](./tools/admin-env-wizard/README.md)
+
 The repo currently has three operational layers:
 
 - local development through Docker Compose and Nx

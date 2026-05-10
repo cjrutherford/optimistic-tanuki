@@ -2,6 +2,17 @@
 
 Welcome! This guide will help you get Optimistic Tanuki running on your local machine.
 
+## Best Starting Points
+
+Use this document for setup and day-one contributor workflow.
+
+After setup:
+
+- use [Workspace Map](../architecture/workspace-map.md) to understand where code belongs
+- use [Workspace Catalog](../reference/workspace-catalog.md) when you need the full project inventory
+- use [Docker Compose](../devops/docker-compose.md) for the canonical local stack workflow
+- use [Deployment Generation](../devops/deployment-generation.md) if your change affects deployable service shape
+
 ## Overview
 
 Optimistic Tanuki is a monorepo containing microservices and frontend applications for:
@@ -9,6 +20,12 @@ Optimistic Tanuki is a monorepo containing microservices and frontend applicatio
 - **Digital Homestead**: Personal content management and social features
 - **Forge of Will**: Project management and planning tool
 - **Personal Website**: Portfolio and blog platform
+
+The repo also contains:
+
+- shared libraries under `libs/`
+- deployment tooling under `tools/`
+- Kubernetes and Compose deployment surfaces
 
 ## Prerequisites
 
@@ -134,13 +151,13 @@ Run specific services independently when Docker is unnecessary:
 
 ```bash
 # Run gateway
-nx serve gateway
+pnpm exec nx serve gateway
 
 # Run client interface
-nx serve client-interface
+pnpm exec nx serve client-interface
 
 # Run authentication service
-nx serve authentication
+pnpm exec nx serve authentication
 ```
 
 ## First-Time Setup
@@ -198,7 +215,7 @@ Do not default to `pnpm run docker:dev` when:
 
 ```bash
 # Build all applications
-nx run-many --target=build --all
+pnpm exec nx run-many --target=build --all
 
 # Build specific application
 pnpm exec nx build client-interface
@@ -208,13 +225,13 @@ pnpm exec nx build client-interface
 
 ```bash
 # Run all tests
-nx run-many --target=test --all
+pnpm exec nx run-many --target=test --all
 
 # Run tests for specific library
-nx test common-ui
+pnpm exec nx test common-ui
 
 # Run E2E tests
-nx e2e client-interface-e2e
+pnpm exec nx e2e client-interface-e2e
 ```
 
 For comprehensive testing information, see the [E2E Testing Guide](../testing/e2e-testing.md).
@@ -223,10 +240,10 @@ For comprehensive testing information, see the [E2E Testing Guide](../testing/e2
 
 ```bash
 # Lint all projects
-nx run-many --target=lint --all
+pnpm exec nx run-many --target=lint --all
 
 # Lint specific project
-nx lint gateway
+pnpm exec nx lint gateway
 ```
 
 ## Project Structure
@@ -250,6 +267,8 @@ optimistic-tanuki/
 ├── docker/                 # Docker configuration
 └── tools/                  # Build tools and scripts
 ```
+
+For the full repo map, read [Workspace Map](../architecture/workspace-map.md).
 
 ## Common Tasks
 

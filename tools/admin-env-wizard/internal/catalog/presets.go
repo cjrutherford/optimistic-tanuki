@@ -6,13 +6,15 @@ import (
 
 func DefaultCatalog() *Catalog {
 	c := &Catalog{
-		presets: make(map[string]Preset),
-		infra:   make(map[domain.InfraKind]Preset),
+		presets:      make(map[string]Preset),
+		infra:        make(map[domain.InfraKind]Preset),
+		capabilities: make(map[string][]string),
 	}
 
 	c.initInfra()
 	c.initServices()
 	c.initClients()
+	c.initCapabilities()
 
 	return c
 }

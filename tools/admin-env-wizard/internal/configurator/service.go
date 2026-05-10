@@ -13,6 +13,7 @@ type GenerateResult struct {
 	OutputDir    string
 	ComposePath  string
 	K8sPath      string
+	DeployScript string
 	GeneratedK8s []string
 }
 
@@ -22,13 +23,13 @@ func DefaultEnvironment() *domain.EnvironmentDefinition {
 		Namespace:    "optimistic-tanuki",
 		Targets:      []domain.Target{domain.TargetCompose, domain.TargetK8s},
 		ComposeMode:  domain.ComposeModeImage,
+		Provider:     domain.ProviderVultr,
 		ImageOwner:   "cjrutherford",
 		DefaultTag:   "latest",
 		IncludeInfra: []domain.InfraKind{domain.InfraPostgres, domain.InfraRedis},
+		Capabilities: []string{"community"},
 		Services: []domain.ServiceSelection{
 			{ServiceID: "gateway", Enabled: true},
-			{ServiceID: "authentication", Enabled: true},
-			{ServiceID: "app-configurator", Enabled: true},
 		},
 	}
 }
@@ -49,16 +50,46 @@ func GenerateEnvironment(env *domain.EnvironmentDefinition, cat *catalog.Catalog
 		return GenerateResult{}, err
 	}
 
+	if len(env.Capabilities) > 0 {
+		explicit := make([]string, 0, len(env.Services))
+		for _, service := range env.Services {
+			if service.Enabled {
+				explicit = append(explicit, service.ServiceID)
+			}
+		}
+
+		resolved, err := cat.ResolveServices(env.Capabilities, []string{"gateway"}, explicit)
+		if err != nil {
+			return GenerateResult{}, err
+		}
+
+		env.Services = make([]domain.ServiceSelection, 0, len(resolved))
+		for _, serviceID := range resolved {
+			env.Services = append(env.Services, domain.ServiceSelection{
+				ServiceID: serviceID,
+				Enabled:   true,
+			})
+		}
+	}
+
 	result := GenerateResult{OutputDir: writer.BaseDir}
+
+	gatewayComposition, err := generate.GenerateGatewayComposition(env, cat)
+	if err != nil {
+		return GenerateResult{}, fmt.Errorf("generate gateway composition: %w", err)
+	}
+	if err := writer.WriteGatewayComposition(gatewayComposition); err != nil {
+		return GenerateResult{}, fmt.Errorf("write gateway composition: %w", err)
+	}
 
 	for _, t := range env.Targets {
 		switch t {
 		case domain.TargetCompose:
-			composeData, err := generate.GenerateCompose(env, cat)
+			composeFiles, err := generate.GenerateComposeFiles(env, cat)
 			if err != nil {
 				return GenerateResult{}, fmt.Errorf("generate compose: %w", err)
 			}
-			if err := writer.WriteComposeFile(composeData); err != nil {
+			if err := writer.WriteComposeFiles(composeFiles); err != nil {
 				return GenerateResult{}, fmt.Errorf("write compose: %w", err)
 			}
 			result.ComposePath = "compose/docker-compose.yaml"
@@ -76,6 +107,11 @@ func GenerateEnvironment(env *domain.EnvironmentDefinition, cat *catalog.Catalog
 			}
 		}
 	}
+
+	if err := writer.WriteDeployScripts(env.Targets); err != nil {
+		return GenerateResult{}, fmt.Errorf("write deploy scripts: %w", err)
+	}
+	result.DeployScript = "deploy.sh"
 
 	return result, nil
 }

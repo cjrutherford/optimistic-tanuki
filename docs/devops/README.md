@@ -8,6 +8,7 @@ This directory contains the infrastructure and deployment docs for the active re
 - [Kubernetes Deployment](k8s.md) - Kustomize base and overlays, local scripts, and cluster apply flow
 - [Service Ports Reference](ports.md) - Port mappings for all services
 - [Gateway Configuration](gateway.md) - Gateway service configuration
+- [Deployment Generation](deployment-generation.md) - General model and deployment workflow for generated Compose and Kubernetes output
 - [Docker Compose](docker-compose.md) - Local development with Docker Compose
 - [ArgoCD](argocd.md) - GitOps deployment with the parameterized Argo application
 
@@ -43,6 +44,8 @@ The current deployment pipeline is inventory-driven:
 3. `scripts/validate-compose-k8s-parity.sh` checks Compose and Kubernetes parity for apps marked deployable to k8s.
 4. `scripts/update-k8s-overlay-images.mjs` updates overlay `images:` entries with the promoted tag.
 5. ArgoCD syncs the environment overlay selected by `k8s/argo-app/application.yaml`.
+
+Generated per-client deployment output is documented separately in `docs/devops/deployment-generation.md`.
 
 ## Key Components
 

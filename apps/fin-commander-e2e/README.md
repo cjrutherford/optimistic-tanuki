@@ -2,6 +2,11 @@
 
 This project contains the Fin Commander Playwright review suite.
 
+## Repo Role
+
+- validates the Fin Commander onboarding and first-run workflow
+- expects a Docker-backed local stack with seeded data
+
 ## Target Stack
 
 - App: `http://localhost:8089`
@@ -43,4 +48,10 @@ The Nx entry point for this suite is:
 
 ```bash
 BASE_URL=http://localhost:8089 GATEWAY_URL=http://localhost:3000 pnpm exec nx e2e fin-commander-e2e
+```
+
+## Nx Commands
+
+```bash
+pnpm exec nx e2e fin-commander-e2e
 ```

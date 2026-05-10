@@ -1,6 +1,18 @@
 # ag-grid-ui
 
-A theme-aware and personality-aware AG Grid wrapper component for the Optimistic Tanuki workspace. This library provides an AG Grid integration that automatically adapts to the application's theme and personality using the ThemeService.
+`ag-grid-ui` provides a theme-aware AG Grid wrapper for Angular applications in the workspace. Its source lives under `libs/ag-grid-ui/src/lib`.
+
+## Repo Role
+
+- shared AG Grid integration for frontend applications
+- adapts grid behavior and styling to workspace theme and personality systems
+
+## Nx Commands
+
+```bash
+pnpm exec nx build ag-grid-ui
+pnpm exec nx test ag-grid-ui
+```
 
 ## Features
 
@@ -55,11 +67,3 @@ export class MyTableComponent {
   ];
 }
 ```
-
-## Building
-
-Run `nx build ag-grid-ui` to build the library.
-
-## Running unit tests
-
-Run `nx test ag-grid-ui` to execute the unit tests.

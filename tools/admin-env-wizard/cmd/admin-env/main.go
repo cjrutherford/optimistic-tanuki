@@ -34,6 +34,35 @@ func main() {
 			os.Exit(1)
 		}
 	default:
+		if command.ConfigPath != "" {
+			workspace, err := configurator.LoadWorkspace(command.ConfigPath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "failed to load workspace config: %v\n", err)
+				os.Exit(1)
+			}
+
+			baseDir := command.Environment.OutputDir
+			if baseDir == "" {
+				baseDir = filepath.Join("dist", "admin-env")
+			}
+
+			result, err := configurator.GenerateWorkspace(
+				workspace,
+				cat,
+				output.NewWriter(baseDir),
+			)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "workspace generation failed: %v\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Printf("Workspace output written to: %s\n", result.OutputDir)
+			for _, deployment := range result.Deployments {
+				fmt.Printf("- %s\n", deployment.OutputDir)
+			}
+			return
+		}
+
 		command.Environment.Normalize()
 		writer := output.NewWriter(command.Environment.OutputDir)
 		result, err := configurator.GenerateEnvironment(command.Environment, cat, writer)
@@ -42,6 +71,9 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Output written to: %s\n", result.OutputDir)
+		if result.DeployScript != "" {
+			fmt.Printf("Deploy: %s\n", filepath.Join(result.OutputDir, result.DeployScript))
+		}
 		if result.ComposePath != "" {
 			fmt.Printf("Compose: %s\n", filepath.Join(result.OutputDir, result.ComposePath))
 		}

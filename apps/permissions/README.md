@@ -2,6 +2,32 @@
 
 The Permissions Service is a microservice that manages roles, permissions, and access control across all applications in the Optimistic Tanuki stack.
 
+## Local Development
+
+Run it through the main repo stack:
+
+```bash
+pnpm run docker:dev
+```
+
+Primary local surface:
+
+- gateway route: `http://localhost:3000/api/permissions`
+
+## Repo Role
+
+- central RBAC and permission-checking backend for the workspace
+- used by gateway guards and app-scoped authorization flows
+- part of the canonical deployment inventory used by CI and deployment validation
+
+## Nx Commands
+
+```bash
+pnpm exec nx build permissions
+pnpm exec nx test permissions
+pnpm exec nx serve permissions
+```
+
 ## Features
 
 - **Role Management**: Create and manage roles scoped to specific applications
@@ -141,19 +167,19 @@ curl -X POST http://localhost:3000/blog/posts \
 Generate a new migration:
 
 ```bash
-nx run permissions:typeorm:migration:generate --name=migration-name
+pnpm exec nx run permissions:typeorm:migration:generate --name=migration-name
 ```
 
 Run migrations:
 
 ```bash
-nx run permissions:typeorm:migration:run
+pnpm exec nx run permissions:typeorm:migration:run
 ```
 
 Revert last migration:
 
 ```bash
-nx run permissions:typeorm:migration:revert
+pnpm exec nx run permissions:typeorm:migration:revert
 ```
 
 ## Integration with Profile Service

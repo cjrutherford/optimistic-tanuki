@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build blogging
 pnpm exec nx test blogging
+pnpm exec nx serve blogging
 ```

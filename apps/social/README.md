@@ -26,4 +26,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build social
 pnpm exec nx test social
+pnpm exec nx serve social
 ```

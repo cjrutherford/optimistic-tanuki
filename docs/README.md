@@ -2,6 +2,17 @@
 
 Welcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today.
 
+## Start Here
+
+Use the shortest path that matches what you are doing:
+
+- new contributor: [Getting Started](./getting-started/README.md)
+- understanding repo layout: [Workspace Map](./architecture/workspace-map.md)
+- finding an app, library, or tool: [Workspace Catalog](./reference/workspace-catalog.md)
+- local development workflow: [Docker Compose](./devops/docker-compose.md)
+- deployment generation and per-client outputs: [Deployment Generation](./devops/deployment-generation.md)
+- staging or production deployment flow: [DevOps README](./devops/README.md)
+
 ## Current State
 
 The current branch has a few operational surfaces that matter more than the older summary docs:
@@ -17,6 +28,7 @@ The current branch has a few operational surfaces that matter more than the olde
 
 ### Getting Started
 
+- [Getting Started](./getting-started/README.md) - First-run setup and contributor workflow
 - [MVP Overview](./getting-started/mvp-overview.md) - Minimum viable product plan and roadmap
 
 ### DevOps and Infrastructure
@@ -26,6 +38,7 @@ The current branch has a few operational surfaces that matter more than the olde
 - [Kubernetes Deployment](./devops/k8s.md) - Kustomize overlays, base resources, and deployment scripts
 - [Service Ports Reference](./devops/ports.md) - Port mappings for all services
 - [Gateway Configuration](./devops/gateway.md) - Gateway service configuration
+- [Deployment Generation](./devops/deployment-generation.md) - General reference and process guide for generated deployment states
 - [Docker Compose](./devops/docker-compose.md) - Local development and the dev stack workflow
 - [ArgoCD](./devops/argocd.md) - GitOps deployment with the parameterized Argo application
 
@@ -39,6 +52,7 @@ The current branch has a few operational surfaces that matter more than the olde
 ### Architecture
 
 - [Architecture Overview](./architecture/README.md) - High-level system architecture and design
+- [Workspace Map](./architecture/workspace-map.md) - Repo layout, ownership boundaries, and navigation guide
 - [Permissions System](./architecture/permissions.md) - RBAC implementation and usage
 - [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions
 - [Theme System](./architecture/theme-system.md) - Theme system architecture and reference
@@ -74,6 +88,11 @@ Step-by-step guides for specific tasks:
 ### API Documentation
 
 - [Applications API Reference](./api/README.md) - Consolidated API documentation for applications and services
+
+### Reference
+
+- [Workspace Catalog](./reference/workspace-catalog.md) - Full inventory of apps, libraries, tools, and deployment surfaces
+- [README Template](./reference/readme-template.md) - Standard structure for app, library, and e2e project READMEs
 
 ## Application-Specific Documentation
 

@@ -45,3 +45,17 @@ func TestParseArgsTUI(t *testing.T) {
 		t.Fatalf("expected tui command, got %s", cmd.Name)
 	}
 }
+
+func TestParseArgsGenerateWorkspaceConfig(t *testing.T) {
+	cmd, err := ParseArgs([]string{
+		"generate",
+		"-config", "deployments.yaml",
+	})
+	if err != nil {
+		t.Fatalf("ParseArgs() error = %v", err)
+	}
+
+	if cmd.ConfigPath != "deployments.yaml" {
+		t.Fatalf("expected config path to be captured, got %q", cmd.ConfigPath)
+	}
+}

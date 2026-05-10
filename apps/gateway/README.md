@@ -18,7 +18,7 @@ Primary local endpoints:
 - Chat WebSocket: `ws://localhost:3300/chat`
 - Social WebSocket: `ws://localhost:3301/social`
 
-## Role in the Repo
+## Repo Role
 
 The gateway is central to both local and deployed flows:
 
@@ -36,3 +36,11 @@ The gateway is central to both local and deployed flows:
 ## Deployment Notes
 
 The gateway is part of the canonical deployment inventory exported by `tools/admin-env-wizard/cmd/deployment-inventory`. Its image tag is promoted through the staging and production Kustomize overlays rather than by directly rewriting the base manifest.
+
+## Nx Commands
+
+```bash
+pnpm exec nx build gateway
+pnpm exec nx test gateway
+pnpm exec nx serve gateway
+```

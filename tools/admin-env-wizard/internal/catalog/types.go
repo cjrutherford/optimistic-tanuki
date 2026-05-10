@@ -92,6 +92,7 @@ type DeployableApp struct {
 type Catalog struct {
 	presets map[string]Preset
 	infra   map[domain.InfraKind]Preset
+	capabilities map[string][]string
 }
 
 func (c *Catalog) Get(id string) (Preset, bool) {

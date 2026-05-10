@@ -25,4 +25,5 @@ Primary local surface:
 ```bash
 pnpm exec nx build project-planning
 pnpm exec nx test project-planning
+pnpm exec nx serve project-planning
 ```
