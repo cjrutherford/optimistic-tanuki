@@ -600,6 +600,9 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 	for _, volume := range preset.Compose.Volumes {
 		switch volume {
 		case "video-processing-data:/tmp/video-processing":
+			if deployment.Spec.Replicas > 1 {
+				deployment.Spec.Replicas = 1
+			}
 			deployment.Spec.Template.Spec.Volumes = append(
 				deployment.Spec.Template.Spec.Volumes,
 				struct {

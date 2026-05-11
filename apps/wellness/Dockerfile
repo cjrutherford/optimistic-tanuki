@@ -22,5 +22,5 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w no
 COPY --from=builder /app/dist/apps/wellness ./wellness
 COPY --from=builder /app/node_modules ./node_modules
 USER nestjs
-EXPOSE 3006
+EXPOSE 3018
 CMD ["node", "wellness/main.js"]

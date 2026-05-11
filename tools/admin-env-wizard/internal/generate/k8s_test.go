@@ -295,6 +295,9 @@ func TestK8sGeneratorIncludesBusinessAndVideoApps(t *testing.T) {
 	if !strings.Contains(string(files["base/videos.yaml"]), "claimName: video-processing-data") {
 		t.Fatal("expected videos deployment to mount the video-processing-data pvc")
 	}
+	if !strings.Contains(string(files["base/videos.yaml"]), "replicas: 1") {
+		t.Fatal("expected videos deployment replicas to be limited to 1 when sharing video-processing-data pvc")
+	}
 	if !strings.Contains(
 		string(files["base/video-transcoder-worker.yaml"]),
 		"claimName: video-processing-data",

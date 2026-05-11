@@ -6,7 +6,7 @@ const SSO_SESSION_STORAGE_KEY = 'ot.registry.ssoSession';
 
 @Injectable({ providedIn: 'root' })
 export class SsoSessionService {
-  constructor(@Inject(PLATFORM_ID) private readonly platformId: Object) {}
+  constructor(@Inject(PLATFORM_ID) private readonly platformId: object) {}
 
   storeSession(session: ExchangedToken): void {
     if (!isPlatformBrowser(this.platformId)) {
