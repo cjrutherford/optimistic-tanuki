@@ -50,6 +50,124 @@ jobs:
           path: dist/
           retention-days: 1
 
+  resolve-e2e-image-source:
+    name: Resolve E2E Image Source
+    runs-on: ubuntu-24.04
+    outputs:
+      image_tag: ${{ steps.resolve.outputs.image_tag }}
+      publish_images: ${{ steps.resolve.outputs.publish_images }}
+
+    steps:
+      - name: Resolve image tag strategy
+        id: resolve
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ "${{ github.event.pull_request.head.repo.full_name }}" != "${{ github.repository }}" ]; then
+            echo "image_tag=${{ github.base_ref || 'main' }}" >> "$GITHUB_OUTPUT"
+            echo "publish_images=false" >> "$GITHUB_OUTPUT"
+            echo "Using base branch image tag for fork PR: ${{ github.base_ref || 'main' }}"
+          else
+            echo "image_tag=sha-${{ github.sha }}" >> "$GITHUB_OUTPUT"
+            echo "publish_images=true" >> "$GITHUB_OUTPUT"
+            echo "Using commit-scoped image tag: sha-${{ github.sha }}"
+          fi
+
+  publish-e2e-images:
+    name: Publish E2E Images
+    runs-on: ubuntu-24.04
+    needs: [build, resolve-e2e-image-source]
+    timeout-minutes: 90
+    if: needs.resolve-e2e-image-source.outputs.publish_images == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: authentication
+            type: service
+          - app: profile
+            type: service
+          - app: social
+            type: service
+          - app: assets
+            type: service
+          - app: project-planning
+            type: service
+          - app: chat-collector
+            type: service
+          - app: telos-docs-service
+            type: service
+          - app: prompt-proxy
+            type: service
+          - app: ai-orchestrator
+            type: service
+          - app: blogging
+            type: service
+          - app: permissions
+            type: service
+          - app: store
+            type: service
+          - app: app-configurator
+            type: service
+          - app: lead-tracker
+            type: service
+          - app: gateway
+            type: service
+          - app: client-interface
+            type: client
+          - app: forgeofwill
+            type: client
+          - app: digital-homestead
+            type: client
+          - app: christopherrutherford-net
+            type: client
+          - app: owner-console
+            type: client
+          - app: store-client
+            type: client
+          - app: configurable-client
+            type: client
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Install dependencies
+        if: matrix.type == 'service'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build application
+        if: matrix.type == 'service'
+        run: pnpm exec nx build ${{ matrix.app }} --configuration=production
+        env:
+          CI: true
+
+      - name: Build and push SHA image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/${{ matrix.app }}/Dockerfile
+          push: true
+          tags: cjrutherford/optimistic_tanuki_${{ matrix.app }}:${{ needs.resolve-e2e-image-source.outputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   # ──────────────────────────────────────────────────────────────────────────
   # Microservice E2E tests — all suites run sequentially on one runner
   # using the shared infrastructure stack
@@ -57,7 +175,8 @@ jobs:
   microservices-e2e:
     name: Microservices E2E Tests
     runs-on: ubuntu-24.04
-    needs: build
+    needs: [build, resolve-e2e-image-source, publish-e2e-images]
+    if: needs.build.result == 'success' && needs.resolve-e2e-image-source.result == 'success' && (needs.publish-e2e-images.result == 'success' || needs.publish-e2e-images.result == 'skipped')
     timeout-minutes: 90
 
     steps:
@@ -78,18 +197,25 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download dist artifact
-        uses: actions/download-artifact@v8
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: dist
-          path: dist/
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Pull shared stack images
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml pull \
+            authentication profile social assets \
+            project-planning chat-collector telos-docs-service prompt-proxy \
+            ai-orchestrator blogging permissions store app-configurator \
+            app-configurator-seed lead-tracker gateway
+        env:
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Start shared infrastructure stack
         run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d \
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d --no-build \
             db redis db-setup \
             authentication profile social assets \
             project-planning chat-collector telos-docs-service prompt-proxy \
@@ -100,6 +226,7 @@ jobs:
           docker compose -f e2e/docker-compose.e2e-stack.yaml ps
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run authentication-e2e
         run: pnpm exec nx e2e authentication-e2e --configuration=ci
@@ -202,7 +329,8 @@ jobs:
   ui-e2e:
     name: UI E2E Tests
     runs-on: ubuntu-24.04
-    needs: build
+    needs: [build, resolve-e2e-image-source, publish-e2e-images]
+    if: needs.build.result == 'success' && needs.resolve-e2e-image-source.result == 'success' && (needs.publish-e2e-images.result == 'success' || needs.publish-e2e-images.result == 'skipped')
     timeout-minutes: 120
 
     steps:
@@ -223,21 +351,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Download dist artifact
-        uses: actions/download-artifact@v8
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          name: dist
-          path: dist/
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
 
+      - name: Pull shared stack images
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml pull \
+            authentication profile social assets \
+            project-planning chat-collector telos-docs-service prompt-proxy \
+            blogging permissions store app-configurator app-configurator-seed \
+            lead-tracker gateway \
+            client-interface forgeofwill digital-homestead \
+            christopherrutherford-net owner-console store-client configurable-client
+        env:
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
+
       - name: Start shared backend infrastructure
         run: |
-          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d \
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d --no-build \
             db redis db-setup \
             authentication profile social assets \
             project-planning chat-collector telos-docs-service prompt-proxy \
@@ -248,15 +385,17 @@ jobs:
           docker compose -f e2e/docker-compose.e2e-stack.yaml ps
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       # ── client-interface ────────────────────────────────────────────────
       - name: Start client-interface app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile client-interface up -d client-interface
+            --profile client-interface up -d --no-build client-interface
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run client-interface-e2e
         run: pnpm exec nx e2e client-interface-e2e --configuration=ci
@@ -276,10 +415,11 @@ jobs:
       - name: Start forgeofwill app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile forgeofwill up -d forgeofwill
+            --profile forgeofwill up -d --no-build forgeofwill
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run forgeofwill-e2e
         run: pnpm exec nx e2e forgeofwill-e2e --configuration=ci
@@ -299,10 +439,11 @@ jobs:
       - name: Start digital-homestead app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile digital-homestead up -d digital-homestead
+            --profile digital-homestead up -d --no-build digital-homestead
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run digital-homestead-e2e
         run: pnpm exec nx e2e digital-homestead-e2e --configuration=ci
@@ -322,10 +463,11 @@ jobs:
       - name: Start christopherrutherford-net app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile christopherrutherford-net up -d christopherrutherford-net
+            --profile christopherrutherford-net up -d --no-build christopherrutherford-net
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run christopherrutherford-net-e2e
         run: pnpm exec nx e2e christopherrutherford-net-e2e --configuration=ci
@@ -345,10 +487,11 @@ jobs:
       - name: Start owner-console app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile owner-console up -d owner-console
+            --profile owner-console up -d --no-build owner-console
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run owner-console-e2e
         run: pnpm exec nx e2e owner-console-e2e --configuration=ci
@@ -368,10 +511,11 @@ jobs:
       - name: Start store-client app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile store-client up -d store-client
+            --profile store-client up -d --no-build store-client
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ needs.resolve-e2e-image-source.outputs.image_tag }}
 
       - name: Run store-client-e2e
         run: pnpm exec nx e2e store-client-e2e --configuration=ci
@@ -391,10 +535,11 @@ jobs:
       - name: Start configurable-client app
         run: |
           docker compose -f e2e/docker-compose.e2e-stack.yaml \
-            --profile configurable-client up -d configurable-client
+            --profile configurable-client up -d --no-build configurable-client
           sleep 20
         env:
           CI: true
+          E2E_IMAGE_TAG: ${{ env.E2E_IMAGE_TAG }}
 
       - name: Run configurable-client-e2e
         run: pnpm exec nx e2e configurable-client-e2e --configuration=ci
