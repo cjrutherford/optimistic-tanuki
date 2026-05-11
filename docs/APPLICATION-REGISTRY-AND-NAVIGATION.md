@@ -25,7 +25,7 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - The shared registry service polls `/api/registry/apps` every five minutes by default, with `APP_REGISTRY_REFRESH_INTERVAL_MS` available for overrides or disabling.
 - Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
 - Gateway serves registry responses from an in-memory runtime cache, adds `Cache-Control`, `ETag`, and `X-App-Registry-Version` headers, and exposes `POST /api/registry/apps` for runtime registry replacement.
-- Docker Compose mounts the generated registry JSON into gateway and sets `APP_REGISTRY_PATH`.
+- Docker Compose mounts the registry JSON into gateway through Compose env substitution and sets `APP_REGISTRY_PATH`.
 - K8s packages `k8s/base/config/app-registry.json` through `app-registry-config` and mounts it into gateway.
 - Initial app integration:
   - `hai` title bar uses the shared navigation service for the HAI Computer link.
@@ -46,11 +46,13 @@ Centralized application registry providing cross-app navigation for all HAI clie
 ### Problem Statement
 
 HAI operates multiple Angular applications across different domains:
+
 - **hai** at haidev.com (company website)
 - **system-configurator** at haicomputer.com (BTO platform)
 - Additional apps: store, leads, billing, owner-console, etc.
 
 These applications need to link to each other reliably, requiring a single source of truth for:
+
 - Application domains
 - API endpoints
 - Navigation paths
@@ -59,6 +61,7 @@ These applications need to link to each other reliably, requiring a single sourc
 ### Solution
 
 Two-tier configuration system:
+
 1. **Build-time**: JSON bundled into Angular at build
 2. **Runtime**: Served from gateway for live updates
 
@@ -149,8 +152,8 @@ That generated file is consumed in two layers:
    `libs/app-registry/src/lib/default-registry.json` is bundled into the shared
    registry library and used when runtime fetches are unavailable.
 2. Gateway runtime registry
-   Docker Compose mounts the same file into gateway and gateway reads it from
-   `APP_REGISTRY_PATH`.
+   Docker Compose mounts the registry file selected by Compose env substitution
+   into gateway and gateway reads it from `APP_REGISTRY_PATH`.
 
 For local Docker use, restart gateway after regeneration so it reloads the
 mounted registry file:
@@ -158,6 +161,27 @@ mounted registry file:
 ```bash
 docker compose -f docker-compose.yaml -f docker-compose.dev.yaml restart gateway
 ```
+
+For production Docker Compose, point the gateway at an operator-managed registry
+file on the host instead of rebuilding images when OAuth callback domains or app
+URLs change:
+
+```dotenv
+# .env.production
+APP_REGISTRY_HOST_PATH=/opt/optimistic-tanuki/config/app-registry.production.json
+APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+```
+
+Then restart the gateway with that env file:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.yaml up -d gateway
+```
+
+Angular OAuth-capable clients continue to fetch `/api/registry/apps` from the
+gateway at runtime, so updating the mounted registry file and restarting the
+gateway is enough to roll out new callback hosts and cross-app URLs without
+rebuilding those client images.
 
 For Kubernetes, sync the generated file into the K8s source config before your
 normal deploy/apply flow:
@@ -172,9 +196,11 @@ cp libs/app-registry/src/lib/default-registry.json \
 - Angular fallback file:
   `libs/app-registry/src/lib/default-registry.json`
 - Docker Compose mount target:
-  `/usr/src/app/config/app-registry.json`
+  `${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}`
+- Docker Compose host registry source:
+  `${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}`
 - Gateway env var:
-  `APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json`
+  `APP_REGISTRY_PATH=${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}`
 - Kubernetes config source:
   `k8s/base/config/app-registry.json`
 
@@ -184,7 +210,7 @@ Applications are defined in a YAML configuration file:
 
 ```yaml
 # tools/registry/apps.yaml
-version: "1.0.0"
+version: '1.0.0'
 
 apps:
   - appId: hai
@@ -314,40 +340,40 @@ export type AppType = 'client' | 'admin' | 'user';
 export interface AppRegistration {
   /** Unique identifier for the application */
   appId: string;
-  
+
   /** Human-readable application name */
   name: string;
-  
+
   /** Primary domain (e.g., 'haidev.com') */
   domain: string;
-  
+
   /** Optional subdomain prefix (e.g., 'store' → store.haidev.com) */
   subdomain?: string;
-  
+
   /** Full computed URL: [subdomain.][domain] */
   uiBaseUrl: string;
-  
+
   /** API gateway base URL */
   apiBaseUrl: string;
-  
+
   /** Application type classification */
   appType: AppType;
-  
+
   /** Visibility level */
   visibility: AppVisibility;
-  
+
   /** Optional description */
   description?: string;
-  
+
   /** Optional icon/logo */
   iconUrl?: string;
-  
+
   /** Feature flags specific to this app */
   features?: Record<string, boolean>;
-  
+
   /** Sort order for listings */
   sortOrder?: number;
-  
+
   /** Timestamp */
   updatedAt?: string;
 }
@@ -430,16 +456,16 @@ export interface GeneratedLink {
 
 ### Client/User/Admin Applications
 
-| App ID | Name | Domain | Visibility | Type |
-|-------|------|--------|-----------|------|
-| hai | HAI Company Website | haidev.com | public | client |
-| system-configurator | HAI Computer | haicomputer.com | public | client |
-| store | HAI Store | store.haidev.com | public | client |
-| leads | Lead Tracker | leads.haidev.com | public | client |
-| billing | Billing Portal | billing.haidev.com | public | client |
-| owner-console | Owner Console | owner.haidev.com | internal | admin |
-| profile | User Profile | profile.haidev.com | internal | user |
-| auth | Authentication | auth.haidev.com | internal | client |
+| App ID              | Name                | Domain             | Visibility | Type   |
+| ------------------- | ------------------- | ------------------ | ---------- | ------ |
+| hai                 | HAI Company Website | haidev.com         | public     | client |
+| system-configurator | HAI Computer        | haicomputer.com    | public     | client |
+| store               | HAI Store           | store.haidev.com   | public     | client |
+| leads               | Lead Tracker        | leads.haidev.com   | public     | client |
+| billing             | Billing Portal      | billing.haidev.com | public     | client |
+| owner-console       | Owner Console       | owner.haidev.com   | internal   | admin  |
+| profile             | User Profile        | profile.haidev.com | internal   | user   |
+| auth                | Authentication      | auth.haidev.com    | internal   | client |
 
 ### Navigation Links
 
@@ -520,11 +546,7 @@ export class AppRegistryServiceImpl implements AppRegistryService {
   private readonly refresh$ = new BehaviorSubject<void>(undefined);
   private readonly registry$: Observable<AppRegistry>;
 
-  constructor(
-    private readonly http: HttpClient,
-    private readonly defaultRegistry: AppRegistry,
-    private readonly gatewayUrl: string
-  ) {
+  constructor(private readonly http: HttpClient, private readonly defaultRegistry: AppRegistry, private readonly gatewayUrl: string) {
     this.registry$ = this.refresh$.pipe(
       switchMap(() => this.fetchFromGateway()),
       shareReplay(1)
@@ -532,23 +554,15 @@ export class AppRegistryServiceImpl implements AppRegistryService {
   }
 
   getAllApps(): Observable<AppRegistration[]> {
-    return this.registry$.pipe(
-      switchMap(r => of(r.apps))
-    );
+    return this.registry$.pipe(switchMap((r) => of(r.apps)));
   }
 
   getApp(appId: string): Observable<AppRegistration | null> {
-    return this.getAllApps().pipe(
-      switchMap(apps => of(apps.find(a => a.appId === appId) ?? null))
-    );
+    return this.getAllApps().pipe(switchMap((apps) => of(apps.find((a) => a.appId === appId) ?? null)));
   }
 
-  getAppUrl(
-    appId: string,
-    path?: string,
-    queryParams?: Record<string, string>
-  ): string {
-    const app = this.defaultRegistry.apps.find(a => a.appId === appId);
+  getAppUrl(appId: string, path?: string, queryParams?: Record<string, string>): string {
+    const app = this.defaultRegistry.apps.find((a) => a.appId === appId);
     if (!app) return '/';
 
     let url = app.uiBaseUrl;
@@ -569,7 +583,7 @@ export class AppRegistryServiceImpl implements AppRegistryService {
 
   private fetchFromGateway(): Observable<AppRegistry> {
     return this.http.get<AppRegistryResponse>(`${this.gatewayUrl}/api/registry/apps`).pipe(
-      map(r => r.success ? r.data : this.defaultRegistry),
+      map((r) => (r.success ? r.data : this.defaultRegistry)),
       catchError(() => of(this.defaultRegistry))
     );
   }
@@ -590,21 +604,9 @@ import { NavigationLink, NavigationContext, GeneratedLink } from './navigation.t
 export interface NavigationService {
   getLinks(appId: string): Observable<NavigationLink[]>;
   getFilteredLinks(context: NavigationContext): Observable<GeneratedLink[]>;
-  generateUrl(
-    targetAppId: string,
-    path?: string,
-    queryParams?: Record<string, string>
-  ): string;
-  navigate(
-    targetAppId: string,
-    path?: string,
-    options?: NavigationOptions
-  ): void;
-  openNewTab(
-    targetAppId: string,
-    path?: string,
-    queryParams?: Record<string, string>
-  ): void;
+  generateUrl(targetAppId: string, path?: string, queryParams?: Record<string, string>): string;
+  navigate(targetAppId: string, path?: string, options?: NavigationOptions): void;
+  openNewTab(targetAppId: string, path?: string, queryParams?: Record<string, string>): void;
   getReturnLink(context: NavigationContext): string;
 }
 
@@ -616,47 +618,27 @@ export interface NavigationOptions {
 
 @Injectable()
 export class NavigationServiceImpl implements NavigationService {
-  constructor(
-    private readonly registry: AppRegistryService
-  ) {}
+  constructor(private readonly registry: AppRegistryService) {}
 
-  generateUrl(
-    targetAppId: string,
-    path?: string,
-    queryParams?: Record<string, string>
-  ): string {
+  generateUrl(targetAppId: string, path?: string, queryParams?: Record<string, string>): string {
     return this.registry.getAppUrl(targetAppId, path, queryParams);
   }
 
-  navigate(
-    targetAppId: string,
-    path?: string,
-    options: NavigationOptions = {}
-  ): void {
-    const params = options.preserveQuery
-      ? { returnTo: window.location.pathname + window.location.search }
-      : options.includeReturn
-        ? { returnTo: window.location.pathname }
-        : undefined;
+  navigate(targetAppId: string, path?: string, options: NavigationOptions = {}): void {
+    const params = options.preserveQuery ? { returnTo: window.location.pathname + window.location.search } : options.includeReturn ? { returnTo: window.location.pathname } : undefined;
 
     const url = this.generateUrl(targetAppId, path, params);
     window.location.href = url;
   }
 
-  openNewTab(
-    targetAppId: string,
-    path?: string,
-    queryParams?: Record<string, string>
-  ): void {
+  openNewTab(targetAppId: string, path?: string, queryParams?: Record<string, string>): void {
     const url = this.generateUrl(targetAppId, path, queryParams);
     window.open(url, '_blank');
   }
 
   getReturnLink(context: NavigationContext): string {
     return this.registry.getAppUrl(context.currentAppId, context.currentPath, {
-      returnTo: encodeURIComponent(
-        `${window.location.origin}${window.location.pathname}`
-      ),
+      returnTo: encodeURIComponent(`${window.location.origin}${window.location.pathname}`),
     });
   }
 }
@@ -682,14 +664,9 @@ import { NavigationService } from '../navigation.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <a
-      [href]="url"
-      [target]="openInNewTab ? '_blank' : '_self'"
-      class="nav-link"
-      (click)="handleClick($event)"
-    >
+    <a [href]="url" [target]="openInNewTab ? '_blank' : '_self'" class="nav-link" (click)="handleClick($event)">
       @if (iconName) {
-        <i [class]="'icon icon-' + iconName"></i>
+      <i [class]="'icon icon-' + iconName"></i>
       }
       <span>{{ label }}</span>
     </a>
@@ -737,16 +714,12 @@ import { GeneratedLink } from '../navigation.types';
   template: `
     <nav class="nav-menu" [class]="'nav-menu--' + position">
       @for (link of links; track link.url) {
-        <a
-          [href]="link.url"
-          class="nav-menu__link"
-          target="_self"
-        >
-          @if (link.meta.iconName) {
-            <i [class]="'icon icon-' + link.meta.iconName"></i>
-          }
-          <span>{{ link.meta.label }}</span>
-        </a>
+      <a [href]="link.url" class="nav-menu__link" target="_self">
+        @if (link.meta.iconName) {
+        <i [class]="'icon icon-' + link.meta.iconName"></i>
+        }
+        <span>{{ link.meta.label }}</span>
+      </a>
       }
     </nav>
   `,
@@ -815,7 +788,7 @@ import { HttpInterceptor, HttpRequest, HttpHandler } from '@angular/common/http'
 export class ReturnLinkInterceptor implements HttpInterceptor {
   intercept(req: HttpRequest<unknown>, next: HttpHandler) {
     const returnTo = req.params.get('returnTo');
-    
+
     if (returnTo) {
       sessionStorage.setItem('return_context', returnTo);
     }
@@ -840,27 +813,14 @@ import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class SsoService {
-  constructor(
-    private readonly http: HttpClient,
-    private readonly gatewayUrl: string
-  ) {}
+  constructor(private readonly http: HttpClient, private readonly gatewayUrl: string) {}
 
   async validateToken(token: string): Promise<TokenValidation> {
-    return firstValueFrom(
-      this.http.post<TokenValidation>(
-        `${this.gatewayUrl}/api/auth/validate`,
-        { token }
-      )
-    );
+    return firstValueFrom(this.http.post<TokenValidation>(`${this.gatewayUrl}/api/auth/validate`, { token }));
   }
 
   async exchangeToken(token: string, targetAppId: string): Promise<ExchangedToken> {
-    return firstValueFrom(
-      this.http.post<ExchangedToken>(
-        `${this.gatewayUrl}/api/auth/exchange`,
-        { token, targetAppId }
-      )
-    );
+    return firstValueFrom(this.http.post<ExchangedToken>(`${this.gatewayUrl}/api/auth/exchange`, { token, targetAppId }));
   }
 }
 ```
@@ -876,11 +836,7 @@ import { Injectable } from '@angular/core';
 
 @Injectable()
 export class NavigationAnalyticsService {
-  trackNavigation(
-    sourceAppId: string,
-    targetAppId: string,
-    path: string
-  ): void {
+  trackNavigation(sourceAppId: string, targetAppId: string, path: string): void {
     if (typeof window !== 'undefined' && (window as any).gtag) {
       (window as any).gtag('event', 'cross_app_navigation', {
         event_category: 'navigation',
@@ -903,6 +859,7 @@ export class NavigationAnalyticsService {
 Returns all registered applications.
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -919,6 +876,7 @@ Returns all registered applications.
 Returns specific application.
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -931,6 +889,7 @@ Returns specific application.
 Returns all registered navigation links.
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -943,6 +902,7 @@ Returns all registered navigation links.
 Returns navigation links for a registered source application.
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -955,6 +915,7 @@ Returns navigation links for a registered source application.
 Create or update navigation links.
 
 **Request:**
+
 ```typescript
 {
   links: NavigationLink[]
@@ -962,6 +923,7 @@ Create or update navigation links.
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1010,6 +972,7 @@ libs/app-registry/
 ## Implementation Phases
 
 ### Phase 1: Core Infrastructure
+
 - [x] Create `libs/app-registry` library
 - [x] Define TypeScript interfaces
 - [x] Create default registry JSON
@@ -1017,30 +980,35 @@ libs/app-registry/
 - [x] Add Angular module
 
 ### Phase 2: Gateway Integration
+
 - [x] Create gateway endpoints
 - [x] Add caching layer
 - [x] Implement version-based cache busting
 - [x] Add admin endpoint for updates
 
 ### Phase 3: Navigation
+
 - [x] Implement `NavigationService`
 - [x] Create navigation components
 - [x] Add default links
 - [x] Implement return link handling
 
 ### Phase 4: Angular Integration
+
 - [x] Integrate into hai app
 - [x] Integrate into system-configurator app
 - [x] Update navigation components
 - [x] Add polling with refresh
 
 ### Phase 5: SSO Integration
+
 - [x] Add token validation service
 - [x] Implement token exchange
 - [x] Create auth redirect interceptor
 - [x] Add session management
 
 ### Phase 6: Admin Interface
+
 - [x] Create registry management UI
 - [x] Add link editor
 - [x] Add validation for domains
@@ -1079,21 +1047,13 @@ export const environment = {
 ### Basic Navigation Link
 
 ```html
-<app-navigation-link
-  targetAppId="system-configurator"
-  path="/build/new"
-  label="Build a System"
-  iconName="computer"
-/>
+<app-navigation-link targetAppId="system-configurator" path="/build/new" label="Build a System" iconName="computer" />
 ```
 
 ### Navigation Menu
 
 ```html
-<app-navigation-menu
-  appId="hai"
-  position="footer"
-/>
+<app-navigation-menu appId="hai" position="footer" />
 ```
 
 ### Programmatic Navigation

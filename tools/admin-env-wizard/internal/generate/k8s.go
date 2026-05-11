@@ -143,6 +143,7 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 	}
 
 	baseResources := []string{"namespace.yaml"}
+	needsVideoProcessingPVC := false
 
 	for kind := range enabledInfra {
 		infra, ok := cat.Infra(kind)
@@ -170,6 +171,29 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 			files[filepathJoin("base", name)] = data
 			baseResources = append(baseResources, name)
 		}
+		for _, volume := range preset.Compose.Volumes {
+			if volume == "video-processing-data:/tmp/video-processing" {
+				needsVideoProcessingPVC = true
+			}
+		}
+	}
+
+	if needsVideoProcessingPVC {
+		videoPVC := K8sPVC{
+			APIVersion: "v1",
+			Kind:       "PersistentVolumeClaim",
+		}
+		videoPVC.Metadata.Name = "video-processing-data"
+		videoPVC.Metadata.Namespace = env.Namespace
+		videoPVC.Spec.AccessModes = []string{"ReadWriteOnce"}
+		videoPVC.Spec.Resources.Requests.Storage = "50Gi"
+		videoPVC.Spec.StorageClassName = profileFor(env.Provider).StorageClassName
+		videoPVCData, err := yaml.Marshal(videoPVC)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal video processing pvc: %w", err)
+		}
+		files["base/video-processing-data-pvc.yaml"] = videoPVCData
+		baseResources = append(baseResources, "video-processing-data-pvc.yaml")
 	}
 
 	sort.Strings(baseResources)
@@ -571,6 +595,35 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 				MountPath: "/etc/optimistic-tanuki/gateway",
 			},
 		)
+	}
+
+	for _, volume := range preset.Compose.Volumes {
+		switch volume {
+		case "video-processing-data:/tmp/video-processing":
+			deployment.Spec.Template.Spec.Volumes = append(
+				deployment.Spec.Template.Spec.Volumes,
+				struct {
+					Name                  string `yaml:"name"`
+					PersistentVolumeClaim *struct {
+						ClaimName string `yaml:"claimName"`
+					} `yaml:"persistentVolumeClaim"`
+					ConfigMap *struct {
+						Name string `yaml:"name"`
+					} `yaml:"configMap"`
+				}{
+					Name: "video-processing-data",
+					PersistentVolumeClaim: &struct {
+						ClaimName string `yaml:"claimName"`
+					}{
+						ClaimName: "video-processing-data",
+					},
+				},
+			)
+			container.VolumeMounts = append(container.VolumeMounts, struct {
+				Name      string `yaml:"name"`
+				MountPath string `yaml:"mountPath"`
+			}{Name: "video-processing-data", MountPath: "/tmp/video-processing"})
+		}
 	}
 
 	deployment.Spec.Template.Spec.Containers = []struct {

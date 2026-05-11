@@ -24,7 +24,11 @@ resources:
   - services/store.yaml
   - services/app-configurator.yaml
   - services/system-configurator-api.yaml
+  - services/video-processing-data-pvc.yaml
+  - services/video-transcoder-worker.yaml
+  - services/videos.yaml
   - services/wellness.yaml
+  - clients/business-site.yaml
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml
   - clients/digital-homestead.yaml
@@ -33,13 +37,13 @@ resources:
   - clients/owner-console.yaml
   - clients/fin-commander.yaml
   - clients/marketing-generator.yaml
-  - clients/trainer-site.yaml
   - clients/store-client.yaml
   - clients/configurable-client.yaml
   - clients/system-configurator.yaml
   - clients/d6.yaml
   - clients/local-hub.yaml
   - clients/leads-app.yaml
+  - clients/video-client.yaml
   - ingress.yaml
   - tailscale-ingress.yaml
 

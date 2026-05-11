@@ -1,51 +1,46 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: classifieds
+  name: business-site
   namespace: optimistic-tanuki
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: classifieds
+      app: business-site
   template:
     metadata:
       labels:
-        app: classifieds
+        app: business-site
     spec:
       containers:
-        - name: classifieds
-          image: cjrutherford/optimistic_tanuki_classifieds:latest
+        - name: business-site
+          image: cjrutherford/optimistic_tanuki_business-site:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3017
+            - containerPort: 4000
           env:
             - name: NODE_ENV
               value: 'production'
             - name: PORT
-              value: '3017'
-            - name: POSTGRES_HOST
-              value: 'postgres'
-            - name: POSTGRES_PORT
-              value: '5432'
-          envFrom:
-            - secretRef:
-                name: optimistic-tanuki-secrets
+              value: '4000'
+            - name: GATEWAY_URL
+              value: 'http://gateway:3000'
           resources:
             requests:
-              memory: '128Mi'
-              cpu: '100m'
+              memory: '64Mi'
+              cpu: '50m'
             limits:
-              memory: '512Mi'
-              cpu: '500m'
+              memory: '256Mi'
+              cpu: '250m'
           livenessProbe:
             tcpSocket:
-              port: 3017
+              port: 4000
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
             tcpSocket:
-              port: 3017
+              port: 4000
             initialDelaySeconds: 10
             periodSeconds: 5
       restartPolicy: Always
@@ -53,12 +48,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: classifieds
+  name: business-site
   namespace: optimistic-tanuki
 spec:
   selector:
-    app: classifieds
+    app: business-site
   ports:
-    - port: 3017
-      targetPort: 3017
-  clusterIP: None
+    - port: 8094
+      targetPort: 4000
+  type: LoadBalancer

@@ -96,17 +96,45 @@ jobs:
     strategy:
       matrix:
         service:
+          - ai-orchestrator
+          - app-configurator
+          - assets
           - authentication
+          - blogging
+          - business-site
+          - chat-collector
+          - christopherrutherford-net
+          - classifieds
+          - client-interface
+          - configurable-client
+          - d6
+          - digital-homestead
           - finance
           - fin-commander
-          - business-site
+          - forgeofwill
+          - forum
           - gateway
-          - profile
-          - social
-          - assets
-          - blogging
-          - project-planning
+          - hai
+          - lead-tracker
+          - leads-app
+          - local-hub
+          - marketing-generator
+          - owner-console
+          - payments
           - permissions
+          - profile
+          - project-planning
+          - prompt-proxy
+          - social
+          - store
+          - store-client
+          - system-configurator
+          - system-configurator-api
+          - telos-docs-service
+          - video-client
+          - video-transcoder-worker
+          - videos
+          - wellness
       fail-fast: false
 
     steps:

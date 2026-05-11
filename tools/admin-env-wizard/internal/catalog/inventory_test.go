@@ -11,14 +11,18 @@ func TestDeployableAppsIncludesExpectedServicesAndClients(t *testing.T) {
 	}
 
 	want := map[string]struct{}{
-		"finance":      {},
-		"fin-commander": {},
-		"classifieds":  {},
-		"lead-tracker": {},
-		"leads-app":    {},
-		"local-hub":    {},
+		"business-site":       {},
+		"classifieds":         {},
+		"finance":             {},
+		"fin-commander":       {},
+		"lead-tracker":        {},
+		"leads-app":           {},
+		"local-hub":           {},
 		"marketing-generator": {},
-		"payments":     {},
+		"payments":            {},
+		"video-client":        {},
+		"video-transcoder-worker": {},
+		"videos":              {},
 	}
 
 	for _, app := range apps {
@@ -44,6 +48,11 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 		composeService string
 		manifestPath   string
 	}{
+		{
+			id:             "business-site",
+			composeService: "business-site",
+			manifestPath:   "k8s/base/clients/business-site.yaml",
+		},
 		{
 			id:             "client-interface",
 			composeService: "ot-client-interface",
@@ -75,9 +84,24 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 			manifestPath:   "k8s/base/clients/marketing-generator.yaml",
 		},
 		{
+			id:             "video-client",
+			composeService: "video-client",
+			manifestPath:   "k8s/base/clients/video-client.yaml",
+		},
+		{
 			id:             "lead-tracker",
 			composeService: "lead-tracker",
 			manifestPath:   "k8s/base/services/lead-tracker.yaml",
+		},
+		{
+			id:             "video-transcoder-worker",
+			composeService: "video-transcoder-worker",
+			manifestPath:   "k8s/base/services/video-transcoder-worker.yaml",
+		},
+		{
+			id:             "videos",
+			composeService: "videos",
+			manifestPath:   "k8s/base/services/videos.yaml",
 		},
 	}
 

@@ -15,7 +15,7 @@ const emptyDefaults = (): PolicyRoleInitDefaults => ({
 
 const withAssignments = (
   roleNames: string[],
-  profileId?: string,
+  profileId?: string
 ): PolicyRoleInitDefaults => ({
   permissions: [],
   roles: [],
@@ -27,11 +27,11 @@ class StaticPolicy implements AppScopePolicy {
     public readonly scopeName: string,
     private readonly build: (profileId?: string) => PolicyRoleInitDefaults,
     private readonly permissionMirrors?: (
-      permissions: PolicyPermissionSpec[],
+      permissions: PolicyPermissionSpec[]
     ) => PolicyPermissionMirrorSpec[],
     private readonly crossScope?: (
-      assignment: PolicyAssignmentSpec,
-    ) => PolicyAssignmentSpec[],
+      assignment: PolicyAssignmentSpec
+    ) => PolicyAssignmentSpec[]
   ) {}
 
   buildDefaults(profileId?: string): PolicyRoleInitDefaults {
@@ -39,20 +39,20 @@ class StaticPolicy implements AppScopePolicy {
   }
 
   buildPermissionMirrors?(
-    permissions: PolicyPermissionSpec[],
+    permissions: PolicyPermissionSpec[]
   ): PolicyPermissionMirrorSpec[] {
     return this.permissionMirrors ? this.permissionMirrors(permissions) : [];
   }
 
   buildCrossScopeMappings?(
-    assignment: PolicyAssignmentSpec,
+    assignment: PolicyAssignmentSpec
   ): PolicyAssignmentSpec[] {
     return this.crossScope ? this.crossScope(assignment) : [];
   }
 }
 
 const clientInterfaceDefaults = (
-  profileId?: string,
+  profileId?: string
 ): PolicyRoleInitDefaults => {
   const permissions: PolicyPermissionSpec[] = [
     {
@@ -292,7 +292,7 @@ const socialDefaults = (profileId?: string): PolicyRoleInitDefaults => {
 
 export class AppScopePolicyRegistry {
   private readonly fallbackPolicy = new StaticPolicy('default', () =>
-    emptyDefaults(),
+    emptyDefaults()
   );
 
   private readonly policies = new Map<string, AppScopePolicy>([
@@ -305,8 +305,8 @@ export class AppScopePolicyRegistry {
             'forgeofwill_planner',
             'forgeofwill_profile_owner',
           ],
-          profileId,
-        ),
+          profileId
+        )
       ),
     ],
     [
@@ -314,8 +314,8 @@ export class AppScopePolicyRegistry {
       new StaticPolicy('digital-homestead', (profileId) =>
         withAssignments(
           ['digital_standard_user', 'digital_follower'],
-          profileId,
-        ),
+          profileId
+        )
       ),
     ],
     [
@@ -348,28 +348,28 @@ export class AppScopePolicyRegistry {
             return [{ ...assignment, appScope: 'social' }];
           }
           return [];
-        },
+        }
       ),
     ],
     ['leads-app', new StaticPolicy('leads-app', leadsDefaults)],
     [
       'christopherrutherford-net',
       new StaticPolicy('christopherrutherford-net', (profileId) =>
-        withAssignments(['christopherrutherford_standard_user'], profileId),
+        withAssignments(['christopherrutherford_standard_user'], profileId)
       ),
     ],
     ['owner-console', new StaticPolicy('owner-console', () => emptyDefaults())],
     [
       'store',
       new StaticPolicy('store', (profileId) =>
-        withAssignments(['store_customer'], profileId),
+        withAssignments(['store_customer'], profileId)
       ),
     ],
     ['finance', new StaticPolicy('finance', financeDefaults)],
     [
       'global',
       new StaticPolicy('global', (profileId) =>
-        withAssignments(['standard_user'], profileId),
+        withAssignments(['standard_user'], profileId)
       ),
     ],
     ['local-hub', new StaticPolicy('local-hub', localHubDefaults)],
@@ -378,14 +378,14 @@ export class AppScopePolicyRegistry {
       new StaticPolicy('video-client', (profileId) =>
         withAssignments(
           ['video_client_member', 'video_channel_creator'],
-          profileId,
-        ),
+          profileId
+        )
       ),
     ],
     [
-      'trainer-site',
-      new StaticPolicy('trainer-site', (profileId) =>
-        withAssignments(['business_site_client'], profileId),
+      'business-site',
+      new StaticPolicy('business-site', (profileId) =>
+        withAssignments(['business_site_client'], profileId)
       ),
     ],
     ['social', new StaticPolicy('social', socialDefaults)],

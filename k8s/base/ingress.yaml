@@ -102,20 +102,20 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: trainer-site-ingress
+  name: business-site-ingress
   namespace: optimistic-tanuki
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: '50m'
 spec:
   ingressClassName: nginx
   rules:
-    - host: trainer-site.localhost
+    - host: business-site.localhost
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: trainer-site
+                name: business-site
                 port:
                   number: 8094

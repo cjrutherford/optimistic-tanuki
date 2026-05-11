@@ -38,7 +38,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "command -v pg_isready && pnpm run db:setup"
+    command: /bin/sh -c "command -v pg_isready && sh ./setup-and-migrate.sh"
     restart: 'no'
   redis:
     image: redis:latest
@@ -65,6 +65,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/authentication/Dockerfile
+    image: cjrutherford/optimistic_tanuki_authentication:latest
     ports:
       - '3001:3001'
     environment:
@@ -99,6 +100,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/client-interface/Dockerfile
+    image: cjrutherford/optimistic_tanuki_client-interface:latest
     ports:
       - '8080:4000'
     deploy:
@@ -115,6 +117,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/forgeofwill/Dockerfile
+    image: cjrutherford/optimistic_tanuki_forgeofwill:latest
     ports:
       - '8081:4000'
     deploy:
@@ -131,6 +134,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/digital-homestead/Dockerfile
+    image: cjrutherford/optimistic_tanuki_digital-homestead:latest
     ports:
       - '8082:4000'
 
@@ -139,6 +143,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/hai/Dockerfile
+    image: cjrutherford/optimistic_tanuki_hai:latest
     ports:
       - '8088:4000'
     environment:
@@ -149,6 +154,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/fin-commander/Dockerfile
+    image: cjrutherford/optimistic_tanuki_fin-commander:latest
     ports:
       - '8089:4000'
     environment:
@@ -163,6 +169,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/marketing-generator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_marketing-generator:latest
     ports:
       - '8092:4000'
     environment:
@@ -177,6 +184,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/business-site/Dockerfile
+    image: cjrutherford/optimistic_tanuki_business-site:latest
     ports:
       - '8094:4000'
     environment:
@@ -191,6 +199,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/christopherrutherford-net/Dockerfile
+    image: cjrutherford/optimistic_tanuki_christopherrutherford-net:latest
     ports:
       - '8083:4000'
 
@@ -201,6 +210,7 @@ services:
       dockerfile: ./apps/owner-console/Dockerfile
     ports:
       - '8084:4000'
+    image: cjrutherford/optimistic_tanuki_owner-console:latest
 
   leads-app:
     container_name: ot_leads_app
@@ -209,12 +219,14 @@ services:
       dockerfile: ./apps/leads-app/Dockerfile
     ports:
       - '4201:4000'
+    image: cjrutherford/optimistic_tanuki_leads-app:latest
 
   system-configurator:
     container_name: ot_system_configurator
     build:
       context: .
       dockerfile: ./apps/system-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_system-configurator:latest
     ports:
       - '8091:4000'
     environment:
@@ -230,8 +242,9 @@ services:
     build:
       context: .
       dockerfile: ./apps/gateway/Dockerfile
+    image: cjrutherford/optimistic_tanuki_gateway:latest
     environment:
-      - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+      - APP_REGISTRY_PATH=${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
@@ -259,7 +272,7 @@ services:
       - CI_FACEBOOK_CLIENT_SECRET=${CI_FACEBOOK_CLIENT_SECRET:-}
       - CI_FACEBOOK_REDIRECT_URI=${CI_FACEBOOK_REDIRECT_URI:-}
     volumes:
-      - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
+      - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro
     ports:
       - '3000:3000'
       - '3300:3300' # Chat WebSocket
@@ -334,6 +347,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/lead-tracker/Dockerfile
+    image: cjrutherford/optimistic_tanuki_lead-tracker:latest
     ports:
       - '3020:3020'
     environment:
@@ -356,6 +370,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/profile/Dockerfile
+    image: cjrutherford/optimistic_tanuki_profile:latest
     ports:
       - '3002:3002'
     depends_on:
@@ -370,6 +385,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/social/Dockerfile
+    image: cjrutherford/optimistic_tanuki_social:latest
     ports:
       - '3003:3003'
     depends_on:
@@ -383,6 +399,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/forum/Dockerfile
+    image: cjrutherford/optimistic_tanuki_forum:latest
     ports:
       - 3015:3015
     depends_on:
@@ -396,6 +413,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/finance/Dockerfile
+    image: cjrutherford/optimistic_tanuki_finance:latest
     ports:
       - 3016:3016
     depends_on:
@@ -422,6 +440,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/chat-collector/Dockerfile
+    image: cjrutherford/optimistic_tanuki_chat-collector:latest
     ports:
       - '3007:3007'
     depends_on:
@@ -437,6 +456,7 @@ services:
       dockerfile: ./apps/assets/Dockerfile
     ports:
       - '3005:3005'
+    image: cjrutherford/optimistic_tanuki_assets:latest
     volumes:
       - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
     environment:
@@ -453,6 +473,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/prompt-proxy/Dockerfile
+    image: cjrutherford/optimistic_tanuki_prompt-proxy:latest
     ports:
       - '3009:3009'
     volumes:
@@ -467,6 +488,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/ai-orchestrator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_ai-orchestrator:latest
     ports:
       - '3010:3010'
     depends_on:
@@ -492,6 +514,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/telos-docs-service/Dockerfile
+    image: cjrutherford/optimistic_tanuki_telos-docs-service:latest
     ports:
       - '3008:3008'
     depends_on:
@@ -504,6 +527,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/blogging/Dockerfile
+    image: cjrutherford/optimistic_tanuki_blogging:latest
     ports:
       - '3011:3011'
     depends_on:
@@ -517,6 +541,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/permissions/Dockerfile
+    image: cjrutherford/optimistic_tanuki_permissions:latest
     ports:
       - '3012:3012'
     depends_on:
@@ -530,6 +555,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/project-planning/Dockerfile
+    image: cjrutherford/optimistic_tanuki_project-planning:latest
     ports:
       - '3006:3006'
     depends_on:
@@ -542,6 +568,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/store-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_store-client:latest
     ports:
       - '8085:4000'
     depends_on:
@@ -551,6 +578,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/store/Dockerfile
+    image: cjrutherford/optimistic_tanuki_store:latest
     ports:
       - '3013:3009'
     depends_on:
@@ -564,6 +592,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/app-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_app-configurator:latest
     ports:
       - '3014:3014'
     depends_on:
@@ -579,6 +608,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/system-configurator-api/Dockerfile
+    image: cjrutherford/optimistic_tanuki_system-configurator-api:latest
     ports:
       - '3021:3021'
     environment:
@@ -601,6 +631,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/app-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_app-configurator:latest
     environment:
       - DB_HOST=db
       - DB_PORT=5432
@@ -619,6 +650,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/configurable-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_configurable-client:latest
     ports:
       - '8090:4000'
     depends_on:
@@ -631,6 +663,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/wellness/Dockerfile
+    image: cjrutherford/optimistic_tanuki_wellness:latest
     ports:
       - '3018:3018'
     depends_on:
@@ -644,6 +677,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/classifieds/Dockerfile
+    image: cjrutherford/optimistic_tanuki_classifieds:latest
     ports:
       - '3017:3017'
     depends_on:
@@ -657,6 +691,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/payments/Dockerfile
+    image: cjrutherford/optimistic_tanuki_payments:latest
     ports:
       - '3004:3004'
     depends_on:
@@ -670,6 +705,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/local-hub/Dockerfile
+    image: cjrutherford/optimistic_tanuki_local-hub:latest
     ports:
       - '8087:4000'
     environment:
@@ -683,6 +719,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/d6/Dockerfile
+    image: cjrutherford/optimistic_tanuki_d6:latest
     ports:
       - '8086:4000'
     depends_on:
@@ -693,6 +730,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/videos/Dockerfile
+    image: cjrutherford/optimistic_tanuki_videos:latest
     ports:
       - '3022:3022'
     environment:
@@ -727,6 +765,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/video-transcoder-worker/Dockerfile
+    image: cjrutherford/optimistic_tanuki_video-transcoder-worker:latest
     ports:
       - '3023:3023'
     environment:
@@ -742,6 +781,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/video-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_video-client:latest
     ports:
       - '8093:4000'
     environment:

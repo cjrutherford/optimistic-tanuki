@@ -30,6 +30,8 @@ images:
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_blogging
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_business-site
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_chat-collector
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_christopherrutherford-net
@@ -64,8 +66,6 @@ images:
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_marketing-generator
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
-  - name: cjrutherford/optimistic_tanuki_trainer-site
-    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_owner-console
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_payments
@@ -89,6 +89,12 @@ images:
   - name: cjrutherford/optimistic_tanuki_system-configurator-api
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_telos-docs-service
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_video-client
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_video-transcoder-worker
+    newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
+  - name: cjrutherford/optimistic_tanuki_videos
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae
   - name: cjrutherford/optimistic_tanuki_wellness
     newTag: sha-805093fecdb14d17fe35f2a59ae96c01b3127eae

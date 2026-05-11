@@ -25,7 +25,7 @@ describe('RegistryController', () => {
       'system-configurator'
     );
     expect(response.data.apps.map((app) => app.appId)).toContain(
-      'trainer-site'
+      'business-site'
     );
     expect(responseHeaders.setHeader).toHaveBeenCalledWith(
       'Cache-Control',

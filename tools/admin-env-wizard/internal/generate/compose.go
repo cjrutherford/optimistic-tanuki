@@ -141,6 +141,14 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 	}
 	cf.Volumes["postgres_data"] = nil
 
+	for _, service := range cf.Services {
+		for _, volume := range service.Volumes {
+			if volume == "video-processing-data:/tmp/video-processing" {
+				cf.Volumes["video-processing-data"] = nil
+			}
+		}
+	}
+
 	sortKeys := make([]string, 0, len(cf.Services))
 	for k := range cf.Services {
 		sortKeys = append(sortKeys, k)

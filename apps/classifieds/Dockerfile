@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:24-alpine AS base
 
 FROM base AS builder
 RUN apk add --no-cache libc6-compat
@@ -11,15 +11,18 @@ RUN pnpm exec nx build classifieds --configuration=development
 
 FROM base AS runner
 WORKDIR /app
-RUN apk add --no-cache dumb-init && corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
+RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
+COPY --from=builder /app/pnpm-workspace.yaml ./
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w typeorm
 COPY --from=builder /app/dist/apps/classifieds ./classifieds
 COPY --from=builder /app/apps/classifieds/src/assets ./assets
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
 USER nestjs
 EXPOSE 3017
 CMD ["node", "classifieds/main.js"]

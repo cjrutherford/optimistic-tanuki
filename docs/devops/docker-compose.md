@@ -93,6 +93,40 @@ Use this when you want the non-debug image startup path.
 docker compose up -d
 ```
 
+### Production Registry Overrides
+
+Use Compose env substitution when deployed app URLs or OAuth callback hosts need
+to change without rebuilding images.
+
+The production compose file now accepts:
+
+- `APP_REGISTRY_HOST_PATH`: host path to the registry JSON mounted into gateway
+- `APP_REGISTRY_PATH`: in-container path gateway reads from
+
+Recommended pattern:
+
+```dotenv
+# .env.production
+APP_REGISTRY_HOST_PATH=/opt/optimistic-tanuki/config/app-registry.production.json
+APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+```
+
+Bring the gateway up with that env file:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.yaml up -d gateway
+```
+
+When registry contents change, update the host file and restart the gateway:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.yaml restart gateway
+```
+
+This is enough for OAuth-capable Angular clients as well. They use the
+gateway-served runtime registry at `/api/registry/apps`, so they pick up new
+app URLs and callback routing after the gateway reloads the mounted registry.
+
 ## Dist-Driven Restart Flow
 
 The Docker dev stack does not compile TypeScript inside containers. Source changes only appear after Nx rebuilds the affected project into `dist/`, and the container restarts when `nodemon` sees the compiled output change.

@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: video-transcoder-worker
+  namespace: optimistic-tanuki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: video-transcoder-worker
+  template:
+    metadata:
+      labels:
+        app: video-transcoder-worker
+    spec:
+      containers:
+        - name: video-transcoder-worker
+          image: cjrutherford/optimistic_tanuki_video-transcoder-worker:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3023
+          env:
+            - name: PORT
+              value: '3023'
+            - name: HOST
+              value: '0.0.0.0'
+            - name: VIDEO_TRANSCODER_OUTPUT_ROOT
+              value: '/tmp/video-processing'
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          volumeMounts:
+            - name: video-processing-data
+              mountPath: /tmp/video-processing
+          livenessProbe:
+            tcpSocket:
+              port: 3023
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 3023
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: video-processing-data
+          persistentVolumeClaim:
+            claimName: video-processing-data
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: video-transcoder-worker
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: video-transcoder-worker
+  ports:
+    - port: 3023
+      targetPort: 3023
+  clusterIP: None

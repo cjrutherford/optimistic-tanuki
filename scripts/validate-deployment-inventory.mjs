@@ -84,7 +84,9 @@ const expectedResources = inventory.apps
 const actualResources = (baseKustomization.resources || [])
   .filter(
     (resource) =>
-      resource !== 'ingress.yaml' && resource !== 'tailscale-ingress.yaml'
+      resource !== 'ingress.yaml' &&
+      resource !== 'tailscale-ingress.yaml' &&
+      resource !== 'services/video-processing-data-pvc.yaml'
   )
   .sort();
 

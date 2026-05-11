@@ -243,3 +243,33 @@ func TestComposeGeneratorAppliesWorkloadSpecificProviderProfiles(t *testing.T) {
 		t.Fatal("expected wellness-specific tuning in provider fragment")
 	}
 }
+
+func TestComposeGeneratorIncludesBusinessAndVideoApps(t *testing.T) {
+	env := fixtureEnvironment(domain.ComposeModeImage)
+	env.Services = []domain.ServiceSelection{
+		{ServiceID: "business-site", Enabled: true},
+		{ServiceID: "video-client", Enabled: true},
+		{ServiceID: "videos", Enabled: true},
+		{ServiceID: "video-transcoder-worker", Enabled: true},
+	}
+	cat := catalog.DefaultCatalog()
+
+	files, err := GenerateComposeFiles(env, cat)
+	if err != nil {
+		t.Fatalf("failed to generate compose files: %v", err)
+	}
+
+	output := string(files["docker-compose.yaml"])
+	for _, serviceName := range []string{"business-site:", "video-client:", "videos:", "video-transcoder-worker:"} {
+		if !strings.Contains(output, serviceName) {
+			t.Fatalf("expected compose output to include %s", serviceName)
+		}
+	}
+
+	if !strings.Contains(output, "video-processing-data:") {
+		t.Fatal("expected compose output to declare video-processing-data volume")
+	}
+	if !strings.Contains(output, "video-transcoder-worker") {
+		t.Fatal("expected compose output to reference video transcoder worker")
+	}
+}

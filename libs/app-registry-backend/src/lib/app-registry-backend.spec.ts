@@ -1,7 +1,4 @@
-import {
-  DEFAULT_APP_REGISTRY,
-  DEFAULT_NAVIGATION_LINKS,
-} from '../index';
+import { DEFAULT_APP_REGISTRY, DEFAULT_NAVIGATION_LINKS } from '../index';
 
 describe('app-registry-backend', () => {
   it('exposes the default registry through a server-safe package', () => {
@@ -10,7 +7,7 @@ describe('app-registry-backend', () => {
       'system-configurator'
     );
     expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
-      'trainer-site'
+      'business-site'
     );
   });
 

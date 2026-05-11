@@ -14,53 +14,53 @@ import { dirname, join, normalize } from 'node:path';
 
 const root = new URL('..', import.meta.url);
 const packageJson = JSON.parse(
-  readFileSync(new URL('package.json', root), 'utf8'),
+  readFileSync(new URL('package.json', root), 'utf8')
 );
 
 const dockerScripts = Object.entries(packageJson.scripts).filter(([name]) =>
-  name.startsWith('docker:'),
+  name.startsWith('docker:')
 );
 
 assert.equal(
   packageJson.scripts['docker:dev'],
   'pnpm run build:docker:dev && pnpm run docker:build:dev && pnpm run docker:dev:up',
-  'docker:dev must use the docker-specific development build set',
+  'docker:dev must use the docker-specific development build set'
 );
 
 assert.equal(
   packageJson.scripts['docker:dev:reset'],
   'pnpm run build:docker:dev && pnpm run docker:build:dev && ./scripts/docker-start-phased.sh 5 --force-recreate --renew-anon-volumes',
-  'docker:dev:reset must use the docker-specific development build set',
+  'docker:dev:reset must use the docker-specific development build set'
 );
 
 assert.equal(
   packageJson.scripts['docker:dev:watch'],
   'pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev',
-  'docker:dev:watch must use the docker-specific development build set',
+  'docker:dev:watch must use the docker-specific development build set'
 );
 
 assert.match(
   packageJson.scripts['build:docker:dev'],
   /--projects=.*video-client --configuration=development$/,
-  'build:docker:dev must define the docker development project list',
+  'build:docker:dev must define the docker development project list'
 );
 
 assert.match(
   packageJson.scripts['build:docker:dev'],
   /marketing-generator.*business-site|business-site.*marketing-generator/,
-  'build:docker:dev must include apps in the docker dev compose stack',
+  'build:docker:dev must include apps in the docker dev compose stack'
 );
 
 assert.match(
   packageJson.scripts['watch:docker:dev'],
   /--projects=.*video-client --configuration=development --watch$/,
-  'watch:docker:dev must define the docker development project watch list',
+  'watch:docker:dev must define the docker development project watch list'
 );
 
 assert.match(
   packageJson.scripts['watch:docker:dev'],
   /marketing-generator.*business-site|business-site.*marketing-generator/,
-  'watch:docker:dev must include apps in the docker dev compose stack',
+  'watch:docker:dev must include apps in the docker dev compose stack'
 );
 
 const referencedScripts = new Set();
@@ -68,7 +68,7 @@ const directlyInvokedScripts = new Set();
 
 for (const [, command] of dockerScripts) {
   for (const match of command.matchAll(
-    /(?:^|\s)(sh\s+)?(\.\/scripts\/[^\s;&|]+\.sh)\b/g,
+    /(?:^|\s)(sh\s+)?(\.\/scripts\/[^\s;&|]+\.sh)\b/g
   )) {
     const script = match[2];
     const usesShell = Boolean(match[1]);
@@ -93,7 +93,7 @@ for (const script of referencedScripts) {
     assert.equal(
       (statSync(path).mode & 0o111) !== 0,
       true,
-      `${script} must be executable`,
+      `${script} must be executable`
     );
   }
 }
@@ -174,11 +174,16 @@ for (const service of phasedStartupServices) {
   assert.equal(
     composeServices.has(service),
     true,
-    `${service} must exist in compose files`,
+    `${service} must exist in compose files`
   );
 }
 
 const composeYaml = readFileSync(new URL('docker-compose.yaml', root), 'utf8');
+assert.match(
+  composeYaml,
+  /command:\s+\/bin\/sh -c "command -v pg_isready && sh \.\/setup-and-migrate\.sh"/,
+  'db-setup must invoke setup-and-migrate.sh directly to avoid pnpm non-TTY module purge prompts'
+);
 const dockerfileReferences = [
   ...composeYaml.matchAll(/^\s+dockerfile:\s+(.+)$/gm),
 ].map((match) => match[1].replace(/^['"]|['"]$/g, ''));
@@ -186,7 +191,7 @@ const dockerfileReferences = [
 assert.equal(
   dockerfileReferences.includes('./docker/db-setup/Dockerfile'),
   true,
-  'db-setup Dockerfile must be referenced by docker-compose.yaml',
+  'db-setup Dockerfile must be referenced by docker-compose.yaml'
 );
 
 for (const dockerfile of dockerfileReferences) {
@@ -196,7 +201,7 @@ for (const dockerfile of dockerfileReferences) {
   assert.equal(
     existsSync(new URL(dirname(normalizedPath), root)),
     true,
-    `${dirname(dockerfile)} directory must exist`,
+    `${dirname(dockerfile)} directory must exist`
   );
 }
 
@@ -213,7 +218,7 @@ writeFileSync(
       'app-configurator-seed': {},
       'store-seed': {},
     },
-  }),
+  })
 );
 
 function execForOutput(command, args, options) {
@@ -243,18 +248,18 @@ const buildOutput = execForOutput(
     cwd: root,
     env: { ...process.env, DOCKER_BUILD_BAKE_FILE: bakeFile },
     encoding: 'utf8',
-  },
+  }
 );
 
 assert.match(
   buildOutput,
-  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/,
+  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/
 );
 assert.match(buildOutput, /Found 3 services to build/);
 assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* db-setup/);
 assert.match(
   buildOutput,
-  /DRY RUN: docker buildx bake -f .* authentication gateway/,
+  /DRY RUN: docker buildx bake -f .* authentication gateway/
 );
 assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* profile/);
 assert.doesNotMatch(buildOutput, /app-configurator-seed|store-seed/);
@@ -271,26 +276,26 @@ const startupOutput = execForOutput(
   {
     cwd: root,
     encoding: 'utf8',
-  },
+  }
 );
 
 assert.match(
   startupOutput,
-  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/,
+  /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/
 );
 assert.match(startupOutput, /Extra flags: --force-recreate/);
 assert.match(
   startupOutput,
-  /DRY RUN: docker compose .* up -d --force-recreate postgres redis/,
+  /DRY RUN: docker compose .* up -d --force-recreate postgres redis/
 );
 assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
 assert.match(
   startupOutput,
-  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/,
+  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
 );
 assert.match(
   startupOutput,
-  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/,
+  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/
 );
 
 const seedRuntimeEntries = [
@@ -327,17 +332,17 @@ for (const entry of seedRuntimeEntries) {
   assert.equal(
     existsSync(new URL(entry.path, root)),
     true,
-    `${entry.label} runtime entry must exist at ${entry.path}`,
+    `${entry.label} runtime entry must exist at ${entry.path}`
   );
 }
 
 const devSeedScript = readFileSync(
   new URL('scripts/dev-seed.sh', root),
-  'utf8',
+  'utf8'
 );
 const prodSeedScript = readFileSync(
   new URL('scripts/prod-seed.sh', root),
-  'utf8',
+  'utf8'
 );
 
 for (const token of [
@@ -354,16 +359,16 @@ for (const token of [
   assert.equal(
     devSeedScript.includes(token),
     true,
-    `dev seed script must include ${token}`,
+    `dev seed script must include ${token}`
   );
 }
 
 assert.equal(
   prodSeedScript.includes(
-    'run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js',
+    'run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js'
   ),
   true,
-  'prod seed script must use the permissions runtime seed entrypoint',
+  'prod seed script must use the permissions runtime seed entrypoint'
 );
 
 const ignoredPackageManagerScanDirs = new Set([
@@ -425,8 +430,8 @@ function collectFiles(dirUrl, relativeDir = '') {
       files.push(
         ...collectFiles(
           new URL(`${entry.name}/`, dirUrl),
-          join(relativeDir, entry.name),
-        ),
+          join(relativeDir, entry.name)
+        )
       );
       continue;
     }
@@ -468,5 +473,5 @@ for (const file of collectFiles(root)) {
 assert.deepEqual(
   packageManagerViolations,
   [],
-  'package operations must use pnpm',
+  'package operations must use pnpm'
 );
