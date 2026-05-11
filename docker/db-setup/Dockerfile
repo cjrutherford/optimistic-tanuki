@@ -6,4 +6,4 @@ WORKDIR /workspace
 
 RUN corepack enable
 
-CMD ["pnpm", "run", "db:setup"]
+CMD ["sh", "./setup-and-migrate.sh"]

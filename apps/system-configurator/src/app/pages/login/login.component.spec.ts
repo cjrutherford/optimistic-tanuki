@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { signal, WritableSignal } from '@angular/core';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -41,12 +43,16 @@ describe('LoginComponent', () => {
           useValue: {
             setToken: jest.fn(),
             isAuthenticated: true,
-            getDecodedTokenValue: jest.fn().mockReturnValue({ userId: 'user-1' }),
+            getDecodedTokenValue: jest
+              .fn()
+              .mockReturnValue({ userId: 'user-1' }),
           },
         },
         { provide: ProfileService, useClass: MockProfileService },
         { provide: Router, useValue: router },
         { provide: ReturnIntentService, useValue: returnIntent },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         {
           provide: MessageService,
           useValue: {

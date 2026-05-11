@@ -102,6 +102,77 @@ func (c *Catalog) initInfra() {
 func (c *Catalog) initServices() {
 	services := []Preset{
 		{
+			ID:       "videos",
+			Name:     "Videos Service",
+			Category: CategoryService,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/videos/Dockerfile",
+				ContainerPort: 3022,
+				ExternalPort:  3022,
+				DependsOn:     []string{"postgres", "assets", "video-transcoder-worker"},
+				EnvDefaults: map[string]string{
+					"POSTGRES_HOST":          "postgres",
+					"POSTGRES_PORT":          "5432",
+					"POSTGRES_USER":          "postgres",
+					"POSTGRES_PASSWORD":      "postgres",
+					"POSTGRES_DB":            "ot_videos",
+					"PORT":                   "3022",
+					"VIDEO_SEED_SOURCE_DIR":  "/mnt/valhalla/media/TV",
+					"ASSETS_HOST":            "assets",
+					"ASSETS_PORT":            "3005",
+					"LOCAL_STORAGE_PATH":     "/usr/src/app/storage",
+					"VIDEO_TRANSCODER_HOST":  "video-transcoder-worker",
+					"VIDEO_TRANSCODER_PORT":  "3023",
+				},
+				Volumes: []string{
+					"${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro",
+					"${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage",
+					"video-processing-data:/tmp/video-processing",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 3022,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_videos", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
+				{ServiceID: "assets", Required: true},
+				{ServiceID: "video-transcoder-worker", Required: true},
+			},
+		},
+		{
+			ID:       "video-transcoder-worker",
+			Name:     "Video Transcoder Worker",
+			Category: CategoryService,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/video-transcoder-worker/Dockerfile",
+				ContainerPort: 3023,
+				ExternalPort:  3023,
+				EnvDefaults: map[string]string{
+					"PORT":                         "3023",
+					"HOST":                         "0.0.0.0",
+					"VIDEO_TRANSCODER_OUTPUT_ROOT": "/tmp/video-processing",
+				},
+				Volumes: []string{
+					"${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage",
+					"video-processing-data:/tmp/video-processing",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     1,
+				InternalPort: 3023,
+				ServiceType:  "ClusterIP",
+				Resources:    ResourceLimits{},
+			},
+			Image:        ImageMetadata{Name: "cjrutherford/optimistic_tanuki_video-transcoder-worker", Tag: "latest"},
+			Dependencies: []Dependency{},
+		},
+		{
 			ID:       "gateway",
 			Name:     "Gateway API",
 			Category: CategoryService,
@@ -782,6 +853,33 @@ func (c *Catalog) initClients() {
 			},
 		},
 		{
+			ID:       "business-site",
+			Name:     "Business Site",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/business-site/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  8094,
+				DependsOn:     []string{"gateway"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "LoadBalancer",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_business-site", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
 			ID:       "owner-console",
 			Name:     "Owner Console",
 			Category: CategoryClient,
@@ -988,6 +1086,34 @@ func (c *Catalog) initClients() {
 			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_local-hub", Tag: "latest"},
 			Dependencies: []Dependency{
 				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
+			ID:       "video-client",
+			Name:     "Video Client",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/video-client/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  8093,
+				DependsOn:     []string{"gateway", "videos"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "LoadBalancer",
+				Resources:    ResourceLimits{},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_video-client", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+				{ServiceID: "videos", Required: false},
 			},
 		},
 		{

@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
@@ -58,6 +60,8 @@ describe('LoginComponent', () => {
         { provide: TenantContextService, useValue: tenantContext },
         { provide: FinanceService, useValue: financeService },
         { provide: Router, useValue: router },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
     }).compileComponents();
   });

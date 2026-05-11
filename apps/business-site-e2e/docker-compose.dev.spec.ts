@@ -5,17 +5,25 @@ describe('business-site dev compose wiring', () => {
   const workspaceRoot = join(__dirname, '../../');
 
   it('builds business-site from a dev dockerfile with dev dependencies available', () => {
-    const compose = readFileSync(join(workspaceRoot, 'docker-compose.dev.yaml'), 'utf8');
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
     const businessSiteSection = compose.slice(
       compose.indexOf('  business-site:'),
       compose.indexOf('  crdn-client-interface:')
     );
 
-    expect(businessSiteSection).toContain("dockerfile: ./apps/business-site/Dockerfile.dev");
+    expect(businessSiteSection).toContain(
+      'dockerfile: ./apps/business-site/Dockerfile.dev'
+    );
   });
 
   it('starts business-site with the image-local nodemon binary', () => {
-    const compose = readFileSync(join(workspaceRoot, 'docker-compose.dev.yaml'), 'utf8');
+    const compose = readFileSync(
+      join(workspaceRoot, 'docker-compose.dev.yaml'),
+      'utf8'
+    );
     const businessSiteSection = compose.slice(
       compose.indexOf('  business-site:'),
       compose.indexOf('  crdn-client-interface:')
@@ -31,6 +39,8 @@ describe('business-site dev compose wiring', () => {
       'utf8'
     );
 
-    expect(dockerfile).toContain('RUN corepack enable && pnpm add -w nodemon');
+    expect(dockerfile).toContain(
+      'RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon'
+    );
   });
 });

@@ -19,7 +19,6 @@ FROM node:24-alpine
 RUN apk add --no-cache dumb-init
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 
 WORKDIR /app
 
@@ -33,6 +32,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/fin-commander ./dist/apps/fin-commander

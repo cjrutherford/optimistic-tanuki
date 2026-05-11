@@ -12,7 +12,7 @@ describe('AppRegistryService', () => {
       'system-configurator'
     );
     expect(DEFAULT_APP_REGISTRY.apps.map((app) => app.appId)).toContain(
-      'trainer-site'
+      'business-site'
     );
   });
 
@@ -75,7 +75,12 @@ describe('AppRegistryService', () => {
       ),
     };
 
-    new AppRegistryService(http as any, '/api/registry/apps', 0, browserPlatformId);
+    new AppRegistryService(
+      http as any,
+      '/api/registry/apps',
+      0,
+      browserPlatformId
+    );
 
     jest.advanceTimersByTime(5000);
 
@@ -85,36 +90,46 @@ describe('AppRegistryService', () => {
   });
 
   it('returns bundled apps when the runtime registry is unavailable', (done) => {
-    const service = new AppRegistryService({
-      get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),
-    } as any, '/api/registry/apps', 300000, browserPlatformId);
+    const service = new AppRegistryService(
+      {
+        get: jest.fn().mockReturnValue(throwError(() => new Error('offline'))),
+      } as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
 
     service.getAllApps().subscribe((apps) => {
       expect(apps.map((app) => app.appId)).toContain('hai');
       expect(apps.map((app) => app.appId)).toContain('system-configurator');
-      expect(apps.map((app) => app.appId)).toContain('trainer-site');
+      expect(apps.map((app) => app.appId)).toContain('business-site');
       done();
     });
   });
 
   it('uses runtime registry data when the gateway returns it', (done) => {
-    const service = new AppRegistryService({
-      get: jest.fn().mockReturnValue(
-        of({
-          success: true,
-          data: {
-            ...DEFAULT_APP_REGISTRY,
-            apps: [
-              {
-                ...DEFAULT_APP_REGISTRY.apps[0],
-                appId: 'runtime-app',
-                name: 'Runtime App',
-              },
-            ],
-          },
-        })
-      ),
-    } as any, '/api/registry/apps', 300000, browserPlatformId);
+    const service = new AppRegistryService(
+      {
+        get: jest.fn().mockReturnValue(
+          of({
+            success: true,
+            data: {
+              ...DEFAULT_APP_REGISTRY,
+              apps: [
+                {
+                  ...DEFAULT_APP_REGISTRY.apps[0],
+                  appId: 'runtime-app',
+                  name: 'Runtime App',
+                },
+              ],
+            },
+          })
+        ),
+      } as any,
+      '/api/registry/apps',
+      300000,
+      browserPlatformId
+    );
 
     service.getApp('runtime-app').subscribe((app) => {
       expect(app?.name).toBe('Runtime App');

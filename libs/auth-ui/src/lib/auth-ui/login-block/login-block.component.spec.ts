@@ -183,7 +183,6 @@ describe('LoginBlockComponent', () => {
       'github',
       'microsoft',
       'facebook',
-      'x',
     ]);
   });
 

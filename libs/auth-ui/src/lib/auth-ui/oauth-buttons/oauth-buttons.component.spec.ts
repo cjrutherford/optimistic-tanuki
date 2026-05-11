@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { OAuthButtonsComponent, OAuthProviderEvent } from './oauth-buttons.component';
+import {
+  OAuthButtonsComponent,
+  OAuthProviderEvent,
+} from './oauth-buttons.component';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 
@@ -140,7 +143,7 @@ describe('OAuthButtonsComponent', () => {
   });
 
   it('should show all providers by default', () => {
-    expect(component.visibleProviders.length).toBe(5);
+    expect(component.visibleProviders.length).toBe(4);
   });
 
   it('should filter providers by enabledProviders input', () => {

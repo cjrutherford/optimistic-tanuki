@@ -233,20 +233,20 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: trainer-site-ingress-tailscale
+  name: business-site-ingress-tailscale
   namespace: optimistic-tanuki
   annotations:
-    tailscale.com/hostname: trainer-site
+    tailscale.com/hostname: business-site
 spec:
   ingressClassName: tailscale
   rules:
-    - host: trainer-site.tail-scale.ts.net
+    - host: business-site.tail-scale.ts.net
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: trainer-site
+                name: business-site
                 port:
                   number: 8094

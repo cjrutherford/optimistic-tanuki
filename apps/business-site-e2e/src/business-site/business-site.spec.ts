@@ -30,21 +30,23 @@ async function loginClient(
   );
 
   expect(clientToken).toBeTruthy();
-  await expect.poll(async () => {
-    return page.evaluate(() => {
-      const raw = localStorage.getItem('business-site:client-user');
-      if (!raw) {
-        return '';
-      }
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => {
+        const raw = localStorage.getItem('business-site:client-user');
+        if (!raw) {
+          return '';
+        }
 
-      try {
-        const clientUser = JSON.parse(raw) as { profileId?: string };
-        return clientUser.profileId ?? '';
-      } catch {
-        return '';
-      }
-    });
-  }).toBeTruthy();
+        try {
+          const clientUser = JSON.parse(raw) as { profileId?: string };
+          return clientUser.profileId ?? '';
+        } catch {
+          return '';
+        }
+      });
+    })
+    .toBeTruthy();
 
   const clientProfileId = await page.evaluate(() => {
     const raw = localStorage.getItem('business-site:client-user');
@@ -88,21 +90,23 @@ async function loginOwner(page: Page) {
   await page.getByRole('button', { name: /sign in/i }).click();
   await expect(page).toHaveURL(/\/owner\/dashboard$/);
 
-  await expect.poll(async () => {
-    return page.evaluate(() => {
-      const raw = localStorage.getItem('business-site:user');
-      if (!raw) {
-        return '';
-      }
+  await expect
+    .poll(async () => {
+      return page.evaluate(() => {
+        const raw = localStorage.getItem('business-site:user');
+        if (!raw) {
+          return '';
+        }
 
-      try {
-        const ownerUser = JSON.parse(raw) as { profileId?: string };
-        return ownerUser.profileId ?? '';
-      } catch {
-        return '';
-      }
-    });
-  }).toBeTruthy();
+        try {
+          const ownerUser = JSON.parse(raw) as { profileId?: string };
+          return ownerUser.profileId ?? '';
+        } catch {
+          return '';
+        }
+      });
+    })
+    .toBeTruthy();
 
   const ownerToken = await page.evaluate(() => {
     const raw = localStorage.getItem('business-site:user');
@@ -122,12 +126,15 @@ async function loginOwner(page: Page) {
   return ownerToken as string;
 }
 
-async function createLeadRequest(page: Page, input: {
-  name: string;
-  email?: string;
-  title: string;
-  description: string;
-}) {
+async function createLeadRequest(
+  page: Page,
+  input: {
+    name: string;
+    email?: string;
+    title: string;
+    description: string;
+  }
+) {
   await page.goto('/book');
   await page.getByLabel('Name').fill(input.name);
   if (input.email) {
@@ -156,10 +163,13 @@ async function createLeadRequest(page: Page, input: {
   });
 }
 
-async function createAcceptedClientBooking(page: Page, input: {
-  title: string;
-  description: string;
-}) {
+async function createAcceptedClientBooking(
+  page: Page,
+  input: {
+    title: string;
+    description: string;
+  }
+) {
   await page.goto('/book');
   await page.getByLabel('Requested offer').selectOption({ index: 0 });
   const slotSelect = page.getByLabel('Available hour block');
@@ -189,12 +199,13 @@ async function waitForOwnerBooking(
   bookingTitle: string
 ) {
   await expect
-    .poll(async () => {
-      const bookings = await fetchOwnerBookings(page, ownerToken);
-      return (
-        bookings.find((entry) => entry.title === bookingTitle) ?? null
-      );
-    }, { timeout: 15000 })
+    .poll(
+      async () => {
+        const bookings = await fetchOwnerBookings(page, ownerToken);
+        return bookings.find((entry) => entry.title === bookingTitle) ?? null;
+      },
+      { timeout: 15000 }
+    )
     .toBeTruthy();
 
   return (await fetchOwnerBookings(page, ownerToken)).find(
@@ -211,10 +222,7 @@ async function waitForOwnerBooking(
   };
 }
 
-async function fetchBookings(
-  page: Page,
-  token: string
-) {
+async function fetchBookings(page: Page, token: string) {
   const response = await page.request.get('/api/business/bookings', {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -267,7 +275,7 @@ async function enableClientTasksFeature(page: Page, token: string) {
       config: {
         ...config,
         features: {
-          ...(config.features ?? {}),
+          ...(config['features'] ?? {}),
           clientTasks: {
             enabled: true,
             allowClientCompletion: true,
@@ -325,10 +333,7 @@ async function fetchClientCheckIns(
   }>;
 }
 
-async function fetchOwnerBookings(
-  page: Page,
-  token: string
-) {
+async function fetchOwnerBookings(page: Page, token: string) {
   const response = await page.request.get('/api/business/owner/bookings', {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -364,7 +369,8 @@ test.describe('Business site user stories', () => {
       name: `Jordan Prospect ${randomUUID().slice(0, 8)}`,
       email: `public-${Date.now()}@example.com`,
       title: bookingTitle,
-      description: 'Proxy smoke test intake created through the business SSR app.',
+      description:
+        'Proxy smoke test intake created through the business SSR app.',
     });
   });
 
@@ -385,20 +391,30 @@ test.describe('Business site user stories', () => {
 
     await createAcceptedClientBooking(page, {
       title: bookingTitle,
-      description: 'A client-booked consultation that should flow through the gateway proxy.',
+      description:
+        'A client-booked consultation that should flow through the gateway proxy.',
     });
 
-    await expect.poll(async () => {
-      const bookings = await fetchBookings(page, clientToken);
-      return bookings.some((booking) => booking.title === bookingTitle);
-    }).toBe(true);
+    await expect
+      .poll(async () => {
+        const bookings = await fetchBookings(page, clientToken);
+        return bookings.some((booking) => booking.title === bookingTitle);
+      })
+      .toBe(true);
 
     const ownerToken = await loginOwner(page);
     await enableClientTasksFeature(page, ownerToken);
-    const pendingBooking = await waitForOwnerBooking(page, ownerToken, bookingTitle);
+    const pendingBooking = await waitForOwnerBooking(
+      page,
+      ownerToken,
+      bookingTitle
+    );
 
     await page.goto('/owner/requests');
-    let bookingRow = page.locator('.row').filter({ hasText: bookingTitle }).first();
+    let bookingRow = page
+      .locator('.row')
+      .filter({ hasText: bookingTitle })
+      .first();
     await expect(bookingRow).toBeVisible();
     await expect(bookingRow).toContainText(clientUserId);
     await expect(bookingRow).toContainText(
@@ -407,23 +423,32 @@ test.describe('Business site user stories', () => {
 
     await page.goto('/owner/clients');
     await expect(page.locator('body')).toContainText('Approved clients');
-    await page.getByRole('button', { name: new RegExp(CLIENT_EMAIL, 'i') }).first().click();
+    await page
+      .getByRole('button', { name: new RegExp(CLIENT_EMAIL, 'i') })
+      .first()
+      .click();
     await page.getByLabel('Title').fill(routineTitle);
-    await page.getByLabel('Summary').fill(
-      '3 training sessions, mobility finishers, and weekly check-ins.'
-    );
+    await page
+      .getByLabel('Summary')
+      .fill('3 training sessions, mobility finishers, and weekly check-ins.');
     await page.getByRole('button', { name: /assign routine/i }).click();
 
-    await expect.poll(async () => {
-      const routines = await fetchClientRoutines(page, clientUserId, clientToken);
-      return routines.find((routine) => routine.title === routineTitle)?.id ?? null;
-    }).toBeTruthy();
+    await expect
+      .poll(async () => {
+        const routines = await fetchClientRoutines(
+          page,
+          clientUserId,
+          clientToken
+        );
+        return (
+          routines.find((routine) => routine.title === routineTitle)?.id ?? null
+        );
+      })
+      .toBeTruthy();
 
-    const assignedRoutine = (await fetchClientRoutines(
-      page,
-      clientUserId,
-      clientToken
-    )).find((routine) => routine.title === routineTitle);
+    const assignedRoutine = (
+      await fetchClientRoutines(page, clientUserId, clientToken)
+    ).find((routine) => routine.title === routineTitle);
     const routineId = assignedRoutine?.id;
     expect(routineId).toBeTruthy();
 
@@ -440,11 +465,13 @@ test.describe('Business site user stories', () => {
     await expect(bookingRow).toContainText('completed');
     await bookingRow.getByRole('button', { name: 'Invoice' }).click();
 
-    await expect.poll(async () => {
-      const bookings = await fetchOwnerBookings(page, ownerToken);
-      const booking = bookings.find((entry) => entry.title === bookingTitle);
-      return booking?.status ?? null;
-    }).toBe('completed');
+    await expect
+      .poll(async () => {
+        const bookings = await fetchOwnerBookings(page, ownerToken);
+        const booking = bookings.find((entry) => entry.title === bookingTitle);
+        return booking?.status ?? null;
+      })
+      .toBe('completed');
 
     const completedBooking = (await fetchOwnerBookings(page, ownerToken)).find(
       (entry) => entry.title === bookingTitle
@@ -452,7 +479,9 @@ test.describe('Business site user stories', () => {
     expect(completedBooking?.totalCost).toBeTruthy();
     expect(completedBooking?.id).toBe(pendingBooking.id);
 
-    await expect(bookingRow).toContainText(`$${completedBooking?.totalCost ?? ''}`);
+    await expect(bookingRow).toContainText(
+      `$${completedBooking?.totalCost ?? ''}`
+    );
 
     await page.goto('/client/routines');
     await expect(page.locator('body')).toContainText(routineTitle);
@@ -461,10 +490,16 @@ test.describe('Business site user stories', () => {
     await page.getByLabel('Energy').fill('8');
     await page.getByRole('button', { name: 'Save check-in' }).click();
 
-    await expect.poll(async () => {
-      const checkIns = await fetchClientCheckIns(page, clientUserId, clientToken);
-      return checkIns.some((entry) => entry.notes === checkInNotes);
-    }).toBe(true);
+    await expect
+      .poll(async () => {
+        const checkIns = await fetchClientCheckIns(
+          page,
+          clientUserId,
+          clientToken
+        );
+        return checkIns.some((entry) => entry.notes === checkInNotes);
+      })
+      .toBe(true);
 
     await page.goto('/client/billing');
     await expect(page.locator('body')).toContainText(bookingTitle);
@@ -488,14 +523,21 @@ test.describe('Business site user stories', () => {
       description: 'Pending client should stay in the approval queue.',
     });
 
-    await expect.poll(async () => {
-      const prospects = await fetchOwnerProspects(page, ownerToken);
-      return prospects.some((entry) => entry.email === PENDING_CLIENT_EMAIL);
-    }).toBe(true);
+    await expect
+      .poll(async () => {
+        const prospects = await fetchOwnerProspects(page, ownerToken);
+        return prospects.some((entry) => entry.email === PENDING_CLIENT_EMAIL);
+      })
+      .toBe(true);
 
     await page.goto('/owner/requests');
-    const prospectRow = page.locator('.row').filter({ hasText: PENDING_CLIENT_EMAIL }).first();
+    const prospectRow = page
+      .locator('.row')
+      .filter({ hasText: PENDING_CLIENT_EMAIL })
+      .first();
     await expect(prospectRow).toBeVisible();
-    await expect(prospectRow.getByRole('button', { name: 'Accept client' })).toBeVisible();
+    await expect(
+      prospectRow.getByRole('button', { name: 'Accept client' })
+    ).toBeVisible();
   });
 });

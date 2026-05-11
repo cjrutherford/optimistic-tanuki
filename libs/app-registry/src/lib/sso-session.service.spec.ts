@@ -7,7 +7,7 @@ describe('SsoSessionService', () => {
   });
 
   it('stores and clears an exchanged token', () => {
-    const service = new SsoSessionService('browser');
+    const service = new SsoSessionService('browser' as unknown as object);
 
     service.storeSession({
       token: 'target-token',

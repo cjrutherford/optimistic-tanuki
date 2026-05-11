@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: trainer-site
+  name: video-client
   namespace: optimistic-tanuki
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: trainer-site
+      app: video-client
   template:
     metadata:
       labels:
-        app: trainer-site
+        app: video-client
     spec:
       containers:
-        - name: trainer-site
-          image: cjrutherford/optimistic_tanuki_trainer-site:latest
+        - name: video-client
+          image: cjrutherford/optimistic_tanuki_video-client:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 4000
@@ -48,12 +48,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: trainer-site
+  name: video-client
   namespace: optimistic-tanuki
 spec:
   selector:
-    app: trainer-site
+    app: video-client
   ports:
-    - port: 8094
+    - port: 8093
       targetPort: 4000
   type: LoadBalancer

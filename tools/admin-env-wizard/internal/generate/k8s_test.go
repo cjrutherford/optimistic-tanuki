@@ -257,3 +257,54 @@ func TestK8sGeneratorAppliesWorkloadSpecificProfilesToBaseDeployments(t *testing
 	assertContains("base/blogging.yaml", "replicas: 3")
 	assertContains("base/wellness.yaml", "memory: 896Mi")
 }
+
+func TestK8sGeneratorIncludesBusinessAndVideoApps(t *testing.T) {
+	env := fixtureEnvironmentK8s()
+	env.Services = []domain.ServiceSelection{
+		{ServiceID: "business-site", Enabled: true},
+		{ServiceID: "video-client", Enabled: true},
+		{ServiceID: "videos", Enabled: true},
+		{ServiceID: "video-transcoder-worker", Enabled: true},
+	}
+	cat := catalog.DefaultCatalog()
+
+	files, err := GenerateK8s(env, cat)
+	if err != nil {
+		t.Fatalf("failed to generate k8s: %v", err)
+	}
+
+	for _, name := range []string{
+		"base/business-site.yaml",
+		"base/business-site-service.yaml",
+		"base/video-client.yaml",
+		"base/video-client-service.yaml",
+		"base/video-processing-data-pvc.yaml",
+		"base/videos.yaml",
+		"base/videos-service.yaml",
+		"base/video-transcoder-worker.yaml",
+		"base/video-transcoder-worker-service.yaml",
+	} {
+		if _, ok := files[name]; !ok {
+			t.Fatalf("expected generated file %s", name)
+		}
+	}
+
+	if !strings.Contains(string(files["base/videos.yaml"]), "VIDEO_TRANSCODER_PORT") {
+		t.Fatal("expected videos deployment to include transcoder configuration")
+	}
+	if !strings.Contains(string(files["base/videos.yaml"]), "claimName: video-processing-data") {
+		t.Fatal("expected videos deployment to mount the video-processing-data pvc")
+	}
+	if !strings.Contains(string(files["base/videos.yaml"]), "replicas: 1") {
+		t.Fatal("expected videos deployment replicas to be limited to 1 when sharing video-processing-data pvc")
+	}
+	if !strings.Contains(
+		string(files["base/video-transcoder-worker.yaml"]),
+		"claimName: video-processing-data",
+	) {
+		t.Fatal("expected transcoder deployment to mount the video-processing-data pvc")
+	}
+	if !strings.Contains(string(files["base/kustomization.yaml"]), "video-transcoder-worker.yaml") {
+		t.Fatal("expected base kustomization to reference video transcoder worker")
+	}
+}

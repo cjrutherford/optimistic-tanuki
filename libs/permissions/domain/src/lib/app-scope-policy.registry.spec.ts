@@ -8,13 +8,13 @@ describe('AppScopePolicyRegistry', () => {
 
     const defaults = policy.buildDefaults();
     expect(defaults.roles.map((role: PolicyRoleSpec) => role.name)).toContain(
-      'community_owner',
+      'community_owner'
     );
     expect(defaults.assignments).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ roleName: 'client_interface_user' }),
         expect.objectContaining({ roleName: 'community_owner' }),
-      ]),
+      ])
     );
 
     expect(policy.buildPermissionMirrors?.(defaults.permissions)).toEqual([
@@ -34,7 +34,7 @@ describe('AppScopePolicyRegistry', () => {
       policy.buildCrossScopeMappings?.({
         roleName: 'community_owner',
         profileId: 'profile-1',
-      }),
+      })
     ).toEqual([
       {
         roleName: 'community_owner',
@@ -44,9 +44,9 @@ describe('AppScopePolicyRegistry', () => {
     ]);
   });
 
-  it('maps trainer-site defaults to the seeded business-site client role', () => {
+  it('maps business-site defaults to the seeded business-site client role', () => {
     const registry = new AppScopePolicyRegistry();
-    const policy = registry.get('trainer-site');
+    const policy = registry.get('business-site');
 
     expect(policy.buildDefaults('profile-1').assignments).toEqual([
       {

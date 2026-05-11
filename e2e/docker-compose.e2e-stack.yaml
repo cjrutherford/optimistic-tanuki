@@ -50,6 +50,7 @@ services:
   # ──────────────── Backend Microservices ────────────────
   authentication:
     container_name: e2e_authentication
+    image: cjrutherford/optimistic_tanuki_authentication:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/authentication/Dockerfile
@@ -70,6 +71,7 @@ services:
 
   profile:
     container_name: e2e_profile
+    image: cjrutherford/optimistic_tanuki_profile:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/profile/Dockerfile
@@ -91,6 +93,7 @@ services:
 
   social:
     container_name: e2e_social
+    image: cjrutherford/optimistic_tanuki_social:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/social/Dockerfile
@@ -114,6 +117,7 @@ services:
 
   assets:
     container_name: e2e_assets
+    image: cjrutherford/optimistic_tanuki_assets:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/assets/Dockerfile
@@ -133,6 +137,7 @@ services:
 
   project-planning:
     container_name: e2e_project_planning
+    image: cjrutherford/optimistic_tanuki_project-planning:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/project-planning/Dockerfile
@@ -152,6 +157,7 @@ services:
 
   chat-collector:
     container_name: e2e_chat_collector
+    image: cjrutherford/optimistic_tanuki_chat-collector:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/chat-collector/Dockerfile
@@ -171,6 +177,7 @@ services:
 
   telos-docs-service:
     container_name: e2e_telos_docs_service
+    image: cjrutherford/optimistic_tanuki_telos-docs-service:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/telos-docs-service/Dockerfile
@@ -190,6 +197,7 @@ services:
 
   prompt-proxy:
     container_name: e2e_prompt_proxy
+    image: cjrutherford/optimistic_tanuki_prompt-proxy:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/prompt-proxy/Dockerfile
@@ -211,6 +219,7 @@ services:
 
   ai-orchestrator:
     container_name: e2e_ai_orchestrator
+    image: cjrutherford/optimistic_tanuki_ai-orchestrator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/ai-orchestrator/Dockerfile
@@ -236,6 +245,7 @@ services:
 
   blogging:
     container_name: e2e_blogging
+    image: cjrutherford/optimistic_tanuki_blogging:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/blogging/Dockerfile
@@ -255,6 +265,7 @@ services:
 
   permissions:
     container_name: e2e_permissions
+    image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/permissions/Dockerfile
@@ -274,6 +285,7 @@ services:
 
   store:
     container_name: e2e_store
+    image: cjrutherford/optimistic_tanuki_store:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/store/Dockerfile
@@ -293,6 +305,7 @@ services:
 
   app-configurator:
     container_name: e2e_app_configurator
+    image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/app-configurator/Dockerfile
@@ -317,6 +330,7 @@ services:
 
   app-configurator-seed:
     container_name: e2e_app_configurator_seed
+    image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/app-configurator/Dockerfile
@@ -337,6 +351,7 @@ services:
 
   lead-tracker:
     container_name: e2e_lead_tracker
+    image: cjrutherford/optimistic_tanuki_lead-tracker:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/lead-tracker/Dockerfile
@@ -356,6 +371,7 @@ services:
 
   gateway:
     container_name: e2e_gateway
+    image: cjrutherford/optimistic_tanuki_gateway:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/gateway/Dockerfile
@@ -417,6 +433,7 @@ services:
   client-interface:
     container_name: e2e_client_interface
     profiles: [client-interface]
+    image: cjrutherford/optimistic_tanuki_client-interface:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/client-interface/Dockerfile
@@ -429,6 +446,7 @@ services:
   forgeofwill:
     container_name: e2e_forgeofwill
     profiles: [forgeofwill]
+    image: cjrutherford/optimistic_tanuki_forgeofwill:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/forgeofwill/Dockerfile
@@ -441,6 +459,7 @@ services:
   digital-homestead:
     container_name: e2e_digital_homestead
     profiles: [digital-homestead]
+    image: cjrutherford/optimistic_tanuki_digital-homestead:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/digital-homestead/Dockerfile
@@ -453,6 +472,7 @@ services:
   christopherrutherford-net:
     container_name: e2e_crdn
     profiles: [christopherrutherford-net]
+    image: cjrutherford/optimistic_tanuki_christopherrutherford-net:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/christopherrutherford-net/Dockerfile
@@ -465,6 +485,7 @@ services:
   owner-console:
     container_name: e2e_owner_console
     profiles: [owner-console]
+    image: cjrutherford/optimistic_tanuki_owner-console:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/owner-console/Dockerfile
@@ -477,6 +498,7 @@ services:
   store-client:
     container_name: e2e_store_client
     profiles: [store-client]
+    image: cjrutherford/optimistic_tanuki_store-client:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/store-client/Dockerfile
@@ -491,6 +513,7 @@ services:
   configurable-client:
     container_name: e2e_configurable_client
     profiles: [configurable-client]
+    image: cjrutherford/optimistic_tanuki_configurable-client:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
       dockerfile: ./apps/configurable-client/Dockerfile

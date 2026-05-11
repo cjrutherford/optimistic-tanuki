@@ -4,6 +4,8 @@ import {
   fakeAsync,
   tick,
 } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { RegisterComponent } from './register.component';
 import { AuthenticationService } from '../../authentication.service';
 import { Router } from '@angular/router';
@@ -34,6 +36,8 @@ describe('RegisterComponent', () => {
       providers: [
         { provide: AuthenticationService, useValue: authServiceMock },
         { provide: Router, useValue: routerMock },
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: MessageService, useValue: messageServiceMock },
       ],
     }).compileComponents();

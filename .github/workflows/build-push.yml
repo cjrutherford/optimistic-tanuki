@@ -148,6 +148,12 @@ jobs:
             type: client
           - app: system-configurator
             type: client
+          - app: video-client
+            type: client
+          - app: video-transcoder-worker
+            type: service
+          - app: videos
+            type: service
     steps:
       - uses: actions/checkout@v6
 
