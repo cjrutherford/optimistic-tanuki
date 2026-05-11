@@ -9,18 +9,24 @@ describe('video-client permission seeds', () => {
 
   it('defines the video-client app scope and expected roles in default-permissions.json', () => {
     expect(
-      seedData.app_scopes.some((scope: { name: string }) => scope.name === 'video-client')
-    ).toBe(true);
-
-    expect(
-      seedData.roles.some((role: { name: string; appScope: string }) =>
-        role.name === 'video_client_member' && role.appScope === 'video-client'
+      seedData.app_scopes.some(
+        (scope: { name: string }) => scope.name === 'video-client'
       )
     ).toBe(true);
 
     expect(
-      seedData.roles.some((role: { name: string; appScope: string }) =>
-        role.name === 'video_channel_creator' && role.appScope === 'video-client'
+      seedData.roles.some(
+        (role: { name: string; appScope: string }) =>
+          role.name === 'video_client_member' &&
+          role.appScope === 'video-client'
+      )
+    ).toBe(true);
+
+    expect(
+      seedData.roles.some(
+        (role: { name: string; appScope: string }) =>
+          role.name === 'video_channel_creator' &&
+          role.appScope === 'video-client'
       )
     ).toBe(true);
   });
@@ -38,14 +44,6 @@ describe('video-client permission seeds', () => {
       'videos.schedule.delete',
       'videos.live.start',
       'videos.live.stop',
-      'community.join',
-      'community.leave',
-      'community.read',
-      'social.post.create',
-      'social.post.read',
-      'social.comment.create',
-      'social.vote.create',
-      'social.reaction.create',
       'social.reaction.read',
     ];
 
@@ -62,7 +60,11 @@ describe('video-client permission seeds', () => {
   it('maps creator and member roles to the expected video-client permissions', () => {
     expect(
       seedData.role_permissions.some(
-        (entry: { role: string; permission: string; permissionAppScope: string }) =>
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
           entry.role === 'video_channel_creator' &&
           entry.permission === 'videos.schedule.create' &&
           entry.permissionAppScope === 'video-client'
@@ -71,7 +73,11 @@ describe('video-client permission seeds', () => {
 
     expect(
       seedData.role_permissions.some(
-        (entry: { role: string; permission: string; permissionAppScope: string }) =>
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
           entry.role === 'video_channel_creator' &&
           entry.permission === 'videos.live.start' &&
           entry.permissionAppScope === 'video-client'
@@ -80,7 +86,11 @@ describe('video-client permission seeds', () => {
 
     expect(
       seedData.role_permissions.some(
-        (entry: { role: string; permission: string; permissionAppScope: string }) =>
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'community.join' &&
           entry.permissionAppScope === 'video-client'
@@ -89,7 +99,11 @@ describe('video-client permission seeds', () => {
 
     expect(
       seedData.role_permissions.some(
-        (entry: { role: string; permission: string; permissionAppScope: string }) =>
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'social.post.create' &&
           entry.permissionAppScope === 'video-client'

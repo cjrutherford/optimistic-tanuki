@@ -4,7 +4,15 @@ import { Repository } from 'typeorm';
 import { Account, BankConnection, LinkedBankAccount } from '../../entities';
 import { BankConnectionService } from './bank-connection.service';
 import { AccountService } from './account.service';
+import { PlaidBankProviderService } from './plaid-bank-provider.service';
 import { TransactionService } from './transaction.service';
+
+jest.mock('isomorphic-dompurify', () => ({
+  __esModule: true,
+  default: {
+    sanitize: jest.fn((value: string) => value),
+  },
+}));
 
 describe('BankConnectionService', () => {
   let service: BankConnectionService;
@@ -13,6 +21,12 @@ describe('BankConnectionService', () => {
   let accountRepo: jest.Mocked<Repository<Account>>;
   let accountService: { create: jest.Mock };
   let transactionService: { syncBankFeed: jest.Mock };
+  let plaidProvider: {
+    createLinkToken: jest.Mock;
+    exchangePublicToken: jest.Mock;
+    syncTransactions: jest.Mock;
+    mapWebhookStatus: jest.Mock;
+  };
 
   const mockRepoFactory = () => ({
     create: jest.fn(),
@@ -28,6 +42,12 @@ describe('BankConnectionService', () => {
     };
     transactionService = {
       syncBankFeed: jest.fn(),
+    };
+    plaidProvider = {
+      createLinkToken: jest.fn(),
+      exchangePublicToken: jest.fn(),
+      syncTransactions: jest.fn(),
+      mapWebhookStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -52,6 +72,10 @@ describe('BankConnectionService', () => {
         {
           provide: TransactionService,
           useValue: transactionService,
+        },
+        {
+          provide: PlaidBankProviderService,
+          useValue: plaidProvider,
         },
       ],
     }).compile();
@@ -85,7 +109,11 @@ describe('BankConnectionService', () => {
     });
     linkedAccountRepo.create.mockImplementation((value) => value as any);
     linkedAccountRepo.save.mockResolvedValue([] as any);
-    transactionService.syncBankFeed.mockResolvedValue({ added: 2, modified: 0, removed: 0 });
+    transactionService.syncBankFeed.mockResolvedValue({
+      added: 2,
+      modified: 0,
+      removed: 0,
+    });
 
     const result = await service.createConnection({
       provider: 'plaid',
@@ -143,7 +171,8 @@ describe('BankConnectionService', () => {
       expect.objectContaining({
         userId: 'user-1',
         tenantId: 'tenant-1',
-      })
+      }),
+      []
     );
     expect(result).toBe(savedConnection);
   });
@@ -154,12 +183,18 @@ describe('BankConnectionService', () => {
       status: 'healthy',
     } as BankConnection;
     connectionRepo.findOne.mockResolvedValue(existing);
-    connectionRepo.update.mockResolvedValue({ affected: 1, generatedMaps: [], raw: [] });
-    connectionRepo.findOne.mockResolvedValueOnce(existing).mockResolvedValueOnce({
-      ...existing,
-      status: 'disconnected',
-      isActive: false,
-    } as BankConnection);
+    connectionRepo.update.mockResolvedValue({
+      affected: 1,
+      generatedMaps: [],
+      raw: [],
+    });
+    connectionRepo.findOne
+      .mockResolvedValueOnce(existing)
+      .mockResolvedValueOnce({
+        ...existing,
+        status: 'disconnected',
+        isActive: false,
+      } as BankConnection);
 
     const result = await service.disconnectConnection('connection-1', {
       userId: 'user-1',

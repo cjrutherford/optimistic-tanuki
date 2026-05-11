@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AppComponent } from './app.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
@@ -38,6 +40,8 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: ThemeService, useValue: themeServiceStub },
       ],

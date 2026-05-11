@@ -98,18 +98,27 @@ describe('FinanceSummaryService', () => {
       {
         id: 't1',
         type: 'debit',
-        amount: 120,
+        amount: 40,
         workspace: 'business',
         category: '',
         description: 'Owner draw?',
+      },
+      {
+        id: 't2',
+        type: 'debit',
+        amount: 90,
+        workspace: 'business',
+        category: 'Operations',
+        description: 'Vendor payment',
       },
     ]);
     budgetService.findAll.mockResolvedValue([
       {
         id: 'b1',
         workspace: 'business',
+        category: 'Operations',
         limit: 100,
-        spent: 90,
+        spent: 0,
         isActive: true,
       },
     ]);

@@ -38,7 +38,10 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
         };
       }
 
-      if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) {
+      if (
+        value === null ||
+        ['string', 'number', 'boolean'].includes(typeof value)
+      ) {
         return value;
       }
 
@@ -133,8 +136,7 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
                       'error',
                     ];
                     const summary: Record<string, unknown> = {
-                      constructor:
-                        input.constructor?.name ?? typeof input,
+                      constructor: input.constructor?.name ?? typeof input,
                       tag: Object.prototype.toString.call(input),
                     };
 
@@ -276,7 +278,10 @@ function expectNoBrowserErrors(diagnostics: BrowserDiagnostics) {
   ).toEqual([]);
 }
 
-async function logRuntimeBundleContext(page: Page, diagnostics: BrowserDiagnostics) {
+async function logRuntimeBundleContext(
+  page: Page,
+  diagnostics: BrowserDiagnostics
+) {
   if (!diagnostics.consoleErrors.some((entry) => entry.includes('ERROR rt'))) {
     return;
   }
@@ -289,11 +294,15 @@ async function logRuntimeBundleContext(page: Page, diagnostics: BrowserDiagnosti
         .filter((e) => e.name.match(/\/chunk-[A-Z0-9]+\.js$/))
         .map((e) => e.name);
 
-      const chunkResults: Array<{ chunkUrl: string; sourceMappingMatch: string | null }> = [];
+      const chunkResults: Array<{
+        chunkUrl: string;
+        sourceMappingMatch: string | null;
+      }> = [];
       for (const chunkUrl of scriptEntries) {
         try {
           const source = await fetch(chunkUrl).then((r) => r.text());
-          const sourceMappingMatch = source.match(/\/\/# sourceMappingURL=(.+)$/m)?.[1] ?? null;
+          const sourceMappingMatch =
+            source.match(/\/\/# sourceMappingURL=(.+)$/m)?.[1] ?? null;
           chunkResults.push({ chunkUrl, sourceMappingMatch });
         } catch {
           chunkResults.push({ chunkUrl, sourceMappingMatch: null });
@@ -303,19 +312,25 @@ async function logRuntimeBundleContext(page: Page, diagnostics: BrowserDiagnosti
       return {
         discoveredChunks: chunkResults,
         consoleErrors: (
-          (window as Window & {
-            __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
-          }).__otConsoleErrors ?? []
+          (
+            window as Window & {
+              __otConsoleErrors?: Array<{ args: unknown[]; stack?: string }>;
+            }
+          ).__otConsoleErrors ?? []
         ).slice(-5),
         pageErrors: (
-          (window as Window & {
-            __otPageErrors?: Array<unknown>;
-          }).__otPageErrors ?? []
+          (
+            window as Window & {
+              __otPageErrors?: Array<unknown>;
+            }
+          ).__otPageErrors ?? []
         ).slice(-5),
         unhandledRejections: (
-          (window as Window & {
-            __otUnhandledRejections?: Array<unknown>;
-          }).__otUnhandledRejections ?? []
+          (
+            window as Window & {
+              __otUnhandledRejections?: Array<unknown>;
+            }
+          ).__otUnhandledRejections ?? []
         ).slice(-5),
       };
     });
@@ -398,7 +413,7 @@ async function registerViaBrowser(
     async () => {
       await page
         .locator('.register-container form')
-        .evaluate((form) => form.requestSubmit());
+        .evaluate((form) => (form as HTMLFormElement).requestSubmit());
     }
   );
   await page.waitForURL(/\/login$/, { timeout: 20000 });
@@ -420,7 +435,7 @@ async function loginViaBrowser(
     async () => {
       await page
         .locator('.login-container form')
-        .evaluate((form) => form.requestSubmit());
+        .evaluate((form) => (form as HTMLFormElement).requestSubmit());
     }
   );
   await page.waitForLoadState('networkidle');

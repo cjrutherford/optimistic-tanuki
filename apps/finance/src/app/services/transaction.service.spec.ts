@@ -20,7 +20,7 @@ describe('TransactionService', () => {
   };
 
   const mockRepoFactory = () => ({
-    create: jest.fn(),
+    create: jest.fn((value) => value),
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),

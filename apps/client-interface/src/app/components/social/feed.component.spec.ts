@@ -10,7 +10,7 @@ import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { OnDestroy } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -153,6 +153,16 @@ describe('FeedComponent', () => {
       providers: [
         { provide: ProfileService, useValue: profileServiceMock },
         { provide: Router, useValue: routerMock },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: { get: jest.fn().mockReturnValue(null) },
+              queryParamMap: { get: jest.fn().mockReturnValue(null) },
+            },
+            queryParamMap: of({ get: jest.fn().mockReturnValue(null) }),
+          },
+        },
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
       ],

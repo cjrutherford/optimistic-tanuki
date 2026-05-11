@@ -4,6 +4,8 @@ import {
   fakeAsync,
   tick,
 } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { AppComponent } from './app.component';
 import { Router, NavigationEnd, RouterModule } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
@@ -84,6 +86,8 @@ describe('AppComponent', () => {
         { provide: SOCKET_IO_INSTANCE, useValue: io },
         { provide: SOCKET_AUTH_TOKEN_PROVIDER, useValue: () => 'test-token' },
         { provide: SOCKET_AUTH_ERROR_HANDLER, useValue: () => {} },
+        provideHttpClient(),
+        provideHttpClientTesting(),
       ],
       schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();

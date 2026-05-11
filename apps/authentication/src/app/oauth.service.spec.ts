@@ -8,6 +8,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
+import { OAuthConfigValidator } from './oauth-config.validator';
 
 describe('OAuthService', () => {
   let service: OAuthService;
@@ -51,6 +52,12 @@ describe('OAuthService', () => {
           provide: JwtService,
           useValue: {
             sign: jest.fn().mockReturnValue('mock-jwt-token'),
+          },
+        },
+        {
+          provide: OAuthConfigValidator,
+          useValue: {
+            isProviderEnabled: jest.fn().mockReturnValue(true),
           },
         },
       ],
@@ -194,7 +201,11 @@ describe('OAuthService', () => {
       });
       (oauthRepo.findOne as jest.Mock)
         .mockResolvedValueOnce(null) // Check by provider+userId
-        .mockResolvedValueOnce({ provider: 'github', userId: 'user-2', providerUserId: 'github-456' }); // Check by provider+providerUserId
+        .mockResolvedValueOnce({
+          provider: 'github',
+          userId: 'user-2',
+          providerUserId: 'github-456',
+        }); // Check by provider+providerUserId
 
       await expect(
         service.linkProvider('user-1', 'github', 'github-456')
@@ -224,9 +235,9 @@ describe('OAuthService', () => {
     it('should throw if provider not linked', async () => {
       (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
 
-      await expect(
-        service.unlinkProvider('user-1', 'github')
-      ).rejects.toThrow(RpcException);
+      await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
+        RpcException
+      );
     });
 
     it('should throw if trying to unlink last auth method without password', async () => {
@@ -240,9 +251,9 @@ describe('OAuthService', () => {
       });
       (oauthRepo.count as jest.Mock).mockResolvedValue(1);
 
-      await expect(
-        service.unlinkProvider('user-1', 'github')
-      ).rejects.toThrow(RpcException);
+      await expect(service.unlinkProvider('user-1', 'github')).rejects.toThrow(
+        RpcException
+      );
     });
   });
 
