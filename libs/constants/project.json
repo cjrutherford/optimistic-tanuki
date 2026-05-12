@@ -7,9 +7,19 @@
     "type:util",
     "scope:shared",
     "platform:shared",
-    "visibility:internal"
+    "visibility:publishable"
   ],
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/constants",
+        "main": "libs/constants/src/index.ts",
+        "tsConfig": "libs/constants/tsconfig.lib.json",
+        "assets": ["libs/constants/package.json", "libs/constants/README.md"]
+      }
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],

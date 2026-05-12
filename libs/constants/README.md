@@ -1,15 +1,26 @@
-# Constants
+# @optimistic-tanuki/constants
 
-`constants` contains shared constants and tokens used across the monorepo. Its source lives under `libs/constants/src/lib`.
+Shared command names, service tokens, and enum-style constants used across Optimistic Tanuki applications and services.
 
-## Repo Role
-
-- shared compile-time values and identifiers
-- supports both frontend and backend packages
-
-## Nx Commands
+## Install
 
 ```bash
-pnpm exec nx build constants
-pnpm exec nx test constants
+npm install @optimistic-tanuki/constants @angular/core @nestjs/common
 ```
+
+## Usage
+
+```ts
+import { BillingCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+
+console.log(BillingCommands);
+console.log(ServiceTokens);
+```
+
+## Runtime
+
+This package supports Angular clients, Node.js services, and shared TypeScript consumers. It exposes Angular injection tokens and a Nest-compatible module export, so `@angular/core` and `@nestjs/common` are peer dependencies.
+
+## Source And Releases
+
+Source development happens in the internal Optimistic Tanuki monorepo. Public package releases are mirrored into a package-only repository for distribution.

@@ -1,15 +1,26 @@
-# Logger
+# @optimistic-tanuki/logger
 
-`logger` contains shared logging infrastructure for backend services. Its source lives under `libs/logger/src/lib`.
+Shared Nest-compatible logging module exports for Optimistic Tanuki backend services.
 
-## Repo Role
-
-- common logging behavior and helpers
-- backend-focused shared utility layer
-
-## Nx Commands
+## Install
 
 ```bash
-pnpm exec nx build logger
-pnpm exec nx test logger
+npm install @optimistic-tanuki/logger @nestjs/common
 ```
+
+## Usage
+
+```ts
+import { Logger } from '@nestjs/common';
+import { LoggerModule } from '@optimistic-tanuki/logger';
+
+export { Logger, LoggerModule };
+```
+
+## Runtime
+
+This package targets Node.js and NestJS service runtimes. `@nestjs/common` is provided as a peer dependency.
+
+## Source And Releases
+
+Source development happens in the internal Optimistic Tanuki monorepo. Public package releases are mirrored into a package-only repository for distribution.

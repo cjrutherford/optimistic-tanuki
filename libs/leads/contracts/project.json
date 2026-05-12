@@ -7,9 +7,22 @@
     "type:contracts",
     "scope:leads",
     "platform:shared",
-    "visibility:internal"
+    "visibility:publishable"
   ],
   "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/leads/contracts",
+        "main": "libs/leads/contracts/src/index.ts",
+        "tsConfig": "libs/leads/contracts/tsconfig.lib.json",
+        "assets": [
+          "libs/leads/contracts/package.json",
+          "libs/leads/contracts/README.md"
+        ]
+      }
+    },
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
