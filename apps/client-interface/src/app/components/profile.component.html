@@ -46,7 +46,6 @@
   (createProfile)="createProfile($event)"
 ></lib-profile-editor>
 
-@if (isViewingOther) {
 <section class="profile-section">
   <h3>Posts</h3>
   @if (userPosts().length > 0) {
@@ -71,7 +70,9 @@
     @for (community of userCommunities(); track community.id) {
     <otui-card
       class="community-card"
-      (click)="router.navigate(['/communities', community.id])"
+      (click)="
+        router.navigate(['/communities', community.slug || community.id])
+      "
     >
       @if (community.logoUrl) {
       <img [src]="community.logoUrl" alt="" class="community-logo" />
@@ -85,7 +86,7 @@
   <p class="no-content">No communities yet</p>
   }
 </section>
-} } @else {
+} @else {
 <otui-card>
   <div class="no-profile">
     <p>No profile selected. Go to Settings to create your profile.</p>

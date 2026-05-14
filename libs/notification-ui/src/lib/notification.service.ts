@@ -12,6 +12,7 @@ export class NotificationService {
   private http = inject(HttpClient);
   private baseUrl = '/api/notifications';
   private ws: WebSocketSubject<Notification> | null = null;
+  private activeProfileId: string | null = null;
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal<number>(0);
@@ -45,12 +46,19 @@ export class NotificationService {
   }
 
   private handleNewNotification(notification: Notification): void {
+    if (
+      this.activeProfileId &&
+      notification.recipientId !== this.activeProfileId
+    ) {
+      return;
+    }
     this.notifications.update((list) => [notification, ...list]);
     this.unreadCount.update((count) => count + 1);
     this.notificationSubject.next(notification);
   }
 
   loadNotifications(profileId: string): void {
+    this.activeProfileId = profileId;
     this.http.get<Notification[]>(`${this.baseUrl}/${profileId}`).subscribe({
       next: (notifications) => {
         this.notifications.set(notifications);
@@ -61,6 +69,7 @@ export class NotificationService {
   }
 
   getNotifications(profileId: string): Observable<Notification[]> {
+    this.activeProfileId = profileId;
     return this.http.get<Notification[]>(`${this.baseUrl}/${profileId}`);
   }
 
@@ -86,6 +95,7 @@ export class NotificationService {
   }
 
   markAllAsRead(profileId: string): Observable<void> {
+    this.activeProfileId = profileId;
     return this.http
       .put<void>(`${this.baseUrl}/${profileId}/read-all`, {})
       .pipe(

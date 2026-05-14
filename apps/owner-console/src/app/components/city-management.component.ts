@@ -101,6 +101,8 @@ export class CityManagementComponent implements OnInit {
   cities: CommunityDto[] = [];
   filteredCities: CommunityDto[] = [];
   loading = false;
+  readonly governanceSummary =
+    'City records are governed through Community Ops permissions on the shared communities API.';
 
   searchQuery = '';
   sortBy: 'name' | 'population' | 'createdAt' = 'name';

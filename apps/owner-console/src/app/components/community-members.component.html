@@ -15,6 +15,20 @@
 
   <div *ngIf="loading">Loading...</div>
 
+  <div *ngIf="!loading" class="manager-banner">
+    <p>
+      <strong>Current manager:</strong>
+      {{ currentManager?.profileId || 'No manager assigned' }}
+    </p>
+    <otui-button
+      *ngIf="currentManager"
+      variant="secondary"
+      (click)="revokeManager()"
+    >
+      Revoke Manager
+    </otui-button>
+  </div>
+
   <table *ngIf="!loading && members.length > 0" class="members-table">
     <thead>
       <tr>
@@ -45,6 +59,13 @@
               (click)="updateRole(member, 'admin')"
             >
               Make Admin
+            </otui-button>
+            <otui-button
+              *ngIf="member.role !== 'owner' && !isCurrentManager(member)"
+              variant="secondary"
+              (click)="appointManager(member)"
+            >
+              Appoint Manager
             </otui-button>
             <otui-button
               *ngIf="member.role !== 'member' && member.role !== 'owner'"

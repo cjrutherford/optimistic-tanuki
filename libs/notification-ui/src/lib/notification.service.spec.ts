@@ -68,12 +68,40 @@ describe('NotificationService', () => {
     });
 
     it('should handle error gracefully', () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+
       service.loadNotifications('user1');
 
       const req = httpMock.expectOne('/api/notifications/user1');
       req.flush('Error', { status: 500, statusText: 'Server Error' });
 
       expect(service.notifications()).toEqual([]);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to load notifications:',
+        expect.objectContaining({ status: 500 })
+      );
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should replace previous profile notifications when switching profiles', () => {
+      service.notifications.set([
+        { ...mockNotification, recipientId: 'user0' },
+      ]);
+      service.unreadCount.set(4);
+
+      service.loadNotifications('user2');
+
+      const req = httpMock.expectOne('/api/notifications/user2');
+      req.flush([
+        { ...mockNotification, id: '2', recipientId: 'user2', isRead: false },
+      ]);
+
+      expect(service.notifications()).toEqual([
+        { ...mockNotification, id: '2', recipientId: 'user2', isRead: false },
+      ]);
+      expect(service.unreadCount()).toBe(1);
     });
   });
 
@@ -203,6 +231,22 @@ describe('NotificationService', () => {
       });
 
       service['notificationSubject'].next(mockNotification);
+    });
+  });
+
+  describe('profile isolation', () => {
+    it('should ignore websocket notifications for a different active profile', () => {
+      service.loadNotifications('user1');
+      httpMock.expectOne('/api/notifications/user1').flush([mockNotification]);
+
+      service['handleNewNotification']({
+        ...mockNotification,
+        id: '2',
+        recipientId: 'user2',
+      });
+
+      expect(service.notifications()).toEqual([mockNotification]);
+      expect(service.unreadCount()).toBe(1);
     });
   });
 });

@@ -11,6 +11,11 @@ import {
   InviteToCommunityDto,
 } from '@optimistic-tanuki/ui-models';
 
+export interface CommunityManagerRecord {
+  userId: string;
+  profileId: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -74,6 +79,28 @@ export class CommunityService {
       `${this.API_URL}/${invite.communityId}/members/invite`,
       { inviteeUserId: invite.inviteeUserId }
     );
+  }
+
+  getCommunityManager(
+    communityId: string
+  ): Observable<CommunityManagerRecord | null> {
+    return this.http.get<CommunityManagerRecord | null>(
+      `${this.API_URL}/${communityId}/manager`
+    );
+  }
+
+  appointManager(
+    communityId: string,
+    manager: { userId: string; profileId: string }
+  ): Observable<CommunityManagerRecord> {
+    return this.http.post<CommunityManagerRecord>(
+      `${this.API_URL}/${communityId}/manager`,
+      manager
+    );
+  }
+
+  revokeManager(communityId: string): Observable<void> {
+    return this.http.delete<void>(`${this.API_URL}/${communityId}/manager`);
   }
 
   getCities(): Observable<CommunityDto[]> {

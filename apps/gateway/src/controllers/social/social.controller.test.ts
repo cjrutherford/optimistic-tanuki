@@ -31,6 +31,7 @@ import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 describe('SocialController', () => {
   let socialController: SocialController;
   let clientProxy: ClientProxy;
+  let consoleLogSpy: jest.SpyInstance;
   const mockUser = {
     id: '1',
     userId: '1',
@@ -44,6 +45,9 @@ describe('SocialController', () => {
   };
 
   beforeEach(async () => {
+    consoleLogSpy = jest
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SocialController],
       providers: [
@@ -97,6 +101,10 @@ describe('SocialController', () => {
     clientProxy = module.get<ClientProxy>('SOCIAL_SERVICE');
   });
 
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
   it('should create a post', async () => {
     const postDto: CreatePostDto = {
       title: 'Test Post',
@@ -108,6 +116,27 @@ describe('SocialController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.CREATE },
       postDto
+    );
+  });
+
+  it('should normalize post creation to the acting user and profile', async () => {
+    const postDto: CreatePostDto = {
+      title: 'Test Post',
+      content: 'Test Content',
+      userId: 'different-user',
+      profileId: 'different-profile',
+      communityId: 'community-1',
+    };
+
+    await socialController.post(mockUser, postDto);
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.CREATE },
+      expect.objectContaining({
+        userId: mockUser.userId,
+        profileId: mockUser.profileId,
+        communityId: 'community-1',
+      })
     );
   });
 
@@ -183,8 +212,20 @@ describe('SocialController', () => {
   it('should find the current user vote for a post', async () => {
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
       of([
-        { id: 'vote-1', postId: 'post-1', userId: '1', profileId: '1', value: 1 },
-        { id: 'vote-2', postId: 'post-1', userId: '2', profileId: '2', value: -1 },
+        {
+          id: 'vote-1',
+          postId: 'post-1',
+          userId: '1',
+          profileId: '1',
+          value: 1,
+        },
+        {
+          id: 'vote-2',
+          postId: 'post-1',
+          userId: '2',
+          profileId: '2',
+          value: -1,
+        },
       ])
     );
 

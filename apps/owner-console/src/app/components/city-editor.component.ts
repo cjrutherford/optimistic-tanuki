@@ -113,6 +113,8 @@ export class CityEditorComponent implements OnInit, OnDestroy {
   cityId: string | null = null;
   loading = false;
   saving = false;
+  readonly governanceSummary =
+    'City mutations use Community Ops permissions through the shared communities API.';
   private destroy$ = new Subject<void>();
 
   constructor(

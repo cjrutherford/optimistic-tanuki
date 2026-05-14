@@ -24,6 +24,17 @@ export interface BusinessOffer {
   allowOnlineBooking?: boolean;
 }
 
+export interface BusinessStoreProduct {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  type: string;
+  active: boolean;
+  stock: number;
+  imageUrl?: string;
+}
+
 export interface BusinessBusyWindow {
   startTime: string;
   endTime: string;
@@ -138,6 +149,10 @@ export class BusinessApiService {
     return this.http.get<BusinessOffer[]>(`${this.baseUrl}/offers`);
   }
 
+  getStoreProducts(): Observable<BusinessStoreProduct[]> {
+    return this.http.get<BusinessStoreProduct[]>('/api/store/products');
+  }
+
   getSiteConfig(): Observable<SiteConfigResponse> {
     return this.http.get<SiteConfigResponse>(`${this.baseUrl}/site-config`);
   }
@@ -175,14 +190,22 @@ export class BusinessApiService {
     return this.http.get<BusinessBusyWindow[]>(`${this.baseUrl}/busy-windows`);
   }
 
-  createBooking(payload: CreateBusinessBookingRequest): Observable<Appointment> {
+  createBooking(
+    payload: CreateBusinessBookingRequest
+  ): Observable<Appointment> {
     return this.http.post<Appointment>(`${this.baseUrl}/bookings`, payload);
   }
 
-  createLeadIntake(payload: BusinessLeadIntake): Observable<BusinessLeadIntakeRecord> {
-    return this.http.post<BusinessLeadIntakeRecord>(`${this.baseUrl}/leads`, payload, {
-      headers: this.clientAuthHeaders(),
-    });
+  createLeadIntake(
+    payload: BusinessLeadIntake
+  ): Observable<BusinessLeadIntakeRecord> {
+    return this.http.post<BusinessLeadIntakeRecord>(
+      `${this.baseUrl}/leads`,
+      payload,
+      {
+        headers: this.clientAuthHeaders(),
+      }
+    );
   }
 
   getClientBookings(): Observable<Appointment[]> {
@@ -192,9 +215,12 @@ export class BusinessApiService {
   }
 
   getClientBookingStatus(): Observable<BusinessClientBookingStatus> {
-    return this.http.get<BusinessClientBookingStatus>(`${this.baseUrl}/client-status`, {
-      headers: this.clientAuthHeaders(),
-    });
+    return this.http.get<BusinessClientBookingStatus>(
+      `${this.baseUrl}/client-status`,
+      {
+        headers: this.clientAuthHeaders(),
+      }
+    );
   }
 
   getOwnerBookings(): Observable<Appointment[]> {
@@ -202,7 +228,9 @@ export class BusinessApiService {
   }
 
   getOwnerProspects(): Observable<BusinessLeadIntakeRecord[]> {
-    return this.http.get<BusinessLeadIntakeRecord[]>(`${this.baseUrl}/owner/leads`);
+    return this.http.get<BusinessLeadIntakeRecord[]>(
+      `${this.baseUrl}/owner/leads`
+    );
   }
 
   markProspectContacted(id: string): Observable<BusinessLeadIntakeRecord> {
@@ -226,11 +254,18 @@ export class BusinessApiService {
   }
 
   getOwnerAvailabilities(): Observable<Availability[]> {
-    return this.http.get<Availability[]>(`${this.baseUrl}/owner/availabilities`);
+    return this.http.get<Availability[]>(
+      `${this.baseUrl}/owner/availabilities`
+    );
   }
 
-  createOwnerAvailability(payload: CreateAvailabilityDto): Observable<Availability> {
-    return this.http.post<Availability>(`${this.baseUrl}/owner/availabilities`, payload);
+  createOwnerAvailability(
+    payload: CreateAvailabilityDto
+  ): Observable<Availability> {
+    return this.http.post<Availability>(
+      `${this.baseUrl}/owner/availabilities`,
+      payload
+    );
   }
 
   updateOwnerAvailability(
@@ -318,7 +353,9 @@ export class BusinessApiService {
     return this.http.get<RoutineAssignment[]>(`${this.baseUrl}/owner/routines`);
   }
 
-  assignRoutine(payload: CreateRoutineAssignment): Observable<RoutineAssignment> {
+  assignRoutine(
+    payload: CreateRoutineAssignment
+  ): Observable<RoutineAssignment> {
     return this.http.post<RoutineAssignment>(
       `${this.baseUrl}/owner/routines`,
       payload
@@ -357,7 +394,10 @@ export class BusinessApiService {
     );
   }
 
-  listAssets(profileId: string, type = 'image'): Observable<BusinessAssetLibraryItem[]> {
+  listAssets(
+    profileId: string,
+    type = 'image'
+  ): Observable<BusinessAssetLibraryItem[]> {
     return this.http.get<BusinessAssetLibraryItem[]>(`/api/asset`, {
       headers: this.authHeaders(),
       params: { profileId, type },

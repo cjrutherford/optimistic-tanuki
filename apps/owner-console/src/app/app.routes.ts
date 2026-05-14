@@ -159,6 +159,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'store/business-site',
+        loadComponent: () =>
+          import(
+            './components/business-site-catalog-management.component'
+          ).then((m) => m.BusinessSiteCatalogManagementComponent),
+      },
+      {
         path: 'store/orders',
         loadComponent: () =>
           import('./components/order-management.component').then(
@@ -226,6 +233,20 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./components/community-members.component').then(
             (m) => m.CommunityMembersComponent
+          ),
+      },
+      {
+        path: 'social-governance',
+        loadComponent: () =>
+          import('./components/social-governance.component').then(
+            (m) => m.SocialGovernanceComponent
+          ),
+      },
+      {
+        path: 'forum-governance',
+        loadComponent: () =>
+          import('./components/forum-governance.component').then(
+            (m) => m.ForumGovernanceComponent
           ),
       },
       {

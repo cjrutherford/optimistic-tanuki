@@ -39,6 +39,10 @@ export interface BusinessService {
   allowOnlineBooking: boolean;
 }
 
+export interface BusinessServiceCatalogConfig {
+  source: 'manual' | 'store';
+}
+
 export interface BusinessLeadContext {
   profileId: string;
   appScope: string;
@@ -64,7 +68,11 @@ export type LandingSectionType =
   | 'gallery';
 
 export type LandingSectionMediaSourceType = 'url' | 'asset';
-export type LandingSectionMediaAspect = 'landscape' | 'square' | 'portrait' | 'auto';
+export type LandingSectionMediaAspect =
+  | 'landscape'
+  | 'square'
+  | 'portrait'
+  | 'auto';
 export type LandingSectionMediaFit = 'cover' | 'contain';
 export type LandingSectionMediaFocalPoint =
   | 'center'
@@ -150,6 +158,7 @@ export interface BusinessSiteConfig {
     consultationLabel: string;
   };
   features: BusinessFeatures;
+  serviceCatalog: BusinessServiceCatalogConfig;
   services: BusinessService[];
   landingPage: {
     sections: LandingSection[];
@@ -167,7 +176,9 @@ export interface BusinessSiteConfig {
 function cloneSection(section: LandingSection): LandingSection {
   return {
     ...section,
-    layoutPlacement: section.layoutPlacement ? { ...section.layoutPlacement } : undefined,
+    layoutPlacement: section.layoutPlacement
+      ? { ...section.layoutPlacement }
+      : undefined,
     image: section.image ? { ...section.image } : undefined,
     gallery: section.gallery
       ? {
@@ -191,7 +202,10 @@ function mergeLandingSections(
   }
 
   const defaultsById = new Map(
-    DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map((section) => [section.id, section])
+    DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map((section) => [
+      section.id,
+      section,
+    ])
   );
 
   return sections.map((section, index) => ({
@@ -241,7 +255,9 @@ function mergeLandingSections(
   }));
 }
 
-export function normalizeLandingSections(sections: LandingSection[]): LandingSection[] {
+export function normalizeLandingSections(
+  sections: LandingSection[]
+): LandingSection[] {
   return sections.map((section, index) => ({
     ...section,
     order: index,
@@ -257,9 +273,13 @@ export function mergeBusinessSiteConfig(
     brand: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
       ...(config?.brand ?? {}),
-      credentials: [...(config?.brand?.credentials ?? DEFAULT_BUSINESS_SITE_CONFIG.brand.credentials)],
+      credentials: [
+        ...(config?.brand?.credentials ??
+          DEFAULT_BUSINESS_SITE_CONFIG.brand.credentials),
+      ],
       specializations: [
-        ...(config?.brand?.specializations ?? DEFAULT_BUSINESS_SITE_CONFIG.brand.specializations),
+        ...(config?.brand?.specializations ??
+          DEFAULT_BUSINESS_SITE_CONFIG.brand.specializations),
       ],
     },
     contact: {
@@ -288,6 +308,10 @@ export function mergeBusinessSiteConfig(
         ...(config?.features?.testimonials ?? {}),
       },
     },
+    serviceCatalog: {
+      ...DEFAULT_BUSINESS_SITE_CONFIG.serviceCatalog,
+      ...(config?.serviceCatalog ?? {}),
+    },
     services: [...(config?.services ?? DEFAULT_BUSINESS_SITE_CONFIG.services)],
     landingPage: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
@@ -298,10 +322,13 @@ export function mergeBusinessSiteConfig(
       ...DEFAULT_BUSINESS_SITE_CONFIG.clientPortal,
       ...(config?.clientPortal ?? {}),
       capabilities: [
-        ...(config?.clientPortal?.capabilities ?? DEFAULT_BUSINESS_SITE_CONFIG.clientPortal.capabilities),
+        ...(config?.clientPortal?.capabilities ??
+          DEFAULT_BUSINESS_SITE_CONFIG.clientPortal.capabilities),
       ],
     },
-    testimonials: [...(config?.testimonials ?? DEFAULT_BUSINESS_SITE_CONFIG.testimonials)],
+    testimonials: [
+      ...(config?.testimonials ?? DEFAULT_BUSINESS_SITE_CONFIG.testimonials),
+    ],
     theme: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.theme,
       ...(config?.theme ?? {}),
@@ -310,7 +337,11 @@ export function mergeBusinessSiteConfig(
 }
 
 export function cloneBusinessSiteConfig(
-  config: Partial<BusinessSiteConfig> | BusinessSiteConfig | null | undefined = DEFAULT_BUSINESS_SITE_CONFIG
+  config:
+    | Partial<BusinessSiteConfig>
+    | BusinessSiteConfig
+    | null
+    | undefined = DEFAULT_BUSINESS_SITE_CONFIG
 ): BusinessSiteConfig {
   return mergeBusinessSiteConfig(config);
 }
@@ -343,6 +374,9 @@ export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
     clientPortal: { enabled: true },
     invoices: { enabled: false },
     testimonials: { enabled: true },
+  },
+  serviceCatalog: {
+    source: 'manual',
   },
   services: [],
   landingPage: {

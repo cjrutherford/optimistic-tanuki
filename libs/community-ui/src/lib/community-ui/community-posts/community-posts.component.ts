@@ -158,9 +158,11 @@ export class CommunityPostsComponent extends Variantable {
   private async loadCurrentProfile() {
     try {
       const profile = await this.communityService.getCurrentUserProfile();
+      this.currentUserId = profile.userId;
       this.currentProfileId = profile.id;
       this.currentProfileName = profile.profileName;
       this.currentProfileAvatar = profile.profilePic;
+      this.refreshOwnershipState();
     } catch (err) {
       console.error('Error loading current profile:', err);
     }
@@ -182,19 +184,7 @@ export class CommunityPostsComponent extends Variantable {
           logoUrl,
         };
         this.community.set(communityWithUrls);
-
-        const isOwner = community.ownerId === this.currentProfileId;
-
-        if (!isOwner && this.currentProfileId) {
-          const isAdminOrMod = community.ownerIds?.includes(
-            this.currentProfileId
-          );
-          if (isAdminOrMod) {
-            this.isOwnerOrManager.set(true);
-          }
-        } else if (isOwner) {
-          this.isOwnerOrManager.set(true);
-        }
+        this.refreshOwnershipState();
 
         await this.loadPosts(community.id);
       } else {
@@ -224,19 +214,7 @@ export class CommunityPostsComponent extends Variantable {
           logoUrl,
         };
         this.community.set(communityWithUrls);
-
-        const isOwner = community.ownerId === this.currentProfileId;
-
-        if (!isOwner && this.currentProfileId) {
-          const isAdminOrMod = community.ownerIds?.includes(
-            this.currentProfileId
-          );
-          if (isAdminOrMod) {
-            this.isOwnerOrManager.set(true);
-          }
-        } else if (isOwner) {
-          this.isOwnerOrManager.set(true);
-        }
+        this.refreshOwnershipState();
       }
     } catch (err) {
       console.error('Error loading community:', err);
@@ -256,6 +234,27 @@ export class CommunityPostsComponent extends Variantable {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private isCurrentUserOwnerOrManager(community: CommunityDto): boolean {
+    const identifiers = new Set(
+      [this.currentProfileId, this.currentUserId].filter(Boolean) as string[]
+    );
+
+    return (
+      identifiers.has(community.ownerId) ||
+      identifiers.has(community.ownerProfileId) ||
+      (community.ownerIds ?? []).some((id) => identifiers.has(id))
+    );
+  }
+
+  private refreshOwnershipState(): void {
+    const community = this.community();
+    if (!community) {
+      return;
+    }
+
+    this.isOwnerOrManager.set(this.isCurrentUserOwnerOrManager(community));
   }
 
   private async loadReactionData(posts: PostDto[]) {

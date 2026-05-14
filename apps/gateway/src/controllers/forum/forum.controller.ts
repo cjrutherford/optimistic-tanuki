@@ -32,7 +32,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
-import { User } from '../../decorators/user.decorator';
+import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
@@ -45,7 +45,7 @@ export class ForumController {
   constructor(
     @Inject(ServiceTokens.FORUM_SERVICE)
     private readonly forumClient: ClientProxy
-  ) { }
+  ) {}
 
   // Topic endpoints
   @UseGuards(AuthGuard, PermissionsGuard)
@@ -93,7 +93,10 @@ export class ForumController {
     @Param('topicId') topicId: string
   ): Promise<ThreadDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: { topicId } })
+      this.forumClient.send(
+        { cmd: ThreadCommands.FIND_MANY },
+        { where: { topicId } }
+      )
     );
   }
 
@@ -194,7 +197,10 @@ export class ForumController {
     @Param('threadId') threadId: string
   ): Promise<ForumPostDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.FIND_MANY }, { where: { threadId } })
+      this.forumClient.send(
+        { cmd: ForumPostCommands.FIND_MANY },
+        { where: { threadId } }
+      )
     );
   }
 
@@ -309,12 +315,18 @@ export class ForumController {
   @RequirePermissions('forum.post.update')
   async updateForumPost(
     @Param('id') id: string,
-    @Body() updatePostDto: UpdateForumPostDto
+    @Body() updatePostDto: UpdateForumPostDto,
+    @User() user: UserDetails
   ): Promise<ForumPostDto> {
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ForumPostCommands.UPDATE },
-        { id, data: updatePostDto }
+        {
+          id,
+          data: updatePostDto,
+          userId: user.userId,
+          profileId: user.profileId,
+        }
       )
     );
   }
@@ -346,7 +358,7 @@ export class ForumController {
   @Get('search/topics')
   async searchTopics(@Query() query: Partial<TopicDto>): Promise<TopicDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where:  query })
+      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where: query })
     );
   }
 
@@ -358,10 +370,11 @@ export class ForumController {
     type: [ThreadDto],
   })
   @Get('search/threads')
-  async searchThreads(@Query() query: Partial<ThreadDto>): Promise<ThreadDto[]> {
+  async searchThreads(
+    @Query() query: Partial<ThreadDto>
+  ): Promise<ThreadDto[]> {
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: query })
     );
   }
-
 }

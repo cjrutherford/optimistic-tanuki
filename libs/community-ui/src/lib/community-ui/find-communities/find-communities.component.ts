@@ -93,9 +93,9 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
   }
 
   override ngOnInit() {
-    this.loadUserMemberships();
-    this.loadTopActive();
-    this.loadAllCommunities();
+    Promise.all([this.loadTopActive(), this.loadAllCommunities()])
+      .then(() => this.loadUserMemberships())
+      .catch((err) => console.error('Error loading communities:', err));
 
     this.searchControl.valueChanges
       .pipe(debounceTime(300), distinctUntilChanged())
@@ -109,29 +109,44 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
       const profile = await this.communityService.getCurrentUserProfile();
       if (profile) {
         this.currentUserId = profile.id;
-        const userCommunities =
-          await this.communityService.getUserCommunities();
+        const existingMemberships = this.userMemberships();
+        const userCommunities = [
+          ...this.communities(),
+          ...this.topActiveCommunities(),
+        ];
         const memberships = new Map<string, CommunityMemberDto>();
         const ownerships = new Set<string>();
+        const profileIdentifiers = new Set(
+          [profile.id, profile.userId].filter(Boolean) as string[]
+        );
 
         for (const community of userCommunities) {
+          const isOwner = this.isCurrentUserOwner(
+            community,
+            profileIdentifiers
+          );
+          const isMember =
+            isOwner || this.isCurrentUserMember(community, profileIdentifiers);
+
+          if (!isMember) {
+            const existingMembership = existingMemberships.get(community.id);
+            if (existingMembership?.status === 'pending') {
+              memberships.set(community.id, existingMembership);
+            }
+            continue;
+          }
+
           memberships.set(community.id, {
-            id: '',
+            id: community.id,
             communityId: community.id,
             userId: profile.userId,
             profileId: profile.id,
-            role:
-              community.ownerId === profile.userId
-                ? ('owner' as any)
-                : ('member' as any),
+            role: isOwner ? ('owner' as any) : ('member' as any),
             status: 'approved' as any,
             joinedAt: new Date(),
           });
 
-          if (
-            community.ownerIds?.includes(profile.userId) ||
-            community.ownerId === profile.userId
-          ) {
+          if (isOwner) {
             ownerships.add(community.id);
           }
         }
@@ -178,7 +193,8 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
 
   async searchCommunities(query: string) {
     if (!query.trim()) {
-      this.loadAllCommunities();
+      await this.loadAllCommunities();
+      await this.loadUserMemberships();
       return;
     }
 
@@ -186,6 +202,7 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
     try {
       const communities = await this.communityService.findAll({ name: query });
       this.communities.set(communities);
+      await this.loadUserMemberships();
     } catch (err) {
       console.error('Error searching communities:', err);
     } finally {
@@ -201,8 +218,12 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
       const updatedMemberships = new Map(this.userMemberships());
       updatedMemberships.set(community.id, membership);
       this.userMemberships.set(updatedMemberships);
+      await Promise.all([this.loadTopActive(), this.loadAllCommunities()]);
+      await this.loadUserMemberships();
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('ot-community-membership-changed'));
+        window.dispatchEvent(
+          new CustomEvent('ot-community-membership-changed')
+        );
       }
     } catch (err: any) {
       this.error.set(err.message || 'Failed to join community');
@@ -222,5 +243,32 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
 
   setDisplayMode(mode: 'all' | 'top') {
     this.displayMode.set(mode);
+  }
+
+  private isCurrentUserMember(
+    community: CommunityDto,
+    profileIdentifiers: Set<string>
+  ): boolean {
+    const membershipFields = [
+      ...(community.memberIds ?? []),
+      ...(community.memberUserIds ?? []),
+    ];
+
+    return (
+      membershipFields.some((id) => profileIdentifiers.has(id)) ||
+      profileIdentifiers.has(community.ownerId) ||
+      profileIdentifiers.has(community.ownerProfileId)
+    );
+  }
+
+  private isCurrentUserOwner(
+    community: CommunityDto,
+    profileIdentifiers: Set<string>
+  ): boolean {
+    return (
+      profileIdentifiers.has(community.ownerId) ||
+      profileIdentifiers.has(community.ownerProfileId) ||
+      (community.ownerIds ?? []).some((id) => profileIdentifiers.has(id))
+    );
   }
 }

@@ -309,7 +309,8 @@ ON CONFLICT (name, "appScopeId") DO NOTHING;
 INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
 VALUES
   ('app-config.read', 'Read business site configuration', 'app-config', 'read', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
-  ('app-config.update', 'Update business site configuration', 'app-config', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site'))
+  ('app-config.update', 'Update business site configuration', 'app-config', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site')),
+  ('business-site.catalog.update', 'Update business-site catalog source', 'business-site.catalog', 'update', NULL, (SELECT id FROM app_scope WHERE name='business-site'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Map permissions to roles (role_permissions)
@@ -632,7 +633,8 @@ INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r JOIN permission p ON p.name IN (
   'app-config.read',
-  'app-config.update'
+  'app-config.update',
+  'business-site.catalog.update'
 ) AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='business-site')
 WHERE r.name = 'business_site_owner'
 ON CONFLICT DO NOTHING;

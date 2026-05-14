@@ -17,6 +17,7 @@ import {
   AppointmentCommands,
   AvailabilityCommands,
   LeadCommands,
+  ProductCommands,
   ServiceTokens,
   TrainerConfigCommands,
 } from '@optimistic-tanuki/constants';
@@ -59,28 +60,47 @@ export class TrainerController {
     private readonly leadService: ClientProxy
   ) {}
 
-  private getBusinessLeadContext(config: Record<string, any> | null | undefined) {
+  private getBusinessLeadContext(
+    config: Record<string, any> | null | undefined
+  ) {
     const profileId = config?.leadContext?.profileId;
     const appScope = config?.leadContext?.appScope || 'business-site';
 
     if (!profileId) {
-      throw new BadRequestException('Business lead intake is not configured yet.');
+      throw new BadRequestException(
+        'Business lead intake is not configured yet.'
+      );
     }
 
     return { profileId, appScope };
   }
 
-  private buildLeadNotes(payload: BusinessLeadIntakeDto, profileId?: string): string {
+  private buildLeadNotes(
+    payload: BusinessLeadIntakeDto,
+    profileId?: string
+  ): string {
     return [
       `Goal: ${payload.goal}`,
       payload.context ? `Context: ${payload.context}` : null,
-      payload.preferredStart ? `Preferred start: ${payload.preferredStart}` : null,
+      payload.preferredStart
+        ? `Preferred start: ${payload.preferredStart}`
+        : null,
       payload.preferredEnd ? `Preferred end: ${payload.preferredEnd}` : null,
       profileId ? `Linked profile: ${profileId}` : null,
       'Business-site intake',
     ]
       .filter(Boolean)
       .join('\n');
+  }
+
+  private resolveBusinessLeadName(payload: BusinessLeadIntakeDto): string {
+    return (
+      payload.name?.trim() ||
+      payload.email?.trim() ||
+      payload.phone?.trim() ||
+      payload.goal?.trim() ||
+      'Business-site lead'
+    );
   }
 
   private toProspectRecord(lead: any) {
@@ -101,7 +121,9 @@ export class TrainerController {
 
   private async loadLeadContext() {
     const result = (await firstValueFrom(
-      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+      })
     )) as { config?: Record<string, any> } | null;
 
     return this.getBusinessLeadContext(result?.config);
@@ -109,10 +131,45 @@ export class TrainerController {
 
   private async loadSiteConfig() {
     const result = (await firstValueFrom(
-      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+      })
     )) as { config?: Record<string, any> } | null;
 
     return result?.config ?? {};
+  }
+
+  private async loadActiveStoreServiceProducts() {
+    const products = (await firstValueFrom(
+      this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
+    )) as Array<any>;
+
+    return products.filter(
+      (product) => product?.active !== false && product?.type === 'service'
+    );
+  }
+
+  private async assertStoreCatalogPublishReady() {
+    const serviceProducts = await this.loadActiveStoreServiceProducts();
+
+    if (!serviceProducts.length) {
+      throw new BadRequestException(
+        'At least one active store service product is required before enabling store mode.'
+      );
+    }
+
+    const hasMissingDescription = serviceProducts.some(
+      (product) => !product?.description?.trim()
+    );
+    const hasInvalidPrice = serviceProducts.some(
+      (product) => Number(product?.price) <= 0
+    );
+
+    if (hasMissingDescription || hasInvalidPrice) {
+      throw new BadRequestException(
+        'Store mode requires publish-ready service products with descriptions and prices greater than zero.'
+      );
+    }
   }
 
   private async loadBusinessLeads() {
@@ -130,10 +187,14 @@ export class TrainerController {
   private async requireAcceptedClient(user: UserDetails) {
     const { leads } = await this.loadBusinessLeads();
     const acceptedLead =
-      leads.find((lead) => lead?.userId === user.userId && this.isAcceptedLead(lead)) ?? null;
+      leads.find(
+        (lead) => lead?.userId === user.userId && this.isAcceptedLead(lead)
+      ) ?? null;
 
     if (!acceptedLead) {
-      throw new BadRequestException('Client must be accepted by the business before booking.');
+      throw new BadRequestException(
+        'Client must be accepted by the business before booking.'
+      );
     }
 
     return acceptedLead;
@@ -144,19 +205,36 @@ export class TrainerController {
   @Get('offers')
   async getOffers() {
     const configResult = (await firstValueFrom(
-      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+      })
     )) as { config?: Record<string, any> } | null;
+    const serviceCatalogSource =
+      configResult?.config?.serviceCatalog?.source ?? 'manual';
     const configuredServices = Array.isArray(configResult?.config?.services)
       ? configResult?.config?.services
       : [];
 
-    if (configuredServices.length) {
+    if (serviceCatalogSource === 'manual' && configuredServices.length) {
       return configuredServices.map((service: any) => ({
         id: service.id,
         label: service.name,
         description: service.description || 'Owner-defined offer.',
         serviceType: service.name,
         startingRate: Number(service.price || 0),
+      }));
+    }
+
+    const serviceProducts = await this.loadActiveStoreServiceProducts();
+
+    if (serviceProducts.length) {
+      return serviceProducts.map((product) => ({
+        id: product.id,
+        label: product.name,
+        description: product.description || 'Store-backed service offer.',
+        serviceType: product.type,
+        startingRate: Number(product.price || 0),
+        allowOnlineBooking: true,
       }));
     }
 
@@ -195,7 +273,10 @@ export class TrainerController {
   @Get('availability-overrides')
   getAvailabilityOverrides() {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITY_OVERRIDES, {})
+      this.storeService.send(
+        AvailabilityCommands.FIND_ALL_AVAILABILITY_OVERRIDES,
+        {}
+      )
     );
   }
 
@@ -208,7 +289,8 @@ export class TrainerController {
     return appointments
       .filter(
         (appointment) =>
-          appointment?.status !== 'cancelled' && appointment?.status !== 'denied'
+          appointment?.status !== 'cancelled' &&
+          appointment?.status !== 'denied'
       )
       .map((appointment) => ({
         startTime: appointment.startTime,
@@ -220,7 +302,9 @@ export class TrainerController {
   async getSiteConfig() {
     try {
       const result = await firstValueFrom(
-        this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+        this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+          configKey: 'default',
+        })
       );
       if (!result || !result.config) {
         return { configId: null, config: null };
@@ -257,13 +341,16 @@ export class TrainerController {
     @User() user?: UserDetails | null
   ) {
     const result = (await firstValueFrom(
-      this.storeService.send(TrainerConfigCommands.GET_CONFIG, { configKey: 'default' })
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+      })
     )) as { config?: Record<string, any> } | null;
     const leadContext = this.getBusinessLeadContext(result?.config);
-    const linkedUserId = payload.userId || user?.userId || 'anonymous-business-site';
+    const linkedUserId =
+      payload.userId || user?.userId || 'anonymous-business-site';
     const linkedProfileId = payload.profileId || user?.profileId || '';
     const dto: CreateLeadDto = {
-      name: payload.name,
+      name: this.resolveBusinessLeadName(payload),
       email: payload.email,
       phone: payload.phone,
       source: LeadSource.OTHER,
@@ -274,14 +361,17 @@ export class TrainerController {
     };
 
     return firstValueFrom(
-      this.leadService.send({ cmd: LeadCommands.CREATE }, {
-        dto,
-        context: {
-          userId: linkedUserId,
-          profileId: leadContext.profileId,
-          appScope: leadContext.appScope,
-        },
-      })
+      this.leadService.send(
+        { cmd: LeadCommands.CREATE },
+        {
+          dto,
+          context: {
+            userId: linkedUserId,
+            profileId: leadContext.profileId,
+            appScope: leadContext.appScope,
+          },
+        }
+      )
     );
   }
 
@@ -289,7 +379,10 @@ export class TrainerController {
   @Get('bookings')
   getClientBookings(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, user.userId)
+      this.storeService.send(
+        AppointmentCommands.FIND_USER_APPOINTMENTS,
+        user.userId
+      )
     );
   }
 
@@ -297,7 +390,10 @@ export class TrainerController {
   @Get('client/invoices')
   getClientInvoices(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_USER_INVOICES, user.userId)
+      this.storeService.send(
+        AppointmentCommands.FIND_USER_INVOICES,
+        user.userId
+      )
     );
   }
 
@@ -306,7 +402,9 @@ export class TrainerController {
   async payClientInvoice(@Param('id') id: string, @User() user: UserDetails) {
     const config = await this.loadSiteConfig();
     if (config?.features?.booking?.allowOnlinePayment !== true) {
-      throw new BadRequestException('Online payment is disabled for this business.');
+      throw new BadRequestException(
+        'Online payment is disabled for this business.'
+      );
     }
 
     return firstValueFrom(
@@ -346,10 +444,13 @@ export class TrainerController {
   @Get('owner/leads')
   async getOwnerProspects(@User() user: UserDetails) {
     const leads = (await firstValueFrom(
-      this.leadService.send({ cmd: LeadCommands.FIND_ALL }, {
-        profileId: user.profileId,
-        appScope: 'business-site',
-      })
+      this.leadService.send(
+        { cmd: LeadCommands.FIND_ALL },
+        {
+          profileId: user.profileId,
+          appScope: 'business-site',
+        }
+      )
     )) as any[];
 
     return leads
@@ -360,15 +461,21 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/leads/:id/contacted')
-  async markOwnerProspectContacted(@Param('id') id: string, @User() user: UserDetails) {
+  async markOwnerProspectContacted(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
     const lead = await firstValueFrom(
-      this.leadService.send({ cmd: LeadCommands.UPDATE }, {
-        id,
-        profileId: user.profileId,
-        dto: {
-          status: LeadStatus.CONTACTED,
-        },
-      })
+      this.leadService.send(
+        { cmd: LeadCommands.UPDATE },
+        {
+          id,
+          profileId: user.profileId,
+          dto: {
+            status: LeadStatus.CONTACTED,
+          },
+        }
+      )
     );
 
     return this.toProspectRecord(lead);
@@ -377,15 +484,21 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/leads/:id/approve')
-  async approveOwnerProspect(@Param('id') id: string, @User() user: UserDetails) {
+  async approveOwnerProspect(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
     const lead = await firstValueFrom(
-      this.leadService.send({ cmd: LeadCommands.UPDATE }, {
-        id,
-        profileId: user.profileId,
-        dto: {
-          status: LeadStatus.WON,
-        },
-      })
+      this.leadService.send(
+        { cmd: LeadCommands.UPDATE },
+        {
+          id,
+          profileId: user.profileId,
+          dto: {
+            status: LeadStatus.WON,
+          },
+        }
+      )
     );
 
     return this.toProspectRecord(lead);
@@ -396,10 +509,13 @@ export class TrainerController {
   @Get('owner/accepted-clients')
   async getAcceptedClients(@User() user: UserDetails) {
     const leads = (await firstValueFrom(
-      this.leadService.send({ cmd: LeadCommands.FIND_ALL }, {
-        profileId: user.profileId,
-        appScope: 'business-site',
-      })
+      this.leadService.send(
+        { cmd: LeadCommands.FIND_ALL },
+        {
+          profileId: user.profileId,
+          appScope: 'business-site',
+        }
+      )
     )) as any[];
 
     return leads
@@ -424,7 +540,10 @@ export class TrainerController {
   @Get('owner/availabilities')
   getOwnerAvailabilities(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.FIND_OWNER_AVAILABILITIES, user.userId)
+      this.storeService.send(
+        AvailabilityCommands.FIND_OWNER_AVAILABILITIES,
+        user.userId
+      )
     );
   }
 
@@ -487,10 +606,13 @@ export class TrainerController {
     @User() user: UserDetails
   ) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.CREATE_AVAILABILITY_OVERRIDE, {
-        ...payload,
-        ownerId: payload.ownerId || user.userId,
-      })
+      this.storeService.send(
+        AvailabilityCommands.CREATE_AVAILABILITY_OVERRIDE,
+        {
+          ...payload,
+          ownerId: payload.ownerId || user.userId,
+        }
+      )
     );
   }
 
@@ -502,10 +624,13 @@ export class TrainerController {
     @Body() payload: UpdateAvailabilityOverrideDto
   ) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE, {
-        id,
-        updateAvailabilityOverrideDto: payload,
-      })
+      this.storeService.send(
+        AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE,
+        {
+          id,
+          updateAvailabilityOverrideDto: payload,
+        }
+      )
     );
   }
 
@@ -514,7 +639,10 @@ export class TrainerController {
   @Delete('owner/availability-overrides/:id')
   removeOwnerAvailabilityOverride(@Param('id') id: string) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE, id)
+      this.storeService.send(
+        AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
+        id
+      )
     );
   }
 
@@ -555,7 +683,8 @@ export class TrainerController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('site-config')
   async updateSiteConfig(
-    @Body() payload: { configId?: string | null; config: Record<string, unknown> },
+    @Body()
+    payload: { configId?: string | null; config: Record<string, unknown> },
     @User() user: UserDetails
   ) {
     const config = {
@@ -582,6 +711,47 @@ export class TrainerController {
     );
   }
 
+  @RequirePermissions('business-site.catalog.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Put('site-config/catalog-source')
+  async updateCatalogSource(
+    @Body() payload: { configId?: string | null; source: 'manual' | 'store' },
+    @User() user: UserDetails
+  ) {
+    if (payload.source === 'store') {
+      await this.assertStoreCatalogPublishReady();
+    }
+
+    const existingConfig = await this.loadSiteConfig();
+    const nextConfig = {
+      ...existingConfig,
+      leadContext: {
+        profileId: user.profileId,
+        appScope: 'business-site',
+      },
+      serviceCatalog: {
+        ...(existingConfig?.serviceCatalog ?? {}),
+        source: payload.source,
+      },
+    };
+
+    if (!payload.configId) {
+      return firstValueFrom(
+        this.storeService.send(TrainerConfigCommands.CREATE_CONFIG, {
+          configKey: 'default',
+          ...nextConfig,
+        })
+      );
+    }
+
+    return firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
+        id: payload.configId,
+        config: nextConfig,
+      })
+    );
+  }
+
   // ─── Client routine and check-in endpoints ────────────────────────────────
 
   @UseGuards(AuthGuard)
@@ -594,10 +764,15 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Post('client/routines/:id/complete')
-  async completeClientRoutine(@Param('id') id: string, @User() user: UserDetails) {
+  async completeClientRoutine(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
     const config = await this.loadSiteConfig();
     if (config?.features?.clientTasks?.allowClientCompletion !== true) {
-      throw new BadRequestException('Client completion is disabled for this business.');
+      throw new BadRequestException(
+        'Client completion is disabled for this business.'
+      );
     }
 
     return firstValueFrom(

@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Logger } from '@nestjs/common';
 import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
+import { ensureCommunityChatRoom } from './seed-local-communities.helpers';
 
 type CityHighlight = {
   headline: string;
@@ -173,6 +175,36 @@ const COMMUNITIES: SeedLocality[] = rawLocalities
   .map(toSeedLocality)
   .sort((a, b) => localityRank(a.localityType) - localityRank(b.localityType));
 
+const logger = new Logger('SeedLocalCommunities');
+
+async function createCommunityChat(input: {
+  communityId: string;
+  ownerId: string;
+  name?: string;
+}): Promise<{ id: string } | null> {
+  const chatCollectorUrl =
+    process.env.CHAT_COLLECTOR_URL || 'http://chat-collector:3007';
+
+  const response = await fetch(`${chatCollectorUrl}/conversations/community`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `Chat collector returned ${response.status}: ${
+        errorText || 'Unknown error'
+      }`
+    );
+  }
+
+  return (await response.json()) as { id: string };
+}
+
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
 
@@ -216,6 +248,12 @@ async function main() {
           parentId: parent?.id ?? null,
         });
         await communityRepo.save(existing);
+        await ensureCommunityChatRoom(existing, {
+          createCommunityChat,
+          setCommunityChatRoom: async (communityId, chatRoomId) => {
+            await communityRepo.update(communityId, { chatRoomId });
+          },
+        });
         updated++;
         console.log(`  Updated: ${data.name}`);
       } else {
@@ -244,6 +282,12 @@ async function main() {
           isSystemCommunity: true,
         });
         await communityRepo.save(community);
+        await ensureCommunityChatRoom(community, {
+          createCommunityChat,
+          setCommunityChatRoom: async (communityId, chatRoomId) => {
+            await communityRepo.update(communityId, { chatRoomId });
+          },
+        });
         created++;
         console.log(`  Created: ${data.name}`);
       }
@@ -264,6 +308,7 @@ async function main() {
     await app.close();
     process.exit(0);
   } catch (error) {
+    logger.error('Seed failed', error as Error);
     console.error('Seed failed:', error);
     await app.close();
     process.exit(1);

@@ -1,11 +1,14 @@
 import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, INestApplication } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
 
 import {
   AppointmentCommands,
   AvailabilityCommands,
   LeadCommands,
+  ProductCommands,
+  ServiceTokens,
   TrainerConfigCommands,
 } from '@optimistic-tanuki/constants';
 import { LeadStatus } from '@optimistic-tanuki/models';
@@ -15,6 +18,95 @@ import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 
 import { TrainerController } from './trainer.controller';
+
+function createJwt(payload: Record<string, unknown>): string {
+  const encode = (value: Record<string, unknown>) =>
+    Buffer.from(JSON.stringify(value))
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+
+  return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(payload)}.signature`;
+}
+
+function injectJsonPut(
+  app: INestApplication,
+  path: string,
+  body: Record<string, unknown>,
+  tokenPayload: Record<string, unknown>
+): Promise<{ statusCode: number; body: unknown }> {
+  return new Promise((resolve, reject) => {
+    const expressApp = app.getHttpAdapter().getInstance() as {
+      handle: (
+        req: Record<string, unknown>,
+        res: Record<string, unknown>,
+        next?: (error?: unknown) => void
+      ) => void;
+    };
+
+    const req = {
+      method: 'PUT',
+      url: path,
+      originalUrl: path,
+      path,
+      body,
+      headers: {
+        authorization: `Bearer ${createJwt(tokenPayload)}`,
+        'content-type': 'application/json',
+      },
+      _body: true,
+      get(headerName: string) {
+        return this.headers[
+          headerName.toLowerCase() as keyof typeof this.headers
+        ];
+      },
+    };
+
+    const res = {
+      statusCode: 200,
+      headers: {} as Record<string, string>,
+      body: null as unknown,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      setHeader(name: string, value: string) {
+        this.headers[name.toLowerCase()] = value;
+      },
+      getHeader(name: string) {
+        return this.headers[name.toLowerCase()];
+      },
+      json(payload: unknown) {
+        this.body = payload;
+        resolve({ statusCode: this.statusCode, body: payload });
+        return this;
+      },
+      send(payload: unknown) {
+        this.body = payload;
+        resolve({ statusCode: this.statusCode, body: payload });
+        return this;
+      },
+      end(payload?: unknown) {
+        this.body = payload ?? this.body;
+        resolve({ statusCode: this.statusCode, body: this.body });
+        return this;
+      },
+    };
+
+    try {
+      expressApp.handle(req, res, (error?: unknown) => {
+        if (error) {
+          reject(error);
+          return;
+        }
+        resolve({ statusCode: res.statusCode, body: res.body });
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 describe('TrainerController', () => {
   it('registers both trainer and business route prefixes', () => {
@@ -60,6 +152,155 @@ describe('TrainerController', () => {
     ]);
   });
 
+  it('maps active store service products into public business offers when no site services are configured', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({ config: {} });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Fractional Advisory Sprint',
+              description:
+                'Structured advisory engagement for business operators.',
+              price: 250,
+              type: 'service',
+              active: true,
+            },
+            {
+              id: 'product-2',
+              name: 'Physical Workbook',
+              description: 'Printed workbook',
+              price: 40,
+              type: 'physical',
+              active: true,
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(controller.getOffers()).resolves.toEqual([
+      {
+        id: 'product-1',
+        label: 'Fractional Advisory Sprint',
+        description: 'Structured advisory engagement for business operators.',
+        serviceType: 'service',
+        startingRate: 250,
+        allowOnlineBooking: true,
+      },
+    ]);
+  });
+
+  it('uses store-backed offers when the site config explicitly selects the store catalog', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              serviceCatalog: { source: 'store' },
+              services: [
+                {
+                  id: 'service-1',
+                  name: 'Legacy Manual Offer',
+                  description:
+                    'Manual copy that should be ignored in store mode.',
+                  price: 90,
+                },
+              ],
+            },
+          });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Store Strategy Sprint',
+              description: 'Store-managed service offer.',
+              price: 210,
+              type: 'service',
+              active: true,
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(controller.getOffers()).resolves.toEqual([
+      {
+        id: 'product-1',
+        label: 'Store Strategy Sprint',
+        description: 'Store-managed service offer.',
+        serviceType: 'service',
+        startingRate: 210,
+        allowOnlineBooking: true,
+      },
+    ]);
+  });
+
+  it('falls back to availability-derived offers when neither site services nor service products exist', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({ config: {} });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-2',
+              name: 'Physical Workbook',
+              description: 'Printed workbook',
+              price: 40,
+              type: 'physical',
+              active: true,
+            },
+          ]);
+        }
+
+        if (command === AvailabilityCommands.FIND_ALL_AVAILABILITIES) {
+          return of([
+            {
+              id: 'availability-1',
+              serviceType: 'Strategy Session',
+              hourlyRate: 180,
+              isActive: true,
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(controller.getOffers()).resolves.toEqual([
+      {
+        id: 'availability-1',
+        label: 'Strategy Session',
+        description: 'Bookable service derived from active availability.',
+        serviceType: 'Strategy Session',
+        startingRate: 180,
+      },
+    ]);
+  });
+
   it('stores business lead context when site config is updated', async () => {
     const storeClient = {
       send: jest.fn(() => of({ id: 'cfg-1' })),
@@ -82,16 +323,279 @@ describe('TrainerController', () => {
       }
     );
 
-    expect(storeClient.send).toHaveBeenCalledWith(TrainerConfigCommands.UPDATE_CONFIG, {
-      id: 'cfg-1',
-      config: {
-        brand: { businessName: 'North Star Coaching' },
-        leadContext: {
-          profileId: 'owner-profile-1',
-          appScope: 'business-site',
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.UPDATE_CONFIG,
+      {
+        id: 'cfg-1',
+        config: {
+          brand: { businessName: 'North Star Coaching' },
+          leadContext: {
+            profileId: 'owner-profile-1',
+            appScope: 'business-site',
+          },
         },
+      }
+    );
+  });
+
+  it('updates catalog source through a dedicated permission-scoped business-site endpoint', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: 'cfg-1',
+            config: {
+              brand: { businessName: 'North Star Coaching' },
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Store Strategy Sprint',
+              description: 'Store-managed service offer.',
+              price: 210,
+              type: 'service',
+              active: true,
+            },
+          ]);
+        }
+
+        return of({ id: 'cfg-1' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.updateCatalogSource(
+      {
+        configId: 'cfg-1',
+        source: 'store',
       },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      }
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.UPDATE_CONFIG,
+      {
+        id: 'cfg-1',
+        config: {
+          brand: { businessName: 'North Star Coaching' },
+          leadContext: {
+            profileId: 'owner-profile-1',
+            appScope: 'business-site',
+          },
+          serviceCatalog: {
+            source: 'store',
+          },
+        },
+      }
+    );
+  });
+
+  describe('catalog source request contract', () => {
+    let app: INestApplication;
+    let storeClient: { send: jest.Mock };
+
+    const operatorTokenPayload = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    beforeEach(async () => {
+      storeClient = {
+        send: jest.fn(),
+      };
+
+      const moduleRef = Test.createTestingModule({
+        controllers: [TrainerController],
+        providers: [
+          {
+            provide: ServiceTokens.STORE_SERVICE,
+            useValue: storeClient,
+          },
+          {
+            provide: ServiceTokens.LEAD_SERVICE,
+            useValue: { send: jest.fn() },
+          },
+        ],
+      })
+        .overrideGuard(AuthGuard)
+        .useValue({ canActivate: () => true })
+        .overrideGuard(PermissionsGuard)
+        .useValue({ canActivate: () => true });
+
+      const module: TestingModule = await moduleRef.compile();
+      app = module.createNestApplication();
+      await app.init();
     });
+
+    afterEach(async () => {
+      await app?.close();
+    });
+
+    it('accepts catalog-source updates through the business route with bearer-token identity', async () => {
+      storeClient.send.mockImplementation((command: any) => {
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Store Strategy Sprint',
+              description: 'Store-managed service offer.',
+              price: 210,
+              type: 'service',
+              active: true,
+            },
+          ]);
+        }
+
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              brand: { businessName: 'North Star Coaching' },
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command === TrainerConfigCommands.UPDATE_CONFIG) {
+          return of({ id: 'cfg-1' });
+        }
+
+        return of(null);
+      });
+
+      const response = await injectJsonPut(
+        app,
+        '/business/site-config/catalog-source',
+        { configId: 'cfg-1', source: 'store' },
+        operatorTokenPayload
+      );
+
+      expect(response).toEqual({
+        statusCode: 200,
+        body: { id: 'cfg-1' },
+      });
+      expect(storeClient.send).toHaveBeenCalledWith(
+        TrainerConfigCommands.UPDATE_CONFIG,
+        {
+          id: 'cfg-1',
+          config: {
+            brand: { businessName: 'North Star Coaching' },
+            leadContext: {
+              profileId: 'owner-profile-1',
+              appScope: 'business-site',
+            },
+            serviceCatalog: {
+              source: 'store',
+            },
+          },
+        }
+      );
+    });
+  });
+
+  it('rejects store mode when no active store service products exist', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              brand: { businessName: 'North Star Coaching' },
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([]);
+        }
+
+        return of({ id: 'cfg-1' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.updateCatalogSource(
+        {
+          configId: 'cfg-1',
+          source: 'store',
+        },
+        {
+          userId: 'owner-user-1',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'owner-profile-1',
+        }
+      )
+    ).rejects.toThrow('At least one active store service product is required');
+  });
+
+  it('rejects store mode when active store service products are not publish-ready', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              brand: { businessName: 'North Star Coaching' },
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Strategy Sprint',
+              description: '',
+              price: 0,
+              type: 'service',
+              active: true,
+            },
+          ]);
+        }
+
+        return of({ id: 'cfg-1' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.updateCatalogSource(
+        {
+          configId: 'cfg-1',
+          source: 'store',
+        },
+        {
+          userId: 'owner-user-1',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'owner-profile-1',
+        }
+      )
+    ).rejects.toThrow('publish-ready');
   });
 
   it('bridges public business intake into the leads domain with anonymous context', async () => {
@@ -127,19 +631,66 @@ describe('TrainerController', () => {
       preferredEnd: '2026-05-10T11:00',
     });
 
-    expect(leadClient.send).toHaveBeenCalledWith({ cmd: LeadCommands.CREATE }, {
-      dto: expect.objectContaining({
-        name: 'Jordan Prospect',
-        email: 'jordan@example.com',
-        phone: '(555) 100-2000',
-        searchKeywords: expect.arrayContaining(['business-site-intake']),
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      {
+        dto: expect.objectContaining({
+          name: 'Jordan Prospect',
+          email: 'jordan@example.com',
+          phone: '(555) 100-2000',
+          searchKeywords: expect.arrayContaining(['business-site-intake']),
+        }),
+        context: {
+          userId: 'anonymous-business-site',
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+      }
+    );
+  });
+
+  it('falls back to a non-empty lead name when public business intake omits it', async () => {
+    const storeClient = {
+      send: jest.fn((command: string) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: 'cfg-1',
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of(null);
       }),
-      context: {
-        userId: 'anonymous-business-site',
-        profileId: 'owner-profile-1',
-        appScope: 'business-site',
-      },
+    } as any;
+    const leadClient = {
+      send: jest.fn(() => of({ id: 'lead-1' })),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.createLeadIntake({
+      name: '   ',
+      email: 'jordan@example.com',
+      goal: 'Build a consistent routine',
     });
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      {
+        dto: expect.objectContaining({
+          name: 'jordan@example.com',
+        }),
+        context: {
+          userId: 'anonymous-business-site',
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+      }
+    );
   });
 
   it('reads client bookings for the authenticated user only', async () => {
@@ -314,7 +865,9 @@ describe('TrainerController', () => {
       }),
     } as any;
     const leadClient = {
-      send: jest.fn(() => of([{ id: 'lead-1', userId: 'client-user-1', status: LeadStatus.NEW }])),
+      send: jest.fn(() =>
+        of([{ id: 'lead-1', userId: 'client-user-1', status: LeadStatus.NEW }])
+      ),
     } as any;
     const controller = new TrainerController(storeClient, leadClient);
 
@@ -376,7 +929,9 @@ describe('TrainerController', () => {
   it('protects client bookings with business auth', () => {
     const getClientBookings = TrainerController.prototype.getClientBookings;
 
-    expect(Reflect.getMetadata(GUARDS_METADATA, getClientBookings)).toEqual([AuthGuard]);
+    expect(Reflect.getMetadata(GUARDS_METADATA, getClientBookings)).toEqual([
+      AuthGuard,
+    ]);
   });
 
   it('protects owner booking operations with owner permissions', () => {
@@ -422,9 +977,23 @@ describe('TrainerController', () => {
     });
   });
 
+  it('protects catalog source updates with a dedicated business-site catalog permission', () => {
+    const updateCatalogSource = TrainerController.prototype.updateCatalogSource;
+
+    expect(Reflect.getMetadata(GUARDS_METADATA, updateCatalogSource)).toEqual([
+      AuthGuard,
+      PermissionsGuard,
+    ]);
+    expect(Reflect.getMetadata(PERMISSIONS_KEY, updateCatalogSource)).toEqual({
+      permissions: ['business-site.catalog.update'],
+    });
+  });
+
   it('protects real booking creation with client auth', () => {
     const createBooking = TrainerController.prototype.createBooking;
 
-    expect(Reflect.getMetadata(GUARDS_METADATA, createBooking)).toEqual([AuthGuard]);
+    expect(Reflect.getMetadata(GUARDS_METADATA, createBooking)).toEqual([
+      AuthGuard,
+    ]);
   });
 });

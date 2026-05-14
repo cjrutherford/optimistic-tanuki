@@ -1,6 +1,21 @@
 <div class="product-management">
   <h2>Product Management</h2>
 
+  <div class="catalog-summary">
+    <div class="summary-card">
+      <span class="summary-label">Total products</span>
+      <strong>{{ products.length }}</strong>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Service products</span>
+      <strong>{{ serviceProductCount }}</strong>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Active services</span>
+      <strong>{{ activeServiceProductCount }}</strong>
+    </div>
+  </div>
+
   <div class="error" *ngIf="error">{{ error }}</div>
 
   <div class="actions">
@@ -10,6 +25,41 @@
       [disabled]="loading || isCreating || isEditing"
     >
       Add New Product
+    </button>
+  </div>
+
+  <div class="filter-row" *ngIf="!isCreating && !isEditing">
+    <button
+      class="btn btn-secondary"
+      [class.is-active]="filter === 'all'"
+      (click)="setFilter('all')"
+      [disabled]="loading"
+    >
+      All
+    </button>
+    <button
+      class="btn btn-secondary"
+      [class.is-active]="filter === 'service'"
+      (click)="setFilter('service')"
+      [disabled]="loading"
+    >
+      Service
+    </button>
+    <button
+      class="btn btn-secondary"
+      [class.is-active]="filter === 'active-service'"
+      (click)="setFilter('active-service')"
+      [disabled]="loading"
+    >
+      Active Services
+    </button>
+    <button
+      class="btn btn-secondary"
+      [class.is-active]="filter === 'inactive'"
+      (click)="setFilter('inactive')"
+      [disabled]="loading"
+    >
+      Inactive
     </button>
   </div>
 
@@ -58,6 +108,7 @@
       <div class="form-group">
         <label for="type">Type *</label>
         <select id="type" [(ngModel)]="productForm.type" required>
+          <option value="service">Service</option>
           <option value="physical">Physical</option>
           <option value="digital">Digital</option>
           <option value="subscription">Subscription</option>
@@ -101,7 +152,7 @@
   <div class="products-list" *ngIf="!isCreating && !isEditing">
     <div class="loading" *ngIf="loading">Loading products...</div>
 
-    <table *ngIf="!loading && products.length > 0">
+    <table *ngIf="!loading && filteredProducts.length > 0">
       <thead>
         <tr>
           <th>Name</th>
@@ -113,7 +164,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let product of products">
+        <tr *ngFor="let product of filteredProducts">
           <td>{{ product.name }}</td>
           <td>{{ product.type }}</td>
           <td>\${{ formatPrice(product.price) }}</td>
@@ -142,8 +193,11 @@
       </tbody>
     </table>
 
-    <div class="empty-state" *ngIf="!loading && products.length === 0">
-      <p>No products found. Create your first product to get started.</p>
+    <div class="empty-state" *ngIf="!loading && filteredProducts.length === 0">
+      <p>
+        No products match the current filter. Create or activate products to
+        populate this view.
+      </p>
     </div>
   </div>
 </div>

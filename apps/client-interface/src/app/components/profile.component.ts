@@ -72,13 +72,23 @@ export class ProfileComponent implements OnInit {
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       const userId = params.get('userId');
-      if (userId) {
-        this.viewingUserId = userId;
-        this.loadViewingUserProfile(userId);
-      } else {
+      const currentProfile = this.profileService.getCurrentUserProfile();
+
+      if (!userId) {
+        if (currentProfile?.id) {
+          this.router.navigate(['/profile', currentProfile.id], {
+            replaceUrl: true,
+          });
+          return;
+        }
+
         this.viewingUserId = null;
         this.loadSelfProfile();
+        return;
       }
+
+      this.viewingUserId = userId;
+      this.loadViewingUserProfile(userId);
     });
 
     this.loadOwnedCommunities();
@@ -86,7 +96,17 @@ export class ProfileComponent implements OnInit {
 
   private loadSelfProfile() {
     this.isViewingOther = false;
-    this.viewingUserProfile.set(null);
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    this.viewingUserProfile.set(currentProfile ?? null);
+
+    if (currentProfile?.id) {
+      this.viewingUserId = currentProfile.id;
+      this.loadUserPosts(currentProfile.id);
+      this.loadUserCommunities(currentProfile.id);
+      this.checkFollowStatus(currentProfile.id);
+      this.checkBlockStatus(currentProfile.id, currentProfile.id);
+    }
+
     this.profileService.getAllProfiles().then(() => {
       if (isPlatformBrowser(this.platformId)) {
         const profile = localStorage.getItem('selectedProfile');
@@ -109,22 +129,24 @@ export class ProfileComponent implements OnInit {
   }
 
   private loadViewingUserProfile(userId: string) {
-    this.isViewingOther = true;
     const currentProfile = this.profileService.getCurrentUserProfile();
-
-    if (currentProfile && currentProfile.id === userId) {
-      this.isViewingOther = false;
-      this.loadSelfProfile();
-      return;
-    }
+    this.isViewingOther = !currentProfile || currentProfile.id !== userId;
+    this.viewingUserProfile.set(null);
 
     this.profileService.getDisplayProfile(userId).subscribe({
       next: (profile) => {
         this.viewingUserProfile.set(profile);
         this.loadUserPosts(userId);
         this.loadUserCommunities(userId);
-        this.checkFollowStatus(userId);
-        this.checkBlockStatus(currentProfile?.id || '', userId);
+        this.loadOwnedCommunities();
+
+        if (currentProfile && currentProfile.id !== userId) {
+          this.checkFollowStatus(userId);
+          this.checkBlockStatus(currentProfile.id, userId);
+        } else {
+          this.isFollowing.set(false);
+          this.isBlocked.set(false);
+        }
       },
       error: (err) => {
         console.error('Failed to load user profile', err);
@@ -189,8 +211,15 @@ export class ProfileComponent implements OnInit {
         const currentProfile = this.profileService.getCurrentUserProfile();
         if (!currentProfile) return;
 
+        const currentUserIds = new Set(
+          [currentProfile.id, currentProfile.userId].filter(Boolean) as string[]
+        );
         const owned = communities
-          .filter((c: CommunityDto) => c.ownerId === currentProfile.userId)
+          .filter((c: CommunityDto) =>
+            [c.ownerId, c.ownerProfileId, ...(c.ownerIds ?? [])].some(
+              (ownerId) => ownerId && currentUserIds.has(ownerId)
+            )
+          )
           .map((c: CommunityDto) => ({ id: c.id, name: c.name }));
         this.ownedCommunities.set(owned);
       },
@@ -228,7 +257,7 @@ export class ProfileComponent implements OnInit {
     this.showMessage('Profile selected!', 'success');
     setTimeout(() => {
       if (isPlatformBrowser(this.platformId)) {
-        window.location.href = '/feed';
+        this.router.navigate(['/feed']);
       }
     }, 500);
   }
@@ -244,7 +273,7 @@ export class ProfileComponent implements OnInit {
 
   goToSettings() {
     if (isPlatformBrowser(this.platformId)) {
-      window.location.href = '/settings';
+      this.router.navigate(['/settings']);
     }
   }
 
