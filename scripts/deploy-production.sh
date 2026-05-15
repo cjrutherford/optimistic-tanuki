@@ -202,6 +202,10 @@ else
 fi
 
 echo ""
+echo "Step 5.2: Skipping local production overlay image updates."
+echo "Production image tag promotion must be committed to the Git revision ArgoCD tracks."
+
+echo ""
 echo "Step 6: Applying Terraform configuration..."
 prepare_kubeconfig_for_terraform
 
