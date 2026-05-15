@@ -1,5 +1,6 @@
 import { docsSlugMatcher, routes } from './app.routes';
 import { NavSidebarComponent } from './shared';
+import { UrlSegment } from '@angular/router';
 
 describe('ui-playground routes', () => {
   it('includes the full curated library route set', () => {
@@ -39,9 +40,9 @@ describe('ui-playground routes', () => {
 
   it('captures nested docs slugs through the docs matcher', () => {
     const result = docsSlugMatcher([
-      { path: 'docs' } as never,
-      { path: 'architecture' } as never,
-      { path: 'workspace-map' } as never,
+      new UrlSegment('docs', {}),
+      new UrlSegment('architecture', {}),
+      new UrlSegment('workspace-map', {}),
     ]);
 
     expect(result?.posParams.slug.path).toBe('architecture/workspace-map');

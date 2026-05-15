@@ -57,15 +57,19 @@ export class ThreadService {
     id: string,
     options?: FindOneOptions<Thread>
   ): Promise<Thread | null> {
-    // Increment view count
-    await this.threadRepo.increment({ id }, 'viewCount', 1);
-
-    return await this.threadRepo.findOne(
+    const thread = await this.threadRepo.findOne(
       this.withDefaultModerationFilter({
         where: { id },
         ...options,
       })
     );
+
+    if (thread?.moderationStatus === 'visible') {
+      await this.threadRepo.increment({ id: thread.id }, 'viewCount', 1);
+      thread.viewCount += 1;
+    }
+
+    return thread;
   }
 
   async update(id: string, updateThreadDto: UpdateThreadDto): Promise<Thread> {
@@ -92,7 +96,12 @@ export class ThreadService {
     }
 
     await this.threadRepo.update(id, updatedData);
-    return await this.findOne(id);
+    const updatedThread = await this.threadRepo.findOne({ where: { id } });
+    if (!updatedThread) {
+      throw new Error(`Thread with ID ${id} not found`);
+    }
+
+    return updatedThread;
   }
 
   async remove(id: string): Promise<void> {

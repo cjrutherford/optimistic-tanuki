@@ -30,25 +30,13 @@ describe('Gateway CommunitiesController metadata', () => {
     }
   }
 
-  it('leaves shared community mutations on auth-only guards', () => {
-    const sharedHandlers: Array<keyof CommunitiesController> = [
-      'createCommunity',
-      'updateCommunity',
-      'deleteCommunity',
-      'inviteMember',
-      'updateMemberRole',
-      'removeMember',
-    ];
-
-    for (const methodName of sharedHandlers) {
-      const handler = controller[methodName] as unknown as Function;
-      const guards = Reflect.getMetadata(GUARDS_METADATA, handler) ?? [];
-      const requirement = Reflect.getMetadata(PERMISSIONS_KEY, handler);
-
-      expect(guards).toEqual(expect.arrayContaining([AuthGuard]));
-      expect(guards).not.toEqual(expect.arrayContaining([PermissionsGuard]));
-      expect(requirement).toBeUndefined();
-    }
+  it('protects shared community mutations with explicit permissions', () => {
+    expectMutationGuarded('createCommunity', 'community.create');
+    expectMutationGuarded('updateCommunity', 'community.update');
+    expectMutationGuarded('deleteCommunity', 'community.delete');
+    expectMutationGuarded('inviteMember', 'community.invite');
+    expectMutationGuarded('updateMemberRole', 'community.manage');
+    expectMutationGuarded('removeMember', 'community.member.remove');
   });
 
   it('protects manager appointment with explicit governance permissions', () => {

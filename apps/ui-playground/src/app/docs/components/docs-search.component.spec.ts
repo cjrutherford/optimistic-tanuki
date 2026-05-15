@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { DocsSearchComponent } from './docs-search.component';
 
 describe('DocsSearchComponent', () => {
@@ -7,14 +8,14 @@ describe('DocsSearchComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DocsSearchComponent],
+      imports: [DocsSearchComponent, RouterTestingModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DocsSearchComponent);
     component = fixture.componentInstance;
     component.documents = [
       {
-        slug: 'docs/architecture/workspace-map',
+        slug: 'architecture/workspace-map',
         title: 'Workspace Map',
         summary: 'Repo layout and navigation',
         category: 'architecture',
@@ -22,7 +23,7 @@ describe('DocsSearchComponent', () => {
         tags: ['nx'],
       },
       {
-        slug: 'docs/getting-started/readme',
+        slug: 'getting-started/readme',
         title: 'Getting Started',
         summary: 'Contributor setup guide',
         category: 'getting-started',

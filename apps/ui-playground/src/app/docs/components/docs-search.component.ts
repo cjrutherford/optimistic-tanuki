@@ -1,11 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { DocsSearchDocument } from '../models/docs.models';
 
 @Component({
   selector: 'pg-docs-search',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink],
   template: `
     <section class="docs-search">
       <label class="search-shell">
@@ -23,7 +24,7 @@ import { DocsSearchDocument } from '../models/docs.models';
           <a
             *ngFor="let document of filteredDocuments; trackBy: trackBySlug"
             class="search-result"
-            [attr.href]="'/docs/' + document.slug"
+            [routerLink]="['/docs', document.slug]"
           >
             <span class="result-title">{{ document.title }}</span>
             <span class="result-meta">{{ document.category }}</span>

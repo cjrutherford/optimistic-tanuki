@@ -1,4 +1,4 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlSegment } from '@angular/router';
 
 export function docsSlugMatcher(
   segments: import('@angular/router').UrlSegment[]
@@ -7,12 +7,13 @@ export function docsSlugMatcher(
     return {
       consumed: segments,
       posParams: {
-        slug: new (class {
-          path = segments
+        slug: new UrlSegment(
+          segments
             .slice(1)
             .map((segment) => segment.path)
-            .join('/');
-        })() as import('@angular/router').UrlSegment,
+            .join('/'),
+          {}
+        ),
       },
     };
   }
