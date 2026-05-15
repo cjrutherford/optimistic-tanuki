@@ -31,7 +31,10 @@ import { NavSidebarComponent } from './shared';
             <div class="toolbar-copy">
               <span class="toolbar-label">Validation Sweep</span>
               <strong>{{ activePersonalityName }}</strong>
-              <p>Switch personalities and mode globally before reviewing any library page.</p>
+              <p>
+                Switch personalities and mode globally before reading docs,
+                previews, and implementation references.
+              </p>
             </div>
 
             <label class="personality-picker">
@@ -39,7 +42,7 @@ import { NavSidebarComponent } from './shared';
               <select
                 aria-label="Active personality"
                 [value]="activePersonalityId"
-                (change)="onPersonalityChange(($any($event.target)).value)"
+                (change)="onPersonalityChange($any($event.target).value)"
               >
                 @for (personality of personalities; track personality.id) {
                 <option [value]="personality.id">{{ personality.name }}</option>
@@ -64,7 +67,7 @@ import { NavSidebarComponent } from './shared';
               </button>
             </div>
 
-            <a class="validation-link" routerLink="/validation">Open Validation Board</a>
+            <a class="validation-link" routerLink="/docs">Open Docs Atlas</a>
           </header>
 
           <router-outlet />
@@ -101,8 +104,7 @@ import { NavSidebarComponent } from './shared';
         padding: 0.95rem 1rem;
         border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
         border-radius: var(--personality-card-radius, 1.25rem);
-        background:
-          linear-gradient(
+        background: linear-gradient(
             180deg,
             color-mix(in srgb, var(--surface) 94%, transparent),
             color-mix(in srgb, var(--background) 96%, transparent)

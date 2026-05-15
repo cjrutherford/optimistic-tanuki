@@ -4,13 +4,20 @@ import { Repository } from 'typeorm';
 import { PrivacyService } from './privacy.service';
 import { UserBlock } from '../../entities/user-block.entity';
 import { UserMute } from '../../entities/user-mute.entity';
-import { ContentReport, ReportReason } from '../../entities/content-report.entity';
+import {
+  ContentReport,
+  ReportReason,
+} from '../../entities/content-report.entity';
+import { PostService } from './post.service';
+import { CommentService } from './comment.service';
 
 describe('PrivacyService', () => {
   let service: PrivacyService;
   let userBlockRepo: Repository<UserBlock>;
   let userMuteRepo: Repository<UserMute>;
   let contentReportRepo: Repository<ContentReport>;
+  let postService: { moderate: jest.Mock };
+  let commentService: { moderate: jest.Mock };
 
   const mockUserBlock: UserBlock = {
     id: 'block-123',
@@ -69,7 +76,17 @@ describe('PrivacyService', () => {
             find: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
+            update: jest.fn(),
+            findOne: jest.fn(),
           },
+        },
+        {
+          provide: PostService,
+          useValue: { moderate: jest.fn() },
+        },
+        {
+          provide: CommentService,
+          useValue: { moderate: jest.fn() },
         },
       ],
     }).compile();
@@ -84,6 +101,8 @@ describe('PrivacyService', () => {
     contentReportRepo = module.get<Repository<ContentReport>>(
       getRepositoryToken(ContentReport)
     );
+    postService = module.get(PostService);
+    commentService = module.get(CommentService);
   });
 
   it('should be defined', () => {
@@ -140,7 +159,9 @@ describe('PrivacyService', () => {
 
   describe('unblockUser', () => {
     it('should delete the block', async () => {
-      jest.spyOn(userBlockRepo, 'delete').mockResolvedValue({ affected: 1 } as any);
+      jest
+        .spyOn(userBlockRepo, 'delete')
+        .mockResolvedValue({ affected: 1 } as any);
 
       await service.unblockUser('user-1', 'user-2');
 
@@ -151,15 +172,22 @@ describe('PrivacyService', () => {
     });
 
     it('should not throw error if block does not exist', async () => {
-      jest.spyOn(userBlockRepo, 'delete').mockResolvedValue({ affected: 0 } as any);
+      jest
+        .spyOn(userBlockRepo, 'delete')
+        .mockResolvedValue({ affected: 0 } as any);
 
-      await expect(service.unblockUser('user-1', 'user-2')).resolves.not.toThrow();
+      await expect(
+        service.unblockUser('user-1', 'user-2')
+      ).resolves.not.toThrow();
     });
   });
 
   describe('getBlockedUsers', () => {
     it('should return list of blocked users', async () => {
-      const blockedUsers = [mockUserBlock, { ...mockUserBlock, id: 'block-456' }];
+      const blockedUsers = [
+        mockUserBlock,
+        { ...mockUserBlock, id: 'block-456' },
+      ];
       jest.spyOn(userBlockRepo, 'find').mockResolvedValue(blockedUsers);
 
       const result = await service.getBlockedUsers('user-1');
@@ -198,6 +226,48 @@ describe('PrivacyService', () => {
       const result = await service.isUserBlocked('user-1', 'user-2');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('moderateContent', () => {
+    it('moderates a reported post through the post service', async () => {
+      postService.moderate.mockResolvedValue({ id: 'post-123' });
+
+      const result = await service.moderateContent(
+        'post',
+        'post-123',
+        'hidden',
+        'moderator-1',
+        'Spam cleanup'
+      );
+
+      expect(postService.moderate).toHaveBeenCalledWith(
+        'post-123',
+        'hidden',
+        'moderator-1',
+        'Spam cleanup'
+      );
+      expect(result).toEqual({ success: true });
+    });
+
+    it('moderates a reported comment through the comment service', async () => {
+      commentService.moderate.mockResolvedValue({ id: 'comment-123' });
+
+      const result = await service.moderateContent(
+        'comment',
+        'comment-123',
+        'visible',
+        'moderator-2',
+        'Restored after appeal'
+      );
+
+      expect(commentService.moderate).toHaveBeenCalledWith(
+        'comment-123',
+        'visible',
+        'moderator-2',
+        'Restored after appeal'
+      );
+      expect(result).toEqual({ success: true });
     });
   });
 
@@ -251,7 +321,9 @@ describe('PrivacyService', () => {
 
   describe('unmuteUser', () => {
     it('should delete the mute', async () => {
-      jest.spyOn(userMuteRepo, 'delete').mockResolvedValue({ affected: 1 } as any);
+      jest
+        .spyOn(userMuteRepo, 'delete')
+        .mockResolvedValue({ affected: 1 } as any);
 
       await service.unmuteUser('user-1', 'user-3');
 
@@ -262,9 +334,13 @@ describe('PrivacyService', () => {
     });
 
     it('should not throw error if mute does not exist', async () => {
-      jest.spyOn(userMuteRepo, 'delete').mockResolvedValue({ affected: 0 } as any);
+      jest
+        .spyOn(userMuteRepo, 'delete')
+        .mockResolvedValue({ affected: 0 } as any);
 
-      await expect(service.unmuteUser('user-1', 'user-3')).resolves.not.toThrow();
+      await expect(
+        service.unmuteUser('user-1', 'user-3')
+      ).resolves.not.toThrow();
     });
   });
 
@@ -293,8 +369,12 @@ describe('PrivacyService', () => {
 
   describe('reportContent', () => {
     it('should create a content report', async () => {
-      jest.spyOn(contentReportRepo, 'create').mockReturnValue(mockContentReport);
-      jest.spyOn(contentReportRepo, 'save').mockResolvedValue(mockContentReport);
+      jest
+        .spyOn(contentReportRepo, 'create')
+        .mockReturnValue(mockContentReport);
+      jest
+        .spyOn(contentReportRepo, 'save')
+        .mockResolvedValue(mockContentReport);
 
       const result = await service.reportContent(
         'user-1',
@@ -317,9 +397,16 @@ describe('PrivacyService', () => {
     });
 
     it('should create report without description', async () => {
-      const reportWithoutDesc = { ...mockContentReport, description: undefined };
-      jest.spyOn(contentReportRepo, 'create').mockReturnValue(reportWithoutDesc);
-      jest.spyOn(contentReportRepo, 'save').mockResolvedValue(reportWithoutDesc);
+      const reportWithoutDesc = {
+        ...mockContentReport,
+        description: undefined,
+      };
+      jest
+        .spyOn(contentReportRepo, 'create')
+        .mockReturnValue(reportWithoutDesc);
+      jest
+        .spyOn(contentReportRepo, 'save')
+        .mockResolvedValue(reportWithoutDesc);
 
       const result = await service.reportContent(
         'user-1',
@@ -340,13 +427,9 @@ describe('PrivacyService', () => {
     });
 
     it('should handle different content types', async () => {
-      const contentTypes: Array<'post' | 'comment' | 'profile' | 'community' | 'message'> = [
-        'post',
-        'comment',
-        'profile',
-        'community',
-        'message',
-      ];
+      const contentTypes: Array<
+        'post' | 'comment' | 'profile' | 'community' | 'message'
+      > = ['post', 'comment', 'profile', 'community', 'message'];
 
       for (const type of contentTypes) {
         const report = { ...mockContentReport, contentType: type };

@@ -84,6 +84,18 @@ export class Post {
 
   @Column({ default: false })
   isScheduled: boolean;
+
+  @Column({ type: 'varchar', default: 'visible' })
+  moderationStatus: 'visible' | 'hidden';
+
+  @Column({ type: 'varchar', nullable: true })
+  moderationNotes?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  moderatedBy?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  moderatedAt?: Date | null;
 }
 
 export function postSearchDtoToFindManyOptions(

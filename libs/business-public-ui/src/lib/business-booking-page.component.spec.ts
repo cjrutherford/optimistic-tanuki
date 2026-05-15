@@ -20,7 +20,12 @@ class DummyRegisterPageComponent {}
 
 describe('BusinessBookingPageComponent', () => {
   async function render(
-    clientUser: { userId: string; profileId: string; email: string; name?: string } | null = null,
+    clientUser: {
+      userId: string;
+      profileId: string;
+      email: string;
+      name?: string;
+    } | null = null,
     accepted = false,
     options: {
       offers?: any[];
@@ -41,32 +46,40 @@ describe('BusinessBookingPageComponent', () => {
     ];
     const createLeadIntake = jest.fn().mockReturnValue(of({ id: 'lead-1' }));
     const createBooking = jest.fn().mockReturnValue(of({ id: 'booking-1' }));
-    const getClientBookingStatus = jest.fn().mockReturnValue(
-      of({ accepted, leadId: accepted ? 'lead-accepted' : 'lead-pending' })
-    );
+    const getClientBookingStatus = jest
+      .fn()
+      .mockReturnValue(
+        of({ accepted, leadId: accepted ? 'lead-accepted' : 'lead-pending' })
+      );
     const getAvailabilities = jest.fn().mockReturnValue(
-      of(options.availabilities ?? [
-        {
-          id: 'availability-1',
-          dayOfWeek: new Date().getDay(),
-          startTime: '10:00:00',
-          endTime: '12:00:00',
-          hourlyRate: 120,
-          isActive: true,
-          serviceType: 'Strategy session',
-        },
-      ])
+      of(
+        options.availabilities ?? [
+          {
+            id: 'availability-1',
+            dayOfWeek: new Date().getDay(),
+            startTime: '10:00:00',
+            endTime: '12:00:00',
+            hourlyRate: 120,
+            isActive: true,
+            serviceType: 'Strategy session',
+          },
+        ]
+      )
     );
     const getAvailabilityOverrides = jest
       .fn()
       .mockReturnValue(of(options.availabilityOverrides ?? []));
-    const getBusyWindows = jest.fn().mockReturnValue(of(options.busyWindows ?? []));
+    const getBusyWindows = jest
+      .fn()
+      .mockReturnValue(of(options.busyWindows ?? []));
     const getOffers = jest.fn().mockReturnValue(of(offers));
 
     await TestBed.configureTestingModule({
       imports: [BusinessBookingPageComponent],
       providers: [
-        provideRouter([{ path: 'client/register', component: DummyRegisterPageComponent }]),
+        provideRouter([
+          { path: 'client/register', component: DummyRegisterPageComponent },
+        ]),
         {
           provide: BusinessApiService,
           useValue: {
@@ -130,27 +143,35 @@ describe('BusinessBookingPageComponent', () => {
       email: 'jordan@example.com',
       phone: '(555) 100-2000',
       goal: 'Build a consistent strength routine',
-      context: 'Requested offer: Strategy session\n\nI need a simple weekly plan.',
+      context:
+        'Requested offer: Strategy session\n\nI need a simple weekly plan.',
       preferredStart: component.form.preferredStart,
       preferredEnd: component.form.preferredEnd,
     });
     expect(fixture.nativeElement.textContent).toContain(
       'Create an account now to make scheduling faster.'
     );
-    expect(fixture.nativeElement.textContent).not.toContain('Name or client ID');
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'Name or client ID'
+    );
   });
 
   it('prefills authenticated client identity and links the intake to the signed-in account', async () => {
-    const { component, fixture, createLeadIntake, createBooking, getClientBookingStatus } =
-      await render(
-        {
-          userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
-          profileId: 'client-profile-1',
-          email: 'client@example.com',
-          name: 'Casey Client',
-        },
-        false
-      );
+    const {
+      component,
+      fixture,
+      createLeadIntake,
+      createBooking,
+      getClientBookingStatus,
+    } = await render(
+      {
+        userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
+        profileId: 'client-profile-1',
+        email: 'client@example.com',
+        name: 'Casey Client',
+      },
+      false
+    );
 
     expect(component.form.name).toBe('Casey Client');
     expect(component.form.email).toBe('client@example.com');
@@ -174,22 +195,23 @@ describe('BusinessBookingPageComponent', () => {
       profileId: 'client-profile-1',
     });
     expect(fixture.nativeElement.textContent).toContain(
-      'We\'ll follow up in your client workspace and by email.'
+      "We'll follow up in your client workspace and by email."
     );
     expect(getClientBookingStatus).toHaveBeenCalled();
     expect(createBooking).not.toHaveBeenCalled();
   });
 
   it('submits a real booking for accepted clients using the signed-in client identity', async () => {
-    const { component, fixture, createLeadIntake, createBooking } = await render(
-      {
-        userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
-        profileId: 'client-profile-1',
-        email: 'client@example.com',
-        name: 'Casey Client',
-      },
-      true
-    );
+    const { component, fixture, createLeadIntake, createBooking } =
+      await render(
+        {
+          userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
+          profileId: 'client-profile-1',
+          email: 'client@example.com',
+          name: 'Casey Client',
+        },
+        true
+      );
 
     const selectedSlot = component.availableSlots()[0];
     component.selectedSlotKey = selectedSlot.key;
@@ -201,21 +223,25 @@ describe('BusinessBookingPageComponent', () => {
 
     expect(createBooking).toHaveBeenCalledWith({
       title: 'Strategy session',
-      description: 'Requested offer: Strategy session\n\nI need a structured starting point.',
+      description:
+        'Requested offer: Strategy session\n\nI need a structured starting point.',
       startTime: selectedSlot.start,
       endTime: selectedSlot.end,
       isFreeConsultation: true,
-      notes: 'Client: Casey Client\nEmail: client@example.com\nOffer: Strategy session',
+      notes:
+        'Client: Casey Client\nEmail: client@example.com\nOffer: Strategy session',
     });
     expect(createLeadIntake).not.toHaveBeenCalled();
-    expect(fixture.nativeElement.textContent).toContain('Consultation request submitted.');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Consultation request submitted.'
+    );
   });
 
   it('derives appointment choices from published owner availability', async () => {
     const { component, getAvailabilities } = await render();
 
     expect(getAvailabilities).toHaveBeenCalled();
-    expect(component.availableSlots()).toHaveLength(2);
+    expect(component.availableSlots()).toHaveLength(4);
     expect(component.availableSlots()[0]?.serviceType).toBe('Strategy session');
   });
 

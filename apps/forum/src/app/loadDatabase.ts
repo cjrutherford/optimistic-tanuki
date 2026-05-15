@@ -4,10 +4,11 @@ import { Topic } from '../entities/topic.entity';
 import { Thread } from '../entities/thread.entity';
 import { ForumPost } from '../entities/forum-post.entity';
 import { ForumLink } from '../entities/forum-link.entity';
+import { ForumReport } from '../entities/forum-report.entity';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
-  const entities = [Topic, Thread, ForumPost, ForumLink];
+  const entities = [Topic, Thread, ForumPost, ForumLink, ForumReport];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
     host: database.host,

@@ -17,6 +17,7 @@ import {
   TopicCommands,
   ThreadCommands,
   ForumPostCommands,
+  ForumModerationCommands,
 } from '@optimistic-tanuki/constants';
 import {
   TopicDto,
@@ -36,6 +37,23 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
+
+interface ReportForumContentDto {
+  contentType: 'thread' | 'post';
+  contentId: string;
+  reason: string;
+  description?: string;
+}
+
+interface UpdateForumReportStatusDto {
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+  adminNotes?: string;
+}
+
+interface ModerateForumContentDto {
+  moderationStatus: 'visible' | 'hidden';
+  adminNotes?: string;
+}
 
 @ApiTags('forum')
 @Controller('forum')
@@ -343,6 +361,109 @@ export class ForumController {
   async deleteForumPost(@Param('id') id: string): Promise<void> {
     return await firstValueFrom(
       this.forumClient.send({ cmd: ForumPostCommands.DELETE }, { id })
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Report forum content for moderation review' })
+  @Post('report')
+  async reportForumContent(
+    @Body() dto: ReportForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.REPORT_CONTENT },
+        {
+          reporterId: user.profileId,
+          contentType: dto.contentType,
+          contentId: dto.contentId,
+          reason: dto.reason,
+          description: dto.description,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Get all forum moderation reports' })
+  @Get('admin/reports')
+  @RequirePermissions('community.manage')
+  async getForumReports() {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.GET_ALL_REPORTS },
+        {}
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Update a forum moderation report status' })
+  @Put('admin/reports/:id')
+  @RequirePermissions('community.manage')
+  async updateForumReportStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateForumReportStatusDto
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
+        {
+          id,
+          status: dto.status,
+          adminNotes: dto.adminNotes,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Soft moderate a forum thread' })
+  @Put('admin/thread/:id/moderation')
+  @RequirePermissions('community.manage')
+  async moderateForumThread(
+    @Param('id') id: string,
+    @Body() dto: ModerateForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.MODERATE_THREAD },
+        {
+          id,
+          moderationStatus: dto.moderationStatus,
+          adminNotes: dto.adminNotes,
+          moderatedBy: user.profileId,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Soft moderate a forum post' })
+  @Put('admin/post/:id/moderation')
+  @RequirePermissions('community.manage')
+  async moderateForumPost(
+    @Param('id') id: string,
+    @Body() dto: ModerateForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.MODERATE_POST },
+        {
+          id,
+          moderationStatus: dto.moderationStatus,
+          adminNotes: dto.adminNotes,
+          moderatedBy: user.profileId,
+        }
+      )
     );
   }
 

@@ -208,6 +208,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'store/resources',
+        loadComponent: () =>
+          import('./components/resource-management.component').then(
+            (m) => m.ResourceManagementComponent
+          ),
+      },
+      {
         path: 'communities',
         loadComponent: () =>
           import('./components/community-management.component').then(

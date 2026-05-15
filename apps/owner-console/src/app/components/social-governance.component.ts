@@ -1,87 +1,117 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-
-interface GovernanceLinkCard {
-  title: string;
-  description: string;
-  route: string;
-  eyebrow: string;
-}
+import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import {
+  ModerationReport,
+  SocialGovernanceService,
+} from '../services/social-governance.service';
 
 @Component({
   selector: 'app-social-governance',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <section class="governance-page">
       <header class="hero">
         <p class="hero-kicker">Community Ops</p>
         <h1>Social Governance</h1>
         <p>
-          Review the current moderation and isolation posture for social
-          surfaces, including community governance, member controls, and
-          privacy/reporting seams.
+          Review and triage incoming social content reports directly from
+          owner-console.
         </p>
       </header>
 
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>Live governance surfaces</h2>
-          <p>
-            These routes already let operators intervene in social/community
-            lifecycle flows.
-          </p>
-        </div>
-        <div class="card-grid">
-          @for (card of liveSurfaces; track card.title) {
-          <a class="link-card" [routerLink]="card.route">
-            <span class="eyebrow">{{ card.eyebrow }}</span>
-            <h3>{{ card.title }}</h3>
-            <p>{{ card.description }}</p>
-          </a>
-          }
-        </div>
-      </section>
-
-      <section class="panel two-column">
-        <article class="subpanel">
-          <h2>Current permissions</h2>
-          <ul>
-            @for (permission of socialPermissions; track permission) {
-            <li>
-              <code>{{ permission }}</code>
-            </li>
-            }
-          </ul>
+      <section class="summary-grid">
+        <article class="summary-card">
+          <span class="eyebrow">Reports</span>
+          <strong>{{ reports.length }}</strong>
+          <p>{{ pendingCount }} pending review</p>
         </article>
-
-        <article class="subpanel">
-          <h2>Report pipeline status</h2>
-          <ul>
-            @for (status of reportStatuses; track status) {
-            <li>{{ status }}</li>
-            }
-          </ul>
-          <p class="muted">
-            Content-report entities already model operator review states, but no
-            owner-console triage queue is wired yet.
-          </p>
+        <article class="summary-card">
+          <span class="eyebrow">Actioned</span>
+          <strong>{{ actionedCount }}</strong>
+          <p>{{ dismissedCount }} dismissed</p>
         </article>
       </section>
 
+      <div class="error" *ngIf="error">{{ error }}</div>
+
       <section class="panel">
         <div class="panel-heading">
-          <h2>Known gaps</h2>
+          <h2>Report triage queue</h2>
           <p>
-            These are the next missing governance capabilities before Social can
-            score as complete.
+            Update moderation status and capture operator notes while takedown
+            actions remain a separate follow-up slice.
           </p>
+        </div>
+        <div class="report-list" *ngIf="reports.length; else noReports">
+          <article class="report-card" *ngFor="let report of reports">
+            <div class="report-copy">
+              <div class="status-row">
+                <span class="status-pill">{{ report.status }}</span>
+                <span class="status-pill soft">{{ report.contentType }}</span>
+                <span class="status-pill soft">{{ report.reason }}</span>
+              </div>
+              <h3>{{ report.contentType }} · {{ report.contentId }}</h3>
+              <p>
+                {{ report.description || 'No reporter description provided.' }}
+              </p>
+            </div>
+            <div class="report-actions">
+              <select
+                [ngModel]="getDraft(report).status"
+                (ngModelChange)="updateDraft(report.id, 'status', $event)"
+              >
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="actioned">Actioned</option>
+                <option value="dismissed">Dismissed</option>
+              </select>
+              <textarea
+                rows="3"
+                [ngModel]="getDraft(report).adminNotes"
+                (ngModelChange)="updateDraft(report.id, 'adminNotes', $event)"
+                placeholder="Operator notes"
+              ></textarea>
+              <div class="action-row">
+                <button class="btn" (click)="saveReport(report)">Save</button>
+                <button
+                  class="btn warning"
+                  *ngIf="supportsContentModeration(report)"
+                  (click)="applyContentModeration(report, 'hidden')"
+                >
+                  Hide
+                </button>
+                <button
+                  class="btn"
+                  *ngIf="supportsContentModeration(report)"
+                  (click)="applyContentModeration(report, 'visible')"
+                >
+                  Restore
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <ng-template #noReports>
+          <p class="empty-state">No content reports are currently queued.</p>
+        </ng-template>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Remaining social gaps</h2>
+          <p>These items remain outside the current slice.</p>
         </div>
         <ul class="gap-list">
-          @for (gap of knownGaps; track gap) {
-          <li>{{ gap }}</li>
-          }
+          <li>
+            Privacy block and mute signals are not yet unified into one review
+            console.
+          </li>
+          <li>
+            Reported profiles, communities, and messages still do not have
+            dedicated moderation actions here.
+          </li>
         </ul>
       </section>
     </section>
@@ -100,7 +130,7 @@ interface GovernanceLinkCard {
 
       .hero,
       .panel,
-      .subpanel {
+      .summary-card {
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 24px;
         background: radial-gradient(
@@ -125,99 +155,251 @@ interface GovernanceLinkCard {
         text-transform: uppercase;
       }
 
-      .hero-kicker {
-        margin: 0 0 8px;
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
       }
 
-      h1,
-      h2,
-      h3,
-      p {
-        margin-top: 0;
+      .summary-card strong {
+        display: block;
+        font-size: 2rem;
+        margin: 0.5rem 0;
       }
 
       .panel-heading {
         margin-bottom: 16px;
       }
 
-      .card-grid,
-      .two-column {
+      .report-list {
         display: grid;
         gap: 16px;
       }
 
-      .card-grid {
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      }
-
-      .two-column {
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      }
-
-      .link-card {
-        display: grid;
-        gap: 10px;
-        padding: 20px;
+      .report-card {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 18px;
-        background: rgba(255, 255, 255, 0.9);
-        color: inherit;
-        text-decoration: none;
+        background: rgba(255, 255, 255, 0.92);
       }
 
-      .gap-list,
-      ul {
+      .report-copy,
+      .report-actions {
+        display: grid;
+        gap: 8px;
+      }
+
+      .report-actions {
+        min-width: 240px;
+      }
+
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .status-pill {
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(15, 118, 110, 0.14);
+        color: #0f766e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .status-pill.soft {
+        background: rgba(15, 118, 110, 0.08);
+      }
+
+      .btn,
+      select,
+      textarea {
+        padding: 0.55rem 0.85rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        background: white;
+      }
+
+      .btn {
+        cursor: pointer;
+      }
+
+      .gap-list {
         margin: 0;
         padding-left: 20px;
         display: grid;
         gap: 10px;
       }
 
-      .muted {
-        color: var(--foreground-secondary, #555);
-        margin-bottom: 0;
+      .empty-state,
+      .error {
+        margin: 0;
+      }
+
+      .error {
+        color: #9b2121;
+        font-weight: 600;
       }
     `,
   ],
 })
-export class SocialGovernanceComponent {
-  readonly liveSurfaces: GovernanceLinkCard[] = [
-    {
-      title: 'Communities',
-      description:
-        'Inspect community lifecycle state, local rollout posture, and current moderation surfaces.',
-      route: '/dashboard/communities',
-      eyebrow: 'Community lifecycle',
-    },
-    {
-      title: 'Community Members',
-      description:
-        'Use community-specific member flows to manage invites, roles, removals, and manager assignment.',
-      route: '/dashboard/communities',
-      eyebrow: 'Membership governance',
-    },
-    {
-      title: 'Cities',
-      description:
-        'Track locality records that affect community availability, trust, and rollout boundaries.',
-      route: '/dashboard/cities',
-      eyebrow: 'Locality coverage',
-    },
-  ];
+export class SocialGovernanceComponent implements OnInit {
+  private readonly socialGovernanceService = inject(SocialGovernanceService);
 
-  readonly socialPermissions = [
-    'community.create',
-    'community.update',
-    'community.delete',
-    'community.invite',
-    'community.manage',
-  ];
+  reports: ModerationReport[] = [];
+  error: string | null = null;
+  reportDrafts: Record<
+    string,
+    { status: ModerationReport['status']; adminNotes: string }
+  > = {};
 
-  readonly reportStatuses = ['Pending', 'Reviewed', 'Actioned', 'Dismissed'];
+  get pendingCount(): number {
+    return this.reports.filter((report) => report.status === 'pending').length;
+  }
 
-  readonly knownGaps = [
-    'No owner-console report triage queue exists for social content reports.',
-    'No operator-facing takedown UI exists for social posts or comments.',
-    'Privacy controls expose user block/mute/report signals, but not an operator review workflow.',
-  ];
+  get actionedCount(): number {
+    return this.reports.filter((report) => report.status === 'actioned').length;
+  }
+
+  get dismissedCount(): number {
+    return this.reports.filter((report) => report.status === 'dismissed')
+      .length;
+  }
+
+  ngOnInit(): void {
+    this.loadReports();
+  }
+
+  loadReports(): void {
+    this.socialGovernanceService.getReports().subscribe({
+      next: (reports) => {
+        this.reports = reports;
+        this.reportDrafts = {};
+        for (const report of reports) {
+          this.reportDrafts[report.id] = {
+            status: report.status,
+            adminNotes: report.adminNotes ?? '',
+          };
+        }
+      },
+      error: (err) => {
+        this.error = 'Failed to load moderation reports';
+        console.error(err);
+      },
+    });
+  }
+
+  getDraft(report: ModerationReport): {
+    status: ModerationReport['status'];
+    adminNotes: string;
+  } {
+    return (
+      this.reportDrafts[report.id] ?? {
+        status: report.status,
+        adminNotes: report.adminNotes ?? '',
+      }
+    );
+  }
+
+  updateDraft(
+    reportId: string,
+    key: 'status' | 'adminNotes',
+    value: string
+  ): void {
+    const current = this.reportDrafts[reportId] ?? {
+      status: 'pending' as const,
+      adminNotes: '',
+    };
+    this.reportDrafts[reportId] = {
+      ...current,
+      [key]: value,
+    };
+  }
+
+  saveReport(report: ModerationReport): void {
+    const draft = this.getDraft(report);
+    this.socialGovernanceService
+      .updateReport(report.id, {
+        status: draft.status,
+        adminNotes: draft.adminNotes,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.reports = this.reports.map((existing) =>
+            existing.id === updated.id ? updated : existing
+          );
+          this.reportDrafts[updated.id] = {
+            status: updated.status,
+            adminNotes: updated.adminNotes ?? '',
+          };
+        },
+        error: (err) => {
+          this.error = 'Failed to update moderation report';
+          console.error(err);
+        },
+      });
+  }
+
+  supportsContentModeration(report: ModerationReport): boolean {
+    return report.contentType === 'post' || report.contentType === 'comment';
+  }
+
+  applyContentModeration(
+    report: ModerationReport,
+    moderationStatus: 'visible' | 'hidden'
+  ): void {
+    if (!this.supportsContentModeration(report)) {
+      return;
+    }
+
+    const draft = this.getDraft(report);
+    this.socialGovernanceService
+      .moderateContent({
+        contentType: report.contentType as 'post' | 'comment',
+        contentId: report.contentId,
+        moderationStatus,
+        adminNotes: draft.adminNotes,
+      })
+      .subscribe({
+        next: () => {
+          const nextStatus =
+            moderationStatus === 'hidden' ? 'actioned' : draft.status;
+          this.socialGovernanceService
+            .updateReport(report.id, {
+              status: nextStatus,
+              adminNotes: draft.adminNotes,
+            })
+            .subscribe({
+              next: (updated) => {
+                this.reports = this.reports.map((existing) =>
+                  existing.id === updated.id ? updated : existing
+                );
+                this.reportDrafts[updated.id] = {
+                  status: updated.status,
+                  adminNotes: updated.adminNotes ?? '',
+                };
+              },
+              error: (err) => {
+                this.error = 'Failed to update moderation report';
+                console.error(err);
+              },
+            });
+        },
+        error: (err) => {
+          this.error = 'Failed to apply content moderation';
+          console.error(err);
+        },
+      });
+  }
 }

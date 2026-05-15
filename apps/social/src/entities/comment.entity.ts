@@ -58,6 +58,18 @@ export class Comment {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @Column({ type: 'varchar', default: 'visible' })
+  moderationStatus: 'visible' | 'hidden';
+
+  @Column({ type: 'varchar', nullable: true })
+  moderationNotes?: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  moderatedBy?: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  moderatedAt?: Date | null;
 }
 
 export function transformSearchCommentDtoToFindOptions(

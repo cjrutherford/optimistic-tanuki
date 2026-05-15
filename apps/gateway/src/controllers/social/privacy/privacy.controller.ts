@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Put,
   Body,
   Param,
   UseGuards,
@@ -15,6 +16,8 @@ import { User, UserDetails } from '../../../decorators/user.decorator';
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PrivacyCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { PermissionsGuard } from '../../../guards/permissions.guard';
+import { RequirePermissions } from '../../../decorators/permissions.decorator';
 
 export interface BlockUserDto {
   blockedId: string;
@@ -31,6 +34,18 @@ export interface ReportContentDto {
   contentId: string;
   reason: string;
   description?: string;
+}
+
+export interface UpdateReportStatusDto {
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+  adminNotes?: string;
+}
+
+export interface ModerateContentDto {
+  contentType: 'post' | 'comment';
+  contentId: string;
+  moderationStatus: 'visible' | 'hidden';
+  adminNotes?: string;
 }
 
 @UseGuards(AuthGuard)
@@ -193,6 +208,58 @@ export class PrivacyController {
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_MY_REPORTS },
         { reporterId: user.profileId }
+      )
+    );
+  }
+
+  @Get('admin/reports')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Get all content reports for moderation review' })
+  async getAllReports(): Promise<any[]> {
+    return await firstValueFrom(
+      this.socialClient.send({ cmd: PrivacyCommands.GET_ALL_REPORTS }, {})
+    );
+  }
+
+  @Put('admin/reports/:id')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Update a content report moderation status' })
+  async updateReportStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateReportStatusDto
+  ): Promise<any> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.UPDATE_REPORT_STATUS },
+        {
+          id,
+          status: dto.status,
+          adminNotes: dto.adminNotes,
+        }
+      )
+    );
+  }
+
+  @Put('admin/moderation')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
+  @ApiOperation({ summary: 'Apply or revert moderation to reported content' })
+  async moderateContent(
+    @Body() dto: ModerateContentDto,
+    @User() user: UserDetails
+  ): Promise<{ success: boolean }> {
+    return await firstValueFrom(
+      this.socialClient.send(
+        { cmd: PrivacyCommands.MODERATE_CONTENT },
+        {
+          contentType: dto.contentType,
+          contentId: dto.contentId,
+          moderationStatus: dto.moderationStatus,
+          adminNotes: dto.adminNotes,
+          moderatedBy: user.profileId,
+        }
       )
     );
   }

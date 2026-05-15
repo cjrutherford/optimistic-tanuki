@@ -1308,6 +1308,47 @@ export class AppController {
     return await this.privacyService.getMyReports(data.reporterId);
   }
 
+  @MessagePattern({ cmd: PrivacyCommands.GET_ALL_REPORTS })
+  async getAllReports() {
+    return await this.privacyService.getAllReports();
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.UPDATE_REPORT_STATUS })
+  async updateReportStatus(
+    @Payload()
+    data: {
+      id: string;
+      status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+      adminNotes?: string;
+    }
+  ) {
+    return await this.privacyService.updateReportStatus(
+      data.id,
+      data.status,
+      data.adminNotes
+    );
+  }
+
+  @MessagePattern({ cmd: PrivacyCommands.MODERATE_CONTENT })
+  async moderateContent(
+    @Payload()
+    data: {
+      contentType: 'post' | 'comment';
+      contentId: string;
+      moderationStatus: 'visible' | 'hidden';
+      moderatedBy: string;
+      adminNotes?: string;
+    }
+  ) {
+    return await this.privacyService.moderateContent(
+      data.contentType,
+      data.contentId,
+      data.moderationStatus,
+      data.moderatedBy,
+      data.adminNotes
+    );
+  }
+
   // Activity handlers
   @MessagePattern({ cmd: ActivityCommands.CREATE })
   async createActivity(

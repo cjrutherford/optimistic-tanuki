@@ -5,7 +5,7 @@
     <p>Loading map...</p>
   </div>
   }
-  <div #mapContainer class="map-container" [class.hidden]="isLoading()"></div>
+  <div #mapContainer class="map-container"></div>
 
   <div class="map-controls">
     <button class="map-control-btn" (click)="resetView()" title="Reset view">
@@ -29,8 +29,7 @@
       <span class="legend-dot focus"></span>
       <span>{{ centerLabel }}</span>
     </div>
-    }
-    @if (mode === 'atlas-nearby') {
+    } @if (mode === 'atlas-nearby') {
     <div class="legend-item">
       <span class="legend-dot user"></span>
       <span>Your location</span>
@@ -39,8 +38,7 @@
       <span class="legend-dot city"></span>
       <span>Nearby Locality</span>
     </div>
-    }
-    @if (mode === 'radius-focus') {
+    } @if (mode === 'radius-focus') {
     <div class="legend-item">
       <span class="legend-circle"></span>
       <span>250mi Radius</span>

@@ -11,6 +11,7 @@ type LibraryInfo = {
   path: string;
   name: string;
   componentCount: number;
+  detail?: string;
 };
 
 @Component({
@@ -72,8 +73,8 @@ export class IndexChipComponent {
       <a class="mobile-logo" routerLink="/" (click)="closeMobileMenu()">
         <span class="mobile-logo-mark">UI</span>
         <span class="mobile-logo-copy">
-          <strong>Playground</strong>
-          <small>Developer Toolkit</small>
+          <strong>Docs Atlas</strong>
+          <small>Repository Navigator</small>
         </span>
       </a>
 
@@ -81,7 +82,7 @@ export class IndexChipComponent {
         class="mobile-menu-toggle"
         type="button"
         [attr.aria-expanded]="mobileMenuOpen"
-        aria-label="Toggle library menu"
+        aria-label="Toggle documentation menu"
         (click)="toggleMobileMenu()"
       >
         <span></span>
@@ -93,7 +94,7 @@ export class IndexChipComponent {
     <button
       class="mobile-backdrop"
       type="button"
-      aria-label="Close library menu"
+      aria-label="Close documentation menu"
       (click)="closeMobileMenu()"
     ></button>
     }
@@ -103,16 +104,17 @@ export class IndexChipComponent {
         <a class="logo" routerLink="/" (click)="closeMobileMenu()">
           <span class="logo-mark">UI</span>
           <span class="logo-copy">
-            <strong>Playground</strong>
-            <small>Curated toolkit explorer</small>
+            <strong>Docs Atlas</strong>
+            <small>Markdown-driven workspace guide</small>
           </span>
         </a>
 
         <div class="sidebar-summary">
-          <span class="summary-label">Libraries</span>
+          <span class="summary-label">Navigation</span>
           <span class="summary-value">{{ libraries.length }}</span>
           <p>
-            Live previews, imports, and controls tuned for implementation work.
+            Start with docs, then branch into previews and validation when you
+            need implementation detail.
           </p>
         </div>
 
@@ -126,7 +128,9 @@ export class IndexChipComponent {
           >
             <span class="nav-copy">
               <span class="lib-name">{{ lib.name }}</span>
-              <span class="lib-meta">{{ lib.componentCount }} components</span>
+              <span class="lib-meta">{{
+                lib.detail ?? lib.componentCount + ' components'
+              }}</span>
             </span>
             <span class="count">{{ lib.componentCount }}</span>
           </a>
@@ -423,7 +427,12 @@ export class NavSidebarComponent {
   mobileMenuOpen = false;
 
   readonly libraries: LibraryInfo[] = [
-    { path: '/docs', name: 'Documentation', componentCount: 0 },
+    {
+      path: '/docs',
+      name: 'Documentation',
+      componentCount: 12,
+      detail: 'Curated markdown sources',
+    },
     { path: '/motion-ui', name: 'Motion UI', componentCount: 9 },
     { path: '/common-ui', name: 'Common UI', componentCount: 18 },
     { path: '/form-ui', name: 'Form UI', componentCount: 6 },

@@ -105,16 +105,23 @@ describe('CommentService', () => {
       const comment = { id: 'c1' } as Comment;
       commentRepo.findOne.mockResolvedValue(comment);
       const result = await service.findOne('c1');
-      expect(commentRepo.findOne).toHaveBeenCalledWith({ where: { id: 'c1' } });
+      expect(commentRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'c1', moderationStatus: 'visible' },
+      });
       expect(result).toBe(comment);
     });
 
     it('should handle where as an array in findOne', async () => {
       const comment = { id: 'c1' } as Comment;
       commentRepo.findOne.mockResolvedValue(comment);
-      await service.findOne('c1', { where: [{ userId: 'u1' }, { profileId: 'pr1' }] });
+      await service.findOne('c1', {
+        where: [{ userId: 'u1' }, { profileId: 'pr1' }],
+      });
       expect(commentRepo.findOne).toHaveBeenCalledWith({
-        where: [{ userId: 'u1', id: 'c1' }, { profileId: 'pr1', id: 'c1' }],
+        where: [
+          { userId: 'u1', id: 'c1', moderationStatus: 'visible' },
+          { profileId: 'pr1', id: 'c1', moderationStatus: 'visible' },
+        ],
       });
     });
 
@@ -123,7 +130,7 @@ describe('CommentService', () => {
       commentRepo.findOne.mockResolvedValue(comment);
       await service.findOne('c1', { where: { userId: 'u1' } });
       expect(commentRepo.findOne).toHaveBeenCalledWith({
-        where: { userId: 'u1', id: 'c1' },
+        where: { userId: 'u1', id: 'c1', moderationStatus: 'visible' },
       });
     });
   });
@@ -138,11 +145,16 @@ describe('CommentService', () => {
 
     it('should sanitize content in update', async () => {
       commentRepo.update.mockResolvedValue(undefined);
-      const dto: UpdateCommentDto = { content: '<strong>Hello</strong><script>alert(1)</script>' };
+      const dto: UpdateCommentDto = {
+        content: '<strong>Hello</strong><script>alert(1)</script>',
+      };
       await service.update('c1', dto);
-      expect(commentRepo.update).toHaveBeenCalledWith('c1', expect.objectContaining({
-        content: '<strong>Hello</strong>'
-      }));
+      expect(commentRepo.update).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({
+          content: '<strong>Hello</strong>',
+        })
+      );
     });
   });
 

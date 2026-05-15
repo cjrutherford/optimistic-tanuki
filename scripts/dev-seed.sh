@@ -21,8 +21,12 @@ run_seed() {
   shift 2
 
   echo "Seeding ${service}..."
-  # `docker compose exec` is failing in this dev setup with an OCI cwd error.
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 run_seed_with_run() {
@@ -31,7 +35,12 @@ run_seed_with_run() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 run_seed_with_env() {
@@ -42,7 +51,12 @@ run_seed_with_env() {
   shift 4
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" -e "${env_key}=${env_value}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 run_seed_with_run_env() {
@@ -53,7 +67,32 @@ run_seed_with_run_env() {
   shift 4
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" -e "${env_key}=${env_value}" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
+}
+
+run_seed_from_workspace() {
+  service="$1"
+  workdir="$2"
+  shift 2
+
+  echo "Seeding ${service} from workspace mount..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "$workdir" "$service" "$@"
+}
+
+run_seed_from_workspace_env() {
+  service="$1"
+  workdir="$2"
+  env_key="$3"
+  env_value="$4"
+  shift 4
+
+  echo "Seeding ${service} from workspace mount..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "${env_key}=${env_value}" -w "$workdir" "$service" "$@"
 }
 
 restart_service() {
@@ -91,6 +130,29 @@ wait_for_gateway() {
   return 1
 }
 
+wait_for_chat_collector() {
+  attempts="${1:-30}"
+  delay_seconds="${2:-2}"
+
+  echo "Waiting for chat-collector TCP health check..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    if docker compose ${COMPOSE_FILES} exec -T social sh -lc '
+      cd "$1"
+      node -e "const { ClientProxyFactory, Transport } = require(\"@nestjs/microservices\"); const { firstValueFrom, timeout } = require(\"rxjs\"); (async () => { const client = ClientProxyFactory.create({ transport: Transport.TCP, options: { host: process.env.CHAT_COLLECTOR_HOST || \"chat-collector\", port: Number.parseInt(process.env.CHAT_COLLECTOR_PORT || \"3007\", 10) } }); await client.connect(); const result = await firstValueFrom(client.send({ cmd: \"health-check\" }, {}).pipe(timeout(5000))); client.close(); if (!result || result.status !== \"healthy\") { throw new Error(\"chat-collector returned unhealthy status\"); } })().catch((error) => { console.error(error?.message || error); process.exit(1); });"
+    ' sh "${APP_RUNTIME_DIR}" >/dev/null 2>&1; then
+      echo "chat-collector is ready."
+      return 0
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "chat-collector did not become ready in time." >&2
+  return 1
+}
+
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 restart_service gateway
@@ -104,22 +166,25 @@ restart_service assets
 restart_service gateway
 sleep 15
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
+wait_for_chat_collector
 run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
-run_seed_with_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
+run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
 run_seed_with_media_volume() {
   service="$1"
   workdir="$2"
   shift 2
 
-  echo "Seeding ${service} with media volume..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "${workdir}" \
-    -v /mnt/valhalla/media:/media:ro \
-    -e "ASSETS_HOST=assets" \
-    "$service" "$@"
+  echo "Seeding ${service} inside running container..."
+  docker compose ${COMPOSE_FILES} exec -T -e "ASSETS_HOST=assets" "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
@@ -128,7 +193,5 @@ run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
 
 run_seed_assets() {
   echo "Seeding assets..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps \
-    -v /mnt/valhalla/media:/media:ro \
-    assets node ./seed-assets.js || true
+  docker compose ${COMPOSE_FILES} exec -T assets node ./seed-assets.js || true
 }

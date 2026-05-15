@@ -9,6 +9,7 @@ import {
   deriveChannelName,
   deriveVideoTitle,
   getRelativeImportPath,
+  resolveFirstExistingSeedVideoDirectory,
 } from './seed-videos.helpers';
 
 describe('seed video helpers', () => {
@@ -58,10 +59,10 @@ describe('seed video helpers', () => {
 
   it('derives readable titles from filenames', () => {
     expect(
-      deriveVideoTitle('/mnt/valhalla/media/TV/Show_Name/S01E02 - Pilot.mp4'),
+      deriveVideoTitle('/mnt/valhalla/media/TV/Show_Name/S01E02 - Pilot.mp4')
     ).toBe('S01E02 Pilot');
     expect(
-      deriveVideoTitle('/mnt/valhalla/media/TV/Show.Name.Part.1.mkv'),
+      deriveVideoTitle('/mnt/valhalla/media/TV/Show.Name.Part.1.mkv')
     ).toBe('Show Name Part 1');
   });
 
@@ -69,14 +70,14 @@ describe('seed video helpers', () => {
     expect(
       deriveChannelName(
         '/mnt/valhalla/media/TV',
-        '/mnt/valhalla/media/TV/Mystery Science Theater/Season 01/Episode 01.mp4',
-      ),
+        '/mnt/valhalla/media/TV/Mystery Science Theater/Season 01/Episode 01.mp4'
+      )
     ).toBe('Mystery Science Theater');
     expect(
       deriveChannelName(
         '/mnt/valhalla/media/TV',
-        '/mnt/valhalla/media/TV/LooseMovie.mp4',
-      ),
+        '/mnt/valhalla/media/TV/LooseMovie.mp4'
+      )
     ).toBe('Imported TV');
   });
 
@@ -107,5 +108,16 @@ describe('seed video helpers', () => {
     expect(assessVideoImport('/tmp/show.mp4', 10 * 1024 * 1024)).toEqual({
       canImport: true,
     });
+  });
+
+  it('resolves the first existing in-container seed video directory', () => {
+    const exists = jest.fn((path: string) => path === '/media/TV');
+
+    expect(
+      resolveFirstExistingSeedVideoDirectory(
+        ['/media/Tv', '/media/TV', '/mnt/valhalla/media/TV'],
+        exists
+      )
+    ).toBe('/media/TV');
   });
 });

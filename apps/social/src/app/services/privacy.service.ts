@@ -7,6 +7,8 @@ import {
   ContentReport,
   ReportReason,
 } from '../../entities/content-report.entity';
+import { PostService } from './post.service';
+import { CommentService } from './comment.service';
 
 export interface BlockedUserInfo {
   id: string;
@@ -32,7 +34,9 @@ export class PrivacyService {
     @InjectRepository(UserMute)
     private readonly userMuteRepo: Repository<UserMute>,
     @InjectRepository(ContentReport)
-    private readonly contentReportRepo: Repository<ContentReport>
+    private readonly contentReportRepo: Repository<ContentReport>,
+    private readonly postService: PostService,
+    private readonly commentService: CommentService
   ) {}
 
   // Block functionality
@@ -137,5 +141,56 @@ export class PrivacyService {
       where: { reporterId },
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async getAllReports(): Promise<ContentReport[]> {
+    return await this.contentReportRepo.find({
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async updateReportStatus(
+    id: string,
+    status: 'pending' | 'reviewed' | 'actioned' | 'dismissed',
+    adminNotes?: string
+  ): Promise<ContentReport | null> {
+    await this.contentReportRepo.update(id, {
+      status,
+      adminNotes,
+    });
+
+    return await this.contentReportRepo.findOne({
+      where: { id },
+    });
+  }
+
+  async moderateContent(
+    contentType: 'post' | 'comment',
+    contentId: string,
+    moderationStatus: 'visible' | 'hidden',
+    moderatedBy: string,
+    adminNotes?: string
+  ): Promise<{ success: boolean }> {
+    if (contentType === 'post') {
+      await this.postService.moderate(
+        contentId,
+        moderationStatus,
+        moderatedBy,
+        adminNotes
+      );
+      return { success: true };
+    }
+
+    if (contentType === 'comment') {
+      await this.commentService.moderate(
+        contentId,
+        moderationStatus,
+        moderatedBy,
+        adminNotes
+      );
+      return { success: true };
+    }
+
+    throw new Error(`Unsupported content type: ${contentType}`);
   }
 }

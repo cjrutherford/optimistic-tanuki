@@ -3,7 +3,7 @@ export type SeedHttpClient = {
   post: (
     path: string,
     body: unknown,
-    options?: SeedRequestOptions,
+    options?: SeedRequestOptions
   ) => Promise<unknown>;
 };
 
@@ -96,8 +96,8 @@ export async function ensureSeedUserSession(params: {
         },
         {
           headers: { 'x-ot-appscope': appScope },
-        },
-      ),
+        }
+      )
     );
 
     userId = registerResponse.user?.id;
@@ -114,7 +114,7 @@ export async function ensureSeedUserSession(params: {
     await httpClient.post('/authentication/login', {
       email: credentials.email,
       password: credentials.password,
-    }),
+    })
   );
   const token = loginResponse.newToken || loginResponse.token;
 
@@ -144,9 +144,9 @@ export async function ensureSeedUserSession(params: {
 export async function uploadAssetThroughApi(
   httpClient: SeedHttpClient,
   token: string,
-  input: UploadAssetInput,
+  input: UploadAssetInput
 ): Promise<{ id: string }> {
-  return unwrapResponse<{ id: string }>(
+  const asset = unwrapResponse<{ id?: unknown }>(
     await httpClient.post(
       '/asset',
       {
@@ -159,61 +159,67 @@ export async function uploadAssetThroughApi(
       },
       {
         headers: { Authorization: `Bearer ${token}` },
-      },
-    ),
+      }
+    )
   );
+
+  if (!isUuid(asset?.id)) {
+    throw new Error('Asset upload did not return a valid UUID id');
+  }
+
+  return { id: asset.id };
 }
 
 export async function createChannelThroughApi(
   httpClient: SeedHttpClient,
   token: string,
-  input: CreateChannelInput,
+  input: CreateChannelInput
 ): Promise<{ id: string }> {
   return unwrapResponse<{ id: string }>(
     await httpClient.post('/videos/channels', input, {
       headers: { Authorization: `Bearer ${token}` },
-    }),
+    })
   );
 }
 
 export async function createVideoThroughApi(
   httpClient: SeedHttpClient,
   token: string,
-  input: CreateVideoInput,
+  input: CreateVideoInput
 ): Promise<{ id: string }> {
   return unwrapResponse<{ id: string }>(
     await httpClient.post('/videos', input, {
       headers: { Authorization: `Bearer ${token}` },
-    }),
+    })
   );
 }
 
 export async function listUserChannelsThroughApi(
   httpClient: SeedHttpClient,
   token: string,
-  userId: string,
+  userId: string
 ): Promise<SeedChannel[]> {
   return unwrapArrayResponse<SeedChannel>(
     await httpClient.get(`/videos/channels/user/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
-    }),
+    })
   );
 }
 
 export async function listChannelsThroughApi(
-  httpClient: SeedHttpClient,
+  httpClient: SeedHttpClient
 ): Promise<SeedChannel[]> {
   return unwrapArrayResponse<SeedChannel>(
-    await httpClient.get('/videos/channels'),
+    await httpClient.get('/videos/channels')
   );
 }
 
 export async function listChannelVideosThroughApi(
   httpClient: SeedHttpClient,
-  channelId: string,
+  channelId: string
 ): Promise<SeedVideo[]> {
   return unwrapArrayResponse<SeedVideo>(
-    await httpClient.get(`/videos/channel/${channelId}`),
+    await httpClient.get(`/videos/channel/${channelId}`)
   );
 }
 
@@ -224,18 +230,18 @@ export async function subscribeToChannelThroughApi(
     channelId: string;
     userId: string;
     profileId: string;
-  },
+  }
 ): Promise<{ id?: string }> {
   return unwrapResponse<{ id?: string }>(
     await httpClient.post('/videos/subscriptions', input, {
       headers: { Authorization: `Bearer ${token}` },
-    }),
+    })
   );
 }
 
 export function createHttpClient(
   baseUrl: string,
-  defaultHeaders: Record<string, string>,
+  defaultHeaders: Record<string, string>
 ): SeedHttpClient {
   return {
     get: (path, options) =>
@@ -251,7 +257,7 @@ async function request(
   path: string,
   body: unknown,
   defaultHeaders: Record<string, string>,
-  options?: SeedRequestOptions,
+  options?: SeedRequestOptions
 ): Promise<unknown> {
   const response = await fetch(`${trimTrailingSlash(baseUrl)}${path}`, {
     method,
@@ -270,7 +276,7 @@ async function request(
         ? (data as { message?: unknown }).message
         : undefined) || response.statusText;
     const error = new Error(
-      String(message || 'HTTP request failed'),
+      String(message || 'HTTP request failed')
     ) as Error & {
       status?: number;
       data?: unknown;
@@ -333,7 +339,7 @@ function decodeJwtPayload(token: string): {
     }
 
     const payload = JSON.parse(
-      Buffer.from(payloadSegment, 'base64url').toString('utf8'),
+      Buffer.from(payloadSegment, 'base64url').toString('utf8')
     ) as Record<string, unknown>;
 
     const userId = payload['userId'];
@@ -346,6 +352,15 @@ function decodeJwtPayload(token: string): {
   } catch {
     return {};
   }
+}
+
+function isUuid(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value
+    )
+  );
 }
 
 function unwrapResponse<T>(value: unknown): T {

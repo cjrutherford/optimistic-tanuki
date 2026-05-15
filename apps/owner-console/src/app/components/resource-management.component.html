@@ -1,0 +1,201 @@
+<div class="resource-management">
+  <h2>Resource Management</h2>
+
+  <div class="catalog-summary">
+    <div class="summary-card">
+      <span class="summary-label">Total resources</span>
+      <strong>{{ resources.length }}</strong>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Active resources</span>
+      <strong>{{ activeResourceCount }}</strong>
+    </div>
+    <div class="summary-card">
+      <span class="summary-label">Inactive resources</span>
+      <strong>{{ inactiveResourceCount }}</strong>
+    </div>
+  </div>
+
+  <div class="error" *ngIf="error">{{ error }}</div>
+
+  <div class="actions">
+    <button
+      class="btn btn-primary"
+      (click)="startCreate()"
+      [disabled]="loading || isCreating || isEditing"
+    >
+      Add New Resource
+    </button>
+  </div>
+
+  <div class="filter-row" *ngIf="!isCreating && !isEditing">
+    <button
+      *ngFor="let item of filters"
+      class="btn btn-secondary"
+      [class.is-active]="filter === item"
+      (click)="setFilter(item)"
+      [disabled]="loading"
+    >
+      {{
+        item === 'all'
+          ? 'All'
+          : item === 'inactive'
+          ? 'Inactive'
+          : (item | titlecase)
+      }}
+    </button>
+  </div>
+
+  <div class="resource-form" *ngIf="isCreating || isEditing">
+    <h3>{{ isCreating ? 'Create Resource' : 'Edit Resource' }}</h3>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="name">Name *</label>
+        <input type="text" id="name" [(ngModel)]="resourceForm.name" required />
+      </div>
+
+      <div class="form-group">
+        <label for="type">Type *</label>
+        <select id="type" [(ngModel)]="resourceForm.type" required>
+          <option value="room">Room</option>
+          <option value="equipment">Equipment</option>
+          <option value="vehicle">Vehicle</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea
+        id="description"
+        [(ngModel)]="resourceForm.description"
+        rows="3"
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="location">Location</label>
+        <input type="text" id="location" [(ngModel)]="resourceForm.location" />
+      </div>
+
+      <div class="form-group">
+        <label for="capacity">Capacity</label>
+        <input
+          type="number"
+          id="capacity"
+          [(ngModel)]="resourceForm.capacity"
+        />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="hourlyRate">Hourly Rate</label>
+        <input
+          type="number"
+          id="hourlyRate"
+          [(ngModel)]="resourceForm.hourlyRate"
+          step="0.01"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="active">Status</label>
+        <select id="active" [(ngModel)]="resourceForm.isActive">
+          <option [ngValue]="true">Active</option>
+          <option [ngValue]="false">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="amenities">Amenities</label>
+      <input
+        type="text"
+        id="amenities"
+        [(ngModel)]="resourceForm.amenitiesText"
+        placeholder="wifi, whiteboard, monitor"
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="imageUrl">Image URL</label>
+      <input type="text" id="imageUrl" [(ngModel)]="resourceForm.imageUrl" />
+    </div>
+
+    <div class="form-actions">
+      <button
+        class="btn btn-primary"
+        (click)="saveResource()"
+        [disabled]="loading || !resourceForm.name"
+      >
+        {{ isCreating ? 'Create' : 'Update' }}
+      </button>
+      <button
+        class="btn btn-secondary"
+        (click)="cancelEdit()"
+        [disabled]="loading"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <div class="resources-list" *ngIf="!isCreating && !isEditing">
+    <div class="loading" *ngIf="loading">Loading resources...</div>
+
+    <table *ngIf="!loading && filteredResources.length > 0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Location</th>
+          <th>Capacity</th>
+          <th>Rate</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let resource of filteredResources">
+          <td>{{ resource.name }}</td>
+          <td>{{ resource.type }}</td>
+          <td>{{ resource.location || 'N/A' }}</td>
+          <td>{{ resource.capacity ?? 'N/A' }}</td>
+          <td>
+            {{
+              resource.hourlyRate != null ? '$' + resource.hourlyRate : 'N/A'
+            }}
+          </td>
+          <td>
+            <span
+              class="status"
+              [class.active]="resource.isActive"
+              [class.inactive]="!resource.isActive"
+            >
+              {{ resource.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+          <td class="actions-cell">
+            <button class="btn btn-sm btn-edit" (click)="startEdit(resource)">
+              Edit
+            </button>
+            <button
+              class="btn btn-sm btn-delete"
+              (click)="deleteResource(resource)"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="empty-state" *ngIf="!loading && filteredResources.length === 0">
+      <p>No resources match the current filter.</p>
+    </div>
+  </div>
+</div>

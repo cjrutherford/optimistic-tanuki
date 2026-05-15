@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DataSource } from 'typeorm';
 import { ClassifiedAdEntity } from './app/entities/classified-ad.entity';
+import { parseCommunityLookupResponse } from './seed-classifieds.helpers';
 
 interface ClassifiedSeed {
   title: string;
@@ -416,12 +417,6 @@ const CATEGORIES = [
   'Miscellaneous',
 ];
 
-interface CommunityResponse {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 async function fetchCommunityId(
   slug: string,
   gatewayUrl: string
@@ -432,8 +427,13 @@ async function fetchCommunityId(
       console.warn(`  Community not found: ${slug}`);
       return null;
     }
-    const community: CommunityResponse = await response.json();
-    return community.id;
+
+    const communityId = await parseCommunityLookupResponse(response);
+    if (!communityId) {
+      console.warn(`  Community lookup returned no JSON body for ${slug}`);
+    }
+
+    return communityId;
   } catch (error) {
     console.warn(`  Failed to fetch community ${slug}:`, error);
     return null;
@@ -530,7 +530,9 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error('Seed failed:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('Seed failed:', err);
+    process.exit(1);
+  });
+}

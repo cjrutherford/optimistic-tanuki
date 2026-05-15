@@ -78,4 +78,27 @@ export class ThreadDto {
   @IsInt()
   @Min(0)
   viewCount!: number;
+
+  @ApiProperty({ description: 'Moderation visibility state for the thread' })
+  @IsIn(['visible', 'hidden'])
+  moderationStatus!: 'visible' | 'hidden';
+
+  @ApiProperty({
+    description: 'Moderator notes associated with the current moderation state',
+    required: false,
+  })
+  moderationNotes?: string | null;
+
+  @ApiProperty({
+    description:
+      'Profile identifier of the moderator who last updated moderation',
+    required: false,
+  })
+  moderatedBy?: string | null;
+
+  @ApiProperty({
+    description: 'Timestamp of the latest moderation update',
+    required: false,
+  })
+  moderatedAt?: Date | null;
 }

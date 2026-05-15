@@ -117,13 +117,22 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     const foregroundColor = this.getCssVariable('--foreground', '#111827');
     const accentColor = this.getCssVariable('--accent', primaryColor);
 
-    this.document.documentElement.style.setProperty('--map-primary', primaryColor);
+    this.document.documentElement.style.setProperty(
+      '--map-primary',
+      primaryColor
+    );
     this.document.documentElement.style.setProperty(
       '--map-secondary',
       secondaryColor
     );
-    this.document.documentElement.style.setProperty('--map-surface', surfaceColor);
-    this.document.documentElement.style.setProperty('--map-border', borderColor);
+    this.document.documentElement.style.setProperty(
+      '--map-surface',
+      surfaceColor
+    );
+    this.document.documentElement.style.setProperty(
+      '--map-border',
+      borderColor
+    );
     this.document.documentElement.style.setProperty(
       '--map-foreground',
       foregroundColor
@@ -140,16 +149,19 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       trackResize: true,
     });
 
-    this.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-      maxZoom: 18,
-      minZoom: 3,
-      noWrap: false,
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      keepBuffer: 6,
-    }).addTo(this.map);
+    this.tileLayer = L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 18,
+        minZoom: 3,
+        noWrap: false,
+        updateWhenIdle: true,
+        updateWhenZooming: false,
+        keepBuffer: 6,
+      }
+    ).addTo(this.map);
 
     L.control
       .zoom({
@@ -425,9 +437,13 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       if (this.mode === 'single-location' || this.mode === 'radius-focus') {
         const focusCoordinates = this.getFocusCoordinates();
         if (focusCoordinates) {
-          this.map.flyTo([focusCoordinates.lat, focusCoordinates.lng], this.zoom, {
-            duration: 1,
-          });
+          this.map.flyTo(
+            [focusCoordinates.lat, focusCoordinates.lng],
+            this.zoom,
+            {
+              duration: 1,
+            }
+          );
           this.scheduleInvalidateSize();
           return;
         }
@@ -459,7 +475,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
 
     this.resizeObserver?.disconnect();
-    this.resizeObserver = new ResizeObserver(() => this.scheduleInvalidateSize());
+    this.resizeObserver = new ResizeObserver(() =>
+      this.scheduleInvalidateSize()
+    );
     this.resizeObserver.observe(this.mapContainer.nativeElement);
   }
 
@@ -473,8 +491,15 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
         if (!this.map) {
           return;
         }
-        this.map.invalidateSize(false);
-        this.tileLayer?.redraw?.();
+
+        requestAnimationFrame(() => {
+          if (!this.map) {
+            return;
+          }
+
+          this.map.invalidateSize(true);
+          this.tileLayer?.redraw?.();
+        });
       });
     });
   }

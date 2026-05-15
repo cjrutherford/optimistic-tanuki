@@ -159,6 +159,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         route: '/dashboard/store/availability',
         highlight: 'Capacity planning',
       },
+      {
+        title: 'Resources',
+        description:
+          'Manage rooms, equipment, and other bookable resources exposed to service operations.',
+        route: '/dashboard/store/resources',
+        highlight: 'Resource inventory',
+      },
     ],
   },
   {

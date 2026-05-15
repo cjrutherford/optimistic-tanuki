@@ -4,6 +4,7 @@ import {
   TopicCommands,
   ThreadCommands,
   ForumPostCommands,
+  ForumModerationCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateTopicDto,
@@ -16,15 +17,17 @@ import {
 import { TopicService } from './services/topic.service';
 import { ThreadService } from './services/thread.service';
 import { ForumPostService } from './services/forum-post.service';
+import { ForumModerationService } from './services/forum-moderation.service';
 import { FindManyOptions } from 'typeorm';
-import { ForumPost, Thread, Topic } from '../entities';
+import { ForumPost, ForumReport, Thread, Topic } from '../entities';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly topicService: TopicService,
     private readonly threadService: ThreadService,
-    private readonly forumPostService: ForumPostService
+    private readonly forumPostService: ForumPostService,
+    private readonly forumModerationService: ForumModerationService
   ) {}
 
   // Topic endpoints
@@ -112,5 +115,68 @@ export class AppController {
   @MessagePattern({ cmd: ForumPostCommands.DELETE })
   async removeForumPost(@Payload('id') id: string) {
     return await this.forumPostService.remove(id);
+  }
+
+  @MessagePattern({ cmd: ForumModerationCommands.REPORT_CONTENT })
+  async reportForumContent(
+    @Payload()
+    data: {
+      reporterId: string;
+      contentType: 'thread' | 'post';
+      contentId: string;
+      reason: string;
+      description?: string;
+    }
+  ) {
+    return await this.forumModerationService.reportContent(data);
+  }
+
+  @MessagePattern({ cmd: ForumModerationCommands.GET_ALL_REPORTS })
+  async getAllForumReports(): Promise<ForumReport[]> {
+    return await this.forumModerationService.getAllReports();
+  }
+
+  @MessagePattern({ cmd: ForumModerationCommands.UPDATE_REPORT_STATUS })
+  async updateForumReportStatus(
+    @Payload('id') id: string,
+    @Payload('status')
+    status: 'pending' | 'reviewed' | 'actioned' | 'dismissed',
+    @Payload('adminNotes') adminNotes?: string
+  ) {
+    return await this.forumModerationService.updateReportStatus(
+      id,
+      status,
+      adminNotes
+    );
+  }
+
+  @MessagePattern({ cmd: ForumModerationCommands.MODERATE_THREAD })
+  async moderateForumThread(
+    @Payload('id') id: string,
+    @Payload('moderationStatus') moderationStatus: 'visible' | 'hidden',
+    @Payload('moderatedBy') moderatedBy: string,
+    @Payload('adminNotes') adminNotes?: string
+  ) {
+    return await this.forumModerationService.moderateThread(
+      id,
+      moderationStatus,
+      moderatedBy,
+      adminNotes
+    );
+  }
+
+  @MessagePattern({ cmd: ForumModerationCommands.MODERATE_POST })
+  async moderateForumPost(
+    @Payload('id') id: string,
+    @Payload('moderationStatus') moderationStatus: 'visible' | 'hidden',
+    @Payload('moderatedBy') moderatedBy: string,
+    @Payload('adminNotes') adminNotes?: string
+  ) {
+    return await this.forumModerationService.moderatePost(
+      id,
+      moderationStatus,
+      moderatedBy,
+      adminNotes
+    );
   }
 }

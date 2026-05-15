@@ -49,14 +49,16 @@ export class CommentService {
   }
 
   async findAll(options?: FindManyOptions<Comment>): Promise<Comment[]> {
-    return await this.commentRepo.find(options);
+    return await this.commentRepo.find(
+      this.withDefaultModerationFilter(options)
+    );
   }
 
   async findOne(
     id: string,
     options?: FindOneOptions<Comment>
   ): Promise<Comment> {
-    const finalOptions = { ...options };
+    const finalOptions = this.withDefaultModerationFilter({ ...options });
     if (finalOptions.where) {
       if (Array.isArray(finalOptions.where)) {
         finalOptions.where = finalOptions.where.map((w) => ({ ...w, id }));
@@ -82,5 +84,58 @@ export class CommentService {
   async remove(id: string): Promise<{ success: boolean }> {
     await this.commentRepo.delete(id);
     return { success: true };
+  }
+
+  async moderate(
+    id: string,
+    moderationStatus: 'visible' | 'hidden',
+    moderatedBy: string,
+    moderationNotes?: string
+  ): Promise<Comment> {
+    const comment = await this.commentRepo.findOne({ where: { id } });
+    if (!comment) {
+      throw new RpcException('Comment not found');
+    }
+
+    await this.commentRepo.update(id, {
+      moderationStatus,
+      moderationNotes: moderationNotes ?? null,
+      moderatedBy,
+      moderatedAt: new Date(),
+    });
+
+    return await this.commentRepo.findOne({ where: { id } });
+  }
+
+  private withDefaultModerationFilter<
+    T extends FindManyOptions<Comment> | FindOneOptions<Comment> | undefined
+  >(options?: T): T {
+    const normalized = { ...(options ?? {}) } as T;
+    const where = (
+      normalized as FindManyOptions<Comment> | FindOneOptions<Comment>
+    ).where;
+
+    if (!where) {
+      (normalized as FindManyOptions<Comment> | FindOneOptions<Comment>).where =
+        { moderationStatus: 'visible' };
+      return normalized;
+    }
+
+    if (Array.isArray(where)) {
+      (normalized as FindManyOptions<Comment> | FindOneOptions<Comment>).where =
+        where.map((entry) =>
+          entry.moderationStatus === undefined
+            ? { ...entry, moderationStatus: 'visible' }
+            : entry
+        );
+      return normalized;
+    }
+
+    if ((where as any).moderationStatus === undefined) {
+      (normalized as FindManyOptions<Comment> | FindOneOptions<Comment>).where =
+        { ...where, moderationStatus: 'visible' };
+    }
+
+    return normalized;
   }
 }

@@ -87,6 +87,7 @@ export {
   TopicCommands,
   ThreadCommands,
   ForumPostCommands,
+  ForumModerationCommands,
   ForumLinkCommands,
 } from './lib/libs/forum';
 

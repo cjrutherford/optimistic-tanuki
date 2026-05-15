@@ -41,31 +41,14 @@ describe('OWNER_CONSOLE_MUTATION_MATRIX', () => {
   it('documents the remaining partial and missing gaps explicitly', () => {
     expect(
       OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) =>
-          entry.feature === 'Theme persistence' && entry.status === 'partial'
+        (entry) => entry.status === 'partial'
       )
-    ).toHaveLength(1);
+    ).toHaveLength(0);
 
     expect(
       OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) =>
-          entry.feature === 'Role permission add' && entry.status === 'partial'
+        (entry) => entry.status === 'missing'
       )
-    ).toHaveLength(1);
-
-    expect(
-      OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) =>
-          entry.feature === 'Resource create' && entry.status === 'missing'
-      )
-    ).toHaveLength(1);
-
-    expect(
-      OWNER_CONSOLE_MUTATION_MATRIX.filter(
-        (entry) =>
-          entry.feature === 'Community manager appoint' &&
-          entry.status === 'missing'
-      )
-    ).toHaveLength(1);
+    ).toHaveLength(0);
   });
 });

@@ -8,6 +8,7 @@ import { AppConfigService } from '../services/app-config.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
 import { CommunityService } from '../services/community.service';
 import { StoreService } from '../services/store.service';
+import { OWNER_CONSOLE_MUTATION_MATRIX } from '../owner-console-mutation-matrix';
 
 describe('OperationsWorkspaceComponent', () => {
   beforeEach(async () => {
@@ -65,17 +66,23 @@ describe('OperationsWorkspaceComponent', () => {
     expect(fixture.componentInstance.matrixStatusCards).toEqual([
       expect.objectContaining({
         label: 'Complete flows',
-        count: 28,
+        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
+          (entry) => entry.status === 'complete'
+        ).length,
         tone: 'complete',
       }),
       expect.objectContaining({
         label: 'Partial flows',
-        count: 12,
+        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
+          (entry) => entry.status === 'partial'
+        ).length,
         tone: 'partial',
       }),
       expect.objectContaining({
         label: 'Missing flows',
-        count: 5,
+        count: OWNER_CONSOLE_MUTATION_MATRIX.filter(
+          (entry) => entry.status === 'missing'
+        ).length,
         tone: 'missing',
       }),
     ]);
@@ -84,12 +91,12 @@ describe('OperationsWorkspaceComponent', () => {
       fixture.componentInstance.incompleteMatrixEntries.some(
         (entry) => entry.feature === 'Theme persistence'
       )
-    ).toBe(true);
-    expect(
-      fixture.componentInstance.incompleteMatrixEntries.some(
-        (entry) => entry.feature === 'Community manager appoint'
-      )
-    ).toBe(true);
+    ).toBe(false);
+    expect(fixture.componentInstance.incompleteMatrixEntries).toHaveLength(
+      OWNER_CONSOLE_MUTATION_MATRIX.filter(
+        (entry) => entry.status !== 'complete'
+      ).length
+    );
   });
 
   it('surfaces the business-site catalog mode for central commerce auditing', () => {

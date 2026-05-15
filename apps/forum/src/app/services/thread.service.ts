@@ -2,10 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Thread } from '../../entities/thread.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
-import {
-  CreateThreadDto,
-  UpdateThreadDto,
-} from '@optimistic-tanuki/models';
+import { CreateThreadDto, UpdateThreadDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 
 @Injectable()
@@ -51,7 +48,9 @@ export class ThreadService {
   }
 
   async findAll(options?: FindManyOptions<Thread>): Promise<Thread[]> {
-    return await this.threadRepo.find(options);
+    return await this.threadRepo.find(
+      this.withDefaultModerationFilter(options)
+    );
   }
 
   async findOne(
@@ -60,11 +59,13 @@ export class ThreadService {
   ): Promise<Thread | null> {
     // Increment view count
     await this.threadRepo.increment({ id }, 'viewCount', 1);
-    
-    return await this.threadRepo.findOne({
-      where: { id },
-      ...options,
-    });
+
+    return await this.threadRepo.findOne(
+      this.withDefaultModerationFilter({
+        where: { id },
+        ...options,
+      })
+    );
   }
 
   async update(id: string, updateThreadDto: UpdateThreadDto): Promise<Thread> {
@@ -72,7 +73,7 @@ export class ThreadService {
     if (!thread) {
       throw new Error(`Thread with ID ${id} not found`);
     }
-    
+
     const updatedData: Partial<Thread> = {};
     if (updateThreadDto.title) {
       updatedData.title = this.sanitizeContent(updateThreadDto.title);
@@ -96,5 +97,61 @@ export class ThreadService {
 
   async remove(id: string): Promise<void> {
     await this.threadRepo.delete(id);
+  }
+
+  async moderate(
+    id: string,
+    moderationStatus: 'visible' | 'hidden',
+    moderatedBy: string,
+    moderationNotes?: string
+  ): Promise<Thread | null> {
+    const thread = await this.threadRepo.findOne({ where: { id } });
+    if (!thread) {
+      throw new Error(`Thread with ID ${id} not found`);
+    }
+
+    await this.threadRepo.update(id, {
+      moderationStatus,
+      moderationNotes: moderationNotes ?? null,
+      moderatedBy,
+      moderatedAt: new Date(),
+    });
+
+    return await this.threadRepo.findOne({ where: { id } });
+  }
+
+  private withDefaultModerationFilter<
+    T extends FindManyOptions<Thread> | FindOneOptions<Thread> | undefined
+  >(options?: T): T {
+    const normalized = { ...(options ?? {}) } as T;
+    const where = (
+      normalized as FindManyOptions<Thread> | FindOneOptions<Thread>
+    ).where;
+
+    if (!where) {
+      (normalized as FindManyOptions<Thread> | FindOneOptions<Thread>).where = {
+        moderationStatus: 'visible',
+      };
+      return normalized;
+    }
+
+    if (Array.isArray(where)) {
+      (normalized as FindManyOptions<Thread> | FindOneOptions<Thread>).where =
+        where.map((entry) =>
+          entry.moderationStatus === undefined
+            ? { ...entry, moderationStatus: 'visible' }
+            : entry
+        );
+      return normalized;
+    }
+
+    if ((where as any).moderationStatus === undefined) {
+      (normalized as FindManyOptions<Thread> | FindOneOptions<Thread>).where = {
+        ...where,
+        moderationStatus: 'visible',
+      };
+    }
+
+    return normalized;
   }
 }

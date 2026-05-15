@@ -2,10 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Logger } from '@nestjs/common';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
 import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
 import { ensureCommunityChatRoom } from './seed-local-communities.helpers';
+import { ChatCommands } from '@optimistic-tanuki/constants';
 
 type CityHighlight = {
   headline: string;
@@ -177,38 +184,32 @@ const COMMUNITIES: SeedLocality[] = rawLocalities
 
 const logger = new Logger('SeedLocalCommunities');
 
-async function createCommunityChat(input: {
-  communityId: string;
-  ownerId: string;
-  name?: string;
-}): Promise<{ id: string } | null> {
-  const chatCollectorUrl =
-    process.env.CHAT_COLLECTOR_URL || 'http://chat-collector:3007';
+async function createCommunityChat(
+  input: {
+    communityId: string;
+    ownerId: string;
+    name?: string;
+  },
+  chatClient: ClientProxy
+): Promise<{ id: string } | null> {
+  const chatRoom = await firstValueFrom(
+    chatClient
+      .send<{ id: string } | null>(
+        { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
+        input
+      )
+      .pipe(timeout(15000))
+  );
 
-  const response = await fetch(`${chatCollectorUrl}/conversations/community`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(
-      `Chat collector returned ${response.status}: ${
-        errorText || 'Unknown error'
-      }`
-    );
-  }
-
-  return (await response.json()) as { id: string };
+  return chatRoom;
 }
 
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
+  const chatClient = createChatCollectorClient();
 
   try {
+    await chatClient.connect();
     const communityRepo = app.get<Repository<Community>>(
       getRepositoryToken(Community)
     );
@@ -249,7 +250,8 @@ async function main() {
         });
         await communityRepo.save(existing);
         await ensureCommunityChatRoom(existing, {
-          createCommunityChat,
+          createCommunityChat: (input) =>
+            createCommunityChat(input, chatClient),
           setCommunityChatRoom: async (communityId, chatRoomId) => {
             await communityRepo.update(communityId, { chatRoomId });
           },
@@ -283,7 +285,8 @@ async function main() {
         });
         await communityRepo.save(community);
         await ensureCommunityChatRoom(community, {
-          createCommunityChat,
+          createCommunityChat: (input) =>
+            createCommunityChat(input, chatClient),
           setCommunityChatRoom: async (communityId, chatRoomId) => {
             await communityRepo.update(communityId, { chatRoomId });
           },
@@ -305,14 +308,32 @@ async function main() {
       `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`
     );
     console.log(`Breakdown: ${JSON.stringify(totalByType)}`);
+    chatClient.close();
     await app.close();
     process.exit(0);
   } catch (error) {
     logger.error('Seed failed', error as Error);
     console.error('Seed failed:', error);
+    chatClient.close();
     await app.close();
     process.exit(1);
   }
+}
+
+function createChatCollectorClient(): ClientProxy {
+  const chatCollectorHost = process.env.CHAT_COLLECTOR_HOST || 'chat-collector';
+  const chatCollectorPort = Number.parseInt(
+    process.env.CHAT_COLLECTOR_PORT || '3007',
+    10
+  );
+
+  return ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: {
+      host: chatCollectorHost,
+      port: chatCollectorPort,
+    },
+  });
 }
 
 main();
