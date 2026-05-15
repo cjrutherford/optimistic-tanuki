@@ -8,6 +8,14 @@ const registryPath = path.join(
 );
 const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 const publishablePackages = registry.packages;
+const admission = registry.admission ?? {};
+const requiredFiles = admission.requiredFiles ?? [
+  'package.json',
+  'README.md',
+  'project.json',
+];
+const requiredTag = admission.requiredTag ?? 'visibility:publishable';
+const requiredTargets = admission.requiredTargets ?? ['build'];
 const allowedExternalDependenciesPath = path.join(
   workspaceRoot,
   'tools/public-packages/allowed-external-dependencies.json'
@@ -97,22 +105,19 @@ function fail(message) {
 }
 
 for (const publishablePackage of publishablePackages) {
+  for (const requiredFile of requiredFiles) {
+    const requiredPath = path.join(publishablePackage.root, requiredFile);
+
+    if (!exists(requiredPath)) {
+      fail(`${requiredPath} is missing`);
+    }
+  }
+
   const packageJsonPath = path.join(publishablePackage.root, 'package.json');
   const projectJsonPath = path.join(publishablePackage.root, 'project.json');
-  const readmePath = path.join(publishablePackage.root, 'README.md');
 
-  if (!exists(packageJsonPath)) {
-    fail(`${packageJsonPath} is missing`);
+  if (!exists(packageJsonPath) || !exists(projectJsonPath)) {
     continue;
-  }
-
-  if (!exists(projectJsonPath)) {
-    fail(`${projectJsonPath} is missing`);
-    continue;
-  }
-
-  if (!exists(readmePath)) {
-    fail(`${readmePath} is missing`);
   }
 
   const packageJson = readJson(packageJsonPath);
@@ -158,12 +163,14 @@ for (const publishablePackage of publishablePackages) {
     fail(`${packageJsonPath} must define bugs.url`);
   }
 
-  if (!projectJson.tags?.includes('visibility:publishable')) {
-    fail(`${projectJsonPath} must include visibility:publishable`);
+  if (!projectJson.tags?.includes(requiredTag)) {
+    fail(`${projectJsonPath} must include ${requiredTag}`);
   }
 
-  if (!projectJson.targets?.build) {
-    fail(`${projectJsonPath} must define a build target`);
+  for (const requiredTarget of requiredTargets) {
+    if (!projectJson.targets?.[requiredTarget]) {
+      fail(`${projectJsonPath} must define a ${requiredTarget} target`);
+    }
   }
 
   const buildAssets = projectJson.targets.build.options?.assets ?? [];

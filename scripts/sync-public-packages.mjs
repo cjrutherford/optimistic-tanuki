@@ -73,6 +73,15 @@ function copyIfExists(sourcePath, targetPath) {
   fs.cpSync(sourcePath, targetPath, { recursive: true });
 }
 
+function normalizeConfiguredValue(value) {
+  if (typeof value !== 'string') {
+    return value ?? undefined;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
 function rewritePackageManifest(packageManifest, packageEntry, mirrorRepoSlug) {
   const baseUrl = `https://github.com/${mirrorRepoSlug}`;
 
@@ -220,24 +229,40 @@ function collectPackageFiles(packageEntry) {
 }
 
 function resolveMirrorRepoSlug(registry, args) {
-  const configuredValue =
-    args.values.get('--mirror-repo-slug') ??
-    process.env[registry.mirrorRepo.slugEnvVar] ??
-    registry.mirrorRepo.slug;
+  const configuredValue = [
+    args.values.get('--mirror-repo-slug'),
+    process.env[registry.mirrorRepo.slugEnvVar],
+    registry.mirrorRepo.slug,
+  ]
+    .map(normalizeConfiguredValue)
+    .find((value) => value !== undefined);
 
   return {
     slug: configuredValue ?? registry.mirrorRepo.placeholderSlug,
-    mode: configuredValue ? 'configured' : 'placeholder',
+    mode: configuredValue !== undefined ? 'configured' : 'placeholder',
   };
 }
 
 function resolveOutputRoot(registry, args) {
-  const configuredValue =
-    args.values.get('--output') ??
-    process.env[registry.mirrorRepo.outputPathEnvVar] ??
-    registry.mirrorRepo.defaultOutput;
+  const configuredValue = [
+    args.values.get('--output'),
+    process.env[registry.mirrorRepo.outputPathEnvVar],
+    registry.mirrorRepo.defaultOutput,
+  ]
+    .map(normalizeConfiguredValue)
+    .find((value) => value !== undefined);
+  const resolvedPath = path.resolve(
+    workspaceRoot,
+    configuredValue ?? registry.mirrorRepo.defaultOutput
+  );
 
-  return path.resolve(workspaceRoot, configuredValue);
+  if (resolvedPath === workspaceRoot) {
+    throw new Error(
+      'Refusing to sync public packages to the workspace root. Set --output or PUBLIC_PACKAGES_MIRROR_OUTPUT to a non-empty path.'
+    );
+  }
+
+  return resolvedPath;
 }
 
 function preflight(packageEntries) {
@@ -326,6 +351,7 @@ for (const generatedPath of [
   'nx.json',
   'tsconfig.base.json',
   'jest.preset.js',
+  'pnpm-lock.yaml',
   'public-packages-manifest.json',
 ]) {
   removeIfExists(path.join(outputRoot, generatedPath));

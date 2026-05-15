@@ -9,20 +9,7 @@
   "admission": {
     "requiredFiles": ["package.json", "README.md", "project.json"],
     "requiredTag": "visibility:publishable",
-    "requiredTargets": ["build", "test"],
-    "forbiddenImports": [
-      "apps/",
-      "@optimistic-tanuki/models",
-      "/src/",
-      "relative paths outside package root"
-    ],
-    "futureCandidates": [
-      "ui-models",
-      "theme-models",
-      "app-config-models",
-      "auth-domain",
-      "payments-domain"
-    ]
+    "requiredTargets": ["build", "test"]
   },
   "packages": [
     {
