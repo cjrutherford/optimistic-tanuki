@@ -28,7 +28,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'pnpm exec nx run digital-homestead:serve',
+        command: 'node ./node_modules/nx/bin/nx.js run digital-homestead:serve',
         url: 'http://localhost:4200',
         reuseExistingServer: true,
         cwd: workspaceRoot,

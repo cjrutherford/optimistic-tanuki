@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: process.env.CI
     ? undefined
     : {
-        command: 'pnpm exec nx run forgeofwill:serve',
+        command: 'node ./node_modules/nx/bin/nx.js run forgeofwill:serve',
         url: 'http://localhost:4200',
         reuseExistingServer: true,
         cwd: workspaceRoot,

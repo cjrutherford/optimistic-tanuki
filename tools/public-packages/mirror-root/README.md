@@ -10,8 +10,8 @@ It is generated from the internal development monorepo and only contains approve
 pnpm install --no-frozen-lockfile
 pnpm test
 pnpm build
-pnpm version
-pnpm publish
+pnpm run version
+pnpm run publish
 ```
 
 ## Release Ownership

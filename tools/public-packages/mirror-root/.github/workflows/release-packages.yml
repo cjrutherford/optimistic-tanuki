@@ -106,8 +106,8 @@ jobs:
       - name: Create version PR or publish packages
         uses: changesets/action@v1
         with:
-          version: pnpm version
-          publish: pnpm publish
+          version: pnpm run version
+          publish: pnpm run publish
           title: 'chore: version public packages'
           commit: 'chore: version public packages'
         env:
