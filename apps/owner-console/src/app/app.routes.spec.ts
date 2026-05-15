@@ -21,7 +21,23 @@ describe('appRoutes', () => {
         'community-ops',
         'operations',
         'registry',
+        'social-governance',
+        'forum-governance',
       ])
+    );
+  });
+
+  it('exposes dedicated social and forum governance routes for community ops', () => {
+    const dashboardRoute = appRoutes.find(
+      (route) => route.path === 'dashboard'
+    );
+
+    const childPaths = (dashboardRoute?.children ?? []).map(
+      (route) => route.path
+    );
+
+    expect(childPaths).toEqual(
+      expect.arrayContaining(['social-governance', 'forum-governance'])
     );
   });
 

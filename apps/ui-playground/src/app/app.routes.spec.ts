@@ -1,5 +1,6 @@
-import { routes } from './app.routes';
+import { docsSlugMatcher, routes } from './app.routes';
 import { NavSidebarComponent } from './shared';
+import { UrlSegment } from '@angular/router';
 
 describe('ui-playground routes', () => {
   it('includes the full curated library route set', () => {
@@ -35,6 +36,16 @@ describe('ui-playground routes', () => {
       'project-ui',
       'validation',
     ]);
+  });
+
+  it('captures nested docs slugs through the docs matcher', () => {
+    const result = docsSlugMatcher([
+      new UrlSegment('docs', {}),
+      new UrlSegment('architecture', {}),
+      new UrlSegment('workspace-map', {}),
+    ]);
+
+    expect(result?.posParams.slug.path).toBe('architecture/workspace-map');
   });
 
   it('keeps the sidebar library index aligned with the route set', () => {

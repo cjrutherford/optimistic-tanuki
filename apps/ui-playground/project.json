@@ -8,8 +8,8 @@
   "targets": {
     "build": {
       "executor": "@angular/build:application",
+      "dependsOn": ["docs-content", "^build"],
       "outputs": ["{options.outputPath}"],
-      "dependsOn": ["^build"],
       "options": {
         "outputPath": "dist/apps/ui-playground",
         "browser": "apps/ui-playground/src/main.ts",
@@ -17,7 +17,12 @@
         "polyfills": ["zone.js"],
         "tsConfig": "apps/ui-playground/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
-        "assets": [],
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/ui-playground/public"
+          }
+        ],
         "styles": ["apps/ui-playground/src/styles.scss"]
       },
       "configurations": {
@@ -47,6 +52,7 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "dependsOn": ["docs-content"],
       "options": {
         "poll": 2000
       },
@@ -59,6 +65,12 @@
         }
       },
       "defaultConfiguration": "development"
+    },
+    "docs-content": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node tools/docs-site/build-docs-manifest.mjs"
+      }
     },
     "lint": {
       "executor": "@nx/eslint:lint"

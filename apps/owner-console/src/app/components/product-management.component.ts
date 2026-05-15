@@ -15,6 +15,8 @@ import {
   styleUrls: ['./product-management.component.scss'],
 })
 export class ProductManagementComponent implements OnInit {
+  readonly filters = ['all', 'service', 'active-service', 'inactive'] as const;
+  filter: (typeof this.filters)[number] = 'all';
   products: Product[] = [];
   selectedProduct: Product | null = null;
   isEditing = false;
@@ -44,6 +46,35 @@ export class ProductManagementComponent implements OnInit {
         console.error(err);
       },
     });
+  }
+
+  get filteredProducts(): Product[] {
+    switch (this.filter) {
+      case 'service':
+        return this.products.filter((product) => product.type === 'service');
+      case 'active-service':
+        return this.products.filter(
+          (product) => product.type === 'service' && product.active
+        );
+      case 'inactive':
+        return this.products.filter((product) => !product.active);
+      default:
+        return this.products;
+    }
+  }
+
+  get serviceProductCount(): number {
+    return this.products.filter((product) => product.type === 'service').length;
+  }
+
+  get activeServiceProductCount(): number {
+    return this.products.filter(
+      (product) => product.type === 'service' && product.active
+    ).length;
+  }
+
+  setFilter(filter: (typeof this.filters)[number]): void {
+    this.filter = filter;
   }
 
   formatPrice(price: number | string): string {

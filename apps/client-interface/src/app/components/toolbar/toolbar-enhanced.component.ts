@@ -76,7 +76,11 @@ export interface ProfileInfo {
           <div class="dropdown-menu">
             <a
               class="dropdown-item"
-              routerLink="/profile/{{ currentProfile()?.id }}"
+              [routerLink]="
+                currentProfile()?.id
+                  ? ['/profile', currentProfile()?.id]
+                  : ['/profile']
+              "
             >
               <svg
                 viewBox="0 0 24 24"

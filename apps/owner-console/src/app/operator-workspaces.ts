@@ -133,6 +133,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
         highlight: 'Catalog control',
       },
       {
+        title: 'Business-Site Catalog',
+        description:
+          'Govern whether business-site offers stay manual or use the store service catalog.',
+        route: '/dashboard/store/business-site',
+        highlight: 'Catalog linkage',
+      },
+      {
         title: 'Orders',
         description: 'Investigate outstanding orders and manual interventions.',
         route: '/dashboard/store/orders',
@@ -151,6 +158,13 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
           'Adjust booking capacity and operator-controlled openings.',
         route: '/dashboard/store/availability',
         highlight: 'Capacity planning',
+      },
+      {
+        title: 'Resources',
+        description:
+          'Manage rooms, equipment, and other bookable resources exposed to service operations.',
+        route: '/dashboard/store/resources',
+        highlight: 'Resource inventory',
       },
     ],
   },
@@ -180,6 +194,20 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
           'Control city-level locality records and rollout readiness.',
         route: '/dashboard/cities',
         highlight: 'Locality coverage',
+      },
+      {
+        title: 'Social Governance',
+        description:
+          'Review current community moderation, privacy signals, and report-pipeline gaps.',
+        route: '/dashboard/social-governance',
+        highlight: 'Social boundary map',
+      },
+      {
+        title: 'Forum Governance',
+        description:
+          'Track topic/thread moderation capabilities and current forum governance gaps.',
+        route: '/dashboard/forum-governance',
+        highlight: 'Forum moderation',
       },
     ],
   },

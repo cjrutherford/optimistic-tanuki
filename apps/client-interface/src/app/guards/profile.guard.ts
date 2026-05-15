@@ -36,7 +36,7 @@ export class ProfileGuard implements CanActivate {
       }
     }
     // If the user is not authenticated, navigate to the login page
-    this.router.navigate(['/profile']);
+    this.router.navigate(['/login']);
     return false;
   }
 }

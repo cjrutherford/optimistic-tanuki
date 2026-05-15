@@ -1,11 +1,32 @@
 import { Dirent, promises as fs } from 'fs';
 import { basename, extname, join, relative } from 'path';
 
-const SUPPORTED_VIDEO_EXTENSIONS = new Set(['.mp4', '.mpeg', '.mov', '.webm', '.mkv', '.avi', '.m3u8']);
+const SUPPORTED_VIDEO_EXTENSIONS = new Set([
+  '.mp4',
+  '.mpeg',
+  '.mov',
+  '.webm',
+  '.mkv',
+  '.avi',
+  '.m3u8',
+]);
+
+export function resolveFirstExistingSeedVideoDirectory(
+  candidates: readonly string[],
+  exists: (path: string) => boolean
+): string | null {
+  for (const candidate of candidates) {
+    if (candidate && exists(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
 
 export async function discoverSeedVideoFiles(
   rootDir: string,
-  options: { maxFiles?: number } = {},
+  options: { maxFiles?: number } = {}
 ): Promise<string[]> {
   const results: string[] = [];
   const maxFiles =
@@ -64,7 +85,7 @@ export function deriveVideoTitle(filePath: string): string {
 
 export function getRelativeImportPath(
   rootDir: string,
-  filePath: string,
+  filePath: string
 ): string {
   return relative(rootDir, filePath);
 }
@@ -82,7 +103,7 @@ export function deriveChannelName(rootDir: string, filePath: string): string {
 
 export function assessVideoImport(
   filePath: string,
-  fileSizeBytes: number,
+  fileSizeBytes: number
 ): { canImport: true } | { canImport: false; reason: string } {
   const extension = extname(filePath).toLowerCase();
 
@@ -90,7 +111,7 @@ export function assessVideoImport(
     return {
       canImport: false,
       reason: `unsupported extension ${extension}; supported extensions: ${Array.from(
-        SUPPORTED_VIDEO_EXTENSIONS,
+        SUPPORTED_VIDEO_EXTENSIONS
       ).join(', ')}`,
     };
   }

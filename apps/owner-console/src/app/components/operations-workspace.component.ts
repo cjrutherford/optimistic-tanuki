@@ -8,6 +8,7 @@ import {
 } from '../owner-console-mutation-matrix';
 import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
+import { BusinessSiteAdminService } from '../services/business-site-admin.service';
 import { CommunityService } from '../services/community.service';
 import { StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
@@ -31,6 +32,13 @@ interface MatrixStatusCard {
   tone: 'complete' | 'partial' | 'missing';
 }
 
+interface BusinessSiteCatalogStatus {
+  status: 'Healthy' | 'Attention';
+  mode: 'manual' | 'store' | 'unknown';
+  detail: string;
+  route: string;
+}
+
 @Component({
   selector: 'app-operations-workspace',
   standalone: true,
@@ -41,20 +49,27 @@ interface MatrixStatusCard {
         <p class="hero-kicker">Operations Workspace</p>
         <h1>Operational visibility and intervention</h1>
         <p>
-          Use this workspace to monitor platform domains, identify attention areas,
-          and jump directly into the tools that support operator intervention.
+          Use this workspace to monitor platform domains, identify attention
+          areas, and jump directly into the tools that support operator
+          intervention.
         </p>
       </header>
 
       <section class="panel">
         <div class="panel-heading">
           <h2>Domain status</h2>
-          <p>Current status is derived from the operator data sources available today.</p>
+          <p>
+            Current status is derived from the operator data sources available
+            today.
+          </p>
         </div>
         <div class="status-grid">
           @for (card of statusCards; track card.title) {
           <a class="status-card" [routerLink]="card.route">
-            <span class="status-badge" [class.attention]="card.status === 'Attention'">
+            <span
+              class="status-badge"
+              [class.attention]="card.status === 'Attention'"
+            >
               {{ card.status }}
             </span>
             <h3>{{ card.title }}</h3>
@@ -67,7 +82,10 @@ interface MatrixStatusCard {
       <section class="panel">
         <div class="panel-heading">
           <h2>Control-plane actions</h2>
-          <p>These entry points concentrate the workflows platform owners use to intervene.</p>
+          <p>
+            These entry points concentrate the workflows platform owners use to
+            intervene.
+          </p>
         </div>
         <div class="actions-grid">
           @for (action of controlPlaneActions; track action.title) {
@@ -81,15 +99,39 @@ interface MatrixStatusCard {
 
       <section class="panel">
         <div class="panel-heading">
+          <h2>Business-site catalog linkage</h2>
+          <p>
+            Track whether the public business site is running against manual
+            offers or the store service catalog.
+          </p>
+        </div>
+        <a class="status-card" [routerLink]="businessSiteCatalogStatus.route">
+          <span
+            class="status-badge"
+            [class.attention]="businessSiteCatalogStatus.status === 'Attention'"
+          >
+            {{ businessSiteCatalogStatus.status }}
+          </span>
+          <h3>Catalog mode: {{ businessSiteCatalogStatus.mode }}</h3>
+          <p>{{ businessSiteCatalogStatus.detail }}</p>
+        </a>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
           <h2>Mutation coverage matrix</h2>
           <p>
-            This matrix tracks every owner-console write flow by workspace, route,
-            backend endpoint, and expected permission boundary.
+            This matrix tracks every owner-console write flow by workspace,
+            route, backend endpoint, and expected permission boundary.
           </p>
         </div>
         <div class="coverage-grid">
           @for (card of matrixStatusCards; track card.label) {
-          <article class="coverage-card" [class.partial]="card.tone === 'partial'" [class.missing]="card.tone === 'missing'">
+          <article
+            class="coverage-card"
+            [class.partial]="card.tone === 'partial'"
+            [class.missing]="card.tone === 'missing'"
+          >
             <span class="coverage-count">{{ card.count }}</span>
             <h3>{{ card.label }}</h3>
           </article>
@@ -99,7 +141,10 @@ interface MatrixStatusCard {
           @for (entry of incompleteMatrixEntries; track entry.feature) {
           <article class="gap-card">
             <div class="gap-header">
-              <span class="gap-status" [class.missing]="entry.status === 'missing'">
+              <span
+                class="gap-status"
+                [class.missing]="entry.status === 'missing'"
+              >
                 {{ entry.status }}
               </span>
               <h3>{{ entry.feature }}</h3>
@@ -131,9 +176,16 @@ interface MatrixStatusCard {
       .panel {
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 24px;
-        background:
-          radial-gradient(circle at top left, rgba(196, 112, 0, 0.08), transparent 30%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 248, 248, 0.92));
+        background: radial-gradient(
+            circle at top left,
+            rgba(196, 112, 0, 0.08),
+            transparent 30%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.96),
+            rgba(246, 248, 248, 0.92)
+          );
         padding: 24px;
       }
 
@@ -259,12 +311,19 @@ export class OperationsWorkspaceComponent implements OnInit {
   private readonly usersService = inject(UsersService);
   private readonly appScopesService = inject(AppScopesService);
   private readonly appConfigService = inject(AppConfigService);
+  private readonly businessSiteAdminService = inject(BusinessSiteAdminService);
   private readonly communityService = inject(CommunityService);
   private readonly storeService = inject(StoreService);
 
   statusCards: DomainStatusCard[] = [];
   matrixStatusCards: MatrixStatusCard[] = [];
   incompleteMatrixEntries: OwnerConsoleMutationMatrixEntry[] = [];
+  businessSiteCatalogStatus: BusinessSiteCatalogStatus = {
+    status: 'Attention',
+    mode: 'unknown',
+    detail: 'Business-site catalog configuration has not been loaded yet.',
+    route: '/dashboard/store/business-site',
+  };
   controlPlaneActions: ControlPlaneAction[] = [
     {
       title: 'Review role assignments',
@@ -283,6 +342,12 @@ export class OperationsWorkspaceComponent implements OnInit {
       description:
         'Handle outstanding commerce issues from one entry point into orders, appointments, and availability.',
       route: '/dashboard/store/orders',
+    },
+    {
+      title: 'Govern business-site catalog source',
+      description:
+        'Verify store service-product readiness before switching the public business site to store-backed offers.',
+      route: '/dashboard/store/business-site',
     },
     {
       title: 'Stabilize community rollout',
@@ -331,17 +396,24 @@ export class OperationsWorkspaceComponent implements OnInit {
         .getConfigurations()
         .pipe(catchError(() => of(null))),
       commerce: forkJoin({
-        products: this.storeService.getProducts().pipe(catchError(() => of(null))),
+        products: this.storeService
+          .getProducts()
+          .pipe(catchError(() => of(null))),
         orders: this.storeService.getOrders().pipe(catchError(() => of(null))),
         appointments: this.storeService
           .getAppointments()
+          .pipe(catchError(() => of(null))),
+        businessSiteConfig: this.businessSiteAdminService
+          .getSiteConfig()
           .pipe(catchError(() => of(null))),
       }),
       communities: forkJoin({
         communities: this.communityService
           .getCommunities()
           .pipe(catchError(() => of(null))),
-        cities: this.communityService.getCities().pipe(catchError(() => of(null))),
+        cities: this.communityService
+          .getCities()
+          .pipe(catchError(() => of(null))),
       }),
     }).subscribe((result) => {
       this.statusCards = [
@@ -394,6 +466,31 @@ export class OperationsWorkspaceComponent implements OnInit {
           route: '/dashboard/community-ops',
         },
       ];
+
+      const catalogSource =
+        result.commerce.businessSiteConfig?.config?.serviceCatalog?.source ??
+        'manual';
+      const serviceProducts =
+        result.commerce.products?.filter(
+          (product) => product.type === 'service'
+        ) ?? [];
+      this.businessSiteCatalogStatus = {
+        status:
+          result.commerce.businessSiteConfig && result.commerce.products
+            ? 'Healthy'
+            : 'Attention',
+        mode:
+          catalogSource === 'store' || catalogSource === 'manual'
+            ? catalogSource
+            : 'unknown',
+        detail:
+          result.commerce.businessSiteConfig && result.commerce.products
+            ? catalogSource === 'store'
+              ? `Store-backed business offers are enabled. ${serviceProducts.length} service product(s) are available in the current catalog.`
+              : 'Manual business-site offers are active. Store service products are available, but not currently selected as the public source.'
+            : 'Business-site or store catalog data is unavailable and should be investigated.',
+        route: '/dashboard/store/business-site',
+      };
     });
   }
 }

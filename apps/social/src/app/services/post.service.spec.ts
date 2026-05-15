@@ -100,7 +100,9 @@ describe('PostService', () => {
     const post = { id: '1' } as Post;
     postRepo.findOne.mockResolvedValue(post);
     const result = await service.findOne('1');
-    expect(postRepo.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(postRepo.findOne).toHaveBeenCalledWith({
+      where: { id: '1', moderationStatus: 'visible' },
+    });
     expect(result).toBe(post);
   });
 
@@ -167,8 +169,8 @@ describe('PostService', () => {
 
     expect(postRepo.findOne).toHaveBeenCalledWith({
       where: [
-        { userId: 'u1', id: '1' },
-        { visibility: 'public', id: '1' },
+        { userId: 'u1', id: '1', moderationStatus: 'visible' },
+        { visibility: 'public', id: '1', moderationStatus: 'visible' },
       ],
     });
   });
@@ -181,7 +183,7 @@ describe('PostService', () => {
     await service.findOne('1', { where: { userId: 'u1' } });
 
     expect(postRepo.findOne).toHaveBeenCalledWith({
-      where: { userId: 'u1', id: '1' },
+      where: { userId: 'u1', id: '1', moderationStatus: 'visible' },
     });
   });
 
@@ -254,7 +256,41 @@ describe('PostService', () => {
     await service.getPosts(searchDto);
 
     expect(postRepo.find).toHaveBeenCalledWith({
-      where: { profileId: 'prof1' },
+      where: { profileId: 'prof1', moderationStatus: 'visible' },
     });
+  });
+
+  it('filters hidden posts from default findAll queries', async () => {
+    postRepo.find.mockResolvedValue([]);
+
+    await service.findAll();
+
+    expect(postRepo.find).toHaveBeenCalledWith({
+      where: { moderationStatus: 'visible' },
+    });
+  });
+
+  it('soft moderates a post instead of deleting it', async () => {
+    const post = {
+      id: '1',
+      moderationStatus: 'visible',
+    } as Post;
+    postRepo.findOne.mockResolvedValue(post);
+    postRepo.update.mockResolvedValue({
+      generatedMaps: [],
+      raw: [],
+      affected: 1,
+    });
+
+    await service.moderate('1', 'hidden', 'reviewer-1', 'Spam cleanup');
+
+    expect(postRepo.update).toHaveBeenCalledWith(
+      '1',
+      expect.objectContaining({
+        moderationStatus: 'hidden',
+        moderatedBy: 'reviewer-1',
+        moderationNotes: 'Spam cleanup',
+      })
+    );
   });
 });

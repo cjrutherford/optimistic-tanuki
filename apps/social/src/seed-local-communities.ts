@@ -1,9 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Logger } from '@nestjs/common';
+import {
+  ClientProxy,
+  ClientProxyFactory,
+  Transport,
+} from '@nestjs/microservices';
+import { firstValueFrom, timeout } from 'rxjs';
 import seedData from './data/seed-cities.json';
 import { AppModule } from './app/app.module';
 import { Community, LocalityType } from './entities/community.entity';
+import { ensureCommunityChatRoom } from './seed-local-communities.helpers';
+import { ChatCommands } from '@optimistic-tanuki/constants';
 
 type CityHighlight = {
   headline: string;
@@ -173,10 +182,34 @@ const COMMUNITIES: SeedLocality[] = rawLocalities
   .map(toSeedLocality)
   .sort((a, b) => localityRank(a.localityType) - localityRank(b.localityType));
 
+const logger = new Logger('SeedLocalCommunities');
+
+async function createCommunityChat(
+  input: {
+    communityId: string;
+    ownerId: string;
+    name?: string;
+  },
+  chatClient: ClientProxy
+): Promise<{ id: string } | null> {
+  const chatRoom = await firstValueFrom(
+    chatClient
+      .send<{ id: string } | null>(
+        { cmd: ChatCommands.CREATE_COMMUNITY_CHAT },
+        input
+      )
+      .pipe(timeout(15000))
+  );
+
+  return chatRoom;
+}
+
 async function main() {
   const app = await NestFactory.createApplicationContext(AppModule);
+  const chatClient = createChatCollectorClient();
 
   try {
+    await chatClient.connect();
     const communityRepo = app.get<Repository<Community>>(
       getRepositoryToken(Community)
     );
@@ -216,6 +249,13 @@ async function main() {
           parentId: parent?.id ?? null,
         });
         await communityRepo.save(existing);
+        await ensureCommunityChatRoom(existing, {
+          createCommunityChat: (input) =>
+            createCommunityChat(input, chatClient),
+          setCommunityChatRoom: async (communityId, chatRoomId) => {
+            await communityRepo.update(communityId, { chatRoomId });
+          },
+        });
         updated++;
         console.log(`  Updated: ${data.name}`);
       } else {
@@ -244,6 +284,13 @@ async function main() {
           isSystemCommunity: true,
         });
         await communityRepo.save(community);
+        await ensureCommunityChatRoom(community, {
+          createCommunityChat: (input) =>
+            createCommunityChat(input, chatClient),
+          setCommunityChatRoom: async (communityId, chatRoomId) => {
+            await communityRepo.update(communityId, { chatRoomId });
+          },
+        });
         created++;
         console.log(`  Created: ${data.name}`);
       }
@@ -261,13 +308,32 @@ async function main() {
       `\nDone. Created: ${created}, Updated: ${updated}, Total: ${COMMUNITIES.length}`
     );
     console.log(`Breakdown: ${JSON.stringify(totalByType)}`);
+    chatClient.close();
     await app.close();
     process.exit(0);
   } catch (error) {
+    logger.error('Seed failed', error as Error);
     console.error('Seed failed:', error);
+    chatClient.close();
     await app.close();
     process.exit(1);
   }
+}
+
+function createChatCollectorClient(): ClientProxy {
+  const chatCollectorHost = process.env.CHAT_COLLECTOR_HOST || 'chat-collector';
+  const chatCollectorPort = Number.parseInt(
+    process.env.CHAT_COLLECTOR_PORT || '3007',
+    10
+  );
+
+  return ClientProxyFactory.create({
+    transport: Transport.TCP,
+    options: {
+      host: chatCollectorHost,
+      port: chatCollectorPort,
+    },
+  });
 }
 
 main();

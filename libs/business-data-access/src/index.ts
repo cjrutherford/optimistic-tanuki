@@ -12,7 +12,11 @@ export { BusinessApiService as TrainerApiService };
 export { BusinessAuthService };
 export { BusinessAuthService as TrainerAuthService };
 export { businessHttpInterceptor };
-export { cloneBusinessSiteConfig, mergeBusinessSiteConfig, normalizeLandingSections } from './lib/business-site.config';
+export {
+  cloneBusinessSiteConfig,
+  mergeBusinessSiteConfig,
+  normalizeLandingSections,
+} from './lib/business-site.config';
 export type { BusinessSiteConfig } from './lib/business-site.config';
 export type { BusinessSiteConfig as TrainerSiteConfig } from './lib/business-site.config';
 
@@ -20,6 +24,7 @@ export type {
   BusinessFeatures,
   BusinessLeadContext,
   BusinessService,
+  BusinessServiceCatalogConfig,
   LandingSection,
   LandingSectionType,
   LandingSectionMediaItem,
@@ -54,6 +59,7 @@ export type {
   BusinessLeadIntake,
   BusinessLeadIntakeRecord,
   BusinessOffer,
+  BusinessStoreProduct,
   BusinessBusyWindow,
   BusinessClientBookingStatus,
   AcceptedBusinessClient,

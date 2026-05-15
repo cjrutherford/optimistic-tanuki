@@ -167,7 +167,9 @@ describe('PermissionsGuard', () => {
       });
 
       // Mock ProfileService to return empty list so fallback fails
-      const profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
       jest.spyOn(profileService, 'send').mockReturnValue(of([]));
 
       const context = createMockContext(
@@ -245,6 +247,53 @@ describe('PermissionsGuard', () => {
       expect(permissionsClient.send).toHaveBeenCalledTimes(3);
     });
 
+    it('should evaluate business-site catalog governance against the business-site scope permission', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+        permissions: ['business-site.catalog.update'],
+      });
+
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          { id: 'global-profile', appScope: 'global', userId: 'user1' },
+          {
+            id: 'business-profile',
+            appScope: 'business-site',
+            userId: 'user1',
+          },
+        ])
+      );
+
+      permissionsClient.send
+        .mockReturnValueOnce(
+          of({ id: 'business-scope-id', name: 'business-site' })
+        )
+        .mockReturnValueOnce(of({ id: 'global-scope-id', name: 'global' }))
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(true));
+
+      const context = createMockContext(
+        { userId: 'user1', profileId: 'global-profile' },
+        { 'x-ot-appscope': 'business-site' }
+      );
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(permissionsClient.send).toHaveBeenLastCalledWith(
+        { cmd: 'CheckPermission:Role' },
+        expect.objectContaining({
+          profileId: 'business-profile',
+          permission: 'business-site.catalog.update',
+          profileAppScope: 'business-site',
+          appScopeId: 'business-scope-id',
+          checkGlobalFallback: true,
+        })
+      );
+    });
+
     it('should pass a DTO-derived targetId when permission target metadata is configured', async () => {
       jest
         .spyOn(reflector, 'getAllAndOverride')
@@ -297,8 +346,50 @@ describe('PermissionsGuard', () => {
       );
     });
 
+    it('should deny business-site catalog governance when the scoped permission is missing', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+        permissions: ['business-site.catalog.update'],
+      });
+
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          { id: 'global-profile', appScope: 'global', userId: 'user1' },
+          {
+            id: 'business-profile',
+            appScope: 'business-site',
+            userId: 'user1',
+          },
+        ])
+      );
+
+      permissionsClient.send
+        .mockReturnValueOnce(
+          of({ id: 'business-scope-id', name: 'business-site' })
+        )
+        .mockReturnValueOnce(of({ id: 'global-scope-id', name: 'global' }))
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(false));
+
+      const context = createMockContext(
+        { userId: 'user1', profileId: 'global-profile' },
+        { 'x-ot-appscope': 'business-site' }
+      );
+
+      const activation = guard.canActivate(context);
+
+      await expect(activation).rejects.toThrow(ForbiddenException);
+      await expect(activation).rejects.toThrow(
+        'Permission denied: business-site.catalog.update in app scope business-site'
+      );
+    });
+
     it('uses the app-scoped profile when the JWT profile belongs to another scope', async () => {
-      const profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
       jest.spyOn(profileService, 'send').mockReturnValue(
         of([
           { id: 'global-profile', appScope: 'global', userId: 'user-1' },
@@ -327,6 +418,91 @@ describe('PermissionsGuard', () => {
           profileAppScope: 'leads-app',
           appScopeId: 'scope-leads',
         })
+      );
+    });
+
+    it('uses the community-scoped profile when community governance runs in a non-global app scope', async () => {
+      jest
+        .spyOn(reflector, 'getAllAndOverride')
+        .mockImplementation((key: string) => {
+          if (key === 'permissions') {
+            return { permissions: ['community.manage'] };
+          }
+
+          return undefined;
+        });
+
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          { id: 'global-profile', appScope: 'global', userId: 'user-1' },
+          { id: 'community-profile', appScope: 'local-hub', userId: 'user-1' },
+          { id: 'forum-profile', appScope: 'forum', userId: 'user-1' },
+        ])
+      );
+
+      permissionsClient.send
+        .mockReturnValueOnce(of({ id: 'scope-community', name: 'local-hub' }))
+        .mockReturnValueOnce(of({ id: 'scope-global', name: 'global' }))
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(true));
+
+      const context = createMockContext(
+        { profileId: 'forum-profile', userId: 'user-1' },
+        { 'x-ot-appscope': 'local-hub' },
+        { params: { id: 'community-123' }, body: {}, query: {} }
+      );
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(permissionsClient.send).toHaveBeenLastCalledWith(
+        { cmd: 'CheckPermission:Role' },
+        expect.objectContaining({
+          profileId: 'community-profile',
+          permission: 'community.manage',
+          profileAppScope: 'local-hub',
+          appScopeId: 'scope-community',
+          targetId: 'community-123',
+        })
+      );
+    });
+
+    it('denies forum post updates when the permission only exists in another app scope', async () => {
+      jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
+        permissions: ['forum.post.update'],
+      });
+
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest.spyOn(profileService, 'send').mockReturnValue(
+        of([
+          { id: 'global-profile', appScope: 'global', userId: 'user-1' },
+          { id: 'forum-profile', appScope: 'forum', userId: 'user-1' },
+          { id: 'social-profile', appScope: 'social', userId: 'user-1' },
+        ])
+      );
+
+      permissionsClient.send
+        .mockReturnValueOnce(of({ id: 'scope-forum', name: 'forum' }))
+        .mockReturnValueOnce(of({ id: 'scope-global', name: 'global' }))
+        .mockReturnValueOnce(of(false))
+        .mockReturnValueOnce(of(false));
+
+      const context = createMockContext(
+        { profileId: 'social-profile', userId: 'user-1' },
+        { 'x-ot-appscope': 'forum' },
+        { params: { id: 'forum-post-1' } }
+      );
+
+      const activation = guard.canActivate(context);
+
+      await expect(activation).rejects.toThrow(ForbiddenException);
+      await expect(activation).rejects.toThrow(
+        'Permission denied: forum.post.update in app scope forum'
       );
     });
 

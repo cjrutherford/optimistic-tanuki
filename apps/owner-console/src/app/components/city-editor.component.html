@@ -3,6 +3,8 @@
     isEditMode ? 'Edit City' : 'Create City'
   }}</otui-heading>
 
+  <p>{{ governanceSummary }}</p>
+
   <div *ngIf="loading">Loading...</div>
 
   <form *ngIf="!loading" [formGroup]="cityForm" (ngSubmit)="save()">

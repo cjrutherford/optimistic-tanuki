@@ -252,7 +252,7 @@ export class FeedComponent implements OnInit, OnDestroy {
         }
       }, 5000);
     } else {
-      this.router.navigate(['/profile']);
+      this.router.navigate(['/login']);
     }
   }
   profiles = signal<{ [key: string]: PostProfileStub }>({});
@@ -880,12 +880,12 @@ export class FeedComponent implements OnInit, OnDestroy {
           }
         );
     feedRequest.subscribe((posts: PostDto[]) => {
-        this.posts.set(posts);
-        this.hasMorePosts.set(posts.length >= this.pageSize);
-        this.loadReactionData(posts);
-        this.loadCommunityInfo(posts);
-        this.loadProfiles(posts);
-      });
+      this.posts.set(posts);
+      this.hasMorePosts.set(posts.length >= this.pageSize);
+      this.loadReactionData(posts);
+      this.loadCommunityInfo(posts);
+      this.loadProfiles(posts);
+    });
   }
 
   loadFollowingFeed() {

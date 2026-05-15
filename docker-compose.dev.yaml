@@ -21,7 +21,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',
@@ -367,7 +367,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',
@@ -513,7 +513,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',
@@ -544,7 +544,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',
@@ -572,7 +572,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         'dist/apps/lead-tracker',
         '--ext',
@@ -587,6 +587,7 @@ services:
     ports:
       - '9233:9233'
     environment:
+      - POSTGRES_HOST=postgres
       - NODE_ENV=development
       - OLLAMA_HOST=192.168.50.14
       - OLLAMA_MODEL=gemma3:4b
@@ -609,7 +610,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',

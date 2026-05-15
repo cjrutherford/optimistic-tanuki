@@ -23,6 +23,7 @@ import { CommunityService } from '../../community.service';
 import { VoteService } from '../../vote.service';
 import { ReactionService } from '../../reaction.service';
 import { ActivityService } from '../../activity.service';
+import { throwError } from 'rxjs';
 
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
@@ -30,6 +31,7 @@ describe('FeedComponent', () => {
   let postService: PostService;
   let profileService: ProfileService;
   let router: Router;
+  let consoleLogSpy: jest.SpyInstance;
 
   class MockIntersectionObserver {
     observe() {}
@@ -38,6 +40,9 @@ describe('FeedComponent', () => {
   }
 
   beforeEach(() => {
+    consoleLogSpy = jest
+      .spyOn(console, 'log')
+      .mockImplementation(() => undefined);
     Object.defineProperty(window, 'IntersectionObserver', {
       writable: true,
       configurable: true,
@@ -59,6 +64,13 @@ describe('FeedComponent', () => {
     };
     const postServiceMock = {
       searchPosts: jest.fn().mockReturnValue(of([])),
+      createPost: jest
+        .fn()
+        .mockReturnValue(of({ id: 'new-post', profileId: '123' })),
+      deletePost: jest.fn().mockReturnValue(of(undefined)),
+      getPost: jest.fn().mockReturnValue(of(null)),
+      getFeed: jest.fn().mockReturnValue(of([])),
+      getPostsByCommunityIds: jest.fn().mockReturnValue(of([])),
     };
     const profileServiceMock = {
       currentUserProfile: jest
@@ -175,9 +187,52 @@ describe('FeedComponent', () => {
     router = TestBed.inject(Router);
   });
 
+  afterEach(() => {
+    consoleLogSpy.mockRestore();
+  });
+
   it('should create', fakeAsync(() => {
     fixture.detectChanges();
     tick();
     expect(component).toBeTruthy();
   }));
+
+  it('should not prepend a post when create fails with an isolation denial', async () => {
+    const denial = new Error(
+      'Forbidden: cannot create post for another profile'
+    );
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    jest
+      .spyOn(component.postService as any, 'createPost')
+      .mockReturnValue(throwError(() => denial));
+    component.posts.set([
+      { id: 'existing-post', profileId: '123', title: 'Existing' } as any,
+    ]);
+
+    await expect(
+      component.createdPost({
+        title: 'Denied',
+        content: 'Nope',
+        attachments: [],
+        links: [],
+        injectedComponentsNew: [],
+      })
+    ).rejects.toBe(denial);
+
+    expect(component.postService.createPost).toHaveBeenCalledWith({
+      title: 'Denied',
+      content: 'Nope',
+      profileId: '123',
+    });
+    expect(component.posts()).toEqual([
+      { id: 'existing-post', profileId: '123', title: 'Existing' },
+    ]);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[Feed] Failed to create post:',
+      denial
+    );
+    consoleErrorSpy.mockRestore();
+  });
 });

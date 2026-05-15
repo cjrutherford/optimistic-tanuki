@@ -116,6 +116,8 @@ const loadConfig = () => {
     },
     database: {
       ...configData.database,
+      host: process.env.POSTGRES_HOST || configData.database.host,
+      port: toNumber(process.env.POSTGRES_PORT, configData.database.port),
       database:
         process.env.POSTGRES_DB ||
         configData.database.database ||

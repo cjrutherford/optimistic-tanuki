@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Inject,
   Logger,
@@ -67,6 +68,23 @@ export class ProfileController {
     private readonly socialClient: ClientProxy,
     private readonly roleInit: RoleInitService
   ) {}
+
+  private getAuthenticatedProfileId(user: UserDetails): string {
+    if (!user?.profileId) {
+      throw new ForbiddenException('Authenticated profile is required');
+    }
+    return user.profileId;
+  }
+
+  private assertOwnProfileRoute(profileId: string, user: UserDetails): string {
+    const authenticatedProfileId = this.getAuthenticatedProfileId(user);
+    if (profileId !== authenticatedProfileId) {
+      throw new ForbiddenException(
+        'Cannot modify another profile privacy state'
+      );
+    }
+    return authenticatedProfileId;
+  }
 
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create a new profile' })
@@ -493,11 +511,15 @@ export class ProfileController {
     description: 'The blocked users have been successfully retrieved.',
   })
   @Get(':id/blocked')
-  async getBlockedUsers(@Param('id') profileId: string) {
+  async getBlockedUsers(
+    @Param('id') profileId: string,
+    @User() user: UserDetails
+  ) {
+    const blockerId = this.assertOwnProfileRoute(profileId, user);
     const blocked = await firstValueFrom(
       this.socialClient.send(
         { cmd: PrivacyCommands.GET_BLOCKED_USERS },
-        { blockerId: profileId }
+        { blockerId }
       )
     );
     return (blocked || []).map((b: any) => ({
@@ -515,11 +537,13 @@ export class ProfileController {
   @Post(':id/block')
   async blockUser(
     @Param('id') profileId: string,
-    @Body() body: { blockedProfileId: string }
+    @Body() body: { blockedProfileId: string },
+    @User() user: UserDetails
   ) {
+    const blockerId = this.assertOwnProfileRoute(profileId, user);
     return this.socialClient.send(
       { cmd: PrivacyCommands.BLOCK_USER },
-      { blockerId: profileId, blockedId: body.blockedProfileId }
+      { blockerId, blockedId: body.blockedProfileId }
     );
   }
 
@@ -532,11 +556,13 @@ export class ProfileController {
   @Delete(':id/block/:blockedProfileId')
   async unblockUser(
     @Param('id') profileId: string,
-    @Param('blockedProfileId') blockedProfileId: string
+    @Param('blockedProfileId') blockedProfileId: string,
+    @User() user: UserDetails
   ) {
+    const blockerId = this.assertOwnProfileRoute(profileId, user);
     return this.socialClient.send(
       { cmd: PrivacyCommands.UNBLOCK_USER },
-      { blockerId: profileId, blockedId: blockedProfileId }
+      { blockerId, blockedId: blockedProfileId }
     );
   }
 }

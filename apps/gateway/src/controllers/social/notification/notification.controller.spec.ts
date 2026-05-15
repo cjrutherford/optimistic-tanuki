@@ -9,6 +9,7 @@ import { AuthGuard } from '../../../auth/auth.guard';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { SocialGateway } from '../../../app/social-gateway/social.gateway';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('NotificationController', () => {
   let controller: NotificationController;
@@ -87,7 +88,9 @@ describe('NotificationController', () => {
       ];
       mockSocialClient.send.mockReturnValue(of(mockNotifications));
 
-      const result = await controller.getNotifications('user1');
+      const result = await controller.getNotifications('user1', {
+        profileId: 'user1',
+      } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.FIND_BY_RECIPIENT },
@@ -99,9 +102,18 @@ describe('NotificationController', () => {
     it('should return empty array when no notifications', async () => {
       mockSocialClient.send.mockReturnValue(of([]));
 
-      const result = await controller.getNotifications('user1');
+      const result = await controller.getNotifications('user1', {
+        profileId: 'user1',
+      } as any);
 
       expect(result).toEqual([]);
+    });
+
+    it('should reject cross-profile notification reads', async () => {
+      await expect(
+        controller.getNotifications('user2', { profileId: 'user1' } as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 
@@ -109,7 +121,9 @@ describe('NotificationController', () => {
     it('should get unread notification count', async () => {
       mockSocialClient.send.mockReturnValue(of({ count: 5 }));
 
-      const result = await controller.getUnreadCount('user1');
+      const result = await controller.getUnreadCount('user1', {
+        profileId: 'user1',
+      } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.GET_UNREAD_COUNT },
@@ -121,9 +135,18 @@ describe('NotificationController', () => {
     it('should return zero when no unread notifications', async () => {
       mockSocialClient.send.mockReturnValue(of({ count: 0 }));
 
-      const result = await controller.getUnreadCount('user1');
+      const result = await controller.getUnreadCount('user1', {
+        profileId: 'user1',
+      } as any);
 
       expect(result).toEqual({ count: 0 });
+    });
+
+    it('should reject cross-profile unread count reads', async () => {
+      await expect(
+        controller.getUnreadCount('user2', { profileId: 'user1' } as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 
@@ -168,12 +191,19 @@ describe('NotificationController', () => {
     it('should mark all notifications as read for a profile', async () => {
       mockSocialClient.send.mockReturnValue(of({ success: true }));
 
-      await controller.markAllAsRead('user1');
+      await controller.markAllAsRead('user1', { profileId: 'user1' } as any);
 
       expect(mockSocialClient.send).toHaveBeenCalledWith(
         { cmd: NotificationCommands.MARK_ALL_READ },
         { recipientId: 'user1' }
       );
+    });
+
+    it('should reject cross-profile mark-all requests', async () => {
+      await expect(
+        controller.markAllAsRead('user2', { profileId: 'user1' } as any)
+      ).rejects.toBeInstanceOf(ForbiddenException);
+      expect(mockSocialClient.send).not.toHaveBeenCalled();
     });
   });
 

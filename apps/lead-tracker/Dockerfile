@@ -16,7 +16,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w pg typeorm
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon pg typeorm
 COPY --from=builder /usr/src/app/dist/apps/lead-tracker/ ./
 RUN chown -R node:node .
 USER node

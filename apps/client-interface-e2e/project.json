@@ -20,7 +20,9 @@
     },
     "e2e": {
       "executor": "@nx/playwright:playwright",
-      "options": {},
+      "options": {
+        "config": "apps/client-interface-e2e/playwright.config.ts"
+      },
       "configurations": {
         "ci": {
           "env": {

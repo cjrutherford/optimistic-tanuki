@@ -19,6 +19,7 @@ describe('ProfileComponent', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
   let profileService: ProfileService;
+  let router: Router;
   let profileServiceMock: Record<string, jest.Mock | (() => unknown)>;
 
   const mockProfile: ProfileDto = {
@@ -101,6 +102,7 @@ describe('ProfileComponent', () => {
     }).compileComponents();
 
     profileService = TestBed.inject(ProfileService);
+    router = TestBed.inject(Router);
     fixture = TestBed.createComponent(ProfileComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -133,5 +135,15 @@ describe('ProfileComponent', () => {
     const profile = component.profile;
     expect(profileService.getCurrentUserProfile).toHaveBeenCalled();
     expect(profile).toEqual(mockProfile);
+  });
+
+  it('should redirect the base profile route to the selected profile id', async () => {
+    TestBed.resetTestingModule();
+
+    await createComponent({});
+
+    expect(router.navigate).toHaveBeenCalledWith(['/profile', mockProfile.id], {
+      replaceUrl: true,
+    });
   });
 });

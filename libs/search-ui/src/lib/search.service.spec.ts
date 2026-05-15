@@ -310,6 +310,53 @@ describe('SearchService', () => {
       expect(req.request.method).toBe('GET');
       req.flush(mockHistory);
     });
+
+    it("should not reuse another profile's cached history request", () => {
+      const userOneResults: SearchHistory[] = [
+        {
+          id: '1',
+          profileId: 'profile-1',
+          query: 'one',
+          searchType: 'all',
+          resultCount: 1,
+          createdAt: new Date('2024-01-01'),
+        },
+      ];
+      const userTwoResults: SearchHistory[] = [
+        {
+          id: '2',
+          profileId: 'profile-2',
+          query: 'two',
+          searchType: 'all',
+          resultCount: 1,
+          createdAt: new Date('2024-01-02'),
+        },
+      ];
+
+      service.getSearchHistory('profile-1').subscribe((results) => {
+        expect(results).toEqual(userOneResults);
+      });
+      httpMock
+        .expectOne(
+          (request) =>
+            request.url === `${baseUrl}/history` &&
+            request.params.get('profileId') === 'profile-1' &&
+            request.params.get('limit') === '10'
+        )
+        .flush(userOneResults);
+
+      service.getSearchHistory('profile-2').subscribe((results) => {
+        expect(results).toEqual(userTwoResults);
+      });
+      httpMock
+        .expectOne(
+          (request) =>
+            request.url === `${baseUrl}/history` &&
+            request.params.get('profileId') === 'profile-2' &&
+            request.params.get('limit') === '10'
+        )
+        .flush(userTwoResults);
+    });
   });
 
   describe('signals', () => {

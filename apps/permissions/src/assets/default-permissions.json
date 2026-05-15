@@ -2570,6 +2570,15 @@
       "appScope": "business-site"
     },
     {
+      "name": "business-site.catalog.update",
+      "description": "Update business-site catalog source",
+      "active": true,
+      "resource": "business-site.catalog",
+      "action": "update",
+      "targetId": null,
+      "appScope": "business-site"
+    },
+    {
       "name": "social.reaction.read",
       "description": "Read a channel community reaction",
       "active": true,
@@ -2817,6 +2826,11 @@
     {
       "role": "business_site_owner",
       "permission": "app-config.update",
+      "permissionAppScope": "business-site"
+    },
+    {
+      "role": "business_site_owner",
+      "permission": "business-site.catalog.update",
       "permissionAppScope": "business-site"
     },
     {

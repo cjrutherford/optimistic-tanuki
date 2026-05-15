@@ -14,9 +14,11 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AppScopeDto,
+  PermissionDto,
 } from '@optimistic-tanuki/ui-models';
 import { RolesService } from '../services/roles.service';
 import { AppScopesService } from '../services/app-scopes.service';
+import { PermissionsService } from '../services/permissions.service';
 import { AgRolesTableComponent } from './ag-roles-table.component';
 
 @Component({
@@ -115,6 +117,99 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
               {{ currentRole.created_at | date : 'medium' }}
             </p>
           </div>
+        </div>
+
+        <div class="permissions-panel">
+          <div class="permissions-header">
+            <div>
+              <h3>Role Permissions</h3>
+              <p class="section-description">
+                Attach or remove permissions for this role from the full
+                catalog.
+              </p>
+            </div>
+          </div>
+
+          <ng-container
+            *ngIf="isEditMode && currentRole; else createModeNotice"
+          >
+            <div class="permissions-grid">
+              <div class="permissions-column">
+                <h4>Assigned</h4>
+                <div
+                  *ngIf="
+                    currentRole.permissions?.length;
+                    else noAssignedPermissions
+                  "
+                  class="permission-list"
+                >
+                  <div
+                    *ngFor="let permission of currentRole.permissions"
+                    class="permission-card"
+                  >
+                    <div class="permission-copy">
+                      <strong>{{ permission.name }}</strong>
+                      <span>{{
+                        permission.description || 'No description'
+                      }}</span>
+                    </div>
+                    <otui-button
+                      variant="secondary"
+                      (action)="removePermission(permission.id)"
+                    >
+                      Remove
+                    </otui-button>
+                  </div>
+                </div>
+                <ng-template #noAssignedPermissions>
+                  <p class="empty-state">
+                    No permissions are currently attached.
+                  </p>
+                </ng-template>
+              </div>
+
+              <div class="permissions-column">
+                <h4>Available</h4>
+                <div
+                  *ngIf="
+                    availablePermissions.length;
+                    else noAvailablePermissions
+                  "
+                  class="permission-list"
+                >
+                  <div
+                    *ngFor="let permission of availablePermissions"
+                    class="permission-card"
+                  >
+                    <div class="permission-copy">
+                      <strong>{{ permission.name }}</strong>
+                      <span>{{
+                        permission.description || 'No description'
+                      }}</span>
+                    </div>
+                    <otui-button
+                      variant="primary"
+                      (action)="addPermission(permission.id)"
+                    >
+                      Add
+                    </otui-button>
+                  </div>
+                </div>
+                <ng-template #noAvailablePermissions>
+                  <p class="empty-state">
+                    All loaded permissions are already attached to this role.
+                  </p>
+                </ng-template>
+              </div>
+            </div>
+          </ng-container>
+
+          <ng-template #createModeNotice>
+            <p class="empty-state">
+              Save the role first, then reopen it in edit mode to manage
+              permissions.
+            </p>
+          </ng-template>
         </div>
 
         <div class="form-actions">
@@ -260,12 +355,71 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         border: 1px solid var(--border-color, #ddd);
       }
 
+      .permissions-panel {
+        background: var(--background, #f9f9f9);
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color, #ddd);
+      }
+
+      .permissions-header {
+        margin-bottom: 1rem;
+      }
+
       .form-preview h3 {
         margin-bottom: 1rem;
       }
 
+      .permissions-panel h3,
+      .permissions-panel h4 {
+        margin-bottom: 0.75rem;
+      }
+
       .preview-content p {
         margin-bottom: 0.75rem;
+      }
+
+      .permissions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+      }
+
+      .permissions-column {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .permission-list {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .permission-card {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.875rem 1rem;
+        border: 1px solid var(--border-color, #ddd);
+        border-radius: 6px;
+        background: var(--bg-primary, #fff);
+      }
+
+      .permission-copy {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .permission-copy span {
+        color: var(--foreground, #666);
+        font-size: 0.9rem;
+      }
+
+      .empty-state {
+        margin: 0;
+        color: var(--foreground, #666);
+        font-size: 0.95rem;
       }
 
       .info-text {
@@ -332,10 +486,12 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
 export class RolesManagementComponent implements OnInit {
   private readonly rolesService = inject(RolesService);
   private readonly appScopesService = inject(AppScopesService);
+  private readonly permissionsService = inject(PermissionsService);
   private readonly messageService = inject(MessageService);
 
   roles: RoleDto[] = [];
   appScopes: AppScopeDto[] = [];
+  permissions: PermissionDto[] = [];
   loading = false;
 
   showFormModal = false;
@@ -353,9 +509,19 @@ export class RolesManagementComponent implements OnInit {
   confirmModalMessage = '';
   confirmAction: 'create' | 'update' | 'delete' = 'create';
 
+  get availablePermissions(): PermissionDto[] {
+    const assignedIds = new Set(
+      (this.currentRole?.permissions ?? []).map((permission) => permission.id)
+    );
+    return this.permissions.filter(
+      (permission) => !assignedIds.has(permission.id)
+    );
+  }
+
   ngOnInit(): void {
     this.loadRoles();
     this.loadAppScopes();
+    this.loadPermissions();
   }
 
   loadRoles(): void {
@@ -399,6 +565,17 @@ export class RolesManagementComponent implements OnInit {
     });
   }
 
+  loadPermissions(): void {
+    this.permissionsService.getPermissions().subscribe({
+      next: (permissions) => {
+        this.permissions = permissions;
+      },
+      error: (err) => {
+        console.error('Failed to load permissions:', err);
+      },
+    });
+  }
+
   openCreateModal(): void {
     this.isEditMode = false;
     this.currentRole = null;
@@ -412,7 +589,10 @@ export class RolesManagementComponent implements OnInit {
 
   openEditModal(role: RoleDto): void {
     this.isEditMode = true;
-    this.currentRole = role;
+    this.currentRole = {
+      ...role,
+      permissions: role.permissions ?? [],
+    };
     this.formData = {
       id: role.id,
       name: role.name,
@@ -420,10 +600,63 @@ export class RolesManagementComponent implements OnInit {
       appScopeId: role.appScope?.id || '',
     };
     this.showFormModal = true;
+    this.refreshCurrentRole();
   }
 
   closeFormModal(): void {
     this.showFormModal = false;
+  }
+
+  addPermission(permissionId: string): void {
+    if (!this.currentRole?.id || !this.isEditMode) {
+      return;
+    }
+
+    this.rolesService
+      .addPermissionToRole(this.currentRole.id, permissionId)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Permission added to role.',
+            type: 'success',
+          });
+          this.refreshCurrentRole();
+        },
+        error: (err) => {
+          const errorMessage =
+            err.error?.message || err.message || 'Failed to add permission.';
+          this.messageService.addMessage({
+            content: errorMessage,
+            type: 'error',
+          });
+        },
+      });
+  }
+
+  removePermission(permissionId: string): void {
+    if (!this.currentRole?.id || !this.isEditMode) {
+      return;
+    }
+
+    this.rolesService
+      .removePermissionFromRole(this.currentRole.id, permissionId)
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Permission removed from role.',
+            type: 'success',
+          });
+          this.refreshCurrentRole();
+        },
+        error: (err) => {
+          const errorMessage =
+            err.error?.message || err.message || 'Failed to remove permission.';
+          this.messageService.addMessage({
+            content: errorMessage,
+            type: 'error',
+          });
+        },
+      });
   }
 
   onAppScopeSelect(event: Event): void {
@@ -537,6 +770,27 @@ export class RolesManagementComponent implements OnInit {
           content: errorMessage,
           type: 'error',
         });
+      },
+    });
+  }
+
+  private refreshCurrentRole(): void {
+    if (!this.currentRole?.id) {
+      return;
+    }
+
+    this.rolesService.getRole(this.currentRole.id).subscribe({
+      next: (role) => {
+        this.currentRole = {
+          ...role,
+          permissions: role.permissions ?? [],
+        };
+        this.roles = this.roles.map((existingRole) =>
+          existingRole.id === role.id ? this.currentRole! : existingRole
+        );
+      },
+      error: (err) => {
+        console.error('Failed to refresh role details:', err);
       },
     });
   }

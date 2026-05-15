@@ -96,7 +96,8 @@ export class CommunitiesController {
   }
 
   @Post()
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.create')
   @ApiOperation({ summary: 'Create a new community' })
   @ApiResponse({ status: 201, description: 'Community created.' })
   async createCommunity(
@@ -160,7 +161,8 @@ export class CommunitiesController {
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.update')
   @ApiOperation({ summary: 'Update a community' })
   @ApiResponse({ status: 200, description: 'Community updated.' })
   async updateCommunity(
@@ -186,7 +188,8 @@ export class CommunitiesController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.delete')
   @ApiOperation({ summary: 'Delete a community' })
   @ApiResponse({ status: 200, description: 'Community deleted.' })
   async deleteCommunity(@Param('id') id: string, @User() user: UserDetails) {
@@ -222,7 +225,8 @@ export class CommunitiesController {
   }
 
   @Put(':id/members/:memberId/role')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Update member role' })
   @ApiResponse({ status: 200, description: 'Member role updated.' })
   async updateMemberRole(
@@ -250,7 +254,8 @@ export class CommunitiesController {
   }
 
   @Delete(':id/members/:memberId')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.member.remove')
   @ApiOperation({ summary: 'Remove member from community' })
   @ApiResponse({ status: 200, description: 'Member removed.' })
   async removeMember(
@@ -272,7 +277,8 @@ export class CommunitiesController {
   }
 
   @Post(':id/members/invite')
-  @UseGuards(AuthGuard)
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('community.invite')
   @ApiOperation({ summary: 'Invite user to community' })
   @ApiResponse({ status: 201, description: 'User invited.' })
   async inviteMember(

@@ -9,6 +9,7 @@ import {
   UseGuards,
   Logger,
   Inject,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -58,6 +59,26 @@ export class NotificationController {
     private readonly socialGateway: SocialGateway
   ) {}
 
+  private getAuthenticatedProfileId(user: UserDetails): string {
+    if (!user?.profileId) {
+      throw new ForbiddenException('Authenticated profile is required');
+    }
+    return user.profileId;
+  }
+
+  private assertOwnNotificationStream(
+    profileId: string,
+    user: UserDetails
+  ): string {
+    const authenticatedProfileId = this.getAuthenticatedProfileId(user);
+    if (profileId !== authenticatedProfileId) {
+      throw new ForbiddenException(
+        'Cannot access another profile notification stream'
+      );
+    }
+    return authenticatedProfileId;
+  }
+
   @Get(':profileId')
   @ApiOperation({ summary: 'Get all notifications for a profile' })
   @ApiResponse({
@@ -65,12 +86,14 @@ export class NotificationController {
     description: 'The notifications have been successfully retrieved.',
   })
   async getNotifications(
-    @Param('profileId') profileId: string
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails
   ): Promise<NotificationDto[]> {
+    const recipientId = this.assertOwnNotificationStream(profileId, user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.FIND_BY_RECIPIENT },
-        { recipientId: profileId }
+        { recipientId }
       )
     );
   }
@@ -82,12 +105,14 @@ export class NotificationController {
     description: 'The unread count has been successfully retrieved.',
   })
   async getUnreadCount(
-    @Param('profileId') profileId: string
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails
   ): Promise<{ count: number }> {
+    const recipientId = this.assertOwnNotificationStream(profileId, user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.GET_UNREAD_COUNT },
-        { recipientId: profileId }
+        { recipientId }
       )
     );
   }
@@ -138,11 +163,15 @@ export class NotificationController {
     status: 200,
     description: 'All notifications have been successfully marked as read.',
   })
-  async markAllAsRead(@Param('profileId') profileId: string): Promise<void> {
+  async markAllAsRead(
+    @Param('profileId') profileId: string,
+    @User() user: UserDetails
+  ): Promise<void> {
+    const recipientId = this.assertOwnNotificationStream(profileId, user);
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: NotificationCommands.MARK_ALL_READ },
-        { recipientId: profileId }
+        { recipientId }
       )
     );
   }

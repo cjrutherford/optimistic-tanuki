@@ -26,12 +26,19 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { Reflector } from '@nestjs/core';
+import { ForbiddenException } from '@nestjs/common';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
   let clientProxy: ClientProxy;
+  let socialClient: ClientProxy;
+  let roleInitService: { processNow: jest.Mock };
 
   beforeEach(async () => {
+    roleInitService = {
+      processNow: jest.fn().mockResolvedValue(undefined),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProfileController],
       providers: [
@@ -80,10 +87,7 @@ describe('ProfileController', () => {
         },
         {
           provide: RoleInitService,
-          useValue: {
-            initializeRoles: jest.fn().mockResolvedValue(undefined),
-            enqueue: jest.fn().mockResolvedValue(undefined),
-          },
+          useValue: roleInitService,
         },
         Reflector,
         {
@@ -108,10 +112,34 @@ describe('ProfileController', () => {
 
     controller = module.get<ProfileController>(ProfileController);
     clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
+    socialClient = module.get<ClientProxy>(ServiceTokens.SOCIAL_SERVICE);
   });
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('uses the role init service processNow API during profile creation', async () => {
+    const createProfileDto: CreateProfileDto = {
+      name: 'Test',
+      description: 'thomas morrow',
+      userId: 'user-1',
+      profilePic: 'https://www.google.com',
+      coverPic: 'https://www.google.com',
+      bio: 'I am a bio',
+      location: 'USA',
+      occupation: 'Software Engineer',
+      interests: 'Coding',
+      skills: 'Coding',
+    };
+
+    jest
+      .spyOn(clientProxy, 'send')
+      .mockReturnValueOnce(of({ id: 'profile-1', userId: 'user-1' } as any));
+
+    await controller.createProfile(createProfileDto, 'test');
+
+    expect(roleInitService.processNow).toHaveBeenCalled();
   });
 
   it('should create a profile', async () => {
@@ -277,5 +305,30 @@ describe('ProfileController', () => {
       id
     );
     expect(deleteResponse).toEqual({});
+  });
+
+  it('should reject reading blocked users for another profile', async () => {
+    await expect(
+      controller.getBlockedUsers('profile-2', { profileId: 'profile-1' } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(socialClient.send).not.toHaveBeenCalled();
+  });
+
+  it('should reject blocking a user for another profile', async () => {
+    await expect(
+      controller.blockUser('profile-2', { blockedProfileId: 'blocked-1' }, {
+        profileId: 'profile-1',
+      } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(socialClient.send).not.toHaveBeenCalled();
+  });
+
+  it('should reject unblocking a user for another profile', async () => {
+    await expect(
+      controller.unblockUser('profile-2', 'blocked-1', {
+        profileId: 'profile-1',
+      } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(socialClient.send).not.toHaveBeenCalled();
   });
 });

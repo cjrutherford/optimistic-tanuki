@@ -16,6 +16,7 @@ describe('BusinessSiteEditorPageComponent', () => {
   const getSiteConfig = jest.fn();
   const updateSiteConfig = jest.fn();
   const listAssets = jest.fn();
+  const getStoreProducts = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
   const setPrimaryColor = jest.fn();
@@ -34,8 +35,29 @@ describe('BusinessSiteEditorPageComponent', () => {
       })
     );
     updateSiteConfig.mockReturnValue(of({ id: 'config-1' }));
+    getStoreProducts.mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          name: 'Store Advisory Sprint',
+          description: 'Store-backed service offer.',
+          price: 225,
+          type: 'service',
+          active: true,
+          stock: 0,
+        },
+      ])
+    );
     listAssets.mockReturnValue(
-      of([{ id: 'asset-1', name: 'Studio', type: 'image', profileId: 'profile-1', url: '/api/asset/asset-1' }])
+      of([
+        {
+          id: 'asset-1',
+          name: 'Studio',
+          type: 'image',
+          profileId: 'profile-1',
+          url: '/api/asset/asset-1',
+        },
+      ])
     );
     httpPost.mockReturnValue(of({ id: 'uploaded-1' }));
 
@@ -47,6 +69,7 @@ describe('BusinessSiteEditorPageComponent', () => {
           useValue: {
             getSiteConfig,
             updateSiteConfig,
+            getStoreProducts,
             listAssets,
           },
         },
@@ -87,13 +110,44 @@ describe('BusinessSiteEditorPageComponent', () => {
     jest.clearAllMocks();
   });
 
+  it('saves store-backed service catalog mode without persisting manual offers', () => {
+    const { component } = createComponent();
+
+    component.draft.update((draft) => {
+      draft.serviceCatalog.source = 'store';
+      draft.services = [
+        {
+          id: 'service-1',
+          name: 'Legacy Manual Offer',
+          description: 'Should not persist in store mode.',
+          duration: 60,
+          price: 90,
+          allowOnlineBooking: true,
+        },
+      ];
+      return draft;
+    });
+
+    component.save();
+
+    expect(updateSiteConfig).toHaveBeenCalledWith(
+      'config-1',
+      expect.objectContaining({
+        serviceCatalog: { source: 'store' },
+        services: [],
+      })
+    );
+  });
+
   it('reorders landing sections with stable sequential order values', () => {
     const { component } = createComponent();
 
     component.moveSectionDown(0);
     component.moveSectionUp(2);
 
-    expect(component.draft().landingPage.sections.map((section) => section.id)).toEqual([
+    expect(
+      component.draft().landingPage.sections.map((section) => section.id)
+    ).toEqual([
       'about',
       'services',
       'hero',
@@ -101,9 +155,9 @@ describe('BusinessSiteEditorPageComponent', () => {
       'contact',
       'booking',
     ]);
-    expect(component.draft().landingPage.sections.map((section) => section.order)).toEqual([
-      0, 1, 2, 3, 4, 5,
-    ]);
+    expect(
+      component.draft().landingPage.sections.map((section) => section.order)
+    ).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
   it('saves edited feature flags with normalized landing section order', () => {
@@ -172,7 +226,9 @@ describe('BusinessSiteEditorPageComponent', () => {
 
     const featureRow = fixture.nativeElement.querySelector('.feature-row');
     expect(featureRow).toBeTruthy();
-    expect(featureRow.querySelectorAll('.toggle-card').length).toBeGreaterThan(1);
+    expect(featureRow.querySelectorAll('.toggle-card').length).toBeGreaterThan(
+      1
+    );
   });
 
   it('saves business type, portal capabilities, layout, and custom sections', () => {
@@ -181,7 +237,10 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.draft.update((draft) => {
       draft.businessType = 'consulting';
       draft.landingPage.layout = 'grid';
-      draft.clientPortal.capabilities = ['Track billing', 'Review assigned work'];
+      draft.clientPortal.capabilities = [
+        'Track billing',
+        'Review assigned work',
+      ];
       draft.landingPage.sections.push({
         id: 'custom-1',
         type: 'custom',
@@ -226,8 +285,12 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.addImageSection();
     component.addGallerySection();
 
-    const imageSection = component.draft().landingPage.sections.find((section) => section.type === 'image');
-    const gallerySection = component.draft().landingPage.sections.find((section) => section.type === 'gallery');
+    const imageSection = component
+      .draft()
+      .landingPage.sections.find((section) => section.type === 'image');
+    const gallerySection = component
+      .draft()
+      .landingPage.sections.find((section) => section.type === 'gallery');
 
     expect(imageSection).toEqual(
       expect.objectContaining({
@@ -262,7 +325,9 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.addImageSection();
     component.addGallerySection();
     component.draft.update((draft) => {
-      const imageSection = draft.landingPage.sections.find((section) => section.type === 'image')!;
+      const imageSection = draft.landingPage.sections.find(
+        (section) => section.type === 'image'
+      )!;
       imageSection.title = 'Studio walkthrough';
       imageSection.image!.sourceType = 'asset';
       imageSection.image!.src = '/assets/business/studio.jpg';
@@ -270,9 +335,12 @@ describe('BusinessSiteEditorPageComponent', () => {
       imageSection.motion!.kind = 'signal-mesh';
       imageSection.motion!.density = 7;
 
-      const gallerySection = draft.landingPage.sections.find((section) => section.type === 'gallery')!;
+      const gallerySection = draft.landingPage.sections.find(
+        (section) => section.type === 'gallery'
+      )!;
       gallerySection.gallery!.style = 'masonry';
-      gallerySection.gallery!.items[0].src = 'https://cdn.example.com/proof-1.jpg';
+      gallerySection.gallery!.items[0].src =
+        'https://cdn.example.com/proof-1.jpg';
       gallerySection.gallery!.items[0].alt = 'Proof image';
       gallerySection.motion!.kind = 'shimmer-beam';
       gallerySection.motion!.direction = 'horizontal';
@@ -325,7 +393,9 @@ describe('BusinessSiteEditorPageComponent', () => {
     const { component } = createComponent();
 
     component.addImageSection();
-    component.toggleAssetPicker(component.draft().landingPage.sections.length - 1);
+    component.toggleAssetPicker(
+      component.draft().landingPage.sections.length - 1
+    );
     await Promise.resolve();
 
     expect(listAssets).toHaveBeenCalledWith('profile-1');
@@ -333,7 +403,13 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.selectAsset(
       component.draft().landingPage.sections.length - 1,
       null,
-      { id: 'asset-1', name: 'Studio', type: 'image', profileId: 'profile-1', url: '/api/asset/asset-1' }
+      {
+        id: 'asset-1',
+        name: 'Studio',
+        type: 'image',
+        profileId: 'profile-1',
+        url: '/api/asset/asset-1',
+      }
     );
 
     const section = component.draft().landingPage.sections.at(-1);
@@ -367,7 +443,9 @@ describe('BusinessSiteEditorPageComponent', () => {
         headers: { Authorization: 'Bearer owner-token' },
       })
     );
-    expect(component.draft().landingPage.sections[sectionIndex].gallery?.items[0]).toEqual(
+    expect(
+      component.draft().landingPage.sections[sectionIndex].gallery?.items[0]
+    ).toEqual(
       expect.objectContaining({
         sourceType: 'asset',
         src: '/api/asset/uploaded-1',
@@ -393,7 +471,9 @@ describe('BusinessSiteEditorPageComponent', () => {
 
     component.restoreRecommendedSectionState();
 
-    expect(component.draft().landingPage.sections.map((section) => section.id)).toEqual([
+    expect(
+      component.draft().landingPage.sections.map((section) => section.id)
+    ).toEqual([
       'hero',
       'about',
       'services',
@@ -401,7 +481,9 @@ describe('BusinessSiteEditorPageComponent', () => {
       'contact',
       'booking',
     ]);
-    expect(component.draft().landingPage.sections.every((section) => section.enabled)).toBe(true);
+    expect(
+      component.draft().landingPage.sections.every((section) => section.enabled)
+    ).toBe(true);
   });
 
   it('renders visual layout cards and organizer actions for the landing page editor', () => {
@@ -421,7 +503,9 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.moveSectionToLayoutZone('contact', 'split', 'primary');
 
     expect(
-      component.draft().landingPage.sections.find((section) => section.id === 'contact')
+      component
+        .draft()
+        .landingPage.sections.find((section) => section.id === 'contact')
     ).toEqual(
       expect.objectContaining({
         layoutPlacement: expect.objectContaining({
@@ -438,11 +522,17 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.setLandingLayout('split');
     fixture.detectChanges();
     expect(host.querySelector('[data-drop-zone="split:primary"]')).toBeTruthy();
-    expect(host.querySelector('[data-drop-zone="split:secondary"]')).toBeTruthy();
+    expect(
+      host.querySelector('[data-drop-zone="split:secondary"]')
+    ).toBeTruthy();
 
     component.setLandingLayout('grid');
     fixture.detectChanges();
-    expect(host.querySelector('[data-drop-zone="grid:hero-wide"]')).toBeTruthy();
-    expect(host.querySelector('[data-drop-zone="grid:bottom-right"]')).toBeTruthy();
+    expect(
+      host.querySelector('[data-drop-zone="grid:hero-wide"]')
+    ).toBeTruthy();
+    expect(
+      host.querySelector('[data-drop-zone="grid:bottom-right"]')
+    ).toBeTruthy();
   });
 });

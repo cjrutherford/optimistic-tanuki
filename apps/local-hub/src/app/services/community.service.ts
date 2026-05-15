@@ -130,8 +130,24 @@ export class CommunityService {
   private baseUrl = `${this.apiBaseUrl}/communities`;
   private socialBaseUrl = `${this.apiBaseUrl}/social/community`;
 
-  private isRootLocality(community: LocalCommunity | null | undefined): boolean {
-    return !!community && !community.parentId && community.localityType !== 'neighborhood';
+  private isRootLocality(
+    community: LocalCommunity | null | undefined
+  ): boolean {
+    return (
+      !!community &&
+      !community.parentId &&
+      community.localityType !== 'neighborhood'
+    );
+  }
+
+  private normalizeCommunity(community: LocalCommunity): LocalCommunity {
+    return {
+      ...community,
+      coordinates: {
+        lat: Number(community.coordinates?.lat) || Number(community.lat) || 0,
+        lng: Number(community.coordinates?.lng) || Number(community.lng) || 0,
+      },
+    };
   }
 
   private toRootLocalityCard(
@@ -164,13 +180,7 @@ export class CommunityService {
           console.error('API returned non-array for communities:', communities);
           return [];
         }
-        return communities.map((c) => ({
-          ...c,
-          coordinates: c.coordinates || {
-            lat: c.lat || 0,
-            lng: c.lng || 0,
-          },
-        }));
+        return communities.map(this.normalizeCommunity);
       }
     );
   }
@@ -178,10 +188,7 @@ export class CommunityService {
   getCommunityBySlug(slug: string): Promise<LocalCommunity> {
     return firstValueFrom(
       this.http.get<LocalCommunity>(`${this.baseUrl}/slug/${slug}`)
-    ).then((c) => ({
-      ...c,
-      coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
-    }));
+    ).then(this.normalizeCommunity);
   }
 
   getSubCommunities(parentId: string): Promise<LocalCommunity[]> {
@@ -197,10 +204,7 @@ export class CommunityService {
         );
         return [];
       }
-      return communities.map((c) => ({
-        ...c,
-        coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
-      }));
+      return communities.map(this.normalizeCommunity);
     });
   }
 
@@ -225,10 +229,13 @@ export class CommunityService {
     name: string
   ): Promise<{ id: string }> {
     return firstValueFrom(
-      this.http.post<{ id: string }>(`${this.baseUrl}/${communityId}/chat-room`, {
-        ownerId,
-        name,
-      })
+      this.http.post<{ id: string }>(
+        `${this.baseUrl}/${communityId}/chat-room`,
+        {
+          ownerId,
+          name,
+        }
+      )
     );
   }
 
@@ -268,10 +275,7 @@ export class CommunityService {
       this.http.get<LocalCommunity[]>(`${this.socialBaseUrl}/user/communities`)
     ).then((communities) => {
       if (!Array.isArray(communities)) return [];
-      return communities.map((c) => ({
-        ...c,
-        coordinates: c.coordinates || { lat: c.lat || 0, lng: c.lng || 0 },
-      }));
+      return communities.map(this.normalizeCommunity);
     });
   }
 
@@ -371,7 +375,10 @@ export class CommunityService {
     const directChildrenCount = communities.reduce<Map<string, number>>(
       (counts, community) => {
         if (community.parentId) {
-          counts.set(community.parentId, (counts.get(community.parentId) || 0) + 1);
+          counts.set(
+            community.parentId,
+            (counts.get(community.parentId) || 0) + 1
+          );
         }
         return counts;
       },
@@ -386,12 +393,12 @@ export class CommunityService {
         )
       )
       .sort((left, right) => {
-      const byName = left.name.localeCompare(right.name);
-      if (byName !== 0) {
-        return byName;
-      }
+        const byName = left.name.localeCompare(right.name);
+        if (byName !== 0) {
+          return byName;
+        }
 
-      return left.adminArea.localeCompare(right.adminArea);
+        return left.adminArea.localeCompare(right.adminArea);
       });
   }
 
@@ -436,7 +443,9 @@ export class CommunityService {
 
       const allCommunities = await this.getCommunities();
       const parentCommunity = community.parentId
-        ? allCommunities.find((c) => c.id === community.parentId && this.isRootLocality(c))
+        ? allCommunities.find(
+            (c) => c.id === community.parentId && this.isRootLocality(c)
+          )
         : undefined;
       if (parentCommunity?.slug) {
         return parentCommunity.slug;

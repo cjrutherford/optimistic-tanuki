@@ -9,10 +9,12 @@ import { Topic } from '../entities/topic.entity';
 import { Thread } from '../entities/thread.entity';
 import { ForumPost } from '../entities/forum-post.entity';
 import { ForumLink } from '../entities/forum-link.entity';
+import { ForumReport } from '../entities/forum-report.entity';
 import { DataSource } from 'typeorm';
 import { TopicService } from './services/topic.service';
 import { ThreadService } from './services/thread.service';
 import { ForumPostService } from './services/forum-post.service';
+import { ForumModerationService } from './services/forum-moderation.service';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { ForumPostService } from './services/forum-post.service';
     TopicService,
     ThreadService,
     ForumPostService,
+    ForumModerationService,
     {
       provide: getRepositoryToken(Topic),
       useFactory: (ds: DataSource) => ds.getRepository(Topic),
@@ -48,6 +51,11 @@ import { ForumPostService } from './services/forum-post.service';
     {
       provide: getRepositoryToken(ForumLink),
       useFactory: (ds: DataSource) => ds.getRepository(ForumLink),
+      inject: ['FORUM_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(ForumReport),
+      useFactory: (ds: DataSource) => ds.getRepository(ForumReport),
       inject: ['FORUM_CONNECTION'],
     },
   ],

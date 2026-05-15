@@ -66,7 +66,7 @@ export class SocialController {
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
     @Optional() private readonly socialGateway?: SocialGateway
-  ) { }
+  ) {}
 
   @UseGuards(AuthGuard)
   @ApiTags('post')
@@ -83,6 +83,7 @@ export class SocialController {
   async post(@User() user, @Body() postDto: CreatePostDto) {
     this.l.log(`Creating post for user: ${user.userId}`);
     postDto.userId = user.userId;
+    postDto.profileId = user.profileId;
     this.l.log(`Post Data: ${JSON.stringify(postDto)}`);
     const result = await firstValueFrom(
       this.socialClient.send({ cmd: PostCommands.CREATE }, postDto)
@@ -112,7 +113,7 @@ export class SocialController {
   @RequirePermissions('social.vote.create')
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 votes per minute
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
-    this.l.debug("Vote Received. Vote DTO: " + JSON.stringify(voteDto));
+    this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
     voteDto.userId = user.userId;
     const commandMap = {
       '-1': VoteCommands.DOWNVOTE,

@@ -50,29 +50,34 @@ export class ForumPostService {
   }
 
   async findAll(options?: FindManyOptions<ForumPost>): Promise<ForumPost[]> {
-    return await this.postRepo.find(options);
+    return await this.postRepo.find(this.withDefaultModerationFilter(options));
   }
 
   async findOne(
     id: string,
     options?: FindOneOptions<ForumPost>
   ): Promise<ForumPost | null> {
-    return await this.postRepo.findOne({
-      where: { id },
-      ...options,
-    });
+    return await this.postRepo.findOne(
+      this.withDefaultModerationFilter({
+        where: { id },
+        ...options,
+      })
+    );
   }
 
-  async update(id: string, updatePostDto: UpdateForumPostDto): Promise<ForumPost> {
+  async update(
+    id: string,
+    updatePostDto: UpdateForumPostDto
+  ): Promise<ForumPost> {
     const post = await this.findOne(id);
     if (!post) {
       throw new Error(`Forum post with ID ${id} not found`);
     }
-    
+
     const updatedData: Partial<ForumPost> = {
       isEdited: true,
     };
-    
+
     if (updatePostDto.content) {
       updatedData.content = this.sanitizeContent(updatePostDto.content);
     }
@@ -83,5 +88,66 @@ export class ForumPostService {
 
   async remove(id: string): Promise<void> {
     await this.postRepo.delete(id);
+  }
+
+  async moderate(
+    id: string,
+    moderationStatus: 'visible' | 'hidden',
+    moderatedBy: string,
+    moderationNotes?: string
+  ): Promise<ForumPost | null> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post) {
+      throw new Error(`Forum post with ID ${id} not found`);
+    }
+
+    await this.postRepo.update(id, {
+      moderationStatus,
+      moderationNotes: moderationNotes ?? null,
+      moderatedBy,
+      moderatedAt: new Date(),
+    });
+
+    return await this.postRepo.findOne({ where: { id } });
+  }
+
+  private withDefaultModerationFilter<
+    T extends FindManyOptions<ForumPost> | FindOneOptions<ForumPost> | undefined
+  >(options?: T): T {
+    const normalized = { ...(options ?? {}) } as T;
+    const where = (
+      normalized as FindManyOptions<ForumPost> | FindOneOptions<ForumPost>
+    ).where;
+
+    if (!where) {
+      (
+        normalized as FindManyOptions<ForumPost> | FindOneOptions<ForumPost>
+      ).where = {
+        moderationStatus: 'visible',
+      };
+      return normalized;
+    }
+
+    if (Array.isArray(where)) {
+      (
+        normalized as FindManyOptions<ForumPost> | FindOneOptions<ForumPost>
+      ).where = where.map((entry) =>
+        entry.moderationStatus === undefined
+          ? { ...entry, moderationStatus: 'visible' }
+          : entry
+      );
+      return normalized;
+    }
+
+    if ((where as any).moderationStatus === undefined) {
+      (
+        normalized as FindManyOptions<ForumPost> | FindOneOptions<ForumPost>
+      ).where = {
+        ...where,
+        moderationStatus: 'visible',
+      };
+    }
+
+    return normalized;
   }
 }

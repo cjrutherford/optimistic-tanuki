@@ -21,7 +21,10 @@ import {
   CommunityMemberRole,
   InviteToCommunityDto,
 } from '@optimistic-tanuki/ui-models';
-import { CommunityService } from '../services/community.service';
+import {
+  CommunityManagerRecord,
+  CommunityService,
+} from '../services/community.service';
 
 @Component({
   selector: 'app-community-members',
@@ -81,12 +84,24 @@ import { CommunityService } from '../services/community.service';
         background: gray;
         color: white;
       }
+      .manager-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: 12px 0;
+        padding: 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background: var(--bg-secondary);
+      }
     `,
   ],
 })
 export class CommunityMembersComponent implements OnInit {
   communityId: string = '';
   members: CommunityMemberDto[] = [];
+  currentManager: CommunityManagerRecord | null = null;
   loading = false;
   showAddMemberModal = false;
   inviteForm: FormGroup;
@@ -116,7 +131,7 @@ export class CommunityMembersComponent implements OnInit {
     this.communityService.getCommunityMembers(this.communityId).subscribe({
       next: (members) => {
         this.members = members;
-        this.loading = false;
+        this.loadManager();
       },
       error: (err) => {
         this.loading = false;
@@ -124,6 +139,25 @@ export class CommunityMembersComponent implements OnInit {
           content: err.error?.message || 'Failed to load members.',
           type: 'error',
         });
+      },
+    });
+  }
+
+  loadManager(): void {
+    this.communityService.getCommunityManager(this.communityId).subscribe({
+      next: (manager) => {
+        this.currentManager = manager;
+        this.loading = false;
+      },
+      error: (err) => {
+        this.currentManager = null;
+        this.loading = false;
+        if (err?.status !== 404) {
+          this.messageService.addMessage({
+            content: err.error?.message || 'Failed to load community manager.',
+            type: 'error',
+          });
+        }
       },
     });
   }
@@ -172,6 +206,50 @@ export class CommunityMembersComponent implements OnInit {
           },
         });
     }
+  }
+
+  appointManager(
+    member: Pick<CommunityMemberDto, 'userId' | 'profileId'>
+  ): void {
+    this.communityService
+      .appointManager(this.communityId, {
+        userId: member.userId,
+        profileId: member.profileId,
+      })
+      .subscribe({
+        next: () => {
+          this.messageService.addMessage({
+            content: 'Community manager appointed successfully.',
+            type: 'success',
+          });
+          this.loadMembers();
+        },
+        error: (err) => {
+          this.messageService.addMessage({
+            content:
+              err.error?.message || 'Failed to appoint community manager.',
+            type: 'error',
+          });
+        },
+      });
+  }
+
+  revokeManager(): void {
+    this.communityService.revokeManager(this.communityId).subscribe({
+      next: () => {
+        this.messageService.addMessage({
+          content: 'Community manager revoked successfully.',
+          type: 'success',
+        });
+        this.loadMembers();
+      },
+      error: (err) => {
+        this.messageService.addMessage({
+          content: err.error?.message || 'Failed to revoke community manager.',
+          type: 'error',
+        });
+      },
+    });
   }
 
   openAddMemberModal(): void {
@@ -224,5 +302,9 @@ export class CommunityMembersComponent implements OnInit {
 
   getRoleClass(role: CommunityMemberRole): string {
     return `role-${role.toLowerCase()}`;
+  }
+
+  isCurrentManager(member: Pick<CommunityMemberDto, 'profileId'>): boolean {
+    return this.currentManager?.profileId === member.profileId;
   }
 }

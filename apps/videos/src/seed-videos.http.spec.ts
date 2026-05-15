@@ -43,7 +43,7 @@ describe('seed video HTTP helpers', () => {
       { title: 'Episode' },
       {
         headers: { Authorization: 'Bearer token-1' },
-      },
+      }
     );
 
     expect(fetchMock).toHaveBeenCalledWith('http://gateway:3000/api/videos', {
@@ -86,7 +86,7 @@ describe('seed video HTTP helpers', () => {
       client.post('/asset', {
         name: 'show.mp4',
         content: largeBase64,
-      }),
+      })
     ).rejects.toMatchObject({
       message: 'File validation failed',
       status: 400,
@@ -139,7 +139,7 @@ describe('seed video HTTP helpers', () => {
         headers: {
           'x-ot-appscope': 'video-client',
         },
-      },
+      }
     );
     expect(httpClient.post).toHaveBeenNthCalledWith(
       2,
@@ -147,7 +147,7 @@ describe('seed video HTTP helpers', () => {
       {
         email: 'alice@example.com',
         password: 'TestPassword123!',
-      },
+      }
     );
     expect(session).toEqual({
       userId: 'user-1',
@@ -158,10 +158,14 @@ describe('seed video HTTP helpers', () => {
   });
 
   it('uploads assets and creates channels and videos through gateway routes', async () => {
+    const assetId = '11111111-1111-4111-8111-111111111111';
+    const channelId = '22222222-2222-4222-8222-222222222222';
+    const videoId = '33333333-3333-4333-8333-333333333333';
+
     httpClient.post
-      .mockResolvedValueOnce({ id: 'asset-1' })
-      .mockResolvedValueOnce({ id: 'channel-1' })
-      .mockResolvedValueOnce({ id: 'video-1' });
+      .mockResolvedValueOnce({ id: assetId })
+      .mockResolvedValueOnce({ id: channelId })
+      .mockResolvedValueOnce({ id: videoId });
 
     const asset = await uploadAssetThroughApi(httpClient as any, 'token-1', {
       name: 'episode.mp4',
@@ -180,14 +184,14 @@ describe('seed video HTTP helpers', () => {
           'Imported during bootstrap from the local TV media library.',
         userId: 'user-1',
         profileId: 'profile-1',
-      },
+      }
     );
 
     const video = await createVideoThroughApi(httpClient as any, 'token-1', {
       title: 'Episode 01',
       description: 'Imported from local library: Imported TV/Episode 01.mp4',
-      channelId: 'channel-1',
-      assetId: 'asset-1',
+      channelId,
+      assetId,
       visibility: 'public',
     });
 
@@ -201,7 +205,7 @@ describe('seed video HTTP helpers', () => {
         fileExtension: 'mp4',
         content: 'ZmFrZQ==',
       },
-      { headers: { Authorization: 'Bearer token-1' } },
+      { headers: { Authorization: 'Bearer token-1' } }
     );
     expect(httpClient.post).toHaveBeenNthCalledWith(
       2,
@@ -213,7 +217,7 @@ describe('seed video HTTP helpers', () => {
         userId: 'user-1',
         profileId: 'profile-1',
       },
-      { headers: { Authorization: 'Bearer token-1' } },
+      { headers: { Authorization: 'Bearer token-1' } }
     );
     expect(httpClient.post).toHaveBeenNthCalledWith(
       3,
@@ -221,15 +225,29 @@ describe('seed video HTTP helpers', () => {
       {
         title: 'Episode 01',
         description: 'Imported from local library: Imported TV/Episode 01.mp4',
-        channelId: 'channel-1',
-        assetId: 'asset-1',
+        channelId,
+        assetId,
         visibility: 'public',
       },
-      { headers: { Authorization: 'Bearer token-1' } },
+      { headers: { Authorization: 'Bearer token-1' } }
     );
-    expect(asset).toEqual({ id: 'asset-1' });
-    expect(channel).toEqual({ id: 'channel-1' });
-    expect(video).toEqual({ id: 'video-1' });
+    expect(asset).toEqual({ id: assetId });
+    expect(channel).toEqual({ id: channelId });
+    expect(video).toEqual({ id: videoId });
+  });
+
+  it('rejects asset uploads that do not return a UUID id', async () => {
+    httpClient.post.mockResolvedValueOnce({ id: 'asset-1' });
+
+    await expect(
+      uploadAssetThroughApi(httpClient as any, 'token-1', {
+        name: 'episode.mp4',
+        profileId: 'profile-1',
+        type: 'video',
+        fileExtension: 'mp4',
+        contentBase64: 'ZmFrZQ==',
+      })
+    ).rejects.toThrow('Asset upload did not return a valid UUID id');
   });
 
   it('lists channels and videos and subscribes through gateway routes', async () => {
@@ -243,11 +261,11 @@ describe('seed video HTTP helpers', () => {
     const channels = await listUserChannelsThroughApi(
       httpClient as any,
       'token-1',
-      'user-1',
+      'user-1'
     );
     const videos = await listChannelVideosThroughApi(
       httpClient as any,
-      'channel-1',
+      'channel-1'
     );
     const subscription = await subscribeToChannelThroughApi(
       httpClient as any,
@@ -256,7 +274,7 @@ describe('seed video HTTP helpers', () => {
         channelId: 'channel-1',
         userId: 'user-2',
         profileId: 'profile-2',
-      },
+      }
     );
 
     expect(httpClient.get).toHaveBeenNthCalledWith(1, '/videos/channels');
@@ -265,11 +283,11 @@ describe('seed video HTTP helpers', () => {
       '/videos/channels/user/user-1',
       {
         headers: { Authorization: 'Bearer token-1' },
-      },
+      }
     );
     expect(httpClient.get).toHaveBeenNthCalledWith(
       3,
-      '/videos/channel/channel-1',
+      '/videos/channel/channel-1'
     );
     expect(httpClient.post).toHaveBeenCalledWith(
       '/videos/subscriptions',
@@ -278,7 +296,7 @@ describe('seed video HTTP helpers', () => {
         userId: 'user-2',
         profileId: 'profile-2',
       },
-      { headers: { Authorization: 'Bearer token-1' } },
+      { headers: { Authorization: 'Bearer token-1' } }
     );
     expect(allChannels).toEqual([{ id: 'channel-0' }]);
     expect(channels).toEqual([{ id: 'channel-1', userId: 'user-1' }]);

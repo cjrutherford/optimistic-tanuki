@@ -17,6 +17,7 @@ import {
   TopicCommands,
   ThreadCommands,
   ForumPostCommands,
+  ForumModerationCommands,
 } from '@optimistic-tanuki/constants';
 import {
   TopicDto,
@@ -32,10 +33,27 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from '../../auth/auth.guard';
-import { User } from '../../decorators/user.decorator';
+import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
+
+interface ReportForumContentDto {
+  contentType: 'thread' | 'post';
+  contentId: string;
+  reason: string;
+  description?: string;
+}
+
+interface UpdateForumReportStatusDto {
+  status: 'pending' | 'reviewed' | 'actioned' | 'dismissed';
+  adminNotes?: string;
+}
+
+interface ModerateForumContentDto {
+  moderationStatus: 'visible' | 'hidden';
+  adminNotes?: string;
+}
 
 @ApiTags('forum')
 @Controller('forum')
@@ -45,7 +63,7 @@ export class ForumController {
   constructor(
     @Inject(ServiceTokens.FORUM_SERVICE)
     private readonly forumClient: ClientProxy
-  ) { }
+  ) {}
 
   // Topic endpoints
   @UseGuards(AuthGuard, PermissionsGuard)
@@ -93,7 +111,10 @@ export class ForumController {
     @Param('topicId') topicId: string
   ): Promise<ThreadDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: { topicId } })
+      this.forumClient.send(
+        { cmd: ThreadCommands.FIND_MANY },
+        { where: { topicId } }
+      )
     );
   }
 
@@ -194,7 +215,10 @@ export class ForumController {
     @Param('threadId') threadId: string
   ): Promise<ForumPostDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: ForumPostCommands.FIND_MANY }, { where: { threadId } })
+      this.forumClient.send(
+        { cmd: ForumPostCommands.FIND_MANY },
+        { where: { threadId } }
+      )
     );
   }
 
@@ -309,12 +333,18 @@ export class ForumController {
   @RequirePermissions('forum.post.update')
   async updateForumPost(
     @Param('id') id: string,
-    @Body() updatePostDto: UpdateForumPostDto
+    @Body() updatePostDto: UpdateForumPostDto,
+    @User() user: UserDetails
   ): Promise<ForumPostDto> {
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ForumPostCommands.UPDATE },
-        { id, data: updatePostDto }
+        {
+          id,
+          data: updatePostDto,
+          userId: user.userId,
+          profileId: user.profileId,
+        }
       )
     );
   }
@@ -334,6 +364,109 @@ export class ForumController {
     );
   }
 
+  @UseGuards(AuthGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Report forum content for moderation review' })
+  @Post('report')
+  async reportForumContent(
+    @Body() dto: ReportForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.REPORT_CONTENT },
+        {
+          reporterId: user.profileId,
+          contentType: dto.contentType,
+          contentId: dto.contentId,
+          reason: dto.reason,
+          description: dto.description,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Get all forum moderation reports' })
+  @Get('admin/reports')
+  @RequirePermissions('community.manage')
+  async getForumReports() {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.GET_ALL_REPORTS },
+        {}
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Update a forum moderation report status' })
+  @Put('admin/reports/:id')
+  @RequirePermissions('community.manage')
+  async updateForumReportStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateForumReportStatusDto
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.UPDATE_REPORT_STATUS },
+        {
+          id,
+          status: dto.status,
+          adminNotes: dto.adminNotes,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Soft moderate a forum thread' })
+  @Put('admin/thread/:id/moderation')
+  @RequirePermissions('community.manage')
+  async moderateForumThread(
+    @Param('id') id: string,
+    @Body() dto: ModerateForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.MODERATE_THREAD },
+        {
+          id,
+          moderationStatus: dto.moderationStatus,
+          adminNotes: dto.adminNotes,
+          moderatedBy: user.profileId,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('forum-moderation')
+  @ApiOperation({ summary: 'Soft moderate a forum post' })
+  @Put('admin/post/:id/moderation')
+  @RequirePermissions('community.manage')
+  async moderateForumPost(
+    @Param('id') id: string,
+    @Body() dto: ModerateForumContentDto,
+    @User() user: UserDetails
+  ) {
+    return await firstValueFrom(
+      this.forumClient.send(
+        { cmd: ForumModerationCommands.MODERATE_POST },
+        {
+          id,
+          moderationStatus: dto.moderationStatus,
+          adminNotes: dto.adminNotes,
+          moderatedBy: user.profileId,
+        }
+      )
+    );
+  }
+
   // Search Routes.
 
   @ApiTags('search')
@@ -346,7 +479,7 @@ export class ForumController {
   @Get('search/topics')
   async searchTopics(@Query() query: Partial<TopicDto>): Promise<TopicDto[]> {
     return await firstValueFrom(
-      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where:  query })
+      this.forumClient.send({ cmd: TopicCommands.FIND_MANY }, { where: query })
     );
   }
 
@@ -358,10 +491,11 @@ export class ForumController {
     type: [ThreadDto],
   })
   @Get('search/threads')
-  async searchThreads(@Query() query: Partial<ThreadDto>): Promise<ThreadDto[]> {
+  async searchThreads(
+    @Query() query: Partial<ThreadDto>
+  ): Promise<ThreadDto[]> {
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.FIND_MANY }, { where: query })
     );
   }
-
 }

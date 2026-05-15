@@ -10,6 +10,7 @@ import {
   deriveVideoTitle,
   discoverSeedVideoFiles,
   getRelativeImportPath,
+  resolveFirstExistingSeedVideoDirectory,
 } from './seed-videos.helpers';
 import {
   createChannelThroughApi,
@@ -25,14 +26,14 @@ import {
   uploadAssetThroughApi,
 } from './seed-videos.http';
 
-const DEFAULT_VIDEO_SOURCE_DIR =
-  process.env.VIDEO_SEED_SOURCE_DIR || '/mnt/valhalla/media/TV';
+const LEGACY_VIDEO_SOURCE_DIR = '/mnt/valhalla/media/TV';
+const DEFAULT_VIDEO_SOURCE_DIR = resolveDefaultVideoSourceDir();
 const DEFAULT_IMPORTED_CHANNEL_DESCRIPTION =
   'Imported during bootstrap from the local TV media library.';
 const DEFAULT_VIDEO_SEED_MAX_FILES = 30;
-const VIDEO_SEED_MAX_FILES = parseOptionalPositiveInt(
-  process.env.VIDEO_SEED_MAX_FILES,
-) ?? DEFAULT_VIDEO_SEED_MAX_FILES;
+const VIDEO_SEED_MAX_FILES =
+  parseOptionalPositiveInt(process.env.VIDEO_SEED_MAX_FILES) ??
+  DEFAULT_VIDEO_SEED_MAX_FILES;
 const GATEWAY_URL =
   process.env.GATEWAY_URL || process.env.API_URL || 'http://gateway:3000/api';
 const APP_SCOPE = process.env.APP_SCOPE || 'video-client';
@@ -98,7 +99,7 @@ async function bootstrap() {
 }
 
 async function authenticateSeedUsers(
-  logger: Logger,
+  logger: Logger
 ): Promise<AuthenticatedSeedUser[]> {
   const users: AuthenticatedSeedUser[] = [];
 
@@ -114,7 +115,7 @@ async function authenticateSeedUsers(
       email: credentials.email,
     });
     logger.log(
-      `Authenticated seed user ${credentials.email} with profile ${session.profileId}.`,
+      `Authenticated seed user ${credentials.email} with profile ${session.profileId}.`
     );
   }
 
@@ -129,7 +130,7 @@ async function importVideosFromLibrary(params: {
 
   if (!existsSync(DEFAULT_VIDEO_SOURCE_DIR)) {
     logger.warn(
-      `Video source directory "${DEFAULT_VIDEO_SOURCE_DIR}" does not exist. Falling back to sample catalog.`,
+      `Video source directory "${DEFAULT_VIDEO_SOURCE_DIR}" does not exist. Falling back to sample catalog.`
     );
     return 0;
   }
@@ -140,13 +141,13 @@ async function importVideosFromLibrary(params: {
 
   if (filesToImport.length === 0) {
     logger.warn(
-      `No supported video files found in "${DEFAULT_VIDEO_SOURCE_DIR}". Falling back to sample catalog.`,
+      `No supported video files found in "${DEFAULT_VIDEO_SOURCE_DIR}". Falling back to sample catalog.`
     );
     return 0;
   }
 
   logger.log(
-    `Importing ${filesToImport.length} video file(s) from ${DEFAULT_VIDEO_SOURCE_DIR}.`,
+    `Importing ${filesToImport.length} video file(s) from ${DEFAULT_VIDEO_SOURCE_DIR}.`
   );
 
   const channelCache = new Map<string, SeedChannel>();
@@ -159,7 +160,10 @@ async function importVideosFromLibrary(params: {
     if (importAssessment.canImport === false) {
       skippedVideos += 1;
       logger.warn(
-        `Skipping ${getRelativeImportPath(DEFAULT_VIDEO_SOURCE_DIR, filePath)}: ${importAssessment.reason}.`,
+        `Skipping ${getRelativeImportPath(
+          DEFAULT_VIDEO_SOURCE_DIR,
+          filePath
+        )}: ${importAssessment.reason}.`
       );
       continue;
     }
@@ -169,11 +173,11 @@ async function importVideosFromLibrary(params: {
     const channel = await ensureChannelThroughApi(
       owner,
       channelName,
-      channelCache,
+      channelCache
     );
     const existingVideos = await listChannelVideosThroughApi(
       owner.httpClient,
-      channel.id,
+      channel.id
     );
     const title = deriveVideoTitle(filePath);
 
@@ -192,7 +196,7 @@ async function importVideosFromLibrary(params: {
 
     const relativePath = getRelativeImportPath(
       DEFAULT_VIDEO_SOURCE_DIR,
-      filePath,
+      filePath
     );
     await createVideoThroughApi(owner.httpClient, owner.token, {
       title,
@@ -208,7 +212,7 @@ async function importVideosFromLibrary(params: {
 
   if (skippedVideos > 0) {
     logger.warn(
-      `Skipped ${skippedVideos} incompatible video file(s) during import.`,
+      `Skipped ${skippedVideos} incompatible video file(s) during import.`
     );
   }
 
@@ -248,9 +252,9 @@ async function seedFallbackCatalog(params: {
         channel.owner,
         channel.name,
         channelCache,
-        channel.description,
-      ),
-    ),
+        channel.description
+      )
+    )
   );
 
   const videos: Array<SeedVideoRecord & { channelIndex: number }> = [
@@ -259,7 +263,7 @@ async function seedFallbackCatalog(params: {
       title: 'Getting Started with NestJS',
       description:
         'Learn the basics of NestJS framework and build your first API.',
-      assetId: '00000000-0000-0000-0000-000000000001',
+      assetId: '',
       durationSeconds: 1245,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -270,7 +274,7 @@ async function seedFallbackCatalog(params: {
       title: 'Angular Best Practices 2024',
       description:
         'Discover the best practices for Angular development in 2024.',
-      assetId: '00000000-0000-0000-0000-000000000002',
+      assetId: '',
       durationSeconds: 1876,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -280,7 +284,7 @@ async function seedFallbackCatalog(params: {
       channelIndex: 0,
       title: 'TypeScript Advanced Features',
       description: 'Deep dive into advanced TypeScript features and patterns.',
-      assetId: '00000000-0000-0000-0000-000000000003',
+      assetId: '',
       durationSeconds: 2156,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -291,7 +295,7 @@ async function seedFallbackCatalog(params: {
       title: 'Perfect Homemade Pizza',
       description:
         'Learn how to make authentic Italian pizza from scratch at home.',
-      assetId: '00000000-0000-0000-0000-000000000004',
+      assetId: '',
       durationSeconds: 945,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -301,7 +305,7 @@ async function seedFallbackCatalog(params: {
       channelIndex: 1,
       title: 'Thai Green Curry Recipe',
       description: 'A step-by-step guide to making delicious Thai green curry.',
-      assetId: '00000000-0000-0000-0000-000000000005',
+      assetId: '',
       durationSeconds: 1123,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -311,7 +315,7 @@ async function seedFallbackCatalog(params: {
       channelIndex: 2,
       title: '30-Minute Full Body Workout',
       description: 'An effective full-body workout routine you can do at home.',
-      assetId: '00000000-0000-0000-0000-000000000006',
+      assetId: '',
       durationSeconds: 1876,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -321,7 +325,7 @@ async function seedFallbackCatalog(params: {
       channelIndex: 2,
       title: 'Meal Prep for Beginners',
       description: 'Simple and healthy meal prep ideas for busy people.',
-      assetId: '00000000-0000-0000-0000-000000000007',
+      assetId: '',
       durationSeconds: 1456,
       resolution: '1920x1080',
       encoding: 'H.264',
@@ -334,18 +338,26 @@ async function seedFallbackCatalog(params: {
     const owner = fallbackChannels[videoData.channelIndex].owner;
     const existingVideos = await listChannelVideosThroughApi(
       owner.httpClient,
-      channel.id,
+      channel.id
     );
 
     if (existingVideos.some((video) => video.title === videoData.title)) {
       continue;
     }
 
+    const asset = await uploadAssetThroughApi(owner.httpClient, owner.token, {
+      name: fallbackAssetName(videoData.title),
+      profileId: owner.profileId,
+      type: 'video',
+      fileExtension: 'mp4',
+      contentBase64: fallbackVideoAssetContent(videoData.title),
+    });
+
     await createVideoThroughApi(owner.httpClient, owner.token, {
       title: videoData.title,
       description: videoData.description,
       channelId: channel.id,
-      assetId: videoData.assetId,
+      assetId: asset.id,
       visibility: videoData.visibility,
     });
   }
@@ -362,7 +374,7 @@ async function ensureSampleSubscriptions(params: {
 
   if (channels.length < 3) {
     logger.warn(
-      'Skipping sample subscriptions because fewer than 3 channels exist.',
+      'Skipping sample subscriptions because fewer than 3 channels exist.'
     );
     return;
   }
@@ -383,11 +395,13 @@ async function ensureSampleSubscriptions(params: {
           channelId: subscription.channelId,
           userId: subscription.subscriber.userId,
           profileId: subscription.subscriber.profileId,
-        },
+        }
       );
     } catch (error) {
       logger.warn(
-        `Could not create subscription: ${error instanceof Error ? error.message : String(error)}`,
+        `Could not create subscription: ${
+          error instanceof Error ? error.message : String(error)
+        }`
       );
     }
   }
@@ -397,7 +411,7 @@ async function ensureChannelThroughApi(
   owner: AuthenticatedSeedUser,
   name: string,
   cache: Map<string, SeedChannel>,
-  description = DEFAULT_IMPORTED_CHANNEL_DESCRIPTION,
+  description = DEFAULT_IMPORTED_CHANNEL_DESCRIPTION
 ): Promise<SeedChannel> {
   const cacheKey = `${owner.profileId}:${name}`;
   const cached = cache.get(cacheKey);
@@ -408,10 +422,10 @@ async function ensureChannelThroughApi(
   const channels = await listUserChannelsThroughApi(
     owner.httpClient,
     owner.token,
-    owner.userId,
+    owner.userId
   );
   const existing = channels.find(
-    (channel) => channel.profileId === owner.profileId && channel.name === name,
+    (channel) => channel.profileId === owner.profileId && channel.name === name
   );
 
   if (existing) {
@@ -444,8 +458,45 @@ function titleWithExtension(filePath: string): string {
   return `${deriveVideoTitle(filePath)}.${extensionWithoutDot(filePath)}`;
 }
 
+function fallbackAssetName(title: string): string {
+  return `${
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'sample-video'
+  }.mp4`;
+}
+
+function fallbackVideoAssetContent(title: string): string {
+  return Buffer.from(`Placeholder video asset for ${title}\n`, 'utf8').toString(
+    'base64'
+  );
+}
+
+function resolveDefaultVideoSourceDir(): string {
+  const configuredSourceDir = process.env.VIDEO_SEED_SOURCE_DIR;
+  const candidates =
+    configuredSourceDir && configuredSourceDir !== LEGACY_VIDEO_SOURCE_DIR
+      ? [configuredSourceDir, '/media/TV', '/media/Tv', LEGACY_VIDEO_SOURCE_DIR]
+      : [
+          '/media/TV',
+          '/media/Tv',
+          configuredSourceDir,
+          LEGACY_VIDEO_SOURCE_DIR,
+        ];
+
+  return (
+    resolveFirstExistingSeedVideoDirectory(
+      candidates.filter((candidate): candidate is string => Boolean(candidate)),
+      existsSync
+    ) ??
+    configuredSourceDir ??
+    LEGACY_VIDEO_SOURCE_DIR
+  );
+}
+
 function parseOptionalPositiveInt(
-  value: string | undefined,
+  value: string | undefined
 ): number | undefined {
   if (!value) {
     return undefined;

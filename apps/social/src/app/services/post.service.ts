@@ -100,11 +100,11 @@ export class PostService {
   }
 
   async findAll(options?: FindManyOptions<Post>): Promise<Post[]> {
-    return await this.postRepo.find(options);
+    return await this.postRepo.find(this.withDefaultModerationFilter(options));
   }
 
   async findOne(id: string, options?: FindOneOptions<Post>): Promise<Post> {
-    const finalOptions = { ...options };
+    const finalOptions = this.withDefaultModerationFilter({ ...options });
     if (finalOptions.where) {
       if (Array.isArray(finalOptions.where)) {
         finalOptions.where = finalOptions.where.map((w) => ({ ...w, id }));
@@ -226,7 +226,30 @@ export class PostService {
       where.visibility = visibility;
     }
 
+    where.moderationStatus = 'visible';
+
     return await this.postRepo.find({ where });
+  }
+
+  async moderate(
+    id: string,
+    moderationStatus: 'visible' | 'hidden',
+    moderatedBy: string,
+    moderationNotes?: string
+  ): Promise<Post> {
+    const post = await this.postRepo.findOne({ where: { id } });
+    if (!post) {
+      throw new Error('Post not found');
+    }
+
+    await this.postRepo.update(id, {
+      moderationStatus,
+      moderationNotes: moderationNotes ?? null,
+      moderatedBy,
+      moderatedAt: new Date(),
+    });
+
+    return await this.postRepo.findOne({ where: { id } });
   }
 
   async createScheduledPost(data: {
@@ -320,5 +343,39 @@ export class PostService {
       throw new Error('Scheduled post not found');
     }
     await this.postRepo.delete(id);
+  }
+
+  private withDefaultModerationFilter<
+    T extends FindManyOptions<Post> | FindOneOptions<Post> | undefined
+  >(options?: T): T {
+    const normalized = { ...(options ?? {}) } as T;
+    const where = (normalized as FindManyOptions<Post> | FindOneOptions<Post>)
+      .where;
+
+    if (!where) {
+      (normalized as FindManyOptions<Post> | FindOneOptions<Post>).where = {
+        moderationStatus: 'visible',
+      };
+      return normalized;
+    }
+
+    if (Array.isArray(where)) {
+      (normalized as FindManyOptions<Post> | FindOneOptions<Post>).where =
+        where.map((entry) =>
+          entry.moderationStatus === undefined
+            ? { ...entry, moderationStatus: 'visible' }
+            : entry
+        );
+      return normalized;
+    }
+
+    if ((where as any).moderationStatus === undefined) {
+      (normalized as FindManyOptions<Post> | FindOneOptions<Post>).where = {
+        ...where,
+        moderationStatus: 'visible',
+      };
+    }
+
+    return normalized;
   }
 }

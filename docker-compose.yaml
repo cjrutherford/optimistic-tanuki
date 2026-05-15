@@ -351,6 +351,7 @@ services:
     ports:
       - '3020:3020'
     environment:
+      - POSTGRES_HOST=postgres
       - OLLAMA_HOST=192.168.50.14
       - OLLAMA_MODEL=gemma3:4b
       - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}

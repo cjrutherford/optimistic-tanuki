@@ -280,6 +280,9 @@ async function enableClientTasksFeature(page: Page, token: string) {
             enabled: true,
             allowClientCompletion: true,
           },
+          invoices: {
+            enabled: true,
+          },
         },
       },
     },
@@ -363,7 +366,9 @@ test.describe('Business site user stories', () => {
     await expect(
       page.getByRole('link', { name: 'Book a consultation' }).first()
     ).toBeVisible();
-    await expect(page.locator('body')).toContainText('Extra Steps');
+    await expect(page.locator('body')).toContainText(
+      'Services that fit real schedules and still move the needle.'
+    );
 
     await createLeadRequest(page, {
       name: `Jordan Prospect ${randomUUID().slice(0, 8)}`,
@@ -412,7 +417,7 @@ test.describe('Business site user stories', () => {
 
     await page.goto('/owner/requests');
     let bookingRow = page
-      .locator('.row')
+      .locator('article.queue-row.booking-row')
       .filter({ hasText: bookingTitle })
       .first();
     await expect(bookingRow).toBeVisible();
@@ -456,7 +461,10 @@ test.describe('Business site user stories', () => {
     await expect(page.locator('body')).toContainText(routineTitle);
 
     await page.goto('/owner/requests');
-    bookingRow = page.locator('.row').filter({ hasText: bookingTitle }).first();
+    bookingRow = page
+      .locator('article.queue-row.booking-row')
+      .filter({ hasText: bookingTitle })
+      .first();
     await expect(bookingRow).toBeVisible();
 
     await bookingRow.getByRole('button', { name: 'Approve' }).click();
@@ -532,7 +540,7 @@ test.describe('Business site user stories', () => {
 
     await page.goto('/owner/requests');
     const prospectRow = page
-      .locator('.row')
+      .locator('article.queue-row.prospect-row')
       .filter({ hasText: PENDING_CLIENT_EMAIL })
       .first();
     await expect(prospectRow).toBeVisible();

@@ -1,4 +1,25 @@
-import { Routes } from '@angular/router';
+import { Routes, UrlSegment } from '@angular/router';
+
+export function docsSlugMatcher(
+  segments: import('@angular/router').UrlSegment[]
+) {
+  if (segments.length > 1 && segments[0]?.path === 'docs') {
+    return {
+      consumed: segments,
+      posParams: {
+        slug: new UrlSegment(
+          segments
+            .slice(1)
+            .map((segment) => segment.path)
+            .join('/'),
+          {}
+        ),
+      },
+    };
+  }
+
+  return null;
+}
 
 export const routes: Routes = [
   {
@@ -9,9 +30,14 @@ export const routes: Routes = [
   {
     path: 'docs',
     loadComponent: () =>
-      import('./pages/docs/docs-page.component').then(
-        (m) => m.DocsPageComponent
+      import('./docs/pages/docs-home.component').then(
+        (m) => m.DocsHomeComponent
       ),
+  },
+  {
+    matcher: docsSlugMatcher,
+    loadComponent: () =>
+      import('./docs/pages/doc-view.component').then((m) => m.DocViewComponent),
   },
   {
     path: 'motion-ui',
