@@ -159,7 +159,7 @@ jobs:
           CI: true
 
       - name: Build and push SHA image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./apps/${{ matrix.app }}/Dockerfile
