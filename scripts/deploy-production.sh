@@ -20,6 +20,7 @@ ADOPT_EXISTING_INGRESS_CLASS="${ADOPT_EXISTING_INGRESS_CLASS:-true}"
 BOOTSTRAP_APPLY_SURFACE="${BOOTSTRAP_APPLY_SURFACE:-true}"
 ARGO_ENV="${ARGO_ENV:-production}"
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
+PRODUCTION_IMAGE_TAG="${PRODUCTION_IMAGE_TAG:-}"
 INGRESS_SERVICE_TYPE="${INGRESS_SERVICE_TYPE:-LoadBalancer}"
 TAILSCALE_OAUTH_CLIENT_ID="${TAILSCALE_OAUTH_CLIENT_ID:-}"
 TAILSCALE_OAUTH_CLIENT_SECRET="${TAILSCALE_OAUTH_CLIENT_SECRET:-}"
@@ -200,6 +201,21 @@ else
     echo "Error: validate-compose-k8s-parity.sh not found."
     exit 1
 fi
+
+echo ""
+echo "Step 5.2: Updating production image tags..."
+if [ -z "$PRODUCTION_IMAGE_TAG" ]; then
+    RESOLVED_REVISION="$(git -C "$PROJECT_DIR" rev-parse "$ARGO_TARGET_REVISION" 2>/dev/null || true)"
+    if [ -z "$RESOLVED_REVISION" ]; then
+        echo "Error: Unable to resolve ARGO_TARGET_REVISION '$ARGO_TARGET_REVISION' to a git SHA."
+        echo "Set PRODUCTION_IMAGE_TAG explicitly, for example PRODUCTION_IMAGE_TAG=sha-<commit>."
+        exit 1
+    fi
+    PRODUCTION_IMAGE_TAG="sha-$RESOLVED_REVISION"
+fi
+echo "Using production image tag: $PRODUCTION_IMAGE_TAG"
+DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" \
+    node "$SCRIPT_DIR/update-k8s-overlay-images.mjs" k8s/overlays/production/kustomization.yaml "$PRODUCTION_IMAGE_TAG"
 
 echo ""
 echo "Step 6: Applying Terraform configuration..."
