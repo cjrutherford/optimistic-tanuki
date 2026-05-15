@@ -1,5 +1,5 @@
 {
-  "name": "@optimistic-tanuki/billing-sdk",
+  "name": "@optimistic-tanuki/leads-contracts",
   "version": "0.0.1",
   "private": false,
   "license": "MIT",
@@ -23,14 +23,13 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/your-org/your-public-packages-repo.git",
-    "directory": "packages/billing-sdk"
+    "directory": "packages/leads-contracts"
   },
-  "homepage": "https://github.com/your-org/your-public-packages-repo/tree/main/packages/billing-sdk",
+  "homepage": "https://github.com/your-org/your-public-packages-repo/tree/main/packages/leads-contracts",
   "bugs": {
     "url": "https://github.com/your-org/your-public-packages-repo/issues"
   },
   "dependencies": {
-    "@optimistic-tanuki/billing-contracts": "workspace:*",
     "tslib": "^2.3.0"
   },
   "sideEffects": false

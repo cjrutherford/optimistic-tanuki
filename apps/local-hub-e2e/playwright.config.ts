@@ -26,7 +26,7 @@ export default defineConfig({
   webServer: skipServer
     ? undefined
     : {
-        command: 'pnpm exec nx run local-hub:serve',
+        command: 'node ./node_modules/nx/bin/nx.js run local-hub:serve',
         url: 'http://localhost:4200',
         reuseExistingServer: !process.env['CI'],
         timeout: 120000,

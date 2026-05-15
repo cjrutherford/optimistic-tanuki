@@ -1,1 +1,40 @@
-{"name": "@optimistic-tanuki/logger","version": "0.0.1","description": "logger for Angular","peerDependencies": {"@angular/common": ">=20.0.0","@angular/core": ">=20.0.0"},"dependencies": {"tslib": "^2.3.0"},"sideEffects": false}
+{
+  "name": "@optimistic-tanuki/logger",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Nest-compatible logging module exports shared across Optimistic Tanuki services.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/your-public-packages-repo.git",
+    "directory": "packages/logger"
+  },
+  "homepage": "https://github.com/your-org/your-public-packages-repo/tree/main/packages/logger",
+  "bugs": {
+    "url": "https://github.com/your-org/your-public-packages-repo/issues"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^11.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

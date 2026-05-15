@@ -32,9 +32,9 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
-RUN npm install -g nodemon && \
-    (npm cache clean --force || true)
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && \
+    pnpm install --prod --frozen-lockfile && \
+    pnpm add -w nodemon
 
 COPY --from=builder /usr/src/app/dist/apps/video-client ./dist/apps/video-client
 

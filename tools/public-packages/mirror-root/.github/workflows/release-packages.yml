@@ -1,0 +1,115 @@
+name: Release Public Packages
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - '.github/workflows/release-packages.yml'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - 'jest.preset.js'
+      - 'packages/**'
+  push:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - '.github/workflows/release-packages.yml'
+      - 'package.json'
+      - 'pnpm-workspace.yaml'
+      - 'nx.json'
+      - 'tsconfig.base.json'
+      - 'jest.preset.js'
+      - 'packages/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mirror-release-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+  NODE_VERSION: '24'
+
+jobs:
+  validate-packages:
+    name: Validate Public Packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Test public packages
+        run: pnpm test
+
+      - name: Build public packages
+        run: pnpm build
+
+  release-packages:
+    name: Version Or Publish Public Packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: [validate-packages]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Test public packages
+        run: pnpm test
+
+      - name: Build public packages
+        run: pnpm build
+
+      - name: Create version PR or publish packages
+        uses: changesets/action@v1
+        with:
+          version: pnpm run version
+          publish: pnpm run publish
+          title: 'chore: version public packages'
+          commit: 'chore: version public packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

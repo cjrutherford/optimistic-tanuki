@@ -1,0 +1,73 @@
+{
+  "mirrorRepo": {
+    "slug": null,
+    "placeholderSlug": "your-org/your-public-packages-repo",
+    "slugEnvVar": "PUBLIC_PACKAGES_MIRROR_REPO",
+    "outputPathEnvVar": "PUBLIC_PACKAGES_MIRROR_OUTPUT",
+    "defaultOutput": "dist/public-packages-mirror"
+  },
+  "admission": {
+    "requiredFiles": ["package.json", "README.md", "project.json"],
+    "requiredTag": "visibility:publishable",
+    "requiredTargets": ["build", "test"]
+  },
+  "packages": [
+    {
+      "project": "billing-contracts",
+      "packageName": "@optimistic-tanuki/billing-contracts",
+      "root": "libs/billing/contracts",
+      "mirrorDirectory": "packages/billing-contracts",
+      "phase": "active"
+    },
+    {
+      "project": "billing-sdk",
+      "packageName": "@optimistic-tanuki/billing-sdk",
+      "root": "libs/billing-sdk",
+      "mirrorDirectory": "packages/billing-sdk",
+      "phase": "active"
+    },
+    {
+      "project": "app-catalog-contracts",
+      "packageName": "@optimistic-tanuki/app-catalog-contracts",
+      "root": "libs/app-catalog-contracts",
+      "mirrorDirectory": "packages/app-catalog-contracts",
+      "phase": "active"
+    },
+    {
+      "project": "constants",
+      "packageName": "@optimistic-tanuki/constants",
+      "root": "libs/constants",
+      "mirrorDirectory": "packages/constants",
+      "phase": "wave-1"
+    },
+    {
+      "project": "logger",
+      "packageName": "@optimistic-tanuki/logger",
+      "root": "libs/logger",
+      "mirrorDirectory": "packages/logger",
+      "phase": "wave-1"
+    },
+    {
+      "project": "encryption",
+      "packageName": "@optimistic-tanuki/encryption",
+      "root": "libs/encryption",
+      "mirrorDirectory": "packages/encryption",
+      "phase": "wave-1"
+    },
+    {
+      "project": "leads-contracts",
+      "packageName": "@optimistic-tanuki/leads-contracts",
+      "root": "libs/leads/contracts",
+      "mirrorDirectory": "packages/leads-contracts",
+      "phase": "wave-1"
+    }
+  ],
+  "deferred": [
+    {
+      "project": "permission-lib",
+      "packageName": "@optimistic-tanuki/permission-lib",
+      "root": "libs/permission-lib",
+      "reason": "Deferred until its server-only support policy, public API surface, and package metadata are cleaned up."
+    }
+  ]
+}

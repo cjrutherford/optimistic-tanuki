@@ -1,1 +1,41 @@
-{"name": "@optimistic-tanuki/constants","version": "0.0.1","description": "constants for Angular","peerDependencies": {"@angular/common": ">=20.0.0","@angular/core": ">=20.0.0"},"dependencies": {"tslib": "^2.3.0"},"sideEffects": false}
+{
+  "name": "@optimistic-tanuki/constants",
+  "version": "0.0.1",
+  "private": false,
+  "description": "Shared command, token, and enum constants used across Optimistic Tanuki services and clients.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "require": "./src/index.js",
+      "default": "./src/index.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/your-public-packages-repo.git",
+    "directory": "packages/constants"
+  },
+  "homepage": "https://github.com/your-org/your-public-packages-repo/tree/main/packages/constants",
+  "bugs": {
+    "url": "https://github.com/your-org/your-public-packages-repo/issues"
+  },
+  "peerDependencies": {
+    "@angular/core": "^20.0.0",
+    "@nestjs/common": "^11.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}

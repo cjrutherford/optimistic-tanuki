@@ -53,7 +53,7 @@ function compareRequiredList(label, expected, actual) {
 }
 
 function parseSpaceLoopScript(script) {
-  const match = script.match(/for service in (.*); do/);
+  const match = script.match(/for service in\s+(.+?)\s*;\s*do\b/);
   if (!match) {
     throw new Error(`Unable to parse service loop from script: ${script}`);
   }

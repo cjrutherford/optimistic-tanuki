@@ -1,15 +1,25 @@
-# Encryption
+# @optimistic-tanuki/encryption
 
-`encryption` contains shared cryptographic helpers used across backend services. Its source lives under `libs/encryption/src/lib`.
+Shared encryption helpers and Nest-compatible module exports used by Optimistic Tanuki backend services.
 
-## Repo Role
-
-- reusable encryption and secure value handling
-- backend-focused shared utility library
-
-## Nx Commands
+## Install
 
 ```bash
-pnpm exec nx build encryption
-pnpm exec nx test encryption
+npm install @optimistic-tanuki/encryption @nestjs/common
 ```
+
+## Usage
+
+```ts
+import { AsymmetricService, EncryptionModule, SaltedHashService } from '@optimistic-tanuki/encryption';
+
+export { AsymmetricService, EncryptionModule, SaltedHashService };
+```
+
+## Runtime
+
+This package targets Node.js and NestJS service runtimes. `@nestjs/common` is provided as a peer dependency.
+
+## Source And Releases
+
+Source development happens in the internal Optimistic Tanuki monorepo. Public package releases are mirrored into a package-only repository for distribution.

@@ -1,0 +1,117 @@
+name: Sync Public Packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.changeset/**'
+      - '.github/workflows/release-packages.yml'
+      - '.github/workflows/sync-public-packages.yml'
+      - 'libs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'nx.json'
+      - 'scripts/public-package-registry.mjs'
+      - 'scripts/sync-public-packages.mjs'
+      - 'scripts/validate-publishable-packages.mjs'
+      - 'tsconfig.base.json'
+      - 'tools/public-packages/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sync-public-packages-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CI: true
+  NODE_VERSION: '24'
+  PUBLIC_PACKAGES_MIRROR_OUTPUT: ${{ runner.temp }}/public-packages-mirror
+  PUBLIC_PACKAGES_MIRROR_REPO: ${{ vars.PUBLIC_PACKAGES_MIRROR_REPO }}
+
+jobs:
+  export-mirror:
+    name: Export Mirror Tree
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test public packages
+        run: pnpm run packages:test
+
+      - name: Check public package boundaries
+        run: pnpm run packages:check
+
+      - name: Build public packages
+        run: pnpm run packages:build
+
+      - name: Export mirror tree
+        run: pnpm run packages:sync
+
+      - name: Upload mirror export
+        uses: actions/upload-artifact@v6
+        with:
+          name: public-packages-mirror
+          path: ${{ env.PUBLIC_PACKAGES_MIRROR_OUTPUT }}
+          retention-days: 7
+
+  sync-mirror:
+    name: Push Mirror Repo
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    needs: [export-mirror]
+    if: vars.PUBLIC_PACKAGES_MIRROR_REPO != ''
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download mirror export
+        uses: actions/download-artifact@v6
+        with:
+          name: public-packages-mirror
+          path: ${{ runner.temp }}/public-packages-mirror
+
+      - name: Sync generated tree into mirror repository
+        env:
+          PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN: ${{ secrets.PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN }}
+        run: |
+          if [ -z "$PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN" ]; then
+            echo "PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN is required when PUBLIC_PACKAGES_MIRROR_REPO is configured."
+            exit 1
+          fi
+
+          git clone "https://x-access-token:${PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN}@github.com/${PUBLIC_PACKAGES_MIRROR_REPO}.git" "${RUNNER_TEMP}/mirror-repo"
+          rsync -a --delete --exclude='.git' "${RUNNER_TEMP}/public-packages-mirror/" "${RUNNER_TEMP}/mirror-repo/"
+
+          cd "${RUNNER_TEMP}/mirror-repo"
+
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Mirror repository already up to date."
+            exit 0
+          fi
+
+          git config user.name "optimistic-tanuki-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add .
+          git commit -m "chore: sync public packages from source monorepo"
+          git push origin HEAD:main
