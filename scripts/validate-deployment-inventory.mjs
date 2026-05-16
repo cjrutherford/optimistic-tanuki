@@ -122,13 +122,21 @@ const composeContent = fs.readFileSync(
   path.join(repoRoot, 'docker-compose.yaml'),
   'utf8'
 );
-const composeImageNames = [
+const composeImageMatches = [
   ...composeContent.matchAll(
-    /image:\s*(cjrutherford\/optimistic_tanuki_[^:\s]+):\$\{PRODUCTION_IMAGE_TAG:-latest\}/g
+    /image:\s*(cjrutherford\/optimistic_tanuki_[^:\s]+)(?::([^\s]+))?/g
   ),
-].map((match) => match[1]);
+];
+const composeImageNames = composeImageMatches.map((match) => match[1]);
+const invalidComposeImageTags = composeImageMatches
+  .filter((match) => match[2] !== '${PRODUCTION_IMAGE_TAG:-latest}')
+  .map((match) =>
+    match[2]
+      ? `${match[1]} uses unexpected tag "${match[2]}"`
+      : `${match[1]} is missing a tag`
+  );
 const uniqueComposeImageNames = [...new Set(composeImageNames)].sort();
-const expectedComposeImageNames = expectedImageNames.sort();
+const expectedComposeImageNames = [...expectedImageNames];
 const expectedComposeServices = inventory.apps
   .map((app) => app.ComposeServiceName || app.ID)
   .sort();
@@ -140,6 +148,7 @@ errors.push(
     uniqueComposeImageNames
   )
 );
+errors.push(...invalidComposeImageTags);
 
 errors.push(
   ...compareRequiredList(
