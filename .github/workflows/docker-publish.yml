@@ -9,23 +9,92 @@ permissions:
   contents: read
 
 jobs:
-  # SSR Angular apps that build themselves (multi-stage Dockerfiles)
-  build_and_push_ssr_apps:
-    name: Build and Push ${{ matrix.service }}
+  build_and_push:
+    name: Build and Push ${{ matrix.app }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
-        service:
-          [
-            client-interface,
-            forgeofwill,
-            christopherrutherford-net,
-            digital-homestead,
-            fin-commander,
-            business-site,
-          ]
+        include:
+          - app: ai-orchestrator
+            type: service
+          - app: app-configurator
+            type: service
+          - app: assets
+            type: service
+          - app: authentication
+            type: service
+          - app: blogging
+            type: service
+          - app: business-site
+            type: client
+          - app: chat-collector
+            type: service
+          - app: christopherrutherford-net
+            type: client
+          - app: classifieds
+            type: service
+          - app: client-interface
+            type: client
+          - app: configurable-client
+            type: client
+          - app: d6
+            type: client
+          - app: digital-homestead
+            type: client
+          - app: fin-commander
+            type: client
+          - app: finance
+            type: service
+          - app: forgeofwill
+            type: client
+          - app: forum
+            type: service
+          - app: gateway
+            type: service
+          - app: hai
+            type: client
+          - app: lead-tracker
+            type: service
+          - app: leads-app
+            type: client
+          - app: local-hub
+            type: client
+          - app: marketing-generator
+            type: client
+          - app: owner-console
+            type: client
+          - app: payments
+            type: service
+          - app: permissions
+            type: service
+          - app: profile
+            type: service
+          - app: project-planning
+            type: service
+          - app: prompt-proxy
+            type: service
+          - app: social
+            type: service
+          - app: store
+            type: service
+          - app: store-client
+            type: client
+          - app: system-configurator
+            type: client
+          - app: system-configurator-api
+            type: service
+          - app: telos-docs-service
+            type: service
+          - app: video-client
+            type: client
+          - app: video-transcoder-worker
+            type: service
+          - app: videos
+            type: service
+          - app: wellness
+            type: service
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -43,89 +112,30 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: cjrutherford/optimistic_tanuki_${{ matrix.service }}
-          tags: |
-            type=ref,event=branch
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            type=raw,value=prod,enable=${{ github.ref == 'refs/heads/main' }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/${{ matrix.service }}/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-  # Backend services that need pre-built artifacts
-  build_and_push_backend_services:
-    name: Build and Push ${{ matrix.service }}
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        service:
-          [
-            assets,
-            authentication,
-            social,
-            profile,
-            gateway,
-            project-planning,
-            chat-collector,
-            prompt-proxy,
-            ai-orchestrator,
-            telos-docs-service,
-            blogging,
-            finance,
-          ]
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
       - name: Install pnpm
+        if: matrix.type == 'service'
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
+        if: matrix.type == 'service'
         uses: actions/setup-node@v6
         with:
           node-version: '24'
           cache: 'pnpm'
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          buildkitd-config-inline: |
-            [registry."docker.io"]
-              mirrors = ["mirror.gcr.io"]
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Install Dependencies
-        id: install
-        run: |
-          echo "Installing dependencies for service: ${{ matrix.service }}"
-          pnpm install --frozen-lockfile
+        if: matrix.type == 'service'
+        run: pnpm install --frozen-lockfile
+
       - name: Build Nx Projects
-        id: build
-        run: |
-          echo "Building Nx project for service: ${{ matrix.service }}"
-          pnpm exec nx build ${{ matrix.service }} --configuration=production
-          ls -lath && pwd
+        if: matrix.type == 'service'
+        run: pnpm exec nx build ${{ matrix.app }} --configuration=production
+
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: cjrutherford/optimistic_tanuki_${{ matrix.service }}
+          images: cjrutherford/optimistic_tanuki_${{ matrix.app }}
           tags: |
             type=ref,event=branch
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -135,7 +145,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./apps/${{ matrix.service }}/Dockerfile
+          file: ./apps/${{ matrix.app }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

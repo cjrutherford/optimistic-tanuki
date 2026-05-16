@@ -75,6 +75,15 @@ const matrixApps = buildPush.jobs['build-and-push'].strategy.matrix.include
   .map((entry) => entry.app)
   .sort();
 
+const dockerPublish = readYaml(
+  path.join(repoRoot, '.github/workflows/docker-publish.yml')
+);
+const dockerPublishApps = dockerPublish.jobs[
+  'build_and_push'
+].strategy.matrix.include
+  .map((entry) => entry.app)
+  .sort();
+
 const baseKustomization = readYaml(
   path.join(repoRoot, 'k8s/base/kustomization.yaml')
 );
@@ -98,6 +107,7 @@ const expectedImageNames = inventory.apps.map((app) => app.ImageName).sort();
 
 const errors = [
   ...compareList('build-push matrix apps', expectedApps, matrixApps),
+  ...compareList('docker-publish matrix apps', expectedApps, dockerPublishApps),
   ...compareList(
     'base kustomization resources',
     expectedResources,
@@ -108,9 +118,37 @@ const errors = [
 const packageJson = JSON.parse(
   fs.readFileSync(path.join(repoRoot, 'package.json'), 'utf8')
 );
+const composeContent = fs.readFileSync(
+  path.join(repoRoot, 'docker-compose.yaml'),
+  'utf8'
+);
+const composeImageMatches = [
+  ...composeContent.matchAll(
+    /image:\s*(cjrutherford\/optimistic_tanuki_[^:\s]+)(?::([^\s]+))?/g
+  ),
+];
+const composeImageNames = composeImageMatches.map((match) => match[1]);
+const invalidComposeImageTags = composeImageMatches
+  .filter((match) => match[2] !== '${PRODUCTION_IMAGE_TAG:-latest}')
+  .map((match) =>
+    match[2]
+      ? `${match[1]} uses unexpected tag "${match[2]}"`
+      : `${match[1]} is missing a tag`
+  );
+const uniqueComposeImageNames = [...new Set(composeImageNames)].sort();
+const expectedComposeImageNames = [...expectedImageNames];
 const expectedComposeServices = inventory.apps
   .map((app) => app.ComposeServiceName || app.ID)
   .sort();
+
+errors.push(
+  ...compareList(
+    'docker-compose image names',
+    expectedComposeImageNames,
+    uniqueComposeImageNames
+  )
+);
+errors.push(...invalidComposeImageTags);
 
 errors.push(
   ...compareRequiredList(
