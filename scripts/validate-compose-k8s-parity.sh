@@ -3,8 +3,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-COMPOSE_FILE="${COMPOSE_FILE:-$PROJECT_DIR/docker-compose.yaml}"
-K8S_BASE_DIR="${K8S_BASE_DIR:-$PROJECT_DIR/k8s/base}"
+WORKSPACE_DIR="${DEPLOYMENT_WORKSPACE_DIR:-}"
+if [ -n "$WORKSPACE_DIR" ]; then
+  COMPOSE_FILE="${COMPOSE_FILE:-$WORKSPACE_DIR/compose/docker-compose.yaml}"
+  K8S_BASE_DIR="${K8S_BASE_DIR:-$WORKSPACE_DIR/k8s/base}"
+else
+  COMPOSE_FILE="${COMPOSE_FILE:-$PROJECT_DIR/docker-compose.yaml}"
+  K8S_BASE_DIR="${K8S_BASE_DIR:-$PROJECT_DIR/k8s/base}"
+fi
 
 if [ ! -f "$COMPOSE_FILE" ]; then
   echo "Error: docker-compose file not found: $COMPOSE_FILE"
@@ -18,10 +24,14 @@ fi
 
 INVENTORY_FILE="$(mktemp)"
 trap 'rm -f "$INVENTORY_FILE"' EXIT
-(
-  cd "$PROJECT_DIR/tools/admin-env-wizard"
-  GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
-)
+if [ -n "${DEPLOYMENT_INVENTORY_FILE:-}" ]; then
+  cp "$DEPLOYMENT_INVENTORY_FILE" "$INVENTORY_FILE"
+else
+  (
+    cd "$PROJECT_DIR/tools/admin-env-wizard"
+    GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
+  )
+fi
 
 node - "$COMPOSE_FILE" "$K8S_BASE_DIR" "$INVENTORY_FILE" <<'NODE'
 const fs = require('fs');
@@ -30,7 +40,6 @@ const path = require('path');
 const composeFile = process.argv[2];
 const k8sBaseDir = process.argv[3];
 const inventoryFile = process.argv[4];
-const repoRoot = path.resolve(k8sBaseDir, '..', '..');
 const inventoryJson = fs.readFileSync(inventoryFile, 'utf8');
 const inventory = JSON.parse(inventoryJson);
 
@@ -99,7 +108,7 @@ for (const [composeService, info] of parsed.entries()) {
     composeService,
     k8sName: app.ID,
     containerPort: info.containerPort,
-    manifestPath: path.join(repoRoot, app.K8sManifestPath)
+    manifestPath: path.join(k8sBaseDir, path.basename(app.K8sManifestPath))
   });
 }
 
@@ -141,10 +150,12 @@ if (errors.length > 0) {
 console.log(`Compose ↔ K8s parity validation passed for ${expected.length} services.`);
 NODE
 
-echo "Validating kustomization paths..."
-if grep -q -- "- ../base" "$PROJECT_DIR/k8s/overlays/production/kustomization.yaml" || grep -q -- "- ../base" "$PROJECT_DIR/k8s/overlays/staging/kustomization.yaml"; then
-  echo "Error: overlay kustomization uses '../base' but should point to '../../base'."
-  exit 1
+if [ -z "$WORKSPACE_DIR" ]; then
+  echo "Validating kustomization paths..."
+  if grep -q -- "- ../base" "$PROJECT_DIR/k8s/overlays/production/kustomization.yaml" || grep -q -- "- ../base" "$PROJECT_DIR/k8s/overlays/staging/kustomization.yaml"; then
+    echo "Error: overlay kustomization uses '../base' but should point to '../../base'."
+    exit 1
+  fi
 fi
 
 echo "Parity validation completed successfully."

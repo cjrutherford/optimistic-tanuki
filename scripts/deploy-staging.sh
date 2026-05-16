@@ -19,12 +19,25 @@ ADOPT_EXISTING_INGRESS_CLASS="${ADOPT_EXISTING_INGRESS_CLASS:-true}"
 BOOTSTRAP_APPLY_SURFACE="${BOOTSTRAP_APPLY_SURFACE:-true}"
 ARGO_ENV="${ARGO_ENV:-staging}"
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
+DEPLOYMENT_NAME="${DEPLOYMENT_NAME:-$ARGO_ENV}"
 INGRESS_SERVICE_TYPE="${INGRESS_SERVICE_TYPE:-NodePort}"
 
 KUBECTL_CMD="kubectl"
 if command -v microk8s >/dev/null 2>&1; then
     KUBECTL_CMD="microk8s kubectl"
 fi
+
+resolve_workspace_context_field() {
+    local field=$1
+    CONTEXT_JSON="$WORKSPACE_CONTEXT_JSON" node -e 'const context = JSON.parse(process.env.CONTEXT_JSON); process.stdout.write(String(context[process.argv[1]] ?? ""));' "$field"
+}
+
+WORKSPACE_CONTEXT_JSON="$(DEPLOYMENT_WORKSPACE_DIR="${DEPLOYMENT_WORKSPACE_DIR:-}" DEPLOYMENT_NAME="$DEPLOYMENT_NAME" ARGO_ENV="$ARGO_ENV" node "$SCRIPT_DIR/lib/deployment-workspace-context.mjs")"
+WORKSPACE_MODE="$(resolve_workspace_context_field mode)"
+RESOLVED_WORKSPACE_DIR="$(resolve_workspace_context_field deploymentWorkspaceDir)"
+RESOLVED_ARGO_APP_FILE="$(resolve_workspace_context_field argocdAppFile)"
+RESOLVED_KUSTOMIZE_DIR="$(resolve_workspace_context_field kustomizeDir)"
+RESOLVED_ARGO_APP_NAME="$(resolve_workspace_context_field appName)"
 
 prepare_kubeconfig_for_terraform() {
     if [ -n "${KUBECONFIG:-}" ] && [ -f "${KUBECONFIG}" ]; then
@@ -150,7 +163,7 @@ if [ -f "$SCRIPT_DIR/validate-deployment-inventory.mjs" ]; then
         cd "$PROJECT_DIR/tools/admin-env-wizard"
         GOCACHE="${GOCACHE:-/tmp/go-build}" go run ./cmd/deployment-inventory > "$INVENTORY_FILE"
     )
-    DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" node "$SCRIPT_DIR/validate-deployment-inventory.mjs"
+    DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" DEPLOYMENT_WORKSPACE_DIR="$RESOLVED_WORKSPACE_DIR" node "$SCRIPT_DIR/validate-deployment-inventory.mjs"
 else
     echo "Error: validate-deployment-inventory.mjs not found."
     exit 1
@@ -160,7 +173,7 @@ echo ""
 echo "Step 5.1: Validating compose ↔ k8s parity..."
 if [ -f "$SCRIPT_DIR/validate-compose-k8s-parity.sh" ]; then
     chmod +x "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
-    "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
+    DEPLOYMENT_INVENTORY_FILE="$INVENTORY_FILE" DEPLOYMENT_WORKSPACE_DIR="$RESOLVED_WORKSPACE_DIR" "$SCRIPT_DIR/validate-compose-k8s-parity.sh"
 else
     echo "Error: validate-compose-k8s-parity.sh not found."
     exit 1
@@ -194,21 +207,28 @@ ARGO_REPO_URL="${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuk
 ARGO_TARGET_REVISION="${ARGO_TARGET_REVISION:-main}"
 ARGO_ENV="${ARGO_ENV:-staging}"
 
-ARGO_APP_FILE="$PROJECT_DIR/k8s/argo-app/application.yaml"
-sed -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-    -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|$NAMESPACE|g" \
-    -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|$ARGO_REPO_URL|g" \
-    -e "s|\${ARGO_TARGET_REVISION:-main}|$ARGO_TARGET_REVISION|g" \
-    -e "s|\${ARGO_ENV:-production}|$ARGO_ENV|g" \
-    "$ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
+if [ "$WORKSPACE_MODE" = "workspace" ]; then
+    echo "Using generated deployment workspace: $RESOLVED_WORKSPACE_DIR"
+fi
+
+if [ "$WORKSPACE_MODE" = "workspace" ]; then
+    $KUBECTL_CMD apply -f "$RESOLVED_ARGO_APP_FILE"
+else
+    sed -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+        -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|$NAMESPACE|g" \
+        -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|$ARGO_REPO_URL|g" \
+        -e "s|\${ARGO_TARGET_REVISION:-main}|$ARGO_TARGET_REVISION|g" \
+        -e "s|\${ARGO_ENV:-production}|$ARGO_ENV|g" \
+        "$RESOLVED_ARGO_APP_FILE" | $KUBECTL_CMD apply -f -
+fi
 
 if [ "$BOOTSTRAP_APPLY_SURFACE" = "true" ]; then
     echo "Bootstrap: Applying application surface manifests directly for first-time setup..."
-    $KUBECTL_CMD apply -k "$PROJECT_DIR/k8s/overlays/${ARGO_ENV}"
+    $KUBECTL_CMD apply -k "$RESOLVED_KUSTOMIZE_DIR"
 fi
 
 wait_for_deployment "argocd" "argocd-server"
-wait_for_argocd_application_sync "optimistic-tanuki-staging" "argocd"
+wait_for_argocd_application_sync "$RESOLVED_ARGO_APP_NAME" "argocd"
 wait_for_deployment "$NAMESPACE" "postgres"
 wait_for_deployment "$NAMESPACE" "redis"
 wait_for_deployment "$NAMESPACE" "gateway"
@@ -258,5 +278,5 @@ echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "1. Configure ArgoCD: argocd login argocd.<domain> --username admin --password <password>"
-echo "2. Sync application: argocd app sync optimistic-tanuki-staging"
+echo "2. Sync application: argocd app sync $RESOLVED_ARGO_APP_NAME"
 echo "Or push to main branch to trigger GitHub Actions deployment."

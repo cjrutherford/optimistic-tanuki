@@ -7,10 +7,10 @@ This document describes the current GitHub Actions deployment path in the reposi
 ## Pipeline Architecture
 
 ```text
-deployment inventory -> contract validation -> image build/push -> overlay image update -> ArgoCD sync
+deployment inventory -> contract validation -> image build/push -> compatibility overlay image update -> ArgoCD sync
 ```
 
-The inventory exported from `tools/admin-env-wizard/cmd/deployment-inventory` is the source used to keep these surfaces aligned:
+The inventory exported from `tools/admin-env-wizard/cmd/deployment-inventory` is the source used to keep these compatibility-era surfaces aligned:
 
 - `.github/workflows/build-push.yml`
 - `k8s/base/kustomization.yaml`
@@ -51,7 +51,7 @@ Trigger:
 
 Staging path:
 
-- render `k8s/argo-app/application.yaml` with `ARGO_ENV=staging`
+- resolve a generated deployment workspace when present, otherwise fall back to the root Argo template
 - sync `optimistic-tanuki-staging`
 - wait for reconciliation
 - run a smoke check against the staging gateway endpoint
@@ -59,9 +59,9 @@ Staging path:
 Production path:
 
 - manual only
-- promote `k8s/overlays/production/kustomization.yaml` to `sha-<commit>`
+- promote `k8s/overlays/production/kustomization.yaml` to `sha-<commit>` for the compatibility path
 - commit the production overlay change
-- render the production ArgoCD application
+- resolve a generated deployment workspace when present, otherwise fall back to the root Argo template
 - sync `optimistic-tanuki`
 - run a smoke check against the production gateway endpoint
 
@@ -84,4 +84,11 @@ GOCACHE=/tmp/go-build go test ./internal/catalog/... ./internal/generate/... ./c
 cd /home/cjrutherford/workspace/optimistic-tanuki
 node scripts/validate-deployment-inventory.mjs
 bash scripts/validate-compose-k8s-parity.sh
+```
+
+For generated workspaces, prefer:
+
+```bash
+DEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs
+DEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh
 ```

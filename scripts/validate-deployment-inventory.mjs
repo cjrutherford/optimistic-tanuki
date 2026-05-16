@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
+import { validateGeneratedWorkspace } from './lib/deployment-workspace-validation.mjs';
 
 const repoRoot = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
@@ -18,6 +19,7 @@ const inventoryJson = process.env.DEPLOYMENT_INVENTORY_FILE
     });
 
 const inventory = JSON.parse(inventoryJson);
+const workspaceDir = process.env.DEPLOYMENT_WORKSPACE_DIR;
 const expectedApps = inventory.apps
   .map((app) => app.BuildAppID || app.ID)
   .sort();
@@ -185,6 +187,15 @@ for (const overlayFile of overlayFiles) {
       expectedImageNames,
       actualImageNames
     )
+  );
+}
+
+if (workspaceDir) {
+  errors.push(
+    ...validateGeneratedWorkspace({
+      workspaceDir: path.resolve(workspaceDir),
+      inventory,
+    })
   );
 }
 

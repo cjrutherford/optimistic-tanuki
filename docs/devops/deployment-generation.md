@@ -14,6 +14,8 @@ Use it when you need to:
 
 Deployment generation is handled by `tools/admin-env-wizard`.
 
+The recommended operator flow is documented in [Deployment Workspace Workflow](./deployment-workspace-workflow.md). This document focuses on generation mechanics and generated artifact structure.
+
 The flow is:
 
 1. choose capabilities and any direct service overrides
@@ -24,6 +26,30 @@ The flow is:
 6. validate inventory and parity if the deployment surface changed
 
 The generator supports both one-off deployments and multi-client workspace generation in the same repo.
+
+## Preferred Tooling
+
+Use the deployment dashboard first when you are managing an existing environment:
+
+```bash
+cd tools/admin-env-wizard
+GOCACHE=/tmp/go-build go run ./cmd/admin-env tui -deployment ../../dist/admin-env/<deployment>/deployment.yaml
+```
+
+Use direct `generate` CLI flows when:
+
+- bootstrapping a brand new deployment
+- generating several deployments from one config file
+- scripting reproducible generation in CI or local automation
+
+When using the TUI, treat it as the primary source editor for deployment intent:
+
+- open a generated workspace
+- edit document sections
+- read the contextual help for the current section
+- regenerate from the saved workspace
+
+Do not treat the root `k8s/` and root Compose files as the primary edit surfaces for new deployment work.
 
 ## Single Deployment Process
 
@@ -57,6 +83,12 @@ Key files:
 - `k8s/base/kustomization.yaml`
 - `k8s/deploy.sh`
 - `k8s/overlays/<provider>/provider-patch.yaml`
+
+The generated deployment workspace may now also include:
+
+- database-slot-driven service env wiring
+- generated ArgoCD application metadata
+- backend-materialized Compose and Kubernetes config/secrets outputs
 
 Apply the deployment:
 
@@ -136,6 +168,28 @@ The gateway uses it to decide:
 
 When a deployment state changes, review this file first. It is the clearest representation of what the deployment will expose.
 
+## Database Slot Generation
+
+The workspace model now carries deployment-level database slots plus per-service overrides.
+
+Generation uses the resolved effective binding for each service when producing deployment artifacts. Today that means generated Compose and Kubernetes service outputs can carry:
+
+- `DATABASE_NAME`
+- `DATABASE_USER_KEY`
+- `DATABASE_PASSWORD_KEY`
+
+The generated artifacts also now consume resolved service-level backend config where a service has an explicit contract in the catalog. That contract is not inferred from `EnvDefaults`; it is declared intentionally and validated before output-writing actions proceed.
+
+Structured backend files can now carry service-specific values under `services.<service-id>` with optional target overrides under `services.<service-id>.targets.compose` and `services.<service-id>.targets.k8s`.
+
+Validation behavior is now split intentionally:
+
+- `save` can persist an incomplete workspace
+- `generate` / `regenerate` fail when required service config is missing
+- `materialize` fails on the same missing-key conditions
+
+This does not yet add a second secret backend. The current goal is alignment between workspace intent, generated service artifacts, and explicit blocking validation when required runtime config is absent.
+
 ## Validation Process
 
 Run generator tests:
@@ -152,6 +206,16 @@ cd /home/cjrutherford/workspace/optimistic-tanuki
 node scripts/validate-deployment-inventory.mjs
 bash scripts/validate-compose-k8s-parity.sh
 ```
+
+If you are validating a generated deployment workspace during migration, point those same validators at the generated output:
+
+```bash
+cd /home/cjrutherford/workspace/optimistic-tanuki
+DEPLOYMENT_WORKSPACE_DIR=dist/admin-env/demo node scripts/validate-deployment-inventory.mjs
+DEPLOYMENT_WORKSPACE_DIR=dist/admin-env/demo bash scripts/validate-compose-k8s-parity.sh
+```
+
+The repo-level staging and production deploy scripts now do that resolution automatically. If `dist/admin-env/staging/` or `dist/admin-env/production/` exists with a generated `deployment.yaml`, they will validate and apply from that generated workspace first. If not, they fall back to the legacy root ArgoCD template and root overlays.
 
 If gateway behavior changed, run:
 

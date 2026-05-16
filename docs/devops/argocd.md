@@ -2,48 +2,60 @@
 
 ## Overview
 
-ArgoCD is used for GitOps deployment to Kubernetes. The repo now uses a single parameterized application manifest at `k8s/argo-app/application.yaml` and points it at environment-specific Kustomize overlays.
+ArgoCD is used for GitOps deployment to Kubernetes.
+
+The preferred path now comes from generated deployment workspaces:
+
+- `dist/admin-env/<deployment>/argocd/application.yaml`
+- `dist/admin-env/<deployment>/k8s`
+
+The root `k8s/argo-app/application.yaml` template still exists as a compatibility path for environments that have not fully moved to generated workspaces.
+
+For operators, the intended place to manage ArgoCD metadata is the `Kubernetes` document in `tools/admin-env-wizard`, not the root template file.
 
 ## Application Definition
 
-The ArgoCD application is defined in `k8s/argo-app/application.yaml`:
+The generated workspace application points ArgoCD at the repo-relative workspace path:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: ${ARGO_APP_NAME:-optimistic-tanuki}
+  name: <app-name>
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: ${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}
-    targetRevision: ${ARGO_TARGET_REVISION:-main}
-    path: k8s/overlays/${ARGO_ENV:-production}
+    repoURL: https://github.com/cjrutherford/optimistic-tanuki.git
+    targetRevision: main
+    path: dist/admin-env/<deployment>/k8s
   destination:
     server: https://kubernetes.default.svc
-    namespace: ${ARGO_NAMESPACE:-optimistic-tanuki}
+    namespace: <namespace>
 ```
 
 ## Applying the Application
 
-### Production
+The normal workflow is:
+
+1. open `dist/admin-env/<deployment>/deployment.yaml` in `admin-env`
+2. edit ArgoCD app/project/namespace/repo/revision in the `Kubernetes` document
+3. regenerate the workspace
+4. apply `dist/admin-env/<deployment>/argocd/application.yaml`
+
+### Preferred workspace path
+
+```bash
+kubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml
+```
+
+### Legacy compatibility path
 
 ```bash
 sed \
   -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
   -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki|g" \
   -e "s|\${ARGO_ENV:-production}|production|g" \
-  k8s/argo-app/application.yaml | kubectl apply -f -
-```
-
-### Staging
-
-```bash
-sed \
-  -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-  -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-  -e "s|\${ARGO_ENV:-production}|staging|g" \
   k8s/argo-app/application.yaml | kubectl apply -f -
 ```
 
@@ -75,11 +87,11 @@ The overlay image names are expected to stay aligned with the exported deploymen
 ## Directory Structure
 
 ```text
-k8s/
-├── base/
-├── overlays/
-│   ├── production/
-│   └── staging/
-└── argo-app/
-    └── application.yaml
+dist/admin-env/<deployment>/
+├── argocd/
+│   └── application.yaml
+└── k8s/
+    ├── base/
+    ├── overlays/
+    └── kustomization.yaml
 ```

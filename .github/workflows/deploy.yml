@@ -47,21 +47,31 @@ jobs:
       - name: Login to ArgoCD
         run: argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
 
+      - name: Resolve staging deployment workspace context
+        run: |
+          DEPLOYMENT_NAME=staging ARGO_ENV=staging node scripts/lib/deployment-workspace-context.mjs > /tmp/staging-workspace-context.json
+          echo "ARGOCD_APP_FILE=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/staging-workspace-context.json','utf8')); process.stdout.write(context.argocdAppFile)")" >> "$GITHUB_ENV"
+          echo "ARGOCD_APP_NAME=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/staging-workspace-context.json','utf8')); process.stdout.write(context.appName)")" >> "$GITHUB_ENV"
+
       - name: Apply ArgoCD Application for staging
         run: |
-          sed \
-            -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-            -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-            -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
-            -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
-            -e "s|\${ARGO_ENV:-production}|staging|g" \
-            k8s/argo-app/application.yaml | kubectl apply -f -
+          if grep -q 'dist/admin-env/staging/k8s' "$ARGOCD_APP_FILE"; then
+            kubectl apply -f "$ARGOCD_APP_FILE"
+          else
+            sed \
+              -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+              -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
+              -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+              -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
+              -e "s|\${ARGO_ENV:-production}|staging|g" \
+              "$ARGOCD_APP_FILE" | kubectl apply -f -
+          fi
 
       - name: Sync staging application
-        run: argocd app sync optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
+        run: argocd app sync "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
       - name: Wait for staging deployment
-        run: argocd app wait optimistic-tanuki-staging --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
+        run: argocd app wait "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
       - name: Run staging smoke test
         run: |
@@ -131,21 +141,31 @@ jobs:
       - name: Login to ArgoCD
         run: argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
 
+      - name: Resolve production deployment workspace context
+        run: |
+          DEPLOYMENT_NAME=production ARGO_ENV=production node scripts/lib/deployment-workspace-context.mjs > /tmp/production-workspace-context.json
+          echo "ARGOCD_APP_FILE=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/production-workspace-context.json','utf8')); process.stdout.write(context.argocdAppFile)")" >> "$GITHUB_ENV"
+          echo "ARGOCD_APP_NAME=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/production-workspace-context.json','utf8')); process.stdout.write(context.appName)")" >> "$GITHUB_ENV"
+
       - name: Apply ArgoCD Application for production
         run: |
-          sed \
-            -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
-            -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki|g" \
-            -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
-            -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
-            -e "s|\${ARGO_ENV:-production}|production|g" \
-            k8s/argo-app/application.yaml | kubectl apply -f -
+          if grep -q 'dist/admin-env/production/k8s' "$ARGOCD_APP_FILE"; then
+            kubectl apply -f "$ARGOCD_APP_FILE"
+          else
+            sed \
+              -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki|g" \
+              -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki|g" \
+              -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
+              -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
+              -e "s|\${ARGO_ENV:-production}|production|g" \
+              "$ARGOCD_APP_FILE" | kubectl apply -f -
+          fi
 
       - name: Sync production application
-        run: argocd app sync optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
+        run: argocd app sync "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
       - name: Wait for production deployment
-        run: argocd app wait optimistic-tanuki --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
+        run: argocd app wait "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
 
       - name: Run production smoke test
         run: |
