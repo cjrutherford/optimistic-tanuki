@@ -3,15 +3,18 @@
 set -eu
 
 COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-}"
-COMPOSE_FILES="-f docker-compose.yaml"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
 APP_RUNTIME_DIR="/usr/src/app"
 
-if [ -n "$COMPOSE_ENV_FILE" ]; then
-  COMPOSE_FILES="--env-file ${COMPOSE_ENV_FILE} ${COMPOSE_FILES}"
-fi
+compose_cmd() {
+  if [ -n "$COMPOSE_ENV_FILE" ]; then
+    docker compose --env-file "$COMPOSE_ENV_FILE" -f docker-compose.yaml "$@"
+  else
+    docker compose -f docker-compose.yaml "$@"
+  fi
+}
 
 if [ -n "${HOST_GATEWAY_READY_URL:-}" ]; then
   :
@@ -25,14 +28,14 @@ run_seed() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" "$service" "$@"
+  compose_cmd exec -T -w "${workdir}" "$service" "$@"
 }
 
 restart_service() {
   service="$1"
 
   echo "Restarting ${service}..."
-  docker compose ${COMPOSE_FILES} restart "$service"
+  compose_cmd restart "$service"
 }
 
 wait_for_gateway() {

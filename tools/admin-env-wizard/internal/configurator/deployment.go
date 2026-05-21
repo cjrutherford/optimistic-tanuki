@@ -427,10 +427,10 @@ func ValidateDeploymentArtifacts(doc *DeploymentConfig, secrets map[string]strin
 				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("oauth provider %s must define redirectUri", provider)})
 			}
 			if strings.TrimSpace(secrets[config.ClientIDKey]) == "" {
-				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("oauth provider %s is missing secret value for %s", provider, config.ClientIDKey)})
+				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("oauth provider %s is missing the client ID secret value", provider)})
 			}
 			if strings.TrimSpace(secrets[config.ClientSecretKey]) == "" {
-				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("oauth provider %s is missing secret value for %s", provider, config.ClientSecretKey)})
+				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("oauth provider %s is missing the client secret value", provider)})
 			}
 		}
 	}

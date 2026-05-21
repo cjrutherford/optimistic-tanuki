@@ -67,6 +67,13 @@ func TestParseArgsValidateDeployment(t *testing.T) {
 	}
 }
 
+func TestParseArgsValidateRequiresDeployment(t *testing.T) {
+	_, err := ParseArgs([]string{"validate"})
+	if err == nil {
+		t.Fatal("expected error when deployment path is missing")
+	}
+}
+
 func TestParseArgsGenerateWorkspaceConfig(t *testing.T) {
 	cmd, err := ParseArgs([]string{
 		"generate",

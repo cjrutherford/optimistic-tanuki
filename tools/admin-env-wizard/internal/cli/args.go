@@ -89,6 +89,9 @@ func parseValidate(args []string) (Command, error) {
 	if err := fs.Parse(args); err != nil {
 		return Command{}, err
 	}
+	if strings.TrimSpace(deploymentPath) == "" {
+		return Command{}, fmt.Errorf("validate requires -deployment")
+	}
 
 	return Command{
 		Name:           "validate",
