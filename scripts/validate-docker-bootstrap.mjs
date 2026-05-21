@@ -451,8 +451,8 @@ assert.equal(
 );
 assert.match(
   videosDockerfile,
-  /pnpm install --frozen-lockfile/,
-  'videos Dockerfile runner must install dependencies from the lockfile for the dev compose command'
+  /pnpm add -w nodemon\b/,
+  'videos Dockerfile runner must install nodemon for the dev compose command'
 );
 
 for (const token of [
