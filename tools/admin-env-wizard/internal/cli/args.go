@@ -10,9 +10,11 @@ import (
 )
 
 type Command struct {
-	Name        string
-	Environment *domain.EnvironmentDefinition
-	ConfigPath   string
+	Name           string
+	Environment    *domain.EnvironmentDefinition
+	ConfigPath     string
+	DeploymentPath string
+	SecretsPath    string
 }
 
 func ParseArgs(args []string) (Command, error) {
@@ -23,8 +25,10 @@ func ParseArgs(args []string) (Command, error) {
 	switch args[0] {
 	case "generate":
 		return parseGenerate(args[1:])
+	case "validate":
+		return parseValidate(args[1:])
 	case "tui":
-		return Command{Name: "tui", Environment: configurator.DefaultEnvironment()}, nil
+		return parseTUI(args[1:])
 	default:
 		return Command{}, fmt.Errorf("unknown command %q", args[0])
 	}
@@ -38,6 +42,8 @@ func parseGenerate(args []string) (Command, error) {
 	var infra string
 	var services string
 	var configPath string
+	var deploymentPath string
+	var secretsPath string
 
 	fs.StringVar(&env.Name, "name", env.Name, "environment name")
 	fs.StringVar(&env.Namespace, "namespace", env.Namespace, "kubernetes namespace")
@@ -48,6 +54,8 @@ func parseGenerate(args []string) (Command, error) {
 	fs.StringVar(&infra, "infra", "postgres,redis", "comma-separated infra: postgres,redis,seaweedfs")
 	fs.StringVar(&services, "services", "gateway,authentication,app-configurator", "comma-separated service ids")
 	fs.StringVar(&configPath, "config", "", "path to workspace config YAML")
+	fs.StringVar(&deploymentPath, "deployment", "", "path to deployment document YAML")
+	fs.StringVar(&secretsPath, "secrets", "", "path to deployment secrets env file")
 	fs.Func("compose-mode", "compose mode: build or image", func(v string) error {
 		env.ComposeMode = domain.ComposeMode(v)
 		return nil
@@ -61,7 +69,61 @@ func parseGenerate(args []string) (Command, error) {
 	env.IncludeInfra = parseInfra(infra)
 	env.Services = parseServices(services)
 
-	return Command{Name: "generate", Environment: env, ConfigPath: configPath}, nil
+	return Command{
+		Name:           "generate",
+		Environment:    env,
+		ConfigPath:     configPath,
+		DeploymentPath: deploymentPath,
+		SecretsPath:    secretsPath,
+	}, nil
+}
+
+func parseValidate(args []string) (Command, error) {
+	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
+	var deploymentPath string
+	var secretsPath string
+
+	fs.StringVar(&deploymentPath, "deployment", "", "path to deployment document YAML")
+	fs.StringVar(&secretsPath, "secrets", "", "path to deployment secrets env file")
+
+	if err := fs.Parse(args); err != nil {
+		return Command{}, err
+	}
+
+	return Command{
+		Name:           "validate",
+		Environment:    configurator.DefaultEnvironment(),
+		DeploymentPath: deploymentPath,
+		SecretsPath:    secretsPath,
+	}, nil
+}
+
+func parseTUI(args []string) (Command, error) {
+	fs := flag.NewFlagSet("tui", flag.ContinueOnError)
+	var deploymentPath string
+	var secretsPath string
+	fs.StringVar(&deploymentPath, "deployment", "", "path to deployment document YAML")
+	fs.StringVar(&secretsPath, "secrets", "", "path to deployment secrets env file")
+	if err := fs.Parse(args); err != nil {
+		return Command{}, err
+	}
+
+	command := Command{
+		Name:           "tui",
+		Environment:    configurator.DefaultEnvironment(),
+		DeploymentPath: deploymentPath,
+		SecretsPath:    secretsPath,
+	}
+
+	if deploymentPath != "" {
+		doc, _, err := configurator.LoadDeploymentConfig(deploymentPath, secretsPath)
+		if err != nil {
+			return Command{}, err
+		}
+		command.Environment = doc.ToEnvironmentDefinition()
+	}
+
+	return command, nil
 }
 
 func parseTargets(raw string) []domain.Target {

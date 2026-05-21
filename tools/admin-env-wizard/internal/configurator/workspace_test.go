@@ -11,7 +11,7 @@ import (
 
 func TestGenerateWorkspaceWritesOutputsForMultipleDeployments(t *testing.T) {
 	workspace := &WorkspaceDefinition{
-		Deployments: []DeploymentConfig{
+		Deployments: []WorkspaceDeploymentConfig{
 			{
 				Name:         "client-a",
 				Provider:     "vultr",

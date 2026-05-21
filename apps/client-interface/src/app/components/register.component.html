@@ -1,9 +1,23 @@
-<lib-register-block
-  [title]="'Optomitic Tanuki'"
-  callToAction="Start a journey together"
-  heroSource="assets/tanuki.jpg"
-  heroAlt="The Optomitic Tanuki"
-  (submitEvent)="onSubmit($event)"
-  (oauthProviderSelected)="onOAuthProvider($event)"
->
-</lib-register-block>
+<section class="auth-shell">
+  <div class="auth-story">
+    <p class="eyebrow">Optimistic Tanuki</p>
+    <h1>Create a profile that can move with you across the platform.</h1>
+    <p class="lede">
+      Registration sets up your base account first. After sign-in, you can pick
+      or create the profile that fits the workspace you want to join.
+    </p>
+    <ul class="auth-points">
+      <li>Register once, then create app-specific profiles as needed</li>
+      <li>Use email or a supported OAuth provider</li>
+      <li>Start in your feed as soon as profile context is ready</li>
+    </ul>
+  </div>
+  <lib-register-block
+    registerHeader="Join Optimistic Tanuki"
+    callToAction="Create your account and start your first profile journey."
+    heroSource="assets/tanuki.jpg"
+    (submitEvent)="onSubmit($event)"
+    (oauthProviderSelected)="onOAuthProvider($event)"
+  >
+  </lib-register-block>
+</section>

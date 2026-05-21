@@ -2,11 +2,16 @@
 
 set -eu
 
+COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-}"
 COMPOSE_FILES="-f docker-compose.yaml"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
 APP_RUNTIME_DIR="/usr/src/app"
+
+if [ -n "$COMPOSE_ENV_FILE" ]; then
+  COMPOSE_FILES="--env-file ${COMPOSE_ENV_FILE} ${COMPOSE_FILES}"
+fi
 
 if [ -n "${HOST_GATEWAY_READY_URL:-}" ]; then
   :
@@ -62,11 +67,16 @@ echo "=========================================="
 echo "Production Seed Script"
 echo "=========================================="
 
+if [ -n "$COMPOSE_ENV_FILE" ]; then
+  echo "Using compose env file: $COMPOSE_ENV_FILE"
+fi
+
 echo "Restarting services before seeding..."
 restart_service permissions
 restart_service gateway
 sleep 5
 
+run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 
 echo "Seeding social service (including local communities)..."

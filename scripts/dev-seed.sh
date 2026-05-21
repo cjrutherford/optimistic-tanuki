@@ -7,7 +7,7 @@ GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
 APP_RUNTIME_DIR="/usr/src/app"
-CLASSIFIEDS_RUNTIME_DIR="/app/classifieds"
+CLASSIFIEDS_RUNTIME_DIR="/app"
 
 if [ -n "${HOST_GATEWAY_READY_URL:-}" ]; then
   :
@@ -169,7 +169,7 @@ run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" n
 wait_for_chat_collector
 run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
-run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./seed-classifieds.js
+run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./dist/apps/classifieds/seed-classifieds.js
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
 run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
@@ -187,7 +187,7 @@ run_seed_with_media_volume() {
   ' sh "${workdir}" "$@"
 }
 
-run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./seed-videos.js
+run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
 

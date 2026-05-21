@@ -114,13 +114,13 @@ main() {
             echo "Running in Kubernetes mode..."
             case $seed_choice in
                 permissions) run_seed_k8s "permissions" "node /usr/src/app/seed-permissions.js" ;;
-                social) run_seed_k8s "social" "node /usr/src/app/seed-social.js" ;;
+                social) run_seed_k8s "social" "node /usr/src/app/seed-local-communities.js" ;;
                 telos-docs) run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_k8s "store" "node /usr/src/app/seed-store.js" ;;
                 app-configurator) run_seed_k8s "app-configurator" "node seed-data/seed-script.js" ;;
                 all)
                     run_seed_k8s "permissions" "node /usr/src/app/seed-permissions.js"
-                    run_seed_k8s "social" "node /usr/src/app/seed-social.js"
+                    run_seed_k8s "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_k8s "store" "node /usr/src/app/seed-store.js"
                     run_seed_k8s "app-configurator" "node seed-data/seed-script.js"
@@ -132,13 +132,13 @@ main() {
             echo "Running in Docker Compose mode..."
             case $seed_choice in
                 permissions) run_seed_docker "permissions" "node /usr/src/app/seed-permissions.js" ;;
-                social) run_seed_docker "social" "node /usr/src/app/seed-social.js" ;;
+                social) run_seed_docker "social" "node /usr/src/app/seed-local-communities.js" ;;
                 telos-docs) run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_docker "store" "node /usr/src/app/seed-store.js" ;;
                 app-configurator) run_seed_docker "app-configurator" "node seed-data/seed-script.js" ;;
                 all)
                     run_seed_docker "permissions" "node /usr/src/app/seed-permissions.js"
-                    run_seed_docker "social" "node /usr/src/app/seed-social.js"
+                    run_seed_docker "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_docker "store" "node /usr/src/app/seed-store.js"
                     run_seed_docker "app-configurator" "node seed-data/seed-script.js"

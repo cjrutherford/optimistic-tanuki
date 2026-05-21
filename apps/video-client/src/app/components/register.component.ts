@@ -1,7 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { RegisterRequest, RegisterSubmitType } from '@optimistic-tanuki/ui-models';
+import {
+  RegisterRequest,
+  RegisterSubmitType,
+} from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from '../services/authentication.service';
 import {
   OAuthProviderEvent,
@@ -16,43 +19,89 @@ import { ProfileService } from '../services/profile.service';
   standalone: true,
   imports: [RegisterBlockComponent],
   template: `
-    <div class="register-container">
+    <section class="auth-shell">
+      <div class="auth-story">
+        <p class="eyebrow">Video Client</p>
+        <h1>Build your account before you build your channel.</h1>
+        <p class="lede">
+          Register to upload, schedule, and grow a channel with a profile that
+          already understands the media workflow.
+        </p>
+      </div>
       <div class="register-content">
-        <h1>Create Your Account</h1>
-        <p>Join the video platform community</p>
         <lib-register-block
+          registerHeader="Create your Video Client account"
+          callToAction="Start with an account, then launch your channel."
+          heroSource="assets/register-splash.png"
           (submitEvent)="onSubmit($event)"
           (oauthProviderSelected)="onOAuthProvider($event)"
         ></lib-register-block>
       </div>
-    </div>
+    </section>
   `,
-  styles: [`
-    .register-container {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2rem;
-    }
+  styles: [
+    `
+      .auth-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: minmax(0, 30rem) minmax(20rem, 35rem);
+        gap: 3rem;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.25rem 3rem;
+        background: radial-gradient(
+            circle at top left,
+            rgba(255, 95, 61, 0.18),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(255, 193, 92, 0.16),
+            transparent 26rem
+          ),
+          linear-gradient(180deg, #110f16 0%, #1d1823 100%);
+      }
 
-    .register-content {
-      max-width: 500px;
-      width: 100%;
-    }
+      .auth-story {
+        display: grid;
+        gap: 1rem;
+        color: #f7f0e8;
+      }
 
-    h1 {
-      margin: 0 0 0.5rem 0;
-      font-size: 2rem;
-      text-align: center;
-    }
+      .eyebrow {
+        margin: 0;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: #ff9d66;
+      }
 
-    p {
-      margin: 0 0 2rem 0;
-      text-align: center;
-      opacity: 0.8;
-    }
-  `]
+      h1 {
+        margin: 0;
+        font-size: clamp(2.4rem, 5vw, 4.2rem);
+        line-height: 0.95;
+        letter-spacing: -0.05em;
+      }
+
+      .lede {
+        margin: 0;
+        color: rgba(247, 240, 232, 0.8);
+        line-height: 1.7;
+      }
+
+      .register-content {
+        max-width: 35rem;
+        width: 100%;
+      }
+
+      @media (max-width: 960px) {
+        .auth-shell {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
 })
 export class RegisterComponent {
   private readonly authenticationService = inject(AuthenticationService);

@@ -71,7 +71,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/client-interface/server',
         '--ext',
@@ -99,7 +99,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/forgeofwill/server',
         '--ext',
@@ -129,7 +129,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/digital-homestead/server',
         '--ext',
@@ -159,7 +159,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/hai/server',
         '--ext',
@@ -190,7 +190,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/fin-commander/server',
         '--ext',
@@ -222,7 +222,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/marketing-generator/server',
         '--ext',
@@ -285,7 +285,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/christopherrutherford-net/server',
         '--ext',
@@ -313,7 +313,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/leads-app/server',
         '--ext',
@@ -339,7 +339,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/system-configurator/server',
         '--ext',
@@ -664,19 +664,21 @@ services:
       context: .
       dockerfile: ./apps/classifieds/Dockerfile
     volumes:
-      - ./dist/apps/classifieds:/app/classifieds
-      - ./apps/classifieds/src/assets:/app/assets
+      - ./dist/apps:/app/dist/apps
+      - ./apps/classifieds/src/assets:/app/dist/apps/assets
       - /app/node_modules
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
-        '/app/classifieds',
+        '/app/dist/apps/classifieds',
+        '--ext',
+        'js,json',
         '--exec',
         'node --inspect=0.0.0.0:9217',
         '-L',
-        'classifieds/main.js',
+        'dist/apps/classifieds/main.js',
       ]
     ports:
       - '9217:9217'
@@ -698,7 +700,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app',
         '--ext',
@@ -729,7 +731,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/usr/src/app/dist/apps/finance',
         '--ext',
@@ -755,6 +757,7 @@ services:
     build:
       context: .
       dockerfile: ./apps/assets/Dockerfile
+    user: '0:0'
     volumes:
       - ./dist/apps/assets:/usr/src/app
       - /usr/src/app/node_modules
@@ -801,7 +804,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/d6/server',
         '--ext',
@@ -817,7 +820,7 @@ services:
   videos:
     container_name: ot_videos
     volumes:
-      - ./dist/apps/videos:/usr/src/app
+      - ./dist/apps:/usr/src/app/dist/apps
       - /usr/src/app/node_modules
       - asset-data:/usr/src/app/storage
       - video-processing-data:/tmp/video-processing
@@ -829,13 +832,13 @@ services:
         'dumb-init',
         './node_modules/.bin/nodemon',
         '--watch',
-        '/usr/src/app',
+        '/usr/src/app/dist/apps/videos',
         '--ext',
         'js,json',
         '--exec',
         'node',
         '-L',
-        'main.js',
+        'dist/apps/videos/main.js',
       ]
 
   video-transcoder-worker:
@@ -853,7 +856,7 @@ services:
     command:
       [
         'dumb-init',
-        'nodemon',
+        './node_modules/.bin/nodemon',
         '--watch',
         '/app/dist/apps/video-client/server',
         '--ext',
