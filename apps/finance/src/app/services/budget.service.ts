@@ -2,10 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Budget } from '../../entities/budget.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
-import {
-  CreateBudgetDto,
-  UpdateBudgetDto,
-} from '@optimistic-tanuki/models';
+import { CreateBudgetDto, UpdateBudgetDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 import {
   FinanceScope,
@@ -40,7 +37,9 @@ export class BudgetService {
     scope?: FinanceScope,
     options?: FindManyOptions<Budget>
   ): Promise<Budget[]> {
-    return await this.budgetRepo.find(withScopedFindManyOptions(scope, options));
+    return await this.budgetRepo.find(
+      withScopedFindManyOptions(scope, options)
+    );
   }
 
   async findOne(
@@ -62,7 +61,7 @@ export class BudgetService {
     if (!budget) {
       throw new NotFoundException(`Budget with ID ${id} not found`);
     }
-    
+
     const updatedData: Partial<Budget> = {};
     if (updateBudgetDto.name) {
       updatedData.name = this.sanitizeContent(updateBudgetDto.name);
@@ -111,7 +110,7 @@ export class BudgetService {
     if (!budget) {
       throw new NotFoundException(`Budget with ID ${id} not found`);
     }
-    
+
     const newSpent = Number(budget.spent) + amount;
     await this.budgetRepo.update(id, { spent: newSpent });
     return await this.findOne(id, scope);

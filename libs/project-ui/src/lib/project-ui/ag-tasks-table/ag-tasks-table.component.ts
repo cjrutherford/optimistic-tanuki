@@ -106,13 +106,13 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
       cellRenderer: (params: ICellRendererParams) => {
         const tags: TaskTag[] = params.value || [];
         if (tags.length === 0) return '-';
-        
+
         const container = document.createElement('div');
         container.style.display = 'flex';
         container.style.gap = '4px';
         container.style.flexWrap = 'wrap';
         container.style.alignItems = 'center';
-        
+
         tags.forEach((tag: TaskTag) => {
           const tagBadge = document.createElement('span');
           tagBadge.innerText = tag.name;
@@ -124,7 +124,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
           tagBadge.style.whiteSpace = 'nowrap';
           container.appendChild(tagBadge);
         });
-        
+
         return container;
       },
     },
@@ -207,7 +207,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
   private startTimerUpdates(): void {
     // Clear any existing interval first
     this.stopTimerUpdates();
-    
+
     // Update every second
     this.timerInterval = setInterval(() => {
       // Trigger AG Grid to refresh cells with active timers
@@ -235,17 +235,17 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     // This will be called every second to refresh timer displays
     // AG Grid will automatically re-render cells when data changes
     const tasks = this.tasksSignal();
-    const hasActiveTimers = tasks.some(task => 
-      task.timeEntries?.some(entry => !entry.endTime)
+    const hasActiveTimers = tasks.some((task) =>
+      task.timeEntries?.some((entry) => !entry.endTime)
     );
-    
+
     // Update if there are active timers OR if we just stopped a timer
     // (transition from active to inactive needs one final refresh)
     if (hasActiveTimers || this.hadActiveTimers) {
       // Force a signal update to trigger re-render
       this.tasksSignal.set([...tasks]);
     }
-    
+
     // Track the current state for next iteration
     this.hadActiveTimers = hasActiveTimers;
   }
@@ -257,7 +257,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m ${secs}s`;
     } else if (minutes > 0) {
@@ -288,11 +288,11 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     container.style.fontSize = '0.875rem';
 
     // Find active timer entry
-    const activeEntry = task.timeEntries?.find(entry => !entry.endTime);
-    
+    const activeEntry = task.timeEntries?.find((entry) => !entry.endTime);
+
     // Calculate total time from all completed entries
     let totalSeconds = 0;
-    task.timeEntries?.forEach(entry => {
+    task.timeEntries?.forEach((entry) => {
       if (entry.elapsedSeconds) {
         totalSeconds += entry.elapsedSeconds;
       }
@@ -302,7 +302,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     let sessionSeconds = 0;
     if (activeEntry) {
       sessionSeconds = this.getCurrentElapsedTime(activeEntry.startTime);
-      
+
       // Session time display (active timer counting up)
       const sessionDiv = document.createElement('div');
       sessionDiv.style.color = 'var(--success)';
@@ -314,13 +314,16 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     // Total time display
     const totalDiv = document.createElement('div');
     const totalWithSession = totalSeconds + sessionSeconds;
-    totalDiv.style.color = activeEntry ? 'var(--text-secondary)' : 'var(--text-primary)';
+    totalDiv.style.color = activeEntry
+      ? 'var(--text-secondary)'
+      : 'var(--text-primary)';
     totalDiv.innerHTML = `Total: ${this.formatTime(totalWithSession)}`;
     container.appendChild(totalDiv);
 
     // If no time tracked yet
     if (totalWithSession === 0) {
-      container.innerHTML = '<span style="color: var(--text-secondary)">No time tracked</span>';
+      container.innerHTML =
+        '<span style="color: var(--text-secondary)">No time tracked</span>';
     }
 
     return container;
@@ -337,7 +340,7 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
 
     // Check if there's an active time entry
     const task = params.data as Task;
-    const hasActiveTimer = task.timeEntries?.some(entry => !entry.endTime);
+    const hasActiveTimer = task.timeEntries?.some((entry) => !entry.endTime);
 
     // Timer button (Start or Stop)
     const timerBtn = document.createElement('button');
@@ -345,13 +348,17 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
     timerBtn.style.padding = '4px 12px';
     timerBtn.style.cursor = 'pointer';
     timerBtn.style.borderRadius = '4px';
-    timerBtn.style.border = hasActiveTimer ? '1px solid var(--danger)' : '1px solid var(--success)';
-    timerBtn.style.background = hasActiveTimer ? 'var(--danger)' : 'var(--success)';
+    timerBtn.style.border = hasActiveTimer
+      ? '1px solid var(--danger)'
+      : '1px solid var(--success)';
+    timerBtn.style.background = hasActiveTimer
+      ? 'var(--danger)'
+      : 'var(--success)';
     timerBtn.style.color = 'white';
     timerBtn.style.fontSize = '0.875rem';
     timerBtn.onclick = () => {
       if (hasActiveTimer) {
-        const activeEntry = task.timeEntries?.find(entry => !entry.endTime);
+        const activeEntry = task.timeEntries?.find((entry) => !entry.endTime);
         if (activeEntry) {
           this.stopTimer.emit(activeEntry.id);
         }

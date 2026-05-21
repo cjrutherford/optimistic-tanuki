@@ -237,7 +237,9 @@ describe('MarketingEnrichmentServer', () => {
     expect(result[0].generationMode).toBe('hybrid');
     expect(result[0].headline).toBe('A better enriched headline');
     expect(result[0].channelOutputs[0].label).toBe('Launch landing draft');
-    expect(result[0].channelOutputs[0].summary).toBe('Enriched landing summary');
+    expect(result[0].channelOutputs[0].summary).toBe(
+      'Enriched landing summary'
+    );
     expect(result[0].channelOutputs[0].blocks[0].value).toBe(
       'Landing hero enriched'
     );
@@ -252,6 +254,8 @@ describe('MarketingEnrichmentServer', () => {
     expect(result[0].materialOutputs[0].surfaces[0].imageSlots[0].prompt).toBe(
       'Refined cinematic prompt'
     );
-    expect(result[0].materialOutputs[1]).toEqual(concepts[0].materialOutputs[1]);
+    expect(result[0].materialOutputs[1]).toEqual(
+      concepts[0].materialOutputs[1]
+    );
   });
 });

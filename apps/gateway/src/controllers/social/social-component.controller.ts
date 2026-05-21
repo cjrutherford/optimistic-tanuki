@@ -13,7 +13,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { ServiceTokens, SocialComponentCommands } from '@optimistic-tanuki/constants';
+import {
+  ServiceTokens,
+  SocialComponentCommands,
+} from '@optimistic-tanuki/constants';
 import {
   CreateSocialComponentDto,
   UpdateSocialComponentDto,
@@ -155,7 +158,12 @@ export class SocialComponentController {
     @User() user: UserDetails
   ) {
     try {
-      this.l.log('Deleting social components for post for user:', user.userId, 'postId:', postId);
+      this.l.log(
+        'Deleting social components for post for user:',
+        user.userId,
+        'postId:',
+        postId
+      );
       return await firstValueFrom(
         this.socialService.send(
           { cmd: SocialComponentCommands.DELETE_BY_POST },
@@ -177,7 +185,10 @@ export class SocialComponentController {
     try {
       this.l.log('Finding social components by query:', query);
       return await firstValueFrom(
-        this.socialService.send({ cmd: SocialComponentCommands.FIND_BY_QUERY }, query)
+        this.socialService.send(
+          { cmd: SocialComponentCommands.FIND_BY_QUERY },
+          query
+        )
       );
     } catch (error) {
       this.l.error('Error finding social components by query:', error);

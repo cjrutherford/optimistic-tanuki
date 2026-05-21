@@ -10,6 +10,7 @@ Updated the social app's database configuration files to include all 24 entity t
 ## Entities Added
 
 ### Previously Missing (12 entities added):
+
 1. **Activity** - User activity tracking
 2. **SavedItem** - Bookmarked posts and comments
 3. **UserBlock** - User blocking for privacy
@@ -24,6 +25,7 @@ Updated the social app's database configuration files to include all 24 entity t
 12. **PostShare** - Post sharing functionality
 
 ### Previously Included (12 entities):
+
 1. Attachment
 2. Comment
 3. Post
@@ -40,116 +42,48 @@ Updated the social app's database configuration files to include all 24 entity t
 ## Files Updated
 
 ### 1. loadDatabase.ts
+
 **Path:** `apps/social/src/app/loadDatabase.ts`
 
 **Changes:**
+
 - Added imports for 12 missing entities
 - Added all entities to the entities array
 - Total entities registered: 24
 
 **Before:**
+
 ```typescript
-const entities = [
-  Attachment,
-  Comment,
-  Post,
-  Vote,
-  Link,
-  FollowEntity,
-  SocialComponent,
-  Community,
-  CommunityMember,
-  CommunityInvite,
-  Notification,
-  Reaction,
-];
+const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity, SocialComponent, Community, CommunityMember, CommunityInvite, Notification, Reaction];
 ```
 
 **After:**
+
 ```typescript
-const entities = [
-  Attachment,
-  Comment,
-  Post,
-  Vote,
-  Link,
-  FollowEntity,
-  SocialComponent,
-  Community,
-  CommunityMember,
-  CommunityInvite,
-  Notification,
-  Reaction,
-  Activity,
-  SavedItem,
-  UserBlock,
-  UserMute,
-  UserPresence,
-  ProfileView,
-  ContentReport,
-  SearchHistory,
-  ChatMessage,
-  Event,
-  Poll,
-  PostShare,
-];
+const entities = [Attachment, Comment, Post, Vote, Link, FollowEntity, SocialComponent, Community, CommunityMember, CommunityInvite, Notification, Reaction, Activity, SavedItem, UserBlock, UserMute, UserPresence, ProfileView, ContentReport, SearchHistory, ChatMessage, Event, Poll, PostShare];
 ```
 
 ### 2. staticDatabase.ts
+
 **Path:** `apps/social/src/app/staticDatabase.ts`
 
 **Changes:**
+
 - Added imports for 12 missing entities
 - Added all entities to the entities array for static DataSource
 - Ensures migrations have access to all entities
 - Total entities registered: 24
 
 **Before:**
+
 ```typescript
-const entities = [
-  Post,
-  Vote,
-  Comment,
-  Attachment,
-  Link,
-  FollowEntity,
-  SocialComponent,
-  Community,
-  CommunityMember,
-  CommunityInvite,
-  Notification,
-  Reaction
-];
+const entities = [Post, Vote, Comment, Attachment, Link, FollowEntity, SocialComponent, Community, CommunityMember, CommunityInvite, Notification, Reaction];
 ```
 
 **After:**
+
 ```typescript
-const entities = [
-  Post,
-  Vote,
-  Comment,
-  Attachment,
-  Link,
-  FollowEntity,
-  SocialComponent,
-  Community,
-  CommunityMember,
-  CommunityInvite,
-  Notification,
-  Reaction,
-  Activity,
-  SavedItem,
-  UserBlock,
-  UserMute,
-  UserPresence,
-  ProfileView,
-  ContentReport,
-  SearchHistory,
-  ChatMessage,
-  Event,
-  Poll,
-  PostShare,
-];
+const entities = [Post, Vote, Comment, Attachment, Link, FollowEntity, SocialComponent, Community, CommunityMember, CommunityInvite, Notification, Reaction, Activity, SavedItem, UserBlock, UserMute, UserPresence, ProfileView, ContentReport, SearchHistory, ChatMessage, Event, Poll, PostShare];
 ```
 
 ## Repository Registration
@@ -157,11 +91,13 @@ const entities = [
 Verified that all 24 entities have corresponding repository providers in `app.module.ts`:
 
 ✅ All repositories are properly registered with dependency injection:
+
 - Each entity has a provider using `getRepositoryToken(Entity)`
 - Each provider uses factory pattern with DataSource injection
 - All inject from 'SOCIAL_CONNECTION'
 
 Example:
+
 ```typescript
 {
   provide: getRepositoryToken(Activity),
@@ -175,6 +111,7 @@ Example:
 All services that require repositories are properly set up:
 
 ✅ **Services with Repositories:**
+
 1. ActivityService - Activity, SavedItem
 2. AttachmentService - Attachment
 3. ChatMessageService - ChatMessage
@@ -198,16 +135,19 @@ All services that require repositories are properly set up:
 ## Impact
 
 ### Database Migrations
+
 - All entities are now available for TypeORM migrations
 - Future schema changes will properly detect all entities
 - Existing migrations remain compatible
 
 ### Runtime Behavior
+
 - No runtime errors from missing entity registration
 - All services can properly inject their repositories
 - Database operations will work for all features
 
 ### Feature Completeness
+
 - Activity & History feature fully supported
 - Privacy features (block, mute, report) properly registered
 - Chat messaging infrastructure in place
@@ -218,12 +158,14 @@ All services that require repositories are properly set up:
 ## Testing
 
 **Build Verification:**
+
 ```bash
 ✅ nx build social --configuration=development
 webpack compiled successfully
 ```
 
 **Database Connection:**
+
 - Configuration supports both runtime (loadDatabase) and static (staticDatabase) modes
 - Environment variable overrides work correctly
 - All 24 entities accessible to both configurations

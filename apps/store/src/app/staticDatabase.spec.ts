@@ -41,9 +41,9 @@ describe('store static datasource', () => {
       staticSource as unknown as { buildMetadatas(): Promise<void> }
     ).buildMetadatas();
 
-    const entityNames = ((staticSource.options.entities ?? []) as Function[]).map(
-      (entity) => entity.name
-    );
+    const entityNames = (
+      (staticSource.options.entities ?? []) as Function[]
+    ).map((entity) => entity.name);
     const routineMetadata = staticSource.entityMetadatas.find(
       (metadata) => metadata.name === TrainerRoutineAssignmentEntity.name
     );

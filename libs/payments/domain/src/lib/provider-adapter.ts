@@ -46,7 +46,7 @@ export interface ProviderCatalogStore {
 
 export interface BillingProviderAdapter {
   createCheckoutSession(
-    input: CreateCheckoutInput,
+    input: CreateCheckoutInput
   ): Promise<CreateCheckoutResult>;
   processWebhook(input: ProcessWebhookInput): Promise<ProviderWebhookResult>;
   listCatalogStores(appScope?: string): ProviderCatalogStore[];

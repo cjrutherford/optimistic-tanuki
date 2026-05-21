@@ -28,7 +28,7 @@ export class AppController {
     private readonly videoService: VideoService,
     private readonly subscriptionService: SubscriptionService,
     private readonly videoViewService: VideoViewService,
-    private readonly broadcastService: BroadcastService,
+    private readonly broadcastService: BroadcastService
   ) {}
 
   // Channel endpoints
@@ -59,7 +59,7 @@ export class AppController {
 
   @MessagePattern({ cmd: VideoCommands.UPDATE_CHANNEL })
   async updateChannel(
-    @Payload() payload: { id: string; updateChannelDto: UpdateChannelDto },
+    @Payload() payload: { id: string; updateChannelDto: UpdateChannelDto }
   ) {
     return this.channelService.update(payload.id, payload.updateChannelDto);
   }
@@ -93,7 +93,7 @@ export class AppController {
   @MessagePattern({ cmd: VideoCommands.FIND_RECOMMENDED_VIDEOS })
   async findRecommendedVideos(@Payload() limit?: number) {
     return this.videoService.findRecommended(
-      this.normalizeOptionalLimit(limit),
+      this.normalizeOptionalLimit(limit)
     );
   }
 
@@ -104,7 +104,7 @@ export class AppController {
 
   @MessagePattern({ cmd: VideoCommands.UPDATE_VIDEO })
   async updateVideo(
-    @Payload() payload: { id: string; updateVideoDto: UpdateVideoDto },
+    @Payload() payload: { id: string; updateVideoDto: UpdateVideoDto }
   ) {
     return this.videoService.update(payload.id, payload.updateVideoDto);
   }
@@ -135,7 +135,9 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VideoCommands.COMPLETE_VIDEO_PROCESSING })
-  async completeVideoProcessing(@Payload() payload: CompleteVideoProcessingDto) {
+  async completeVideoProcessing(
+    @Payload() payload: CompleteVideoProcessingDto
+  ) {
     return this.videoService.completeProcessing(payload.id, {
       ...payload.result,
       processingStatus:
@@ -151,18 +153,18 @@ export class AppController {
   // Subscription endpoints
   @MessagePattern({ cmd: VideoCommands.SUBSCRIBE_TO_CHANNEL })
   async subscribeToChannel(
-    @Payload() createSubscriptionDto: CreateChannelSubscriptionDto,
+    @Payload() createSubscriptionDto: CreateChannelSubscriptionDto
   ) {
     return this.subscriptionService.subscribe(createSubscriptionDto);
   }
 
   @MessagePattern({ cmd: VideoCommands.UNSUBSCRIBE_FROM_CHANNEL })
   async unsubscribeFromChannel(
-    @Payload() payload: { channelId: string; userId: string },
+    @Payload() payload: { channelId: string; userId: string }
   ) {
     return this.subscriptionService.unsubscribe(
       payload.channelId,
-      payload.userId,
+      payload.userId
     );
   }
 
@@ -205,7 +207,7 @@ export class AppController {
   // Video view endpoints
   @MessagePattern({ cmd: VideoCommands.RECORD_VIDEO_VIEW })
   async recordVideoView(
-    @Payload() payload: { dto: RecordVideoViewDto; ipAddress?: string },
+    @Payload() payload: { dto: RecordVideoViewDto; ipAddress?: string }
   ) {
     return this.videoViewService.recordView(payload.dto, payload.ipAddress);
   }

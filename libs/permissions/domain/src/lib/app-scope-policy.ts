@@ -36,9 +36,9 @@ export interface AppScopePolicy {
   buildDefaults(profileId?: string): PolicyRoleInitDefaults;
   buildOwnerDefaults?(profileId?: string): PolicyRoleInitDefaults;
   buildPermissionMirrors?(
-    permissions: PolicyPermissionSpec[],
+    permissions: PolicyPermissionSpec[]
   ): PolicyPermissionMirrorSpec[];
   buildCrossScopeMappings?(
-    assignment: PolicyAssignmentSpec,
+    assignment: PolicyAssignmentSpec
   ): PolicyAssignmentSpec[];
 }

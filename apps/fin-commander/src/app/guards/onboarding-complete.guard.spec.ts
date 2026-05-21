@@ -60,14 +60,11 @@ describe('onboardingCompleteGuard', () => {
   it('hydrates tenant context before enforcing setup for the new commander route', async () => {
     const createUrlTree = jest.fn();
     const loadTenantContext = jest.fn().mockResolvedValue(undefined);
-    const activeTenant = jest
-      .fn()
-      .mockReturnValueOnce(null)
-      .mockReturnValue({
-        id: 'tenant-1',
-        name: 'North Household',
-        type: 'household',
-      });
+    const activeTenant = jest.fn().mockReturnValueOnce(null).mockReturnValue({
+      id: 'tenant-1',
+      name: 'North Household',
+      type: 'household',
+    });
 
     await TestBed.configureTestingModule({
       providers: [

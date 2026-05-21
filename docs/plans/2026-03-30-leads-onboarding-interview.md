@@ -13,6 +13,7 @@
 ### Task 1: Document the onboarding interview contract before touching behavior
 
 **Files:**
+
 - Create: `libs/models/src/lib/libs/leads/onboarding-plan.interface.ts`
 - Modify: `libs/models/src/lib/libs/leads/contracts.ts`
 - Modify: `libs/models/src/index.ts`
@@ -72,6 +73,7 @@ git commit -m "feat: add leads onboarding planning contract"
 ### Task 2: Add a pure planner in `leads-app` that turns interview answers into topic presets
 
 **Files:**
+
 - Create: `apps/leads-app/src/app/onboarding-planner.ts`
 - Create: `apps/leads-app/src/app/onboarding-planner.spec.ts`
 - Modify: `apps/leads-app/src/app/leads.types.ts`
@@ -123,6 +125,7 @@ Implement a pure planner function that:
 - returns preview-ready topic presets without calling the API
 
 Recommendation:
+
 - Keep this logic pure and framework-free so it is easy to test and later reuse in `lead-tracker` if needed.
 
 **Step 4: Run test to verify it passes**
@@ -140,6 +143,7 @@ git commit -m "feat: add leads onboarding planner"
 ### Task 3: Replace dashboard first-run topic creation with an interview UI
 
 **Files:**
+
 - Modify: `apps/leads-app/src/app/dashboard.component.ts`
 - Modify: `apps/leads-app/src/app/dashboard.component.html`
 - Modify: `apps/leads-app/src/app/dashboard.component.scss`
@@ -187,6 +191,7 @@ git commit -m "feat: add interview-based leads onboarding"
 ### Task 4: Reposition the Topics page as refinement, not first-run setup
 
 **Files:**
+
 - Modify: `apps/leads-app/src/app/topics.component.ts`
 - Modify: `apps/leads-app/src/app/topics.component.html`
 - Modify: `apps/leads-app/src/app/topics.component.scss`
@@ -231,6 +236,7 @@ git commit -m "feat: reposition topics page as onboarding refinement"
 ### Task 5: Add backend normalization rules that match the planner output
 
 **Files:**
+
 - Modify: `apps/lead-tracker/src/app/leads.service.ts`
 - Modify: `apps/lead-tracker/src/app/leads.service.spec.ts`
 - Modify: `libs/models/src/lib/libs/leads/create-lead-topic.dto.ts`
@@ -273,6 +279,7 @@ git commit -m "feat: normalize onboarding-generated lead topics"
 ### Task 6: Make topic edits trigger rediscovery for all search-shaping fields
 
 **Files:**
+
 - Modify: `apps/lead-tracker/src/app/leads.controller.ts`
 - Modify: `apps/lead-tracker/src/app/leads.controller.spec.ts`
 - Test: `apps/lead-tracker/src/app/leads.controller.spec.ts`
@@ -310,6 +317,7 @@ git commit -m "feat: rerun discovery when topic search strategy changes"
 ### Task 7: Add current documentation for the onboarding-driven model
 
 **Files:**
+
 - Create: `apps/lead-tracker/documentation.lwts`
 - Modify: `docs/plans/leed-tracker.md`
 
@@ -352,6 +360,7 @@ git commit -m "docs: add current lead tracker onboarding documentation"
 ### Task 8: Verify the end-to-end build and test surface
 
 **Files:**
+
 - Modify: none unless failures are found
 - Test: `apps/leads-app/src/app/dashboard.component.spec.ts`
 - Test: `apps/leads-app/src/app/topics.component.spec.ts`

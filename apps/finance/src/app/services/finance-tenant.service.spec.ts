@@ -162,7 +162,7 @@ describe('FinanceTenantService', () => {
       service.getCurrentTenant({
         profileId: 'profile-1',
         appScope: 'finance',
-      }),
+      })
     ).rejects.toMatchObject({
       constructor: RpcException,
     });
@@ -238,7 +238,7 @@ describe('FinanceTenantService', () => {
         tenantId: 'missing-tenant',
         profileId: 'profile-1',
         appScope: 'finance',
-      }),
+      })
     ).rejects.toMatchObject({
       constructor: RpcException,
     });

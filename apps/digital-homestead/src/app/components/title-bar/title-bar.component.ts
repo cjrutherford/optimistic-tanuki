@@ -44,10 +44,11 @@ export class TitleBarComponent {
     {
       label: 'Contact',
       action: () => this.navigateTo('#contact'),
-    }, {
+    },
+    {
       label: 'Forum',
       action: () => this.navigateToRoute('/forum'),
-    }
+    },
   ];
 
   toggleMenu() {

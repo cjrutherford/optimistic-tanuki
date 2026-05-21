@@ -61,16 +61,30 @@ export class BankConnections1771000000000 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "bank_connection" DROP CONSTRAINT "FK_bank_connection_tenant"`
     );
-    await queryRunner.query(`ALTER TABLE "transaction" DROP COLUMN "reviewStatus"`);
+    await queryRunner.query(
+      `ALTER TABLE "transaction" DROP COLUMN "reviewStatus"`
+    );
     await queryRunner.query(`ALTER TABLE "transaction" DROP COLUMN "pending"`);
-    await queryRunner.query(`ALTER TABLE "transaction" DROP COLUMN "externalTransactionId"`);
-    await queryRunner.query(`ALTER TABLE "transaction" DROP COLUMN "sourceProvider"`);
-    await queryRunner.query(`ALTER TABLE "transaction" DROP COLUMN "sourceType"`);
+    await queryRunner.query(
+      `ALTER TABLE "transaction" DROP COLUMN "externalTransactionId"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "transaction" DROP COLUMN "sourceProvider"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "transaction" DROP COLUMN "sourceType"`
+    );
     await queryRunner.query(`ALTER TABLE "account" DROP COLUMN "lastSyncedAt"`);
     await queryRunner.query(`ALTER TABLE "account" DROP COLUMN "syncStatus"`);
-    await queryRunner.query(`ALTER TABLE "account" DROP COLUMN "institutionName"`);
-    await queryRunner.query(`ALTER TABLE "account" DROP COLUMN "providerAccountId"`);
-    await queryRunner.query(`ALTER TABLE "account" DROP COLUMN "providerConnectionId"`);
+    await queryRunner.query(
+      `ALTER TABLE "account" DROP COLUMN "institutionName"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "account" DROP COLUMN "providerAccountId"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "account" DROP COLUMN "providerConnectionId"`
+    );
     await queryRunner.query(`DROP TABLE "linked_bank_account"`);
     await queryRunner.query(`DROP TABLE "bank_connection"`);
   }

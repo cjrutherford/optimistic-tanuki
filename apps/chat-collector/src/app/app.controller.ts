@@ -60,14 +60,18 @@ export class AppController {
     @Payload() data: { participantIds: string[] }
   ) {
     this.l.log(
-      `TCP: Get-or-create direct chat for participants: ${data.participantIds.join(', ')}`
+      `TCP: Get-or-create direct chat for participants: ${data.participantIds.join(
+        ', '
+      )}`
     );
     return await this.appService.getOrCreateDirectChat(data.participantIds);
   }
 
   @MessagePattern({ cmd: ChatCommands.GET_MESSAGES })
   async getMessagesTcp(@Payload() data: { conversationId: string }) {
-    this.l.log(`TCP: Retrieving messages for conversation: ${data.conversationId}`);
+    this.l.log(
+      `TCP: Retrieving messages for conversation: ${data.conversationId}`
+    );
     return await this.appService.getMessages(data.conversationId);
   }
 

@@ -109,7 +109,10 @@ export class AvailabilitiesService {
       },
       id
     );
-    await this.availabilityOverrideRepository.update(id, updateAvailabilityOverrideDto);
+    await this.availabilityOverrideRepository.update(
+      id,
+      updateAvailabilityOverrideDto
+    );
     return this.findOneOverride(id);
   }
 
@@ -129,7 +132,9 @@ export class AvailabilitiesService {
     const start = this.normalizeTime(payload.startTime);
     const end = this.normalizeTime(payload.endTime);
     if (end <= start) {
-      throw new BadRequestException('Availability end time must be after start time.');
+      throw new BadRequestException(
+        'Availability end time must be after start time.'
+      );
     }
 
     const existing = await this.availabilityRepository.find({
@@ -153,7 +158,9 @@ export class AvailabilitiesService {
     });
 
     if (overlaps) {
-      throw new BadRequestException('Availability cannot overlap an existing time block.');
+      throw new BadRequestException(
+        'Availability cannot overlap an existing time block.'
+      );
     }
   }
 
@@ -168,7 +175,9 @@ export class AvailabilitiesService {
     const start = new Date(payload.startTime);
     const end = new Date(payload.endTime);
     if (end.getTime() <= start.getTime()) {
-      throw new BadRequestException('Availability override end time must be after start time.');
+      throw new BadRequestException(
+        'Availability override end time must be after start time.'
+      );
     }
 
     const existing = await this.availabilityOverrideRepository.find({
@@ -191,13 +200,18 @@ export class AvailabilitiesService {
     });
 
     if (overlaps) {
-      throw new BadRequestException('Availability override cannot overlap an existing override.');
+      throw new BadRequestException(
+        'Availability override cannot overlap an existing override.'
+      );
     }
   }
 
   private normalizeTime(value: string): string {
     const [hours = '00', minutes = '00', seconds = '00'] = value.split(':');
-    return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+    return `${hours.padStart(2, '0')}:${minutes.padStart(
+      2,
+      '0'
+    )}:${seconds.padStart(2, '0')}`;
   }
 
   private timeRangesOverlap(
@@ -215,6 +229,8 @@ export class AvailabilitiesService {
     startB: Date,
     endB: Date
   ): boolean {
-    return startA.getTime() < endB.getTime() && startB.getTime() < endA.getTime();
+    return (
+      startA.getTime() < endB.getTime() && startB.getTime() < endA.getTime()
+    );
   }
 }

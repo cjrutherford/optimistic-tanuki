@@ -25,9 +25,7 @@ describe('ui-playground catalog metadata', () => {
     const component = new MotionUiPageComponent();
 
     const heightEnabledIds = component.elements
-      .filter((element) =>
-        element.props.some((prop) => prop.name === 'height')
-      )
+      .filter((element) => element.props.some((prop) => prop.name === 'height'))
       .map((element) => element.id);
 
     expect(heightEnabledIds).toEqual([

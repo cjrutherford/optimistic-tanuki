@@ -18,12 +18,10 @@ describe('SitemapService', () => {
 
   it('generateSitemap should return XML', () => {
     const posts = [
-      { id: '1', updatedAt: new Date(), publishedAt: new Date() }
+      { id: '1', updatedAt: new Date(), publishedAt: new Date() },
     ] as any;
-    const blogs = [
-      { id: '1', updatedAt: new Date() }
-    ] as any;
-    
+    const blogs = [{ id: '1', updatedAt: new Date() }] as any;
+
     const result = service.generateSitemap('https://example.com', posts, blogs);
     expect(result).toContain('<?xml');
     expect(result).toContain('<urlset');
@@ -32,8 +30,8 @@ describe('SitemapService', () => {
   });
 
   it('escapeXml should escape special characters', () => {
-      const input = '< " & \' >';
-      const result = (service as any).escapeXml(input);
-      expect(result).toBe('&lt; &quot; &amp; &apos; &gt;');
+    const input = '< " & \' >';
+    const result = (service as any).escapeXml(input);
+    expect(result).toBe('&lt; &quot; &amp; &apos; &gt;');
   });
 });

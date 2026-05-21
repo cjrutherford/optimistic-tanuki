@@ -156,7 +156,9 @@ export class CreateCommunityComponent extends Variantable {
 
       const community = await this.communityService.create(dto);
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('ot-community-membership-changed'));
+        window.dispatchEvent(
+          new CustomEvent('ot-community-membership-changed')
+        );
       }
       this.router.navigate([
         '/communities/manage',

@@ -24,7 +24,11 @@ describe('MarketingGeneratorService', () => {
     deliverables: [
       { type: 'flyer', formatId: 'flyer-letter', quantity: 1 },
       { type: 'brochure', formatId: 'brochure-trifold', quantity: 1 },
-      { type: 'business-card', formatId: 'business-card-standard', quantity: 1 },
+      {
+        type: 'business-card',
+        formatId: 'business-card-standard',
+        quantity: 1,
+      },
       { type: 'web-ad', formatId: 'web-ad-square', quantity: 1 },
     ],
     brand: {
@@ -58,12 +62,12 @@ describe('MarketingGeneratorService', () => {
     expect(concepts.every((concept) => concept.headline.length > 10)).toBe(
       true
     );
-    expect(concepts.every((concept) => concept.materialOutputs.length >= 3)).toBe(
-      true
-    );
-    expect(concepts.every((concept) => concept.channelOutputs.length >= 1)).toBe(
-      true
-    );
+    expect(
+      concepts.every((concept) => concept.materialOutputs.length >= 3)
+    ).toBe(true);
+    expect(
+      concepts.every((concept) => concept.channelOutputs.length >= 1)
+    ).toBe(true);
   });
 
   it('falls back to deterministic concepts when ai polish is unavailable', async () => {
@@ -74,9 +78,9 @@ describe('MarketingGeneratorService', () => {
 
     expect(concepts.length).toBeGreaterThanOrEqual(5);
     expect(concepts.every((concept) => concept.generationMode)).toBeTruthy();
-    expect(concepts.some((concept) => concept.generationMode === 'template')).toBe(
-      true
-    );
+    expect(
+      concepts.some((concept) => concept.generationMode === 'template')
+    ).toBe(true);
   });
 
   it('uses a custom app brief when the user is marketing a custom product', async () => {
@@ -87,9 +91,11 @@ describe('MarketingGeneratorService', () => {
       customApp: {
         name: 'Atlas Room',
         category: 'Research workspace',
-        summary: 'A workspace for collecting signals and planning team investigations.',
+        summary:
+          'A workspace for collecting signals and planning team investigations.',
         features: 'Shared boards, signal capture, tagged notes',
-        differentiators: 'Faster synthesis, lightweight collaboration, durable context',
+        differentiators:
+          'Faster synthesis, lightweight collaboration, durable context',
         primaryGoal: 'Earn product demo requests',
       },
     });
@@ -121,22 +127,18 @@ describe('MarketingGeneratorService', () => {
       concepts[0].materialOutputs.map((asset) => [asset.type, asset])
     );
 
-    expect(assetsByType.get('flyer')?.surfaces.map((surface) => surface.type)).toEqual([
-      'front',
-    ]);
-    expect(assetsByType.get('brochure')?.surfaces.map((surface) => surface.type)).toEqual([
-      'front',
-      'inside-left',
-      'inside-right',
-      'back',
-    ]);
-    expect(assetsByType.get('business-card')?.surfaces.map((surface) => surface.type)).toEqual([
-      'front',
-      'back',
-    ]);
-    expect(assetsByType.get('web-ad')?.surfaces.map((surface) => surface.type)).toEqual([
-      'single',
-    ]);
+    expect(
+      assetsByType.get('flyer')?.surfaces.map((surface) => surface.type)
+    ).toEqual(['front']);
+    expect(
+      assetsByType.get('brochure')?.surfaces.map((surface) => surface.type)
+    ).toEqual(['front', 'inside-left', 'inside-right', 'back']);
+    expect(
+      assetsByType.get('business-card')?.surfaces.map((surface) => surface.type)
+    ).toEqual(['front', 'back']);
+    expect(
+      assetsByType.get('web-ad')?.surfaces.map((surface) => surface.type)
+    ).toEqual(['single']);
   });
 
   it('produces channel-native web outputs when the request channel is web', async () => {
@@ -145,9 +147,9 @@ describe('MarketingGeneratorService', () => {
       channel: 'web',
     });
 
-    expect(
-      concepts[0].channelOutputs.map((output) => output.type)
-    ).toContain('landing-page');
+    expect(concepts[0].channelOutputs.map((output) => output.type)).toContain(
+      'landing-page'
+    );
     expect(concepts[0].channelOutputs[0].blocks.length).toBeGreaterThan(1);
   });
 
@@ -157,12 +159,13 @@ describe('MarketingGeneratorService', () => {
       channel: 'email',
     });
 
+    expect(concepts[0].channelOutputs.map((output) => output.type)).toContain(
+      'email-sequence'
+    );
     expect(
-      concepts[0].channelOutputs.map((output) => output.type)
-    ).toContain('email-sequence');
-    expect(
-      concepts[0].channelOutputs.find((output) => output.type === 'email-sequence')
-        ?.blocks.length
+      concepts[0].channelOutputs.find(
+        (output) => output.type === 'email-sequence'
+      )?.blocks.length
     ).toBeGreaterThan(1);
   });
 
@@ -172,12 +175,13 @@ describe('MarketingGeneratorService', () => {
       channel: 'social',
     });
 
+    expect(concepts[0].channelOutputs.map((output) => output.type)).toContain(
+      'social-campaign'
+    );
     expect(
-      concepts[0].channelOutputs.map((output) => output.type)
-    ).toContain('social-campaign');
-    expect(
-      concepts[0].channelOutputs.find((output) => output.type === 'social-campaign')
-        ?.blocks.length
+      concepts[0].channelOutputs.find(
+        (output) => output.type === 'social-campaign'
+      )?.blocks.length
     ).toBeGreaterThan(1);
   });
 });

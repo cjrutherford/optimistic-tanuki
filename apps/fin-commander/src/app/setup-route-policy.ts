@@ -5,12 +5,13 @@ import {
 import { ProfileService } from './profile.service';
 import { TenantContextService } from './tenant-context.service';
 
-export type SetupRoute =
-  | ['/settings']
-  | ['/onboarding'];
+export type SetupRoute = ['/settings'] | ['/onboarding'];
 
 function hasCompleteTenant(
-  tenant: Pick<NonNullable<ReturnType<TenantContextService['activeTenant']>>, 'type'> | null
+  tenant: Pick<
+    NonNullable<ReturnType<TenantContextService['activeTenant']>>,
+    'type'
+  > | null
 ): boolean {
   return Boolean(tenant?.type);
 }

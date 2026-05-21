@@ -11,7 +11,8 @@ export const csvImportProvider: FinCommanderImportProvider = {
   manifest: {
     id: 'csv',
     name: 'CSV Intake',
-    description: 'Paste exported transaction rows from a bank or card statement.',
+    description:
+      'Paste exported transaction rows from a bank or card statement.',
     inputLabel: 'CSV rows',
     placeholder: 'date,description,amount,type,category',
   },
@@ -37,7 +38,10 @@ export const csvImportProvider: FinCommanderImportProvider = {
     return {
       providerId: 'csv',
       title: 'CSV preview',
-      warnings: rows.length <= 1 ? ['No transaction rows detected beyond the header.'] : [],
+      warnings:
+        rows.length <= 1
+          ? ['No transaction rows detected beyond the header.']
+          : [],
       transactions,
     };
   },

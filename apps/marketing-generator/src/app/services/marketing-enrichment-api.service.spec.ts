@@ -80,16 +80,23 @@ describe('MarketingEnrichmentApiService', () => {
 
   it('returns enriched concepts from the endpoint', async () => {
     const httpClient = {
-      post: jest.fn().mockReturnValue(of({ concepts: [{ ...concepts[0], headline: 'Enriched' }] })),
+      post: jest
+        .fn()
+        .mockReturnValue(
+          of({ concepts: [{ ...concepts[0], headline: 'Enriched' }] })
+        ),
     } as any;
 
     const service = new MarketingEnrichmentApiService(httpClient);
     const result = await service.enrichConcepts(request, concepts);
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/marketing-generator/enrich', {
-      request,
-      concepts,
-    });
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/marketing-generator/enrich',
+      {
+        request,
+        concepts,
+      }
+    );
     expect(result[0].headline).toBe('Enriched');
   });
 

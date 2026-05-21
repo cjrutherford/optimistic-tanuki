@@ -11,9 +11,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "8.0B",
         "quantization_level": "Q4_K_M"
       },
@@ -23,9 +21,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 4583,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "llama3.2:3b-instruct-q4_0",
@@ -37,9 +33,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "3.2B",
         "quantization_level": "Q4_0"
       },
@@ -49,9 +43,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "llama3.2:3b",
@@ -63,9 +55,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "3.2B",
         "quantization_level": "Q4_K_M"
       },
@@ -75,9 +65,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "cogito:3b",
@@ -89,9 +77,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "3.6B",
         "quantization_level": "Q4_K_M"
       },
@@ -101,9 +87,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2485,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "qwen3:4b",
@@ -115,9 +99,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "qwen3",
-        "families": [
-          "qwen3"
-        ],
+        "families": ["qwen3"],
         "parameter_size": "4.0B",
         "quantization_level": "Q4_K_M"
       },
@@ -127,9 +109,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2676,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "gemma3:4b-it-q4_K_M",
@@ -141,9 +121,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "gemma3",
-        "families": [
-          "gemma3"
-        ],
+        "families": ["gemma3"],
         "parameter_size": "4.3B",
         "quantization_level": "Q4_K_M"
       },
@@ -153,9 +131,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2819,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "deepseek-r1:8b",
@@ -167,9 +143,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "qwen3",
-        "families": [
-          "qwen3"
-        ],
+        "families": ["qwen3"],
         "parameter_size": "8.2B",
         "quantization_level": "Q4_K_M"
       },
@@ -179,9 +153,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 4679,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "qwen2.5:14b-instruct-q3_K_S",
@@ -193,9 +165,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "qwen2",
-        "families": [
-          "qwen2"
-        ],
+        "families": ["qwen2"],
         "parameter_size": "14.8B",
         "quantization_level": "Q3_K_S"
       },
@@ -205,9 +175,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 6697,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "mistral-nemo:12b-instruct-2407-q3_K_M",
@@ -219,9 +187,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "12.2B",
         "quantization_level": "Q3_K_M"
       },
@@ -231,9 +197,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 6353,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     },
     {
       "name": "llama3.2:latest",
@@ -245,9 +209,7 @@
         "parent_model": "",
         "format": "gguf",
         "family": "llama",
-        "families": [
-          "llama"
-        ],
+        "families": ["llama"],
         "parameter_size": "3.2B",
         "quantization_level": "Q4_K_M"
       },
@@ -257,9 +219,7 @@
       "contextOverheadMB": 256,
       "totalVRAMMB": 2294,
       "fitScore": 0,
-      "suitability": [
-        "cpu_fallback"
-      ]
+      "suitability": ["cpu_fallback"]
     }
   ],
   "benchmarkResults": [
@@ -399,14 +359,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "sure, i can add that task to your project titled \"website redesign.\" here's an updated version of th",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "i apologize for any confusion. as an ai, i don't have real-time access to external databases or spec",
         "responses": [
           "I'd be happy to help you with creating a project called \"Website Redesign.\" However, I want to make ",
@@ -438,10 +394,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 1,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "it seems there was some confusion. to clarify, you mentioned creating a task called \"fix login bug,\" but then asked what we had just created. since we",
         "allResponses": [
           "Hello! I'm here to help you with creating tasks. Could you please provide more details about what ki",
@@ -479,12 +432,7 @@
       "responseLength": 3567,
       "validationDetails": {
         "matches": 4,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "to help you decide which project to prioritize and which one to tackle first, let's gather more context about both projects. this will enable me to suggest a logical order of focus based on factors su",
         "allResponses": [
           "I'd be happy to hear about your projects! Please provide a brief description of what you've been wor",
@@ -644,14 +592,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i've added a new task to the \"website redesign\" project.\n\n**task details:**\n\n* task name: review des",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "i can check the status of the \"website redesign\" project for you.\n\nas of now, the project has the fo",
         "responses": [
           "I've created a new project in our project management system.\n\n**Project Details:**\n\n* Project Name: ",
@@ -683,10 +627,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 1,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we just created a new task called \"fix login bug\". here are the details:\n\n* task name: fix login bug\n* priority: high\n* assignee: technical lead (who ",
         "allResponses": [
           "You'd like to create a new task. Can you please provide some details about the task you want to crea",
@@ -724,12 +665,7 @@
       "responseLength": 1249,
       "validationDetails": {
         "matches": 3,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "considering you have a website project (alpha) that's already underway, it might be more efficient to continue working on alpha before diving into beta.\n\nhowever, if there's a critical component in be",
         "allResponses": [
           "I'm all ears. Please go ahead and share information about your current projects. I'll do my best to ",
@@ -889,14 +825,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i've added the task \"review design mockups\" to the \"website redesign\" project.\n\n**project title:** w",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the current status of the \"website redesign\" project is:\n\n**project title:** website redesign\n**proj",
         "responses": [
           "I'll create a new project called \"Website Redesign\". I've created a basic project structure with the",
@@ -928,10 +860,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we just created a new task called \"fix login bug\". we made it a high priority task and i'm keeping track of its details. if you need to add more infor",
         "allResponses": [
           "To create a new task, I'll guide you through the process.\n\nCan you please provide some details about",
@@ -969,12 +898,7 @@
       "responseLength": 1877,
       "validationDetails": {
         "matches": 4,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "considering you mentioned both projects need attention, i'd recommend focusing on the website project (alpha) first. here's why:\n\n1. typically, having a solid online presence is crucial for any busine",
         "allResponses": [
           "I'd love to hear about your current projects. Please feel free to share as much or as little as you'",
@@ -1134,14 +1058,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i'll add that task as a subtask under the website redesign project.\n\n**updated project structure:**\n",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the status of the website redesign project is currently **in progress**.\n\nfor context, this means we",
         "responses": [
           "I'll help you create the Website Redesign project.\n\n**Project Name:** Website Redesign\n\n**Status:** ",
@@ -1173,10 +1093,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "i apologize for the confusion - let me clarify what was created:\n\nwe created a project management task with the following details:\n- title: \"fix login",
         "allResponses": [
           "I'll help you create a task. Could you please provide more details about what needs to be done? For ",
@@ -1214,12 +1131,7 @@
       "responseLength": 2732,
       "validationDetails": {
         "matches": 4,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "based on the context provided, it seems alpha (website) might be your immediate priority since it's a website development project and mobile app development (beta) can potentially wait if resources al",
         "allResponses": [
           "I'm ready to listen and help with any project management questions or assistance you need! What woul",
@@ -1379,14 +1291,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i've added the task **\"review design mockups\"** to your **website redesign** project.  \n\nto ensure t",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "i've checked the status of your **website redesign** project. it's currently **not started** with on",
         "responses": [
           "I've created a new project called **\"Website Redesign\"** in the project management system.  \n\nTo ens",
@@ -1418,10 +1326,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we just created the task **\"fix login bug\"** with **high priority**. to complete it fully and ensure timely delivery, we need the due date, assigned t",
         "allResponses": [
           "I'll help you create a task. Could you please share the task name, description, and any other detail",
@@ -1459,12 +1364,7 @@
       "responseLength": 1638,
       "validationDetails": {
         "matches": 0,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "to help you decide, could you share which factor matters most to you? for example:  \n- **deadlines** (which project has tighter deadlines?)  \n- **dependencies** (does one project rely on the other?)  ",
         "allResponses": [
           "I'd love to hear about your projects! Could you share details like project names, current status, te",
@@ -1624,14 +1524,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "alright, i’ve added the task “review design mockups” to the “website redesign” project. \n\nto help me",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "currently, the “website redesign” project is in the **initiated** status. i’ve created the project a",
         "responses": [
           "Okay, I can certainly help you with that. Let's create a project called \"Website Redesign.\" \n\nI’ll i",
@@ -1663,10 +1559,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "i’ve created a task called “fix login bug” with high priority. to ensure i’m capturing all the details, could you please provide a brief description o",
         "allResponses": [
           "Okay, let’s get that task created. Could you please tell me a little more about it? Specifically, wh",
@@ -1704,12 +1597,7 @@
       "responseLength": 901,
       "validationDetails": {
         "matches": 0,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "that’s a great question! to help me advise you on that, could you tell me a little about the priorities for each project? for example, is one project more critical to the company’s overall goals, or a",
         "allResponses": [
           "Okay, I’m ready to hear about your projects. Please go ahead and tell me about them – I’m here to he",
@@ -1869,14 +1757,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "okay, i've added the task \"review design mockups\" to the \"website redesign\" project.\n\nwould you like",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the \"website redesign\" project is currently open with one task added: \"review design mockups\". no pr",
         "responses": [
           "I've created a new project titled \"Website Redesign\".\n\nThis is a general project tracking task. Let ",
@@ -1908,10 +1792,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 1,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we just created the task **\"fix login bug\"** and set its priority to **high**. we still need to provide the deadline and assignee to complete the task",
         "allResponses": [
           "I'd be happy to help you create a task. Could you provide more details, such as the task name, deadl",
@@ -1949,12 +1830,7 @@
       "responseLength": 2802,
       "validationDetails": {
         "matches": 2,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "that's a thoughtful question, and the best approach depends on several factors. since i don't have specific details about timelines, deadlines, or dependencies between your projects, i'll provide some",
         "allResponses": [
           "Great! I'd be happy to help you with your projects. Could you start by telling me the name of the pr",
@@ -2114,14 +1990,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "the task \"review design mockups\" has been added to the \"website redesign\" project. is there anything",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the \"website redesign\" project has been created but no tasks have been completed yet. specifically, ",
         "responses": [
           "I've created a new project titled \"Website Redesign\". What would you like me to do next with this pr",
@@ -2153,10 +2025,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 1,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we created a high-priority task titled \"fix login bug.\" it is currently not assigned to anyone and does not have a specific deadline set yet. would yo",
         "allResponses": [
           "Sure, I can help with that. Could you please provide more details about the task? What needs to be d",
@@ -2194,12 +2063,7 @@
       "responseLength": 2073,
       "validationDetails": {
         "matches": 4,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "to determine which project to focus on first, it's helpful to consider factors such as deadlines, resource availability, and strategic priorities. here are some questions that might help guide your de",
         "allResponses": [
           "Sure, please share more details about your projects. What would you like to discuss or need assistan",
@@ -2359,14 +2223,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i've added a new task titled \"review design mockups\" to your website redesign project. is there anyt",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the current status of your website redesign project is:\n\n* 1 task completed: \"create a project calle",
         "responses": [
           "I've created a new project titled \"Website Redesign\". Is there any specific information or tasks you",
@@ -2398,10 +2258,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we created a new task titled \"fix login bug\" with high priority.",
         "allResponses": [
           "I'll help you create a new task. Could you please provide me with some details about this task? For ",
@@ -2439,12 +2296,7 @@
       "responseLength": 1429,
       "validationDetails": {
         "matches": 0,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "to determine which project to focus on first, could you please share any priorities or deadlines associated with each project? this information will help me provide a more informed suggestion.",
         "allResponses": [
           "Of course! I'm here to help manage your projects. To get started, could you please provide a brief o",
@@ -2604,14 +2456,10 @@
       "validationDetails": {
         "turnCount": 3,
         "turn2Matches": 1,
-        "turn2Expected": [
-          "Website Redesign"
-        ],
+        "turn2Expected": ["Website Redesign"],
         "turn2Actual": "i'll add the new task to the \"website redesign\" project.\n\n**updated project timeline:**\n\n* week 1-2:",
         "turn3Matches": 1,
-        "turn3Expected": [
-          "Website Redesign"
-        ],
+        "turn3Expected": ["Website Redesign"],
         "turn3Actual": "the \"website redesign\" project has reached a significant milestone. the high-fidelity mockups have b",
         "responses": [
           "I'll create a new project for you.\n\n**Project Name:** Website Redesign\n\n**Project Description:**\nThe",
@@ -2643,10 +2491,7 @@
       "validationDetails": {
         "turnCount": 4,
         "matches": 2,
-        "expected": [
-          "Fix login bug",
-          "high priority"
-        ],
+        "expected": ["Fix login bug", "high priority"],
         "actual": "we created a new task called \"fix login bug\". it has been added to your project management framework. the task is currently marked as high priority.\n\n",
         "allResponses": [
           "You'd like to create a new task. Can you please provide some details about the task, such as:\n\n* Wha",
@@ -2684,12 +2529,7 @@
       "responseLength": 2096,
       "validationDetails": {
         "matches": 3,
-        "expected": [
-          "Alpha",
-          "Beta",
-          "website",
-          "mobile"
-        ],
+        "expected": ["Alpha", "Beta", "website", "mobile"],
         "actual": "i would recommend focusing on the alpha project (the website) first. here's why: having a functional website in place can provide a solid foundation for your project, make it easier to attract and eng",
         "allResponses": [
           "I'd be happy to hear about your current projects. Which one would you like to start with, or would y",
@@ -2854,9 +2694,7 @@
         "Project Reference Memory (3 tu",
         "Task Creation Context (4 turns"
       ],
-      "weaknesses": [
-        "Complex Multi-Reference (5 tur (0)"
-      ],
+      "weaknesses": ["Complex Multi-Reference (5 tur (0)"],
       "fitScore": 0,
       "recommendation": "EXCELLENT - Recommended for production use"
     },
@@ -2880,9 +2718,7 @@
         "Project Reference Memory (3 tu",
         "Task Creation Context (4 turns"
       ],
-      "weaknesses": [
-        "Complex Multi-Reference (5 tur (0)"
-      ],
+      "weaknesses": ["Complex Multi-Reference (5 tur (0)"],
       "fitScore": 0,
       "recommendation": "EXCELLENT - Recommended for production use"
     },
@@ -2929,9 +2765,7 @@
         "Project Reference Memory (3 tu",
         "Task Creation Context (4 turns"
       ],
-      "weaknesses": [
-        "Complex Multi-Reference (5 tur (0)"
-      ],
+      "weaknesses": ["Complex Multi-Reference (5 tur (0)"],
       "fitScore": 0,
       "recommendation": "EXCELLENT - Recommended for production use"
     },
@@ -2954,9 +2788,7 @@
         "Project Reference Memory (3 tu",
         "Complex Multi-Reference (5 tur"
       ],
-      "weaknesses": [
-        "Welcome Message Generation - P (40)"
-      ],
+      "weaknesses": ["Welcome Message Generation - P (40)"],
       "fitScore": 0,
       "recommendation": "GOOD - Suitable for most use cases"
     }

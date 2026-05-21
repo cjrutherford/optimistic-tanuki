@@ -1,4 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
 import { ExplorePageComponent } from './explore-page.component';
 import { SearchService } from '../search.service';
 import { Router } from '@angular/router';

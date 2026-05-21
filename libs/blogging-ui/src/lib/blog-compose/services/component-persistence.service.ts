@@ -2,7 +2,11 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, from } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { API_BASE_URL, BlogComponentDto, CreateBlogComponentDto } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  BlogComponentDto,
+  CreateBlogComponentDto,
+} from '@optimistic-tanuki/ui-models';
 
 export interface ComponentExtractionResult {
   instanceId: string;
@@ -13,13 +17,13 @@ export interface ComponentExtractionResult {
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ComponentPersistenceService {
   private readonly apiBaseUrl = inject(API_BASE_URL);
   private readonly gatewayUrl = `${this.apiBaseUrl}/blog-components`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   /**
    * Extracts component data from HTML content for database persistence
@@ -43,16 +47,20 @@ export class ComponentPersistenceService {
             componentType: componentId,
             componentData: JSON.parse(dataStr),
             position: index,
-            domNode: node as HTMLElement
+            domNode: node as HTMLElement,
           });
         } catch (error) {
-          console.warn('Failed to parse component data for instance:', instanceId, error);
+          console.warn(
+            'Failed to parse component data for instance:',
+            instanceId,
+            error
+          );
         }
       } else {
         console.warn('Component missing required attributes:', {
           componentId,
           instanceId,
-          hasData: !!dataStr
+          hasData: !!dataStr,
         });
       }
     });
@@ -63,21 +71,24 @@ export class ComponentPersistenceService {
   /**
    * Saves components to the database using RPC
    */
-  saveComponents(blogPostId: string, components: ComponentExtractionResult[]): Observable<BlogComponentDto[]> {
+  saveComponents(
+    blogPostId: string,
+    components: ComponentExtractionResult[]
+  ): Observable<BlogComponentDto[]> {
     if (components.length === 0) {
-      return new Observable(observer => {
+      return new Observable((observer) => {
         observer.next([]);
         observer.complete();
       });
     }
 
-    const saveRequests = components.map(comp => {
+    const saveRequests = components.map((comp) => {
       const createDto: CreateBlogComponentDto = {
         blogPostId,
         instanceId: comp.instanceId,
         componentType: comp.componentType,
         componentData: comp.componentData,
-        position: comp.position
+        position: comp.position,
       };
 
       return this.http.post<BlogComponentDto>(`${this.gatewayUrl}`, createDto);
@@ -90,19 +101,28 @@ export class ComponentPersistenceService {
    * Gets stored components for a blog post using RPC
    */
   getComponentsForPost(postId: string): Observable<BlogComponentDto[]> {
-    return this.http.get<BlogComponentDto[]>(`${this.gatewayUrl}/post/${postId}`);
+    return this.http.get<BlogComponentDto[]>(
+      `${this.gatewayUrl}/post/${postId}`
+    );
   }
 
   /**
    * Updates a component in the database using RPC
    */
-  updateComponent(componentId: string, componentData: Record<string, any>, position?: number): Observable<BlogComponentDto> {
+  updateComponent(
+    componentId: string,
+    componentData: Record<string, any>,
+    position?: number
+  ): Observable<BlogComponentDto> {
     const updateDto = {
       componentData,
-      ...(position !== undefined && { position })
+      ...(position !== undefined && { position }),
     };
 
-    return this.http.put<BlogComponentDto>(`${this.gatewayUrl}/${componentId}`, updateDto);
+    return this.http.put<BlogComponentDto>(
+      `${this.gatewayUrl}/${componentId}`,
+      updateDto
+    );
   }
 
   /**
@@ -128,7 +148,7 @@ export class ComponentPersistenceService {
     const doc = parser.parseFromString(content, 'text/html');
     const componentNodes = doc.querySelectorAll('[data-angular-component]');
 
-    componentNodes.forEach(node => {
+    componentNodes.forEach((node) => {
       // Remove data attributes but keep structure for reconstruction
       node.removeAttribute('data-component-data');
       // Keep data-component-id and data-instance-id for reconstruction

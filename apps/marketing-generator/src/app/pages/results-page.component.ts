@@ -27,8 +27,9 @@ function cloneRequest<T>(value: T): T {
           <span class="eyebrow">Generated workbench</span>
           <h1>Compare strategy directions, then refine the built assets.</h1>
           <p>
-            The concept gallery chooses the direction. The workbench below lets you tune the
-            actual channel drafts and material copy before exporting or copying them.
+            The concept gallery chooses the direction. The workbench below lets
+            you tune the actual channel drafts and material copy before
+            exporting or copying them.
           </p>
         </div>
 
@@ -40,7 +41,9 @@ function cloneRequest<T>(value: T): T {
             [class.selected]="selectedConcept().id === concept.id"
             (click)="selectConcept(concept.id)"
           >
-            <span class="meta">{{ concept.channelLabel }} · {{ concept.generationMode }}</span>
+            <span class="meta"
+              >{{ concept.channelLabel }} · {{ concept.generationMode }}</span
+            >
             <strong>{{ concept.headline }}</strong>
             <p>{{ concept.subheadline }}</p>
             <small>{{ concept.angle }}</small>
@@ -54,17 +57,25 @@ function cloneRequest<T>(value: T): T {
           <h2>{{ selectedConcept().headline }}</h2>
           <p class="detail-subhead">{{ selectedConcept().subheadline }}</p>
           <div class="copy-actions">
-            <button type="button" (click)="copyConcept()">Copy strategy + outputs</button>
-            <button type="button" class="secondary" routerLink="/create">Edit studio</button>
+            <button type="button" (click)="copyConcept()">
+              Copy strategy + outputs
+            </button>
+            <button type="button" class="secondary" routerLink="/create">
+              Edit studio
+            </button>
           </div>
-          <p class="copy-feedback" *ngIf="copiedMessage()">{{ copiedMessage() }}</p>
+          <p class="copy-feedback" *ngIf="copiedMessage()">
+            {{ copiedMessage() }}
+          </p>
           <div class="preview-frame">
             <span class="frame-label">{{ selectedConcept().sectionType }}</span>
             <section *ngFor="let section of selectedConcept().sections">
               <h3>{{ section.title }}</h3>
               <p>{{ section.body }}</p>
             </section>
-            <button type="button" class="inline-cta">{{ selectedConcept().cta }}</button>
+            <button type="button" class="inline-cta">
+              {{ selectedConcept().cta }}
+            </button>
           </div>
         </div>
 
@@ -117,28 +128,41 @@ function cloneRequest<T>(value: T): T {
                 <strong>{{ channelHeadline(output) }}</strong>
                 <p>{{ output.summary }}</p>
                 <div class="preview-lines">
-                  <span *ngFor="let block of output.blocks.slice(1, 4)">{{ block.value }}</span>
+                  <span *ngFor="let block of output.blocks.slice(1, 4)">{{
+                    block.value
+                  }}</span>
                 </div>
               </div>
             </button>
           </div>
         </section>
 
-        <section class="editor-stack" *ngIf="selectedChannelOutput() as activeChannel">
+        <section
+          class="editor-stack"
+          *ngIf="selectedChannelOutput() as activeChannel"
+        >
           <div class="editor-card">
             <div class="output-head">
               <div>
                 <span class="eyebrow">Edit channel draft</span>
                 <h3>{{ activeChannel.label }}</h3>
               </div>
-              <button type="button" class="copy-mini" (click)="copyOutput(activeChannel)">Copy</button>
+              <button
+                type="button"
+                class="copy-mini"
+                (click)="copyOutput(activeChannel)"
+              >
+                Copy
+              </button>
             </div>
             <div class="editor-grid">
               <label *ngFor="let block of activeChannel.blocks">
                 <span>{{ block.label }}</span>
                 <textarea
                   [ngModel]="block.value"
-                  (ngModelChange)="updateChannelBlock(activeChannel.id, block.id, $event)"
+                  (ngModelChange)="
+                    updateChannelBlock(activeChannel.id, block.id, $event)
+                  "
                   [name]="block.id"
                 ></textarea>
               </label>
@@ -185,10 +209,19 @@ function cloneRequest<T>(value: T): T {
                 <span class="eyebrow">Edit material asset</span>
                 <h3>{{ activeMaterial.label }}</h3>
               </div>
-              <button type="button" class="copy-mini" (click)="copyMaterial(activeMaterial)">Copy</button>
+              <button
+                type="button"
+                class="copy-mini"
+                (click)="copyMaterial(activeMaterial)"
+              >
+                Copy
+              </button>
             </div>
 
-            <div class="surface-tabs" *ngIf="activeMaterial.surfaces.length > 1">
+            <div
+              class="surface-tabs"
+              *ngIf="activeMaterial.surfaces.length > 1"
+            >
               <button
                 *ngFor="let surface of activeMaterial.surfaces"
                 type="button"
@@ -207,7 +240,12 @@ function cloneRequest<T>(value: T): T {
             >
               <article class="surface-canvas">
                 <span class="surface-chip">{{ activeSurface.label }}</span>
-                <div *ngFor="let block of activeSurface.textBlocks" class="surface-block" [class.headline]="block.role === 'headline'" [class.cta]="block.role === 'cta'">
+                <div
+                  *ngFor="let block of activeSurface.textBlocks"
+                  class="surface-block"
+                  [class.headline]="block.role === 'headline'"
+                  [class.cta]="block.role === 'cta'"
+                >
                   {{ block.value }}
                 </div>
               </article>
@@ -217,7 +255,14 @@ function cloneRequest<T>(value: T): T {
                   <span>{{ block.label }}</span>
                   <textarea
                     [ngModel]="block.value"
-                    (ngModelChange)="updateMaterialTextBlock(activeMaterial.id, activeSurface.id, block.id, $event)"
+                    (ngModelChange)="
+                      updateMaterialTextBlock(
+                        activeMaterial.id,
+                        activeSurface.id,
+                        block.id,
+                        $event
+                      )
+                    "
                     [name]="block.id"
                   ></textarea>
                 </label>
@@ -232,7 +277,10 @@ function cloneRequest<T>(value: T): T {
       <section class="empty-state">
         <span class="eyebrow">No concepts yet</span>
         <h1>Generate a campaign workbench first.</h1>
-        <p>Your strategy and outputs will appear here after the studio brief is complete.</p>
+        <p>
+          Your strategy and outputs will appear here after the studio brief is
+          complete.
+        </p>
         <a routerLink="/create">Go to the generator</a>
       </section>
     </ng-template>
@@ -255,7 +303,11 @@ function cloneRequest<T>(value: T): T {
       .material-card,
       .editor-card {
         border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-        background: color-mix(in srgb, var(--surface, #10151c) 90%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 90%,
+          transparent
+        );
         border-radius: var(--border-radius-lg, 20px);
         box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25));
       }
@@ -301,22 +353,27 @@ function cloneRequest<T>(value: T): T {
         text-align: left;
         padding: 1rem;
         cursor: pointer;
-        transition:
-          transform var(--animation-duration-fast, 180ms) var(--animation-easing, ease),
-          border-color var(--animation-duration-fast, 180ms) var(--animation-easing, ease),
-          background var(--animation-duration-fast, 180ms) var(--animation-easing, ease);
+        transition: transform var(--animation-duration-fast, 180ms)
+            var(--animation-easing, ease),
+          border-color var(--animation-duration-fast, 180ms)
+            var(--animation-easing, ease),
+          background var(--animation-duration-fast, 180ms)
+            var(--animation-easing, ease);
       }
 
       .concept-card.selected,
       .channel-card.active,
       .material-card.active {
         border-color: var(--primary, #f59e0b);
-        background: color-mix(in srgb, var(--primary, #f59e0b) 12%, var(--surface, #10151c));
+        background: color-mix(
+          in srgb,
+          var(--primary, #f59e0b) 12%,
+          var(--surface, #10151c)
+        );
       }
 
       .material-card.primary {
-        box-shadow:
-          var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25)),
+        box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25)),
           0 0 0 1px color-mix(in srgb, var(--primary, #f59e0b) 38%, transparent);
       }
 
@@ -368,8 +425,11 @@ function cloneRequest<T>(value: T): T {
       .preview-frame {
         padding: 1rem;
         border-radius: var(--border-radius-md, 14px);
-        background:
-          linear-gradient(180deg, color-mix(in srgb, var(--primary, #f59e0b) 10%, transparent), transparent),
+        background: linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--primary, #f59e0b) 10%, transparent),
+            transparent
+          ),
           color-mix(in srgb, var(--surface, #10151c) 96%, transparent);
       }
 
@@ -391,7 +451,10 @@ function cloneRequest<T>(value: T): T {
       .inline-cta {
         margin-top: 1rem;
         color: var(--background, #081018);
-        background: var(--primary-gradient, linear-gradient(135deg, #f59e0b, #0ea5e9));
+        background: var(
+          --primary-gradient,
+          linear-gradient(135deg, #f59e0b, #0ea5e9)
+        );
         border-color: transparent;
       }
 
@@ -411,9 +474,18 @@ function cloneRequest<T>(value: T): T {
       .tuning-card select,
       .editor-grid textarea {
         border-radius: var(--border-radius-md, 14px);
-        border: 1px solid color-mix(in srgb, var(--border, rgba(255, 255, 255, 0.12)) 90%, transparent);
+        border: 1px solid
+          color-mix(
+            in srgb,
+            var(--border, rgba(255, 255, 255, 0.12)) 90%,
+            transparent
+          );
         padding: 0.85rem 0.95rem;
-        background: color-mix(in srgb, var(--surface, #10151c) 86%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 86%,
+          transparent
+        );
         color: var(--foreground, #f7f1e6);
       }
 
@@ -447,9 +519,16 @@ function cloneRequest<T>(value: T): T {
         min-height: 13rem;
         padding: 1rem;
         border-radius: calc(var(--border-radius-lg, 20px) - 4px);
-        background:
-          radial-gradient(circle at top right, color-mix(in srgb, var(--asset-accent, #2563eb) 20%, transparent), transparent 32%),
-          linear-gradient(155deg, color-mix(in srgb, var(--asset-primary, #d97706) 26%, #10151c), color-mix(in srgb, var(--surface, #10151c) 88%, black));
+        background: radial-gradient(
+            circle at top right,
+            color-mix(in srgb, var(--asset-accent, #2563eb) 20%, transparent),
+            transparent 32%
+          ),
+          linear-gradient(
+            155deg,
+            color-mix(in srgb, var(--asset-primary, #d97706) 26%, #10151c),
+            color-mix(in srgb, var(--surface, #10151c) 88%, black)
+          );
       }
 
       .channel-preview strong,
@@ -483,7 +562,10 @@ function cloneRequest<T>(value: T): T {
 
       .surface-tabs button.active {
         color: var(--background, #081018);
-        background: var(--primary-gradient, linear-gradient(135deg, #f59e0b, #0ea5e9));
+        background: var(
+          --primary-gradient,
+          linear-gradient(135deg, #f59e0b, #0ea5e9)
+        );
         border-color: transparent;
       }
 
@@ -545,7 +627,9 @@ function cloneRequest<T>(value: T): T {
 })
 export class ResultsPageComponent {
   protected readonly concepts = inject(MarketingStateService).concepts;
-  protected readonly request = cloneRequest(inject(MarketingStateService).request());
+  protected readonly request = cloneRequest(
+    inject(MarketingStateService).request()
+  );
   protected readonly personas = AUDIENCE_PERSONAS;
   protected readonly selectedId = signal(this.concepts()[0]?.id ?? '');
   protected readonly selectedChannelOutputId = signal('');
@@ -559,29 +643,38 @@ export class ResultsPageComponent {
 
     return selected ?? this.concepts()[0];
   });
-  protected readonly selectedChannelOutput = computed<ChannelOutput | undefined>(() => {
+  protected readonly selectedChannelOutput = computed<
+    ChannelOutput | undefined
+  >(() => {
     const concept = this.selectedConcept();
     return (
-      concept.channelOutputs.find((output) => output.id === this.selectedChannelOutputId()) ||
-      concept.channelOutputs[0]
+      concept.channelOutputs.find(
+        (output) => output.id === this.selectedChannelOutputId()
+      ) || concept.channelOutputs[0]
     );
   });
-  protected readonly selectedMaterialOutput = computed<CampaignAsset | undefined>(() => {
+  protected readonly selectedMaterialOutput = computed<
+    CampaignAsset | undefined
+  >(() => {
     const concept = this.selectedConcept();
     return (
-      concept.materialOutputs.find((asset) => asset.id === this.selectedMaterialId()) ||
-      concept.materialOutputs[0]
+      concept.materialOutputs.find(
+        (asset) => asset.id === this.selectedMaterialId()
+      ) || concept.materialOutputs[0]
     );
   });
-  protected readonly selectedMaterialSurface = computed<MaterialSurface | undefined>(() => {
+  protected readonly selectedMaterialSurface = computed<
+    MaterialSurface | undefined
+  >(() => {
     const material = this.selectedMaterialOutput();
     if (!material) {
       return undefined;
     }
 
     return (
-      material.surfaces.find((surface) => surface.id === this.selectedSurfaceId()) ||
-      material.surfaces[0]
+      material.surfaces.find(
+        (surface) => surface.id === this.selectedSurfaceId()
+      ) || material.surfaces[0]
     );
   });
 
@@ -606,7 +699,9 @@ export class ResultsPageComponent {
       }
 
       if (
-        !concept.materialOutputs.some((asset) => asset.id === this.selectedMaterialId())
+        !concept.materialOutputs.some(
+          (asset) => asset.id === this.selectedMaterialId()
+        )
       ) {
         const firstAsset = concept.materialOutputs[0];
         this.selectedMaterialId.set(firstAsset?.id ?? '');
@@ -617,7 +712,9 @@ export class ResultsPageComponent {
         );
         if (
           material &&
-          !material.surfaces.some((surface) => surface.id === this.selectedSurfaceId())
+          !material.surfaces.some(
+            (surface) => surface.id === this.selectedSurfaceId()
+          )
         ) {
           this.selectedSurfaceId.set(material.surfaces[0]?.id ?? '');
         }
@@ -699,8 +796,12 @@ export class ResultsPageComponent {
       concept.headline,
       concept.subheadline,
       ...concept.sections.map((section) => `${section.title}: ${section.body}`),
-      ...concept.channelOutputs.map((output) => this.formatChannelOutput(output)),
-      ...concept.materialOutputs.map((asset) => this.formatMaterialOutput(asset)),
+      ...concept.channelOutputs.map((output) =>
+        this.formatChannelOutput(output)
+      ),
+      ...concept.materialOutputs.map((asset) =>
+        this.formatMaterialOutput(asset)
+      ),
       concept.cta,
     ].join('\n\n');
 
@@ -749,9 +850,11 @@ export class ResultsPageComponent {
   private updateConcepts(
     updater: (concept: CampaignConcept) => CampaignConcept
   ): void {
-    const updated = this.state.concepts().map((concept) =>
-      concept.id === this.selectedConcept().id ? updater(concept) : concept
-    );
+    const updated = this.state
+      .concepts()
+      .map((concept) =>
+        concept.id === this.selectedConcept().id ? updater(concept) : concept
+      );
     this.state.setConcepts(updated);
   }
 
@@ -781,7 +884,9 @@ export class ResultsPageComponent {
       return;
     }
 
-    this.copiedMessage.set('Clipboard unavailable here. Returning to the generator.');
+    this.copiedMessage.set(
+      'Clipboard unavailable here. Returning to the generator.'
+    );
     await this.router.navigate(['/create']);
   }
 }

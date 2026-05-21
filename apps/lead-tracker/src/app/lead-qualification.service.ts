@@ -45,7 +45,9 @@ export class LeadQualificationService {
         userId: context.userId,
       },
       currentStep: profile.currentStep || 0,
-      completedAt: profile.completedAt ? new Date(profile.completedAt) : new Date(),
+      completedAt: profile.completedAt
+        ? new Date(profile.completedAt)
+        : new Date(),
     });
 
     return this.onboardingProfileRepository.save(record);
@@ -156,7 +158,10 @@ export class LeadQualificationService {
     }
 
     for (const lead of leads) {
-      await this.analyzeAndSave(lead, primaryTopicByLeadId.get(lead.id) || null);
+      await this.analyzeAndSave(
+        lead,
+        primaryTopicByLeadId.get(lead.id) || null
+      );
     }
   }
 

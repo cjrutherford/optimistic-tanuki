@@ -55,8 +55,8 @@ describe('ChannelService', () => {
       name: 'OT Live',
     } as unknown as Channel;
 
-    repository.findOne!
-      .mockResolvedValueOnce(null)
+    repository
+      .findOne!.mockResolvedValueOnce(null)
       .mockResolvedValueOnce(channel);
 
     const result = await service.findBySlugOrId('channel-1');

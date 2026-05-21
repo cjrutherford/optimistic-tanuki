@@ -1,27 +1,34 @@
 # Injected Component Interaction Fixes
 
 ## Overview
+
 This document describes the fixes implemented to resolve two critical issues with injected components in the TipTap editor:
+
 1. Components being deleted when typing around them
 2. Quick-edit forms losing focus and properties not persisting
 
 ## Problems Identified
 
 ### Problem 1: Components Deleted by Typing
+
 **Symptom**: When typing before, after, or near an injected component, the component would be deleted or overwritten with text.
 
 **Root Cause**: The component-editor-wrapper didn't have `contenteditable="false"`, so TipTap treated it as regular editable content. This allowed the editor to:
+
 - Delete components when typing
 - Replace components with text
 - Merge component nodes into text nodes
 
 ### Problem 2: Form Focus Loss and Data Not Persisting
+
 **Symptoms**:
+
 - Clicking in quick-edit form inputs would immediately blur
 - Typing in forms would sometimes lose focus
 - Property changes wouldn't persist after saving
 
 **Root Causes**:
+
 1. **Focus Loss**: TipTap's editor was capturing mousedown events from the overlay, preventing forms from getting focus
 2. **No Persistence**: The `updateAngularComponent` command wasn't dispatching transactions, so changes never committed to editor state
 3. **Poor Sync**: Node view updates weren't properly syncing back to wrapper component
@@ -33,18 +40,20 @@ This document describes the fixes implemented to resolve two critical issues wit
 **File**: `component-editor-wrapper.component.ts`
 
 **Changes**:
+
 ```html
 <!-- Wrapper: Prevent TipTap editing -->
 <div class="component-editor-wrapper" contenteditable="false">
-  
   <!-- Quick Edit Overlay: Allow form input -->
   <div class="quick-edit-overlay" contenteditable="true">
-    <input type="text" /> <!-- Can type here -->
+    <input type="text" />
+    <!-- Can type here -->
   </div>
 </div>
 ```
 
 **How it Works**:
+
 - `contenteditable="false"` on wrapper prevents TipTap from treating component as text
 - `contenteditable="true"` on overlay re-enables editing within forms
 - TipTap respects these boundaries and won't delete the component
@@ -56,6 +65,7 @@ This document describes the fixes implemented to resolve two critical issues wit
 **File**: `component-editor-wrapper.component.ts`
 
 **Added Event Handler**:
+
 ```typescript
 onOverlayMouseDown(event: MouseEvent): void {
   // Prevent TipTap editor from capturing focus
@@ -64,12 +74,13 @@ onOverlayMouseDown(event: MouseEvent): void {
 ```
 
 **HTML**:
+
 ```html
-<div class="quick-edit-overlay" 
-     (mousedown)="onOverlayMouseDown($event)">
+<div class="quick-edit-overlay" (mousedown)="onOverlayMouseDown($event)"></div>
 ```
 
 **How it Works**:
+
 - Mousedown events are stopped before reaching TipTap's event handlers
 - Form inputs can receive focus normally
 - TipTap doesn't interfere with form interactions
@@ -81,24 +92,27 @@ onOverlayMouseDown(event: MouseEvent): void {
 **File**: `angular-component-node.extension.ts`
 
 **Before**:
+
 ```typescript
-updateAngularComponent: (options) => ({ tr, state }) => {
-  doc.descendants((node, pos) => {
-    if (node.attrs['instanceId'] === options.instanceId) {
-      tr.setNodeMarkup(pos, undefined, {
-        ...node.attrs,
-        data: options.data,
-      });
-      updated = true;
-    }
-  });
-  return updated; // ❌ Transaction never committed!
-}
+updateAngularComponent: (options) =>
+  ({ tr, state }) => {
+    doc.descendants((node, pos) => {
+      if (node.attrs['instanceId'] === options.instanceId) {
+        tr.setNodeMarkup(pos, undefined, {
+          ...node.attrs,
+          data: options.data,
+        });
+        updated = true;
+      }
+    });
+    return updated; // ❌ Transaction never committed!
+  };
 ```
 
 **After**:
+
 ```typescript
-updateAngularComponent: (options) => 
+updateAngularComponent: (options) =>
   ({ tr, state, dispatch }) => {
     doc.descendants((node, pos) => {
       if (node.attrs['instanceId'] === options.instanceId) {
@@ -109,17 +123,18 @@ updateAngularComponent: (options) =>
         updated = true;
       }
     });
-    
+
     // ✅ Actually commit the transaction
     if (updated && dispatch) {
       dispatch(tr);
     }
-    
+
     return updated;
-  }
+  };
 ```
 
 **How it Works**:
+
 - `dispatch` parameter receives the editor's dispatch function
 - Calling `dispatch(tr)` commits the transaction to editor state
 - Editor state is updated, changes are persisted
@@ -131,6 +146,7 @@ updateAngularComponent: (options) =>
 **File**: `angular-component-node.extension.ts`
 
 **Node View Update Method**:
+
 ```typescript
 update: (updatedNode) => {
   if (updatedNode.type.name !== this.name) {
@@ -141,11 +157,11 @@ update: (updatedNode) => {
   if (instance && instance.componentRef) {
     // ✅ Update wrapper's componentData property
     const wrapperInstance = instance.componentRef.instance;
-    wrapperInstance.componentData = { 
-      ...wrapperInstance.componentData, 
-      ...newData 
+    wrapperInstance.componentData = {
+      ...wrapperInstance.componentData,
+      ...newData,
     };
-    
+
     // ✅ Update instance data
     instance.data = { ...instance.data, ...newData };
 
@@ -155,10 +171,11 @@ update: (updatedNode) => {
     }
   }
   return true;
-}
+};
 ```
 
 **How it Works**:
+
 - When TipTap node updates, the wrapper component is notified
 - Wrapper's `componentData` property is updated
 - Angular change detection runs
@@ -171,20 +188,22 @@ update: (updatedNode) => {
 **File**: `component-editor-wrapper.component.ts`
 
 **New Public Method**:
+
 ```typescript
 public updateComponentData(newData: Record<string, any>): void {
   this.componentData = { ...this.componentData, ...newData };
-  
+
   // Don't overwrite editing data if user is currently editing
   if (!this.isEditing) {
     this.editingData = { ...this.componentData };
   }
-  
+
   this.updateDynamicComponent();
 }
 ```
 
 **Improved Private Method**:
+
 ```typescript
 private updateDynamicComponent(): void {
   if (!this.dynamicComponentRef) return;
@@ -195,7 +214,7 @@ private updateDynamicComponent(): void {
     ...this.componentDef.data,
     ...this.componentData,
   };
-  
+
   Object.keys(data).forEach((key) => {
     if (this.dynamicComponentRef!.instance[key] !== undefined) {
       this.dynamicComponentRef!.instance[key] = data[key];
@@ -207,6 +226,7 @@ private updateDynamicComponent(): void {
 ```
 
 **How it Works**:
+
 - External updates use the public `updateComponentData()` method
 - If user is editing, their changes aren't overwritten
 - Component always reflects the latest committed data
@@ -219,6 +239,7 @@ private updateDynamicComponent(): void {
 **File**: `component-injection.service.ts`
 
 **Improved updateComponent Method**:
+
 ```typescript
 updateComponent(instanceId: string, data: any): void {
   const instance = this.activeComponents.get(instanceId);
@@ -237,16 +258,16 @@ updateComponent(instanceId: string, data: any): void {
     } else {
       // Fallback for compatibility
       if (wrapperInstance.componentData) {
-        wrapperInstance.componentData = { 
-          ...wrapperInstance.componentData, 
-          ...data 
+        wrapperInstance.componentData = {
+          ...wrapperInstance.componentData,
+          ...data
         };
       }
     }
   }
 
   instance.componentRef.changeDetectorRef.detectChanges();
-  
+
   this.componentEvents.emit({
     type: 'updated',
     instance,
@@ -256,6 +277,7 @@ updateComponent(instanceId: string, data: any): void {
 ```
 
 **How it Works**:
+
 - Prefers using the public `updateComponentData()` method
 - Falls back to direct property update if needed
 - Maintains backward compatibility
@@ -330,7 +352,9 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 ## Testing Guide
 
 ### Test 1: Typing Around Components
+
 **Steps**:
+
 1. Insert a component in editor
 2. Click before the component
 3. Type text
@@ -338,12 +362,15 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 5. Type text
 
 **Expected**:
+
 - ✅ Component remains intact
 - ✅ Text appears before/after component
 - ✅ Component is not deleted or corrupted
 
 ### Test 2: Quick Edit Forms
+
 **Steps**:
+
 1. Insert a component
 2. Click Edit button
 3. Click in a text input
@@ -352,13 +379,16 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 6. Type more text
 
 **Expected**:
+
 - ✅ First input maintains focus
 - ✅ Can type without blur
 - ✅ Tab moves to next field
 - ✅ All inputs work normally
 
 ### Test 3: Property Persistence
+
 **Steps**:
+
 1. Insert a component
 2. Click Edit button
 3. Change a property value
@@ -367,13 +397,16 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 6. Click Edit button again
 
 **Expected**:
+
 - ✅ Component shows updated value
 - ✅ Quick-edit form shows saved value
 - ✅ Changes persisted in editor
 - ✅ Can edit again successfully
 
 ### Test 4: Component Rearrangement
+
 **Steps**:
+
 1. Insert two components
 2. Edit properties on first component
 3. Save changes
@@ -381,19 +414,23 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 5. Edit second component
 
 **Expected**:
+
 - ✅ Drag and drop works
 - ✅ Components reorder correctly
 - ✅ First component retains its data
 - ✅ Second component is editable
 
 ### Test 5: Component Deletion
+
 **Steps**:
+
 1. Insert a component
 2. Edit properties
 3. Save changes
 4. Click Delete button
 
 **Expected**:
+
 - ✅ Component is removed
 - ✅ Editor remains functional
 - ✅ No errors in console
@@ -402,26 +439,31 @@ Component Wrapper (contenteditable="false") ← Protected from editing
 ## Common Issues and Troubleshooting
 
 ### Issue: Component still gets deleted when typing
+
 **Check**:
+
 - Is `contenteditable="false"` on wrapper element?
 - Is the wrapper element actually rendered?
 - Are there any CSS overrides affecting pointer-events?
 
 **Fix**:
+
 ```html
-<div class="component-editor-wrapper" contenteditable="false">
+<div class="component-editor-wrapper" contenteditable="false"></div>
 ```
 
 ### Issue: Forms still lose focus
+
 **Check**:
+
 - Is `onOverlayMouseDown` handler bound?
 - Is `event.stopPropagation()` being called?
 - Is the overlay inside the wrapper hierarchy?
 
 **Fix**:
+
 ```html
-<div class="quick-edit-overlay" 
-     (mousedown)="onOverlayMouseDown($event)">
+<div class="quick-edit-overlay" (mousedown)="onOverlayMouseDown($event)"></div>
 ```
 
 ```typescript
@@ -431,36 +473,43 @@ onOverlayMouseDown(event: MouseEvent): void {
 ```
 
 ### Issue: Changes don't persist
+
 **Check**:
+
 - Is `dispatch` parameter in command?
 - Is `dispatch(tr)` being called?
 - Is transaction being created with changes?
 
 **Fix**:
+
 ```typescript
-updateAngularComponent: (options) => 
-  ({ tr, state, dispatch }) => { // Must include dispatch
+updateAngularComponent: (options) =>
+  ({ tr, state, dispatch }) => {
+    // Must include dispatch
     // ... make changes ...
     if (updated && dispatch) {
       dispatch(tr); // Must call dispatch
     }
     return updated;
-  }
+  };
 ```
 
 ### Issue: Wrapper not updating
+
 **Check**:
+
 - Is `updateComponentData()` method defined?
 - Is node view's `update()` method calling it?
 - Is change detection running?
 
 **Fix**:
+
 ```typescript
 // In node view update:
 const wrapperInstance = instance.componentRef.instance;
-wrapperInstance.componentData = { 
-  ...wrapperInstance.componentData, 
-  ...newData 
+wrapperInstance.componentData = {
+  ...wrapperInstance.componentData,
+  ...newData,
 };
 instance.componentRef.changeDetectorRef.detectChanges();
 ```
@@ -468,16 +517,19 @@ instance.componentRef.changeDetectorRef.detectChanges();
 ## Performance Considerations
 
 ### Change Detection Optimization
+
 - Only trigger change detection when data actually changes
 - Use `OnPush` strategy where possible
 - Avoid unnecessary wrapper re-renders
 
 ### Event Handler Efficiency
+
 - Use `stopPropagation()` sparingly, only where needed
 - Avoid deep event handler nesting
 - Debounce rapid updates if necessary
 
 ### Transaction Batching
+
 - Consider batching multiple updates into single transaction
 - Avoid dispatching on every keystroke
 - Use appropriate update granularity
@@ -485,6 +537,7 @@ instance.componentRef.changeDetectorRef.detectChanges();
 ## Future Improvements
 
 ### Potential Enhancements
+
 1. **Undo/Redo Support**: Make component edits undoable
 2. **Validation**: Add property validation before saving
 3. **Conflict Resolution**: Handle concurrent edits gracefully
@@ -492,6 +545,7 @@ instance.componentRef.changeDetectorRef.detectChanges();
 5. **Change Indicators**: Show which properties changed
 
 ### Architecture Improvements
+
 1. **State Management**: Consider using a state management library
 2. **Event Bus**: Centralize component event handling
 3. **Component Registry**: Better component lifecycle management
@@ -500,6 +554,7 @@ instance.componentRef.changeDetectorRef.detectChanges();
 ## Conclusion
 
 The fixes implemented resolve both critical issues:
+
 1. ✅ Components are protected from accidental deletion
 2. ✅ Forms are fully functional with proper focus management
 3. ✅ Property changes persist reliably

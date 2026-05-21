@@ -60,7 +60,7 @@ export class CommunityController {
     private readonly permissionsClient: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
     private readonly chatClient: ClientProxy
-  ) { }
+  ) {}
 
   @Post()
   @RequirePermissions('community.create')
@@ -646,7 +646,10 @@ export class CommunityController {
     @Body() body: { ownerId: string; name?: string }
   ): Promise<{ id: string }> {
     const community = await firstValueFrom(
-      this.socialClient.send({ cmd: CommunityCommands.FIND }, { id: communityId })
+      this.socialClient.send(
+        { cmd: CommunityCommands.FIND },
+        { id: communityId }
+      )
     );
 
     if (community?.chatRoomId) {
@@ -716,9 +719,10 @@ export class CommunityController {
 
       const alreadyAssigned = Array.isArray(existingAssignments)
         ? existingAssignments.some(
-          (assignment: any) =>
-            assignment.role?.id === role.id && assignment.targetId === communityId
-        )
+            (assignment: any) =>
+              assignment.role?.id === role.id &&
+              assignment.targetId === communityId
+          )
         : false;
 
       if (alreadyAssigned) {

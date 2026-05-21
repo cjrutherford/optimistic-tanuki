@@ -48,7 +48,11 @@ describe('HaiAboutModalComponent', () => {
       '[data-testid="hai-app-link"]'
     ) as NodeListOf<HTMLAnchorElement>;
 
-    expect(Array.from(appLinks).some((link) => link.textContent?.includes('HAI Computer'))).toBe(false);
+    expect(
+      Array.from(appLinks).some((link) =>
+        link.textContent?.includes('HAI Computer')
+      )
+    ).toBe(false);
   });
 
   it('switches to the HAI tab when selected', () => {

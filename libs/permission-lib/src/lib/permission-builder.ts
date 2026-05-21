@@ -133,7 +133,7 @@ export class RoleInitBuilder {
     action: string,
     description = '',
     targetId?: string,
-    appScope?: string,
+    appScope?: string
   ) {
     this.opts.permissions?.push({
       name,
@@ -151,25 +151,25 @@ export class RoleInitBuilder {
       'asset.create',
       'asset',
       'create',
-      'Create asset for profile',
+      'Create asset for profile'
     );
     this.addPermission(
       'asset.read',
       'asset',
       'read',
-      'Read asset owned by user',
+      'Read asset owned by user'
     );
     this.addPermission(
       'asset.update',
       'asset',
       'update',
-      'Update asset owned by user',
+      'Update asset owned by user'
     );
     this.addPermission(
       'asset.delete',
       'asset',
       'delete',
-      'Delete asset owned by user',
+      'Delete asset owned by user'
     );
     // Create an AssetUser role and assign it so the permissions are linked
     this.addRole('AssetUser', 'User with asset upload permissions', [
@@ -258,7 +258,7 @@ export class RoleInitBuilder {
         permission.action,
         permission.description || '',
         permission.targetId,
-        permission.appScope,
+        permission.appScope
       );
     }
 
@@ -291,7 +291,7 @@ export class RoleInitBuilder {
       'read',
       'Read profile',
       profileId,
-      appScope,
+      appScope
     );
     this.addPermission(
       'profile.update',
@@ -299,7 +299,7 @@ export class RoleInitBuilder {
       'update',
       'Update profile',
       profileId,
-      appScope,
+      appScope
     );
     this.addRole('ProfileOwner', 'Owner of profile', [
       'profile.read',

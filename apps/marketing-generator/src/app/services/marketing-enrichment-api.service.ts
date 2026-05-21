@@ -16,10 +16,13 @@ export class MarketingEnrichmentApiService {
   ): Promise<CampaignConcept[]> {
     const response = await firstValueFrom(
       this.http
-        .post<{ concepts: CampaignConcept[] }>('/api/marketing-generator/enrich', {
-          request,
-          concepts,
-        })
+        .post<{ concepts: CampaignConcept[] }>(
+          '/api/marketing-generator/enrich',
+          {
+            request,
+            concepts,
+          }
+        )
         .pipe(catchError(() => of({ concepts })))
     );
 

@@ -1,4 +1,7 @@
-import { LeadDiscoverySource, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
+import {
+  LeadDiscoverySource,
+  LeadTopicDiscoveryIntent,
+} from '@optimistic-tanuki/models/leads-contracts';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
 import { CrunchbaseDiscoveryProvider } from './crunchbase-discovery.provider';
 
@@ -9,7 +12,9 @@ describe('CrunchbaseDiscoveryProvider', () => {
       searchNews: jest.fn().mockResolvedValue([]),
       analyzePage: jest.fn(),
     };
-    const provider = new CrunchbaseDiscoveryProvider(searchAcquisitionService as any);
+    const provider = new CrunchbaseDiscoveryProvider(
+      searchAcquisitionService as any
+    );
     const topic = {
       id: 'topic-1',
       name: 'Developer platform',
@@ -30,12 +35,16 @@ describe('CrunchbaseDiscoveryProvider', () => {
     const queries = searchAcquisitionService.searchNews.mock.calls.map(
       (call) => call[0] as string
     );
-    expect(queries.some((query) => query.includes('site:crunchbase.com/organization'))).toBe(
-      true
-    );
+    expect(
+      queries.some((query) =>
+        query.includes('site:crunchbase.com/organization')
+      )
+    ).toBe(true);
     expect(queries.some((query) => query.includes('funding'))).toBe(true);
-    expect(queries.some((query) => query.includes('raised') || query.includes('series'))).toBe(
-      true
-    );
+    expect(
+      queries.some(
+        (query) => query.includes('raised') || query.includes('series')
+      )
+    ).toBe(true);
   });
 });

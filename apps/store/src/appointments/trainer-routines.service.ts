@@ -42,14 +42,18 @@ export class TrainerRoutinesService {
     });
   }
 
-  async getClientRoutines(clientId: string): Promise<TrainerRoutineAssignmentEntity[]> {
+  async getClientRoutines(
+    clientId: string
+  ): Promise<TrainerRoutineAssignmentEntity[]> {
     return this.routineRepository.find({
       where: { clientId },
       order: { createdAt: 'DESC' },
     });
   }
 
-  async completeRoutine(id: string): Promise<TrainerRoutineAssignmentEntity | null> {
+  async completeRoutine(
+    id: string
+  ): Promise<TrainerRoutineAssignmentEntity | null> {
     await this.routineRepository.update(id, {
       status: 'completed',
       completedAt: new Date(),
@@ -67,7 +71,9 @@ export class TrainerRoutinesService {
     return this.checkInRepository.save(checkIn);
   }
 
-  async getClientCheckIns(clientId: string): Promise<TrainerProgressCheckInEntity[]> {
+  async getClientCheckIns(
+    clientId: string
+  ): Promise<TrainerProgressCheckInEntity[]> {
     return this.checkInRepository.find({
       where: { clientId },
       order: { completedAt: 'DESC' },

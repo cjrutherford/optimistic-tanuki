@@ -23,7 +23,10 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
-    provideHttpClient(withInterceptors([authenticationInterceptor]), withFetch()),
+    provideHttpClient(
+      withInterceptors([authenticationInterceptor]),
+      withFetch()
+    ),
     {
       provide: API_BASE_URL,
       useValue: '/api',

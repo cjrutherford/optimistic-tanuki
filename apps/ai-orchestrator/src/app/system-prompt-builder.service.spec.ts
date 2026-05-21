@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { SystemPromptBuilder, SystemPromptOptions } from './system-prompt-builder.service';
+import {
+  SystemPromptBuilder,
+  SystemPromptOptions,
+} from './system-prompt-builder.service';
 import { ClientProxy } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
@@ -27,9 +30,15 @@ describe('SystemPromptBuilder', () => {
     id: 'persona-123',
     name: 'ProjectAssistant',
     description: 'A helpful project management assistant',
-    goals: ['Help users manage projects efficiently', 'Track deadlines and milestones'],
+    goals: [
+      'Help users manage projects efficiently',
+      'Track deadlines and milestones',
+    ],
     skills: ['Task management', 'Communication', 'Organization'],
-    limitations: ['Cannot access external systems', 'Limited to platform features'],
+    limitations: [
+      'Cannot access external systems',
+      'Limited to platform features',
+    ],
     coreObjective: 'Streamline project workflow and boost team productivity',
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -88,12 +97,18 @@ describe('SystemPromptBuilder', () => {
   };
 
   const mockChatPromptTemplate = {
-    formatMessages: jest.fn().mockResolvedValue([{ content: 'Mocked system message' }]),
+    formatMessages: jest
+      .fn()
+      .mockResolvedValue([{ content: 'Mocked system message' }]),
   };
 
   beforeEach(async () => {
-    (ChatPromptTemplate.fromMessages as jest.Mock).mockReturnValue(mockChatPromptTemplate);
-    mockChatPromptTemplate.formatMessages.mockResolvedValue([{ content: 'Mocked system message' }]);
+    (ChatPromptTemplate.fromMessages as jest.Mock).mockReturnValue(
+      mockChatPromptTemplate
+    );
+    mockChatPromptTemplate.formatMessages.mockResolvedValue([
+      { content: 'Mocked system message' },
+    ]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -114,7 +129,9 @@ describe('SystemPromptBuilder', () => {
     }).compile();
 
     service = module.get<SystemPromptBuilder>(SystemPromptBuilder);
-    telosDocsService = module.get<ClientProxy>(ServiceTokens.TELOS_DOCS_SERVICE);
+    telosDocsService = module.get<ClientProxy>(
+      ServiceTokens.TELOS_DOCS_SERVICE
+    );
     profileService = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
   });
 
@@ -128,7 +145,9 @@ describe('SystemPromptBuilder', () => {
 
   describe('buildSystemPrompt', () => {
     it('should build basic system prompt with persona TELOS only', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       const result = await service.buildSystemPrompt({
@@ -140,12 +159,15 @@ describe('SystemPromptBuilder', () => {
       expect(result.template).toBeDefined();
       expect(result.variables).toBeDefined();
       expect(result.variables.personaName).toBe('ProjectAssistant');
-      expect(result.variables.personaCoreObjective).toBe('Streamline project workflow and boost team productivity');
+      expect(result.variables.personaCoreObjective).toBe(
+        'Streamline project workflow and boost team productivity'
+      );
       expect(result.variables.userName).toBe('John Doe');
     });
 
     it('should include profile TELOS when requested', async () => {
-      jest.spyOn(telosDocsService, 'send')
+      jest
+        .spyOn(telosDocsService, 'send')
         .mockReturnValueOnce(of([mockPersonaTelos])) // fetchPersonaTelos
         .mockReturnValueOnce(of(mockProfileTelos)); // fetchProfileTelos
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
@@ -160,13 +182,20 @@ describe('SystemPromptBuilder', () => {
         }
       );
 
-      expect(result.variables.userCoreObjective).toBe('Build innovative software products');
-      expect(result.variables.userGoals).toBe('Deliver high-quality code and Mentor junior developers');
-      expect(result.variables.userSkills).toBe('TypeScript, React, Node.js, and Leadership');
+      expect(result.variables.userCoreObjective).toBe(
+        'Build innovative software products'
+      );
+      expect(result.variables.userGoals).toBe(
+        'Deliver high-quality code and Mentor junior developers'
+      );
+      expect(result.variables.userSkills).toBe(
+        'TypeScript, React, Node.js, and Leadership'
+      );
     });
 
     it('should include project TELOS when requested', async () => {
-      jest.spyOn(telosDocsService, 'send')
+      jest
+        .spyOn(telosDocsService, 'send')
         .mockReturnValueOnce(of([mockPersonaTelos])) // fetchPersonaTelos
         .mockReturnValueOnce(of(mockProjectTelos)); // fetchProjectTelos
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
@@ -182,13 +211,20 @@ describe('SystemPromptBuilder', () => {
         }
       );
 
-      expect(result.variables.projectCoreObjective).toBe('Deliver scalable e-commerce platform');
-      expect(result.variables.projectGoals).toBe('Achieve 99.9% uptime and Support 10k concurrent users');
-      expect(result.variables.projectSkills).toBe('Cloud architecture, Microservices, and Database optimization');
+      expect(result.variables.projectCoreObjective).toBe(
+        'Deliver scalable e-commerce platform'
+      );
+      expect(result.variables.projectGoals).toBe(
+        'Achieve 99.9% uptime and Support 10k concurrent users'
+      );
+      expect(result.variables.projectSkills).toBe(
+        'Cloud architecture, Microservices, and Database optimization'
+      );
     });
 
     it('should include all TELOS contexts when all options enabled', async () => {
-      jest.spyOn(telosDocsService, 'send')
+      jest
+        .spyOn(telosDocsService, 'send')
         .mockReturnValueOnce(of([mockPersonaTelos])) // fetchPersonaTelos
         .mockReturnValueOnce(of(mockProfileTelos)) // fetchProfileTelos
         .mockReturnValueOnce(of(mockProjectTelos)); // fetchProjectTelos
@@ -209,13 +245,18 @@ describe('SystemPromptBuilder', () => {
       );
 
       expect(result.variables.personaName).toBe('ProjectAssistant');
-      expect(result.variables.userCoreObjective).toBe('Build innovative software products');
-      expect(result.variables.projectCoreObjective).toBe('Deliver scalable e-commerce platform');
+      expect(result.variables.userCoreObjective).toBe(
+        'Build innovative software products'
+      );
+      expect(result.variables.projectCoreObjective).toBe(
+        'Deliver scalable e-commerce platform'
+      );
       expect(result.variables.userId).toBe('profile-456');
     });
 
     it('should handle missing profile TELOS gracefully', async () => {
-      jest.spyOn(telosDocsService, 'send')
+      jest
+        .spyOn(telosDocsService, 'send')
         .mockReturnValueOnce(of([mockPersonaTelos])) // fetchPersonaTelos
         .mockReturnValueOnce(throwError(() => new Error('Not found'))); // fetchProfileTelos fails
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
@@ -237,7 +278,8 @@ describe('SystemPromptBuilder', () => {
     });
 
     it('should handle missing project TELOS gracefully', async () => {
-      jest.spyOn(telosDocsService, 'send')
+      jest
+        .spyOn(telosDocsService, 'send')
         .mockReturnValueOnce(of([mockPersonaTelos])) // fetchPersonaTelos
         .mockReturnValueOnce(throwError(() => new Error('Not found'))); // fetchProjectTelos fails
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
@@ -259,12 +301,14 @@ describe('SystemPromptBuilder', () => {
       expect(result.variables.projectCoreObjective).toBeUndefined();
     });
 
-
     it('should include project context when provided', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
-      const projectContext = 'Current project: E-commerce Platform. Active tasks: 12. Overdue tasks: 2.';
+      const projectContext =
+        'Current project: E-commerce Platform. Active tasks: 12. Overdue tasks: 2.';
 
       const result = await service.buildSystemPrompt({
         personaId: 'persona-123',
@@ -278,7 +322,9 @@ describe('SystemPromptBuilder', () => {
 
   describe('TELOS-first architecture', () => {
     it('should generate template with persona TELOS as foundational identity', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       await service.buildSystemPrompt({
@@ -288,9 +334,10 @@ describe('SystemPromptBuilder', () => {
 
       // Since we mocked ChatPromptTemplate.fromMessages, we need to inspect the calls to it
       expect(ChatPromptTemplate.fromMessages).toHaveBeenCalled();
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
-      
+
       // Verify TELOS-first structure
       expect(systemMessage).toContain('PERSONA IDENTITY');
       expect(systemMessage).toContain('TELOS Framework');
@@ -301,7 +348,9 @@ describe('SystemPromptBuilder', () => {
     });
 
     it('should emphasize assistant role clarity', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       await service.buildSystemPrompt({
@@ -309,9 +358,10 @@ describe('SystemPromptBuilder', () => {
         profileId: 'profile-456',
       });
 
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
-      
+
       // Verify role clarity
       expect(systemMessage).toContain('NOT role-playing as the user');
       expect(systemMessage).toContain('AI assistant');
@@ -321,7 +371,9 @@ describe('SystemPromptBuilder', () => {
 
   describe('caching', () => {
     it('should cache persona TELOS data', async () => {
-      const sendSpy = jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      const sendSpy = jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       // First call
@@ -343,7 +395,9 @@ describe('SystemPromptBuilder', () => {
 
   describe('template variable building', () => {
     it('should format persona goals as readable text', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       const result = await service.buildSystemPrompt({
@@ -351,12 +405,18 @@ describe('SystemPromptBuilder', () => {
         profileId: 'profile-456',
       });
 
-      expect(result.variables.personaGoals).toContain('Help users manage projects efficiently');
-      expect(result.variables.personaGoals).toContain('Track deadlines and milestones');
+      expect(result.variables.personaGoals).toContain(
+        'Help users manage projects efficiently'
+      );
+      expect(result.variables.personaGoals).toContain(
+        'Track deadlines and milestones'
+      );
     });
 
     it('should format user name correctly', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       const result = await service.buildSystemPrompt({
@@ -369,7 +429,9 @@ describe('SystemPromptBuilder', () => {
     });
 
     it('should NOT include conversation summary (Phase 1 fix)', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
 
       const result = await service.buildSystemPrompt({
@@ -379,15 +441,18 @@ describe('SystemPromptBuilder', () => {
 
       // Phase 1 fix: conversationSummary should NOT be in variables (system prompt is now static)
       expect(result.variables.conversationSummary).toBeUndefined();
-      
+
       // Verify template does NOT include conversation context section
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
       expect(systemMessage).not.toContain('# CONVERSATION CONTEXT');
     });
 
     it('should include first message instructions when isFirstMessage is true', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       (ChatPromptTemplate.fromMessages as jest.Mock).mockClear();
 
@@ -401,11 +466,14 @@ describe('SystemPromptBuilder', () => {
         }
       );
 
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
-      
+
       // Should include first message instructions
-      expect(systemMessage).toContain('# RESPONSE GUIDELINES - INITIAL GREETING');
+      expect(systemMessage).toContain(
+        '# RESPONSE GUIDELINES - INITIAL GREETING'
+      );
       expect(systemMessage).toContain('CRITICAL: First Message Rules');
       expect(systemMessage).toContain('BE CONVERSATIONAL ONLY');
       expect(systemMessage).toContain('DO NOT call any tools');
@@ -414,7 +482,9 @@ describe('SystemPromptBuilder', () => {
     });
 
     it('should NOT include first message instructions when isFirstMessage is false', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       (ChatPromptTemplate.fromMessages as jest.Mock).mockClear();
 
@@ -428,13 +498,16 @@ describe('SystemPromptBuilder', () => {
         }
       );
 
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
-      
+
       // Should NOT include first message instructions
-      expect(systemMessage).not.toContain('# RESPONSE GUIDELINES - INITIAL GREETING');
+      expect(systemMessage).not.toContain(
+        '# RESPONSE GUIDELINES - INITIAL GREETING'
+      );
       expect(systemMessage).not.toContain('CRITICAL: First Message Rules');
-      
+
       // Should include normal response guidelines
       expect(systemMessage).toContain('# RESPONSE GUIDELINES');
       expect(systemMessage).toContain('## Persona Alignment');
@@ -442,7 +515,9 @@ describe('SystemPromptBuilder', () => {
     });
 
     it('should exclude tools section when isFirstMessage is true', async () => {
-      jest.spyOn(telosDocsService, 'send').mockReturnValue(of([mockPersonaTelos]));
+      jest
+        .spyOn(telosDocsService, 'send')
+        .mockReturnValue(of([mockPersonaTelos]));
       jest.spyOn(profileService, 'send').mockReturnValue(of(mockProfile));
       (ChatPromptTemplate.fromMessages as jest.Mock).mockClear();
 
@@ -457,9 +532,10 @@ describe('SystemPromptBuilder', () => {
         }
       );
 
-      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock.calls[0][0];
+      const messages = (ChatPromptTemplate.fromMessages as jest.Mock).mock
+        .calls[0][0];
       const systemMessage = messages[0][1];
-      
+
       // Should NOT include tools section on first message
       expect(systemMessage).not.toContain('# TOOLS & CAPABILITIES');
       expect(systemMessage).not.toContain('Tool Discovery');

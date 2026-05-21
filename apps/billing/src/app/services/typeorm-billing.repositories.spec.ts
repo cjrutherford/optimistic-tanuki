@@ -1,5 +1,8 @@
 import { DataSource, Repository } from 'typeorm';
-import { UsageBlockGrantEntity, UsageEventEntity } from '@optimistic-tanuki/billing-data-access';
+import {
+  UsageBlockGrantEntity,
+  UsageEventEntity,
+} from '@optimistic-tanuki/billing-data-access';
 import {
   TypeOrmUsageBlockRepository,
   TypeOrmUsageEventRepository,
@@ -54,10 +57,12 @@ describe('TypeOrmUsageBlockRepository', () => {
         accountId: 'acct-1',
         meterId: 'api-calls',
         at,
-      }),
+      })
     ).resolves.toEqual([]);
 
-    expect(dataSource.getRepository).toHaveBeenCalledWith(UsageBlockGrantEntity);
+    expect(dataSource.getRepository).toHaveBeenCalledWith(
+      UsageBlockGrantEntity
+    );
     expect(usageBlockRepository.find).toHaveBeenCalledWith({
       where: [
         {

@@ -250,7 +250,9 @@ Respond with only valid JSON using this exact shape:
       cScore: this.normalizeScore(parsed.cScore),
       primaryType: parsed.primaryType || 'C',
       secondaryType: parsed.secondaryType || undefined,
-      summary: parsed.summary || 'DISC assessment completed from interview transcript.',
+      summary:
+        parsed.summary ||
+        'DISC assessment completed from interview transcript.',
       confidence: this.normalizeScore(parsed.confidence),
     };
   }
@@ -299,7 +301,10 @@ Rules:
 
   private buildUserPrompt(profile: UserOnboardingProfile): string {
     const combinedSkills = Array.from(
-      new Set([...(profile.skills || []), ...(profile.resumeDerivedSkills || [])])
+      new Set([
+        ...(profile.skills || []),
+        ...(profile.resumeDerivedSkills || []),
+      ])
     );
 
     return `Analyze this onboarding profile and generate topic suggestions:
@@ -456,7 +461,10 @@ Excluded Industries: ${
       : ['business'];
   }
 
-  private async invokeJson<T>(systemPrompt: string, userPrompt: string): Promise<T> {
+  private async invokeJson<T>(
+    systemPrompt: string,
+    userPrompt: string
+  ): Promise<T> {
     if (!this.llm) {
       throw new Error('LLM model not available');
     }

@@ -24,7 +24,7 @@ export class RolesService {
     @InjectRepository(AppScope)
     private appScopesRepository: Repository<AppScope>,
     private readonly l: Logger
-  ) { }
+  ) {}
 
   async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
     this.l.log(`Creating role: ${createRoleDto.name}`);
@@ -222,14 +222,17 @@ export class RolesService {
 
       const roleAssignment = await queryBuilder.getMany();
       this.l.debug(
-        `Found ${roleAssignment.length
-        } role assignments for profile ${profileId} (appScopeIdOrName=${appScopeIdOrName ?? 'null'
+        `Found ${
+          roleAssignment.length
+        } role assignments for profile ${profileId} (appScopeIdOrName=${
+          appScopeIdOrName ?? 'null'
         })`
       );
       return roleAssignment;
     } catch (error) {
       this.l.error(
-        `getUserRoles failed for profileId=${profileId} appScopeIdOrName=${appScopeIdOrName ?? 'null'
+        `getUserRoles failed for profileId=${profileId} appScopeIdOrName=${
+          appScopeIdOrName ?? 'null'
         }`,
         error instanceof Error ? error.stack : String(error)
       );
@@ -314,7 +317,8 @@ export class RolesService {
 
         if (!nameMatch) {
           this.l.debug(
-            `Permission ${p.name || p.action
+            `Permission ${
+              p.name || p.action
             } rejected - name/action does not match ${permissionName}`
           );
           continue;
@@ -323,8 +327,9 @@ export class RolesService {
         if (!targetMatch) {
           this.l.debug(
             `Permission ${p.name || p.action} rejected - targetId mismatch ` +
-            `(expected: ${targetId}, assignmentTarget: ${assignment.targetId || 'none'
-            }, permissionTarget: ${p.targetId || 'none'})`
+              `(expected: ${targetId}, assignmentTarget: ${
+                assignment.targetId || 'none'
+              }, permissionTarget: ${p.targetId || 'none'})`
           );
           continue;
         }

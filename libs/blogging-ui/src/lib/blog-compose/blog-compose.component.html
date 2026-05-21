@@ -1,6 +1,12 @@
-<otui-card class="compose-card" [class.dragover]="isDragOver" (dragenter)="handleDragEnter($event)"
-  (dragover)="handleDragOver($event)" (dragleave)="handleDragLeave($event)" (drop)="handleDrop($event)"
-  [variantOverrides]="{ background: backgroundGradient }">
+<otui-card
+  class="compose-card"
+  [class.dragover]="isDragOver"
+  (dragenter)="handleDragEnter($event)"
+  (dragover)="handleDragOver($event)"
+  (dragleave)="handleDragLeave($event)"
+  (drop)="handleDrop($event)"
+  [variantOverrides]="{ background: backgroundGradient }"
+>
   <!-- Theme Configuration Panel -->
   <!-- <div class="theme-config-panel">
     <div class="theme-config-header" (click)="toggleThemeConfig()" (keyup.enter)="toggleThemeConfig()" tabindex="0">
@@ -31,18 +37,37 @@
 
   <form>
     <label for="title">Title</label>
-    <lib-text-input id="title" [(ngModel)]="title" [ngModelOptions]="{ standalone: true }"
-      placeholder="Enter title"></lib-text-input>
+    <lib-text-input
+      id="title"
+      [(ngModel)]="title"
+      [ngModelOptions]="{ standalone: true }"
+      placeholder="Enter title"
+    ></lib-text-input>
 
     <label for="content">Content</label>
     @if (editor) {
-    <lib-rich-text-toolbar [editor]="editor" (componentsClicked)="onToolbarComponentsClick()"
-      (imageUploadClicked)="onToolbarImageUploadClick()"></lib-rich-text-toolbar>
+    <lib-rich-text-toolbar
+      [editor]="editor"
+      (componentsClicked)="onToolbarComponentsClick()"
+      (imageUploadClicked)="onToolbarImageUploadClick()"
+    ></lib-rich-text-toolbar>
     }
-    <input type="file" id="imageInput" #imageInput hidden (change)="onFileSelected($event)" accept="image/*" />
+    <input
+      type="file"
+      id="imageInput"
+      #imageInput
+      hidden
+      (change)="onFileSelected($event)"
+      accept="image/*"
+    />
     @if(editor) {
-    <tiptap-editor #componentContainer [editor]="editor" [(ngModel)]="content" [ngModelOptions]="{ standalone: true }"
-      class="tiptap-editor-styles"></tiptap-editor>
+    <tiptap-editor
+      #componentContainer
+      [editor]="editor"
+      [(ngModel)]="content"
+      [ngModelOptions]="{ standalone: true }"
+      class="tiptap-editor-styles"
+    ></tiptap-editor>
     }
 
     <otui-button (action)="onPostSubmit()">Submit</otui-button>
@@ -50,18 +75,29 @@
 </otui-card>
 
 <!-- Component injection selector -->
-<lib-component-selector [isVisible]="isComponentSelectorVisible" [components]="registeredComponents"
-  (componentSelected)="onComponentSelected($event)" (closed)="hideComponentSelector()"></lib-component-selector>
+<lib-component-selector
+  [isVisible]="isComponentSelectorVisible"
+  [components]="registeredComponents"
+  (componentSelected)="onComponentSelected($event)"
+  (closed)="hideComponentSelector()"
+></lib-component-selector>
 
 <!-- Property editor -->
-<lib-property-editor [isVisible]="isPropertyEditorVisible" [componentInstance]="selectedComponentInstance"
-  [propertyDefinitions]="selectedComponentProperties" (propertiesUpdated)="onPropertiesUpdated($event)"
-  (closed)="closePropertyEditor()"></lib-property-editor>
-
+<lib-property-editor
+  [isVisible]="isPropertyEditorVisible"
+  [componentInstance]="selectedComponentInstance"
+  [propertyDefinitions]="selectedComponentProperties"
+  (propertiesUpdated)="onPropertiesUpdated($event)"
+  (closed)="closePropertyEditor()"
+></lib-property-editor>
 
 <!-- Context menu -->
 @if (isContextMenuVisible) {
-<lib-context-menu [x]="contextMenuX" [y]="contextMenuY" [editor]="editor"></lib-context-menu>
+<lib-context-menu
+  [x]="contextMenuX"
+  [y]="contextMenuY"
+  [editor]="editor"
+></lib-context-menu>
 }
 
 <!-- Hidden container for dynamic component injection -->

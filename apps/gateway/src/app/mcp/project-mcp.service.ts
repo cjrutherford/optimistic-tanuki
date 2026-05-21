@@ -29,14 +29,18 @@ const createProjectSchema = z.object({
   startDate: z
     .string()
     .optional()
-    .describe('The start date of the project (ISO 8601 format) if not provided, defaults to now'),
+    .describe(
+      'The start date of the project (ISO 8601 format) if not provided, defaults to now'
+    ),
   status: z
     .enum(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'])
     .describe('The status of the project. DEFAULT IS "PLANNING"'),
   members: z
     .array(z.string())
     .optional()
-    .describe('Array of member IDs to add to the project. add the current user by default. (same is userId)'),
+    .describe(
+      'Array of member IDs to add to the project. add the current user by default. (same is userId)'
+    ),
 });
 
 const updateProjectSchema = z.object({
@@ -54,7 +58,9 @@ const updateProjectSchema = z.object({
   endDate: z
     .string()
     .optional()
-    .describe('The end date of the project (ISO 8601 format), if moving to completed status, default to now.'),
+    .describe(
+      'The end date of the project (ISO 8601 format), if moving to completed status, default to now.'
+    ),
 });
 
 const deleteProjectSchema = z.object({
@@ -73,7 +79,7 @@ export class ProjectMcpService {
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
     private readonly projectPlanningService: ClientProxy
-  ) { }
+  ) {}
 
   @McpTool({
     name: 'list_projects',

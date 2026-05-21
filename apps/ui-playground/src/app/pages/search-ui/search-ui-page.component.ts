@@ -133,7 +133,8 @@ export class SearchUiPageComponent {
       headline: 'Header search interaction',
       importName: 'GlobalSearchComponent',
       selector: 'search-global-search',
-      summary: 'Compact query bar with inline result grouping and loading affordances.',
+      summary:
+        'Compact query bar with inline result grouping and loading affordances.',
       props: [],
     },
     {
@@ -142,7 +143,8 @@ export class SearchUiPageComponent {
       headline: 'Discovery browse surface',
       importName: 'ExplorePageComponent',
       selector: 'search-explore-page',
-      summary: 'Tabbed exploration view for trending posts, suggested users, and communities.',
+      summary:
+        'Tabbed exploration view for trending posts, suggested users, and communities.',
       props: [],
     },
   ];

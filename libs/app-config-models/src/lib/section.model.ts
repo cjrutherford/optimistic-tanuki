@@ -1,7 +1,13 @@
 /**
  * Types of sections that can be used in landing pages
  */
-export type SectionType = 'hero' | 'features' | 'content' | 'grid' | 'cta' | 'footer';
+export type SectionType =
+  | 'hero'
+  | 'features'
+  | 'content'
+  | 'grid'
+  | 'cta'
+  | 'footer';
 
 /**
  * Layout options for landing pages

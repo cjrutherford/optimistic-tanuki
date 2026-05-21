@@ -2,7 +2,12 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 
-export type BadgeVariant = 'success' | 'primary' | 'warning' | 'error' | 'neutral';
+export type BadgeVariant =
+  | 'success'
+  | 'primary'
+  | 'warning'
+  | 'error'
+  | 'neutral';
 export type BadgeSize = 'sm' | 'md' | 'lg';
 
 @Component({

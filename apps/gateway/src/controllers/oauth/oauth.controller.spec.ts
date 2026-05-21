@@ -120,9 +120,9 @@ describe('OAuthController', () => {
         provider: 'google' as any,
         code: 'auth-code',
       };
-      await expect(
-        controller.oauthCallback(callbackRequest)
-      ).rejects.toThrow(HttpException);
+      await expect(controller.oauthCallback(callbackRequest)).rejects.toThrow(
+        HttpException
+      );
     });
   });
 
@@ -134,7 +134,14 @@ describe('OAuthController', () => {
       };
       (authClient.send as jest.Mock).mockReturnValue(of(mockResult));
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
       const linkRequest = {
         provider: 'google' as any,
         providerUserId: 'google-123',
@@ -153,14 +160,21 @@ describe('OAuthController', () => {
         throw new Error('link error');
       });
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
       const linkRequest = {
         provider: 'google' as any,
         providerUserId: 'google-123',
       };
-      await expect(
-        controller.linkProvider(linkRequest, user)
-      ).rejects.toThrow(HttpException);
+      await expect(controller.linkProvider(linkRequest, user)).rejects.toThrow(
+        HttpException
+      );
     });
   });
 
@@ -172,7 +186,14 @@ describe('OAuthController', () => {
       };
       (authClient.send as jest.Mock).mockReturnValue(of(mockResult));
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
       const unlinkRequest = { provider: 'google' as any };
       const result = await controller.unlinkProvider(unlinkRequest, user);
 
@@ -188,7 +209,14 @@ describe('OAuthController', () => {
         throw new Error('unlink error');
       });
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
       const unlinkRequest = { provider: 'google' as any };
       await expect(
         controller.unlinkProvider(unlinkRequest, user)
@@ -205,7 +233,14 @@ describe('OAuthController', () => {
       };
       (authClient.send as jest.Mock).mockReturnValue(of(mockResult));
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
       const result = await controller.getLinkedProviders(user);
 
       expect(authClient.send).toHaveBeenCalledWith(
@@ -220,10 +255,17 @@ describe('OAuthController', () => {
         throw new Error('providers error');
       });
 
-      const user = { userId: 'user-1', email: 'test@test.com', name: 'Test', profileId: 'p1', exp: 0, iat: 0 };
-      await expect(
-        controller.getLinkedProviders(user)
-      ).rejects.toThrow(HttpException);
+      const user = {
+        userId: 'user-1',
+        email: 'test@test.com',
+        name: 'Test',
+        profileId: 'p1',
+        exp: 0,
+        iat: 0,
+      };
+      await expect(controller.getLinkedProviders(user)).rejects.toThrow(
+        HttpException
+      );
     });
   });
 });

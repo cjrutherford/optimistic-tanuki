@@ -114,7 +114,11 @@ export class AssetListQuery {
   @IsUUID()
   profileId!: string;
 
-  @ApiProperty({ description: 'Optional asset type filter', enum: AssetType, required: false })
+  @ApiProperty({
+    description: 'Optional asset type filter',
+    enum: AssetType,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(AssetType)
   type?: AssetType;

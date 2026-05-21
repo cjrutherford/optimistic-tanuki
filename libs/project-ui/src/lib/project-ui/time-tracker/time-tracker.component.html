@@ -17,11 +17,7 @@
     >
       Start Timer
     </otui-button>
-    <otui-button
-      *ngIf="isRunning"
-      (click)="onStopTimer()"
-      [variant]="'danger'"
-    >
+    <otui-button *ngIf="isRunning" (click)="onStopTimer()" [variant]="'danger'">
       Stop Timer
     </otui-button>
   </div>

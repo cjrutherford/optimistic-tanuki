@@ -36,8 +36,9 @@ import {
           <a routerLink="/" fragment="about">About</a>
           <a routerLink="/" fragment="results">Results</a>
           <a routerLink="/" fragment="contact">Contact</a>
-          @if (site().features.clientPortal.enabled && !auth.isAuthenticated()) {
-            <a routerLink="/client" routerLinkActive="active">Client Portal</a>
+          @if (site().features.clientPortal.enabled && !auth.isAuthenticated())
+          {
+          <a routerLink="/client" routerLinkActive="active">Client Portal</a>
           }
         </nav>
 
@@ -45,42 +46,58 @@ import {
           <button
             class="theme-toggle"
             (click)="toggleTheme()"
-            [attr.aria-label]="currentTheme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+            [attr.aria-label]="
+              currentTheme() === 'dark'
+                ? 'Switch to light mode'
+                : 'Switch to dark mode'
+            "
           >
             @if (currentTheme() === 'dark') {
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="5" />
-                <line x1="12" y1="1" x2="12" y2="3" />
-                <line x1="12" y1="21" x2="12" y2="23" />
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
-                <line x1="1" y1="12" x2="3" y2="12" />
-                <line x1="21" y1="12" x2="23" y2="12" />
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
-              </svg>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
             } @else {
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
             }
           </button>
 
-          @if (isClientAuthenticated()) {
-            @if (site().features.clientPortal.enabled) {
-              <a class="ghost" routerLink="/client/dashboard">Client Portal</a>
-            }
-            <button class="ghost" (click)="signOutClient()">Sign Out</button>
-          } @else if (!auth.isAuthenticated()) {
-            @if (site().features.clientPortal.enabled) {
-              <a class="ghost" routerLink="/client/login">Client Login</a>
-            }
+          @if (isClientAuthenticated()) { @if
+          (site().features.clientPortal.enabled) {
+          <a class="ghost" routerLink="/client/dashboard">Client Portal</a>
           }
-          @if (auth.isAuthenticated()) {
-            <a class="ghost" routerLink="/owner/dashboard">Workspace</a>
-            <button class="solid" (click)="logout()">Sign Out</button>
+          <button class="ghost" (click)="signOutClient()">Sign Out</button>
+          } @else if (!auth.isAuthenticated()) { @if
+          (site().features.clientPortal.enabled) {
+          <a class="ghost" routerLink="/client/login">Client Login</a>
+          } } @if (auth.isAuthenticated()) {
+          <a class="ghost" routerLink="/owner/dashboard">Workspace</a>
+          <button class="solid" (click)="logout()">Sign Out</button>
           } @else if (!isClientAuthenticated()) {
-            <a class="solid" routerLink="/owner/login">Owner Login</a>
+          <a class="solid" routerLink="/owner/login">Owner Login</a>
           }
         </div>
       </header>
@@ -122,12 +139,17 @@ import {
         padding: 0.85rem 1.5rem;
         border-bottom: var(--personality-border-width, 1px) solid var(--border);
         backdrop-filter: blur(20px) saturate(1.2);
-        background: color-mix(in srgb, var(--background, #fff) 78%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--background, #fff) 78%,
+          transparent
+        );
         transition: box-shadow 0.3s ease;
       }
 
       .topbar:has(.topnav a:hover) {
-        box-shadow: 0 4px 20px color-mix(in srgb, var(--primary) 4%, transparent);
+        box-shadow: 0 4px 20px
+          color-mix(in srgb, var(--primary) 4%, transparent);
       }
 
       .brand {
@@ -157,12 +179,14 @@ import {
           var(--primary, #1f7a63),
           color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
         );
-        box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 30%, transparent);
+        box-shadow: 0 4px 14px
+          color-mix(in srgb, var(--primary) 30%, transparent);
         transition: box-shadow 0.3s ease, transform 0.3s ease;
       }
 
       .brand:hover .brand-mark {
-        box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 45%, transparent);
+        box-shadow: 0 6px 20px
+          color-mix(in srgb, var(--primary) 45%, transparent);
         transform: rotate(-3deg);
       }
 
@@ -200,8 +224,8 @@ import {
         border-radius: var(--personality-button-radius, 999px);
         text-decoration: none;
         transition: background-color 0.2s ease, color 0.2s ease,
-          border-color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-          box-shadow 0.2s ease;
+          border-color 0.2s ease,
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
         font-size: inherit;
         font-family: inherit;
         cursor: pointer;
@@ -265,12 +289,14 @@ import {
         background: var(--primary, #1f7a63);
         color: var(--primary-foreground, white);
         border: none;
-        box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 24%, transparent);
+        box-shadow: 0 4px 12px
+          color-mix(in srgb, var(--primary) 24%, transparent);
       }
 
       .solid:hover {
         background: color-mix(in srgb, var(--primary, #1f7a63) 88%, black);
-        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 32%, transparent);
+        box-shadow: 0 6px 18px
+          color-mix(in srgb, var(--primary) 32%, transparent);
         transform: translateY(-1px);
       }
 
@@ -334,7 +360,11 @@ export class AppComponent {
     });
 
     this.router.events
-      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .pipe(
+        filter(
+          (event): event is NavigationEnd => event instanceof NavigationEnd
+        )
+      )
       .subscribe((event) => {
         this.currentUrl.set(event.urlAfterRedirects || event.url || '/');
       });

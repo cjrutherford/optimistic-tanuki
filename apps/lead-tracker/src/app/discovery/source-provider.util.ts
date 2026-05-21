@@ -1,8 +1,18 @@
 import { createHash } from 'crypto';
 import { Lead } from '@optimistic-tanuki/models/leads-entities';
-import { LeadSource, LeadStatus, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
-import { LeadContactPoint, LeadContactPointSource } from '@optimistic-tanuki/models/leads-contracts';
-import { normalizeTopicTerms, truncateText } from './provider-result-analysis.util';
+import {
+  LeadSource,
+  LeadStatus,
+  LeadTopicDiscoveryIntent,
+} from '@optimistic-tanuki/models/leads-contracts';
+import {
+  LeadContactPoint,
+  LeadContactPointSource,
+} from '@optimistic-tanuki/models/leads-contracts';
+import {
+  normalizeTopicTerms,
+  truncateText,
+} from './provider-result-analysis.util';
 
 export type RssItem = {
   title: string;
@@ -20,25 +30,43 @@ export type JustRemoteEmbeddedJob = {
   pubDate?: string;
 };
 
-export const normalizeTopicKeywords = (topicName: string, keywords: string[]): string[] => {
-  return normalizeTopicTerms([...(keywords || []), topicName || '']).slice(0, 8);
+export const normalizeTopicKeywords = (
+  topicName: string,
+  keywords: string[]
+): string[] => {
+  return normalizeTopicTerms([...(keywords || []), topicName || '']).slice(
+    0,
+    8
+  );
 };
 
-export const normalizeExcludedTerms = (excludedTerms?: string[] | null): string[] => {
+export const normalizeExcludedTerms = (
+  excludedTerms?: string[] | null
+): string[] => {
   return normalizeTopicTerms(excludedTerms || []);
 };
 
-export const getMatchedKeywords = (text: string, keywords: string[]): string[] => {
+export const getMatchedKeywords = (
+  text: string,
+  keywords: string[]
+): string[] => {
   const haystack = text.toLowerCase();
   return keywords.filter((keyword) => haystack.includes(keyword));
 };
 
-export const hasExcludedTerms = (text: string, excludedTerms?: string[] | null): boolean => {
+export const hasExcludedTerms = (
+  text: string,
+  excludedTerms?: string[] | null
+): boolean => {
   const haystack = text.toLowerCase();
-  return normalizeExcludedTerms(excludedTerms).some((term) => haystack.includes(term));
+  return normalizeExcludedTerms(excludedTerms).some((term) =>
+    haystack.includes(term)
+  );
 };
 
-export const getTopicDiscoveryIntent = (topic: { discoveryIntent?: LeadTopicDiscoveryIntent | string | null }) => {
+export const getTopicDiscoveryIntent = (topic: {
+  discoveryIntent?: LeadTopicDiscoveryIntent | string | null;
+}) => {
   return topic.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS;
 };
 
@@ -105,14 +133,10 @@ export const parseJustRemoteEmbeddedJobs = (
 
     return jobs
       .map((job) => {
-        const title =
-          typeof job?.title === 'string' ? job.title.trim() : '';
+        const title = typeof job?.title === 'string' ? job.title.trim() : '';
         const companyName =
-          typeof job?.company_name === 'string'
-            ? job.company_name.trim()
-            : '';
-        const href =
-          typeof job?.href === 'string' ? job.href.trim() : '';
+          typeof job?.company_name === 'string' ? job.company_name.trim() : '';
+        const href = typeof job?.href === 'string' ? job.href.trim() : '';
         if (!title || !href) {
           return null;
         }
@@ -130,8 +154,7 @@ export const parseJustRemoteEmbeddedJobs = (
           ]
             .filter(Boolean)
             .join(' · '),
-          pubDate:
-            typeof job?.raw_date === 'string' ? job.raw_date : undefined,
+          pubDate: typeof job?.raw_date === 'string' ? job.raw_date : undefined,
         };
       })
       .filter(Boolean) as JustRemoteEmbeddedJob[];
@@ -141,8 +164,12 @@ export const parseJustRemoteEmbeddedJobs = (
 };
 
 const readXmlTag = (value: string, tag: string): string => {
-  const match = value.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i'));
-  return stripHtml((match?.[1] || '').replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, ''));
+  const match = value.match(
+    new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i')
+  );
+  return stripHtml(
+    (match?.[1] || '').replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '')
+  );
 };
 
 export const toAbsoluteUrl = (url: string, baseUrl: string): string => {
@@ -189,10 +216,18 @@ export const createLeadEntity = (input: {
 
 export const createDeterministicId = (value: string): string => {
   const hash = createHash('sha1').update(value).digest('hex').slice(0, 32);
-  return [hash.slice(0, 8), hash.slice(8, 12), hash.slice(12, 16), hash.slice(16, 20), hash.slice(20, 32)].join('-');
+  return [
+    hash.slice(0, 8),
+    hash.slice(8, 12),
+    hash.slice(12, 16),
+    hash.slice(16, 20),
+    hash.slice(20, 32),
+  ].join('-');
 };
 
-export const estimateCompensationValue = (...values: Array<string | number | undefined | null>): number => {
+export const estimateCompensationValue = (
+  ...values: Array<string | number | undefined | null>
+): number => {
   const numericValues = values
     .flatMap((value) => {
       if (typeof value === 'number' && Number.isFinite(value)) {
@@ -201,7 +236,9 @@ export const estimateCompensationValue = (...values: Array<string | number | und
       if (typeof value !== 'string') {
         return [];
       }
-      return Array.from(value.matchAll(/\d[\d,]*(?:\.\d+)?/g)).map((match) => Number(match[0].replace(/,/g, '')));
+      return Array.from(value.matchAll(/\d[\d,]*(?:\.\d+)?/g)).map((match) =>
+        Number(match[0].replace(/,/g, ''))
+      );
     })
     .filter((value) => Number.isFinite(value) && value > 0);
 
@@ -212,7 +249,9 @@ export const estimateCompensationValue = (...values: Array<string | number | und
   return Math.round(Math.max(...numericValues));
 };
 
-export const splitCsvInput = (values: string[] | undefined | null): string[] => {
+export const splitCsvInput = (
+  values: string[] | undefined | null
+): string[] => {
   return Array.from(
     new Set(
       (values || [])
@@ -269,7 +308,9 @@ export const extractContactPoints = (
     });
   }
 
-  for (const match of html.matchAll(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi)) {
+  for (const match of html.matchAll(
+    /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
+  )) {
     const email = match[0].trim().toLowerCase();
     addContact({
       kind: 'email',
@@ -319,29 +360,28 @@ export const mergeContactPoints = (
   existing: LeadContactPoint[] | undefined,
   incoming: LeadContactPoint[] | undefined
 ): LeadContactPoint[] | undefined => {
-  const merged = [...(existing || []), ...(incoming || [])].reduce<LeadContactPoint[]>(
-    (acc, contact) => {
-      const index = acc.findIndex(
-        (entry) =>
-          entry.kind === contact.kind &&
-          entry.href.toLowerCase() === contact.href.toLowerCase()
-      );
+  const merged = [...(existing || []), ...(incoming || [])].reduce<
+    LeadContactPoint[]
+  >((acc, contact) => {
+    const index = acc.findIndex(
+      (entry) =>
+        entry.kind === contact.kind &&
+        entry.href.toLowerCase() === contact.href.toLowerCase()
+    );
 
-      if (index === -1) {
-        acc.push(contact);
-        return acc;
-      }
-
-      const current = acc[index];
-      acc[index] = {
-        ...current,
-        ...contact,
-        isPrimary: current.isPrimary || contact.isPrimary,
-      };
+    if (index === -1) {
+      acc.push(contact);
       return acc;
-    },
-    []
-  );
+    }
+
+    const current = acc[index];
+    acc[index] = {
+      ...current,
+      ...contact,
+      isPrimary: current.isPrimary || contact.isPrimary,
+    };
+    return acc;
+  }, []);
 
   return merged.length ? merged : undefined;
 };
@@ -356,8 +396,7 @@ export const selectPrimaryContactValue = (
   }
 
   return (
-    matches.find((contact) => contact.isPrimary)?.value ||
-    matches[0].value
+    matches.find((contact) => contact.isPrimary)?.value || matches[0].value
   );
 };
 

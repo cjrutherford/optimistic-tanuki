@@ -207,8 +207,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         font-family: inherit;
         background: rgba(var(--background-rgb, 10, 10, 15), 0.5);
         color: var(--foreground);
-        transition:
-          border-color var(--animation-duration-fast, 0.15s)
+        transition: border-color var(--animation-duration-fast, 0.15s)
             var(--animation-easing, ease),
           box-shadow var(--animation-duration-fast, 0.15s)
             var(--animation-easing, ease);
@@ -443,7 +442,7 @@ export class UploadComponent {
   constructor(
     private http: HttpClient,
     private videoService: VideoService,
-    private router: Router,
+    private router: Router
   ) {
     this.loadChannels();
   }

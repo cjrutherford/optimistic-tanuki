@@ -36,7 +36,10 @@ export class TopographicDriftComponent {
         width: `${width}%`,
         opacity: 0.24 + ((index * 2) % 5) * 0.1,
         delay: `${(-0.35 * (index % 6)).toFixed(2)}s`,
-        duration: `${(8 + ((index * 3) % 5) / Math.max(this.speed, 0.25)).toFixed(2)}s`,
+        duration: `${(
+          8 +
+          ((index * 3) % 5) / Math.max(this.speed, 0.25)
+        ).toFixed(2)}s`,
       };
     });
   }

@@ -7,9 +7,7 @@
     <button (click)="openCreateModal()" class="btn-create">
       Add Availability Slot
     </button>
-    <button (click)="loadAvailabilities()" [disabled]="loading">
-      Refresh
-    </button>
+    <button (click)="loadAvailabilities()" [disabled]="loading">Refresh</button>
   </div>
 
   <div *ngIf="loading" class="loading">Loading availabilities...</div>
@@ -43,7 +41,10 @@
             <button (click)="openEditModal(availability)" class="btn-edit">
               Edit
             </button>
-            <button (click)="deleteAvailability(availability)" class="btn-delete">
+            <button
+              (click)="deleteAvailability(availability)"
+              class="btn-delete"
+            >
               Delete
             </button>
           </td>
@@ -122,10 +123,18 @@
           </label>
         </div>
         <div class="modal-actions">
-          <button type="button" (click)="createAvailability()" class="btn-primary">
+          <button
+            type="button"
+            (click)="createAvailability()"
+            class="btn-primary"
+          >
             Create
           </button>
-          <button type="button" (click)="closeCreateModal()" class="btn-secondary">
+          <button
+            type="button"
+            (click)="closeCreateModal()"
+            class="btn-secondary"
+          >
             Cancel
           </button>
         </div>
@@ -199,10 +208,18 @@
           </label>
         </div>
         <div class="modal-actions">
-          <button type="button" (click)="updateAvailability()" class="btn-primary">
+          <button
+            type="button"
+            (click)="updateAvailability()"
+            class="btn-primary"
+          >
             Update
           </button>
-          <button type="button" (click)="closeEditModal()" class="btn-secondary">
+          <button
+            type="button"
+            (click)="closeEditModal()"
+            class="btn-secondary"
+          >
             Cancel
           </button>
         </div>

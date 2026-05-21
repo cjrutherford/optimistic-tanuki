@@ -168,7 +168,10 @@ export class FinanceService {
     redirectUri?: string;
   }): Promise<BankLinkTokenResponse> {
     return firstValueFrom(
-      this.http.post<BankLinkTokenResponse>(`${this.baseUrl}/bank/link-token`, input)
+      this.http.post<BankLinkTokenResponse>(
+        `${this.baseUrl}/bank/link-token`,
+        input
+      )
     );
   }
 
@@ -433,13 +436,13 @@ export class FinanceService {
     );
   }
 
-  async getCategorySuggestions(
-    workspace: FinanceWorkspace
-  ): Promise<string[]> {
+  async getCategorySuggestions(workspace: FinanceWorkspace): Promise<string[]> {
     const [transactions, budgets, recurringItems] = await Promise.all([
       this.getTransactions(workspace),
       this.getBudgets(workspace),
-      workspace === 'net-worth' ? Promise.resolve([]) : this.getRecurringItems(workspace),
+      workspace === 'net-worth'
+        ? Promise.resolve([])
+        : this.getRecurringItems(workspace),
     ]);
 
     return Array.from(

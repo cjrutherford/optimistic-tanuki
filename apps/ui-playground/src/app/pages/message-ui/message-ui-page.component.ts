@@ -65,7 +65,8 @@ export class MessageUiPageComponent {
       headline: 'Inline status feedback',
       importName: 'MessageComponent',
       selector: 'lib-message',
-      summary: 'Dismissible message rail for info, warnings, errors, and success states.',
+      summary:
+        'Dismissible message rail for info, warnings, errors, and success states.',
       props: [],
     },
   ];

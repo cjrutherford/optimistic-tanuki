@@ -10,9 +10,7 @@ import { AvailabilitiesService } from './availabilities.service';
 
 @Controller()
 export class AvailabilitiesController {
-  constructor(
-    private readonly availabilitiesService: AvailabilitiesService
-  ) {}
+  constructor(private readonly availabilitiesService: AvailabilitiesService) {}
 
   @MessagePattern({ cmd: 'createAvailability' })
   create(@Payload() createAvailabilityDto: CreateAvailabilityDto) {
@@ -37,7 +35,10 @@ export class AvailabilitiesController {
   @MessagePattern({ cmd: 'updateAvailability' })
   update(
     @Payload()
-    data: { id: string; updateAvailabilityDto: UpdateAvailabilityDto }
+    data: {
+      id: string;
+      updateAvailabilityDto: UpdateAvailabilityDto;
+    }
   ) {
     return this.availabilitiesService.update(
       data.id,
@@ -73,7 +74,10 @@ export class AvailabilitiesController {
   @MessagePattern({ cmd: 'updateAvailabilityOverride' })
   updateOverride(
     @Payload()
-    data: { id: string; updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto }
+    data: {
+      id: string;
+      updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto;
+    }
   ) {
     return this.availabilitiesService.updateOverride(
       data.id,

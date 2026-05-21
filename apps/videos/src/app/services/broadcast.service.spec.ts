@@ -57,10 +57,18 @@ describe('BroadcastService', () => {
 
     feedRepository.findOne!.mockResolvedValue(feed);
     blockRepository.findOne!.mockResolvedValue(scheduledBlock);
-    sessionRepository.create!.mockImplementation((input) => input as LiveSession);
-    sessionRepository.save!.mockImplementation(async (input) => input as LiveSession);
-    blockRepository.save!.mockImplementation(async (input) => input as ProgramBlock);
-    feedRepository.save!.mockImplementation(async (input) => input as ChannelFeed);
+    sessionRepository.create!.mockImplementation(
+      (input) => input as LiveSession
+    );
+    sessionRepository.save!.mockImplementation(
+      async (input) => input as LiveSession
+    );
+    blockRepository.save!.mockImplementation(
+      async (input) => input as ProgramBlock
+    );
+    feedRepository.save!.mockImplementation(
+      async (input) => input as ChannelFeed
+    );
 
     const result = await service.startLiveSession({
       communityId: 'community-1',

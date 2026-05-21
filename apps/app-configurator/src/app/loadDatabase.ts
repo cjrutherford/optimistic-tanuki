@@ -4,7 +4,7 @@ import loadConfig from '../config';
 
 export default (): DataSourceOptions => {
   const appConfig = loadConfig();
-  
+
   const config: DataSourceOptions = {
     type: 'postgres',
     host: appConfig.database.host,

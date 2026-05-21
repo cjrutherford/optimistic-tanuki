@@ -36,7 +36,10 @@ const workspaceState = await page.evaluate(async () => {
   };
 });
 
-if ((workspaceState.stats?.total ?? 0) !== 0 || (workspaceState.topics?.length ?? 0) !== 0) {
+if (
+  (workspaceState.stats?.total ?? 0) !== 0 ||
+  (workspaceState.topics?.length ?? 0) !== 0
+) {
   console.log(
     JSON.stringify(
       {
@@ -69,9 +72,11 @@ await clickNext(page);
 
 await clickNext(page);
 
-await page.locator('textarea').fill(
-  'Healthcare SaaS product teams with legacy patient onboarding flows and compliance requirements.'
-);
+await page
+  .locator('textarea')
+  .fill(
+    'Healthcare SaaS product teams with legacy patient onboarding flows and compliance requirements.'
+  );
 await clickNext(page);
 
 await page.getByRole('button', { name: '51-200' }).click();
@@ -129,7 +134,9 @@ const analyzePayload = await analyzeResponse.json();
 await page.waitForSelector('text=Review Generated Topics', { timeout: 180000 });
 
 const topicNames = await page.locator('.topic-card h3').allTextContents();
-const confidenceBadges = await page.locator('.confidence-badge').allTextContents();
+const confidenceBadges = await page
+  .locator('.confidence-badge')
+  .allTextContents();
 
 console.log(
   JSON.stringify(

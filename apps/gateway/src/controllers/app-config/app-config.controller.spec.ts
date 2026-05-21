@@ -15,7 +15,9 @@ describe('Gateway AppConfigController metadata', () => {
     const guards = Reflect.getMetadata(GUARDS_METADATA, handler) ?? [];
     const requirement = Reflect.getMetadata(PERMISSIONS_KEY, handler);
 
-    expect(guards).toEqual(expect.arrayContaining([AuthGuard, PermissionsGuard]));
+    expect(guards).toEqual(
+      expect.arrayContaining([AuthGuard, PermissionsGuard])
+    );
     expect(requirement).toEqual({ permissions: [permission] });
   }
 

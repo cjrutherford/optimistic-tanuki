@@ -27,8 +27,14 @@ const resolveConfigPath = (): string => {
   const candidates = [
     path.resolve(currentDir, './assets/config.yaml'),
     path.resolve(currentDir, '../browser/assets/config.yaml'),
-    path.resolve(process.cwd(), 'apps/marketing-generator/src/app/assets/config.yaml'),
-    path.resolve(process.cwd(), 'dist/apps/marketing-generator/browser/assets/config.yaml'),
+    path.resolve(
+      process.cwd(),
+      'apps/marketing-generator/src/app/assets/config.yaml'
+    ),
+    path.resolve(
+      process.cwd(),
+      'dist/apps/marketing-generator/browser/assets/config.yaml'
+    ),
   ];
 
   const match = candidates.find((candidate) => fs.existsSync(candidate));

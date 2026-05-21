@@ -101,7 +101,9 @@ export class OAuthCallbackComponent implements OnInit {
       if (provider && (code || error)) {
         const query = new URLSearchParams(window.location.search);
         window.location.replace(
-          `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(provider)}?${query.toString()}`
+          `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(
+            provider
+          )}?${query.toString()}`
         );
         return;
       }

@@ -43,7 +43,7 @@ export class VideoProcessingService {
     private readonly config: ProcessingConfig = {
       assetStorageRoot:
         process.env['LOCAL_STORAGE_PATH'] || '/usr/src/app/storage',
-    },
+    }
   ) {}
 
   async processVideo(videoId: string): Promise<void> {
@@ -69,24 +69,28 @@ export class VideoProcessingService {
         videoId,
         sourcePath: path.join(
           this.config.assetStorageRoot,
-          sourceAsset.storagePath,
+          sourceAsset.storagePath
         ),
       });
 
       const playbackAsset = await this.createFileAsset(
         sourceAsset.profileId,
         result.playbackPath,
-        AssetType.VIDEO,
+        AssetType.VIDEO
       );
       const segmentAssets = await Promise.all(
         result.hlsSegmentPaths.map((segmentPath) =>
-          this.createFileAsset(sourceAsset.profileId, segmentPath, AssetType.VIDEO),
-        ),
+          this.createFileAsset(
+            sourceAsset.profileId,
+            segmentPath,
+            AssetType.VIDEO
+          )
+        )
       );
       const manifestAsset = await this.createManifestAsset(
         sourceAsset.profileId,
         result,
-        segmentAssets,
+        segmentAssets
       );
 
       await this.videoRepository.update(videoId, {
@@ -112,34 +116,31 @@ export class VideoProcessingService {
 
   private async retrieveAsset(assetId: string): Promise<AssetRecord> {
     return firstValueFrom(
-      this.assetsClient.send({ cmd: AssetCommands.RETRIEVE }, { id: assetId }),
+      this.assetsClient.send({ cmd: AssetCommands.RETRIEVE }, { id: assetId })
     );
   }
 
   private async createFileAsset(
     profileId: string,
     filePath: string,
-    type: AssetType,
+    type: AssetType
   ): Promise<{ id: string }> {
     const fileName = path.basename(filePath);
     const extension = path.extname(fileName).slice(1);
     const stagedSourcePath = await this.stageFileForAssetImport(
       filePath,
-      fileName,
+      fileName
     );
 
     try {
       const asset = await firstValueFrom(
-        this.assetsClient.send(
-          { cmd: AssetCommands.CREATE },
-          {
-            name: fileName,
-            profileId,
-            type,
-            sourcePath: stagedSourcePath,
-            fileExtension: extension,
-          } satisfies CreateAssetDto,
-        ),
+        this.assetsClient.send({ cmd: AssetCommands.CREATE }, {
+          name: fileName,
+          profileId,
+          type,
+          sourcePath: stagedSourcePath,
+          fileExtension: extension,
+        } satisfies CreateAssetDto)
       );
 
       return asset;
@@ -153,11 +154,11 @@ export class VideoProcessingService {
 
   private async stageFileForAssetImport(
     filePath: string,
-    fileName: string,
+    fileName: string
   ): Promise<string> {
     await fs.mkdir(this.config.assetStorageRoot, { recursive: true });
     const stagingDir = await fs.mkdtemp(
-      path.join(this.config.assetStorageRoot, 'video-processing-import-'),
+      path.join(this.config.assetStorageRoot, 'video-processing-import-')
     );
     const stagedPath = path.join(stagingDir, fileName);
     await fs.copyFile(filePath, stagedPath);
@@ -167,7 +168,7 @@ export class VideoProcessingService {
   private async createManifestAsset(
     profileId: string,
     result: VideoTranscodeResult,
-    segmentAssets: { id: string }[],
+    segmentAssets: { id: string }[]
   ): Promise<{ id: string }> {
     const manifestPath = result.hlsManifestPath;
     const manifestName = path.basename(manifestPath);
@@ -176,7 +177,7 @@ export class VideoProcessingService {
       result.hlsSegmentPaths.map((segmentPath, index) => [
         path.basename(segmentPath),
         segmentAssets[index]?.id || '',
-      ]),
+      ])
     );
     const rewrittenManifest = rawManifest
       .split('\n')
@@ -191,16 +192,13 @@ export class VideoProcessingService {
       .join('\n');
 
     return firstValueFrom(
-      this.assetsClient.send(
-        { cmd: AssetCommands.CREATE },
-        {
-          name: manifestName,
-          profileId,
-          type: AssetType.VIDEO,
-          content: Buffer.from(rewrittenManifest, 'utf8').toString('base64'),
-          fileExtension: path.extname(manifestName).slice(1),
-        } satisfies CreateAssetDto,
-      ),
+      this.assetsClient.send({ cmd: AssetCommands.CREATE }, {
+        name: manifestName,
+        profileId,
+        type: AssetType.VIDEO,
+        content: Buffer.from(rewrittenManifest, 'utf8').toString('base64'),
+        fileExtension: path.extname(manifestName).slice(1),
+      } satisfies CreateAssetDto)
     );
   }
 }

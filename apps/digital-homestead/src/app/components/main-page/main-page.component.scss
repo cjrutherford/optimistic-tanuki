@@ -7,8 +7,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at top left,
       color-mix(in srgb, var(--accent) 12%, transparent),
       transparent 42%
@@ -35,8 +34,7 @@
   display: block;
   width: min(1180px, calc(100% - 2rem));
   margin: 0 auto;
-  animation: homestead-panel-rise 0.7s var(--personality-transition, ease)
-    both;
+  animation: homestead-panel-rise 0.7s var(--personality-transition, ease) both;
 }
 
 .main-body > :not(dh-hero-section) {

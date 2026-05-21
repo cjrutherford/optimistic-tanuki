@@ -62,7 +62,11 @@ export class LeadsController {
   @MessagePattern({ cmd: LeadCommands.UPDATE })
   async update(
     @Payload()
-    data: { id: string; dto: UpdateLeadDto; profileId: string }
+    data: {
+      id: string;
+      dto: UpdateLeadDto;
+      profileId: string;
+    }
   ) {
     return this.leadsService.update(data.id, data.dto, data.profileId);
   }
@@ -98,7 +102,11 @@ export class LeadsController {
   @MessagePattern({ cmd: LeadTopicCommands.UPDATE })
   async updateTopic(
     @Payload()
-    data: { id: string; dto: UpdateLeadTopicDto; profileId: string }
+    data: {
+      id: string;
+      dto: UpdateLeadTopicDto;
+      profileId: string;
+    }
   ) {
     const existing = await this.leadsService.findTopicById(
       data.id,
@@ -125,28 +133,33 @@ export class LeadsController {
 
   @MessagePattern({ cmd: LeadTopicCommands.RUN_DISCOVERY })
   async runTopicDiscovery(
-    @Payload() data: RunLeadTopicDiscoveryDto
-      & { profileId: string }
+    @Payload() data: RunLeadTopicDiscoveryDto & { profileId: string }
   ): Promise<LeadTopicDiscoveryResultDto | null> {
     return this.discoveryService.request(data.topicId, data.profileId);
   }
 
   @MessagePattern({ cmd: LeadTopicCommands.GET_DISCOVERY_STATUS })
   async getTopicDiscoveryStatus(
-    @Payload() data: RunLeadTopicDiscoveryDto
-      & { profileId: string }
+    @Payload() data: RunLeadTopicDiscoveryDto & { profileId: string }
   ): Promise<LeadTopicDiscoveryResultDto | null> {
     return this.discoveryService.getStatus(data.topicId, data.profileId);
   }
 
   @MessagePattern({ cmd: LeadFlagCommands.FIND_BY_LEAD })
-  async findFlagsByLead(@Payload() data: { leadId: string; profileId: string }) {
+  async findFlagsByLead(
+    @Payload() data: { leadId: string; profileId: string }
+  ) {
     return this.leadsService.findFlagsByLead(data.leadId, data.profileId);
   }
 
   @MessagePattern({ cmd: LeadFlagCommands.CREATE })
   async createFlag(
-    @Payload() data: { leadId: string; dto: CreateLeadFlagDto; context: LeadAuthContext }
+    @Payload()
+    data: {
+      leadId: string;
+      dto: CreateLeadFlagDto;
+      context: LeadAuthContext;
+    }
   ) {
     return this.leadsService.createFlag(data.leadId, data.dto, data.context);
   }

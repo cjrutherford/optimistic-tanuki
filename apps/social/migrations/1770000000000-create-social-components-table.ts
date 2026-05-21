@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class CreateSocialComponentsTable1770000000000 implements MigrationInterface {
+export class CreateSocialComponentsTable1770000000000
+  implements MigrationInterface
+{
   name = 'CreateSocialComponentsTable1770000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

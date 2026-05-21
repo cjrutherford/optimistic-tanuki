@@ -54,7 +54,7 @@ describe('AppController', () => {
         },
         usageQuantity: 12,
         usageBlockBalance: 0,
-      }),
+      })
     ).toMatchObject({
       tenantId: 'tenant-1',
       appScope: 'local-hub',

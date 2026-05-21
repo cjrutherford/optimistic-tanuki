@@ -43,7 +43,11 @@ export class NavigationLinkComponent {
         ? window.location.pathname
         : undefined;
     const queryParams = returnTo ? { returnTo } : undefined;
-    return this.navigation.generateUrl(this.targetAppId, this.path, queryParams);
+    return this.navigation.generateUrl(
+      this.targetAppId,
+      this.path,
+      queryParams
+    );
   }
 
   handleClick(event: Event): void {

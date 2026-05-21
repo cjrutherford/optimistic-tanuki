@@ -50,6 +50,7 @@ docs/
 ## Test Coverage Summary
 
 ### By Numbers
+
 - **46** total components/services analyzed
 - **20** with tests (43.5%)
 - **26** missing tests (56.5%)
@@ -57,12 +58,14 @@ docs/
 ### Critical Missing Tests
 
 **High Priority:**
+
 - All search-ui components (0% coverage)
 - privacy.service (backend)
 - chat-message.service (backend)
 - presence.service (backend)
 
 **Medium Priority:**
+
 - Content feature services (poll, event, reaction, etc.)
 - Profile analytics
 - Social component system
@@ -70,6 +73,7 @@ docs/
 ## Next Actions
 
 ### Immediate
+
 1. ✅ Split enhancement plan ← **DONE**
 2. ✅ Create test coverage audit ← **DONE**
 3. 🔄 **Create missing tests for Priority 1 items**
@@ -78,6 +82,7 @@ docs/
 ### Recommended Test Creation Order
 
 **Sprint 1:**
+
 ```bash
 # Search UI (3 files)
 libs/search-ui/src/lib/search.service.spec.ts
@@ -95,6 +100,7 @@ apps/social/src/profile-analytics.service.spec.ts
 ```
 
 **Sprint 2:**
+
 ```bash
 # Content Features (6 files)
 apps/social/src/poll.service.spec.ts
@@ -115,6 +121,7 @@ apps/social/src/social-component.service.spec.ts
 ## Commands
 
 ### Run tests for a library
+
 ```bash
 nx test <library-name>
 # Examples:
@@ -124,11 +131,13 @@ nx test social-ui
 ```
 
 ### Run tests for backend
+
 ```bash
 nx test social
 ```
 
 ### Generate a new test file
+
 ```bash
 # For Angular components/services
 nx g @nx/angular:component-test <component-name> --project=<library-name>
@@ -138,6 +147,7 @@ nx g @nx/nest:service <service-name> --project=social --spec
 ```
 
 ### Check overall coverage
+
 ```bash
 nx test <project> --coverage
 ```

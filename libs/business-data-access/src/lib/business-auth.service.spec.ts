@@ -15,7 +15,11 @@ describe('BusinessAuthService', () => {
     localStorage.clear();
 
     TestBed.configureTestingModule({
-      providers: [BusinessAuthService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        BusinessAuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
 
     service = TestBed.inject(BusinessAuthService);
@@ -30,21 +34,29 @@ describe('BusinessAuthService', () => {
   it('exchanges owner login tokens into the business-site app scope', () => {
     let storedToken: string | null = null;
 
-    service.loginAndExchange('owner@example.com', 'secret').subscribe((user) => {
-      storedToken = user.token;
-    });
+    service
+      .loginAndExchange('owner@example.com', 'secret')
+      .subscribe((user) => {
+        storedToken = user.token;
+      });
 
     const loginRequest = httpMock.expectOne('/api/authentication/login');
     expect(loginRequest.request.body).toEqual({
       email: 'owner@example.com',
       password: 'secret',
     });
-    expect(loginRequest.request.headers.get('x-ot-appscope')).toBe('business-site');
+    expect(loginRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
     loginRequest.flush({ token: 'base-token', email: 'owner@example.com' });
 
     const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
-    expect(exchangeRequest.request.body).toEqual({ targetAppId: 'business-site' });
-    expect(exchangeRequest.request.headers.get('Authorization')).toBe('Bearer base-token');
+    expect(exchangeRequest.request.body).toEqual({
+      targetAppId: 'business-site',
+    });
+    expect(exchangeRequest.request.headers.get('Authorization')).toBe(
+      'Bearer base-token'
+    );
     exchangeRequest.flush({ token: 'business-token', profileId: 'profile-1' });
 
     expect(storedToken).toBe('base-token');
@@ -65,7 +77,9 @@ describe('BusinessAuthService', () => {
 
     const registerRequest = httpMock.expectOne('/api/authentication/register');
     expect(registerRequest.request.method).toBe('POST');
-    expect(registerRequest.request.headers.get('x-ot-appscope')).toBe('business-site');
+    expect(registerRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
     expect(registerRequest.request.body).toEqual({
       fn: 'Casey',
       ln: 'Client',
@@ -96,13 +110,17 @@ describe('BusinessAuthService', () => {
     });
 
     const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
-    expect(exchangeRequest.request.body).toEqual({ targetAppId: 'business-site' });
+    expect(exchangeRequest.request.body).toEqual({
+      targetAppId: 'business-site',
+    });
     exchangeRequest.flush({
       token: 'business-token',
       profileId: 'client-profile-1',
     });
 
     expect(clientUserId).toBe('client-user-1');
-    expect(localStorage.getItem('business-site:client-user')).toContain('client-user-1');
+    expect(localStorage.getItem('business-site:client-user')).toContain(
+      'client-user-1'
+    );
   });
 });

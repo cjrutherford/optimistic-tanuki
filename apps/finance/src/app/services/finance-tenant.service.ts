@@ -23,7 +23,7 @@ export class FinanceTenantService {
     @Inject(getRepositoryToken(FinanceTenant))
     private readonly tenantRepo: Repository<FinanceTenant>,
     @Inject(getRepositoryToken(FinanceTenantMember))
-    private readonly tenantMemberRepo: Repository<FinanceTenantMember>,
+    private readonly tenantMemberRepo: Repository<FinanceTenantMember>
   ) {}
 
   private toRpcException(error: unknown): RpcException {
@@ -37,12 +37,12 @@ export class FinanceTenantService {
         typeof response === 'string'
           ? response
           : Array.isArray((response as { message?: unknown })?.message)
-            ? (response as { message: string[] }).message.join(', ')
-            : ((response as { message?: string })?.message ?? error.message);
+          ? (response as { message: string[] }).message.join(', ')
+          : (response as { message?: string })?.message ?? error.message;
       const errorLabel =
         typeof response === 'string'
           ? error.name
-          : ((response as { error?: string })?.error ?? error.name);
+          : (response as { error?: string })?.error ?? error.name;
 
       return new RpcException({
         statusCode: error.getStatus(),
@@ -103,7 +103,7 @@ export class FinanceTenantService {
     try {
       if (!dto.profileId) {
         throw new NotFoundException(
-          'Profile is required to create a finance tenant',
+          'Profile is required to create a finance tenant'
         );
       }
 

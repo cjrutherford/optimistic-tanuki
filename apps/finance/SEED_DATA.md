@@ -5,22 +5,27 @@ This document describes the sample data created by the `seed-finance.ts` script.
 ## Accounts (6 total)
 
 1. **Primary Checking Account** (Bank)
+
    - Balance: $5,432.18
    - Main checking account for daily expenses
 
 2. **High-Yield Savings** (Bank)
+
    - Balance: $15,000.00
    - Emergency fund and savings
 
 3. **Credit Card - Rewards** (Credit)
+
    - Balance: -$1,250.45 (negative = owed)
    - Cashback rewards credit card
 
 4. **Investment Account** (Investment)
+
    - Balance: $28,500.75
    - Long-term investment portfolio
 
 5. **Cash Wallet** (Cash)
+
    - Balance: $250.00
    - Physical cash on hand
 
@@ -33,6 +38,7 @@ This document describes the sample data created by the `seed-finance.ts` script.
 ## Transactions (16 total)
 
 ### Checking Account Transactions
+
 - Monthly salary deposit: +$3,500.00
 - Monthly rent payment: -$1,200.00
 - Weekly groceries: -$85.42
@@ -43,15 +49,18 @@ This document describes the sample data created by the `seed-finance.ts` script.
 - Gas station: -$75.00
 
 ### Credit Card Transactions
+
 - Amazon electronics: -$120.00
 - Movie tickets: -$65.00
 - Netflix subscription: -$15.99
 
 ### Savings Account Transactions
+
 - Monthly savings transfer: +$500.00
 - Interest payment: +$2.15
 
 ### Business Account Transactions
+
 - Client payment: +$2,500.00
 - Software licenses: -$450.00
 - Marketing: -$200.00
@@ -74,6 +83,7 @@ This document describes the sample data created by the `seed-finance.ts` script.
 ## Budgets (7 total)
 
 ### Monthly Budgets
+
 1. **Groceries**: $600.00 limit, $85.42 spent (14%)
 2. **Dining Out**: $300.00 limit, $32.50 spent (11%)
 3. **Entertainment**: $200.00 limit, $65.00 spent (33%)
@@ -82,6 +92,7 @@ This document describes the sample data created by the `seed-finance.ts` script.
 6. **Utilities**: $250.00 limit, $100.00 spent (40%)
 
 ### Yearly Budgets
+
 7. **Annual Savings Goal**: $12,000.00 limit, $500.00 spent (4%)
 
 ## Usage

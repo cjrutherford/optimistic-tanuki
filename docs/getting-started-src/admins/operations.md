@@ -5,6 +5,7 @@ slug: operations
 summary: Inspect service health, logs, and routine local-environment commands.
 order: 30
 ---
+
 # Operations Playbook
 
 Useful commands for the shared stack:

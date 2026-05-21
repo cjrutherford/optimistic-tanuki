@@ -15,12 +15,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class LocalStorageAdapter implements StorageAdapter {
-  constructor(
-    private readonly l: Logger,
-    private readonly basePath: string,
-  ) {
+  constructor(private readonly l: Logger, private readonly basePath: string) {
     this.l.log(
-      `LocalStorageAdapter initialized with basePath: ${this.basePath}`,
+      `LocalStorageAdapter initialized with basePath: ${this.basePath}`
     );
     this.ensureBasePathExists();
   }
@@ -40,7 +37,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       data.name,
       data.profileId,
       data.type,
-      data.content?.length,
+      data.content?.length
     );
     const assetId = uuidv4();
     // Create a unique path for the file within the base path
@@ -85,7 +82,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       return createdAsset;
     } catch (error: any) {
       this.l.error(
-        `LocalStorageAdapter: Failed to create asset: ${error.message}`,
+        `LocalStorageAdapter: Failed to create asset: ${error.message}`
       );
       throw error; // Re-throw the error
     }
@@ -108,11 +105,11 @@ export class LocalStorageAdapter implements StorageAdapter {
       // Ignore error if file doesn't exist
       if (error.code === 'ENOENT') {
         this.l.warn(
-          `LocalStorageAdapter: Attempted to remove non-existent asset at ${absolutePath}`,
+          `LocalStorageAdapter: Attempted to remove non-existent asset at ${absolutePath}`
         );
       } else {
         this.l.error(
-          `LocalStorageAdapter: Failed to remove asset at ${absolutePath}: ${error.message}`,
+          `LocalStorageAdapter: Failed to remove asset at ${absolutePath}: ${error.message}`
         );
         throw error; // Re-throw other errors
       }
@@ -141,7 +138,7 @@ export class LocalStorageAdapter implements StorageAdapter {
       `LocalStorageAdapter: Reading asset with data:`,
       Object.entries(data)
         .map(([key, value]) => `${key}: ${value}`)
-        .join(', '),
+        .join(', ')
     );
     const absolutePath = path.join(this.basePath, data.storagePath);
 
@@ -149,16 +146,16 @@ export class LocalStorageAdapter implements StorageAdapter {
       // Read the file content
       const fileContent = await fs.readFile(absolutePath);
       this.l.log(
-        `LocalStorageAdapter: Asset content read from ${absolutePath}: ${fileContent.length}`,
+        `LocalStorageAdapter: Asset content read from ${absolutePath}: ${fileContent.length}`
       );
       const mime = this.getMimeType(data.name, data.type);
       const base64Content = `data:${mime};base64,${fileContent.toString(
-        'base64',
+        'base64'
       )}`;
       return base64Content;
     } catch (error: any) {
       this.l.error(
-        `LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`,
+        `LocalStorageAdapter: Failed to read asset content from ${absolutePath}: ${error.message}`
       );
       throw error; // Re-throw the error
     }

@@ -62,7 +62,9 @@ describe('TaskNoteService', () => {
 
     it('should throw error if profile is not available', () => {
       profileService.getCurrentUserProfile.mockReturnValue(null);
-      expect(() => service.createTaskNote({} as any)).toThrow('User profile is not available');
+      expect(() => service.createTaskNote({} as any)).toThrow(
+        'User profile is not available'
+      );
     });
   });
 
@@ -110,7 +112,9 @@ describe('TaskNoteService', () => {
 
     it('should throw error if profile is not available', () => {
       profileService.getCurrentUserProfile.mockReturnValue(null);
-      expect(() => service.updateTaskNote({} as any)).toThrow('User profile is not available');
+      expect(() => service.updateTaskNote({} as any)).toThrow(
+        'User profile is not available'
+      );
     });
   });
 

@@ -42,7 +42,8 @@ import { Variantable } from '../interfaces/variantable.interface';
 })
 export class AccordionComponent
   extends Variantable
-  implements OnInit, OnDestroy {
+  implements OnInit, OnDestroy
+{
   // ==================== INPUTS ====================
 
   /** Accordion sections data */

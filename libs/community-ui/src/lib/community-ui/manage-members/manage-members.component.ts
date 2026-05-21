@@ -155,8 +155,9 @@ export class ManageMembersComponent extends Variantable implements OnInit {
     }));
     this.members.set(membersWithProfiles);
 
-    const pendingRequests =
-      await this.communityService.getPendingJoinRequests(this.communityId);
+    const pendingRequests = await this.communityService.getPendingJoinRequests(
+      this.communityId
+    );
     this.pendingRequests.set(pendingRequests);
 
     const pendingInvites = await this.communityService.getPendingInvites(
@@ -261,7 +262,8 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   async appointAsManager(member: CommunityMemberDto & { profile?: any }) {
     if (
       !confirm(
-        `Appoint ${member.profile?.profileName || member.profileId
+        `Appoint ${
+          member.profile?.profileName || member.profileId
         } as a community manager?`
       )
     ) {
@@ -282,7 +284,8 @@ export class ManageMembersComponent extends Variantable implements OnInit {
   async revokeManagerRole(member: CommunityMemberDto & { profile?: any }) {
     if (
       !confirm(
-        `Revoke manager role from ${member.profile?.profileName || member.profileId
+        `Revoke manager role from ${
+          member.profile?.profileName || member.profileId
         }?`
       )
     ) {

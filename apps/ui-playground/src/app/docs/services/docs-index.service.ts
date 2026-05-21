@@ -95,9 +95,7 @@ export class DocsIndexService {
     );
   }
 
-  getAdjacentDocs(
-    slug: string
-  ): Observable<{
+  getAdjacentDocs(slug: string): Observable<{
     previous: DocsManifestItem | null;
     next: DocsManifestItem | null;
   }> {

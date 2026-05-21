@@ -19,7 +19,7 @@ describe('UsageBlocksService', () => {
         meterId: 'api-calls',
         quantity: 25,
         expiresAt: new Date('2026-05-01T00:00:00.000Z'),
-      }),
+      })
     ).resolves.toMatchObject({
       grant: {
         tenantId: 'tenant-1',
@@ -59,7 +59,7 @@ describe('UsageBlocksService', () => {
         meterId: 'api-calls',
         quantity: 12,
         occurredAt: new Date('2026-04-15T00:00:00.000Z'),
-      }),
+      })
     ).resolves.toMatchObject({
       requestedQuantity: 12,
       consumedQuantity: 12,
@@ -77,7 +77,7 @@ describe('UsageBlocksService', () => {
         accountId: 'acct-1',
         meterId: 'api-calls',
         at: new Date('2026-04-15T00:00:00.000Z'),
-      }),
+      })
     ).resolves.toMatchObject([
       {
         id: later.grant.id,
@@ -102,7 +102,7 @@ describe('UsageBlocksService', () => {
         accountId: 'acct-1',
         meterId: 'api-calls',
         quantity: 7,
-      }),
+      })
     ).resolves.toMatchObject({
       requestedQuantity: 7,
       consumedQuantity: 5,

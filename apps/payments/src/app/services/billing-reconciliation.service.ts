@@ -7,7 +7,7 @@ export class BillingReconciliationService {
 
   async publishProviderEvent(event: ProviderWebhookResult): Promise<void> {
     this.logger.log(
-      `Billing reconciliation event queued: provider=${event.provider}, event=${event.eventType}`,
+      `Billing reconciliation event queued: provider=${event.provider}, event=${event.eventType}`
     );
   }
 }

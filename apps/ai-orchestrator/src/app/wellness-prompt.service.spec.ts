@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { WellnessPromptService, WellnessContextType } from './wellness-prompt.service';
+import {
+  WellnessPromptService,
+  WellnessContextType,
+} from './wellness-prompt.service';
 
 describe('WellnessPromptService', () => {
   let service: WellnessPromptService;
@@ -49,7 +52,9 @@ describe('WellnessPromptService', () => {
   describe('getPromptContext', () => {
     it('should return the correct context description for affirmation', () => {
       const context = service.getPromptContext('affirmation');
-      expect(context).toContain('affirmations are statements to boost confidence and positivity');
+      expect(context).toContain(
+        'affirmations are statements to boost confidence and positivity'
+      );
     });
 
     it('should return the correct context description for plannedPleasurable', () => {
@@ -102,7 +107,8 @@ describe('WellnessPromptService', () => {
 
     it('should consider previous activities when provided', () => {
       const previousActivities = ['breathing exercise', 'meditation'];
-      const suggestion = service.generateMindfulActivitySuggestion(previousActivities);
+      const suggestion =
+        service.generateMindfulActivitySuggestion(previousActivities);
       expect(suggestion).toContain('breathing exercise');
       expect(suggestion).toContain('meditation');
     });

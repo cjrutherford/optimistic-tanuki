@@ -33,7 +33,9 @@ export class ConfigurationsController {
   }
 
   @MessagePattern({ cmd: AppConfigCommands.Get })
-  async getConfiguration(@Payload() id: string): Promise<AppConfigurationEntity> {
+  async getConfiguration(
+    @Payload() id: string
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`Getting app configuration: ${id}`);
     return await this.configurationsService.getConfiguration(id);
   }
@@ -43,7 +45,9 @@ export class ConfigurationsController {
     @Payload() data: { domain: string }
   ): Promise<AppConfigurationEntity> {
     this.logger.log(`Getting app configuration by domain: ${data.domain}`);
-    return await this.configurationsService.getConfigurationByDomain(data.domain);
+    return await this.configurationsService.getConfigurationByDomain(
+      data.domain
+    );
   }
 
   @MessagePattern({ cmd: AppConfigCommands.GetByName })
@@ -55,7 +59,9 @@ export class ConfigurationsController {
   }
 
   @MessagePattern({ cmd: AppConfigCommands.GetAll })
-  async getAllConfigurations(@Payload() query?: any): Promise<AppConfigurationEntity[]> {
+  async getAllConfigurations(
+    @Payload() query?: any
+  ): Promise<AppConfigurationEntity[]> {
     this.logger.log('Getting all app configurations');
     return await this.configurationsService.getAllConfigurations(query || {});
   }

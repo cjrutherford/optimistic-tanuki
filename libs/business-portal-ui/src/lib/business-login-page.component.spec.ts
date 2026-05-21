@@ -34,14 +34,19 @@ describe('BusinessLoginPageComponent', () => {
     expect(text).toContain('Owner Login');
     expect(text).toContain('owner workspace');
     expect(text).not.toContain('Trainer Login');
-    expect(fixture.nativeElement.textContent).not.toContain('trainer workspace');
-    expect(fixture.nativeElement.querySelector('input[type="email"]').placeholder).toBe(
-      'owner@example.com'
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'trainer workspace'
     );
+    expect(
+      fixture.nativeElement.querySelector('input[type="email"]').placeholder
+    ).toBe('owner@example.com');
 
     fixture.componentInstance.onSubmit();
 
-    expect(loginAndExchange).toHaveBeenCalledWith('owner@example.com', 'secret');
+    expect(loginAndExchange).toHaveBeenCalledWith(
+      'owner@example.com',
+      'secret'
+    );
     expect(navigate).toHaveBeenCalledWith(['/owner/dashboard']);
   });
 });

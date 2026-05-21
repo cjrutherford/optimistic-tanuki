@@ -1,4 +1,3 @@
-
 export const PermissionCommands = {
   Create: 'Create:Permission',
   Update: 'Update:Permission',

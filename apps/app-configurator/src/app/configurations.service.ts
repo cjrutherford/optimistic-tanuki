@@ -27,7 +27,7 @@ export class ConfigurationsService {
     entity.features = createDto.features as any;
     entity.theme = createDto.theme as any;
     entity.active = createDto.active ?? true;
-    
+
     return await this.configRepository.save(entity);
   }
 
@@ -39,7 +39,9 @@ export class ConfigurationsService {
     return config;
   }
 
-  async getConfigurationByDomain(domain: string): Promise<AppConfigurationEntity> {
+  async getConfigurationByDomain(
+    domain: string
+  ): Promise<AppConfigurationEntity> {
     const config = await this.configRepository.findOne({ where: { domain } });
     if (!config) {
       throw new NotFoundException(
@@ -56,12 +58,19 @@ export class ConfigurationsService {
       this.logger.warn(`[Service] Configuration with name "${name}" not found`);
       throw new NotFoundException(`Configuration with name ${name} not found`);
     }
-    this.logger.log(`[Service] Found configuration: ${config.name} (id: ${config.id})`);
+    this.logger.log(
+      `[Service] Found configuration: ${config.name} (id: ${config.id})`
+    );
     return config;
   }
 
-  async getAllConfigurations(query: any = {}): Promise<AppConfigurationEntity[]> {
-    this.logger.log(`[Service] Querying all configurations with filter:`, query);
+  async getAllConfigurations(
+    query: any = {}
+  ): Promise<AppConfigurationEntity[]> {
+    this.logger.log(
+      `[Service] Querying all configurations with filter:`,
+      query
+    );
     const configs = await this.configRepository.find({
       where: query,
       order: { createdAt: 'DESC' },

@@ -62,7 +62,9 @@ describe('CreatePageComponent', () => {
     ).find((button: HTMLButtonElement) => button.textContent?.includes('Next'));
 
     expect(nextButton?.hasAttribute('disabled')).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Complete the custom app brief');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Complete the custom app brief'
+    );
   });
 
   it('exposes output and brand configuration steps in the studio flow', async () => {

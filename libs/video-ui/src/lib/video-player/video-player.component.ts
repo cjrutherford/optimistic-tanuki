@@ -128,7 +128,7 @@ export class VideoPlayerComponent implements AfterViewInit, OnInit, OnDestroy {
     this.themeSub = this.themeService.themeColors$.subscribe(
       (colors: ThemeColors | undefined) => {
         // Theme colors now applied via CSS custom properties
-      },
+      }
     );
   }
 

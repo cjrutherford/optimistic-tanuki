@@ -13,7 +13,7 @@
   <div *ngIf="showMyBookings" class="my-bookings">
     <h2>My Bookings</h2>
     <div *ngIf="loading" class="loading">Loading your bookings...</div>
-    
+
     <div *ngIf="!loading && userAppointments.length === 0" class="empty-state">
       <p>You don't have any bookings yet.</p>
       <button class="btn-primary" (click)="toggleMyBookings()">
@@ -44,7 +44,13 @@
           </p>
           <p *ngIf="appointment.description">{{ appointment.description }}</p>
         </div>
-        <div class="booking-actions" *ngIf="appointment.status === 'pending' || appointment.status === 'approved'">
+        <div
+          class="booking-actions"
+          *ngIf="
+            appointment.status === 'pending' ||
+            appointment.status === 'approved'
+          "
+        >
           <button class="btn-danger" (click)="cancelAppointment(appointment)">
             Cancel Booking
           </button>
@@ -74,7 +80,9 @@
           <img [src]="resource.imageUrl" [alt]="resource.name" />
         </div>
         <div class="resource-image placeholder" *ngIf="!resource.imageUrl">
-          <span class="resource-type-icon">{{ resource.type[0].toUpperCase() }}</span>
+          <span class="resource-type-icon">{{
+            resource.type[0].toUpperCase()
+          }}</span>
         </div>
         <div class="resource-info">
           <h3>{{ resource.name }}</h3>
@@ -91,12 +99,19 @@
               <strong>Rate:</strong> ${{ resource.hourlyRate }}/hour
             </p>
           </div>
-          <div class="amenities" *ngIf="resource.amenities && resource.amenities.length > 0">
+          <div
+            class="amenities"
+            *ngIf="resource.amenities && resource.amenities.length > 0"
+          >
             <span class="amenity" *ngFor="let amenity of resource.amenities">
               {{ amenity.replace('_', ' ') }}
             </span>
           </div>
-          <button class="btn-primary" (click)="openBookingModal(resource)" [disabled]="!resource.isActive">
+          <button
+            class="btn-primary"
+            (click)="openBookingModal(resource)"
+            [disabled]="!resource.isActive"
+          >
             {{ resource.isActive ? 'Book Now' : 'Unavailable' }}
           </button>
         </div>
@@ -113,7 +128,9 @@
       </div>
 
       <div *ngIf="error" class="error-message">{{ error }}</div>
-      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
+      <div *ngIf="successMessage" class="success-message">
+        {{ successMessage }}
+      </div>
 
       <form (ngSubmit)="submitBooking()" *ngIf="!successMessage">
         <div class="form-group">
@@ -189,7 +206,12 @@
           <button type="submit" class="btn-primary" [disabled]="loading">
             {{ loading ? 'Checking Availability...' : 'Submit Booking' }}
           </button>
-          <button type="button" class="btn-secondary" (click)="closeBookingModal()" [disabled]="loading">
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="closeBookingModal()"
+            [disabled]="loading"
+          >
             Cancel
           </button>
         </div>

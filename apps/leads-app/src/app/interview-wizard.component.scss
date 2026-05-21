@@ -116,7 +116,8 @@
     &:focus {
       outline: none;
       border-color: var(--app-success);
-      box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-success) 16%, transparent);
+      box-shadow: 0 0 0 2px
+        color-mix(in srgb, var(--app-success) 16%, transparent);
     }
   }
 
@@ -129,9 +130,14 @@
   }
 
   input[type='file'] {
-    border: 1px dashed color-mix(in srgb, var(--app-border) 86%, var(--app-primary) 14%);
+    border: 1px dashed
+      color-mix(in srgb, var(--app-border) 86%, var(--app-primary) 14%);
     border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--app-surface) 82%, var(--app-background) 18%);
+    background: color-mix(
+      in srgb,
+      var(--app-surface) 82%,
+      var(--app-background) 18%
+    );
     color: var(--app-foreground);
   }
 }
@@ -149,7 +155,8 @@
   display: grid;
   gap: 0.25rem;
   padding: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--app-success) 24%, var(--app-border) 76%);
+  border: 1px solid
+    color-mix(in srgb, var(--app-success) 24%, var(--app-border) 76%);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--app-surface) 94%, white 6%);
   box-shadow: var(--shadow-lg);
@@ -168,7 +175,11 @@
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--app-success) 10%, var(--app-surface) 90%);
+    background: color-mix(
+      in srgb,
+      var(--app-success) 10%,
+      var(--app-surface) 90%
+    );
   }
 }
 
@@ -216,8 +227,16 @@
   }
 
   &.user {
-    background: color-mix(in srgb, var(--app-success) 12%, var(--app-surface) 88%);
-    color: color-mix(in srgb, var(--app-success) 45%, var(--app-foreground) 55%);
+    background: color-mix(
+      in srgb,
+      var(--app-success) 12%,
+      var(--app-surface) 88%
+    );
+    color: color-mix(
+      in srgb,
+      var(--app-success) 45%,
+      var(--app-foreground) 55%
+    );
   }
 }
 
@@ -270,8 +289,16 @@
       align-items: center;
       gap: 4px;
       padding: 4px 10px;
-      background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface) 86%);
-      color: color-mix(in srgb, var(--app-success) 44%, var(--app-foreground) 56%);
+      background: color-mix(
+        in srgb,
+        var(--app-success) 14%,
+        var(--app-surface) 86%
+      );
+      color: color-mix(
+        in srgb,
+        var(--app-success) 44%,
+        var(--app-foreground) 56%
+      );
       border-radius: 16px;
       font-size: 0.875rem;
 
@@ -398,13 +425,29 @@
         color: var(--app-foreground);
 
         &.high {
-          background: color-mix(in srgb, var(--app-success) 14%, var(--app-surface) 86%);
-          color: color-mix(in srgb, var(--app-success) 48%, var(--app-foreground) 52%);
+          background: color-mix(
+            in srgb,
+            var(--app-success) 14%,
+            var(--app-surface) 86%
+          );
+          color: color-mix(
+            in srgb,
+            var(--app-success) 48%,
+            var(--app-foreground) 52%
+          );
         }
 
         &.medium {
-          background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface) 84%);
-          color: color-mix(in srgb, var(--app-warning) 56%, var(--app-foreground) 44%);
+          background: color-mix(
+            in srgb,
+            var(--app-warning) 16%,
+            var(--app-surface) 84%
+          );
+          color: color-mix(
+            in srgb,
+            var(--app-warning) 56%,
+            var(--app-foreground) 44%
+          );
         }
       }
     }

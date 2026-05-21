@@ -11,13 +11,13 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
       <h2>{{ section.title }}</h2>
       <div class="features-grid">
         @for (feature of section.features; track feature.title) {
-          <div class="feature-card">
-            @if (feature.icon) {
-              <div class="feature-icon">{{ feature.icon }}</div>
-            }
-            <h3>{{ feature.title }}</h3>
-            <p>{{ feature.description }}</p>
-          </div>
+        <div class="feature-card">
+          @if (feature.icon) {
+          <div class="feature-icon">{{ feature.icon }}</div>
+          }
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
         }
       </div>
     </section>

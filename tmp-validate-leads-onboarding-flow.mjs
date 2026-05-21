@@ -5,8 +5,13 @@ const baseUrl = 'http://127.0.0.1:4201';
 const reviewedTopics = [
   {
     name: 'React modernization roles',
-    description: 'Remote and hybrid positions for React modernization specialists.',
-    keywords: ['react modernization', 'angular migration', 'frontend architecture'],
+    description:
+      'Remote and hybrid positions for React modernization specialists.',
+    keywords: [
+      'react modernization',
+      'angular migration',
+      'frontend architecture',
+    ],
     excludedTerms: ['wordpress'],
     discoveryIntent: 'job-openings',
     sources: ['remoteok', 'himalayas', 'indeed'],
@@ -138,9 +143,11 @@ await clickNext();
 
 await clickNext();
 
-await page.locator('textarea').fill(
-  'Healthcare SaaS product teams with legacy patient onboarding flows and compliance needs.'
-);
+await page
+  .locator('textarea')
+  .fill(
+    'Healthcare SaaS product teams with legacy patient onboarding flows and compliance needs.'
+  );
 await clickNext();
 
 await page.getByRole('button', { name: '51-200' }).click();

@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
@@ -8,7 +13,10 @@ import {
   ButtonComponent,
   CardComponent,
 } from '@optimistic-tanuki/common-ui';
-import { SelectComponent, TextInputComponent } from '@optimistic-tanuki/form-ui';
+import {
+  SelectComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 import { PersonalityPreviewComponent } from '@optimistic-tanuki/theme-ui';
 import { AppBarComponent } from '@optimistic-tanuki/navigation-ui';
 import {
@@ -72,7 +80,8 @@ class ValidationSearchService {
       type: 'post',
       title: 'Personality Distinctness Sweep',
       subtitle: 'Integrated validation board update',
-      highlight: 'Compare all 12 personalities against the same component surface.',
+      highlight:
+        'Compare all 12 personalities against the same component surface.',
     },
   ];
 
@@ -110,7 +119,8 @@ class ValidationPersonaService {
       {
         id: 'persona-1',
         name: 'Design System Editor',
-        description: 'Refines token naming, previews, and validation heuristics.',
+        description:
+          'Refines token naming, previews, and validation heuristics.',
         goals: ['Compare personalities', 'Reduce ambiguity'],
         skills: ['design systems', 'documentation'],
         interests: ['playgrounds', 'tokens'],
@@ -193,7 +203,10 @@ class ValidationPersonaService {
               <otui-badge variant="success">Stable</otui-badge>
               <otui-card>
                 <h4>Shared surface</h4>
-                <p>Buttons, copy rhythm, and card treatment should all shift with personality.</p>
+                <p>
+                  Buttons, copy rhythm, and card treatment should all shift with
+                  personality.
+                </p>
               </otui-card>
             </div>
             } @case ('form-ui') {
@@ -203,7 +216,10 @@ class ValidationPersonaService {
                 placeholder="Curated validation board"
                 [(ngModel)]="workspaceName"
               />
-              <lib-select [options]="personalityOptions" [(ngModel)]="selectedPersonalityLabel" />
+              <lib-select
+                [options]="personalityOptions"
+                [(ngModel)]="selectedPersonalityLabel"
+              />
             </div>
             } @case ('theme-ui') {
             <div class="theme-preview">
@@ -261,7 +277,11 @@ class ValidationPersonaService {
             </div>
             } @case ('ag-grid-ui') {
             <div class="grid-preview">
-              <otui-ag-grid [rowData]="rowData" [columnDefs]="columnDefs" height="260px" />
+              <otui-ag-grid
+                [rowData]="rowData"
+                [columnDefs]="columnDefs"
+                height="260px"
+              />
             </div>
             } }
           </div>
@@ -284,8 +304,7 @@ class ValidationPersonaService {
         padding: 1rem;
         border: 1px solid color-mix(in srgb, var(--border) 92%, transparent);
         border-radius: var(--personality-card-radius, 1.35rem);
-        background:
-          linear-gradient(
+        background: linear-gradient(
             180deg,
             color-mix(in srgb, var(--surface) 96%, transparent),
             color-mix(in srgb, var(--background) 98%, transparent)
@@ -415,105 +434,120 @@ export class ValidationPageComponent {
       name: 'Motion UI',
       packageName: '@optimistic-tanuki/motion-ui',
       path: '/motion-ui',
-      focus: 'Atmosphere, glow behavior, and depth treatment should shift with the active personality.',
+      focus:
+        'Atmosphere, glow behavior, and depth treatment should shift with the active personality.',
     },
     {
       id: 'common-ui',
       name: 'Common UI',
       packageName: '@optimistic-tanuki/common-ui',
       path: '/common-ui',
-      focus: 'Buttons, badges, and core card surfaces are the fastest way to catch token regressions.',
+      focus:
+        'Buttons, badges, and core card surfaces are the fastest way to catch token regressions.',
     },
     {
       id: 'form-ui',
       name: 'Form UI',
       packageName: '@optimistic-tanuki/form-ui',
       path: '/form-ui',
-      focus: 'Inputs should reflect personality spacing, border treatment, and focus rhythm without losing clarity.',
+      focus:
+        'Inputs should reflect personality spacing, border treatment, and focus rhythm without losing clarity.',
     },
     {
       id: 'theme-ui',
       name: 'Theme UI',
       packageName: '@optimistic-tanuki/theme-ui',
       path: '/theme-ui',
-      focus: 'The preview surface exposes typography, palette, spacing, shadows, and radius all in one place.',
+      focus:
+        'The preview surface exposes typography, palette, spacing, shadows, and radius all in one place.',
     },
     {
       id: 'navigation-ui',
       name: 'Navigation UI',
       packageName: '@optimistic-tanuki/navigation-ui',
       path: '/navigation-ui',
-      focus: 'Navigation chrome should feel like it belongs to the same personality system as the content surfaces.',
+      focus:
+        'Navigation chrome should feel like it belongs to the same personality system as the content surfaces.',
     },
     {
       id: 'notification-ui',
       name: 'Notification UI',
       packageName: '@optimistic-tanuki/notification-ui',
       path: '/notification-ui',
-      focus: 'Alert affordances and unread emphasis should stay legible across personalities and modes.',
+      focus:
+        'Alert affordances and unread emphasis should stay legible across personalities and modes.',
     },
     {
       id: 'social-ui',
       name: 'Social UI',
       packageName: '@optimistic-tanuki/social-ui',
       path: '/social-ui',
-      focus: 'Rich composition panels reveal whether personality styles hold up in denser editorial layouts.',
+      focus:
+        'Rich composition panels reveal whether personality styles hold up in denser editorial layouts.',
     },
     {
       id: 'store-ui',
       name: 'Store UI',
       packageName: '@optimistic-tanuki/store-ui',
       path: '/store-ui',
-      focus: 'Commerce cards surface elevation, CTA hierarchy, and pricing emphasis quickly.',
+      focus:
+        'Commerce cards surface elevation, CTA hierarchy, and pricing emphasis quickly.',
     },
     {
       id: 'auth-ui',
       name: 'Auth UI',
       packageName: '@optimistic-tanuki/auth-ui',
       path: '/auth-ui',
-      focus: 'Authentication shells should feel distinct without losing trust or form clarity.',
+      focus:
+        'Authentication shells should feel distinct without losing trust or form clarity.',
     },
     {
       id: 'profile-ui',
       name: 'Profile UI',
       packageName: '@optimistic-tanuki/profile-ui',
       path: '/profile-ui',
-      focus: 'Identity banners test large-image framing, heading treatment, and tone-setting surfaces.',
+      focus:
+        'Identity banners test large-image framing, heading treatment, and tone-setting surfaces.',
     },
     {
       id: 'chat-ui',
       name: 'Chat UI',
       packageName: '@optimistic-tanuki/chat-ui',
       path: '/chat-ui',
-      focus: 'Conversation rows are useful for checking compact density and recency metadata styles.',
+      focus:
+        'Conversation rows are useful for checking compact density and recency metadata styles.',
     },
     {
       id: 'message-ui',
       name: 'Message UI',
       packageName: '@optimistic-tanuki/message-ui',
       path: '/message-ui',
-      focus: 'Transient feedback should inherit personality tone instead of reverting to a generic system style.',
+      focus:
+        'Transient feedback should inherit personality tone instead of reverting to a generic system style.',
     },
     {
       id: 'search-ui',
       name: 'Search UI',
       packageName: '@optimistic-tanuki/search-ui',
       path: '/search-ui',
-      focus: 'Lookup flows are sensitive to spacing, typography hierarchy, and focus treatment.',
+      focus:
+        'Lookup flows are sensitive to spacing, typography hierarchy, and focus treatment.',
     },
     {
       id: 'persona-ui',
       name: 'Persona UI',
       packageName: '@optimistic-tanuki/persona-ui',
       path: '/persona-ui',
-      focus: 'Assistant pickers should remain visibly distinct while preserving readable structure.',
+      focus:
+        'Assistant pickers should remain visibly distinct while preserving readable structure.',
     },
     {
       id: 'ag-grid-ui',
       name: 'AG Grid UI',
       packageName: '@optimistic-tanuki/ag-grid-ui',
       path: '/ag-grid-ui',
-      focus: 'Dense tables catch weak token integration fast, especially borders, stripes, and row emphasis.',
+      focus:
+        'Dense tables catch weak token integration fast, especially borders, stripes, and row emphasis.',
     },
   ];
 
@@ -537,7 +571,8 @@ export class ValidationPageComponent {
       id: 'peer-profile',
       name: 'Mika Vale',
       avatarUrl: 'https://placehold.co/96x96/334155/e2e8f0?text=MV',
-      lastMessage: 'The validation route makes personality drift much easier to spot.',
+      lastMessage:
+        'The validation route makes personality drift much easier to spot.',
       lastMessageTime: '2026-04-03T14:05:00Z',
     },
   ];
@@ -571,9 +606,21 @@ export class ValidationPageComponent {
   };
 
   readonly rowData = [
-    { component: 'Primary Button', library: 'common-ui', check: 'shadow + radius' },
-    { component: 'Login Block', library: 'auth-ui', check: 'form shell + hierarchy' },
-    { component: 'Global Search', library: 'search-ui', check: 'input density + focus' },
+    {
+      component: 'Primary Button',
+      library: 'common-ui',
+      check: 'shadow + radius',
+    },
+    {
+      component: 'Login Block',
+      library: 'auth-ui',
+      check: 'form shell + hierarchy',
+    },
+    {
+      component: 'Global Search',
+      library: 'search-ui',
+      check: 'input density + focus',
+    },
   ];
 
   readonly columnDefs: ColDef[] = [

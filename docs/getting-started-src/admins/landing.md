@@ -26,6 +26,7 @@ next_steps:
     page: admin-operations
     body: Use it for day-two support and troubleshooting.
 ---
+
 # Admin Guide
 
 This guide is for operators who need a predictable local environment for the Optimistic Tanuki platform. It focuses on the shared development stack, initialization, and fast health checks.

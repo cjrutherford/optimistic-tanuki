@@ -38,7 +38,10 @@ export function isAbortLikeHttpError(error: unknown): boolean {
     return true;
   }
 
-  if (hasAbortLikeName(record['name']) || hasAbortLikeMessage(record['message'])) {
+  if (
+    hasAbortLikeName(record['name']) ||
+    hasAbortLikeMessage(record['message'])
+  ) {
     return true;
   }
 

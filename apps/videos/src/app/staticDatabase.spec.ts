@@ -48,17 +48,16 @@ describe('videos static datasource', () => {
 
     expect(
       staticSource.getMetadata(Video).findColumnWithPropertyName('channelId')
-        ?.type,
+        ?.type
     ).toBe('uuid');
     expect(
-      staticSource
-        .getMetadata(VideoView)
-        .findColumnWithPropertyName('videoId')?.type,
+      staticSource.getMetadata(VideoView).findColumnWithPropertyName('videoId')
+        ?.type
     ).toBe('uuid');
     expect(
       staticSource
         .getMetadata(ChannelSubscription)
-        .findColumnWithPropertyName('channelId')?.type,
+        .findColumnWithPropertyName('channelId')?.type
     ).toBe('uuid');
   });
 
@@ -69,10 +68,10 @@ describe('videos static datasource', () => {
 
     expect(queryRunner.hasTable).toHaveBeenCalledWith('channel');
     expect(queryRunner.executed[0]).toContain(
-      'CREATE TABLE IF NOT EXISTS "video_view"',
+      'CREATE TABLE IF NOT EXISTS "video_view"'
     );
     expect(queryRunner.executed).toContain(
-      'ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communityId" character varying',
+      'ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communityId" character varying'
     );
   });
 
@@ -82,14 +81,13 @@ describe('videos static datasource', () => {
     await new CommunityBroadcast20260417143000().up(queryRunner as never);
 
     const slugBackfill = queryRunner.executed.find(
-      (sql) =>
-        sql.includes('UPDATE "channel"') && sql.includes('communitySlug'),
+      (sql) => sql.includes('UPDATE "channel"') && sql.includes('communitySlug')
     );
 
     expect(slugBackfill).toContain('row_number() OVER');
     expect(slugBackfill).toContain('normalized."slug_rank" = 1');
     expect(slugBackfill).toContain(
-      "COALESCE(NULLIF(trim(both '-' from regexp_replace",
+      "COALESCE(NULLIF(trim(both '-' from regexp_replace"
     );
   });
 });

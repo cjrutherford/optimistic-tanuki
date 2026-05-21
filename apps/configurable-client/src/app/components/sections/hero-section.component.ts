@@ -11,14 +11,16 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       <div class="hero-content">
         <h1>{{ section.title }}</h1>
         @if (section.subtitle) {
-          <p class="subtitle">{{ section.subtitle }}</p>
-        }
-        @if (section.ctaText && section.ctaLink) {
-          <a [href]="section.ctaLink" class="cta-button">{{ section.ctaText }}</a>
+        <p class="subtitle">{{ section.subtitle }}</p>
+        } @if (section.ctaText && section.ctaLink) {
+        <a [href]="section.ctaLink" class="cta-button">{{ section.ctaText }}</a>
         }
       </div>
       @if (section.backgroundImage) {
-        <div class="hero-background" [style.background-image]="'url(' + section.backgroundImage + ')'"></div>
+      <div
+        class="hero-background"
+        [style.background-image]="'url(' + section.backgroundImage + ')'"
+      ></div>
       }
     </section>
   `,

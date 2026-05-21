@@ -69,7 +69,7 @@ Only provide the up/down response value once and only at the end of your respons
       affirmation:
         'affirmations are statements to boost confidence and positivity. Please ensure the user input is a useful affirmation and respond to the affirmation constructively.',
       plannedPleasurable:
-        'activities that bring joy and relaxation. Please ensure the user input is a planned pleasurable activity and respond to it constructively. if it\'s not, suggest a new activity.',
+        "activities that bring joy and relaxation. Please ensure the user input is a planned pleasurable activity and respond to it constructively. if it's not, suggest a new activity.",
       judgement:
         'ways to handle judgement and criticism. Please ensure the user input is related to judgement and respond to it constructively. The purpose here is to vent, and understand that if there is a judgement, we will be trying to turn it around in a non-judgement step.',
       nonJudgement:
@@ -105,9 +105,7 @@ Keep the affirmation short (1-2 sentences).`;
   /**
    * Generate a mindful activity suggestion
    */
-  generateMindfulActivitySuggestion(
-    previousActivities?: string[]
-  ): string {
+  generateMindfulActivitySuggestion(previousActivities?: string[]): string {
     const historyContext = previousActivities?.length
       ? `The user has recently done: ${previousActivities.join(', ')}.`
       : '';

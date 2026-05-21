@@ -103,8 +103,7 @@ import { Subscription } from 'rxjs';
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
-        transition:
-          transform var(--animation-duration-normal, 0.3s)
+        transition: transform var(--animation-duration-normal, 0.3s)
             var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1)),
           box-shadow var(--animation-duration-normal, 0.3s)
             var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
@@ -273,7 +272,7 @@ export class VideoCardComponent implements OnInit, OnDestroy {
     this.themeSub = this.themeService.themeColors$.subscribe(
       (colors: ThemeColors | undefined) => {
         // Theme colors now applied via CSS custom properties
-      },
+      }
     );
   }
 
@@ -293,7 +292,9 @@ export class VideoCardComponent implements OnInit, OnDestroy {
     const secs = Math.floor(seconds % 60);
 
     if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs
+        .toString()
+        .padStart(2, '0')}`;
     }
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
   }
@@ -301,7 +302,7 @@ export class VideoCardComponent implements OnInit, OnDestroy {
   getTimeAgo(date: Date): string {
     const now = new Date();
     const secondsAgo = Math.floor(
-      (now.getTime() - new Date(date).getTime()) / 1000,
+      (now.getTime() - new Date(date).getTime()) / 1000
     );
 
     if (secondsAgo < 60) return 'just now';

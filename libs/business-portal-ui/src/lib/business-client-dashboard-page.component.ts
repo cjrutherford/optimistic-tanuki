@@ -20,14 +20,14 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <strong>{{ bookings().length }}</strong>
       </otui-card>
       @if (siteConfig.site().features.clientTasks.enabled) {
-        <otui-card class="stat">
-          <span>Assigned routines</span>
-          <strong>{{ routines().length }}</strong>
-        </otui-card>
-        <otui-card class="stat">
-          <span>Recent check-ins</span>
-          <strong>{{ checkIns().length }}</strong>
-        </otui-card>
+      <otui-card class="stat">
+        <span>Assigned routines</span>
+        <strong>{{ routines().length }}</strong>
+      </otui-card>
+      <otui-card class="stat">
+        <span>Recent check-ins</span>
+        <strong>{{ checkIns().length }}</strong>
+      </otui-card>
       }
     </section>
   `,
@@ -57,22 +57,24 @@ export class BusinessClientDashboardPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   protected readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly clientId = computed(() => this.auth.clientUser()?.userId ?? '');
+  private readonly clientId = computed(
+    () => this.auth.clientUser()?.userId ?? ''
+  );
   readonly bookings = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap(id => id ? this.api.getClientBookings() : of([]))
+      switchMap((id) => (id ? this.api.getClientBookings() : of([])))
     ),
     { initialValue: [] }
   );
   readonly routines = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap(id => id ? this.api.getClientRoutines(id) : of([]))
+      switchMap((id) => (id ? this.api.getClientRoutines(id) : of([])))
     ),
     { initialValue: [] }
   );
   readonly checkIns = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap(id => id ? this.api.getClientCheckIns(id) : of([]))
+      switchMap((id) => (id ? this.api.getClientCheckIns(id) : of([])))
     ),
     { initialValue: [] }
   );

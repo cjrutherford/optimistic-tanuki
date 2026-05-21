@@ -92,8 +92,12 @@ export class MarketingGeneratorService {
       const intentPrefix = this.intentPrefix(request.campaignIntent);
       const channelLabel = CHANNEL_LABELS[request.channel];
       const audienceLabel = audience.label;
-      const headline = `${offering.name} for ${audienceLabel.toLowerCase()} who need ${intentPrefix}`;
-      const subheadline = `${offering.category} built to ${offering.summary.toLowerCase()} ${angle.hook.toLowerCase()}`;
+      const headline = `${
+        offering.name
+      } for ${audienceLabel.toLowerCase()} who need ${intentPrefix}`;
+      const subheadline = `${
+        offering.category
+      } built to ${offering.summary.toLowerCase()} ${angle.hook.toLowerCase()}`;
       const cta = this.ctaFor(request.channel, request.campaignIntent);
 
       return {
@@ -109,11 +113,20 @@ export class MarketingGeneratorService {
         sections: [
           {
             title: 'Positioning',
-            body: `${offering.name} helps ${audience.profile.toLowerCase()} by focusing on ${offering.differentiators[0].toLowerCase()}.`,
+            body: `${
+              offering.name
+            } helps ${audience.profile.toLowerCase()} by focusing on ${offering.differentiators[0].toLowerCase()}.`,
           },
           {
             title: 'Why it lands',
-            body: `${CAMPAIGN_INTENT_LABELS[request.campaignIntent]} concepts for ${request.channel} should center ${offering.features[0].toLowerCase()} and ${offering.features[1]?.toLowerCase() || offering.features[0].toLowerCase()}.`,
+            body: `${
+              CAMPAIGN_INTENT_LABELS[request.campaignIntent]
+            } concepts for ${
+              request.channel
+            } should center ${offering.features[0].toLowerCase()} and ${
+              offering.features[1]?.toLowerCase() ||
+              offering.features[0].toLowerCase()
+            }.`,
           },
           {
             title: 'Audience trigger',
@@ -196,7 +209,8 @@ export class MarketingGeneratorService {
         id: 'custom-app',
         kind: 'preset-app',
         name: request.customApp.name.trim() || 'Custom app',
-        category: request.customApp.category.trim() || 'Custom software product',
+        category:
+          request.customApp.category.trim() || 'Custom software product',
         summary:
           request.customApp.summary.trim() ||
           'a configurable product concept for a defined audience.',
@@ -249,8 +263,8 @@ export class MarketingGeneratorService {
     return intent === 'conversion'
       ? 'Book a planning call'
       : intent === 'launch'
-        ? 'See the campaign build'
-        : 'Explore the offer';
+      ? 'See the campaign build'
+      : 'Explore the offer';
   }
 
   private buildChannelOutputs(
@@ -324,14 +338,14 @@ export class MarketingGeneratorService {
       type === 'landing-page'
         ? 'Landing page draft'
         : type === 'email-sequence'
-          ? 'Email sequence draft'
-          : 'Social campaign draft';
+        ? 'Email sequence draft'
+        : 'Social campaign draft';
     const summary =
       type === 'landing-page'
         ? `A web-first story arc for ${audience.label.toLowerCase()} anchored in ${angle.label.toLowerCase()}.`
         : type === 'email-sequence'
-          ? `A short nurture sequence that translates ${angle.label.toLowerCase()} into inbox-ready copy.`
-          : `A social-first campaign set that turns ${angle.label.toLowerCase()} into fast-hook messaging.`;
+        ? `A short nurture sequence that translates ${angle.label.toLowerCase()} into inbox-ready copy.`
+        : `A social-first campaign set that turns ${angle.label.toLowerCase()} into fast-hook messaging.`;
 
     return {
       id,
@@ -382,7 +396,9 @@ export class MarketingGeneratorService {
           id: `${outputId}-proof`,
           role: 'proof',
           label: 'Proof strip',
-          value: `${offering.features[0]}, ${offering.features[1] || offering.features[0]}, and ${offering.differentiators[0]} in one concise page flow.`,
+          value: `${offering.features[0]}, ${
+            offering.features[1] || offering.features[0]
+          }, and ${offering.differentiators[0]} in one concise page flow.`,
         },
         {
           id: `${outputId}-cta`,
@@ -411,7 +427,12 @@ export class MarketingGeneratorService {
           id: `${outputId}-supporting`,
           role: 'supporting',
           label: 'Email body',
-          value: `${headline}. ${offering.name} gives ${audience.profile.toLowerCase()} a clearer path through ${offering.features[0].toLowerCase()} and ${offering.features[1]?.toLowerCase() || offering.features[0].toLowerCase()}.`,
+          value: `${headline}. ${
+            offering.name
+          } gives ${audience.profile.toLowerCase()} a clearer path through ${offering.features[0].toLowerCase()} and ${
+            offering.features[1]?.toLowerCase() ||
+            offering.features[0].toLowerCase()
+          }.`,
         },
         {
           id: `${outputId}-cta`,
@@ -433,13 +454,17 @@ export class MarketingGeneratorService {
         id: `${outputId}-caption`,
         role: 'caption',
         label: 'Primary caption',
-        value: `${subheadline} ${angle.hook} ${offering.name} keeps the offer concrete for ${audience.label.toLowerCase()}.`,
+        value: `${subheadline} ${angle.hook} ${
+          offering.name
+        } keeps the offer concrete for ${audience.label.toLowerCase()}.`,
       },
       {
         id: `${outputId}-proof`,
         role: 'proof',
         label: 'Proof line',
-        value: `${offering.features[0]} + ${offering.differentiators[0]} for ${audience.desiredOutcome.toLowerCase()}.`,
+        value: `${offering.features[0]} + ${
+          offering.differentiators[0]
+        } for ${audience.desiredOutcome.toLowerCase()}.`,
       },
       {
         id: `${outputId}-cta`,
@@ -586,7 +611,9 @@ export class MarketingGeneratorService {
     cta: string,
     angle: string
   ): MaterialTextBlock[] {
-    const rolePrefix = `${this.typeLabel(type)} ${this.surfaceLabel(surfaceType)}`;
+    const rolePrefix = `${this.typeLabel(type)} ${this.surfaceLabel(
+      surfaceType
+    )}`;
 
     return [
       {
@@ -604,14 +631,18 @@ export class MarketingGeneratorService {
         label: `${rolePrefix} subheadline`,
         value:
           surfaceType === 'back'
-            ? `${offering.name} keeps the promise concrete for ${audienceLabel.toLowerCase()}.`
+            ? `${
+                offering.name
+              } keeps the promise concrete for ${audienceLabel.toLowerCase()}.`
             : subheadline,
       },
       {
         id: `${surfaceId}-body`,
         role: 'body',
         label: `${rolePrefix} body`,
-        value: `${offering.name} helps ${audienceLabel.toLowerCase()} focus on ${offering.features[0].toLowerCase()} through ${angle.toLowerCase()}.`,
+        value: `${
+          offering.name
+        } helps ${audienceLabel.toLowerCase()} focus on ${offering.features[0].toLowerCase()} through ${angle.toLowerCase()}.`,
       },
       {
         id: `${surfaceId}-cta`,
@@ -647,12 +678,22 @@ export class MarketingGeneratorService {
 
     return {
       id: `${surfaceId}-image`,
-      prompt: `${this.typeLabel(type)} ${this.surfaceLabel(surfaceType).toLowerCase()} concept for ${offering.name}, ${angle.toLowerCase()}, audience ${audienceLabel.toLowerCase()}, style ${style || 'clean modern marketing'}, colors ${request.brand.primaryColor} and ${request.brand.accentColor}`,
-      alt: `${offering.name} ${this.surfaceLabel(surfaceType).toLowerCase()} preview`,
+      prompt: `${this.typeLabel(type)} ${this.surfaceLabel(
+        surfaceType
+      ).toLowerCase()} concept for ${
+        offering.name
+      }, ${angle.toLowerCase()}, audience ${audienceLabel.toLowerCase()}, style ${
+        style || 'clean modern marketing'
+      }, colors ${request.brand.primaryColor} and ${request.brand.accentColor}`,
+      alt: `${offering.name} ${this.surfaceLabel(
+        surfaceType
+      ).toLowerCase()} preview`,
       imageUrl: null,
       status: request.generateImages ? 'idle' : 'failed',
       imageBase64: null,
-      errorMessage: request.generateImages ? null : 'Image generation disabled.',
+      errorMessage: request.generateImages
+        ? null
+        : 'Image generation disabled.',
     };
   }
 

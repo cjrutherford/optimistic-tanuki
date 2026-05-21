@@ -53,8 +53,11 @@ import {
               />
             </div>
             <p class="fee-notice" *ngIf="offerAmount && offerAmount > 0">
-              Platform fee (10% + $0.50): <strong>\${{ getTotalFee() | number : '1.2-2' }}</strong><br />
-              Seller receives: <strong>\${{ getSellerReceives() | number : '1.2-2' }}</strong>
+              Platform fee (10% + $0.50):
+              <strong>\${{ getTotalFee() | number : '1.2-2' }}</strong
+              ><br />
+              Seller receives:
+              <strong>\${{ getSellerReceives() | number : '1.2-2' }}</strong>
             </p>
           </div>
 
@@ -274,7 +277,8 @@ export class MakeOfferModalComponent {
   getTotalFee(): number {
     if (!this.offerAmount) return 0;
     const percentageFee =
-      this.offerAmount * (PLATFORM_FEE_PERCENTAGE + LEMON_SQUEEZY_FEE_PERCENTAGE);
+      this.offerAmount *
+      (PLATFORM_FEE_PERCENTAGE + LEMON_SQUEEZY_FEE_PERCENTAGE);
     return Math.round((percentageFee + LEMON_SQUEEZY_FLAT_FEE) * 100) / 100;
   }
 

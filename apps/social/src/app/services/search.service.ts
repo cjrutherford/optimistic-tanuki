@@ -53,7 +53,7 @@ export class SearchService {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
     private readonly followService: FollowService
-  ) { }
+  ) {}
 
   async search(
     query: string,
@@ -70,9 +70,12 @@ export class SearchService {
 
     if (type === 'all' || type === 'users') {
       const allProfiles = await firstValueFrom(
-        this.profileClient.send<Profile[]>({ cmd: ProfileCommands.GetAll }, {
-          take: 1000,
-        })
+        this.profileClient.send<Profile[]>(
+          { cmd: ProfileCommands.GetAll },
+          {
+            take: 1000,
+          }
+        )
       );
       const searchLower = query.toLowerCase();
       const matchedUsers = allProfiles.filter(
@@ -165,9 +168,12 @@ export class SearchService {
   ): Promise<SearchResult[]> {
     const [users, following] = await Promise.all([
       firstValueFrom(
-        this.profileClient.send<Profile[]>({ cmd: ProfileCommands.GetAll }, {
-          take: 1000,
-        })
+        this.profileClient.send<Profile[]>(
+          { cmd: ProfileCommands.GetAll },
+          {
+            take: 1000,
+          }
+        )
       ),
       this.followService.getFollowing(profileId),
     ]);

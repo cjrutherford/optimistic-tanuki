@@ -1,7 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
-import { BusinessApiService, BusinessAuthService } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessApiService,
+  BusinessAuthService,
+} from '@optimistic-tanuki/business-data-access';
 
 import { BusinessClientDashboardPageComponent } from './business-client-dashboard-page.component';
 
@@ -13,9 +16,15 @@ describe('BusinessClientDashboardPageComponent', () => {
         {
           provide: BusinessApiService,
           useValue: {
-            getClientBookings: jest.fn().mockReturnValue(of([{ id: 'booking-1' }])),
-            getClientRoutines: jest.fn().mockReturnValue(of([{ id: 'routine-1' }])),
-            getClientCheckIns: jest.fn().mockReturnValue(of([{ id: 'checkin-1' }])),
+            getClientBookings: jest
+              .fn()
+              .mockReturnValue(of([{ id: 'booking-1' }])),
+            getClientRoutines: jest
+              .fn()
+              .mockReturnValue(of([{ id: 'routine-1' }])),
+            getClientCheckIns: jest
+              .fn()
+              .mockReturnValue(of([{ id: 'checkin-1' }])),
             getSiteConfig: jest.fn().mockReturnValue(
               of({
                 configId: 'config-1',
@@ -43,7 +52,9 @@ describe('BusinessClientDashboardPageComponent', () => {
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(BusinessClientDashboardPageComponent);
+    const fixture = TestBed.createComponent(
+      BusinessClientDashboardPageComponent
+    );
     fixture.detectChanges();
     return fixture;
   }

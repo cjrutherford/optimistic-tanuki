@@ -49,7 +49,9 @@ interface LibraryDoc {
           </p>
           <div class="doc-meta">
             <span class="meta-tag">Monorepo: <strong>Private</strong></span>
-            <span class="meta-tag">Libraries: <strong>Public packages</strong></span>
+            <span class="meta-tag"
+              >Libraries: <strong>Public packages</strong></span
+            >
             <span class="meta-tag">Package Manager: <strong>pnpm</strong></span>
           </div>
         </div>
@@ -57,8 +59,8 @@ interface LibraryDoc {
         <div class="doc-card">
           <h3>Package Manager Migration</h3>
           <p>
-            Successfully migrated to pnpm for improved workspace
-            management, faster installs, and better disk space utilization.
+            Successfully migrated to pnpm for improved workspace management,
+            faster installs, and better disk space utilization.
           </p>
           <pre class="code-block"><code>pnpm install
 pnpm exec nx build</code></pre>

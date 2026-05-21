@@ -53,7 +53,9 @@ export class HardwareCatalogService {
     return this.toChassisDto(chassis);
   }
 
-  async getCompatibleComponents(chassisId: string): Promise<CompatibleComponents> {
+  async getCompatibleComponents(
+    chassisId: string
+  ): Promise<CompatibleComponents> {
     const chassis = await this.getChassisById(chassisId);
     const parts = await this.partRepository.find({
       where: {
@@ -68,18 +70,36 @@ export class HardwareCatalogService {
     );
 
     return {
-      cpu: compatible.filter((part) => part.category === 'cpu').map((part) => this.toPartDto(part)),
-      ram: compatible.filter((part) => part.category === 'ram').map((part) => this.toPartDto(part)),
-      storage: compatible.filter((part) => part.category === 'storage').map((part) => this.toPartDto(part)),
-      gpu: compatible.filter((part) => part.category === 'gpu').map((part) => this.toPartDto(part)),
+      cpu: compatible
+        .filter((part) => part.category === 'cpu')
+        .map((part) => this.toPartDto(part)),
+      ram: compatible
+        .filter((part) => part.category === 'ram')
+        .map((part) => this.toPartDto(part)),
+      storage: compatible
+        .filter((part) => part.category === 'storage')
+        .map((part) => this.toPartDto(part)),
+      gpu: compatible
+        .filter((part) => part.category === 'gpu')
+        .map((part) => this.toPartDto(part)),
     };
   }
 
-  async calculatePrice(configuration: ConfigurationDto): Promise<PriceBreakdown> {
+  async calculatePrice(
+    configuration: ConfigurationDto
+  ): Promise<PriceBreakdown> {
     const chassis = await this.getChassisById(configuration.chassisId);
     const compatible = await this.getCompatibleComponents(chassis.id);
-    const cpu = this.requireSingleSelection(compatible.cpu, configuration.cpuId, 'cpu');
-    const ram = this.requireSingleSelection(compatible.ram, configuration.ramId, 'ram');
+    const cpu = this.requireSingleSelection(
+      compatible.cpu,
+      configuration.cpuId,
+      'cpu'
+    );
+    const ram = this.requireSingleSelection(
+      compatible.ram,
+      configuration.ramId,
+      'ram'
+    );
     const storage = this.requireStorageSelections(
       compatible.storage,
       configuration.storageIds
@@ -93,7 +113,13 @@ export class HardwareCatalogService {
       0
     );
     const assemblyFee =
-      chassis.type === 'L' ? 299 : chassis.type === 'M' ? 249 : chassis.type === 'S' ? 199 : 79;
+      chassis.type === 'L'
+        ? 299
+        : chassis.type === 'M'
+        ? 249
+        : chassis.type === 'S'
+        ? 199
+        : 79;
     const accessoriesPrice = storage.length > 1 ? 39 : 0;
 
     return {
@@ -137,7 +163,9 @@ export class HardwareCatalogService {
   }
 
   async getOrder(orderId: string): Promise<HardwareOrder> {
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
     if (!order) {
       throw new NotFoundException(`Order ${orderId} was not found.`);
     }
@@ -189,10 +217,9 @@ export class HardwareCatalogService {
     return item;
   }
 
-  private requireStorageSelections<T extends { id: string; sellingPrice: number }>(
-    candidates: T[],
-    selectedIds: string[]
-  ): T[] {
+  private requireStorageSelections<
+    T extends { id: string; sellingPrice: number }
+  >(candidates: T[], selectedIds: string[]): T[] {
     if (!selectedIds.length) {
       throw new BadRequestException('At least one storage device is required.');
     }
@@ -251,8 +278,7 @@ export class HardwareCatalogService {
       name: entity.name,
       description: entity.description,
       basePrice: Number(entity.basePrice),
-      specifications:
-        entity.specifications as unknown as ChassisSpecifications,
+      specifications: entity.specifications as unknown as ChassisSpecifications,
       isActive: entity.isActive,
     };
   }

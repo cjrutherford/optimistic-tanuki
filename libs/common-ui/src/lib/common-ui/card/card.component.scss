@@ -11,10 +11,7 @@
   position: relative;
   border: var(--personality-border-width, var(--border-width, 1px))
     var(--personality-border-style, solid) var(--border);
-  border-radius: var(
-    --personality-card-radius,
-    var(--border-radius-lg, 8px)
-  );
+  border-radius: var(--personality-card-radius, var(--border-radius-lg, 8px));
   background-color: var(--surface, var(--background));
   color: var(--foreground);
   font-family: var(--personality-font-family, var(--font-body, system-ui));
@@ -23,7 +20,7 @@
   transition: var(
     --personality-transition,
     transform var(--animation-duration-fast) var(--animation-easing),
-      box-shadow var(--animation-duration-fast) var(--animation-easing)
+    box-shadow var(--animation-duration-fast) var(--animation-easing)
   );
 
   &:hover {

@@ -5,9 +5,11 @@ The configurable-client supports **explicit** multi-tenant app selection through
 ## Selection Methods (Priority Order)
 
 ### 1. Route Parameter (Highest Priority)
+
 Access via top-level route: `/app/:appName`
 
 **Examples:**
+
 ```
 http://localhost:8090/app/demo-app
 http://localhost:8090/app/my-portfolio
@@ -17,9 +19,11 @@ http://mysite.com/app/corporate-site
 **Use Case:** Explicit app selection when you want users to navigate to specific configurations via URL paths. Perfect for hosting multiple apps on a single domain.
 
 ### 2. Hostname/Domain
+
 Access via hostname-based lookup
 
 **Examples:**
+
 ```
 http://myapp.example.com          → loads config where domain = "myapp.example.com"
 http://portfolio.mysite.com       → loads config where domain = "portfolio.mysite.com"
@@ -30,9 +34,11 @@ http://portfolio.mysite.com       → loads config where domain = "portfolio.mys
 **Note:** Localhost and `.local` domains skip this check and fall through to query parameters or defaults.
 
 ### 3. Query Parameter (Fallback)
+
 Access via query string: `?appName=xxx`
 
 **Examples:**
+
 ```
 http://localhost:8090?appName=demo-app
 http://localhost:8090?appName=my-portfolio
@@ -41,11 +47,13 @@ http://localhost:8090?appName=my-portfolio
 **Use Case:** Development and testing. Convenient for local development without setting up custom domains or routes.
 
 ### 4. Default Fallback
+
 If no selection method is provided, loads: **"Demo Application"**
 
 ## Configuration Examples
 
 ### Example 1: Multi-App Single Domain
+
 Host multiple applications on the same domain using route parameters:
 
 ```
@@ -55,6 +63,7 @@ https://platform.example.com/app/portfolio       → Portfolio config
 ```
 
 ### Example 2: Multi-Tenant with Custom Domains
+
 Each customer gets their own domain:
 
 ```
@@ -63,6 +72,7 @@ https://widget-co.platform.io                    → Widget Co config (domain: "
 ```
 
 ### Example 3: Development Testing
+
 Test different configurations locally:
 
 ```
@@ -82,11 +92,13 @@ http://localhost:8090/app/test-app-3
 5. Save the configuration
 
 **Example Configuration:**
+
 - **Name:** `demo-app`
 - **Domain:** `demo.myplatform.com`
 - **Description:** Demo Application
 
 This configuration can be accessed via:
+
 - `http://localhost:8090/app/demo-app` (route)
 - `http://demo.myplatform.com` (domain)
 - `http://localhost:8090?appName=demo-app` (query)
@@ -120,6 +132,7 @@ else {
 ## Docker Deployment
 
 The configurable-client is available at:
+
 - **Container:** `ot_configurable_client`
 - **Port:** `8090:4000`
 
@@ -131,12 +144,13 @@ You can override the default app selection behavior using environment variables:
 # docker-compose.yaml
 configurable-client:
   environment:
-    - DEFAULT_APP_NAME=my-default-app  # Changes the default fallback
+    - DEFAULT_APP_NAME=my-default-app # Changes the default fallback
 ```
 
 ## Error Handling
 
 If a configuration is not found:
+
 - **By Name:** Shows error "Failed to load application configuration for 'xxx'. Configuration not found."
 - **By Domain:** Attempts fallback to query parameter, then default
 - **All failures:** Displays user-friendly error message with troubleshooting hints
@@ -151,16 +165,19 @@ If a configuration is not found:
 ## Best Practices
 
 1. **Production Deployment:**
+
    - Use hostname-based selection for true multi-tenant SaaS
    - Configure DNS to point customer domains to your server
    - Set up SSL certificates for each domain
 
 2. **Single-App Deployment:**
+
    - Use route parameters: `/app/my-app`
    - Or set a default app name in environment variables
    - Remove route parameter requirement for cleaner URLs
 
 3. **Development:**
+
    - Use query parameters for quick testing: `?appName=test`
    - Use route parameters to test production-like URLs
 

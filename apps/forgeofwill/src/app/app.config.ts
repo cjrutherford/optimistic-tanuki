@@ -1,4 +1,8 @@
-import { ApplicationConfig, inject, provideZoneChangeDetection } from '@angular/core';
+import {
+  ApplicationConfig,
+  inject,
+  provideZoneChangeDetection,
+} from '@angular/core';
 import {
   provideClientHydration,
   withEventReplay,
@@ -41,8 +45,7 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value =
-          (window as any)['env']?.SOCKET_URL || ':3300';
+        const value = (window as any)['env']?.SOCKET_URL || ':3300';
         return value;
       },
     },

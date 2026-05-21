@@ -35,8 +35,15 @@
 
 // Theme grid background
 @mixin theme-grid-background($size: 20px) {
-  background-image: linear-gradient(color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--primary) 6%, transparent) 1px, transparent 1px);
+  background-image: linear-gradient(
+      color-mix(in srgb, var(--primary) 6%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--primary) 6%, transparent) 1px,
+      transparent 1px
+    );
   background-size: $size $size;
 }
 
@@ -52,11 +59,13 @@
 
 // Theme card
 @mixin theme-card {
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-sm, 4px);
   background: #fff;
   @include theme-inset-shadow;
-  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms)
+    var(--animation-easing, ease);
 
   &:hover {
     border-color: color-mix(in srgb, var(--primary) 30%, transparent);
@@ -66,7 +75,8 @@
 
 // Theme button
 @mixin theme-button {
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 20%, transparent);
   border-radius: var(--border-radius-sm, 4px);
   padding: 8px 16px;
   font-family: var(--font-mono, monospace);
@@ -77,7 +87,8 @@
   background: #fff;
   color: #4b5563;
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms)
+    var(--animation-easing, ease);
 
   &:hover {
     background: color-mix(in srgb, var(--primary) 8%, transparent);
@@ -100,14 +111,16 @@
 
 // Theme input
 @mixin theme-input {
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-sm, 4px);
   padding: 10px 12px;
   font-family: var(--font-mono, monospace);
   font-size: 0.8125rem;
   background: #fafafa;
   color: #1f2937;
-  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms)
+    var(--animation-easing, ease);
 
   &:focus {
     outline: none;
@@ -135,7 +148,8 @@
 
 // Theme section
 @mixin theme-section {
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 12%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 12%, transparent);
   border-radius: var(--border-radius-sm, 4px);
   padding: 16px;
   background: #fafafa;
@@ -182,7 +196,8 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 20%, transparent);
   border-radius: 3px;
   font-family: var(--font-mono, monospace);
   font-size: 0.625rem;
@@ -212,7 +227,8 @@
     border-radius: 3px;
     opacity: 0;
     visibility: hidden;
-    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms)
+      var(--animation-easing, ease);
     z-index: 100;
   }
 
@@ -224,7 +240,8 @@
 
 // Theme select
 @mixin theme-select {
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 15%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: var(--border-radius-sm, 4px);
   padding: 8px 32px 8px 12px;
   font-family: var(--font-mono, monospace);
@@ -236,7 +253,8 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 10px center;
-  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms)
+    var(--animation-easing, ease);
 
   &:focus {
     outline: none;
@@ -250,11 +268,13 @@
   position: relative;
   width: 36px;
   height: 20px;
-  border: var(--border-width, 1px) solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border: var(--border-width, 1px) solid
+    color-mix(in srgb, var(--primary) 20%, transparent);
   border-radius: 3px;
   background: #e5e7eb;
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms)
+    var(--animation-easing, ease);
 
   &::after {
     content: '';
@@ -266,7 +286,8 @@
     background: #fff;
     border-radius: 2px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-    transition: transform var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
+    transition: transform var(--animation-duration-fast, 200ms)
+      var(--animation-easing, ease);
   }
 
   &.active {
@@ -310,20 +331,54 @@
 // ============================================
 // @deprecated aliases — use theme-* instead
 // ============================================
-@mixin control-fonts { @include theme-fonts; }
-@mixin control-mono { @include theme-mono; }
-@mixin control-grid-background($size: 20px) { @include theme-grid-background($size); }
-@mixin control-inset-shadow { @include theme-inset-shadow; }
-@mixin control-subtle-shadow { @include theme-subtle-shadow; }
-@mixin control-card { @include theme-card; }
-@mixin control-button { @include theme-button; }
-@mixin control-input { @include theme-input; }
-@mixin control-label { @include theme-label; }
-@mixin control-section { @include theme-section; }
-@mixin control-divider { @include theme-divider; }
-@mixin control-badge { @include theme-badge; }
-@mixin control-tooltip { @include theme-tooltip; }
-@mixin control-select { @include theme-select; }
-@mixin control-toggle { @include theme-toggle; }
-@mixin control-progress { @include theme-progress; }
-@mixin control-value { @include theme-value; }
+@mixin control-fonts {
+  @include theme-fonts;
+}
+@mixin control-mono {
+  @include theme-mono;
+}
+@mixin control-grid-background($size: 20px) {
+  @include theme-grid-background($size);
+}
+@mixin control-inset-shadow {
+  @include theme-inset-shadow;
+}
+@mixin control-subtle-shadow {
+  @include theme-subtle-shadow;
+}
+@mixin control-card {
+  @include theme-card;
+}
+@mixin control-button {
+  @include theme-button;
+}
+@mixin control-input {
+  @include theme-input;
+}
+@mixin control-label {
+  @include theme-label;
+}
+@mixin control-section {
+  @include theme-section;
+}
+@mixin control-divider {
+  @include theme-divider;
+}
+@mixin control-badge {
+  @include theme-badge;
+}
+@mixin control-tooltip {
+  @include theme-tooltip;
+}
+@mixin control-select {
+  @include theme-select;
+}
+@mixin control-toggle {
+  @include theme-toggle;
+}
+@mixin control-progress {
+  @include theme-progress;
+}
+@mixin control-value {
+  @include theme-value;
+}

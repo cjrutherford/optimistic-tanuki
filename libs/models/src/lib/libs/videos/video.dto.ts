@@ -37,7 +37,8 @@ export class CreateVideoDto {
 
   @ApiProperty({
     description: 'Video description',
-    example: 'In this tutorial, we will build a NestJS application from scratch',
+    example:
+      'In this tutorial, we will build a NestJS application from scratch',
     required: false,
   })
   @IsOptional()
@@ -170,7 +171,10 @@ export class VideoDto {
   @ApiProperty({ description: 'Original source asset ID', required: false })
   sourceAssetId?: string;
 
-  @ApiProperty({ description: 'Normalized MP4 playback asset ID', required: false })
+  @ApiProperty({
+    description: 'Normalized MP4 playback asset ID',
+    required: false,
+  })
   playbackAssetId?: string;
 
   @ApiProperty({ description: 'HLS manifest asset ID', required: false })

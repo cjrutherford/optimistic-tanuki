@@ -29,11 +29,11 @@ This guide covers how to configure OAuth and social login providers in Optimisti
 
 OAuth integration spans three layers:
 
-| Layer | Component | Purpose |
-|---|---|---|
-| **Backend** | `OAuthService` (authentication microservice) | Handles provider login, account linking/unlinking, JWT issuance |
-| **Gateway** | `OAuthController` | Exposes REST API endpoints, routes requests to the authentication microservice via TCP |
-| **Frontend** | `OAuthButtonsComponent` (auth-ui library) | Renders provider login buttons in all UI applications |
+| Layer        | Component                                    | Purpose                                                                                |
+| ------------ | -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Backend**  | `OAuthService` (authentication microservice) | Handles provider login, account linking/unlinking, JWT issuance                        |
+| **Gateway**  | `OAuthController`                            | Exposes REST API endpoints, routes requests to the authentication microservice via TCP |
+| **Frontend** | `OAuthButtonsComponent` (auth-ui library)    | Renders provider login buttons in all UI applications                                  |
 
 ```
   UI Application
@@ -94,6 +94,7 @@ Each provider requires you to register an application in their developer console
 7. Note the **Client ID** and **Client Secret**.
 
 **Required scopes:**
+
 - `openid`
 - `email`
 - `profile`
@@ -121,6 +122,7 @@ GOOGLE_CALLBACK_URL=http://localhost:4200/auth/callback/google
 5. Note the **Client ID** and generate a **Client Secret**.
 
 **Required scopes:**
+
 - `read:user`
 - `user:email`
 
@@ -147,6 +149,7 @@ GITHUB_CALLBACK_URL=http://localhost:4200/auth/callback/github
 5. Under **Certificates & secrets**, create a new client secret and note the value.
 
 **Required scopes:**
+
 - `openid`
 - `email`
 - `profile`
@@ -175,6 +178,7 @@ MICROSOFT_CALLBACK_URL=http://localhost:4200/auth/callback/microsoft
 5. Note the **App ID** and **App Secret** from **Settings → Basic**.
 
 **Required permissions:**
+
 - `email`
 - `public_profile`
 
@@ -338,24 +342,20 @@ The `@optimistic-tanuki/auth-ui` library provides ready-to-use OAuth components 
 Renders a row of provider login buttons. Drop it into any component:
 
 ```html
-<lib-oauth-buttons
-  [enabledProviders]="['google', 'github', 'microsoft']"
-  [showDivider]="true"
-  (providerSelected)="onOAuthProvider($event)">
-</lib-oauth-buttons>
+<lib-oauth-buttons [enabledProviders]="['google', 'github', 'microsoft']" [showDivider]="true" (providerSelected)="onOAuthProvider($event)"> </lib-oauth-buttons>
 ```
 
 **Inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
+| Input              | Type       | Default                                              | Description                    |
+| ------------------ | ---------- | ---------------------------------------------------- | ------------------------------ |
 | `enabledProviders` | `string[]` | `['google', 'github', 'microsoft', 'facebook', 'x']` | Which provider buttons to show |
-| `showDivider` | `boolean` | `true` | Show "or sign in with" divider |
+| `showDivider`      | `boolean`  | `true`                                               | Show "or sign in with" divider |
 
 **Output:**
 
-| Output | Type | Description |
-|---|---|---|
+| Output             | Type                               | Description                                             |
+| ------------------ | ---------------------------------- | ------------------------------------------------------- |
 | `providerSelected` | `EventEmitter<OAuthProviderEvent>` | Emits `{ provider: 'google' }` when a button is clicked |
 
 ### LoginBlockComponent
@@ -363,25 +363,20 @@ Renders a row of provider login buttons. Drop it into any component:
 The login form component has built-in OAuth support:
 
 ```html
-<lib-login-block
-  [showOAuth]="true"
-  [enabledOAuthProviders]="['google', 'github']"
-  (oauthProviderSelected)="handleOAuth($event)"
-  (loginSubmit)="handleLogin($event)">
-</lib-login-block>
+<lib-login-block [showOAuth]="true" [enabledOAuthProviders]="['google', 'github']" (oauthProviderSelected)="handleOAuth($event)" (loginSubmit)="handleLogin($event)"> </lib-login-block>
 ```
 
 **OAuth-related inputs:**
 
-| Input | Type | Default | Description |
-|---|---|---|---|
-| `showOAuth` | `boolean` | `false` | Show OAuth buttons below the login form |
-| `enabledOAuthProviders` | `string[]` | `['google', 'github', 'microsoft', 'facebook']` | Which providers to enable |
+| Input                   | Type       | Default                                         | Description                             |
+| ----------------------- | ---------- | ----------------------------------------------- | --------------------------------------- |
+| `showOAuth`             | `boolean`  | `false`                                         | Show OAuth buttons below the login form |
+| `enabledOAuthProviders` | `string[]` | `['google', 'github', 'microsoft', 'facebook']` | Which providers to enable               |
 
 **OAuth-related output:**
 
-| Output | Type | Description |
-|---|---|---|
+| Output                  | Type                               | Description                             |
+| ----------------------- | ---------------------------------- | --------------------------------------- |
 | `oauthProviderSelected` | `EventEmitter<OAuthProviderEvent>` | Emits when a provider button is clicked |
 
 ### Handling Provider Events
@@ -391,7 +386,9 @@ In your login component, handle the provider selection and initiate the OAuth fl
 ```typescript
 import { OAuthProviderEvent } from '@optimistic-tanuki/auth-ui';
 
-@Component({ /* ... */ })
+@Component({
+  /* ... */
+})
 export class LoginComponent {
   handleOAuth(event: OAuthProviderEvent) {
     // Redirect to the provider's authorization URL
@@ -422,27 +419,31 @@ After the user authenticates with a provider, send the provider info to the link
 
 ```typescript
 // POST /api/oauth/link
-this.http.post('/api/oauth/link', {
-  provider: 'github',
-  providerUserId: githubUser.id,
-  accessToken: oauthTokens.access_token,
-  refreshToken: oauthTokens.refresh_token,
-  providerEmail: githubUser.email,
-  providerDisplayName: githubUser.login,
-}).subscribe(result => {
-  console.log('Provider linked:', result);
-});
+this.http
+  .post('/api/oauth/link', {
+    provider: 'github',
+    providerUserId: githubUser.id,
+    accessToken: oauthTokens.access_token,
+    refreshToken: oauthTokens.refresh_token,
+    providerEmail: githubUser.email,
+    providerDisplayName: githubUser.login,
+  })
+  .subscribe((result) => {
+    console.log('Provider linked:', result);
+  });
 ```
 
 ### Unlinking a Provider
 
 ```typescript
 // POST /api/oauth/unlink
-this.http.post('/api/oauth/unlink', {
-  provider: 'github',
-}).subscribe(result => {
-  console.log('Provider unlinked:', result);
-});
+this.http
+  .post('/api/oauth/unlink', {
+    provider: 'github',
+  })
+  .subscribe((result) => {
+    console.log('Provider unlinked:', result);
+  });
 ```
 
 > **Important:** The system prevents unlinking the last authentication method. If a user has no password and only one linked provider, the unlink request will fail with: `"Cannot unlink the last authentication provider. Set a password first."`
@@ -451,7 +452,7 @@ this.http.post('/api/oauth/unlink', {
 
 ```typescript
 // GET /api/oauth/providers
-this.http.get('/api/oauth/providers').subscribe(result => {
+this.http.get('/api/oauth/providers').subscribe((result) => {
   // result.data = [{ provider: 'google', providerEmail: '...', ... }]
 });
 ```
@@ -498,18 +499,18 @@ If a user exists with the same email as the OAuth provider profile but has not l
 
 The `oauth_provider` table stores linked OAuth accounts:
 
-| Column | Type | Description |
-|---|---|---|
-| `id` | UUID (PK) | Unique record identifier |
-| `provider` | VARCHAR | Provider name (`google`, `github`, etc.) |
-| `providerUserId` | VARCHAR | User ID from the provider |
-| `providerEmail` | VARCHAR (nullable) | Email from the provider profile |
-| `providerDisplayName` | VARCHAR (nullable) | Display name from the provider |
-| `accessToken` | TEXT (nullable) | Provider access token |
-| `refreshToken` | TEXT (nullable) | Provider refresh token |
-| `userId` | UUID (FK) | Links to the `user` table |
-| `createdAt` | TIMESTAMP | Record creation time |
-| `updatedAt` | TIMESTAMP | Last update time |
+| Column                | Type               | Description                              |
+| --------------------- | ------------------ | ---------------------------------------- |
+| `id`                  | UUID (PK)          | Unique record identifier                 |
+| `provider`            | VARCHAR            | Provider name (`google`, `github`, etc.) |
+| `providerUserId`      | VARCHAR            | User ID from the provider                |
+| `providerEmail`       | VARCHAR (nullable) | Email from the provider profile          |
+| `providerDisplayName` | VARCHAR (nullable) | Display name from the provider           |
+| `accessToken`         | TEXT (nullable)    | Provider access token                    |
+| `refreshToken`        | TEXT (nullable)    | Provider refresh token                   |
+| `userId`              | UUID (FK)          | Links to the `user` table                |
+| `createdAt`           | TIMESTAMP          | Record creation time                     |
+| `updatedAt`           | TIMESTAMP          | Last update time                         |
 
 A user can have multiple rows (one per provider). Each provider can only be linked to one user account.
 

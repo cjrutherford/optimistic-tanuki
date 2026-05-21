@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
-import { LeadDiscoverySource, LeadSource } from '@optimistic-tanuki/models/leads-contracts';
-import { ProviderSearchResult, TopicDiscoveryProvider } from './discovery.types';
+import {
+  LeadDiscoverySource,
+  LeadSource,
+} from '@optimistic-tanuki/models/leads-contracts';
+import {
+  ProviderSearchResult,
+  TopicDiscoveryProvider,
+} from './discovery.types';
 import {
   createLeadEntity,
   estimateCompensationValue,
@@ -37,11 +43,17 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
         headers: { accept: 'application/json' },
       });
       const payload = (await response.json()) as RemoteOkJob[];
-      const jobs = Array.isArray(payload) ? payload.filter((job) => job && job.position) : [];
+      const jobs = Array.isArray(payload)
+        ? payload.filter((job) => job && job.position)
+        : [];
       let excludedCount = 0;
       const candidates = jobs
         .map((job) => {
-          const text = stripHtml(`${job.position || ''} ${job.company || ''} ${job.description || ''} ${(job.tags || []).join(' ')}`);
+          const text = stripHtml(
+            `${job.position || ''} ${job.company || ''} ${
+              job.description || ''
+            } ${(job.tags || []).join(' ')}`
+          );
           if (hasExcludedTerms(text, excludedTerms)) {
             excludedCount += 1;
             return null;
@@ -58,7 +70,9 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
               company: job.company || 'RemoteOK opportunity',
               source: LeadSource.REMOTE_OK,
               originalPostingUrl: job.url,
-              notes: `Discovered via RemoteOK. Source: ${job.url || 'n/a'}. ${stripHtml(job.description)}`,
+              notes: `Discovered via RemoteOK. Source: ${
+                job.url || 'n/a'
+              }. ${stripHtml(job.description)}`,
               searchKeywords: matchedKeywords,
               value: estimateCompensationValue(job.salary_max, job.salary_min),
             }),
@@ -66,13 +80,21 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
             providerName: this.providerName,
           };
         })
-        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
+        .filter((candidate): candidate is NonNullable<typeof candidate> =>
+          Boolean(candidate)
+        );
 
       const warnings = excludedCount
-        ? [`Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(', ')}.`]
+        ? [
+            `Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(
+              ', '
+            )}.`,
+          ]
         : [];
       if (!candidates.length) {
-        warnings.push('RemoteOK returned no jobs that matched the configured topic keywords.');
+        warnings.push(
+          'RemoteOK returned no jobs that matched the configured topic keywords.'
+        );
       }
 
       return {
@@ -81,10 +103,18 @@ export class RemoteOkDiscoveryProvider implements TopicDiscoveryProvider {
         queries: ['https://remoteok.com/api'],
       };
     } catch (error) {
-      this.logger.warn(`RemoteOK discovery failed for topic ${topic.id}: ${error instanceof Error ? error.message : String(error)}`);
+      this.logger.warn(
+        `RemoteOK discovery failed for topic ${topic.id}: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return {
         candidates: [],
-        warnings: [`RemoteOK request failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
+        warnings: [
+          `RemoteOK request failed: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`,
+        ],
         queries: ['https://remoteok.com/api'],
       };
     }

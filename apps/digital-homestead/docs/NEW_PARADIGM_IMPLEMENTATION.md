@@ -22,13 +22,7 @@ The new paradigm consists of four key improvements:
 **Location**: `apps/digital-homestead/src/app/components/blog-page/blog-page.component.html:167`
 
 ```html
-<lib-blog-compose
-  #blogCompose
-  [ngModel]="editorData()"
-  (postSubmitted)="onPostSubmitted($event)"
-  [profileId]="profileId()"
->
-</lib-blog-compose>
+<lib-blog-compose #blogCompose [ngModel]="editorData()" (postSubmitted)="onPostSubmitted($event)" [profileId]="profileId()"> </lib-blog-compose>
 ```
 
 **ProfileId Computation**: `apps/digital-homestead/src/app/components/blog-page/blog-page.component.ts:103-106`
@@ -42,7 +36,8 @@ readonly profileId = computed(() => {
 
 **Status**: ✅ ProfileId is properly computed from auth state and passed to blog-compose component
 
-**Impact**: 
+**Impact**:
+
 - Images uploaded via file input are associated with the correct user profile
 - Images uploaded via drag-and-drop are associated with the correct user profile
 - Asset ownership is properly tracked
@@ -60,10 +55,10 @@ const COMPONENT_MAP: Record<string, any> = {
   'callout-box': CalloutBoxComponent,
   'code-snippet': CodeSnippetComponent,
   'image-gallery': ImageGalleryComponent,
-  'button': ButtonComponent,
-  'card': CardComponent,
-  'accordion': AccordionComponent,
-  'modal': ModalComponent,
+  button: ButtonComponent,
+  card: CardComponent,
+  accordion: AccordionComponent,
+  modal: ModalComponent,
   'hero-section': HeroSectionComponent,
   'content-section': ContentSectionComponent,
 };
@@ -95,7 +90,7 @@ private reconstructComponents(): void {
 
       // Get component class from map
       const ComponentClass = COMPONENT_MAP[componentId];
-      
+
       // Create component instance
       const componentRef = this.contentContainer!.createComponent(ComponentClass);
 
@@ -125,6 +120,7 @@ private reconstructComponents(): void {
 #### Lifecycle Integration
 
 **ngAfterViewInit** (line 264):
+
 ```typescript
 ngAfterViewInit() {
   // Reconstruct Angular components from HTML after view is initialized
@@ -133,6 +129,7 @@ ngAfterViewInit() {
 ```
 
 **ngOnChanges** (lines 269-275):
+
 ```typescript
 ngOnChanges(changes: SimpleChanges) {
   if (changes['content']) {
@@ -144,6 +141,7 @@ ngOnChanges(changes: SimpleChanges) {
 ```
 
 **ngOnDestroy** (lines 277-281):
+
 ```typescript
 ngOnDestroy() {
   // Clean up component references
@@ -155,6 +153,7 @@ ngOnDestroy() {
 **Status**: ✅ Complete component reconstruction system with proper lifecycle management
 
 **Supported Components**:
+
 - CalloutBoxComponent - Highlighted information boxes
 - CodeSnippetComponent - Syntax-highlighted code blocks
 - ImageGalleryComponent - Image galleries with navigation
@@ -174,28 +173,15 @@ ngOnDestroy() {
 #### Single Post View (lines 91-97)
 
 ```html
-<dh-blog-viewer
-  [title]="selectedPost()!.title"
-  [content]="selectedPost()!.content"
-  [authorId]="selectedPost()!.authorId"
-  [createdAt]="selectedPost()!.createdAt"
->
-</dh-blog-viewer>
+<dh-blog-viewer [title]="selectedPost()!.title" [content]="selectedPost()!.content" [authorId]="selectedPost()!.authorId" [createdAt]="selectedPost()!.createdAt"> </dh-blog-viewer>
 ```
 
 #### Multiple Posts View (lines 128-137)
 
 ```html
-@if (!selectedPost() && posts().length > 0) {
-  @for (post of posts(); track post.id) {
-    <dh-blog-viewer
-      [title]="post.title"
-      [content]="post.content"
-      [authorId]="post.authorId"
-      [createdAt]="post.createdAt"
-    ></dh-blog-viewer>
-  }
-}
+@if (!selectedPost() && posts().length > 0) { @for (post of posts(); track post.id) {
+<dh-blog-viewer [title]="post.title" [content]="post.content" [authorId]="post.authorId" [createdAt]="post.createdAt"></dh-blog-viewer>
+} }
 ```
 
 **Status**: ✅ Blog viewer properly integrated for both single and multiple post displays
@@ -229,6 +215,7 @@ cleanInjectedContent(content: string): string {
 ```
 
 **Usage in Save Flow** (line 417):
+
 ```typescript
 const dataStringifiedContent = this.cleanInjectedContent(postData.content);
 postData.content = dataStringifiedContent;
@@ -308,6 +295,7 @@ User sees fully interactive components ✅
 ## Error Handling
 
 ### Missing Component ID
+
 ```typescript
 if (!componentId) {
   console.warn('Component node missing data-component-id:', node);
@@ -316,6 +304,7 @@ if (!componentId) {
 ```
 
 ### Unknown Component
+
 ```typescript
 if (!ComponentClass) {
   console.warn(`Component not found in map: ${componentId}`, node);
@@ -328,6 +317,7 @@ if (!ComponentClass) {
 ```
 
 ### JSON Parse Errors
+
 ```typescript
 try {
   const componentData = dataStr ? JSON.parse(dataStr) : {};
@@ -342,6 +332,7 @@ try {
 ## Security Considerations
 
 ### DOMPurify Sanitization
+
 All HTML content is sanitized with DOMPurify before rendering:
 
 ```typescript
@@ -353,6 +344,7 @@ ngOnInit() {
 **Important**: DOMPurify preserves data attributes by default, allowing component metadata to pass through while blocking XSS attacks.
 
 ### Component Instantiation Safety
+
 - Components are instantiated via Angular's ComponentFactory
 - Only whitelisted components in COMPONENT_MAP can be created
 - No eval() or dangerous code execution
@@ -363,11 +355,13 @@ ngOnInit() {
 ## Performance Considerations
 
 ### Efficient Rendering
+
 - Components created once per view
 - Change detection triggered only when needed
 - Component refs properly cached and cleaned up
 
 ### Memory Management
+
 ```typescript
 ngOnDestroy() {
   // Clean up component references to prevent memory leaks
@@ -377,6 +371,7 @@ ngOnDestroy() {
 ```
 
 ### Lazy Loading Potential
+
 Current implementation loads all component classes upfront. Future optimization could implement lazy loading:
 
 ```typescript
@@ -391,11 +386,13 @@ const ComponentClass = await import(`./components/${componentId}`);
 To add a new component to the reconstruction system:
 
 **Step 1**: Import the component
+
 ```typescript
 import { MyNewComponent } from '@optimistic-tanuki/common-ui';
 ```
 
 **Step 2**: Add to component map
+
 ```typescript
 const COMPONENT_MAP: Record<string, any> = {
   'my-new-component': MyNewComponent,
@@ -404,6 +401,7 @@ const COMPONENT_MAP: Record<string, any> = {
 ```
 
 **Step 3**: Add to imports array
+
 ```typescript
 @Component({
   imports: [

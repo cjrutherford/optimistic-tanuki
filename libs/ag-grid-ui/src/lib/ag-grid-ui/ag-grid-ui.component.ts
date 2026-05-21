@@ -58,7 +58,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 })
 export class AgGridUiComponent
   extends Themeable
-  implements OnInit, OnDestroy, OnChanges {
+  implements OnInit, OnDestroy, OnChanges
+{
   /** Row data to display in the grid */
   @Input() rowData: any[] = [];
 
@@ -138,7 +139,8 @@ export class AgGridUiComponent
     const personality = this.getActivePersonality();
     const personalityTokens = personality?.tokens;
     const spacingMultiplier = personalityTokens?.spacingMultiplier || 1;
-    const borderRadiusMultiplier = personalityTokens?.borderRadiusMultiplier || 1;
+    const borderRadiusMultiplier =
+      personalityTokens?.borderRadiusMultiplier || 1;
     const borderWidth = personalityTokens?.borderWidth || '1px';
 
     // Create AG Grid theme using the new themeQuartz API
@@ -184,7 +186,8 @@ export class AgGridUiComponent
 
       // Typography
       fontSize: 14,
-      fontFamily: personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
+      fontFamily:
+        personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
 
       // Borders
       borderRadius: Math.max(2, Math.round(4 * borderRadiusMultiplier)),
@@ -192,7 +195,8 @@ export class AgGridUiComponent
     });
 
     this.setLocalCSSVariables({
-      'font-family': personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
+      'font-family':
+        personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
       'border-radius': `calc(var(--border-radius-md, 8px) * ${borderRadiusMultiplier})`,
       'border-width': borderWidth,
       shadow:
@@ -201,7 +205,8 @@ export class AgGridUiComponent
       'transition-duration':
         personality?.animations?.duration?.fast ||
         'var(--animation-duration-fast, 150ms)',
-      easing: personality?.animations?.easing || 'var(--animation-easing, ease)',
+      easing:
+        personality?.animations?.easing || 'var(--animation-easing, ease)',
     });
 
     this.gridThemeSignal.set(newTheme);
@@ -243,7 +248,10 @@ export class AgGridUiComponent
     const currentTheme = this.gridThemeSignal();
     if (currentTheme) {
       this.gridApi?.setGridOption('theme', currentTheme);
-      if (this.gridApi && typeof (this.gridApi as any).refreshCells === 'function') {
+      if (
+        this.gridApi &&
+        typeof (this.gridApi as any).refreshCells === 'function'
+      ) {
         (this.gridApi as any).refreshCells();
       }
     }
@@ -338,7 +346,9 @@ export class AgGridUiComponent
   }
 
   private getActivePersonality(): Personality | null {
-    return this.personalitySignal() || this.themeService.getCurrentPersonality();
+    return (
+      this.personalitySignal() || this.themeService.getCurrentPersonality()
+    );
   }
 
   private resolveShadow(personality: Personality | null): string {
@@ -351,7 +361,7 @@ export class AgGridUiComponent
     return shadowIntensity === 'subtle'
       ? 'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.08))'
       : shadowIntensity === 'dramatic'
-        ? 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2))'
-        : 'var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.12))';
+      ? 'var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2))'
+      : 'var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.12))';
   }
 }

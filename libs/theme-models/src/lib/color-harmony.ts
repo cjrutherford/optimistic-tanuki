@@ -145,10 +145,7 @@ export function generateTriadicHarmony(hue: number): number[] {
  * Generate analogous harmony (adjacent colors)
  * Best for: Minimal, Soft, Elegant personalities
  */
-export function generateAnalogousHarmony(
-  hue: number,
-  spread = 30
-): number[] {
+export function generateAnalogousHarmony(hue: number, spread = 30): number[] {
   return [(hue - spread + 360) % 360, hue, (hue + spread) % 360];
 }
 
