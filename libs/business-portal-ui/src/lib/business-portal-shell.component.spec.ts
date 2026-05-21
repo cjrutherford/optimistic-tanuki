@@ -56,8 +56,7 @@ describe('BusinessPortalShellComponent', () => {
       ],
     });
 
-    return TestBed.createComponent(BusinessPortalShellComponent)
-      .componentInstance;
+    return TestBed.createComponent(BusinessPortalShellComponent).componentInstance;
   }
 
   it('uses owner workspace links for business owner routes', () => {

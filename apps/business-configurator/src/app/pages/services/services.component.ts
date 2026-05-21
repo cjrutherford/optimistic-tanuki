@@ -17,26 +17,24 @@ import { BusinessService } from '@optimistic-tanuki/business-data-access';
 
       <div class="services-list">
         @for (service of services(); track service.id) {
-        <div class="service-card">
-          <div class="service-info">
-            <h3>{{ service.name }}</h3>
-            <p>{{ service.description }}</p>
-            <div class="service-meta">
-              <span>\${{ service.price }}</span>
-              <span>{{ service.duration }} min</span>
-              @if (service.allowOnlineBooking) {
-              <span class="badge">Online Booking</span>
-              }
+          <div class="service-card">
+            <div class="service-info">
+              <h3>{{ service.name }}</h3>
+              <p>{{ service.description }}</p>
+              <div class="service-meta">
+                <span>\${{ service.price }}</span>
+                <span>{{ service.duration }} min</span>
+                @if (service.allowOnlineBooking) {
+                  <span class="badge">Online Booking</span>
+                }
+              </div>
             </div>
+            <button class="delete-btn" (click)="removeService(service.id)">Remove</button>
           </div>
-          <button class="delete-btn" (click)="removeService(service.id)">
-            Remove
-          </button>
-        </div>
         } @empty {
-        <div class="empty-state">
-          <p>No services added yet</p>
-        </div>
+          <div class="empty-state">
+            <p>No services added yet</p>
+          </div>
         }
       </div>
 
@@ -262,9 +260,7 @@ export class ServicesComponent {
   };
 
   generateId(): string {
-    return (
-      'svc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5)
-    );
+    return 'svc-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   }
 
   addService(): void {

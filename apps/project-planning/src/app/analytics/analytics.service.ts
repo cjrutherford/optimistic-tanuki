@@ -26,9 +26,7 @@ export class AnalyticsService {
     private readonly projectRepository: Repository<Project>
   ) {}
 
-  async getTaskAnalytics(
-    query: QueryAnalyticsDto
-  ): Promise<TaskAnalyticsDto[]> {
+  async getTaskAnalytics(query: QueryAnalyticsDto): Promise<TaskAnalyticsDto[]> {
     const whereConditions: any = {
       deletedAt: IsNull(),
     };
@@ -99,9 +97,7 @@ export class AnalyticsService {
     return analytics;
   }
 
-  async getProjectAnalytics(
-    query: QueryAnalyticsDto
-  ): Promise<ProjectAnalyticsDto> {
+  async getProjectAnalytics(query: QueryAnalyticsDto): Promise<ProjectAnalyticsDto> {
     if (!query.projectId) {
       throw new Error('Project ID is required for project analytics');
     }

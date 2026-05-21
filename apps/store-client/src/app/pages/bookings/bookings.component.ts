@@ -22,7 +22,7 @@ export class BookingsComponent implements OnInit {
   loading = false;
   error: string | null = null;
   successMessage: string | null = null;
-
+  
   // Filter
   selectedType = 'all';
   resourceTypes = ['all', 'room', 'equipment', 'vehicle', 'other'];
@@ -133,8 +133,7 @@ export class BookingsComponent implements OnInit {
           // Create the appointment
           this.storeService.createAppointment(this.bookingForm).subscribe({
             next: (appointment) => {
-              this.successMessage =
-                'Booking created successfully! Pending approval.';
+              this.successMessage = 'Booking created successfully! Pending approval.';
               this.loading = false;
               this.loadUserAppointments();
               setTimeout(() => {

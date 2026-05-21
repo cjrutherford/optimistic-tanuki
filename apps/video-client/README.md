@@ -334,12 +334,10 @@ Currently using simple service-based state management:
 The app integrates with:
 
 1. **Gateway** (`http://localhost:3000/api`)
-
    - Routes all API requests
    - Handles authentication
 
 2. **Videos Service** (via gateway)
-
    - Video CRUD operations
    - Channel management
    - Subscriptions

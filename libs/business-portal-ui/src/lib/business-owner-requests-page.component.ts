@@ -17,8 +17,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <p class="eyebrow">Owner Queue</p>
           <h1>Review new relationships and move active work forward.</h1>
           <p class="hero-body">
-            Prospects need a response first. Bookings need a scheduling decision
-            next. This workspace separates those jobs clearly.
+            Prospects need a response first. Bookings need a scheduling decision next. This workspace separates those jobs clearly.
           </p>
         </div>
         <div class="hero-metrics">
@@ -34,100 +33,75 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       </otui-card>
 
       <div class="queue-grid">
-        <otui-card class="queue-card">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Needs response</p>
-              <h2>Prospects</h2>
-            </div>
-            <span class="section-count">{{ prospects().length }}</span>
+      <otui-card class="queue-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Needs response</p>
+            <h2>Prospects</h2>
           </div>
-          <div class="rows">
-            @for (prospect of prospects(); track prospect.id) {
+          <span class="section-count">{{ prospects().length }}</span>
+        </div>
+        <div class="rows">
+          @for (prospect of prospects(); track prospect.id) {
             <article class="queue-row prospect-row">
               <div class="queue-main">
                 <div class="row-topline">
                   <strong>{{ prospect.name }}</strong>
                   <span class="status-pill">{{ prospect.status }}</span>
                 </div>
-                <p class="meta-line">
-                  {{ prospect.email || 'No email' }} ·
-                  {{ prospect.phone || 'No phone' }}
-                </p>
-                <p class="meta-line">
-                  {{ prospect.accountStatus }} · {{ prospect.source }}
-                </p>
-                <p class="note-block">
-                  {{ prospect.notes || 'No intake notes provided.' }}
-                </p>
+                <p class="meta-line">{{ prospect.email || 'No email' }} · {{ prospect.phone || 'No phone' }}</p>
+                <p class="meta-line">{{ prospect.accountStatus }} · {{ prospect.source }}</p>
+                <p class="note-block">{{ prospect.notes || 'No intake notes provided.' }}</p>
               </div>
               <div class="actions stack-actions">
-                <otui-button
-                  variant="primary"
-                  (action)="approveProspect(prospect.id)"
-                >
+                <otui-button variant="primary" (action)="approveProspect(prospect.id)">
                   Accept client
                 </otui-button>
-                <otui-button
-                  variant="outlined"
-                  (action)="markProspectContacted(prospect.id)"
-                >
+                <otui-button variant="outlined" (action)="markProspectContacted(prospect.id)">
                   Mark contacted
                 </otui-button>
               </div>
             </article>
-            } @empty {
+          } @empty {
             <p class="empty">No prospects are waiting.</p>
-            }
-          </div>
-        </otui-card>
+          }
+        </div>
+      </otui-card>
 
-        <otui-card class="queue-card">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Scheduling pipeline</p>
-              <h2>Bookings</h2>
-            </div>
-            <span class="section-count">{{ bookings().length }}</span>
+      <otui-card class="queue-card">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Scheduling pipeline</p>
+            <h2>Bookings</h2>
           </div>
-          <div class="rows">
-            @for (booking of bookings(); track booking.id) {
+          <span class="section-count">{{ bookings().length }}</span>
+        </div>
+        <div class="rows">
+          @for (booking of bookings(); track booking.id) {
             <article class="queue-row booking-row">
               <div class="queue-main">
                 <div class="row-topline">
                   <strong>{{ booking.title }}</strong>
                   <span class="status-pill">{{ booking.status }}</span>
                 </div>
-                <p class="meta-line">
-                  {{ formatWindow(booking.startTime, booking.endTime) }}
-                </p>
+                <p class="meta-line">{{ formatWindow(booking.startTime, booking.endTime) }}</p>
                 <p class="meta-line">{{ booking.userId }}</p>
-                <p class="note-block">
-                  {{ booking.description || 'No client context provided.' }}
-                </p>
+                <p class="note-block">{{ booking.description || 'No client context provided.' }}</p>
                 @if (booking.totalCost) {
-                <p class="invoice-line">
-                  {{ invoiceTotalLabel(booking.totalCost) }}
-                </p>
+                  <p class="invoice-line">{{ invoiceTotalLabel(booking.totalCost) }}</p>
                 }
               </div>
               <div class="actions stack-actions">
-                <otui-button variant="outlined" (action)="approve(booking.id)"
-                  >Approve</otui-button
-                >
-                <otui-button variant="outlined" (action)="complete(booking.id)"
-                  >Complete</otui-button
-                >
-                <otui-button variant="outlined" (action)="invoice(booking.id)"
-                  >Invoice</otui-button
-                >
+                <otui-button variant="outlined" (action)="approve(booking.id)">Approve</otui-button>
+                <otui-button variant="outlined" (action)="complete(booking.id)">Complete</otui-button>
+                <otui-button variant="outlined" (action)="invoice(booking.id)">Invoice</otui-button>
               </div>
             </article>
-            } @empty {
+          } @empty {
             <p class="empty">No session requests are waiting.</p>
-            }
-          </div>
-        </otui-card>
+          }
+        </div>
+      </otui-card>
       </div>
     </section>
   `,
@@ -150,16 +124,9 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .queue-hero {
         padding: 1.35rem;
         border-radius: 1.6rem;
-        background: radial-gradient(
-            circle at top left,
-            color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent),
-            transparent 36%
-          ),
-          linear-gradient(
-            135deg,
-            color-mix(in srgb, var(--primary, #1f7a63) 8%, white),
-            var(--background, #fff)
-          );
+        background:
+          radial-gradient(circle at top left, color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent), transparent 36%),
+          linear-gradient(135deg, color-mix(in srgb, var(--primary, #1f7a63) 8%, white), var(--background, #fff));
       }
       .queue-hero-copy,
       .queue-main {
@@ -201,13 +168,8 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .status-pill {
         padding: 0.35rem 0.65rem;
         border-radius: 999px;
-        border: 1px solid
-          color-mix(in srgb, var(--primary, #1f7a63) 35%, var(--border));
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 10%,
-          transparent
-        );
+        border: 1px solid color-mix(in srgb, var(--primary, #1f7a63) 35%, var(--border));
+        background: color-mix(in srgb, var(--primary, #1f7a63) 10%, transparent);
         color: var(--primary, #1f7a63);
         font-size: 0.78rem;
         font-weight: 700;
@@ -302,10 +264,7 @@ export class BusinessOwnerRequestsPageComponent {
     });
   }
 
-  formatWindow(
-    startTime: string | Date | undefined,
-    endTime: string | Date | undefined
-  ): string {
+  formatWindow(startTime: string | Date | undefined, endTime: string | Date | undefined): string {
     if (!startTime || !endTime) {
       return 'Schedule pending';
     }

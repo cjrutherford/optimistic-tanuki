@@ -29,15 +29,11 @@ export class LinkProviderRequest {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({
-    description: 'The email from the OAuth provider profile',
-  })
+  @ApiPropertyOptional({ description: 'The email from the OAuth provider profile' })
   providerEmail?: string;
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({
-    description: 'The display name from the OAuth provider profile',
-  })
+  @ApiPropertyOptional({ description: 'The display name from the OAuth provider profile' })
   providerDisplayName?: string;
 }

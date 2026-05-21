@@ -62,9 +62,6 @@ export class BankConnection {
   })
   updatedAt: Date;
 
-  @OneToMany(
-    () => LinkedBankAccount,
-    (linkedAccount) => linkedAccount.connection
-  )
+  @OneToMany(() => LinkedBankAccount, (linkedAccount) => linkedAccount.connection)
   linkedAccounts: LinkedBankAccount[];
 }

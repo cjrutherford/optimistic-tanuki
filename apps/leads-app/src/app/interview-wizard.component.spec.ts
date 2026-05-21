@@ -77,8 +77,7 @@ describe('InterviewWizardComponent', () => {
     const component = fixture.componentInstance;
 
     component.onMadLibAnalyzed({
-      summary:
-        'I am a product engineering consultant who specializes in React modernization.',
+      summary: 'I am a product engineering consultant who specializes in React modernization.',
       suggestedServiceOffer: 'React modernization consulting',
       suggestedSkills: ['React', 'TypeScript'],
       suggestedIdealCustomer: 'VP Engineering',
@@ -98,9 +97,7 @@ describe('InterviewWizardComponent', () => {
     });
 
     expect(component.profile.madLibSummary).toContain('React modernization');
-    expect(component.profile.serviceOffer).toBe(
-      'React modernization consulting'
-    );
+    expect(component.profile.serviceOffer).toBe('React modernization consulting');
     expect(component.profile.skills).toEqual(['React', 'TypeScript']);
     expect(component.profile.idealCustomer).toBe('VP Engineering');
     expect(component.profile.industries).toEqual(['SaaS']);
@@ -148,10 +145,7 @@ describe('InterviewWizardComponent', () => {
     });
 
     expect(component.profile.resumeParseSummary).toContain('healthcare SaaS');
-    expect(component.profile.resumeDerivedSkills).toEqual([
-      'TypeScript',
-      'React',
-    ]);
+    expect(component.profile.resumeDerivedSkills).toEqual(['TypeScript', 'React']);
     expect(component.profile.resumeDerivedExperience).toEqual([
       '10+ years leading frontend modernization projects',
     ]);
@@ -175,7 +169,10 @@ describe('InterviewWizardComponent', () => {
     component.toggleMultiSelect('budgetRange', '$5k-$25k');
     component.toggleMultiSelect('budgetRange', '$25k-$100k');
 
-    expect(component.profile.budgetRange).toEqual(['$5k-$25k', '$25k-$100k']);
+    expect(component.profile.budgetRange).toEqual([
+      '$5k-$25k',
+      '$25k-$100k',
+    ]);
     expect(component.canGoNext).toBe(true);
   });
 
@@ -341,9 +338,7 @@ describe('InterviewWizardComponent', () => {
     const buttons = fixture.nativeElement.querySelectorAll('otui-button');
     expect(buttons.length).toBeGreaterThanOrEqual(2);
     expect(fixture.nativeElement.textContent).toContain('Edit Profile');
-    expect(fixture.nativeElement.textContent).toContain(
-      'Confirm & Create Topics'
-    );
+    expect(fixture.nativeElement.textContent).toContain('Confirm & Create Topics');
   });
 
   it('hides the DISC textarea once an assessment already exists', () => {

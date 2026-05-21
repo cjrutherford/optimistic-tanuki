@@ -126,10 +126,7 @@ export class CommunityShellComponent
       } else if (path === 'manage') {
         this.activeTab.set('manage');
         this.currentCommunityId.set(null);
-      } else if (
-        path &&
-        /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/i.test(path)
-      ) {
+      } else if (path && /^[a-z0-9][a-z0-9-]*[a-z0-9]$|^[a-z0-9]$/i.test(path)) {
         // Accept both UUIDs and slugs (lowercase alphanumeric with hyphens)
         this.activeTab.set('find');
         this.currentCommunityId.set(path);

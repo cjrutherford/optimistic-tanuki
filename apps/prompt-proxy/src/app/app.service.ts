@@ -10,7 +10,7 @@ export class AppService {
     private httpService: HttpService,
     @Inject('API_BASE_URL') private apiUrl: string,
     private readonly l: Logger
-  ) {}
+  ) { }
 
   async sendMessage(data: GeneratePrompt) {
     try {

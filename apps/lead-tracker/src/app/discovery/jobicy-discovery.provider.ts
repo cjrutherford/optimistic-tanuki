@@ -1,14 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
-import {
-  LeadDiscoverySource,
-  LeadSource,
-} from '@optimistic-tanuki/models/leads-contracts';
+import { LeadDiscoverySource, LeadSource } from '@optimistic-tanuki/models/leads-contracts';
 import { readJsonResponse } from './provider-http.util';
-import {
-  ProviderSearchResult,
-  TopicDiscoveryProvider,
-} from './discovery.types';
+import { ProviderSearchResult, TopicDiscoveryProvider } from './discovery.types';
 import {
   createLeadEntity,
   getMatchedKeywords,
@@ -40,10 +34,7 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
       const response = await fetch(queryUrl, {
         headers: { accept: 'application/json' },
       });
-      const payloadResult = await readJsonResponse<{ jobs?: JobicyJob[] }>(
-        response,
-        'Jobicy'
-      );
+      const payloadResult = await readJsonResponse<{ jobs?: JobicyJob[] }>(response, 'Jobicy');
       if (!payloadResult.ok) {
         const { warning } = payloadResult;
         return {
@@ -58,11 +49,7 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
       let excludedCount = 0;
       const candidates = jobs
         .map((job) => {
-          const text = stripHtml(
-            `${job.jobTitle || ''} ${job.companyName || ''} ${
-              job.jobDescription || ''
-            }`
-          );
+          const text = stripHtml(`${job.jobTitle || ''} ${job.companyName || ''} ${job.jobDescription || ''}`);
           if (hasExcludedTerms(text, excludedTerms)) {
             excludedCount += 1;
             return null;
@@ -80,30 +67,20 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
               company: job.companyName || 'Jobicy opportunity',
               source: LeadSource.JOBICY,
               originalPostingUrl: job.url,
-              notes: `Discovered via Jobicy. Source: ${
-                job.url || 'n/a'
-              }. ${stripHtml(job.jobDescription)}`,
+              notes: `Discovered via Jobicy. Source: ${job.url || 'n/a'}. ${stripHtml(job.jobDescription)}`,
               searchKeywords: matchedKeywords,
             }),
             matchedKeywords,
             providerName: this.providerName,
           };
         })
-        .filter((candidate): candidate is NonNullable<typeof candidate> =>
-          Boolean(candidate)
-        );
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
 
       const warnings = excludedCount
-        ? [
-            `Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(
-              ', '
-            )}.`,
-          ]
+        ? [`Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(', ')}.`]
         : [];
       if (!candidates.length) {
-        warnings.push(
-          'Jobicy returned no jobs that matched the configured topic keywords.'
-        );
+        warnings.push('Jobicy returned no jobs that matched the configured topic keywords.');
       }
 
       return {
@@ -112,18 +89,10 @@ export class JobicyDiscoveryProvider implements TopicDiscoveryProvider {
         queries: [queryUrl],
       };
     } catch (error) {
-      this.logger.warn(
-        `Jobicy discovery failed for topic ${topic.id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      this.logger.warn(`Jobicy discovery failed for topic ${topic.id}: ${error instanceof Error ? error.message : String(error)}`);
       return {
         candidates: [],
-        warnings: [
-          `Jobicy request failed: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
-        ],
+        warnings: [`Jobicy request failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         queries: [queryUrl],
       };
     }

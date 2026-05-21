@@ -110,11 +110,7 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         margin-bottom: 18px;
         padding: 1rem 1.1rem;
         border-radius: var(--border-radius-lg, 18px);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 92%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--surface, #ffffff) 92%, transparent);
         border: 1px solid var(--border, rgba(148, 163, 184, 0.18));
       }
       .eyebrow {

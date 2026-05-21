@@ -1,16 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import {
-  GlobalSearchComponent,
-  SearchService,
-} from '@optimistic-tanuki/search-ui';
+import { GlobalSearchComponent, SearchService } from '@optimistic-tanuki/search-ui';
 import { Observable, of } from 'rxjs';
 
 class StorySearchService {
   search(): Observable<any> {
     return of({
-      users: [
-        { id: '1', type: 'user', title: 'Ari Stone', subtitle: 'DX Lead' },
-      ],
+      users: [{ id: '1', type: 'user', title: 'Ari Stone', subtitle: 'DX Lead' }],
       communities: [],
       posts: [
         {

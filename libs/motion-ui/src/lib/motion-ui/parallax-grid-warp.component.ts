@@ -28,10 +28,7 @@ export class ParallaxGridWarpComponent {
     return Array.from({ length: count }, (_, index) => ({
       left: `${(12 + index * (72 / Math.max(count - 1, 1))).toFixed(2)}%`,
       delay: `${(-0.45 * (index % 5)).toFixed(2)}s`,
-      duration: `${(
-        5.5 +
-        ((index * 2) % 4) / Math.max(this.speed, 0.25)
-      ).toFixed(2)}s`,
+      duration: `${(5.5 + ((index * 2) % 4) / Math.max(this.speed, 0.25)).toFixed(2)}s`,
     }));
   }
 }

@@ -61,11 +61,7 @@ export class ClassifiedsController {
   @MessagePattern({ cmd: ClassifiedCommands.UPDATE })
   async update(
     @Payload()
-    data: {
-      id: string;
-      dto: UpdateClassifiedAdDto;
-      profileId: string;
-    }
+    data: { id: string; dto: UpdateClassifiedAdDto; profileId: string }
   ) {
     return this.classifiedsService.update(data.id, data.dto, data.profileId);
   }

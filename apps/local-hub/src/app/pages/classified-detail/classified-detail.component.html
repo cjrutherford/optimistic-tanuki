@@ -68,10 +68,7 @@
         <p class="description">{{ ad()!.description }}</p>
 
         <div class="seller-panel">
-          <div
-            class="seller-avatar"
-            [class.has-image]="!!ad()!.sellerProfilePic"
-          >
+          <div class="seller-avatar" [class.has-image]="!!ad()!.sellerProfilePic">
             @if (ad()!.sellerProfilePic) {
             <img
               [src]="ad()!.sellerProfilePic!"
@@ -85,7 +82,9 @@
           </div>
           <div class="seller-copy">
             <span class="seller-label">Seller</span>
-            <strong>{{ ad()!.sellerProfileName || 'Community member' }}</strong>
+            <strong>{{
+              ad()!.sellerProfileName || 'Community member'
+            }}</strong>
           </div>
         </div>
 

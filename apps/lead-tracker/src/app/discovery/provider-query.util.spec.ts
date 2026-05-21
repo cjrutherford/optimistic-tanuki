@@ -1,12 +1,6 @@
-import {
-  LeadDiscoverySource,
-  LeadTopicDiscoveryIntent,
-} from '@optimistic-tanuki/models/leads-contracts';
+import { LeadDiscoverySource, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
-import {
-  buildProviderQueries,
-  getProviderQueryRecipe,
-} from './provider-query.util';
+import { buildProviderQueries, getProviderQueryRecipe } from './provider-query.util';
 
 describe('provider-query.util', () => {
   const topic = {
@@ -59,11 +53,9 @@ describe('provider-query.util', () => {
       6
     );
 
-    expect(
-      queries.some((query) => query.includes('site:clutch.co/agencies'))
-    ).toBe(true);
-    expect(queries.some((query) => query.includes('"client reviews"'))).toBe(
+    expect(queries.some((query) => query.includes('site:clutch.co/agencies'))).toBe(
       true
     );
+    expect(queries.some((query) => query.includes('"client reviews"'))).toBe(true);
   });
 });

@@ -20,4 +20,4 @@ export default {
   ],
   collectCoverage: true,
   coverageReporters: ['json-summary', 'text'],
-};
+  }

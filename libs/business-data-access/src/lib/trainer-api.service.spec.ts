@@ -33,11 +33,7 @@ describe('BusinessApiService', () => {
     localStorage.setItem('business-site:token', 'business-site-token');
 
     TestBed.configureTestingModule({
-      providers: [
-        BusinessApiService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [BusinessApiService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BusinessApiService);
@@ -66,11 +62,7 @@ describe('BusinessApiService', () => {
     localStorage.setItem('business-site:client-token', 'client-token');
 
     TestBed.configureTestingModule({
-      providers: [
-        BusinessApiService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [BusinessApiService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BusinessApiService);
@@ -90,9 +82,7 @@ describe('BusinessApiService', () => {
 
     const request = httpMock.expectOne('/api/business/leads');
     expect(request.request.method).toBe('POST');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBe('Bearer client-token');
     request.flush({ id: 'lead-1' });
   });
 
@@ -109,11 +99,7 @@ describe('BusinessApiService', () => {
     localStorage.setItem('business-site:client-token', 'client-token');
 
     TestBed.configureTestingModule({
-      providers: [
-        BusinessApiService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [BusinessApiService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BusinessApiService);
@@ -124,9 +110,7 @@ describe('BusinessApiService', () => {
     const request = httpMock.expectOne('/api/business/bookings');
     expect(request.request.method).toBe('GET');
     expect(request.request.params.keys()).toEqual([]);
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBe('Bearer client-token');
     request.flush([]);
   });
 
@@ -143,11 +127,7 @@ describe('BusinessApiService', () => {
     localStorage.setItem('business-site:client-token', 'client-token');
 
     TestBed.configureTestingModule({
-      providers: [
-        BusinessApiService,
-        provideHttpClient(),
-        provideHttpClientTesting(),
-      ],
+      providers: [BusinessApiService, provideHttpClient(), provideHttpClientTesting()],
     });
 
     service = TestBed.inject(BusinessApiService);
@@ -157,9 +137,7 @@ describe('BusinessApiService', () => {
 
     const request = httpMock.expectOne('/api/business/client-status');
     expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBe('Bearer client-token');
     request.flush({ accepted: true });
   });
 });

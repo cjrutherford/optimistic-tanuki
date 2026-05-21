@@ -1,7 +1,4 @@
-import {
-  LeadDiscoverySource,
-  LeadTopicDiscoveryIntent,
-} from '@optimistic-tanuki/models/leads-contracts';
+import { LeadDiscoverySource, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
 import { JustRemoteDiscoveryProvider } from './justremote-discovery.provider';
 

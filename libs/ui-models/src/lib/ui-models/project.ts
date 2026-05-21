@@ -270,14 +270,14 @@ export interface Risk {
   description: string;
   impact: 'LOW' | 'MEDIUM' | 'HIGH';
   likelihood:
-    | 'UNLIKELY'
-    | 'POSSIBLE'
-    | 'LIKELY'
-    | 'IMMINENT'
-    | 'ALMOST_CERTAIN'
-    | 'CERTAIN'
-    | 'NOT_APPLICABLE'
-    | 'UNKNOWN';
+  | 'UNLIKELY'
+  | 'POSSIBLE'
+  | 'LIKELY'
+  | 'IMMINENT'
+  | 'ALMOST_CERTAIN'
+  | 'CERTAIN'
+  | 'NOT_APPLICABLE'
+  | 'UNKNOWN';
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
@@ -295,14 +295,14 @@ export interface CreateRisk {
   description: string;
   impact: 'LOW' | 'MEDIUM' | 'HIGH';
   likelihood:
-    | 'UNLIKELY'
-    | 'POSSIBLE'
-    | 'LIKELY'
-    | 'IMMINENT'
-    | 'ALMOST_CERTAIN'
-    | 'CERTAIN'
-    | 'NOT_APPLICABLE'
-    | 'UNKNOWN';
+  | 'UNLIKELY'
+  | 'POSSIBLE'
+  | 'LIKELY'
+  | 'IMMINENT'
+  | 'ALMOST_CERTAIN'
+  | 'CERTAIN'
+  | 'NOT_APPLICABLE'
+  | 'UNKNOWN';
   status: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   mitigationPlan?: string;
@@ -315,14 +315,14 @@ export interface QueryRisk {
   description?: string;
   impact?: 'LOW' | 'MEDIUM' | 'HIGH';
   likelihood?:
-    | 'UNLIKELY'
-    | 'POSSIBLE'
-    | 'LIKELY'
-    | 'IMMINENT'
-    | 'ALMOST_CERTAIN'
-    | 'CERTAIN'
-    | 'NOT_APPLICABLE'
-    | 'UNKNOWN';
+  | 'UNLIKELY'
+  | 'POSSIBLE'
+  | 'LIKELY'
+  | 'IMMINENT'
+  | 'ALMOST_CERTAIN'
+  | 'CERTAIN'
+  | 'NOT_APPLICABLE'
+  | 'UNKNOWN';
   status?: 'OPEN' | 'IN_PROGRESS' | 'CLOSED';
   resolution?: 'PENDING' | 'ACCEPTED' | 'MITIGATED' | 'ESCALATED' | 'AVOIDED';
   riskOwner?: string; // Assuming this is a user profile ID
@@ -339,14 +339,14 @@ export interface Change {
   projectId: string; // Foreign key to Project
   changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION';
   changeStatus:
-    | 'PENDING'
-    | 'RESEARCHING'
-    | 'DISCUSSING'
-    | 'DESIGNING'
-    | 'PENDING_APPROVAL'
-    | 'IMPELEMENTING'
-    | 'COMPLETE'
-    | 'DISCARDED';
+  | 'PENDING'
+  | 'RESEARCHING'
+  | 'DISCUSSING'
+  | 'DESIGNING'
+  | 'PENDING_APPROVAL'
+  | 'IMPELEMENTING'
+  | 'COMPLETE'
+  | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
   requestor: string;
@@ -360,14 +360,14 @@ export interface CreateChange {
   projectId: string; // Foreign key to Project
   changeType: 'ADDITION' | 'MODIFICATION' | 'DELETION';
   changeStatus:
-    | 'PENDING'
-    | 'RESEARCHING'
-    | 'DISCUSSING'
-    | 'DESIGNING'
-    | 'PENDING_APPROVAL'
-    | 'IMPELEMENTING'
-    | 'COMPLETE'
-    | 'DISCARDED';
+  | 'PENDING'
+  | 'RESEARCHING'
+  | 'DISCUSSING'
+  | 'DESIGNING'
+  | 'PENDING_APPROVAL'
+  | 'IMPELEMENTING'
+  | 'COMPLETE'
+  | 'DISCARDED';
   changeDescription: string;
   changeDate: Date;
   requestor: string;
@@ -379,14 +379,14 @@ export interface QueryChange {
   projectId?: string; // Optional filter by project ID
   changeType?: 'ADDITION' | 'MODIFICATION' | 'DELETION';
   changeStatus?:
-    | 'PENDING'
-    | 'RESEARCHING'
-    | 'DISCUSSING'
-    | 'DESIGNING'
-    | 'PENDING_APPROVAL'
-    | 'IMPELEMENTING'
-    | 'COMPLETE'
-    | 'DISCARDED';
+  | 'PENDING'
+  | 'RESEARCHING'
+  | 'DISCUSSING'
+  | 'DESIGNING'
+  | 'PENDING_APPROVAL'
+  | 'IMPELEMENTING'
+  | 'COMPLETE'
+  | 'DISCARDED';
   changeDescription?: string;
   changeDate?: [Date, Date]; // Range for changeDate
   requestor?: string;

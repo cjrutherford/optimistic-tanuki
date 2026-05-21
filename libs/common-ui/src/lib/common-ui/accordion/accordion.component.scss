@@ -17,8 +17,7 @@
   border-left: var(--border-width, 3px) solid var(--primary);
   padding-left: 0;
   margin-left: 0;
-  transition: border-color var(--animation-duration-fast, 100ms)
-    var(--animation-easing, ease);
+  transition: border-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
 
   &:hover {
     border-left-color: var(--secondary);
@@ -81,10 +80,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   position: relative;
-  transition: background-color var(--animation-duration-fast, 100ms)
-      var(--animation-easing, ease),
-    border-color var(--animation-duration-fast, 100ms)
-      var(--animation-easing, ease);
+  transition: background-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease),
+    border-color var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
 
   // Icon - geometric square
   &::after {
@@ -96,8 +93,7 @@
     width: 12px;
     height: 12px;
     background: var(--primary);
-    transition: transform var(--animation-duration-fast, 100ms)
-      var(--animation-easing, ease);
+    transition: transform var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
   }
 
   &:hover:not(.disabled) {
@@ -142,9 +138,7 @@
 
 .accordion-content {
   overflow: hidden;
-  transition: max-height var(--animation-duration-fast, 100ms)
-      var(--animation-easing, ease),
-    padding var(--animation-duration-fast, 100ms) var(--animation-easing, ease),
+  transition: max-height var(--animation-duration-fast, 100ms) var(--animation-easing, ease), padding var(--animation-duration-fast, 100ms) var(--animation-easing, ease),
     opacity var(--animation-duration-fast, 100ms) var(--animation-easing, ease);
   background: var(--background, #ffffff);
   color: var(--foreground, #212121);

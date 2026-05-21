@@ -21,7 +21,8 @@
 }
 
 .hero-stage {
-  animation: homestead-rise 0.8s 0.1s var(--personality-transition, ease) both;
+  animation: homestead-rise 0.8s 0.1s var(--personality-transition, ease)
+    both;
 }
 
 lib-hero {
@@ -45,7 +46,8 @@ lib-hero {
   justify-content: flex-end;
   align-items: flex-start;
   padding: clamp(1.5rem, 3vw, 2.75rem);
-  background: linear-gradient(
+  background:
+    linear-gradient(
       180deg,
       color-mix(in srgb, black 14%, transparent) 0%,
       color-mix(in srgb, black 62%, transparent) 58%,
@@ -91,7 +93,8 @@ lib-hero {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
   margin-top: 1rem;
-  animation: homestead-rise 0.8s 0.18s var(--personality-transition, ease) both;
+  animation: homestead-rise 0.8s 0.18s var(--personality-transition, ease)
+    both;
 }
 
 .manifesto-card {
@@ -99,11 +102,12 @@ lib-hero {
   padding: 1.2rem 1.15rem;
   border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border) 76%);
   border-radius: calc(var(--personality-border-radius, 1.2rem) * 0.85);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--surface-light) 88%, transparent),
-    color-mix(in srgb, var(--surface) 96%, transparent)
-  );
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface-light) 88%, transparent),
+      color-mix(in srgb, var(--surface) 96%, transparent)
+    );
   backdrop-filter: blur(14px);
   box-shadow: 0 20px 50px color-mix(in srgb, black 26%, transparent);
 }

@@ -32,7 +32,8 @@ export class TimeTrackerComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     // Find if there's an active time entry (no endTime)
-    this.activeEntry = this.timeEntries.find((entry) => !entry.endTime) || null;
+    this.activeEntry =
+      this.timeEntries.find((entry) => !entry.endTime) || null;
 
     if (this.activeEntry) {
       this.startDisplayTimer();
@@ -73,9 +74,7 @@ export class TimeTrackerComponent implements OnInit, OnDestroy {
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
 
-      this.displayTime = `${this.pad(hours)}:${this.pad(minutes)}:${this.pad(
-        seconds
-      )}`;
+      this.displayTime = `${this.pad(hours)}:${this.pad(minutes)}:${this.pad(seconds)}`;
     }, 1000);
   }
 

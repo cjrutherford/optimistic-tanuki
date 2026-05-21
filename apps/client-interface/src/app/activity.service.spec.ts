@@ -231,7 +231,9 @@ describe('ActivityService', () => {
         done();
       });
 
-      const req = httpMock.expectOne(`${baseUrl}/${profileId}/saved/${itemId}`);
+      const req = httpMock.expectOne(
+        `${baseUrl}/${profileId}/saved/${itemId}`
+      );
       expect(req.request.method).toBe('DELETE');
       req.flush({ success: true });
     });
@@ -247,7 +249,9 @@ describe('ActivityService', () => {
         done();
       });
 
-      const req = httpMock.expectOne(`${baseUrl}/${profileId}/saved/${itemId}`);
+      const req = httpMock.expectOne(
+        `${baseUrl}/${profileId}/saved/${itemId}`
+      );
       expect(req.request.method).toBe('GET');
       req.flush({ saved: true });
     });
@@ -261,7 +265,9 @@ describe('ActivityService', () => {
         done();
       });
 
-      const req = httpMock.expectOne(`${baseUrl}/${profileId}/saved/${itemId}`);
+      const req = httpMock.expectOne(
+        `${baseUrl}/${profileId}/saved/${itemId}`
+      );
       req.flush({ saved: false });
     });
   });

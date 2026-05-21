@@ -15,10 +15,7 @@ import { Subject, Subscription, forkJoin } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
 import { map } from 'rxjs/operators';
 
-import {
-  BlogComposeComponent,
-  ComponentPersistenceService,
-} from '@optimistic-tanuki/blogging-ui';
+import { BlogComposeComponent, ComponentPersistenceService } from '@optimistic-tanuki/blogging-ui';
 import { BlogViewerComponent } from '../blog-viewer/blog-viewer.component';
 import { BlogService } from '../../blog.service';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
@@ -28,7 +25,7 @@ import {
   BlogPostDto,
   CreateBlogPostDto,
   UpdateBlogPostDto,
-  CreateBlogComponentDto,
+  CreateBlogComponentDto
 } from '@optimistic-tanuki/ui-models';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 import { PostThemeConfig } from '@optimistic-tanuki/ui-models';
@@ -125,7 +122,7 @@ export class BlogPageComponent implements OnDestroy {
   readonly profileId = computed(() => {
     const profile = this.authState.getProfileId();
     return profile || undefined;
-  });
+  })
 
   // Computed: can user edit
   readonly canEdit = computed(
@@ -226,16 +223,14 @@ export class BlogPageComponent implements OnDestroy {
     }
     // Verify we have a post ID and components to save
     if (postId && this.hasInjectedComponents(data.content)) {
-      const components = this.componentPersistence.extractComponentsFromContent(
-        data.content
-      );
+      const components = this.componentPersistence.extractComponentsFromContent(data.content);
 
       if (components.length > 0) {
         console.log('Auto-saving components...', components.length);
         // Strategy: Upsert only during auto-save to avoid permission issues with DELETE
         this.componentPersistence.saveComponents(postId, components).subscribe({
           next: () => console.log('Auto-save complete'),
-          error: (err) => console.error('Auto-save failed', err),
+          error: (err) => console.error('Auto-save failed', err)
         });
       }
     }
@@ -271,17 +266,17 @@ export class BlogPageComponent implements OnDestroy {
     // Load post and its components
     forkJoin({
       post: this.blogService.getPost(id),
-      components: this.componentPersistence.getComponentsForPost(id),
+      components: this.componentPersistence.getComponentsForPost(id)
     }).subscribe({
       next: ({ post, components }) => {
         this.selectedPost.set(post);
 
         // Map stored components to InjectedComponentInstance format expected by editor
-        const injectedComponents = components.map((comp) => ({
+        const injectedComponents = components.map(comp => ({
           instanceId: comp.instanceId,
           // We map componentData to data for the editor
           data: comp.componentData,
-          componentDef: { id: comp.componentType } as any, // Minimal def needed if any
+          componentDef: { id: comp.componentType } as any // Minimal def needed if any
         }));
 
         this.editorData.set({
@@ -290,7 +285,7 @@ export class BlogPageComponent implements OnDestroy {
           links: [],
           attachments: [],
           themeConfig: post.themeConfig,
-          injectedComponents: injectedComponents as any[],
+          injectedComponents: injectedComponents as any[]
         });
         this.loading.set(false);
       },
@@ -336,7 +331,7 @@ export class BlogPageComponent implements OnDestroy {
       title: 'Untitled Draft',
       content: '<p>this is sample content</p>',
       authorId,
-      isDraft: true,
+      isDraft: true
     };
 
     this.blogService.createPost(createData).subscribe({
@@ -351,7 +346,7 @@ export class BlogPageComponent implements OnDestroy {
           content: post.content,
           links: [],
           attachments: [],
-          themeConfig: post.themeConfig,
+          themeConfig: post.themeConfig
         });
 
         // Set mode to edit since we now have a real post ID
@@ -364,7 +359,7 @@ export class BlogPageComponent implements OnDestroy {
         this.loading.set(false);
         this.error.set('Failed to create draft post: ' + err.message);
         console.error('Error creating draft:', err);
-      },
+      }
     });
   }
 
@@ -538,14 +533,8 @@ export class BlogPageComponent implements OnDestroy {
     const currentMode = this.mode();
 
     // Check if post has components that need persistence (new format preferred)
-    const hasComponents =
-      postData.injectedComponentsNew &&
-      postData.injectedComponentsNew.length > 0;
-    console.log(
-      '[BlogPage] Post has components:',
-      hasComponents,
-      postData.injectedComponentsNew
-    );
+    const hasComponents = postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0;
+    console.log('[BlogPage] Post has components:', hasComponents, postData.injectedComponentsNew);
 
     if (currentMode === 'edit' && postId) {
       this.updatePostWithComponentsNew(postData, postId, authorId, saveAction);
@@ -569,18 +558,10 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Create post as draft first to get ID for component persistence
    */
-  private createDraftWithComponents(
-    postData: PostData,
-    authorId: string,
-    finalAction: SaveAction
-  ): void {
+  private createDraftWithComponents(postData: PostData, authorId: string, finalAction: SaveAction): void {
     // Extract components before cleaning content
-    const components = this.componentPersistence.extractComponentsFromContent(
-      postData.content
-    );
-    const cleanedContent = this.componentPersistence.cleanContentForStorage(
-      postData.content
-    );
+    const components = this.componentPersistence.extractComponentsFromContent(postData.content);
+    const cleanedContent = this.componentPersistence.cleanContentForStorage(postData.content);
 
     const draftPayload = {
       title: postData.title,
@@ -594,21 +575,17 @@ export class BlogPageComponent implements OnDestroy {
       next: (createdPost) => {
         // Save components with the new post ID
         if (components.length > 0) {
-          this.componentPersistence
-            .saveComponents(createdPost.id, components)
-            .subscribe({
-              next: (savedComponents) => {
-                console.log('Components saved:', savedComponents);
-                this.handlePostCreateSuccess(createdPost, finalAction);
-              },
-              error: (err) => {
-                console.error('Failed to save components:', err);
-                this.error.set(
-                  'Failed to save post components: ' + err.message
-                );
-                this.loading.set(false);
-              },
-            });
+          this.componentPersistence.saveComponents(createdPost.id, components).subscribe({
+            next: (savedComponents) => {
+              console.log('Components saved:', savedComponents);
+              this.handlePostCreateSuccess(createdPost, finalAction);
+            },
+            error: (err) => {
+              console.error('Failed to save components:', err);
+              this.error.set('Failed to save post components: ' + err.message);
+              this.loading.set(false);
+            }
+          });
         } else {
           this.handlePostCreateSuccess(createdPost, finalAction);
         }
@@ -624,11 +601,7 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Create post directly without component persistence
    */
-  private createPostDirectly(
-    postData: PostData,
-    authorId: string,
-    saveAction: SaveAction
-  ): void {
+  private createPostDirectly(postData: PostData, authorId: string, saveAction: SaveAction): void {
     const isDraft = saveAction === 'draft';
     const cleanedContent = this.cleanInjectedContent(postData.content);
 
@@ -662,88 +635,51 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Update existing post with component persistence
    */
-  private updatePostWithComponents(
-    postData: PostData,
-    postId: string,
-    authorId: string,
-    saveAction: SaveAction
-  ): void {
+  private updatePostWithComponents(postData: PostData, postId: string, authorId: string, saveAction: SaveAction): void {
     const isDraft = saveAction === 'draft';
 
     // Extract and save components if content has them
     const hasComponents = this.hasInjectedComponents(postData.content);
     if (hasComponents) {
-      const components = this.componentPersistence.extractComponentsFromContent(
-        postData.content
-      );
-      const cleanedContent = this.componentPersistence.cleanContentForStorage(
-        postData.content
-      );
+      const components = this.componentPersistence.extractComponentsFromContent(postData.content);
+      const cleanedContent = this.componentPersistence.cleanContentForStorage(postData.content);
 
       // First save components, then update post
       this.componentPersistence.deleteComponentsByPost(postId).subscribe({
         next: () => {
           if (components.length > 0) {
-            this.componentPersistence
-              .saveComponents(postId, components)
-              .subscribe({
-                next: (savedComponents) => {
-                  console.log('Components updated:', savedComponents);
-                  this.updatePostContent(
-                    postId,
-                    postData,
-                    cleanedContent,
-                    authorId,
-                    isDraft
-                  );
-                },
-                error: (err) => {
-                  console.error('Failed to save updated components:', err);
-                  this.error.set(
-                    'Failed to save post components: ' + err.message
-                  );
-                  this.loading.set(false);
-                },
-              });
+            this.componentPersistence.saveComponents(postId, components).subscribe({
+              next: (savedComponents) => {
+                console.log('Components updated:', savedComponents);
+                this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
+              },
+              error: (err) => {
+                console.error('Failed to save updated components:', err);
+                this.error.set('Failed to save post components: ' + err.message);
+                this.loading.set(false);
+              }
+            });
           } else {
-            this.updatePostContent(
-              postId,
-              postData,
-              cleanedContent,
-              authorId,
-              isDraft
-            );
+            this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
           }
         },
         error: (err) => {
           console.error('Failed to delete old components:', err);
           this.error.set('Failed to update post components: ' + err.message);
           this.loading.set(false);
-        },
+        }
       });
     } else {
       // No components, update directly
       const cleanedContent = this.cleanInjectedContent(postData.content);
-      this.updatePostContent(
-        postId,
-        postData,
-        cleanedContent,
-        authorId,
-        isDraft
-      );
+      this.updatePostContent(postId, postData, cleanedContent, authorId, isDraft);
     }
   }
 
   /**
    * Update post content in database
    */
-  private updatePostContent(
-    postId: string,
-    postData: PostData,
-    content: string,
-    authorId: string,
-    isDraft: boolean
-  ): void {
+  private updatePostContent(postId: string, postData: PostData, content: string, authorId: string, isDraft: boolean): void {
     const postPayload = {
       id: postId,
       title: postData.title,
@@ -775,10 +711,7 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Handle successful post creation and optionally publish
    */
-  private handlePostCreateSuccess(
-    createdPost: any,
-    finalAction: SaveAction
-  ): void {
+  private handlePostCreateSuccess(createdPost: any, finalAction: SaveAction): void {
     if (finalAction === 'publish') {
       // Publish the draft and then view
       this.blogService.publishPost(createdPost.id).subscribe({
@@ -799,7 +732,7 @@ export class BlogPageComponent implements OnDestroy {
           this.selectedPost.set(createdPost);
           this.addPostToList(createdPost);
           this.mode.set('edit');
-        },
+        }
       });
     } else {
       // Keep as draft and continue editing
@@ -814,11 +747,7 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Create post with components using new format
    */
-  private async createDraftWithComponentsNew(
-    postData: PostData,
-    authorId: string,
-    finalAction: SaveAction
-  ): Promise<void> {
+  private async createDraftWithComponentsNew(postData: PostData, authorId: string, finalAction: SaveAction): Promise<void> {
     try {
       // Create post first
       const draftPayload: CreateBlogPostDto = {
@@ -829,20 +758,12 @@ export class BlogPageComponent implements OnDestroy {
         themeConfig: postData.themeConfig,
       };
 
-      const createdPost = await firstValueFrom(
-        this.blogService.createPost(draftPayload)
-      );
+      const createdPost = await firstValueFrom(this.blogService.createPost(draftPayload));
       console.log('[BlogPage] Post created:', createdPost.id);
 
       // Save components if available
-      if (
-        postData.injectedComponentsNew &&
-        postData.injectedComponentsNew.length > 0
-      ) {
-        await this.saveComponentsNew(
-          createdPost.id,
-          postData.injectedComponentsNew
-        );
+      if (postData.injectedComponentsNew && postData.injectedComponentsNew.length > 0) {
+        await this.saveComponentsNew(createdPost.id, postData.injectedComponentsNew);
         console.log('[BlogPage] Components saved for post:', createdPost.id);
       }
 
@@ -858,12 +779,7 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Update post with components using new format
    */
-  private async updatePostWithComponentsNew(
-    postData: PostData,
-    postId: string,
-    authorId: string,
-    saveAction: SaveAction
-  ): Promise<void> {
+  private async updatePostWithComponentsNew(postData: PostData, postId: string, authorId: string, saveAction: SaveAction): Promise<void> {
     try {
       // Update post content
       const updateData: UpdateBlogPostDto = {
@@ -875,9 +791,7 @@ export class BlogPageComponent implements OnDestroy {
         themeConfig: postData.themeConfig,
       };
 
-      const updatedPost = await firstValueFrom(
-        this.blogService.updatePost(postId, updateData)
-      );
+      const updatedPost = await firstValueFrom(this.blogService.updatePost(postId, updateData));
       console.log('[BlogPage] Post updated:', postId);
 
       // Update components
@@ -910,10 +824,7 @@ export class BlogPageComponent implements OnDestroy {
   /**
    * Save components to database using RPC
    */
-  private async saveComponentsNew(
-    blogPostId: string,
-    components: InjectedComponentData[]
-  ): Promise<void> {
+  private async saveComponentsNew(blogPostId: string, components: InjectedComponentData[]): Promise<void> {
     console.log('[BlogPage] Saving components:', components);
 
     for (const component of components) {
@@ -931,11 +842,7 @@ export class BlogPageComponent implements OnDestroy {
         );
         console.log('[BlogPage] Component saved:', component.instanceId);
       } catch (error) {
-        console.error(
-          '[BlogPage] Failed to save component:',
-          component.instanceId,
-          error
-        );
+        console.error('[BlogPage] Failed to save component:', component.instanceId, error);
         throw error;
       }
     }
@@ -947,9 +854,7 @@ export class BlogPageComponent implements OnDestroy {
   private async deleteComponentsByPostId(blogPostId: string): Promise<void> {
     try {
       await firstValueFrom(
-        this.http.delete(
-          `${this.gatewayUrl}/blog-components/post/${blogPostId}`
-        )
+        this.http.delete(`${this.gatewayUrl}/blog-components/post/${blogPostId}`)
       );
       console.log('[BlogPage] Components deleted for post:', blogPostId);
     } catch (error) {

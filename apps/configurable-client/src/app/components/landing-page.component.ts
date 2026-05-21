@@ -1,10 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConfigurationService } from '../services/configuration.service';
-import {
-  Section,
-  AppConfiguration,
-} from '@optimistic-tanuki/app-config-models';
+import { Section, AppConfiguration } from '@optimistic-tanuki/app-config-models';
 import { HeroSectionComponent } from './sections/hero-section.component';
 import { FeaturesSectionComponent } from './sections/features-section.component';
 import { ContentSectionComponent } from './sections/content-section.component';
@@ -26,20 +23,30 @@ import { FooterSectionComponent } from './sections/footer-section.component';
   ],
   template: `
     <div class="landing-page" [ngClass]="'layout-' + layout">
-      @for (section of sections; track section.id) { @if (section.visible) {
-      @switch (section.type) { @case ('hero') {
-      <app-hero-section [section]="section"></app-hero-section>
-      } @case ('features') {
-      <app-features-section [section]="section"></app-features-section>
-      } @case ('content') {
-      <app-content-section [section]="section"></app-content-section>
-      } @case ('grid') {
-      <app-grid-section [section]="section"></app-grid-section>
-      } @case ('cta') {
-      <app-cta-section [section]="section"></app-cta-section>
-      } @case ('footer') {
-      <app-footer-section [section]="section"></app-footer-section>
-      } } } }
+      @for (section of sections; track section.id) {
+        @if (section.visible) {
+          @switch (section.type) {
+            @case ('hero') {
+              <app-hero-section [section]="section"></app-hero-section>
+            }
+            @case ('features') {
+              <app-features-section [section]="section"></app-features-section>
+            }
+            @case ('content') {
+              <app-content-section [section]="section"></app-content-section>
+            }
+            @case ('grid') {
+              <app-grid-section [section]="section"></app-grid-section>
+            }
+            @case ('cta') {
+              <app-cta-section [section]="section"></app-cta-section>
+            }
+            @case ('footer') {
+              <app-footer-section [section]="section"></app-footer-section>
+            }
+          }
+        }
+      }
     </div>
   `,
   styles: [

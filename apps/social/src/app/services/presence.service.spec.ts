@@ -2,10 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PresenceService, UserPresenceData } from './presence.service';
-import {
-  UserPresence,
-  PresenceStatus,
-} from '../../entities/user-presence.entity';
+import { UserPresence, PresenceStatus } from '../../entities/user-presence.entity';
 
 describe('PresenceService', () => {
   let service: PresenceService;
@@ -60,15 +57,9 @@ describe('PresenceService', () => {
       jest.spyOn(presenceRepo, 'findOne').mockResolvedValue(mockUserPresence);
       jest.spyOn(presenceRepo, 'save').mockResolvedValue(updatedPresence);
 
-      const result = await service.setPresence(
-        'user-1',
-        PresenceStatus.AWAY,
-        true
-      );
+      const result = await service.setPresence('user-1', PresenceStatus.AWAY, true);
 
-      expect(presenceRepo.findOne).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-      });
+      expect(presenceRepo.findOne).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
       expect(presenceRepo.save).toHaveBeenCalled();
       expect(result.status).toBe(PresenceStatus.AWAY);
       expect(result.isExplicit).toBe(true);
@@ -84,15 +75,9 @@ describe('PresenceService', () => {
       jest.spyOn(presenceRepo, 'create').mockReturnValue(newPresence);
       jest.spyOn(presenceRepo, 'save').mockResolvedValue(newPresence);
 
-      const result = await service.setPresence(
-        'user-1',
-        PresenceStatus.ONLINE,
-        true
-      );
+      const result = await service.setPresence('user-1', PresenceStatus.ONLINE, true);
 
-      expect(presenceRepo.findOne).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-      });
+      expect(presenceRepo.findOne).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
       expect(presenceRepo.create).toHaveBeenCalledWith({
         userId: 'user-1',
         status: PresenceStatus.ONLINE,
@@ -120,12 +105,10 @@ describe('PresenceService', () => {
 
     it('should update lastSeen timestamp', async () => {
       const beforeTime = new Date();
-
+      
       jest.spyOn(presenceRepo, 'findOne').mockResolvedValue(mockUserPresence);
       jest.spyOn(presenceRepo, 'save').mockImplementation((presence: any) => {
-        expect(presence.lastSeen.getTime()).toBeGreaterThanOrEqual(
-          beforeTime.getTime()
-        );
+        expect(presence.lastSeen.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
         return Promise.resolve(presence);
       });
 
@@ -144,12 +127,8 @@ describe('PresenceService', () => {
 
       for (const status of statuses) {
         jest.spyOn(presenceRepo, 'findOne').mockResolvedValue(null);
-        jest
-          .spyOn(presenceRepo, 'create')
-          .mockReturnValue({ ...mockUserPresence, status });
-        jest
-          .spyOn(presenceRepo, 'save')
-          .mockResolvedValue({ ...mockUserPresence, status });
+        jest.spyOn(presenceRepo, 'create').mockReturnValue({ ...mockUserPresence, status });
+        jest.spyOn(presenceRepo, 'save').mockResolvedValue({ ...mockUserPresence, status });
 
         const result = await service.setPresence('user-1', status);
 
@@ -164,9 +143,7 @@ describe('PresenceService', () => {
 
       const result = await service.getPresence('user-1');
 
-      expect(presenceRepo.findOne).toHaveBeenCalledWith({
-        where: { userId: 'user-1' },
-      });
+      expect(presenceRepo.findOne).toHaveBeenCalledWith({ where: { userId: 'user-1' } });
       expect(result).toEqual(mockUserPresence);
     });
 
@@ -189,11 +166,7 @@ describe('PresenceService', () => {
 
       jest.spyOn(presenceRepo, 'findBy').mockResolvedValue(presences);
 
-      const result = await service.getPresenceBatch([
-        'user-1',
-        'user-2',
-        'user-3',
-      ]);
+      const result = await service.getPresenceBatch(['user-1', 'user-2', 'user-3']);
 
       expect(presenceRepo.findBy).toHaveBeenCalledWith([
         { userId: 'user-1' },
@@ -215,11 +188,7 @@ describe('PresenceService', () => {
       const presences = [mockUserPresence];
       jest.spyOn(presenceRepo, 'findBy').mockResolvedValue(presences);
 
-      const result = await service.getPresenceBatch([
-        'user-1',
-        'user-2',
-        'user-3',
-      ]);
+      const result = await service.getPresenceBatch(['user-1', 'user-2', 'user-3']);
 
       // Only user-1 has presence, others don't
       expect(result.length).toBe(1);
@@ -255,9 +224,7 @@ describe('PresenceService', () => {
 
   describe('updateLastSeen', () => {
     it('should update last seen timestamp and set status to online', async () => {
-      jest
-        .spyOn(presenceRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(presenceRepo, 'update').mockResolvedValue({ affected: 1 } as any);
 
       await service.updateLastSeen('user-1');
 
@@ -272,9 +239,7 @@ describe('PresenceService', () => {
     });
 
     it('should set isExplicit to false', async () => {
-      jest
-        .spyOn(presenceRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(presenceRepo, 'update').mockResolvedValue({ affected: 1 } as any);
 
       await service.updateLastSeen('user-1');
 
@@ -289,9 +254,7 @@ describe('PresenceService', () => {
 
   describe('setOffline', () => {
     it('should set user status to offline', async () => {
-      jest
-        .spyOn(presenceRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(presenceRepo, 'update').mockResolvedValue({ affected: 1 } as any);
 
       await service.setOffline('user-1');
 
@@ -307,15 +270,11 @@ describe('PresenceService', () => {
 
     it('should update last seen timestamp', async () => {
       const beforeTime = new Date();
-
-      jest
-        .spyOn(presenceRepo, 'update')
-        .mockImplementation((criteria, updateData: any) => {
-          expect(updateData.lastSeen.getTime()).toBeGreaterThanOrEqual(
-            beforeTime.getTime()
-          );
-          return Promise.resolve({ affected: 1 } as any);
-        });
+      
+      jest.spyOn(presenceRepo, 'update').mockImplementation((criteria, updateData: any) => {
+        expect(updateData.lastSeen.getTime()).toBeGreaterThanOrEqual(beforeTime.getTime());
+        return Promise.resolve({ affected: 1 } as any);
+      });
 
       await service.setOffline('user-1');
 
@@ -323,9 +282,7 @@ describe('PresenceService', () => {
     });
 
     it('should set isExplicit to false', async () => {
-      jest
-        .spyOn(presenceRepo, 'update')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(presenceRepo, 'update').mockResolvedValue({ affected: 1 } as any);
 
       await service.setOffline('user-1');
 
@@ -340,9 +297,7 @@ describe('PresenceService', () => {
 
   describe('deletePresence', () => {
     it('should delete user presence', async () => {
-      jest
-        .spyOn(presenceRepo, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(presenceRepo, 'delete').mockResolvedValue({ affected: 1 } as any);
 
       await service.deletePresence('user-1');
 
@@ -350,13 +305,9 @@ describe('PresenceService', () => {
     });
 
     it('should not throw error if presence does not exist', async () => {
-      jest
-        .spyOn(presenceRepo, 'delete')
-        .mockResolvedValue({ affected: 0 } as any);
+      jest.spyOn(presenceRepo, 'delete').mockResolvedValue({ affected: 0 } as any);
 
-      await expect(
-        service.deletePresence('non-existent')
-      ).resolves.not.toThrow();
+      await expect(service.deletePresence('non-existent')).resolves.not.toThrow();
     });
   });
 });

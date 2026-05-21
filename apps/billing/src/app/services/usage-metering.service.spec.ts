@@ -102,7 +102,7 @@ describe('UsageMeteringService', () => {
         meterId: 'api-calls',
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-05-01T00:00:00.000Z'),
-      })
+      }),
     ).resolves.toMatchObject({
       tenantId: 'tenant-1',
       appScope: 'local-hub',

@@ -5,7 +5,6 @@ slug: core-features
 summary: Learn the major workflows available once you are signed in.
 order: 20
 ---
-
 # Core Features
 
 Depending on your role, common areas may include:

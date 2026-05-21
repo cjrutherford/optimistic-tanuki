@@ -37,10 +37,7 @@ export class GlassFogComponent {
         top: `${top}%`,
         size: `${size.toFixed(2)}rem`,
         delay: `${(-0.5 * (index % 5)).toFixed(2)}s`,
-        duration: `${(
-          10 +
-          ((index * 5) % 6) / Math.max(this.speed, 0.25)
-        ).toFixed(2)}s`,
+        duration: `${(10 + ((index * 5) % 6) / Math.max(this.speed, 0.25)).toFixed(2)}s`,
       };
     });
   }

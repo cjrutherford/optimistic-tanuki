@@ -124,14 +124,13 @@
 ## Problems Identified
 
 ### 1. **System Prompt Pollution with Conversation Summary** ⚠️ CRITICAL
-
 - **Issue**: `conversationSummary` is included in the system prompt
-- **Location**:
+- **Location**: 
   - `app.service.ts:271-276` - Generates summary
   - `langchain.service.ts:365-377` - Includes summary in system prompt
   - `system-prompt-builder.service.ts` - Adds summary to template
+  
 - **Impact**:
-
   - System prompt changes with every conversation
   - LLM doesn't maintain consistent persona identity
   - Summary is lossy (only last 5 messages)
@@ -142,38 +141,36 @@
 - **Actual**: System prompt is DYNAMIC and includes conversation context
 
 ### 2. **Thinking Tokens in Final Response**
-
 - **Issue**: LLM (deepseek-r1-8b) generates thinking tokens like `<think>...</think>`
 - **Location**: Model's inherent behavior
-- **Current Handling**:
+- **Current Handling**: 
   - ✅ `workflowControl.extractThinkingTokens()` extracts and filters
   - ✅ Thinking tokens emitted as events
   - ✅ Final response is cleaned
 - **Status**: Partially handled, but needs verification that all patterns are caught
 
 ### 3. **Conversation Context Handling**
-
 - **Issue**: Conversation history passed separately from system prompt
 - **Current Flow**:
   ```typescript
   messages = [
-    ...systemMessages, // Includes conversation summary ⚠️
-    ...chatHistory, // Recent messages (LangChain format)
-    new HumanMessage(userMessage),
-  ];
+    ...systemMessages,    // Includes conversation summary ⚠️
+    ...chatHistory,       // Recent messages (LangChain format)
+    new HumanMessage(userMessage)
+  ]
   ```
-- **Better Approach**:
+- **Better Approach**: 
   - System prompt = STATIC persona TELOS only
   - Conversation history = FULL history as messages
   - No summary in system prompt
 
 ### 4. **Multiple Conversation Representations**
-
 - **Issue**: Conversation exists in multiple formats:
   1. `ChatMessage[]` - Original format from chat-collector
   2. `BaseMessage[]` - LangChain format (HumanMessage, AIMessage)
   3. `conversationSummary` - Text summary
   4. `chatHistory` - State in LangGraph
+  
 - **Impact**: Complexity, potential for data loss, inconsistency
 
 ## Proposed Optimized Flow (To-Be)
@@ -307,13 +304,11 @@
 ### Change 1: Remove Conversation Summary from System Prompt ✅ CRITICAL
 
 **Files to modify:**
-
 1. `apps/ai-orchestrator/src/app/system-prompt-builder.service.ts`
 2. `apps/ai-orchestrator/src/app/langchain.service.ts`
 3. `apps/ai-orchestrator/src/app/app.service.ts`
 
 **Current (WRONG)**:
-
 ```typescript
 // system-prompt-builder.service.ts
 const template = ChatPromptTemplate.fromMessages([
@@ -323,13 +318,12 @@ const template = ChatPromptTemplate.fromMessages([
     ...
     # CONVERSATION CONTEXT
     {conversationSummary}  ⚠️ REMOVE THIS
-    ...`,
-  ],
+    ...`
+  ]
 ]);
 ```
 
 **Proposed (CORRECT)**:
-
 ```typescript
 // system-prompt-builder.service.ts
 const template = ChatPromptTemplate.fromMessages([
@@ -361,8 +355,8 @@ const template = ChatPromptTemplate.fromMessages([
     - Always respond as the assistant, never as the user
     - Filter any thinking tokens (<think>, [THINKING], etc.) from your final response
     - Use available tools when appropriate
-    - Be conversational and helpful`,
-  ],
+    - Be conversational and helpful`
+  ]
 ]);
 
 // NO conversationSummary variable!
@@ -371,21 +365,19 @@ const template = ChatPromptTemplate.fromMessages([
 ### Change 2: Pass Full Conversation History to LLM
 
 **Current (LOSSY)**:
-
 ```typescript
 // app.service.ts - summarizeConversation
-const recentCount = Math.min(messages.length, 5); // Only 5 messages!
+const recentCount = Math.min(messages.length, 5);  // Only 5 messages!
 const recentMessages = messages.slice(-recentCount);
 ```
 
 **Proposed (COMPLETE)**:
-
 ```typescript
 // langchain.service.ts - executeConversation
 private convertChatHistory(messages: ChatMessage[]): BaseMessage[] {
   // Convert ALL messages, not just recent ones
   return messages.map((msg) => {
-    const isUser = msg.role === 'user' ||
+    const isUser = msg.role === 'user' || 
       (msg.type === 'chat' && msg.senderId !== msg.recipientId?.[0]);
     if (isUser) return new HumanMessage(msg.content);
     if (msg.role === 'assistant') return new AIMessage(msg.content);
@@ -406,13 +398,11 @@ const messages: BaseMessage[] = [
 ### Change 3: Remove conversationSummary Parameter
 
 **Files to modify:**
-
 1. `apps/ai-orchestrator/src/app/langchain.service.ts`
 2. `apps/ai-orchestrator/src/app/langgraph.service.ts`
 3. `apps/ai-orchestrator/src/app/app.service.ts`
 
 **Remove** `conversationSummary` parameter from:
-
 - `LangChainService.executeConversation()`
 - `LangGraphService.executeConversation()`
 - All callers of these methods
@@ -420,13 +410,11 @@ const messages: BaseMessage[] = [
 ### Change 4: Simplify app.service.ts
 
 **Remove**:
-
 - `summarizeConversation()` method (lines 220-236)
 - All calls to `summarizeConversation()`
 - `conversationSummary` variables
 
 **Simplify**:
-
 ```typescript
 // app.service.ts - updateConversation (SIMPLIFIED)
 async updateConversation(data: {
@@ -435,7 +423,7 @@ async updateConversation(data: {
 }): Promise<Partial<ChatMessage>[]> {
   const { conversation, aiPersonas } = data;
   const lastMessage = conversation.messages[conversation.messages.length - 1];
-
+  
   const profile: ProfileDto = await firstValueFrom(
     this.profileService.send(
       { cmd: ProfileCommands.Get },
@@ -495,7 +483,7 @@ async updateConversation(data: {
       timestamp: new Date(),
       type: 'chat',
     };
-
+    
     await firstValueFrom(
       this.chatCollectorService.send(
         { cmd: ChatCommands.POST_MESSAGE },
@@ -512,19 +500,15 @@ async updateConversation(data: {
 ## Implementation Plan
 
 ### Phase 1: Remove Conversation Summary from System Prompt (HIGH PRIORITY)
-
 **Goal**: Ensure system prompt is STATIC and contains only TELOS data
 
 **Tasks**:
-
 1. Update `SystemPromptBuilder.buildSystemPrompt()`
-
    - Remove `conversationSummary` from template
    - Remove `conversationSummary` from variables
    - Add clear response rules to system prompt
 
 2. Update `LangChainService.executeConversation()`
-
    - Remove `conversationSummary` parameter
    - Update system prompt building to not include summary
    - Ensure full conversation history is used
@@ -535,19 +519,15 @@ async updateConversation(data: {
    - `AppService.processNewProfile()`
 
 **Verification**:
-
 - System prompt should be identical for same persona/profile/project
 - Only conversation history (messages) should change between requests
 - LLM should see full context through message history, not summary
 
 ### Phase 2: Enhance Thinking Token Handling (MEDIUM PRIORITY)
-
 **Goal**: Ensure all thinking patterns are caught and emitted as events
 
 **Tasks**:
-
 1. Update `WorkflowControlService.extractThinkingTokens()`
-
    - Verify all patterns are caught: `<think>`, `[THINKING]`, `**Thinking:**`, etc.
    - Add more patterns if needed (model-specific)
 
@@ -556,19 +536,15 @@ async updateConversation(data: {
    - Test that thinking events reach frontend
 
 **Verification**:
-
 - No thinking tokens in final user-facing responses
 - Thinking tokens displayed in UI as "AI is thinking..."
 - All patterns successfully extracted
 
 ### Phase 3: Simplify Conversation Flow (LOW PRIORITY)
-
 **Goal**: Reduce complexity, eliminate redundant conversions
 
 **Tasks**:
-
 1. Consider removing LangGraph for simple conversations
-
    - Keep for complex multi-turn tool use
    - Direct LangChain call for simple Q&A
 
@@ -577,7 +553,6 @@ async updateConversation(data: {
    - Consistent conversion to LangChain format
 
 **Verification**:
-
 - Simpler code paths
 - Easier to debug and maintain
 - Same functionality with less complexity
@@ -587,19 +562,16 @@ async updateConversation(data: {
 ### After Implementation:
 
 1. **Consistent LLM Behavior**
-
    - System prompt is STATIC for each persona
    - LLM maintains consistent identity
    - No confusion from changing prompts
 
 2. **Better Context Handling**
-
    - LLM sees FULL conversation history
    - No lossy summaries
    - Better long-term context retention
 
 3. **Clean User Experience**
-
    - No thinking tokens in final responses
    - Real-time visibility into AI reasoning
    - Proper tool call notifications
@@ -612,9 +584,7 @@ async updateConversation(data: {
 ## Testing Plan
 
 ### Unit Tests:
-
 1. Test `SystemPromptBuilder.buildSystemPrompt()`
-
    - Verify no `conversationSummary` in output
    - Verify TELOS data is properly formatted
    - Verify static nature of prompt
@@ -624,7 +594,6 @@ async updateConversation(data: {
    - Verify extraction AND filtering
 
 ### Integration Tests:
-
 1. Test full conversation flow
    - Send user message
    - Verify system prompt is static
@@ -633,7 +602,6 @@ async updateConversation(data: {
    - Verify final response is clean
 
 ### Manual Tests:
-
 1. ForgeOfWill UI test
    - Chat with AI persona
    - Verify no thinking tokens in chat

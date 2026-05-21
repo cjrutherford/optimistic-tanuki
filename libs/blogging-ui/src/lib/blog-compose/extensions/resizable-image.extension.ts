@@ -14,12 +14,7 @@ declare module '@tiptap/core' {
       /**
        * Add an image with optional width
        */
-      setImage: (options: {
-        src: string;
-        alt?: string;
-        title?: string;
-        width?: string | number;
-      }) => ReturnType;
+      setImage: (options: { src: string; alt?: string; title?: string; width?: string | number }) => ReturnType;
     };
   }
 }
@@ -58,11 +53,11 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       },
       width: {
         default: null,
-        parseHTML: (element) => {
+        parseHTML: element => {
           const width = element.getAttribute('width');
           return width ? parseInt(width, 10) : null;
         },
-        renderHTML: (attributes) => {
+        renderHTML: attributes => {
           if (!attributes['width']) {
             return {};
           }
@@ -73,11 +68,11 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       },
       height: {
         default: null,
-        parseHTML: (element) => {
+        parseHTML: element => {
           const height = element.getAttribute('height');
           return height ? parseInt(height, 10) : null;
         },
-        renderHTML: (attributes) => {
+        renderHTML: attributes => {
           if (!attributes['height']) {
             return {};
           }
@@ -100,22 +95,17 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    return [
-      'img',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-    ];
+    return ['img', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)];
   },
 
   addCommands() {
     return {
-      setImage:
-        (options) =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: options,
-          });
-        },
+      setImage: options => ({ commands }) => {
+        return commands.insertContent({
+          type: this.name,
+          attrs: options,
+        });
+      },
     };
   },
 
@@ -124,7 +114,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       nodeInputRule({
         find: /!\[(.+|:?)]\((\S+)(?:(?:\s+)["'](\S+)["'])?\)/,
         type: this.type,
-        getAttributes: (match) => {
+        getAttributes: match => {
           const [, alt, src, title] = match;
 
           return { src, alt, title };
@@ -145,10 +135,8 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
             doc.descendants((node, pos) => {
               if (node.type.name === this.name) {
                 // Check if this image is selected
-                const selected =
-                  selection.from === pos ||
-                  (selection.from <= pos &&
-                    selection.to >= pos + node.nodeSize);
+                const selected = selection.from === pos ||
+                  (selection.from <= pos && selection.to >= pos + node.nodeSize);
 
                 if (selected) {
                   // Add decoration for resize handles
@@ -170,9 +158,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
               // Check if we're clicking on a resize handle
               if (target.classList.contains('resize-handle')) {
                 event.preventDefault();
-                const img = target
-                  .closest('.resizable-image-wrapper')
-                  ?.querySelector('img') as HTMLImageElement;
+                const img = target.closest('.resizable-image-wrapper')?.querySelector('img') as HTMLImageElement;
 
                 if (!img) return false;
 
@@ -195,9 +181,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
 
                   // Update the node attributes using getPos from the node view
                   // Find the wrapper and get its position
-                  const wrapper = target.closest(
-                    '.resizable-image-wrapper'
-                  ) as HTMLElement;
+                  const wrapper = target.closest('.resizable-image-wrapper') as HTMLElement;
                   if (wrapper) {
                     const pos = view.posAtDOM(wrapper, 0);
                     if (pos !== null && pos >= 0) {
@@ -209,7 +193,7 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
                         view.dispatch(
                           view.state.tr.setNodeMarkup(pos, undefined, {
                             ...node.attrs,
-                            width: newWidth, // numeric value
+                            width: newWidth,  // numeric value
                             height: newHeight, // numeric value
                           })
                         );
@@ -241,16 +225,8 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
       img.src = node.attrs['src'];
       if (node.attrs['alt']) img.alt = node.attrs['alt'];
       if (node.attrs['title']) img.title = node.attrs['title'];
-      if (node.attrs['width'])
-        img.style.width =
-          typeof node.attrs['width'] === 'number'
-            ? `${node.attrs['width']}px`
-            : node.attrs['width'];
-      if (node.attrs['height'])
-        img.style.height =
-          typeof node.attrs['height'] === 'number'
-            ? `${node.attrs['height']}px`
-            : node.attrs['height'];
+      if (node.attrs['width']) img.style.width = typeof node.attrs['width'] === 'number' ? `${node.attrs['width']}px` : node.attrs['width'];
+      if (node.attrs['height']) img.style.height = typeof node.attrs['height'] === 'number' ? `${node.attrs['height']}px` : node.attrs['height'];
 
       dom.appendChild(img);
 
@@ -270,18 +246,9 @@ export const ResizableImage = Node.create<ResizableImageOptions>({
 
           img.src = updatedNode.attrs['src'];
           if (updatedNode.attrs['alt']) img.alt = updatedNode.attrs['alt'];
-          if (updatedNode.attrs['title'])
-            img.title = updatedNode.attrs['title'];
-          if (updatedNode.attrs['width'])
-            img.style.width =
-              typeof updatedNode.attrs['width'] === 'number'
-                ? `${updatedNode.attrs['width']}px`
-                : updatedNode.attrs['width'];
-          if (updatedNode.attrs['height'])
-            img.style.height =
-              typeof updatedNode.attrs['height'] === 'number'
-                ? `${updatedNode.attrs['height']}px`
-                : updatedNode.attrs['height'];
+          if (updatedNode.attrs['title']) img.title = updatedNode.attrs['title'];
+          if (updatedNode.attrs['width']) img.style.width = typeof updatedNode.attrs['width'] === 'number' ? `${updatedNode.attrs['width']}px` : updatedNode.attrs['width'];
+          if (updatedNode.attrs['height']) img.style.height = typeof updatedNode.attrs['height'] === 'number' ? `${updatedNode.attrs['height']}px` : updatedNode.attrs['height'];
 
           return true;
         },

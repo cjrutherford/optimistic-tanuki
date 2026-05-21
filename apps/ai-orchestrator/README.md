@@ -30,7 +30,6 @@ pnpm exec nx test ai-orchestrator
 ## Model Configuration
 
 The AI Orchestrator uses multiple specialized models for different tasks:
-
 - **Workflow Control Model**: Quickly detects if a prompt requires tool calling
 - **Tool Calling Model**: Optimized for executing actions through MCP tools
 - **Conversational Model**: Generates natural language responses

@@ -614,7 +614,7 @@ export class StartElectionDto {
   endsAt?: Date;
 }
 
-export class NominateDto {}
+export class NominateDto { }
 
 export class VoteDto {
   @ApiProperty()

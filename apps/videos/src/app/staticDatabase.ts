@@ -16,7 +16,7 @@ import { CommunityBroadcast20260417143000 } from '../../migrations/2026041714300
 import { VideoProcessingPipeline20260418170000 } from '../../migrations/20260418170000-video-processing-pipeline';
 
 const config = yaml.load(
-  fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
+  fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8'),
 ) as Record<string, any>;
 const {
   database: {

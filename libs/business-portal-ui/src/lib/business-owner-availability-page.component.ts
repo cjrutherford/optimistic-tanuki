@@ -17,13 +17,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'business-owner-availability-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    FullCalendarModule,
-    ButtonComponent,
-    CardComponent,
-  ],
+  imports: [CommonModule, FormsModule, FullCalendarModule, ButtonComponent, CardComponent],
   template: `
     <section class="stack">
       <otui-card>
@@ -37,81 +31,52 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <form class="form" (ngSubmit)="saveAvailability()">
             <label>
               Day of week
-              <select
-                [(ngModel)]="availabilityDraft.dayOfWeek"
-                name="dayOfWeek"
-              >
+              <select [(ngModel)]="availabilityDraft.dayOfWeek" name="dayOfWeek">
                 @for (day of dayOptions; track day.value) {
-                <option [ngValue]="day.value">{{ day.label }}</option>
+                  <option [ngValue]="day.value">{{ day.label }}</option>
                 }
               </select>
             </label>
             <label>
               Start time
-              <input
-                [(ngModel)]="availabilityDraft.startTime"
-                name="startTime"
-                type="time"
-              />
+              <input [(ngModel)]="availabilityDraft.startTime" name="startTime" type="time" />
             </label>
             <label>
               End time
-              <input
-                [(ngModel)]="availabilityDraft.endTime"
-                name="endTime"
-                type="time"
-              />
+              <input [(ngModel)]="availabilityDraft.endTime" name="endTime" type="time" />
             </label>
             <label>
               Hourly rate
-              <input
-                [(ngModel)]="availabilityDraft.hourlyRate"
-                name="hourlyRate"
-                type="number"
-                min="0"
-              />
+              <input [(ngModel)]="availabilityDraft.hourlyRate" name="hourlyRate" type="number" min="0" />
             </label>
             <label>
               Service type
-              <input
-                [(ngModel)]="availabilityDraft.serviceType"
-                name="serviceType"
-              />
+              <input [(ngModel)]="availabilityDraft.serviceType" name="serviceType" />
             </label>
             <otui-button type="submit" variant="primary">
-              {{
-                editingAvailabilityId()
-                  ? 'Update weekly slot'
-                  : 'Add weekly slot'
-              }}
+              {{ editingAvailabilityId() ? 'Update weekly slot' : 'Add weekly slot' }}
             </otui-button>
           </form>
 
           <div class="list">
             @for (entry of availabilities(); track entry.id) {
-            <div class="row">
-              <div>
-                <strong>{{ dayLabel(entry.dayOfWeek) }}</strong>
-                <p>{{ availabilitySummary(entry) }}</p>
-                <p>{{ entry.serviceType || 'General consultation' }}</p>
+              <div class="row">
+                <div>
+                  <strong>{{ dayLabel(entry.dayOfWeek) }}</strong>
+                  <p>{{ availabilitySummary(entry) }}</p>
+                  <p>{{ entry.serviceType || 'General consultation' }}</p>
+                </div>
+                <div class="row-actions">
+                  <otui-button variant="outlined" (action)="startEditAvailability(entry)">
+                    Edit
+                  </otui-button>
+                  <otui-button variant="outlined" (action)="removeAvailability(entry.id)">
+                    Remove
+                  </otui-button>
+                </div>
               </div>
-              <div class="row-actions">
-                <otui-button
-                  variant="outlined"
-                  (action)="startEditAvailability(entry)"
-                >
-                  Edit
-                </otui-button>
-                <otui-button
-                  variant="outlined"
-                  (action)="removeAvailability(entry.id)"
-                >
-                  Remove
-                </otui-button>
-              </div>
-            </div>
             } @empty {
-            <p class="empty">No weekly availability published yet.</p>
+              <p class="empty">No weekly availability published yet.</p>
             }
           </div>
         </otui-card>
@@ -128,35 +93,19 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
             </label>
             <label>
               Start
-              <input
-                [(ngModel)]="overrideDraft.startTime"
-                name="overrideStart"
-                type="datetime-local"
-              />
+              <input [(ngModel)]="overrideDraft.startTime" name="overrideStart" type="datetime-local" />
             </label>
             <label>
               End
-              <input
-                [(ngModel)]="overrideDraft.endTime"
-                name="overrideEnd"
-                type="datetime-local"
-              />
+              <input [(ngModel)]="overrideDraft.endTime" name="overrideEnd" type="datetime-local" />
             </label>
             <label>
               Hourly rate
-              <input
-                [(ngModel)]="overrideDraft.hourlyRate"
-                name="overrideRate"
-                type="number"
-                min="0"
-              />
+              <input [(ngModel)]="overrideDraft.hourlyRate" name="overrideRate" type="number" min="0" />
             </label>
             <label>
               Service type
-              <input
-                [(ngModel)]="overrideDraft.serviceType"
-                name="overrideServiceType"
-              />
+              <input [(ngModel)]="overrideDraft.serviceType" name="overrideServiceType" />
             </label>
             <otui-button type="submit" variant="primary">
               {{ editingOverrideId() ? 'Update override' : 'Add override' }}
@@ -165,32 +114,23 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
           <div class="list">
             @for (entry of overrides(); track entry.id) {
-            <div class="row">
-              <div>
-                <strong>{{ entry.mode | titlecase }}</strong>
-                <p>
-                  {{ entry.startTime | date : 'medium' }} -
-                  {{ entry.endTime | date : 'medium' }}
-                </p>
-                <p>{{ entry.serviceType || 'General consultation' }}</p>
+              <div class="row">
+                <div>
+                  <strong>{{ entry.mode | titlecase }}</strong>
+                  <p>{{ entry.startTime | date:'medium' }} - {{ entry.endTime | date:'medium' }}</p>
+                  <p>{{ entry.serviceType || 'General consultation' }}</p>
+                </div>
+                <div class="row-actions">
+                  <otui-button variant="outlined" (action)="startEditOverride(entry)">
+                    Edit
+                  </otui-button>
+                  <otui-button variant="outlined" (action)="removeOverride(entry.id)">
+                    Remove
+                  </otui-button>
+                </div>
               </div>
-              <div class="row-actions">
-                <otui-button
-                  variant="outlined"
-                  (action)="startEditOverride(entry)"
-                >
-                  Edit
-                </otui-button>
-                <otui-button
-                  variant="outlined"
-                  (action)="removeOverride(entry.id)"
-                >
-                  Remove
-                </otui-button>
-              </div>
-            </div>
             } @empty {
-            <p class="empty">No date-specific overrides yet.</p>
+              <p class="empty">No date-specific overrides yet.</p>
             }
           </div>
         </otui-card>
@@ -319,10 +259,7 @@ export class BusinessOwnerAvailabilityPageComponent {
       endTime: new Date(this.overrideDraft.endTime).toISOString(),
     };
     const request$ = this.editingOverrideId()
-      ? this.api.updateOwnerAvailabilityOverride(
-          this.editingOverrideId()!,
-          payload
-        )
+      ? this.api.updateOwnerAvailabilityOverride(this.editingOverrideId()!, payload)
       : this.api.createOwnerAvailabilityOverride(payload);
 
     request$.subscribe(() => {
@@ -336,9 +273,7 @@ export class BusinessOwnerAvailabilityPageComponent {
   }
 
   dayLabel(dayOfWeek: number): string {
-    return (
-      this.dayOptions.find((day) => day.value === dayOfWeek)?.label ?? 'Unknown'
-    );
+    return this.dayOptions.find((day) => day.value === dayOfWeek)?.label ?? 'Unknown';
   }
 
   availabilitySummary(entry: Availability): string {
@@ -389,8 +324,7 @@ export class BusinessOwnerAvailabilityPageComponent {
       })),
       ...this.overrides().map((entry) => ({
         id: entry.id,
-        title:
-          entry.mode === 'blocked' ? 'Blocked time' : 'Special availability',
+        title: entry.mode === 'blocked' ? 'Blocked time' : 'Special availability',
         start: entry.startTime,
         end: entry.endTime,
         backgroundColor: entry.mode === 'blocked' ? '#b91c1c' : '#2563eb',
@@ -406,8 +340,6 @@ export class BusinessOwnerAvailabilityPageComponent {
   private toDateTimeLocal(value: string | Date): string {
     const date = new Date(value);
     const offset = date.getTimezoneOffset();
-    return new Date(date.getTime() - offset * 60_000)
-      .toISOString()
-      .slice(0, 16);
+    return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
   }
 }

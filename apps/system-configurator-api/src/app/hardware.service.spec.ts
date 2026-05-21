@@ -30,9 +30,7 @@ const createRepository = <T extends { id?: string }>(
       }
 
       return rows.filter((row) =>
-        Object.entries(where).every(
-          ([key, value]) => (row as Record<string, unknown>)[key] === value
-        )
+        Object.entries(where).every(([key, value]) => (row as Record<string, unknown>)[key] === value)
       );
     }),
     findOne: jest.fn(async (options?: unknown) => {
@@ -40,11 +38,7 @@ const createRepository = <T extends { id?: string }>(
         return null;
       }
 
-      const where = (
-        options as {
-          where?: Record<string, unknown> | Array<Record<string, unknown>>;
-        }
-      ).where;
+      const where = (options as { where?: Record<string, unknown> | Array<Record<string, unknown>> }).where;
       if (!where) {
         return null;
       }

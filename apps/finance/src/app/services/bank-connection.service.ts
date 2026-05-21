@@ -1,6 +1,10 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Account, BankConnection, LinkedBankAccount } from '../../entities';
+import {
+  Account,
+  BankConnection,
+  LinkedBankAccount,
+} from '../../entities';
 import { Repository } from 'typeorm';
 import {
   BankConnectionCreateDto,
@@ -154,16 +158,12 @@ export class BankConnectionService {
       await this.linkedAccountRepo.save(linkedAccounts);
     }
 
-    await this.transactionService.syncBankFeed(
-      connection.id,
-      {
-        userId: payload.userId,
-        profileId: payload.profileId,
-        tenantId: payload.tenantId,
-        appScope: payload.appScope,
-      },
-      []
-    );
+    await this.transactionService.syncBankFeed(connection.id, {
+      userId: payload.userId,
+      profileId: payload.profileId,
+      tenantId: payload.tenantId,
+      appScope: payload.appScope,
+    }, []);
 
     return connection;
   }
@@ -206,10 +206,7 @@ export class BankConnectionService {
       },
     });
     const accountMap = new Map(
-      linkedAccounts.map((account) => [
-        account.providerAccountId,
-        account.financeAccountId,
-      ])
+      linkedAccounts.map((account) => [account.providerAccountId, account.financeAccountId])
     );
     const providerSync = await this.plaidProvider.syncTransactions(
       connection.accessToken,
@@ -219,9 +216,7 @@ export class BankConnectionService {
       transactions.length > 0
         ? transactions
         : providerSync.transactions
-            .filter((transaction) =>
-              accountMap.has(transaction.providerAccountId)
-            )
+            .filter((transaction) => accountMap.has(transaction.providerAccountId))
             .map((transaction) => ({
               accountId: accountMap.get(transaction.providerAccountId)!,
               amount: Math.abs(transaction.amount),
@@ -250,11 +245,7 @@ export class BankConnectionService {
       lastError: null,
     });
 
-    const result = await this.transactionService.syncBankFeed(
-      id,
-      scope,
-      bankTransactions
-    );
+    const result = await this.transactionService.syncBankFeed(id, scope, bankTransactions);
     await this.connectionRepo.update(id, {
       lastSuccessfulSyncAt: new Date(),
       lastCursor: providerSync.nextCursor,
@@ -262,9 +253,7 @@ export class BankConnectionService {
     return result;
   }
 
-  async processWebhook(
-    payload: Record<string, unknown>
-  ): Promise<{ accepted: true }> {
+  async processWebhook(payload: Record<string, unknown>): Promise<{ accepted: true }> {
     const itemId =
       typeof payload.item_id === 'string' ? payload.item_id : undefined;
     if (!itemId) {
@@ -280,9 +269,7 @@ export class BankConnectionService {
 
     await this.connectionRepo.update(connection.id, {
       status: this.plaidProvider.mapWebhookStatus(
-        typeof payload.webhook_code === 'string'
-          ? payload.webhook_code
-          : undefined
+        typeof payload.webhook_code === 'string' ? payload.webhook_code : undefined
       ),
     });
     return { accepted: true };

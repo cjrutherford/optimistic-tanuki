@@ -36,9 +36,8 @@ interface AttentionItem {
         <p class="hero-kicker">Platform Owner Console</p>
         <h1>Unified operator control plane</h1>
         <p>
-          Govern access, steer user-facing experiences, manage business
-          operations, and intervene across communities from a single
-          workspace-oriented console.
+          Govern access, steer user-facing experiences, manage business operations,
+          and intervene across communities from a single workspace-oriented console.
         </p>
       </header>
 
@@ -70,16 +69,11 @@ interface AttentionItem {
       <section class="workspace-panel">
         <div class="panel-heading">
           <h2>Operator workspaces</h2>
-          <p>
-            Each workspace organizes existing tools into one management outcome.
-          </p>
+          <p>Each workspace organizes existing tools into one management outcome.</p>
         </div>
         <div class="workspace-grid">
           @for (workspace of workspaces; track workspace.path) {
-          <a
-            class="workspace-card"
-            [routerLink]="['/dashboard', workspace.path]"
-          >
+          <a class="workspace-card" [routerLink]="['/dashboard', workspace.path]">
             <span>{{ workspace.label }}</span>
             <h3>{{ workspace.summary }}</h3>
             <p>{{ workspace.description }}</p>
@@ -118,16 +112,9 @@ interface AttentionItem {
       .workspace-panel {
         border-radius: 24px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: radial-gradient(
-            circle at top right,
-            rgba(10, 108, 116, 0.08),
-            transparent 34%
-          ),
-          linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.96),
-            rgba(246, 248, 248, 0.92)
-          );
+        background:
+          radial-gradient(circle at top right, rgba(10, 108, 116, 0.08), transparent 34%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 248, 248, 0.92));
         padding: 24px;
       }
 
@@ -297,8 +284,7 @@ export class OperatorOverviewComponent implements OnInit {
       {
         label: 'Service Appointments',
         value: String(data.appointments.length),
-        detail:
-          'Bookings and availability controls remain under direct operator review.',
+        detail: 'Bookings and availability controls remain under direct operator review.',
       },
     ];
   }
@@ -311,11 +297,10 @@ export class OperatorOverviewComponent implements OnInit {
     cities: CommunityDto[]
   ): AttentionItem[] {
     const draftConfigs = configs.filter((config) => !config.active).length;
-    const openOrders = orders.filter(
-      (order) =>
-        !['complete', 'completed', 'fulfilled', 'cancelled'].includes(
-          order.status?.toLowerCase?.() ?? ''
-        )
+    const openOrders = orders.filter((order) =>
+      !['complete', 'completed', 'fulfilled', 'cancelled'].includes(
+        order.status?.toLowerCase?.() ?? ''
+      )
     ).length;
     const pendingAppointments = appointments.filter((appointment) =>
       ['pending', 'requested', 'awaiting_approval'].includes(

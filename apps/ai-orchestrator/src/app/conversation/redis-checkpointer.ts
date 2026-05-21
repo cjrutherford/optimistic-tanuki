@@ -123,8 +123,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
         return undefined;
       }
 
-      const parsed: RedisCheckpoint =
-        typeof data === 'string' ? JSON.parse(data) : (data as RedisCheckpoint);
+      const parsed: RedisCheckpoint = typeof data === 'string' ? JSON.parse(data) : data as RedisCheckpoint;
       this.logger.debug('Retrieved checkpoint successfully');
       return parsed.checkpoint;
     } catch (error) {
@@ -204,10 +203,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
       for (const key of keys) {
         const data = await this.client.get(key);
         if (data) {
-          const parsed: RedisCheckpoint =
-            typeof data === 'string'
-              ? JSON.parse(data)
-              : (data as RedisCheckpoint);
+          const parsed: RedisCheckpoint = typeof data === 'string' ? JSON.parse(data) : data as RedisCheckpoint;
           checkpoints.push(parsed.checkpoint);
         }
       }
@@ -266,8 +262,7 @@ export class RedisCheckpointer implements OnModuleDestroy {
     const data = await this.client.get(key);
 
     if (data) {
-      const parsed: RedisCheckpoint =
-        typeof data === 'string' ? JSON.parse(data) : (data as RedisCheckpoint);
+      const parsed: RedisCheckpoint = typeof data === 'string' ? JSON.parse(data) : data as RedisCheckpoint;
       return { checkpoint: latest, metadata: parsed.metadata };
     }
 

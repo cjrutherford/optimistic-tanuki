@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { EmailProvider, EmailMessage, EmailSendResult } from '../interfaces';
+import {
+  EmailProvider,
+  EmailMessage,
+  EmailSendResult,
+} from '../interfaces';
 
 export interface HttpApiEmailConfig {
   /** The API endpoint URL */
@@ -71,9 +75,7 @@ export class HttpApiEmailProvider implements EmailProvider {
       }
 
       const result = await response.json();
-      this.logger.debug(
-        `Email sent via ${this.name}: ${JSON.stringify(result)}`
-      );
+      this.logger.debug(`Email sent via ${this.name}: ${JSON.stringify(result)}`);
       return { success: true, messageId: result.id || result.messageId };
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);

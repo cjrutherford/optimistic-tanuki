@@ -43,7 +43,7 @@ export class AppController {
 
   @MessagePattern({ cmd: BillingCommands.PREVIEW_INVOICE })
   previewInvoice(
-    @Payload() payload: InvoicePreviewInput | PeriodInvoicePreviewInput
+    @Payload() payload: InvoicePreviewInput | PeriodInvoicePreviewInput,
   ) {
     if ('periodStart' in payload) {
       return this.billingService.previewInvoiceForPeriod(payload);

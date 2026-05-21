@@ -6,8 +6,7 @@ import { FinanceService } from './services/finance.service';
 const financeServiceStub = {
   getWorkspaceSummary: async () => ({
     workspace: 'personal' as const,
-    headline:
-      'Fin Commander keeps every plan, ledger, and scenario in formation.',
+    headline: 'Fin Commander keeps every plan, ledger, and scenario in formation.',
     metrics: {
       accountCount: 3,
       budgetCount: 4,
@@ -29,10 +28,8 @@ const financeServiceStub = {
         ruleId: 'review-freshness',
         title: 'Review the checking account baseline',
         message: 'Balances have drifted from the last reconciled checkpoint.',
-        explanation:
-          'A quick review keeps plan projections and import matching stable.',
-        whyItMatters:
-          'Scenario outputs are only as good as the source cash position.',
+        explanation: 'A quick review keeps plan projections and import matching stable.',
+        whyItMatters: 'Scenario outputs are only as good as the source cash position.',
         category: 'data-hygiene' as const,
         severity: 'warning' as const,
         actionLabel: 'Open accounts',

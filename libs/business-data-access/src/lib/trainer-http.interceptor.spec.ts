@@ -2,11 +2,7 @@ import {
   HttpTestingController,
   provideHttpClientTesting,
 } from '@angular/common/http/testing';
-import {
-  HttpClient,
-  provideHttpClient,
-  withInterceptors,
-} from '@angular/common/http';
+import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { businessHttpInterceptor } from './business-http.interceptor';
 
@@ -46,9 +42,7 @@ describe('businessHttpInterceptor', () => {
     http.put('/api/business/site-config', {}).subscribe();
 
     const request = httpMock.expectOne('/api/business/site-config');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer business-site-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBe('Bearer business-site-token');
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush({ ok: true });
   });
@@ -68,9 +62,7 @@ describe('businessHttpInterceptor', () => {
     http.get('/api/business/client/routines').subscribe();
 
     const request = httpMock.expectOne('/api/business/client/routines');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBe('Bearer client-token');
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush([]);
   });

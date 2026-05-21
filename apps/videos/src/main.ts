@@ -27,7 +27,9 @@ async function bootstrap() {
   );
 
   await app.listen();
-  Logger.log(`🚀 Video service is running on: ${port}`);
+  Logger.log(
+    `🚀 Video service is running on: ${port}`
+  );
 }
 
 bootstrap();

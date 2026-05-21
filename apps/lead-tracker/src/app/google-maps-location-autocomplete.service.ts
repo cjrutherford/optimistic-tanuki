@@ -96,16 +96,16 @@ export class GoogleMapsLocationAutocompleteService {
       }
 
       const status =
-        payloadResult.payload?.error?.status ||
-        payloadResult.payload?.status ||
-        'OK';
+        payloadResult.payload?.error?.status || payloadResult.payload?.status || 'OK';
       const errorMessage =
         payloadResult.payload?.error?.message ||
         payloadResult.payload?.error_message;
       if (status !== 'OK' && status !== 'ZERO_RESULTS') {
         this.logger.warn(
           `Google Maps autocomplete returned a non-OK payload for "${normalizedQuery}": ${status}${
-            errorMessage ? ` - ${errorMessage}` : ''
+            errorMessage
+              ? ` - ${errorMessage}`
+              : ''
           }`
         );
         return [];

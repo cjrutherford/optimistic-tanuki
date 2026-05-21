@@ -287,8 +287,7 @@ export class LangChainAgentService {
             messageChunk = stateChunk;
             allMessages.push(messageChunk);
             this.logger.debug(
-              `Messages mode - message type: ${
-                messageChunk._getType?.() || typeof messageChunk
+              `Messages mode - message type: ${messageChunk._getType?.() || typeof messageChunk
               }`
             );
           }
@@ -363,8 +362,7 @@ export class LangChainAgentService {
         `Extracted output: ${output?.substring(0, 100) || '(empty)'}...`
       );
       this.logger.debug(
-        `Final message type: ${
-          lastMessage?._getType?.() || lastMessage?.type || 'unknown'
+        `Final message type: ${lastMessage?._getType?.() || lastMessage?.type || 'unknown'
         }`
       );
       this.logger.debug(
@@ -455,9 +453,8 @@ export class LangChainAgentService {
 
             // Update output to reflect the action taken
             return {
-              output: `I've executed the ${
-                manualToolCall.name
-              } tool. Result: ${JSON.stringify(result.result)}`,
+              output: `I've executed the ${manualToolCall.name
+                } tool. Result: ${JSON.stringify(result.result)}`,
               intermediateSteps: finalMessages.map((msg: any) => ({
                 action: msg.tool_calls?.[0]?.name || 'response',
                 observation: msg.content || '',

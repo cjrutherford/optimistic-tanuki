@@ -15,7 +15,7 @@ import {
 } from './helpers/local-hub-api';
 
 async function createSessionWithCommunity(
-  request: Parameters<typeof createAuthenticatedSession>[0]
+  request: Parameters<typeof createAuthenticatedSession>[0],
 ): Promise<{
   session: AuthSession;
   community: LocalHubCommunity | undefined;
@@ -53,7 +53,7 @@ test.describe('Authenticated community membership', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [400]);
@@ -67,7 +67,7 @@ test.describe('Authenticated community membership', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expect(response.ok()).toBeTruthy();
@@ -81,16 +81,24 @@ test.describe('Authenticated community content', () => {
     const { session, community } = await createSessionWithCommunity(request);
     test.skip(!community?.id, 'No community is available for posts');
 
-    await createPost(request, session.token, community.id, 'E2E Test Post');
+    await createPost(
+      request,
+      session.token,
+      community.id,
+      'E2E Test Post',
+    );
 
-    const response = await request.post(apiUrl('/api/social/post/find'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
+    const response = await request.post(
+      apiUrl('/api/social/post/find'),
+      {
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+        },
+        data: {
+          criteria: { communityId: community.id },
+        },
       },
-      data: {
-        criteria: { communityId: community.id },
-      },
-    });
+    );
 
     expect(response.ok()).toBeTruthy();
     const posts = await response.json();
@@ -105,19 +113,22 @@ test.describe('Authenticated community content', () => {
       request,
       session.token,
       community.id,
-      'Post for Voting Test'
+      'Post for Voting Test',
     );
     test.skip(!post?.id, 'No test post is available for voting');
 
-    const voteResponse = await request.post(apiUrl('/api/social/vote'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
+    const voteResponse = await request.post(
+      apiUrl('/api/social/vote'),
+      {
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+        },
+        data: {
+          postId: post.id,
+          value: 1,
+        },
       },
-      data: {
-        postId: post.id,
-        value: 1,
-      },
-    });
+    );
 
     expectOkOrStatus(voteResponse, [400]);
   });
@@ -130,19 +141,22 @@ test.describe('Authenticated community content', () => {
       request,
       session.token,
       community.id,
-      'Post for Comment Test'
+      'Post for Comment Test',
     );
     test.skip(!post?.id, 'No test post is available for comments');
 
-    const commentResponse = await request.post(apiUrl('/api/social/comment'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
+    const commentResponse = await request.post(
+      apiUrl('/api/social/comment'),
+      {
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+        },
+        data: {
+          postId: post.id,
+          content: 'E2E Test Comment',
+        },
       },
-      data: {
-        postId: post.id,
-        content: 'E2E Test Comment',
-      },
-    });
+    );
 
     expectOkOrStatus(commentResponse, [400]);
   });
@@ -179,7 +193,7 @@ test.describe('Authenticated classified ads', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [500]);
@@ -201,7 +215,7 @@ test.describe('Authenticated community management', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [404]);
@@ -217,7 +231,7 @@ test.describe('Authenticated community management', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [404]);
@@ -235,7 +249,7 @@ test.describe('Authenticated business pages', () => {
         headers: {
           Authorization: `Bearer ${session.token}`,
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [500]);

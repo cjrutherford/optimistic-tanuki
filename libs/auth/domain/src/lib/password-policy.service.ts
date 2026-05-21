@@ -24,13 +24,13 @@ export class PasswordPolicyService {
       new Uint8Array(
         passwordBuffer.buffer,
         passwordBuffer.byteOffset,
-        passwordBuffer.byteLength
+        passwordBuffer.byteLength,
       ),
       new Uint8Array(
         confirmationBuffer.buffer,
         confirmationBuffer.byteOffset,
-        confirmationBuffer.byteLength
-      )
+        confirmationBuffer.byteLength,
+      ),
     );
 
     if (!matches) {

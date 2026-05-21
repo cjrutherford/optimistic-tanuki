@@ -7,7 +7,9 @@ describe('NavigationService', () => {
 
   function createService(registry: object, platformId = 'browser') {
     TestBed.configureTestingModule({
-      providers: [{ provide: PLATFORM_ID, useValue: platformId }],
+      providers: [
+        { provide: PLATFORM_ID, useValue: platformId },
+      ],
     });
 
     return TestBed.runInInjectionContext(

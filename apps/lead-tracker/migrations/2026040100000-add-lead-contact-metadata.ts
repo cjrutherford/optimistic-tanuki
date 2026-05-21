@@ -1,6 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddLeadContactMetadata2026040100000 implements MigrationInterface {
+export class AddLeadContactMetadata2026040100000
+  implements MigrationInterface
+{
   name = 'AddLeadContactMetadata2026040100000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

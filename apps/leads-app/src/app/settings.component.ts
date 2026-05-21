@@ -31,11 +31,7 @@ type LeadsProfileFormState = {
         <form *ngIf="profileId" (ngSubmit)="saveProfile()">
           <label>
             Name
-            <input
-              [(ngModel)]="profile.profileName"
-              name="profileName"
-              required
-            />
+            <input [(ngModel)]="profile.profileName" name="profileName" required />
           </label>
 
           <label>

@@ -12,18 +12,6 @@ export const appRoutes: Route[] = [
   { path: 'bookings', component: BookingsComponent },
   {
     path: 'forum',
-    loadChildren: () =>
-      import('@optimistic-tanuki/forum-ui').then((m) =>
-        m.provideForumRoutes(
-          () =>
-            Promise.resolve([
-              'forum.topic.create',
-              'forum.thread.create',
-              'forum.post.create',
-            ]),
-          () => true,
-          () => 'store-guest'
-        )
-      ),
+    loadChildren: () => import('@optimistic-tanuki/forum-ui').then(m => m.provideForumRoutes(() => Promise.resolve(['forum.topic.create', 'forum.thread.create', 'forum.post.create']), () => true, () => 'store-guest')),
   },
 ];

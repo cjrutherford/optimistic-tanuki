@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddTopicIntentAndExcludedTerms2026033000000
-  implements MigrationInterface
-{
+export class AddTopicIntentAndExcludedTerms2026033000000 implements MigrationInterface {
   name = 'AddTopicIntentAndExcludedTerms2026033000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -24,11 +22,7 @@ export class AddTopicIntentAndExcludedTerms2026033000000
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "lead_topics" DROP COLUMN "discoveryIntent"`
-    );
-    await queryRunner.query(
-      `ALTER TABLE "lead_topics" DROP COLUMN "excludedTerms"`
-    );
+    await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "discoveryIntent"`);
+    await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "excludedTerms"`);
   }
 }

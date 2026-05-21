@@ -515,7 +515,10 @@ export class ProjectPlanningController {
   @Get('task-notes/:id')
   async findTaskNoteById(@Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.FIND_ONE }, id)
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ONE },
+        id
+      )
     );
   }
 
@@ -525,7 +528,10 @@ export class ProjectPlanningController {
   @Get('task-notes')
   async findAllTaskNotes() {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        {}
+      )
     );
   }
 
@@ -589,7 +595,10 @@ export class ProjectPlanningController {
   @Delete('task-notes/:id')
   async deleteTaskNote(@Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.REMOVE }, id)
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.REMOVE },
+        id
+      )
     );
   }
 

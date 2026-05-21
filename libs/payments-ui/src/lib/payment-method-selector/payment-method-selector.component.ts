@@ -108,40 +108,35 @@ export class PaymentMethodSelectorComponent implements OnChanges {
       label: 'Card',
       icon: '◧',
       description: 'Hosted checkout session',
-      details:
-        'Use the primary HAI checkout path with redirect-based payment confirmation.',
+      details: 'Use the primary HAI checkout path with redirect-based payment confirmation.',
     },
     {
       value: 'cash-app' as const,
       label: 'Cash App',
       icon: '¤',
       description: 'Out-of-platform transfer',
-      details:
-        'Collect payment intent and confirmation against the order record.',
+      details: 'Collect payment intent and confirmation against the order record.',
     },
     {
       value: 'venmo' as const,
       label: 'Venmo',
       icon: '◌',
       description: 'Out-of-platform transfer',
-      details:
-        'Capture the manual payment method and continue through order verification.',
+      details: 'Capture the manual payment method and continue through order verification.',
     },
     {
       value: 'zelle' as const,
       label: 'Zelle',
       icon: '▣',
       description: 'Bank transfer',
-      details:
-        'Record Zelle as the chosen method and keep shipping/order submission in-app.',
+      details: 'Record Zelle as the chosen method and keep shipping/order submission in-app.',
     },
     {
       value: 'cash' as const,
       label: 'Cash',
       icon: '△',
       description: 'In-person settlement',
-      details:
-        'Reserve for assisted or local deployments where HAI staff handles final exchange.',
+      details: 'Reserve for assisted or local deployments where HAI staff handles final exchange.',
     },
   ];
 
@@ -149,9 +144,7 @@ export class PaymentMethodSelectorComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selected']?.currentValue) {
-      this.selectedMethod.set(
-        changes['selected'].currentValue as PaymentMethodOption
-      );
+      this.selectedMethod.set(changes['selected'].currentValue as PaymentMethodOption);
     }
   }
 
@@ -165,6 +158,8 @@ export class PaymentMethodSelectorComponent implements OnChanges {
   }
 
   detailsFor(method: PaymentMethodOption): string {
-    return this.methods.find((item) => item.value === method)?.details || '';
+    return (
+      this.methods.find((item) => item.value === method)?.details || ''
+    );
   }
 }

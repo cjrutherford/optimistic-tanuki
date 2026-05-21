@@ -32,7 +32,10 @@ export {
   QueryTaskTimeEntryDto,
 } from './update-task-time-entry.dto';
 export { UpdateTaskTagDto, QueryTaskTagDto } from './update-task-tag.dto';
-export { UpdateTaskNoteDto, QueryTaskNoteDto } from './update-task-note.dto';
+export {
+  UpdateTaskNoteDto,
+  QueryTaskNoteDto,
+} from './update-task-note.dto';
 export {
   TaskAnalyticsDto,
   ProjectAnalyticsDto,

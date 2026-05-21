@@ -4,13 +4,7 @@ import { Observable } from 'rxjs';
 
 export interface AiPromptRequest {
   userInput: string;
-  contextType:
-    | 'affirmation'
-    | 'plannedPleasurable'
-    | 'judgement'
-    | 'nonJudgement'
-    | 'mindfulActivity'
-    | 'gratitude';
+  contextType: 'affirmation' | 'plannedPleasurable' | 'judgement' | 'nonJudgement' | 'mindfulActivity' | 'gratitude';
   additionalContext?: string;
 }
 
@@ -43,36 +37,35 @@ export class AiAssistanceService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/wellness/ai';
 
-  generateWellnessPrompt(
-    request: AiPromptRequest
-  ): Observable<AiPromptResponse> {
-    return this.http.post<AiPromptResponse>(`${this.baseUrl}/prompt`, request);
+  generateWellnessPrompt(request: AiPromptRequest): Observable<AiPromptResponse> {
+    return this.http.post<AiPromptResponse>(
+      `${this.baseUrl}/prompt`,
+      request
+    );
   }
 
   getContext(contextType: string): Observable<WellnessContextResponse> {
-    return this.http.post<WellnessContextResponse>(`${this.baseUrl}/context`, {
-      contextType,
-    });
+    return this.http.post<WellnessContextResponse>(
+      `${this.baseUrl}/context`,
+      { contextType }
+    );
   }
 
   getAffirmation(userGoals?: string[]): Observable<AffirmationResponse> {
-    return this.http.post<AffirmationResponse>(`${this.baseUrl}/affirmation`, {
-      userGoals,
-    });
+    return this.http.post<AffirmationResponse>(
+      `${this.baseUrl}/affirmation`,
+      { userGoals }
+    );
   }
 
-  getMindfulActivitySuggestion(
-    previousActivities?: string[]
-  ): Observable<MindfulActivityResponse> {
+  getMindfulActivitySuggestion(previousActivities?: string[]): Observable<MindfulActivityResponse> {
     return this.http.post<MindfulActivityResponse>(
       `${this.baseUrl}/mindful-activity`,
       { previousActivities }
     );
   }
 
-  analyzeGratitudeEntry(
-    gratitudeEntry: string
-  ): Observable<GratitudeAnalysisResponse> {
+  analyzeGratitudeEntry(gratitudeEntry: string): Observable<GratitudeAnalysisResponse> {
     return this.http.post<GratitudeAnalysisResponse>(
       `${this.baseUrl}/gratitude-analysis`,
       { gratitudeEntry }

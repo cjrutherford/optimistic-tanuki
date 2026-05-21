@@ -82,12 +82,12 @@ Where `SERVICE_KEY` is the uppercase service name with underscores.
 
 ### Other Environment Variables
 
-| Variable                 | Description                            | Default          |
-| ------------------------ | -------------------------------------- | ---------------- |
-| LISTEN_PORT              | HTTP port                              | 3000             |
-| JWT_SECRET               | JWT signing secret                     | from config.yaml |
-| NODE_ENV                 | Environment                            | production       |
-| GATEWAY_COMPOSITION_PATH | path to generated composition contract | unset            |
+| Variable    | Description        | Default          |
+| ----------- | ------------------ | ---------------- |
+| LISTEN_PORT | HTTP port          | 3000             |
+| JWT_SECRET  | JWT signing secret | from config.yaml |
+| NODE_ENV    | Environment        | production       |
+| GATEWAY_COMPOSITION_PATH | path to generated composition contract | unset |
 
 ### Database/Redis
 

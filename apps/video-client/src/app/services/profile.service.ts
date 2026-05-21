@@ -25,7 +25,9 @@ export class ProfileService {
   }
 
   async getProfileById(id: string): Promise<ProfileDto> {
-    return firstValueFrom(this.http.get<ProfileDto>(`/api/profile/${id}`));
+    return firstValueFrom(
+      this.http.get<ProfileDto>(`/api/profile/${id}`)
+    );
   }
 
   async createProfile(profile: Partial<ProfileDto>): Promise<ProfileDto> {
@@ -37,14 +39,11 @@ export class ProfileService {
     return newProfile;
   }
 
-  async updateProfile(
-    id: string,
-    profile: Partial<ProfileDto>
-  ): Promise<ProfileDto> {
+  async updateProfile(id: string, profile: Partial<ProfileDto>): Promise<ProfileDto> {
     const updatedProfile = await firstValueFrom(
       this.http.put<ProfileDto>(`/api/profile/${id}`, profile)
     );
-    const profiles = this.profilesSubject.value.map((p) =>
+    const profiles = this.profilesSubject.value.map(p => 
       p.id === id ? updatedProfile : p
     );
     this.profilesSubject.next(profiles);

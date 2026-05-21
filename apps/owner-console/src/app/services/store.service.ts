@@ -280,7 +280,10 @@ export class StoreService {
     id: string,
     resource: UpdateResourceDto
   ): Observable<Resource> {
-    return this.http.put<Resource>(`${this.API_URL}/resources/${id}`, resource);
+    return this.http.put<Resource>(
+      `${this.API_URL}/resources/${id}`,
+      resource
+    );
   }
 
   deleteResource(id: string): Observable<void> {

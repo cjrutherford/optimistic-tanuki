@@ -26,13 +26,11 @@ export class BlogComponentService {
     console.log('BlogComponentService initialized');
   }
 
-  async create(
-    createComponentDto: CreateBlogComponentDto
-  ): Promise<BlogComponentDto> {
+  async create(createComponentDto: CreateBlogComponentDto): Promise<BlogComponentDto> {
     try {
       // Validate that the blog post exists
       const postExists = await this.postRepository.findOne({
-        where: { id: createComponentDto.blogPostId },
+        where: { id: createComponentDto.blogPostId }
       });
 
       if (!postExists) {
@@ -43,17 +41,15 @@ export class BlogComponentService {
       const existingComponent = await this.blogComponentRepository.findOne({
         where: {
           blogPostId: createComponentDto.blogPostId,
-          instanceId: createComponentDto.instanceId,
-        },
+          instanceId: createComponentDto.instanceId
+        }
       });
 
       if (existingComponent) {
         // Upsert behavior: update existing component data and position instead of erroring
         existingComponent.componentData = createComponentDto.componentData;
         existingComponent.position = createComponentDto.position;
-        const savedExisting = await this.blogComponentRepository.save(
-          existingComponent
-        );
+        const savedExisting = await this.blogComponentRepository.save(existingComponent);
         return this.mapToDto(savedExisting);
       }
 
@@ -62,15 +58,12 @@ export class BlogComponentService {
       return this.mapToDto(savedComponent);
     } catch (error) {
       console.error('Error creating blog component:', error);
-      if (
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
+      if (error instanceof NotFoundException || error instanceof BadRequestException) {
         throw error;
       }
       throw new RpcException({
         message: 'Failed to create blog component',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
@@ -79,14 +72,14 @@ export class BlogComponentService {
     try {
       const components = await this.blogComponentRepository.find({
         where: { blogPostId: postId },
-        order: { position: 'ASC', createdAt: 'ASC' },
+        order: { position: 'ASC', createdAt: 'ASC' }
       });
-      return components.map((component) => this.mapToDto(component));
+      return components.map(component => this.mapToDto(component));
     } catch (error) {
       console.error('Error finding blog components:', error);
       throw new RpcException({
         message: 'Failed to fetch blog components',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
@@ -94,7 +87,7 @@ export class BlogComponentService {
   async findOne(id: string): Promise<BlogComponentDto> {
     try {
       const component = await this.blogComponentRepository.findOne({
-        where: { id },
+        where: { id }
       });
 
       if (!component) {
@@ -109,18 +102,15 @@ export class BlogComponentService {
       }
       throw new RpcException({
         message: 'Failed to fetch blog component',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
 
-  async update(
-    id: string,
-    updateComponentDto: UpdateBlogComponentDto
-  ): Promise<BlogComponentDto> {
+  async update(id: string, updateComponentDto: UpdateBlogComponentDto): Promise<BlogComponentDto> {
     try {
       const component = await this.blogComponentRepository.findOne({
-        where: { id },
+        where: { id }
       });
 
       if (!component) {
@@ -129,7 +119,7 @@ export class BlogComponentService {
 
       // Merge the update data
       Object.assign(component, updateComponentDto);
-
+      
       const savedComponent = await this.blogComponentRepository.save(component);
       return this.mapToDto(savedComponent);
     } catch (error) {
@@ -139,7 +129,7 @@ export class BlogComponentService {
       }
       throw new RpcException({
         message: 'Failed to update blog component',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
@@ -147,7 +137,7 @@ export class BlogComponentService {
   async remove(id: string): Promise<void> {
     try {
       const component = await this.blogComponentRepository.findOne({
-        where: { id },
+        where: { id }
       });
 
       if (!component) {
@@ -162,7 +152,7 @@ export class BlogComponentService {
       }
       throw new RpcException({
         message: 'Failed to remove blog component',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
@@ -174,7 +164,7 @@ export class BlogComponentService {
       console.error('Error removing blog components for post:', error);
       throw new RpcException({
         message: 'Failed to remove blog components for post',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }
@@ -186,20 +176,19 @@ export class BlogComponentService {
       if (query.id) whereConditions.id = query.id;
       if (query.blogPostId) whereConditions.blogPostId = query.blogPostId;
       if (query.instanceId) whereConditions.instanceId = query.instanceId;
-      if (query.componentType)
-        whereConditions.componentType = query.componentType;
+      if (query.componentType) whereConditions.componentType = query.componentType;
 
       const components = await this.blogComponentRepository.find({
         where: whereConditions,
-        order: { position: 'ASC', createdAt: 'ASC' },
+        order: { position: 'ASC', createdAt: 'ASC' }
       });
 
-      return components.map((component) => this.mapToDto(component));
+      return components.map(component => this.mapToDto(component));
     } catch (error) {
       console.error('Error finding blog components by query:', error);
       throw new RpcException({
         message: 'Failed to fetch blog components',
-        details: error?.message || 'Unknown error',
+        details: error?.message || 'Unknown error'
       });
     }
   }

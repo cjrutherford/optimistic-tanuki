@@ -50,7 +50,7 @@ class RecordingBillingReconciliationService
 }
 
 function repository<T extends object>(
-  overrides: Partial<Record<string, unknown>> = {}
+  overrides: Partial<Record<string, unknown>> = {},
 ) {
   return {
     create: jest.fn((input: T) => input),
@@ -89,7 +89,7 @@ function createService(providerAdapter = new RecordingProviderAdapter()) {
     repository() as never,
     productRepository as never,
     providerAdapter,
-    billingReconciliationService as never
+    billingReconciliationService as never,
   );
 
   return {
@@ -109,8 +109,8 @@ describe('PaymentService provider adapter boundary', () => {
         'profile-1',
         25,
         false,
-        'local-hub'
-      )
+        'local-hub',
+      ),
     ).resolves.toEqual({
       checkoutUrl: 'provider-checkout:fallback',
       donationId: 'saved-id',
@@ -136,8 +136,8 @@ describe('PaymentService provider adapter boundary', () => {
         'user-1',
         'community-1',
         'pro',
-        'local-hub'
-      )
+        'local-hub',
+      ),
     ).resolves.toEqual({
       checkoutUrl: 'provider-checkout:variant-pro',
       businessPageId: 'business-page-1',
@@ -167,7 +167,7 @@ describe('PaymentService provider adapter boundary', () => {
             community_id: 'community-1',
           },
         },
-      })
+      }),
     ).resolves.toEqual({ received: true });
 
     expect(billingReconciliationService.events).toEqual([

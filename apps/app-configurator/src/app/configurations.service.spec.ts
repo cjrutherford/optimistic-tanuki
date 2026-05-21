@@ -65,11 +65,11 @@ describe('ConfigurationsService', () => {
         name: 'New App',
         domain: 'new.example.com',
       } as any;
-
+      
       jest.spyOn(repository, 'save').mockResolvedValue(mockConfigEntity);
 
       const result = await service.createConfiguration(createDto);
-
+      
       expect(repository.save).toHaveBeenCalled();
       expect(result).toEqual(mockConfigEntity);
     });
@@ -80,7 +80,7 @@ describe('ConfigurationsService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockConfigEntity);
 
       const result = await service.getConfiguration('config-1');
-
+      
       expect(result).toEqual(mockConfigEntity);
     });
 
@@ -98,7 +98,7 @@ describe('ConfigurationsService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockConfigEntity);
 
       const result = await service.getConfigurationByDomain('test.example.com');
-
+      
       expect(result).toEqual(mockConfigEntity);
     });
 
@@ -116,7 +116,7 @@ describe('ConfigurationsService', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValue(mockConfigEntity);
 
       const result = await service.getConfigurationByName('Test App');
-
+      
       expect(result).toEqual(mockConfigEntity);
     });
 
@@ -134,7 +134,7 @@ describe('ConfigurationsService', () => {
       jest.spyOn(repository, 'find').mockResolvedValue([mockConfigEntity]);
 
       const result = await service.getAllConfigurations();
-
+      
       expect(result).toEqual([mockConfigEntity]);
     });
   });
@@ -150,7 +150,7 @@ describe('ConfigurationsService', () => {
       const result = await service.updateConfiguration('config-1', {
         name: 'Updated Name',
       });
-
+      
       expect(result.name).toBe('Updated Name');
     });
 
@@ -165,19 +165,15 @@ describe('ConfigurationsService', () => {
 
   describe('deleteConfiguration', () => {
     it('should delete configuration', async () => {
-      jest
-        .spyOn(repository, 'delete')
-        .mockResolvedValue({ affected: 1 } as any);
+      jest.spyOn(repository, 'delete').mockResolvedValue({ affected: 1 } as any);
 
       await service.deleteConfiguration('config-1');
-
+      
       expect(repository.delete).toHaveBeenCalledWith('config-1');
     });
 
     it('should throw NotFoundException if nothing affected', async () => {
-      jest
-        .spyOn(repository, 'delete')
-        .mockResolvedValue({ affected: 0 } as any);
+      jest.spyOn(repository, 'delete').mockResolvedValue({ affected: 0 } as any);
 
       await expect(service.deleteConfiguration('none')).rejects.toThrow(
         NotFoundException

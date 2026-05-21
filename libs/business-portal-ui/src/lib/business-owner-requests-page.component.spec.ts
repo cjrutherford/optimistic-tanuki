@@ -35,12 +35,8 @@ describe('BusinessOwnerRequestsPageComponent', () => {
           },
         ])
       ),
-      approveProspect: jest
-        .fn()
-        .mockReturnValue(of({ id: 'lead-1', status: 'won' })),
-      markProspectContacted: jest
-        .fn()
-        .mockReturnValue(of({ id: 'lead-1', status: 'contacted' })),
+      approveProspect: jest.fn().mockReturnValue(of({ id: 'lead-1', status: 'won' })),
+      markProspectContacted: jest.fn().mockReturnValue(of({ id: 'lead-1', status: 'contacted' })),
     };
 
     await TestBed.configureTestingModule({

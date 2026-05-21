@@ -80,9 +80,7 @@ import {
         </div>
         } @case ('glass-container') {
         <otui-glass-container>
-          <p style="padding: 1.5rem; margin: 0;">
-            Glassmorphic container content
-          </p>
+          <p style="padding: 1.5rem; margin: 0;">Glassmorphic container content</p>
         </otui-glass-container>
         } }
       </pg-element-card>
@@ -121,19 +119,8 @@ export class CommonUiPageComponent {
       selector: 'otui-button',
       summary: 'Versatile button component with variants, sizes, and states.',
       props: [
-        {
-          name: 'variant',
-          type: 'string',
-          defaultValue: "'primary'",
-          description: 'Visual style variant.',
-          options: ['primary', 'secondary', 'outline', 'ghost', 'danger'],
-        },
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the button.',
-        },
+        { name: 'variant', type: 'string', defaultValue: "'primary'", description: 'Visual style variant.', options: ['primary', 'secondary', 'outline', 'ghost', 'danger'] },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the button.' },
       ],
     },
     {
@@ -162,20 +149,8 @@ export class CommonUiPageComponent {
       selector: 'otui-badge',
       summary: 'Small badge for status, counts, or labels.',
       props: [
-        {
-          name: 'variant',
-          type: 'string',
-          defaultValue: "'default'",
-          description: 'Badge color variant.',
-          options: ['default', 'primary', 'success', 'warning', 'danger'],
-        },
-        {
-          name: 'size',
-          type: 'string',
-          defaultValue: "'medium'",
-          description: 'Badge size.',
-          options: ['small', 'medium', 'large'],
-        },
+        { name: 'variant', type: 'string', defaultValue: "'default'", description: 'Badge color variant.', options: ['default', 'primary', 'success', 'warning', 'danger'] },
+        { name: 'size', type: 'string', defaultValue: "'medium'", description: 'Badge size.', options: ['small', 'medium', 'large'] },
       ],
     },
     {
@@ -203,10 +178,7 @@ export class CommonUiPageComponent {
     }
   }
 
-  private parseDefault(prop: {
-    type: string;
-    defaultValue: string;
-  }): number | string | boolean {
+  private parseDefault(prop: { type: string; defaultValue: string }): number | string | boolean {
     const v = prop.defaultValue;
     if (prop.type === 'boolean') return v === 'true';
     if (prop.type === 'number') return parseFloat(v) || 0;

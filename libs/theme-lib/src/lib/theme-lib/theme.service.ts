@@ -473,8 +473,8 @@ export class ThemeService {
       personality.tokens.spacingScale === 'compact'
         ? 'ease-out'
         : personality.tokens.spacingScale === 'spacious'
-        ? 'ease-in'
-        : 'ease-in-out';
+          ? 'ease-in'
+          : 'ease-in-out';
 
     const primaryShades = generatePerceptualShades(
       colors.primary,
@@ -530,11 +530,11 @@ export class ThemeService {
     // Apply contrast adjustments to foreground
     const adjustedForeground = personality.contrast.autoAdjust
       ? ensureContrast(
-          themeColors.foreground,
-          themeColors.background,
-          personality.contrast.minimumRatio,
-          'auto'
-        )
+        themeColors.foreground,
+        themeColors.background,
+        personality.contrast.minimumRatio,
+        'auto'
+      )
       : themeColors.foreground;
 
     // Generate shadow color
@@ -828,15 +828,12 @@ export class ThemeService {
     return {
       none: 'none',
       sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
-        4 * multiplier
-      }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
-        6 * multiplier
-      }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
-        10 * multiplier
-      }px -5px ${shadowColor}`,
+      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${4 * multiplier
+        }px -1px ${shadowColor}`,
+      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${6 * multiplier
+        }px -2px ${shadowColor}`,
+      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${10 * multiplier
+        }px -5px ${shadowColor}`,
     };
   }
 
@@ -979,11 +976,10 @@ export class ThemeService {
     tertiary: string;
     surface: string;
   } {
-    const personalityGradients =
-      this.gradientFactory.getPersonalityGradientsFromColors(
-        personalityId,
-        colors
-      );
+    const personalityGradients = this.gradientFactory.getPersonalityGradientsFromColors(
+      personalityId,
+      colors
+    );
 
     return {
       primary: personalityGradients.primary,
@@ -1121,9 +1117,7 @@ export class ThemeService {
       const migration = migratePaletteToPersonality(palette, this._theme);
       if (migration.success) {
         this.personalityConfig = migration.config;
-        const personality = getPersonalityById(
-          migration.suggestedPersonalityId
-        );
+        const personality = getPersonalityById(migration.suggestedPersonalityId);
         if (personality) {
           this.currentPersonality = personality;
           this.selectedPalette = palette;

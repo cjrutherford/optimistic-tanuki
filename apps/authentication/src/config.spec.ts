@@ -13,8 +13,7 @@ describe('authentication config oauth env loading', () => {
   it('uses oauth provider values from environment variables', async () => {
     process.env.GOOGLE_CLIENT_ID = 'google-client-id';
     process.env.GOOGLE_CLIENT_SECRET = 'google-client-secret';
-    process.env.GOOGLE_REDIRECT_URI =
-      'https://example.com/auth/google/callback';
+    process.env.GOOGLE_REDIRECT_URI = 'https://example.com/auth/google/callback';
 
     const { default: loadConfig } = await import('./config');
     const config = loadConfig();

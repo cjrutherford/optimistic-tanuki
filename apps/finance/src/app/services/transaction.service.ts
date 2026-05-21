@@ -69,8 +69,7 @@ export class TransactionService {
       transferType: createTransactionDto.transferType ?? undefined,
       sourceType: createTransactionDto.sourceType ?? BankSyncSourceType.MANUAL,
       sourceProvider: createTransactionDto.sourceProvider ?? undefined,
-      externalTransactionId:
-        createTransactionDto.externalTransactionId ?? undefined,
+      externalTransactionId: createTransactionDto.externalTransactionId ?? undefined,
       pending: createTransactionDto.pending ?? false,
       reviewStatus:
         createTransactionDto.reviewStatus ??
@@ -245,8 +244,7 @@ export class TransactionService {
       if (!transactionInput.externalTransactionId) {
         const created = await this.create({
           ...transactionInput,
-          sourceType:
-            transactionInput.sourceType ?? BankSyncSourceType.BANK_SYNC,
+          sourceType: transactionInput.sourceType ?? BankSyncSourceType.BANK_SYNC,
         });
         toSave.push(created);
         added += 1;

@@ -31,7 +31,7 @@ describe('S3Service', () => {
 
     // Create a mock S3Client instance
     mockS3Client = {
-      send: jest.fn() as jest.Mock<any, any>,
+      send: jest.fn() as jest.Mock<any, any>, 
     } as any;
     (S3Client as jest.Mock).mockImplementation(() => mockS3Client);
 
@@ -73,9 +73,7 @@ describe('S3Service', () => {
 
       await service.uploadObject(key, body, contentType);
 
-      expect(mockS3Client.send).toHaveBeenCalledWith(
-        expect.any(PutObjectCommand)
-      );
+      expect(mockS3Client.send).toHaveBeenCalledWith(expect.any(PutObjectCommand));
       expect(mockLogger.log).toHaveBeenCalledWith(
         expect.stringContaining(
           `Uploading object to s3://${s3Options.bucketName}/${key}`

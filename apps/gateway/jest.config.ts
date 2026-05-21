@@ -8,4 +8,4 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/gateway',
   coverageReporters: ['text-summary', 'text', 'json', 'lcov', 'clover'],
-};
+  }

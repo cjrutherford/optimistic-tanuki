@@ -1,13 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
-import {
-  LeadDiscoverySource,
-  LeadSource,
-} from '@optimistic-tanuki/models/leads-contracts';
-import {
-  ProviderSearchResult,
-  TopicDiscoveryProvider,
-} from './discovery.types';
+import { LeadDiscoverySource, LeadSource } from '@optimistic-tanuki/models/leads-contracts';
+import { ProviderSearchResult, TopicDiscoveryProvider } from './discovery.types';
 import {
   createLeadEntity,
   getMatchedKeywords,
@@ -67,25 +61,17 @@ export class JustRemoteDiscoveryProvider implements TopicDiscoveryProvider {
                   : 'JustRemote opportunity',
               source: LeadSource.JUST_REMOTE,
               originalPostingUrl: item.link,
-              notes: `Discovered via JustRemote. Source: ${
-                item.link
-              }. ${stripHtml(item.description)}`,
+              notes: `Discovered via JustRemote. Source: ${item.link}. ${stripHtml(item.description)}`,
               searchKeywords: matchedKeywords,
             }),
             matchedKeywords,
             providerName: this.providerName,
           };
         })
-        .filter((candidate): candidate is NonNullable<typeof candidate> =>
-          Boolean(candidate)
-        );
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
 
       const warnings = excludedCount
-        ? [
-            `Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(
-              ', '
-            )}.`,
-          ]
+        ? [`Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(', ')}.`]
         : [];
       if (!/<rss\b/i.test(body) && !feedItems.length) {
         warnings.push(
@@ -98,9 +84,7 @@ export class JustRemoteDiscoveryProvider implements TopicDiscoveryProvider {
         );
       }
       if (!candidates.length) {
-        warnings.push(
-          'JustRemote returned no feed items that matched the configured topic keywords.'
-        );
+        warnings.push('JustRemote returned no feed items that matched the configured topic keywords.');
       }
 
       return {
@@ -109,18 +93,10 @@ export class JustRemoteDiscoveryProvider implements TopicDiscoveryProvider {
         queries: ['https://justremote.co/jobs.xml'],
       };
     } catch (error) {
-      this.logger.warn(
-        `JustRemote discovery failed for topic ${topic.id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      this.logger.warn(`JustRemote discovery failed for topic ${topic.id}: ${error instanceof Error ? error.message : String(error)}`);
       return {
         candidates: [],
-        warnings: [
-          `JustRemote request failed: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
-        ],
+        warnings: [`JustRemote request failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         queries: ['https://justremote.co/jobs.xml'],
       };
     }

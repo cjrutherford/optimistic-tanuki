@@ -24,9 +24,7 @@ export class BroadcastService {
     private readonly sessionRepository: Repository<LiveSession>
   ) {}
 
-  async getFeedByCommunityId(
-    communityId: string
-  ): Promise<ChannelFeedDto | null> {
+  async getFeedByCommunityId(communityId: string): Promise<ChannelFeedDto | null> {
     return this.feedRepository.findOne({ where: { communityId } });
   }
 

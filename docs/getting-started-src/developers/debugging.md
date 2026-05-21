@@ -6,7 +6,6 @@ parent: developer-workflows
 summary: Narrow failures using service logs, focused tests, and the running local stack.
 order: 40
 ---
-
 # Debugging
 
 When something breaks:

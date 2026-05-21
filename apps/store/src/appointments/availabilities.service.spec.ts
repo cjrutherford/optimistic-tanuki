@@ -13,10 +13,7 @@ describe('AvailabilitiesService', () => {
   beforeEach(() => {
     availabilityRepository = {
       create: jest.fn((payload) => payload as AvailabilityEntity),
-      save: jest.fn(
-        async (payload) =>
-          ({ id: 'availability-1', ...payload } as AvailabilityEntity)
-      ),
+      save: jest.fn(async (payload) => ({ id: 'availability-1', ...payload }) as AvailabilityEntity),
       find: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
@@ -24,20 +21,14 @@ describe('AvailabilitiesService', () => {
     } as unknown as jest.Mocked<Repository<AvailabilityEntity>>;
     overrideRepository = {
       create: jest.fn((payload) => payload as AvailabilityOverrideEntity),
-      save: jest.fn(
-        async (payload) =>
-          ({ id: 'override-1', ...payload } as AvailabilityOverrideEntity)
-      ),
+      save: jest.fn(async (payload) => ({ id: 'override-1', ...payload }) as AvailabilityOverrideEntity),
       find: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     } as unknown as jest.Mocked<Repository<AvailabilityOverrideEntity>>;
 
-    service = new AvailabilitiesService(
-      availabilityRepository,
-      overrideRepository
-    );
+    service = new AvailabilitiesService(availabilityRepository, overrideRepository);
   });
 
   it('rejects overlapping weekly availability for the same owner and day', async () => {

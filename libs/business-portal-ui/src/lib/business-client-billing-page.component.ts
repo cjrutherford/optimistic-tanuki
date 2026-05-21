@@ -19,24 +19,20 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         <h2>Invoices</h2>
         <div class="rows">
           @for (invoice of invoices(); track invoice.id) {
-          <div class="row">
-            <div>
-              <strong>{{ invoice.invoiceNumber }}</strong>
-              <p>{{ invoice.status | titlecase }}</p>
+            <div class="row">
+              <div>
+                <strong>{{ invoice.invoiceNumber }}</strong>
+                <p>{{ invoice.status | titlecase }}</p>
+              </div>
+              <div class="row-actions">
+                <span>{{ '$' + invoice.amount }}</span>
+                @if (allowOnlinePayment() && invoice.status === 'unpaid') {
+                  <otui-button variant="primary" (action)="payInvoice(invoice.id)">Pay now</otui-button>
+                }
+              </div>
             </div>
-            <div class="row-actions">
-              <span>{{ '$' + invoice.amount }}</span>
-              @if (allowOnlinePayment() && invoice.status === 'unpaid') {
-              <otui-button variant="primary" (action)="payInvoice(invoice.id)"
-                >Pay now</otui-button
-              >
-              }
-            </div>
-          </div>
           } @empty {
-          <p class="empty">
-            Invoices will appear here after completed sessions are billed.
-          </p>
+            <p class="empty">Invoices will appear here after completed sessions are billed.</p>
           }
         </div>
       </otui-card>
@@ -50,13 +46,11 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
               <strong>{{ booking.title }}</strong>
               <p>{{ booking.status }}</p>
             </div>
-            <span>{{
-              booking.totalCost ? '$' + booking.totalCost : 'Pending'
-            }}</span>
+            <span>{{ booking.totalCost ? ('$' + booking.totalCost) : 'Pending' }}</span>
           </div>
-          } @empty {
+        } @empty {
           <p class="empty">Approved and invoiced sessions will surface here.</p>
-          }
+        }
         </div>
       </otui-card>
     </section>
@@ -96,21 +90,19 @@ export class BusinessClientBillingPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly clientId = computed(
-    () => this.auth.clientUser()?.userId ?? ''
-  );
+  private readonly clientId = computed(() => this.auth.clientUser()?.userId ?? '');
   readonly allowOnlinePayment = computed(
     () => this.siteConfig.site().features.booking.allowOnlinePayment === true
   );
   readonly bookings = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap((id) => (id ? this.api.getClientBookings() : of([])))
+      switchMap(id => id ? this.api.getClientBookings() : of([]))
     ),
     { initialValue: [] }
   );
   readonly invoices = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap((id) => (id ? this.api.getClientInvoices() : of([])))
+      switchMap(id => id ? this.api.getClientInvoices() : of([]))
     ),
     { initialValue: [] }
   );

@@ -8,13 +8,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'business-client-register-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    ButtonComponent,
-    CardComponent,
-  ],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, CardComponent],
   template: `
     <section class="center">
       <otui-card class="form-card">
@@ -30,46 +24,30 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           </label>
           <label>
             Email
-            <input
-              type="email"
-              [(ngModel)]="email"
-              name="email"
-              autocomplete="email"
-            />
+            <input type="email" [(ngModel)]="email" name="email" autocomplete="email" />
           </label>
           <label>
             Password
-            <input
-              type="password"
-              [(ngModel)]="password"
-              name="password"
-              autocomplete="new-password"
-            />
+            <input type="password" [(ngModel)]="password" name="password" autocomplete="new-password" />
           </label>
           <label>
             Confirm password
-            <input
-              type="password"
-              [(ngModel)]="confirm"
-              name="confirm"
-              autocomplete="new-password"
-            />
+            <input type="password" [(ngModel)]="confirm" name="confirm" autocomplete="new-password" />
           </label>
           <label>
             What brings you here?
             <textarea [(ngModel)]="bio" name="bio"></textarea>
           </label>
           @if (message()) {
-          <p class="success">{{ message() }}</p>
-          } @if (error()) {
-          <p class="error">{{ error() }}</p>
+            <p class="success">{{ message() }}</p>
+          }
+          @if (error()) {
+            <p class="error">{{ error() }}</p>
           }
           <otui-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Creating account…' : 'Create account' }}
           </otui-button>
-          <a [routerLink]="['/client/login']"
-            >Already have an account? Sign in</a
-          >
+          <a [routerLink]="['/client/login']">Already have an account? Sign in</a>
         </form>
       </otui-card>
     </section>
@@ -101,7 +79,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         padding: 0.8rem 0.9rem;
         border-radius: var(--personality-input-radius, 1rem);
         border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255,255,255,0.04);
         color: inherit;
       }
       textarea {
@@ -157,9 +135,7 @@ export class BusinessClientRegisterPageComponent {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(
-            err?.error?.message || err?.message || 'Registration failed.'
-          );
+          this.error.set(err?.error?.message || err?.message || 'Registration failed.');
         },
       });
   }

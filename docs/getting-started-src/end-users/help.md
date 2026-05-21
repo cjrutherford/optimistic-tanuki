@@ -5,7 +5,6 @@ slug: help
 summary: Quick checks for common issues before escalating to an admin or developer.
 order: 30
 ---
-
 # Help And Troubleshooting
 
 If something does not look right:

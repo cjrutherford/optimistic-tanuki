@@ -83,9 +83,7 @@ async function bootstrap() {
     await fetchJson(`${GATEWAY_URL.replace(/\/api$/, '')}/api-docs`);
     logger.log('Gateway connectivity: OK');
   } catch (e) {
-    logger.warn(
-      `Gateway connectivity check failed: ${e.message}. Continuing anyway...`
-    );
+    logger.warn(`Gateway connectivity check failed: ${e.message}. Continuing anyway...`);
   }
 
   const authenticatedUsers = [];
@@ -103,8 +101,7 @@ async function bootstrap() {
             trainerName: 'Jordan Vale',
             monogram: 'NS',
             tagline: 'Operational guidance for growing service businesses.',
-            intro:
-              'Clear scheduling, better client handoff, and a simpler approval flow.',
+            intro: 'Clear scheduling, better client handoff, and a simpler approval flow.',
             longBio:
               'North Star Advisory helps service businesses turn interest into approved client relationships and well-structured engagements.',
             credentials: ['Operations strategy', 'Client systems'],
@@ -117,19 +114,14 @@ async function bootstrap() {
 
   async function createLeadForUser(owner, client, approved = false) {
     logger.log(
-      `${
-        approved ? 'Seeding accepted client lead' : 'Seeding queued client lead'
-      } for ${client.email}`
+      `${approved ? 'Seeding accepted client lead' : 'Seeding queued client lead'} for ${client.email}`
     );
 
     const leadResponse = await fetchJson(`${GATEWAY_URL}/business/leads`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${client.token}` },
       body: JSON.stringify({
-        name:
-          client.email === 'client@localbusiness.test'
-            ? 'Maya Rivers'
-            : 'Taylor Quinn',
+        name: client.email === 'client@localbusiness.test' ? 'Maya Rivers' : 'Taylor Quinn',
         email: client.email,
         phone: '(555) 100-2000',
         goal: approved
@@ -144,20 +136,15 @@ async function bootstrap() {
     });
 
     if (approved && leadResponse?.data?.id) {
-      await fetchJson(
-        `${GATEWAY_URL}/business/owner/leads/${leadResponse.data.id}/approve`,
-        {
-          method: 'PUT',
-          headers: { Authorization: `Bearer ${owner.token}` },
-        }
-      );
+      await fetchJson(`${GATEWAY_URL}/business/owner/leads/${leadResponse.data.id}/approve`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${owner.token}` },
+      });
     }
   }
 
   async function seedAvailability(owner) {
-    logger.log(
-      'Seeding recurring availability and a date-specific override...'
-    );
+    logger.log('Seeding recurring availability and a date-specific override...');
 
     await fetchJson(`${GATEWAY_URL}/business/owner/availabilities`, {
       method: 'POST',
@@ -236,28 +223,22 @@ async function bootstrap() {
     // Try register
     try {
       logger.log(`Registering user: ${userData.email}`);
-      const { status, data } = await fetchJson(
-        `${GATEWAY_URL}/authentication/register`,
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            email: userData.email,
-            fn: userData.firstName,
-            ln: userData.lastName,
-            password: userData.password,
-            confirm: userData.password,
-            bio: userData.bio,
-          }),
-        }
-      );
+      const { status, data } = await fetchJson(`${GATEWAY_URL}/authentication/register`, {
+        method: 'POST',
+        body: JSON.stringify({
+          email: userData.email,
+          fn: userData.firstName,
+          ln: userData.lastName,
+          password: userData.password,
+          confirm: userData.password,
+          bio: userData.bio,
+        }),
+      });
 
       if (data?.data?.user?.id) {
         userId = data.data.user.id;
         logger.log(`Registered user: ${userData.email} (${userId})`);
-      } else if (
-        status === 409 ||
-        JSON.stringify(data).includes('already exists')
-      ) {
+      } else if (status === 409 || JSON.stringify(data).includes('already exists')) {
         logger.log(`User ${userData.email} already exists, will login...`);
       }
     } catch (err) {
@@ -281,12 +262,9 @@ async function bootstrap() {
 
       if (!userId || !profileId) {
         try {
-          const { data: meData } = await fetchJson(
-            `${GATEWAY_URL}/authentication/me`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const { data: meData } = await fetchJson(`${GATEWAY_URL}/authentication/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           userId = meData?.data?.userId || meData?.data?.id || userId;
         } catch (e) {
           logger.warn(`Could not fetch /authentication/me: ${e.message}`);
@@ -297,9 +275,7 @@ async function bootstrap() {
         try {
           const parts = token.split('.');
           if (parts.length === 3) {
-            const payload = JSON.parse(
-              Buffer.from(parts[1], 'base64').toString()
-            );
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
             userId = payload?.sub || payload?.userId || payload?.user_id;
             logger.log(`Extracted userId from token: ${userId}`);
           }
@@ -318,12 +294,9 @@ async function bootstrap() {
         try {
           let profileRes;
           try {
-            profileRes = await fetchJson(
-              `${GATEWAY_URL}/profile/user/${userId}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
+            profileRes = await fetchJson(`${GATEWAY_URL}/profile/user/${userId}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
           } catch (e) {
             profileRes = await fetchJson(`${GATEWAY_URL}/profile`, {
               headers: { Authorization: `Bearer ${token}` },
@@ -338,40 +311,33 @@ async function bootstrap() {
           profileId = matchingProfile?.id || profileId;
           logger.log(`Found profileId: ${profileId}`);
         } catch (e) {
-          logger.warn(
-            `Could not fetch profile for ${userData.email}: ${e.message}`
-          );
+          logger.warn(`Could not fetch profile for ${userData.email}: ${e.message}`);
         }
       }
 
       if (userId && !profileId && token) {
         try {
-          const { data: createdProfile } = await fetchJson(
-            `${GATEWAY_URL}/profile`,
-            {
-              method: 'POST',
-              body: JSON.stringify({
-                userId,
-                name: `${userData.firstName} ${userData.lastName}`,
-                coverPic: '',
-                profilePic: '',
-                bio: userData.bio,
-                location: '',
-                description: '',
-                occupation: '',
-                interests: '',
-                skills: '',
-                appScope: APP_SCOPE,
-              }),
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          );
+          const { data: createdProfile } = await fetchJson(`${GATEWAY_URL}/profile`, {
+            method: 'POST',
+            body: JSON.stringify({
+              userId,
+              name: `${userData.firstName} ${userData.lastName}`,
+              coverPic: '',
+              profilePic: '',
+              bio: userData.bio,
+              location: '',
+              description: '',
+              occupation: '',
+              interests: '',
+              skills: '',
+              appScope: APP_SCOPE,
+            }),
+            headers: { Authorization: `Bearer ${token}` },
+          });
           profileId = extractProfileId(createdProfile) || profileId;
           logger.log(`Created profile: ${profileId}`);
         } catch (e) {
-          logger.warn(
-            `Could not create profile for ${userData.email}: ${e.message}`
-          );
+          logger.warn(`Could not create profile for ${userData.email}: ${e.message}`);
         }
       }
 
@@ -385,21 +351,12 @@ async function bootstrap() {
           await assignRole(profileId, roleName);
           logger.log(`Assigned role ${roleName} to ${userData.email}`);
         } catch (error) {
-          logger.error(
-            `Could not assign ${roleName} to ${userData.email}: ${error.message}`
-          );
+          logger.error(`Could not assign ${roleName} to ${userData.email}: ${error.message}`);
           throw error;
         }
 
-        authenticatedUsers.push({
-          userId,
-          profileId,
-          token,
-          email: userData.email,
-        });
-        logger.log(
-          `Authenticated: ${userData.email} (userId: ${userId}, profileId: ${profileId})`
-        );
+        authenticatedUsers.push({ userId, profileId, token, email: userData.email });
+        logger.log(`Authenticated: ${userData.email} (userId: ${userId}, profileId: ${profileId})`);
       }
     } catch (err) {
       logger.warn(`Login failed for ${userData.email}: ${err.message}`);
@@ -411,9 +368,7 @@ async function bootstrap() {
   logger.log(`=== Business User Seed Complete ===`);
   logger.log(`Successfully authenticated ${authenticatedUsers.length} users`);
 
-  const owner = authenticatedUsers.find(
-    (user) => user.email === 'owner@localbusiness.test'
-  );
+  const owner = authenticatedUsers.find((user) => user.email === 'owner@localbusiness.test');
   const acceptedClient = authenticatedUsers.find(
     (user) => user.email === 'client@localbusiness.test'
   );
@@ -427,9 +382,7 @@ async function bootstrap() {
     await createLeadForUser(owner, acceptedClient, true);
     await createLeadForUser(owner, pendingClient, false);
   } else {
-    logger.warn(
-      'Skipping client-acceptance seed setup because one or more users are missing.'
-    );
+    logger.warn('Skipping client-acceptance seed setup because one or more users are missing.');
   }
 
   for (const user of authenticatedUsers) {

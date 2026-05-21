@@ -39,7 +39,7 @@ describe('EventService', () => {
     const dto = { name: 'Test Event', organizerId: 'user-1' };
     eventRepo.create.mockReturnValue(dto as any);
     eventRepo.save.mockResolvedValue(dto as any);
-
+    
     const result = await service.create(dto as any);
     expect(eventRepo.create).toHaveBeenCalledWith(dto);
     expect(result).toEqual(dto);
@@ -47,14 +47,14 @@ describe('EventService', () => {
 
   it('findAll should return events with filters', async () => {
     eventRepo.find.mockResolvedValue([]);
-    const query = {
-      name: 'test',
-      description: 'desc',
-      location: 'loc',
-      organizerId: 'org',
-      startTime: ['2024-01-01', '2024-12-31'],
-      endTime: ['2024-01-01', '2024-12-31'],
-      createdAt: ['2024-01-01', '2024-12-31'],
+    const query = { 
+        name: 'test', 
+        description: 'desc',
+        location: 'loc',
+        organizerId: 'org',
+        startTime: ['2024-01-01', '2024-12-31'],
+        endTime: ['2024-01-01', '2024-12-31'],
+        createdAt: ['2024-01-01', '2024-12-31']
     };
     await service.findAll(query as any);
     expect(eventRepo.find).toHaveBeenCalled();

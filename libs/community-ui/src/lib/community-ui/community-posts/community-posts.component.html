@@ -46,7 +46,8 @@
     >
       Create Post
     </button>
-    } @if (isOwnerOrManager()) {
+    }
+    @if (isOwnerOrManager()) {
     <button
       class="nav-tab"
       [class.active]="activeTab() === 'manage'"
@@ -64,8 +65,7 @@
     <div class="loading">Loading posts...</div>
     } @else if (error()) {
     <div class="error-message">{{ error() }}</div>
-    } @else { @if (showComposer || (canCreatePosts && activeTab() === 'create'))
-    {
+    } @else { @if (showComposer || (canCreatePosts && activeTab() === 'create')) {
     <div class="create-post">
       @if (currentProfileId) {
       <lib-social-compose

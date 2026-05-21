@@ -23,7 +23,6 @@ next_steps:
     page: user-core-features
     body: Move from account creation into regular product use.
 ---
-
 # End User Guide
 
 This guide is for people using the product rather than operating or developing it. It focuses on account setup, navigation, and the main workflows available in the platform.

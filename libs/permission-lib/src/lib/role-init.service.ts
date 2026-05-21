@@ -20,7 +20,7 @@ export class RoleInitService {
 
   constructor(
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
-    private readonly permissionsClient: ClientProxy
+    private readonly permissionsClient: ClientProxy,
   ) {}
 
   enqueue(options: RoleInitOptions) {
@@ -43,7 +43,7 @@ export class RoleInitService {
       this.processLoop().catch((err) => {
         this.logger.error('RoleInit worker failed', err);
         this.processing = false;
-      })
+      }),
     );
   }
 
@@ -62,7 +62,7 @@ export class RoleInitService {
 
   private async processOne(item: RoleInitOptions) {
     this.logger.log(
-      `role-init scope=${item.scopeName} resource=${item.scopeResourceId}`
+      `role-init scope=${item.scopeName} resource=${item.scopeResourceId}`,
     );
 
     // 1) ensure app scope
@@ -73,14 +73,14 @@ export class RoleInitService {
           { cmd: AppScopeCommands.GetByName },
           {
             name: item.scopeName,
-          }
-        )
+          },
+        ),
       ).catch(() => null);
       this.logger.log(appScope);
     } catch (e: unknown) {
       this.logger.debug(
         'AppScope.GetByName failed',
-        (e as { message: string })?.message || e
+        (e as { message: string })?.message || e,
       );
     }
     if (!appScope) {
@@ -92,13 +92,13 @@ export class RoleInitService {
               name: item.scopeName,
               resourceId: item.scopeResourceId,
               description: `Auto-created scope ${item.scopeName}:${item.scopeResourceId}`,
-            }
-          )
+            },
+          ),
         ).catch(() => null);
       } catch (e) {
         this.logger.debug(
           'AppScope.Create failed',
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
       }
     }
@@ -123,14 +123,14 @@ export class RoleInitService {
         const created = await firstValueFrom(
           this.permissionsClient.send(
             { cmd: PermissionCommands.Create },
-            payload
-          )
+            payload,
+          ),
         );
         if (created?.id) permNameToId[p.name] = created.id;
       } catch (e) {
         this.logger.debug(
           `Permission.Create failed for ${p.name}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         // fallback: try lookup (optional)
       }
@@ -142,7 +142,7 @@ export class RoleInitService {
 
     for (const mirror of permissionMirrors || []) {
       const mirroredPermissions = (item.permissions || []).filter(
-        (permission) => mirror.permissionNames.includes(permission.name)
+        (permission) => mirror.permissionNames.includes(permission.name),
       );
 
       if (!mirroredPermissions.length) {
@@ -155,8 +155,8 @@ export class RoleInitService {
           targetScope = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: AppScopeCommands.GetByName },
-              { name: mirror.targetScope }
-            )
+              { name: mirror.targetScope },
+            ),
           ).catch(() => null);
 
           if (targetScope) {
@@ -166,7 +166,7 @@ export class RoleInitService {
 
         if (!targetScope?.id) {
           this.logger.debug(
-            `Permission mirror skipped; scope ${mirror.targetScope} not found`
+            `Permission mirror skipped; scope ${mirror.targetScope} not found`,
           );
           continue;
         }
@@ -184,23 +184,23 @@ export class RoleInitService {
             await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: PermissionCommands.Create },
-                mirroredPayload
-              )
+                mirroredPayload,
+              ),
             );
             this.logger.debug(
-              `Created mirrored permission ${permission.name} in ${mirror.targetScope}`
+              `Created mirrored permission ${permission.name} in ${mirror.targetScope}`,
             );
           } catch (e) {
             this.logger.debug(
               `Permission mirror failed for ${permission.name} in ${mirror.targetScope}`,
-              (e as { message: string })?.message || e
+              (e as { message: string })?.message || e,
             );
           }
         }
       } catch (e) {
         this.logger.debug(
           `Permission mirror lookup failed for ${mirror.targetScope}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
       }
     }
@@ -218,48 +218,48 @@ export class RoleInitService {
               name: r.name,
               description: r.description || '',
               appScopeId: appScopeId,
-            }
-          )
+            },
+          ),
         );
         createdRoles[r.name] = role;
       } catch (e) {
         // Creation failed -> try to find existing role by name & scope, then fall back to global scope
         this.logger.debug(
           `Role.Create failed ${r.name}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         try {
           // First try to find role in the specific app scope
           let existing = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: r.name, appScope: item.scopeName }
-            )
+              { name: r.name, appScope: item.scopeName },
+            ),
           ).catch(() => null);
 
           // If not found in app scope, try global scope
           if (!existing && item.scopeName !== 'global') {
             this.logger.debug(
-              `Role ${r.name} not found in ${item.scopeName}, trying global scope`
+              `Role ${r.name} not found in ${item.scopeName}, trying global scope`,
             );
             existing = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: r.name, appScope: 'global' }
-              )
+                { name: r.name, appScope: 'global' },
+              ),
             ).catch(() => null);
           }
 
           // Third try: find role without scope at all (legacy or global fallback)
           if (!existing) {
             this.logger.debug(
-              `Role ${r.name} not found in global scope, trying without scope`
+              `Role ${r.name} not found in global scope, trying without scope`,
             );
             existing = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: r.name }
-              )
+                { name: r.name },
+              ),
             ).catch(() => null);
           }
 
@@ -273,7 +273,7 @@ export class RoleInitService {
         } catch (err) {
           this.logger.debug(
             `Role lookup failed for ${r.name}`,
-            (err as { message: string })?.message || err
+            (err as { message: string })?.message || err,
           );
         }
       }
@@ -291,13 +291,13 @@ export class RoleInitService {
           await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.AddPermission },
-              attachPayload
-            )
+              attachPayload,
+            ),
           );
         } catch (e) {
           this.logger.debug(
             `Role.AddPermission failed role=${r.name} perm=${pname}`,
-            (e as { message: string })?.message || e
+            (e as { message: string })?.message || e,
           );
         }
       }
@@ -313,8 +313,8 @@ export class RoleInitService {
           role = await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.GetByName },
-              { name: a.roleName, appScope: item.scopeName }
-            )
+              { name: a.roleName, appScope: item.scopeName },
+            ),
           ).catch(() => null);
 
           // Fall back to global scope if not found
@@ -322,8 +322,8 @@ export class RoleInitService {
             role = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: a.roleName, appScope: 'global' }
-              )
+                { name: a.roleName, appScope: 'global' },
+              ),
             ).catch(() => null);
           }
 
@@ -332,14 +332,14 @@ export class RoleInitService {
             role = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: RoleCommands.GetByName },
-                { name: a.roleName }
-              )
+                { name: a.roleName },
+              ),
             ).catch(() => null);
           }
         } catch (e) {
           this.logger.debug(
             `Role lookup before assignment failed role=${a.roleName}`,
-            (e as { message: string })?.message || e
+            (e as { message: string })?.message || e,
           );
           role = null;
         }
@@ -357,13 +357,13 @@ export class RoleInitService {
         await firstValueFrom(
           this.permissionsClient.send(
             { cmd: RoleCommands.Assign },
-            assignPayload
-          )
+            assignPayload,
+          ),
         );
       } catch (e) {
         this.logger.debug(
           `Role.Assign failed role=${a.roleName}`,
-          (e as { message: string })?.message || e
+          (e as { message: string })?.message || e,
         );
         continue;
       }
@@ -383,8 +383,8 @@ export class RoleInitService {
             targetScope = await firstValueFrom(
               this.permissionsClient.send(
                 { cmd: AppScopeCommands.GetByName },
-                { name: mappedAssignment.appScope }
-              )
+                { name: mappedAssignment.appScope },
+              ),
             ).catch(() => null);
 
             if (targetScope) {
@@ -394,7 +394,7 @@ export class RoleInitService {
 
           if (!targetScope?.id) {
             this.logger.debug(
-              `RoleInitService: ${mappedAssignment.appScope} app scope not found; skipping ${a.roleName} mapping`
+              `RoleInitService: ${mappedAssignment.appScope} app scope not found; skipping ${a.roleName} mapping`,
             );
             continue;
           }
@@ -413,20 +413,20 @@ export class RoleInitService {
           await firstValueFrom(
             this.permissionsClient.send(
               { cmd: RoleCommands.Assign },
-              mappedPayload
-            )
+              mappedPayload,
+            ),
           );
         } catch (e) {
           this.logger.debug(
             `Role.Assign (cross-scope) failed role=${a.roleName}`,
-            (e as { message: string })?.message || e
+            (e as { message: string })?.message || e,
           );
         }
       }
     }
 
     this.logger.log(
-      `completed role-init scope=${item.scopeName} resource=${item.scopeResourceId}`
+      `completed role-init scope=${item.scopeName} resource=${item.scopeResourceId}`,
     );
   }
 }

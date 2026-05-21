@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddTrainerRoutinesAndCheckins1770000002000
-  implements MigrationInterface
-{
+export class AddTrainerRoutinesAndCheckins1770000002000 implements MigrationInterface {
   name = 'AddTrainerRoutinesAndCheckins1770000002000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -33,11 +31,7 @@ export class AddTrainerRoutinesAndCheckins1770000002000
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS "trainer_progress_check_ins"'
-    );
-    await queryRunner.query(
-      'DROP TABLE IF EXISTS "trainer_routine_assignments"'
-    );
+    await queryRunner.query('DROP TABLE IF EXISTS "trainer_progress_check_ins"');
+    await queryRunner.query('DROP TABLE IF EXISTS "trainer_routine_assignments"');
   }
 }

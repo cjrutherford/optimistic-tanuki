@@ -15,19 +15,12 @@
 
 body {
   margin: 0;
-  background: radial-gradient(
-      circle at top left,
-      rgba(255, 208, 124, 0.35),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at top right,
-      rgba(80, 124, 114, 0.18),
-      transparent 24%
-    ),
+  background:
+    radial-gradient(circle at top left, rgba(255, 208, 124, 0.35), transparent 28%),
+    radial-gradient(circle at top right, rgba(80, 124, 114, 0.18), transparent 24%),
     linear-gradient(180deg, #f8f2e7 0%, #efe8da 100%);
   color: var(--text);
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 body.audience-admin {
@@ -249,7 +242,7 @@ a {
 
 .article-body pre,
 .article-body code {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 .article-body pre {

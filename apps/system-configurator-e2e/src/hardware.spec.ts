@@ -160,10 +160,7 @@ async function mockHardwareApi(page: Parameters<typeof test>[0]['page']) {
       return;
     }
 
-    if (
-      request.method() === 'GET' &&
-      path.endsWith('/api/hardware/chassis/xs-cloud')
-    ) {
+    if (request.method() === 'GET' && path.endsWith('/api/hardware/chassis/xs-cloud')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -215,10 +212,7 @@ async function mockHardwareApi(page: Parameters<typeof test>[0]['page']) {
       return;
     }
 
-    if (
-      request.method() === 'GET' &&
-      path.endsWith('/api/hardware/orders/order-1')
-    ) {
+    if (request.method() === 'GET' && path.endsWith('/api/hardware/orders/order-1')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -322,28 +316,18 @@ test.describe('System Configurator', () => {
     await expect(page.locator('h1')).toContainText(
       'Review your system before checkout'
     );
-    await expect(page.locator('.price-card')).toContainText(
-      'Estimated order total'
-    );
+    await expect(page.locator('.price-card')).toContainText('Estimated order total');
     await expect(page.locator('.checkout-action')).toBeVisible();
   });
 
-  test('redirects unauthenticated users from checkout to login', async ({
-    page,
-  }) => {
-    await page.addInitScript(
-      ({ draft, checkoutDraft }) => {
-        localStorage.setItem(
-          'hai-system-configurator-draft',
-          JSON.stringify(draft)
-        );
-        localStorage.setItem(
-          'hai-system-configurator-checkout',
-          JSON.stringify(checkoutDraft)
-        );
-      },
-      { draft: mockDraft, checkoutDraft: mockCheckoutDraft }
-    );
+  test('redirects unauthenticated users from checkout to login', async ({ page }) => {
+    await page.addInitScript(({ draft, checkoutDraft }) => {
+      localStorage.setItem('hai-system-configurator-draft', JSON.stringify(draft));
+      localStorage.setItem(
+        'hai-system-configurator-checkout',
+        JSON.stringify(checkoutDraft)
+      );
+    }, { draft: mockDraft, checkoutDraft: mockCheckoutDraft });
 
     await page.goto('/checkout');
 
@@ -366,9 +350,7 @@ test.describe('System Configurator', () => {
     await expect(page.locator('.profile-note')).toContainText('Active profile');
   });
 
-  test('loads the confirmation page for an authenticated session', async ({
-    page,
-  }) => {
+  test('loads the confirmation page for an authenticated session', async ({ page }) => {
     await seedAuthenticatedSession(page, { withDraft: true });
 
     await page.goto('/confirmation/order-1');
@@ -378,8 +360,6 @@ test.describe('System Configurator', () => {
       'Order accepted into the integration queue.'
     );
     await expect(page.locator('.confirmation-grid')).toContainText('order-1');
-    await expect(page.locator('.shipping-panel')).toContainText(
-      'Alex Integrator'
-    );
+    await expect(page.locator('.shipping-panel')).toContainText('Alex Integrator');
   });
 });

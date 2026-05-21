@@ -50,8 +50,7 @@ export class OnboardingPageComponent {
         this.wizard?.onTopicsAnalyzed(response.topics);
       },
       error: () => {
-        this.analysisError =
-          'Unable to analyze your profile. Please try again.';
+        this.analysisError = 'Unable to analyze your profile. Please try again.';
         this.wizard?.onAnalysisFailed();
       },
     });
@@ -98,8 +97,7 @@ export class OnboardingPageComponent {
 
   onConfirmTopics(topics: GeneratedTopicSuggestion[]): void {
     if (!this.latestProfile) {
-      this.confirmError =
-        'Your onboarding profile is missing. Please analyze again.';
+      this.confirmError = 'Your onboarding profile is missing. Please analyze again.';
       return;
     }
     this.confirmingTopics = true;

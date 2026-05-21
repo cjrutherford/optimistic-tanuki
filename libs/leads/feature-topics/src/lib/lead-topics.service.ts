@@ -20,7 +20,7 @@ export class LeadTopicsService {
 
   getTopicDiscoveryStatus(topicId: string): Observable<TopicDiscoveryResult> {
     return this.http.get<TopicDiscoveryResult>(
-      `${this.baseUrl}/topics/${topicId}/discovery-status`
+      `${this.baseUrl}/topics/${topicId}/discovery-status`,
     );
   }
 
@@ -43,7 +43,7 @@ export class LeadTopicsService {
   runTopicDiscovery(topicId: string): Observable<TopicDiscoveryResult> {
     return this.http.post<TopicDiscoveryResult>(
       `${this.baseUrl}/topics/${topicId}/discover`,
-      {}
+      {},
     );
   }
 }

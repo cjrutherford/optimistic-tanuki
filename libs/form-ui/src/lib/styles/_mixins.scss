@@ -367,8 +367,7 @@
         background: linear-gradient(135deg, var(--primary), var(--secondary));
         border-radius: 50%;
         transform: translate(-50%, -50%);
-        box-shadow: 0 2px 8px
-          color-mix(in srgb, var(--primary) 40%, transparent);
+        box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
       }
     }
   }

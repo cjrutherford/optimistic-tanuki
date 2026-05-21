@@ -80,14 +80,11 @@ export class LeadsController {
     @Query('source') source?: string
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.FIND_ALL },
-        {
-          status,
-          source,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.FIND_ALL }, {
+        status,
+        source,
+        ...this.getContext(user, appScope),
+      })
     );
   }
 
@@ -124,13 +121,10 @@ export class LeadsController {
     @Body() dto: CreateLeadTopicDto
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadTopicCommands.CREATE },
-        {
-          dto,
-          context: this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadTopicCommands.CREATE }, {
+        dto,
+        context: this.getContext(user, appScope),
+      })
     );
   }
 
@@ -144,14 +138,11 @@ export class LeadsController {
     @Body() dto: UpdateLeadTopicDto
   ) {
     const topic = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadTopicCommands.UPDATE },
-        {
-          id,
-          dto,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadTopicCommands.UPDATE }, {
+        id,
+        dto,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!topic) {
@@ -170,13 +161,10 @@ export class LeadsController {
     @Param('id') id: string
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadTopicCommands.DELETE },
-        {
-          id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadTopicCommands.DELETE }, {
+        id,
+        ...this.getContext(user, appScope),
+      })
     );
   }
 
@@ -190,13 +178,10 @@ export class LeadsController {
     @Param('id') id: string
   ): Promise<LeadTopicDiscoveryResultDto> {
     const result = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadTopicCommands.RUN_DISCOVERY },
-        {
-          topicId: id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadTopicCommands.RUN_DISCOVERY }, {
+        topicId: id,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!result) {
@@ -215,13 +200,10 @@ export class LeadsController {
     @Param('id') id: string
   ): Promise<LeadTopicDiscoveryResultDto> {
     const result = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadTopicCommands.GET_DISCOVERY_STATUS },
-        {
-          topicId: id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadTopicCommands.GET_DISCOVERY_STATUS }, {
+        topicId: id,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!result) {
@@ -240,13 +222,10 @@ export class LeadsController {
     @Param('id') id: string
   ) {
     const lead = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.FIND_ONE },
-        {
-          id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.FIND_ONE }, {
+        id,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!lead) {
@@ -265,13 +244,10 @@ export class LeadsController {
     @Body() dto: CreateLeadDto
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.CREATE },
-        {
-          dto,
-          context: this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.CREATE }, {
+        dto,
+        context: this.getContext(user, appScope),
+      })
     );
   }
 
@@ -285,14 +261,11 @@ export class LeadsController {
     @Body() dto: UpdateLeadDto
   ) {
     const lead = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.UPDATE },
-        {
-          id,
-          dto,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.UPDATE }, {
+        id,
+        dto,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!lead) {
@@ -312,14 +285,11 @@ export class LeadsController {
     @Body() dto: UpdateLeadDto
   ) {
     const lead = await firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.UPDATE },
-        {
-          id,
-          dto,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.UPDATE }, {
+        id,
+        dto,
+        ...this.getContext(user, appScope),
+      })
     );
 
     if (!lead) {
@@ -338,13 +308,10 @@ export class LeadsController {
     @Param('id') id: string
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadCommands.DELETE },
-        {
-          id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadCommands.DELETE }, {
+        id,
+        ...this.getContext(user, appScope),
+      })
     );
   }
 
@@ -357,13 +324,10 @@ export class LeadsController {
     @Param('id') id: string
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadFlagCommands.FIND_BY_LEAD },
-        {
-          leadId: id,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadFlagCommands.FIND_BY_LEAD }, {
+        leadId: id,
+        ...this.getContext(user, appScope),
+      })
     );
   }
 
@@ -377,14 +341,11 @@ export class LeadsController {
     @Body() dto: CreateLeadFlagDto
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadFlagCommands.CREATE },
-        {
-          leadId: id,
-          dto,
-          context: this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadFlagCommands.CREATE }, {
+        leadId: id,
+        dto,
+        context: this.getContext(user, appScope),
+      })
     );
   }
 
@@ -404,10 +365,7 @@ export class LeadsController {
     @Body() body: { text: string }
   ): Promise<MadLibAnalysisResult> {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadOnboardingCommands.ANALYZE_MAD_LIB },
-        body
-      )
+      this.leadClient.send({ cmd: LeadOnboardingCommands.ANALYZE_MAD_LIB }, body)
     );
   }
 
@@ -417,11 +375,7 @@ export class LeadsController {
   @ApiOperation({ summary: 'Parse a resume upload for onboarding prefill' })
   async parseResume(
     @UploadedFile()
-    file: {
-      originalname: string;
-      mimetype: string;
-      buffer: Buffer;
-    }
+    file: { originalname: string; mimetype: string; buffer: Buffer }
   ): Promise<ResumeParseResult> {
     if (!file) {
       throw new BadRequestException('Resume file is required.');
@@ -441,9 +395,7 @@ export class LeadsController {
 
   @Get('locations/autocomplete')
   @RequirePermissions('lead.onboarding.update')
-  @ApiOperation({
-    summary: 'Autocomplete city/location inputs for Maps searches',
-  })
+  @ApiOperation({ summary: 'Autocomplete city/location inputs for Maps searches' })
   async autocompleteLocations(
     @Query('q') query?: string
   ): Promise<LocationAutocompleteSuggestion[]> {
@@ -473,13 +425,10 @@ export class LeadsController {
     @Body() data: ConfirmOnboardingRequest
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadOnboardingCommands.CONFIRM },
-        {
-          ...data,
-          context: this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadOnboardingCommands.CONFIRM }, {
+        ...data,
+        context: this.getContext(user, appScope),
+      })
     );
   }
 
@@ -492,13 +441,10 @@ export class LeadsController {
     @Body() data: { leadId: string; topicId: string }
   ) {
     return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadAnalysisCommands.RUN },
-        {
-          ...data,
-          ...this.getContext(user, appScope),
-        }
-      )
+      this.leadClient.send({ cmd: LeadAnalysisCommands.RUN }, {
+        ...data,
+        ...this.getContext(user, appScope),
+      })
     );
   }
 }

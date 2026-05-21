@@ -45,7 +45,9 @@ export const appRoutes: Routes = [
   {
     path: 'feed',
     loadComponent: () =>
-      import('./components/feed/feed.component').then((m) => m.FeedComponent),
+      import('./components/feed/feed.component').then(
+        (m) => m.FeedComponent
+      ),
     canActivate: [AuthGuard],
   },
   {

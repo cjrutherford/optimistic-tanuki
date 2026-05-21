@@ -97,10 +97,7 @@ test.describe('Map rendering', () => {
       request
     )) as CommunityWithCoordinates[];
     const cluster = findNearbyCluster(communities);
-    test.skip(
-      !cluster,
-      'Seeded localities do not include a nearby city cluster'
-    );
+    test.skip(!cluster, 'Seeded localities do not include a nearby city cluster');
 
     if (baseURL) {
       await page
@@ -115,9 +112,7 @@ test.describe('Map rendering', () => {
     await expect(page.locator('.leaflet-container')).toBeVisible();
 
     await expect(page.locator('.map-marker--user')).toHaveCount(1);
-    expect(
-      await page.locator('.map-marker--locality').count()
-    ).toBeGreaterThanOrEqual(2);
+    expect(await page.locator('.map-marker--locality').count()).toBeGreaterThanOrEqual(2);
     await expectInsideMap(page, '.map-marker--user');
     await expectInsideMap(page, '.map-marker--locality');
   });

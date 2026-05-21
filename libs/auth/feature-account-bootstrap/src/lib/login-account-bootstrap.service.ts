@@ -22,7 +22,7 @@ export class LoginAccountBootstrapService {
     private readonly authClient: Pick<ClientProxy, 'send'>,
     private readonly profileClient: Pick<ClientProxy, 'send'>,
     private readonly permissionsClient: Pick<ClientProxy, 'send'>,
-    private readonly roleInit: Pick<RoleInitService, 'processNow'>
+    private readonly roleInit: Pick<RoleInitService, 'processNow'>,
   ) {}
 
   async login(data: LoginRequest, appScope: string) {
@@ -34,8 +34,8 @@ export class LoginAccountBootstrapService {
       await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UserIdFromEmail },
-          { email: normalizedRequest.email }
-        )
+          { email: normalizedRequest.email },
+        ),
       );
     const userId =
       typeof userIdResult === 'string'
@@ -44,24 +44,24 @@ export class LoginAccountBootstrapService {
 
     if (!userId) {
       throw new Error(
-        `Unable to resolve userId for email=${normalizedRequest.email}`
+        `Unable to resolve userId for email=${normalizedRequest.email}`,
       );
     }
 
     const profiles = (await firstValueFrom(
       this.profileClient.send(
         { cmd: ProfileCommands.GetAll },
-        { where: { userId } }
-      )
+        { where: { userId } },
+      ),
     )) as ProfileDto[];
 
     const effectiveAppScope =
       appScope === 'owner-console' ? 'global' : appScope;
     let appScopedProfile = profiles.find(
-      (profile) => profile.appScope === effectiveAppScope
+      (profile) => profile.appScope === effectiveAppScope,
     );
     const globalProfile = profiles.find(
-      (profile) => !profile.appScope || profile.appScope === 'global'
+      (profile) => !profile.appScope || profile.appScope === 'global',
     );
     const seedProfile = globalProfile || profiles[0] || null;
 
@@ -89,7 +89,7 @@ export class LoginAccountBootstrapService {
       };
 
       const createdProfile = (await firstValueFrom(
-        this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
+        this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile),
       )) as ProfileDto;
 
       const roleInitOptions = new RoleInitBuilder()
@@ -117,8 +117,8 @@ export class LoginAccountBootstrapService {
       const roles = (await firstValueFrom(
         this.permissionsClient.send(
           { cmd: RoleCommands.GetUserRoles },
-          { profileId: profileToUse.id, appScope: 'global' }
-        )
+          { profileId: profileToUse.id, appScope: 'global' },
+        ),
       )) as Array<{ role?: { name?: string } }>;
 
       const allowedRoleNames = new Set([
@@ -128,12 +128,12 @@ export class LoginAccountBootstrapService {
         'system_admin',
       ]);
       const hasOwnerConsoleAccess = roles.some((assignment) =>
-        allowedRoleNames.has(assignment.role?.name || '')
+        allowedRoleNames.has(assignment.role?.name || ''),
       );
 
       if (!hasOwnerConsoleAccess) {
         throw new Error(
-          'This account is not authorized for Owner Console access.'
+          'This account is not authorized for Owner Console access.',
         );
       }
     }
@@ -141,8 +141,8 @@ export class LoginAccountBootstrapService {
     return firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.Login },
-        { ...normalizedRequest, profileId: profileToUse.id }
-      )
+        { ...normalizedRequest, profileId: profileToUse.id },
+      ),
     );
   }
 }

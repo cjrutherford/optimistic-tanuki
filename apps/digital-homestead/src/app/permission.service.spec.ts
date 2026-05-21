@@ -58,10 +58,8 @@ describe('PermissionService', () => {
   describe('Authentication changes', () => {
     it('should load permissions when authenticated', fakeAsync(() => {
       isAuthenticated$.next(true);
-
-      const req = httpMock.expectOne(
-        `/api/permissions/user-roles/${mockProfileId}`
-      );
+      
+      const req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
       expect(req.request.method).toBe('GET');
       req.flush(mockUserRoles);
       tick();
@@ -72,9 +70,7 @@ describe('PermissionService', () => {
 
     it('should clear permissions when logged out', fakeAsync(() => {
       isAuthenticated$.next(true);
-      const req = httpMock.expectOne(
-        `/api/permissions/user-roles/${mockProfileId}`
-      );
+      const req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
       req.flush(mockUserRoles);
       tick();
       expect(service.hasFullAccess).toBe(true);
@@ -89,9 +85,7 @@ describe('PermissionService', () => {
   describe('Permission checks', () => {
     beforeEach(fakeAsync(() => {
       isAuthenticated$.next(true);
-      const req = httpMock.expectOne(
-        `/api/permissions/user-roles/${mockProfileId}`
-      );
+      const req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
       req.flush(mockUserRoles);
       tick();
     }));
@@ -114,42 +108,38 @@ describe('PermissionService', () => {
   });
 
   describe('checkFullAccess', () => {
-    it('should grant access based on write permissions even if role is not in OWNER_ROLES', fakeAsync(() => {
-      const rolesWithWritePerm = [
-        {
-          role: {
-            name: 'custom_role',
-            permissions: [{ name: 'blog.post.create' }],
-          },
-        },
-      ];
-      isAuthenticated$.next(true);
-      const req = httpMock.expectOne(
-        `/api/permissions/user-roles/${mockProfileId}`
-      );
-      req.flush(rolesWithWritePerm);
-      tick();
-
-      expect(service.hasFullAccess).toBe(true);
-    }));
+      it('should grant access based on write permissions even if role is not in OWNER_ROLES', fakeAsync(() => {
+          const rolesWithWritePerm = [
+              {
+                  role: {
+                      name: 'custom_role',
+                      permissions: [{ name: 'blog.post.create' }]
+                  }
+              }
+          ];
+          isAuthenticated$.next(true);
+          const req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
+          req.flush(rolesWithWritePerm);
+          tick();
+          
+          expect(service.hasFullAccess).toBe(true);
+      }));
   });
 
   describe('refreshPermissions', () => {
-    it('should reload permissions', fakeAsync(() => {
-      isAuthenticated$.next(true);
-      let req = httpMock.expectOne(
-        `/api/permissions/user-roles/${mockProfileId}`
-      );
-      req.flush([]);
-      tick();
-      expect(service.hasFullAccess).toBe(false);
-
-      service.refreshPermissions();
-      req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
-      req.flush(mockUserRoles);
-      tick();
-
-      expect(service.hasFullAccess).toBe(true);
-    }));
+      it('should reload permissions', fakeAsync(() => {
+          isAuthenticated$.next(true);
+          let req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
+          req.flush([]);
+          tick();
+          expect(service.hasFullAccess).toBe(false);
+          
+          service.refreshPermissions();
+          req = httpMock.expectOne(`/api/permissions/user-roles/${mockProfileId}`);
+          req.flush(mockUserRoles);
+          tick();
+          
+          expect(service.hasFullAccess).toBe(true);
+      }));
   });
 });

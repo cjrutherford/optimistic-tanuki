@@ -17,9 +17,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
   template: `
     <section class="review-shell" *ngIf="draft() as build; else missingDraft">
       <header class="review-header">
-        <button type="button" class="back-link" (click)="goBack()">
-          Back to build bench
-        </button>
+        <button type="button" class="back-link" (click)="goBack()">Back to build bench</button>
         <div class="review-headline">
           <div>
             <p class="eyebrow">HAI Preflight</p>
@@ -43,16 +41,12 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           <section class="detail-grid">
             <article class="detail-card">
               <p class="eyebrow">Processor</p>
-              <strong>{{
-                selectedName(compatible()!.cpu, build.cpuId)
-              }}</strong>
+              <strong>{{ selectedName(compatible()!.cpu, build.cpuId) }}</strong>
               <span>{{ selectedSpecs(compatible()!.cpu, build.cpuId) }}</span>
             </article>
             <article class="detail-card">
               <p class="eyebrow">Memory</p>
-              <strong>{{
-                selectedName(compatible()!.ram, build.ramId)
-              }}</strong>
+              <strong>{{ selectedName(compatible()!.ram, build.ramId) }}</strong>
               <span>{{ selectedSpecs(compatible()!.ram, build.ramId) }}</span>
             </article>
             <article class="detail-card">
@@ -62,14 +56,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
             </article>
             <article class="detail-card">
               <p class="eyebrow">Graphics</p>
-              <strong>{{
-                selectedName(compatible()!.gpu, build.gpuId || '') ||
-                  'Integrated / none'
-              }}</strong>
-              <span>{{
-                selectedSpecs(compatible()!.gpu, build.gpuId || '') ||
-                  'No discrete accelerator selected.'
-              }}</span>
+              <strong>{{ selectedName(compatible()!.gpu, build.gpuId || '') || 'Integrated / none' }}</strong>
+              <span>{{ selectedSpecs(compatible()!.gpu, build.gpuId || '') || 'No discrete accelerator selected.' }}</span>
             </article>
           </section>
         </div>
@@ -107,11 +95,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
             <strong>\${{ totals.totalPrice }}</strong>
           </div>
 
-          <button
-            type="button"
-            class="checkout-action"
-            (click)="goToCheckout()"
-          >
+          <button type="button" class="checkout-action" (click)="goToCheckout()">
             Continue to checkout
           </button>
         </aside>
@@ -123,12 +107,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         <section class="overview-card">
           <p class="eyebrow">HAI Preflight</p>
           <h2>Build draft unavailable</h2>
-          <p>
-            {{
-              errorMessage() ||
-                'Select a chassis and components before opening review.'
-            }}
-          </p>
+          <p>{{ errorMessage() || 'Select a chassis and components before opening review.' }}</p>
         </section>
       </section>
     </ng-template>
@@ -151,11 +130,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .price-card {
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 1.8rem;
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.04),
-            rgba(255, 255, 255, 0.015)
-          ),
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
           rgba(4, 12, 15, 0.78);
       }
 
@@ -308,9 +284,7 @@ export class ReviewComponent implements OnInit {
   private readonly configuratorState = inject(ConfiguratorStateService);
 
   readonly draft = computed(() => this.configuratorState.draft());
-  readonly price = signal<PriceBreakdown | null>(
-    this.configuratorState.priceBreakdown()
-  );
+  readonly price = signal<PriceBreakdown | null>(this.configuratorState.priceBreakdown());
   readonly chassis = signal<Chassis | null>(null);
   readonly compatible = signal<CompatibleComponents | null>(null);
   readonly errorMessage = signal('');

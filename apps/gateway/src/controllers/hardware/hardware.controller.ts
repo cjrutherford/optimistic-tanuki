@@ -17,10 +17,7 @@ export class HardwareController {
   @Get('chassis')
   async getChassis() {
     return await firstValueFrom(
-      this.systemConfiguratorService.send(
-        { cmd: HardwareCommands.GET_CHASSIS },
-        {}
-      )
+      this.systemConfiguratorService.send({ cmd: HardwareCommands.GET_CHASSIS }, {})
     );
   }
 

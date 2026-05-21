@@ -1,6 +1,10 @@
 <div *ngIf="useTile; else cardTemplate">
   <otui-tile style="width: 100%; display: block">
-    <div class="title-bar" [class.compact]="isCompact" [class.small]="isSmall">
+    <div
+      class="title-bar"
+      [class.compact]="isCompact"
+      [class.small]="isSmall"
+    >
       <img
         *ngIf="logoSrc"
         [src]="logoSrc"
@@ -21,7 +25,11 @@
 
 <ng-template #cardTemplate>
   <otui-card>
-    <div class="title-bar" [class.compact]="isCompact" [class.small]="isSmall">
+    <div
+      class="title-bar"
+      [class.compact]="isCompact"
+      [class.small]="isSmall"
+    >
       <otui-button variant="rounded" (click)="onMenuClick()">
         <img
           *ngIf="logoSrc"

@@ -4,14 +4,16 @@ import {
   RecordUsageDto,
 } from '@optimistic-tanuki/billing-contracts';
 
-export function buildRecordUsagePayload(input: RecordUsageDto): RecordUsageDto {
+export function buildRecordUsagePayload(
+  input: RecordUsageDto,
+): RecordUsageDto {
   return {
     ...input,
   };
 }
 
 export function buildBatchRecordUsagePayload(
-  events: RecordUsageDto[]
+  events: RecordUsageDto[],
 ): BatchRecordUsageDto {
   return {
     events: events.map((event) => buildRecordUsagePayload(event)),
@@ -19,7 +21,7 @@ export function buildBatchRecordUsagePayload(
 }
 
 export function buildPeriodInvoicePreviewPayload(
-  input: PeriodInvoicePreviewInput
+  input: PeriodInvoicePreviewInput,
 ): PeriodInvoicePreviewInput {
   return {
     ...input,

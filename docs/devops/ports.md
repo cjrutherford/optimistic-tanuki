@@ -2,27 +2,27 @@
 
 ## Microservices
 
-| Service Name            | K8s Service Name        | Docker Port | K8s Port | Protocol  |
-| ----------------------- | ----------------------- | ----------- | -------- | --------- |
-| gateway                 | gateway                 | 3000        | 3000     | HTTP      |
-| gateway (chat ws)       | gateway                 | 3300        | 3300     | WebSocket |
-| gateway (social ws)     | gateway                 | 3301        | 3301     | WebSocket |
-| authentication          | authentication          | 3001        | 3001     | TCP       |
-| profile                 | profile                 | 3002        | 3002     | TCP       |
-| social                  | social                  | 3003        | 3003     | TCP       |
-| assets                  | assets                  | 3005        | 3005     | TCP       |
-| project-planning        | project-planning        | 3006        | 3006     | TCP       |
-| chat-collector          | chat-collector          | 3007        | 3007     | TCP       |
-| telos-docs-service      | telos-docs-service      | 3008        | 3008     | TCP       |
-| prompt-proxy            | prompt-proxy            | 3009        | 3009     | TCP       |
-| ai-orchestration        | ai-orchestration        | 3010        | 3010     | TCP       |
-| blogging                | blogging                | 3011        | 3011     | TCP       |
-| permissions             | permissions             | 3012        | 3012     | TCP       |
-| store                   | store                   | 3013        | 3013     | TCP       |
-| app-configurator        | app-configurator        | 3014        | 3014     | TCP       |
-| system-configurator-api | system-configurator-api | 3021        | 3021     | TCP       |
-| forum                   | forum                   | 3015        | 3015     | TCP       |
-| wellness                | wellness                | 3016        | 3016     | TCP       |
+| Service Name        | K8s Service Name   | Docker Port | K8s Port | Protocol  |
+| ------------------- | ------------------ | ----------- | -------- | --------- |
+| gateway             | gateway            | 3000        | 3000     | HTTP      |
+| gateway (chat ws)   | gateway            | 3300        | 3300     | WebSocket |
+| gateway (social ws) | gateway            | 3301        | 3301     | WebSocket |
+| authentication      | authentication     | 3001        | 3001     | TCP       |
+| profile             | profile            | 3002        | 3002     | TCP       |
+| social              | social             | 3003        | 3003     | TCP       |
+| assets              | assets             | 3005        | 3005     | TCP       |
+| project-planning    | project-planning   | 3006        | 3006     | TCP       |
+| chat-collector      | chat-collector     | 3007        | 3007     | TCP       |
+| telos-docs-service  | telos-docs-service | 3008        | 3008     | TCP       |
+| prompt-proxy        | prompt-proxy       | 3009        | 3009     | TCP       |
+| ai-orchestration    | ai-orchestration   | 3010        | 3010     | TCP       |
+| blogging            | blogging           | 3011        | 3011     | TCP       |
+| permissions         | permissions        | 3012        | 3012     | TCP       |
+| store               | store              | 3013        | 3013     | TCP       |
+| app-configurator    | app-configurator   | 3014        | 3014     | TCP       |
+| system-configurator-api | system-configurator-api | 3021    | 3021     | TCP       |
+| forum               | forum              | 3015        | 3015     | TCP       |
+| wellness            | wellness           | 3016        | 3016     | TCP       |
 
 ## Client Applications
 

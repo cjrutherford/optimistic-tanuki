@@ -7,13 +7,9 @@ export const clientTasksFeatureGuard: CanActivateFn = () => {
   const siteConfig = inject(BusinessSiteConfigStore);
   const router = inject(Router);
 
-  return siteConfig
-    .fetch()
-    .pipe(
-      map((site) =>
-        site.features.clientTasks.enabled
-          ? true
-          : router.createUrlTree(['/client/dashboard'])
-      )
-    );
+  return siteConfig.fetch().pipe(
+    map((site) =>
+      site.features.clientTasks.enabled ? true : router.createUrlTree(['/client/dashboard'])
+    )
+  );
 };

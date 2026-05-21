@@ -6,7 +6,7 @@ import {
 
 export const financeAppScopeInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
-  next: HttpHandlerFn
+  next: HttpHandlerFn,
 ) => {
   if (!req.url.startsWith('/api')) {
     return next(req);
@@ -30,6 +30,6 @@ export const financeAppScopeInterceptor: HttpInterceptorFn = (
           ? { 'x-finance-tenant-id': activeTenantId }
           : {}),
       },
-    })
+    }),
   );
 };

@@ -783,7 +783,10 @@ export class PaymentsController {
   async getBusinessTheme(@Param('businessPageId') businessPageId: string) {
     return await firstValueFrom(
       this.paymentsClient
-        .send({ cmd: PaymentCommands.GET_BUSINESS_THEME }, { businessPageId })
+        .send(
+          { cmd: PaymentCommands.GET_BUSINESS_THEME },
+          { businessPageId }
+        )
         .pipe(defaultIfEmpty(null))
     );
   }

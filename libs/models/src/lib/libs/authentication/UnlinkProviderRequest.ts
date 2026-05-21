@@ -9,9 +9,6 @@ export class UnlinkProviderRequest {
   userId!: string;
 
   @IsEnum(OAuthProvider)
-  @ApiProperty({
-    enum: OAuthProvider,
-    description: 'The OAuth provider to unlink',
-  })
+  @ApiProperty({ enum: OAuthProvider, description: 'The OAuth provider to unlink' })
   provider!: OAuthProvider;
 }

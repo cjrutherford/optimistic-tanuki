@@ -28,10 +28,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
             </div>
           </div>
           <p class="feature-desc">Allow clients to book appointments online</p>
-          <div
-            class="feature-options"
-            [class.visible]="features.booking.enabled"
-          >
+          <div class="feature-options" [class.visible]="features.booking.enabled">
             <label class="checkbox-label">
               <input
                 type="checkbox"
@@ -43,10 +40,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
           </div>
         </div>
 
-        <div
-          class="feature-card"
-          [class.enabled]="features.clientPortal.enabled"
-        >
+        <div class="feature-card" [class.enabled]="features.clientPortal.enabled">
           <div class="feature-header">
             <div class="feature-toggle">
               <input
@@ -58,15 +52,10 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
               <label for="clientPortal">Client Portal</label>
             </div>
           </div>
-          <p class="feature-desc">
-            Login portal for clients to view sessions and progress
-          </p>
+          <p class="feature-desc">Login portal for clients to view sessions and progress</p>
         </div>
 
-        <div
-          class="feature-card"
-          [class.enabled]="features.clientTasks.enabled"
-        >
+        <div class="feature-card" [class.enabled]="features.clientTasks.enabled">
           <div class="feature-header">
             <div class="feature-toggle">
               <input
@@ -79,10 +68,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
             </div>
           </div>
           <p class="feature-desc">Assign tasks for clients to complete</p>
-          <div
-            class="feature-options"
-            [class.visible]="features.clientTasks.enabled"
-          >
+          <div class="feature-options" [class.visible]="features.clientTasks.enabled">
             <label class="checkbox-label">
               <input
                 type="checkbox"
@@ -109,10 +95,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
           <p class="feature-desc">Generate and track invoices for services</p>
         </div>
 
-        <div
-          class="feature-card"
-          [class.enabled]="features.testimonials.enabled"
-        >
+        <div class="feature-card" [class.enabled]="features.testimonials.enabled">
           <div class="feature-header">
             <div class="feature-toggle">
               <input
@@ -176,7 +159,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
         align-items: center;
         gap: 0.75rem;
       }
-      .feature-toggle input[type='checkbox'] {
+      .feature-toggle input[type="checkbox"] {
         width: 1.25rem;
         height: 1.25rem;
         accent-color: var(--primary);
@@ -243,20 +226,12 @@ export class FeaturesComponent {
   }
 
   updateBookingPayment(enabled: boolean): void {
-    this.state.updateFeatures({
-      booking: {
-        enabled: this.features.booking.enabled,
-        allowOnlinePayment: enabled,
-      },
-    });
+    this.state.updateFeatures({ booking: { enabled: this.features.booking.enabled, allowOnlinePayment: enabled } });
   }
 
   updateClientTaskCompletion(enabled: boolean): void {
     this.state.updateFeatures({
-      clientTasks: {
-        enabled: this.features.clientTasks.enabled,
-        allowClientCompletion: enabled,
-      },
+      clientTasks: { enabled: this.features.clientTasks.enabled, allowClientCompletion: enabled },
     });
   }
 

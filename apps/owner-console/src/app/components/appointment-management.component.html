@@ -15,7 +15,9 @@
         <option value="completed">Completed</option>
       </select>
     </label>
-    <button (click)="loadAppointments()" [disabled]="loading">Refresh</button>
+    <button (click)="loadAppointments()" [disabled]="loading">
+      Refresh
+    </button>
   </div>
 
   <div *ngIf="loading" class="loading">Loading appointments...</div>
@@ -136,18 +138,10 @@
           ></textarea>
         </div>
         <div class="modal-actions">
-          <button
-            type="button"
-            (click)="approveAppointment()"
-            class="btn-primary"
-          >
+          <button type="button" (click)="approveAppointment()" class="btn-primary">
             Approve
           </button>
-          <button
-            type="button"
-            (click)="closeApproveModal()"
-            class="btn-secondary"
-          >
+          <button type="button" (click)="closeApproveModal()" class="btn-secondary">
             Cancel
           </button>
         </div>
@@ -178,11 +172,7 @@
           <button type="button" (click)="denyAppointment()" class="btn-danger">
             Deny
           </button>
-          <button
-            type="button"
-            (click)="closeDenyModal()"
-            class="btn-secondary"
-          >
+          <button type="button" (click)="closeDenyModal()" class="btn-secondary">
             Cancel
           </button>
         </div>
@@ -195,12 +185,8 @@
     <div class="modal-content">
       <h3>Invoice Generated</h3>
       <div *ngIf="generatedInvoice">
-        <p>
-          <strong>Invoice Number:</strong> {{ generatedInvoice.invoiceNumber }}
-        </p>
-        <p>
-          <strong>Amount:</strong> ${{ generatedInvoice.amount.toFixed(2) }}
-        </p>
+        <p><strong>Invoice Number:</strong> {{ generatedInvoice.invoiceNumber }}</p>
+        <p><strong>Amount:</strong> ${{ generatedInvoice.amount.toFixed(2) }}</p>
         <p><strong>Currency:</strong> {{ generatedInvoice.currency }}</p>
         <p><strong>Status:</strong> {{ generatedInvoice.status }}</p>
       </div>

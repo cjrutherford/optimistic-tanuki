@@ -33,7 +33,7 @@ export class ProfileService {
   constructor(
     private readonly http: HttpClient,
     private readonly authState: AuthStateService
-  ) {}
+  ) { }
 
   /**
    * Get a profile from cache or fetch it

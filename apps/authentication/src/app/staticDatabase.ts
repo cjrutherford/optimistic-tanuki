@@ -20,9 +20,7 @@ const resolveConfigPath = () => {
   }
 
   throw new Error(
-    `Authentication staticDatabase config not found. Expected one of: ${candidates.join(
-      ', '
-    )}`
+    `Authentication staticDatabase config not found. Expected one of: ${candidates.join(', ')}`
   );
 };
 

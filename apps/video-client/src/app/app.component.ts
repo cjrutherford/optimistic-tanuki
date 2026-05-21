@@ -73,7 +73,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),
-      startWith(this.router.url)
+      startWith(this.router.url),
     );
 
     this.authSub = this.authState.isAuthenticated$.subscribe({
@@ -110,7 +110,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.foreground = theme.foreground;
         this.accent = theme.accent;
         this.backgroundGradient = theme.accentGradients['light'];
-      }
+      },
     );
   }
 

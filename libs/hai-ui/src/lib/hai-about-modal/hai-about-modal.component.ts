@@ -7,11 +7,7 @@ import {
   OnInit,
   inject,
 } from '@angular/core';
-import {
-  ModalComponent,
-  Tab,
-  TabsComponent,
-} from '@optimistic-tanuki/common-ui';
+import { ModalComponent, Tab, TabsComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutConfig } from '../hai-types/hai-app.config';
 import { HaiAppDirectoryService } from '../hai-types/hai-app-directory.service';
 import { getRandomHaiExpansion } from '../hai-types/hai-expansions';

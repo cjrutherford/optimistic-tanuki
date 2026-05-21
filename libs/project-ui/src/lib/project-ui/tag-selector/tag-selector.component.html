@@ -5,11 +5,9 @@
       class="tag-item"
       [class.selected]="isSelected(tag.id)"
       (click)="toggleTag(tag.id)"
-      [style.backgroundColor]="
-        isSelected(tag.id) ? tag.color || '#3498db' : 'transparent'
-      "
+      [style.backgroundColor]="isSelected(tag.id) ? (tag.color || '#3498db') : 'transparent'"
       [style.borderColor]="tag.color || '#3498db'"
-      [style.color]="isSelected(tag.id) ? 'white' : tag.color || '#3498db'"
+      [style.color]="isSelected(tag.id) ? 'white' : (tag.color || '#3498db')"
     >
       {{ tag.name }}
     </div>

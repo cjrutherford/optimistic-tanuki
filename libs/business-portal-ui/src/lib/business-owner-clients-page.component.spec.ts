@@ -60,16 +60,18 @@ describe('BusinessOwnerClientsPageComponent', () => {
         {
           provide: BusinessSiteConfigStore,
           useValue: {
-            site: jest.fn().mockReturnValue({
-              ...DEFAULT_BUSINESS_SITE_CONFIG,
-              features: {
-                ...DEFAULT_BUSINESS_SITE_CONFIG.features,
-                clientTasks: {
-                  enabled: true,
-                  allowClientCompletion: false,
+            site: jest
+              .fn()
+              .mockReturnValue({
+                ...DEFAULT_BUSINESS_SITE_CONFIG,
+                features: {
+                  ...DEFAULT_BUSINESS_SITE_CONFIG.features,
+                  clientTasks: {
+                    enabled: true,
+                    allowClientCompletion: false,
+                  },
                 },
-              },
-            }),
+              }),
             fetch: jest.fn().mockReturnValue(of(DEFAULT_BUSINESS_SITE_CONFIG)),
           },
         },
@@ -85,9 +87,7 @@ describe('BusinessOwnerClientsPageComponent', () => {
         label: 'Casey Client',
       },
     ]);
-    expect(fixture.componentInstance.selectedClient()?.email).toBe(
-      'casey@example.com'
-    );
+    expect(fixture.componentInstance.selectedClient()?.email).toBe('casey@example.com');
     expect(fixture.componentInstance.selectedClientBookings()).toHaveLength(1);
     expect(fixture.componentInstance.selectedClientRoutines()).toHaveLength(1);
   });
@@ -170,9 +170,7 @@ describe('BusinessOwnerClientsPageComponent', () => {
     rosterItems[1].click();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance.selectedClient()?.email).toBe(
-      'jordan@example.com'
-    );
+    expect(fixture.componentInstance.selectedClient()?.email).toBe('jordan@example.com');
     expect(fixture.nativeElement.textContent).toContain('Jordan Client');
     expect(fixture.nativeElement.textContent).toContain('Review call');
   });
@@ -251,16 +249,18 @@ describe('BusinessOwnerClientsPageComponent', () => {
         {
           provide: BusinessSiteConfigStore,
           useValue: {
-            site: jest.fn().mockReturnValue({
-              ...DEFAULT_BUSINESS_SITE_CONFIG,
-              features: {
-                ...DEFAULT_BUSINESS_SITE_CONFIG.features,
-                clientTasks: {
-                  enabled: false,
-                  allowClientCompletion: false,
+            site: jest
+              .fn()
+              .mockReturnValue({
+                ...DEFAULT_BUSINESS_SITE_CONFIG,
+                features: {
+                  ...DEFAULT_BUSINESS_SITE_CONFIG.features,
+                  clientTasks: {
+                    enabled: false,
+                    allowClientCompletion: false,
+                  },
                 },
-              },
-            }),
+              }),
             fetch: jest.fn().mockReturnValue(of(DEFAULT_BUSINESS_SITE_CONFIG)),
           },
         },

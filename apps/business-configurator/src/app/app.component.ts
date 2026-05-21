@@ -8,13 +8,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   imports: [RouterModule],
   selector: 'app-root',
   template: `<router-outlet></router-outlet>`,
-  styles: [
-    `
-      :host {
-        display: block;
-      }
-    `,
-  ],
+  styles: [`:host { display: block; }`],
 })
 export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);

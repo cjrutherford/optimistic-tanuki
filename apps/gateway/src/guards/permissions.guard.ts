@@ -34,7 +34,7 @@ export class PermissionsGuard implements CanActivate {
     private readonly cacheService: PermissionsCacheService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requirement = this.reflector.getAllAndOverride<PermissionRequirement>(
@@ -137,11 +137,11 @@ export class PermissionsGuard implements CanActivate {
     // Get the global scope for permission checking
     const globalScope = checkGlobalFirst
       ? await firstValueFrom(
-          this.permissionsClient.send(
-            { cmd: AppScopeCommands.GetByName },
-            { name: 'global' }
-          )
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          { name: 'global' }
         )
+      )
       : null;
 
     const { permissions } = requirement;

@@ -1,13 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsString,
-  IsDate,
-  IsOptional,
-  IsNumber,
-  IsBoolean,
-  IsUUID,
-} from 'class-validator';
+import { IsString, IsDate, IsOptional, IsNumber, IsBoolean, IsUUID } from 'class-validator';
 import { FinanceWorkspace } from './finance-workspace.type';
 import {
   BankSyncSourceType,
@@ -15,10 +8,7 @@ import {
 } from './bank-connection.dto';
 
 export class UpdateTransactionDto {
-  @ApiProperty({
-    description: 'The amount of the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'The amount of the transaction', required: false })
   @Type(() => Number)
   @IsNumber()
   @IsOptional()
@@ -29,27 +19,18 @@ export class UpdateTransactionDto {
   @IsOptional()
   type?: string;
 
-  @ApiProperty({
-    description: 'The account associated with the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'The account associated with the transaction', required: false })
   @IsString()
   @IsUUID()
   @IsOptional()
   accountId?: string;
 
-  @ApiProperty({
-    description: 'Description of the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'Description of the transaction', required: false })
   @IsString()
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
-    description: 'The category of the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'The category of the transaction', required: false })
   @IsString()
   @IsOptional()
   category?: string;
@@ -60,26 +41,17 @@ export class UpdateTransactionDto {
   @IsOptional()
   transactionDate?: Date;
 
-  @ApiProperty({
-    description: 'Reference for the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'Reference for the transaction', required: false })
   @IsString()
   @IsOptional()
   reference?: string;
 
-  @ApiProperty({
-    description: 'Whether the transaction is recurring',
-    required: false,
-  })
+  @ApiProperty({ description: 'Whether the transaction is recurring', required: false })
   @IsBoolean()
   @IsOptional()
   isRecurring?: boolean;
 
-  @ApiProperty({
-    description: 'Workspace for the transaction',
-    required: false,
-  })
+  @ApiProperty({ description: 'Workspace for the transaction', required: false })
   @IsString()
   @IsOptional()
   workspace?: FinanceWorkspace;

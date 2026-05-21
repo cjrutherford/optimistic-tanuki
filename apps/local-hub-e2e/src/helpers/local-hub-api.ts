@@ -1,4 +1,9 @@
-import { APIRequestContext, APIResponse, expect, Page } from '@playwright/test';
+import {
+  APIRequestContext,
+  APIResponse,
+  expect,
+  Page,
+} from '@playwright/test';
 import { getGatewayUrl } from '../fixtures/helpers';
 
 const TEST_PASSWORD = 'TestPass123!';
@@ -20,7 +25,10 @@ export function apiUrl(path: string): string {
   return `${getGatewayUrl()}${normalizedPath}`;
 }
 
-export async function expectPageLoads(page: Page, path: string): Promise<void> {
+export async function expectPageLoads(
+  page: Page,
+  path: string,
+): Promise<void> {
   const response = await page.goto(path);
   expect(response?.status()).toBeLessThan(400);
   await page.waitForLoadState('domcontentloaded');
@@ -29,7 +37,7 @@ export async function expectPageLoads(page: Page, path: string): Promise<void> {
 
 export async function expectRedirectsToLogin(
   page: Page,
-  path: string
+  path: string,
 ): Promise<void> {
   const response = await page.goto(path);
   expect(response?.status()).toBeLessThan(400);
@@ -38,7 +46,7 @@ export async function expectRedirectsToLogin(
 }
 
 export async function getCommunities(
-  request: APIRequestContext
+  request: APIRequestContext,
 ): Promise<LocalHubCommunity[]> {
   const response = await request.get(apiUrl('/api/communities'));
   expect(response.ok()).toBeTruthy();
@@ -48,30 +56,30 @@ export async function getCommunities(
 }
 
 export function findCity(
-  communities: LocalHubCommunity[]
+  communities: LocalHubCommunity[],
 ): LocalHubCommunity | undefined {
   return communities.find((community) => community.localityType === 'city');
 }
 
 export function findCommunity(
-  communities: LocalHubCommunity[]
+  communities: LocalHubCommunity[],
 ): LocalHubCommunity | undefined {
   return communities.find(
-    (community) => community.slug && community.localityType !== 'city'
+    (community) => community.slug && community.localityType !== 'city',
   );
 }
 
 export function expectOkOrStatus(
   response: APIResponse,
-  allowedStatuses: number[]
+  allowedStatuses: number[],
 ): void {
   expect(
-    response.ok() || allowedStatuses.includes(response.status())
+    response.ok() || allowedStatuses.includes(response.status()),
   ).toBeTruthy();
 }
 
 export async function createAuthenticatedSession(
-  request: APIRequestContext
+  request: APIRequestContext,
 ): Promise<AuthSession> {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const email = `authe2e_${suffix}@test.com`;
@@ -87,15 +95,12 @@ export async function createAuthenticatedSession(
     },
   });
 
-  const loginResponse = await request.post(
-    apiUrl('/api/authentication/login'),
-    {
-      data: {
-        email,
-        password: TEST_PASSWORD,
-      },
-    }
-  );
+  const loginResponse = await request.post(apiUrl('/api/authentication/login'), {
+    data: {
+      email,
+      password: TEST_PASSWORD,
+    },
+  });
 
   expect(loginResponse.ok()).toBeTruthy();
   const loginData = await loginResponse.json();
@@ -105,7 +110,10 @@ export async function createAuthenticatedSession(
   return { email, token };
 }
 
-export async function addAuthToken(page: Page, token: string): Promise<void> {
+export async function addAuthToken(
+  page: Page,
+  token: string,
+): Promise<void> {
   await page.addInitScript((authToken) => {
     localStorage.setItem('ot-local-hub-authToken', authToken);
   }, token);
@@ -114,7 +122,7 @@ export async function addAuthToken(page: Page, token: string): Promise<void> {
 export async function createCommunity(
   request: APIRequestContext,
   token: string,
-  cityId: string
+  cityId: string,
 ): Promise<LocalHubCommunity | undefined> {
   const response = await request.post(apiUrl('/api/communities'), {
     headers: {
@@ -140,7 +148,7 @@ export async function createPost(
   request: APIRequestContext,
   token: string,
   communityId: string,
-  title: string
+  title: string,
 ): Promise<{ id?: string; title?: string } | undefined> {
   const response = await request.post(apiUrl('/api/social/post'), {
     headers: {

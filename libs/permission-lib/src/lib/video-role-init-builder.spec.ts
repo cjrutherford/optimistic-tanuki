@@ -18,7 +18,7 @@ describe('RoleInitBuilder video-client defaults', () => {
           roleName: 'video_channel_creator',
           profileId: 'profile-1',
         },
-      ])
+      ]),
     );
   });
 });

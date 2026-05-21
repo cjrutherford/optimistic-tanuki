@@ -117,9 +117,7 @@ export class OAuthController {
     @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined
   ) {
-    const provider = String(
-      (request.params as { provider?: string }).provider || ''
-    )
+    const provider = String((request.params as { provider?: string }).provider || '')
       .trim()
       .toLowerCase();
     if (!this.providers.includes(provider)) {
@@ -135,8 +133,7 @@ export class OAuthController {
 
     const validatedReturnTo = this.validateReturnTo(returnTo);
     const appScope =
-      requestedAppScope?.trim() ||
-      this.resolveAppScopeForReturnTo(validatedReturnTo);
+      requestedAppScope?.trim() || this.resolveAppScopeForReturnTo(validatedReturnTo);
     if (!appScope) {
       throw new HttpException(
         'Unable to resolve app scope for OAuth request',
@@ -190,9 +187,7 @@ export class OAuthController {
     @Req() request: Request,
     @Res() response: Response
   ) {
-    const provider = String(
-      (request.params as { provider?: string }).provider || ''
-    )
+    const provider = String((request.params as { provider?: string }).provider || '')
       .trim()
       .toLowerCase();
     if (!this.providers.includes(provider)) {
@@ -202,12 +197,8 @@ export class OAuthController {
       );
     }
 
-    const {
-      code,
-      state,
-      error,
-      error_description: errorDescription,
-    } = request.query as Record<string, string | undefined>;
+    const { code, state, error, error_description: errorDescription } =
+      request.query as Record<string, string | undefined>;
     if (!state) {
       throw new HttpException('Missing OAuth state', HttpStatus.BAD_REQUEST);
     }
@@ -259,11 +250,7 @@ export class OAuthController {
 
       let userId = loginResult?.data?.userId as string | undefined;
       if (!userId && loginResult?.data?.needsRegistration) {
-        userId = await this.registerOAuthUser(
-          statePayload.appScope,
-          provider,
-          identity
-        );
+        userId = await this.registerOAuthUser(statePayload.appScope, provider, identity);
       }
 
       if (!userId) {
@@ -465,7 +452,10 @@ export class OAuthController {
       this.logger.debug(`Getting OAuth configuration for domain=${domain}`);
 
       return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.GetOAuthConfig }, { domain })
+        this.authClient.send(
+          { cmd: AuthCommands.GetOAuthConfig },
+          { domain }
+        )
       );
     } catch (error) {
       this.logger.error('Error in getOAuthConfig:', error?.message || error);
@@ -532,7 +522,9 @@ export class OAuthController {
     }
 
     const app =
-      this.registry.apps.find((entry) => entry.appId === 'client-interface') ??
+      this.registry.apps.find(
+        (entry) => entry.appId === 'client-interface'
+      ) ??
       this.findRegistryAppByDomain(process.env.CLIENT_INTERFACE_DOMAIN);
 
     if (app?.uiBaseUrl) {
@@ -545,9 +537,7 @@ export class OAuthController {
     );
   }
 
-  private findRegistryAppByDomain(
-    domain?: string
-  ): AppRegistration | undefined {
+  private findRegistryAppByDomain(domain?: string): AppRegistration | undefined {
     if (!domain) {
       return undefined;
     }
@@ -565,8 +555,7 @@ export class OAuthController {
       this.configService.get<GatewayOAuthProviderConfig>(`oauth.${provider}`) ||
       {};
     const appEntries =
-      this.configService.get<Array<Record<string, unknown>>>('oauth.apps') ||
-      [];
+      this.configService.get<Array<Record<string, unknown>>>('oauth.apps') || [];
     const domainEntry = domain
       ? appEntries.find((entry) => entry?.domain === domain)
       : undefined;
@@ -621,10 +610,7 @@ export class OAuthController {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
     if (Date.now() - payload.issuedAt > this.oauthStateTtlMs) {
-      throw new HttpException(
-        'OAuth state has expired',
-        HttpStatus.BAD_REQUEST
-      );
+      throw new HttpException('OAuth state has expired', HttpStatus.BAD_REQUEST);
     }
 
     payload.returnTo = this.validateReturnTo(payload.returnTo);
@@ -714,17 +700,10 @@ export class OAuthController {
     >;
     const accessToken = tokenPayload.access_token;
     if (!accessToken) {
-      throw new Error(
-        `${provider} token exchange did not return an access token`
-      );
+      throw new Error(`${provider} token exchange did not return an access token`);
     }
 
-    return this.fetchProviderIdentity(
-      provider,
-      accessToken,
-      tokenPayload,
-      config
-    );
+    return this.fetchProviderIdentity(provider, accessToken, tokenPayload, config);
   }
 
   private async fetchProviderIdentity(
@@ -767,8 +746,7 @@ export class OAuthController {
         };
       case 'github': {
         const githubEmail =
-          String(profile.email || '') ||
-          (await this.fetchGithubEmail(accessToken));
+          String(profile.email || '') || (await this.fetchGithubEmail(accessToken));
         return {
           providerUserId: String(profile.id || ''),
           email: githubEmail,

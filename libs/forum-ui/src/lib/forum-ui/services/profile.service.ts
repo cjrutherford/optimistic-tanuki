@@ -14,17 +14,20 @@ export interface UserProfile {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ProfileService {
   private readonly baseUrl = '/api/profile';
 
-  constructor(private http: HttpClient, private authState: AuthStateService) {}
+  constructor(
+    private http: HttpClient,
+    private authState: AuthStateService
+  ) {}
 
   getCurrentUserProfile(): UserProfile | null {
     const user = this.authState.getCurrentUser();
     if (!user) return null;
-
+    
     // Return a mock profile based on the current user token
     // In a real app, this would fetch from the profile service
     return {
@@ -39,17 +42,10 @@ export class ProfileService {
   }
 
   async getUserProfile(userId: string): Promise<UserProfile> {
-    return this.http
-      .get<UserProfile>(`${this.baseUrl}/users/${userId}`)
-      .toPromise() as Promise<UserProfile>;
+    return this.http.get<UserProfile>(`${this.baseUrl}/users/${userId}`).toPromise() as Promise<UserProfile>;
   }
 
-  async updateProfile(
-    profileId: string,
-    updates: Partial<UserProfile>
-  ): Promise<UserProfile> {
-    return this.http
-      .put<UserProfile>(`${this.baseUrl}/${profileId}`, updates)
-      .toPromise() as Promise<UserProfile>;
+  async updateProfile(profileId: string, updates: Partial<UserProfile>): Promise<UserProfile> {
+    return this.http.put<UserProfile>(`${this.baseUrl}/${profileId}`, updates).toPromise() as Promise<UserProfile>;
   }
 }

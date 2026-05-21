@@ -20,10 +20,7 @@ export class UpdateBudgetDto {
   @IsOptional()
   limit?: number;
 
-  @ApiProperty({
-    description: 'The spent amount of the budget',
-    required: false,
-  })
+  @ApiProperty({ description: 'The spent amount of the budget', required: false })
   @Type(() => Number)
   @IsNumber()
   @IsOptional()

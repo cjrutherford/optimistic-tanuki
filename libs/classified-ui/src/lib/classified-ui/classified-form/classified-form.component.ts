@@ -158,8 +158,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         padding: 24px;
         background: color-mix(in srgb, var(--surface) 94%, transparent);
         border-radius: 24px;
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
         box-shadow: var(--shadow-card, 0 18px 40px rgba(15, 23, 42, 0.12));
         backdrop-filter: blur(14px);
       }
@@ -189,8 +188,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
       textarea,
       select {
         padding: 10px 12px;
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
         border-radius: 12px;
         font-size: 0.9rem;
         font-family: inherit;
@@ -226,8 +224,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
         height: 72px;
         object-fit: cover;
         border-radius: 12px;
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 82%, transparent);
       }
       .remove-image {
         position: absolute;
@@ -276,8 +273,7 @@ import { SelectComponent } from '@optimistic-tanuki/form-ui';
       }
       .btn-secondary {
         background: color-mix(in srgb, var(--surface) 82%, transparent);
-        border: 1px solid
-          color-mix(in srgb, var(--primary) 32%, var(--border, var(--muted)));
+        border: 1px solid color-mix(in srgb, var(--primary) 32%, var(--border, var(--muted)));
         color: var(--primary, #3f51b5);
         &:hover {
           background: color-mix(in srgb, var(--primary) 8%, var(--surface));

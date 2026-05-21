@@ -15,14 +15,9 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
   standalone: true,
   imports: [CommonModule],
   template: `
-    <section
-      class="configure-shell"
-      *ngIf="chassis() as selectedChassis; else configureState"
-    >
+    <section class="configure-shell" *ngIf="chassis() as selectedChassis; else configureState">
       <header class="configure-header">
-        <button type="button" class="back-link" (click)="goBack()">
-          Back to systems
-        </button>
+        <button type="button" class="back-link" (click)="goBack()">Back to systems</button>
 
         <div class="header-grid">
           <div class="headline">
@@ -34,10 +29,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           <aside class="build-meta">
             <div>
               <span>Profile</span>
-              <strong
-                >{{ selectedChassis.type }} /
-                {{ selectedChassis.useCase }}</strong
-              >
+              <strong>{{ selectedChassis.type }} / {{ selectedChassis.useCase }}</strong>
             </div>
             <div>
               <span>Envelope</span>
@@ -69,10 +61,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
               >
                 <span class="option-type">CPU</span>
                 <strong>{{ cpu.name }}</strong>
-                <small
-                  >{{ cpu.specs['cores'] }} cores ·
-                  {{ cpu.specs['frequency'] }}</small
-                >
+                <small>{{ cpu.specs['cores'] }} cores · {{ cpu.specs['frequency'] }}</small>
                 <em>\${{ cpu.sellingPrice }}</em>
               </button>
             </div>
@@ -94,9 +83,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
               >
                 <span class="option-type">RAM</span>
                 <strong>{{ ram.name }}</strong>
-                <small
-                  >{{ ram.specs['capacity'] }} · {{ ram.specs['speed'] }}</small
-                >
+                <small>{{ ram.specs['capacity'] }} · {{ ram.specs['speed'] }}</small>
                 <em>\${{ ram.sellingPrice }}</em>
               </button>
             </div>
@@ -118,10 +105,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
               >
                 <span class="option-type">Storage</span>
                 <strong>{{ storage.name }}</strong>
-                <small
-                  >{{ storage.specs['capacity'] }} ·
-                  {{ storage.specs['type'] }}</small
-                >
+                <small>{{ storage.specs['capacity'] }} · {{ storage.specs['type'] }}</small>
                 <em>\${{ storage.sellingPrice }}</em>
               </button>
             </div>
@@ -144,9 +128,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
                 <span class="option-type">GPU</span>
                 <strong>{{ gpu.name }}</strong>
                 <small>{{ gpu.specs['vram'] || 'Shared' }} VRAM</small>
-                <em>{{
-                  gpu.sellingPrice > 0 ? '$' + gpu.sellingPrice : 'Included'
-                }}</em>
+                <em>{{ gpu.sellingPrice > 0 ? '$' + gpu.sellingPrice : 'Included' }}</em>
               </button>
             </div>
           </section>
@@ -163,15 +145,11 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
             </div>
             <div>
               <span>CPU</span>
-              <strong>{{
-                selectedName(parts.cpu, draft().cpuId) || 'Select one'
-              }}</strong>
+              <strong>{{ selectedName(parts.cpu, draft().cpuId) || 'Select one' }}</strong>
             </div>
             <div>
               <span>RAM</span>
-              <strong>{{
-                selectedName(parts.ram, draft().ramId) || 'Select one'
-              }}</strong>
+              <strong>{{ selectedName(parts.ram, draft().ramId) || 'Select one' }}</strong>
             </div>
             <div>
               <span>Storage</span>
@@ -179,10 +157,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
             </div>
             <div>
               <span>GPU</span>
-              <strong>{{
-                selectedName(parts.gpu, draft().gpuId || '') ||
-                  'Integrated / none'
-              }}</strong>
+              <strong>{{ selectedName(parts.gpu, draft().gpuId || '') || 'Integrated / none' }}</strong>
             </div>
           </div>
 
@@ -191,9 +166,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
               <span>Estimated total</span>
               <strong>\${{ currentPrice.totalPrice }}</strong>
             </div>
-            <small
-              >Includes assembly guidance and current component pricing.</small
-            >
+            <small>Includes assembly guidance and current component pricing.</small>
           </div>
 
           <button
@@ -212,19 +185,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       <section class="configure-shell">
         <aside class="summary-card">
           <p class="eyebrow">HAI Build Bench</p>
-          <h2>
-            {{
-              loading()
-                ? 'Loading build options...'
-                : 'Configuration unavailable'
-            }}
-          </h2>
-          <p>
-            {{
-              errorMessage() ||
-                'Preparing the selected chassis and compatibility data.'
-            }}
-          </p>
+          <h2>{{ loading() ? 'Loading build options...' : 'Configuration unavailable' }}</h2>
+          <p>{{ errorMessage() || 'Preparing the selected chassis and compatibility data.' }}</p>
         </aside>
       </section>
     </ng-template>
@@ -251,11 +213,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .selection-group,
       .summary-card {
         border: 1px solid rgba(255, 255, 255, 0.08);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.04),
-            rgba(255, 255, 255, 0.015)
-          ),
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
           rgba(4, 12, 15, 0.78);
       }
 
@@ -363,16 +322,15 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         color: inherit;
         border-radius: 1.35rem;
         border: 1px solid rgba(255, 255, 255, 0.08);
-        background: linear-gradient(
-            135deg,
-            rgba(45, 212, 191, 0.07),
-            transparent 55%
-          ),
+        background:
+          linear-gradient(135deg, rgba(45, 212, 191, 0.07), transparent 55%),
           rgba(255, 255, 255, 0.03);
         padding: 1rem;
         display: grid;
         gap: 0.3rem;
-        transition: transform 160ms ease, border-color 160ms ease,
+        transition:
+          transform 160ms ease,
+          border-color 160ms ease,
           box-shadow 160ms ease;
       }
 
@@ -566,9 +524,7 @@ export class ConfigureComponent implements OnInit {
   }
 
   storageSummary(items: HardwareComponent[]): string {
-    const selected = items.filter((item) =>
-      this.draft().storageIds.includes(item.id)
-    );
+    const selected = items.filter((item) => this.draft().storageIds.includes(item.id));
     if (selected.length === 0) {
       return 'Select one or more';
     }
@@ -585,11 +541,10 @@ export class ConfigureComponent implements OnInit {
         current.storageIds.length > 0
           ? current.storageIds
           : compatible.storage[0]
-          ? [compatible.storage[0].id]
-          : [],
+            ? [compatible.storage[0].id]
+            : [],
       gpuId:
-        current.gpuId &&
-        compatible.gpu.some((item) => item.id === current.gpuId)
+        current.gpuId && compatible.gpu.some((item) => item.id === current.gpuId)
           ? current.gpuId
           : '',
     });

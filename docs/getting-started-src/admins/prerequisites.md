@@ -5,7 +5,6 @@ slug: prerequisites
 summary: Install the baseline tooling required to run and inspect the local platform.
 order: 10
 ---
-
 # Prerequisites
 
 Install the following before bootstrapping the stack:

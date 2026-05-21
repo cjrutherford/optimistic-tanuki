@@ -53,10 +53,7 @@ describe('PermissionsProxyService.checkPermission', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PermissionsProxyService,
-        {
-          provide: ServiceTokens.PERMISSIONS_SERVICE,
-          useValue: permissionsClientMock,
-        },
+        { provide: ServiceTokens.PERMISSIONS_SERVICE, useValue: permissionsClientMock },
         { provide: PermissionsCacheService, useValue: cacheServiceMock },
       ],
     }).compile();
@@ -102,18 +99,11 @@ describe('PermissionsProxyService.checkPermission', () => {
     const result = await service.checkPermission('p1', 'perm.read', 'app');
 
     expect(result).toBe(true);
-    expect(cacheServiceMock.set).toHaveBeenCalledWith(
-      'p1',
-      'perm.read',
-      'app1',
-      true
-    );
+    expect(cacheServiceMock.set).toHaveBeenCalledWith('p1', 'perm.read', 'app1', true);
   });
 
   it('returns false on error', async () => {
-    permissionsClientMock.send.mockReturnValue(
-      throwError(() => new Error('boom'))
-    );
+    permissionsClientMock.send.mockReturnValue(throwError(() => new Error('boom')));
 
     const result = await service.checkPermission('p1', 'perm.read', 'app');
     expect(result).toBe(false);

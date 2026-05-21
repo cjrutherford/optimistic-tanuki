@@ -110,7 +110,8 @@ import loadDatabase from './loadDatabase';
     },
     {
       provide: getRepositoryToken(TaskTag),
-      useFactory: (connection: DataSource) => connection.getRepository(TaskTag),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(TaskTag),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
     {

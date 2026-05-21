@@ -23,7 +23,12 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [ForumLink, ForumPost, Thread, Topic];
+const entities = [
+  ForumLink,
+  ForumPost,
+  Thread,
+  Topic,
+];
 
 const staticSource = new DataSource({
   type: 'postgres',

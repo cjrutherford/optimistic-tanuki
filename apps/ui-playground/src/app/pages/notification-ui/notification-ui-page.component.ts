@@ -124,8 +124,7 @@ export class NotificationUiPageComponent {
       headline: 'Inbox-style notification feed',
       importName: 'NotificationListComponent',
       selector: 'notif-notification-list',
-      summary:
-        'Tabbed notification feed for all, unread, and activity categories.',
+      summary: 'Tabbed notification feed for all, unread, and activity categories.',
       props: [],
     },
   ];

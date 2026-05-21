@@ -65,9 +65,7 @@ const paymentServiceMock = {
 };
 
 const classifiedServiceMock = {
-  findByCommunity: jest
-    .fn()
-    .mockResolvedValue({ data: [] as ClassifiedAdDto[] }),
+  findByCommunity: jest.fn().mockResolvedValue({ data: [] as ClassifiedAdDto[] }),
 };
 
 describe('CityComponent', () => {
@@ -98,8 +96,9 @@ describe('CityComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const mapComponent = fixture.debugElement.query(By.directive(MapComponent))
-      ?.componentInstance as MapComponent | undefined;
+    const mapComponent = fixture.debugElement.query(
+      By.directive(MapComponent)
+    )?.componentInstance as MapComponent | undefined;
 
     expect(mapComponent).toBeDefined();
     expect(mapComponent?.mode).toBe('single-location');

@@ -15,7 +15,7 @@ describe('RoleInitService', () => {
         .mockImplementation((pattern: { cmd: string }, payload: any) => {
           if (pattern.cmd === AppScopeCommands.GetByName) {
             return throwError(
-              () => new Error(`App scope missing: ${payload.name}`)
+              () => new Error(`App scope missing: ${payload.name}`),
             );
           }
 
@@ -51,14 +51,14 @@ describe('RoleInitService', () => {
         ],
         roles: [],
         assignments: [],
-      })
+      }),
     ).resolves.toBeUndefined();
 
     expect(permissionsClient.send).toHaveBeenCalledWith(
       { cmd: AppScopeCommands.Create },
       expect.objectContaining({
         name: 'leads-app',
-      })
+      }),
     );
   });
 
@@ -107,7 +107,7 @@ describe('RoleInitService', () => {
         roleId: 'role-community-owner',
         appScopeId: 'scope-social',
         profileId: 'profile-1',
-      })
+      }),
     );
   });
 });

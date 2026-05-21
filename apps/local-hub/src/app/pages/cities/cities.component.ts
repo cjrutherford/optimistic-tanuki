@@ -66,8 +66,7 @@ export class CitiesComponent implements OnInit {
     const query = this.normalizeSearchValue(this.searchQuery());
 
     return this.cities().filter((city) => {
-      const matchesState =
-        states.length === 0 || states.includes(city.adminArea);
+      const matchesState = states.length === 0 || states.includes(city.adminArea);
       const citySearchCorpus = [
         city.name,
         city.adminArea,
@@ -252,9 +251,7 @@ export class CitiesComponent implements OnInit {
       return true;
     }
 
-    return values.some((value) =>
-      this.normalizeSearchValue(value).includes(query)
-    );
+    return values.some((value) => this.normalizeSearchValue(value).includes(query));
   }
 
   getTotalCommunities(): number {

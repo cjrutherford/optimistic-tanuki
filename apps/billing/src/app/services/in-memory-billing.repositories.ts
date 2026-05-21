@@ -13,13 +13,13 @@ export class InMemoryUsageEventRepository implements UsageEventRepository {
   async findByEventKey(
     tenantId: string,
     appScope: string,
-    eventKey: string
+    eventKey: string,
   ): Promise<UsageEvent | undefined> {
     return this.events.find(
       (event) =>
         event.tenantId === tenantId &&
         event.appScope === appScope &&
-        event.eventKey === eventKey
+        event.eventKey === eventKey,
     );
   }
 
@@ -41,7 +41,7 @@ export class InMemoryUsageEventRepository implements UsageEventRepository {
         event.appScope === input.appScope &&
         event.meterId === input.meterId &&
         event.occurredAt >= input.periodStart &&
-        event.occurredAt < input.periodEnd
+        event.occurredAt < input.periodEnd,
     );
   }
 }
@@ -51,7 +51,7 @@ export class InMemoryUsageBlockRepository implements UsageBlockRepository {
 
   async save(grant: UsageBlockGrant): Promise<UsageBlockGrant> {
     const existingIndex = this.grants.findIndex(
-      (existing) => existing.id === grant.id
+      (existing) => existing.id === grant.id,
     );
 
     if (existingIndex >= 0) {
@@ -78,7 +78,7 @@ export class InMemoryUsageBlockRepository implements UsageBlockRepository {
           grant.accountId === input.accountId &&
           grant.meterId === input.meterId &&
           grant.remainingQuantity > 0 &&
-          (!grant.expiresAt || grant.expiresAt > input.at)
+          (!grant.expiresAt || grant.expiresAt > input.at),
       )
       .sort((a, b) => {
         const aTime = a.expiresAt?.getTime() ?? Number.MAX_SAFE_INTEGER;

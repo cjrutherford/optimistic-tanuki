@@ -55,9 +55,7 @@ export const buildProviderQueries = (
         }
       }
 
-      queries.add(
-        [scope, quoteIfNeeded(term)].filter(Boolean).join(' ').trim()
-      );
+      queries.add([scope, quoteIfNeeded(term)].filter(Boolean).join(' ').trim());
       if (queries.size >= normalizedMaxQueries) {
         return Array.from(queries);
       }
@@ -75,7 +73,8 @@ export const getProviderQueryRecipe = (
   providerName: 'indeed' | 'clutch' | 'crunchbase',
   intent: LeadTopicDiscoveryIntent | string | null | undefined
 ): QueryRecipe => {
-  const normalizedIntent = intent || LeadTopicDiscoveryIntent.JOB_OPENINGS;
+  const normalizedIntent =
+    intent || LeadTopicDiscoveryIntent.JOB_OPENINGS;
 
   if (providerName === 'indeed') {
     return {
@@ -89,11 +88,7 @@ export const getProviderQueryRecipe = (
 
   if (providerName === 'clutch') {
     return {
-      siteScopes: [
-        'site:clutch.co',
-        'site:clutch.co/agencies',
-        'site:clutch.co/profile',
-      ],
+      siteScopes: ['site:clutch.co', 'site:clutch.co/agencies', 'site:clutch.co/profile'],
       contextSignals:
         normalizedIntent === LeadTopicDiscoveryIntent.SERVICE_BUYERS
           ? ['"client reviews"', 'agency', 'services']

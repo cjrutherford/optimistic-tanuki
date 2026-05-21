@@ -27,7 +27,6 @@ The workflow is broken in the frontend:
 ### Task 1: Add component-level test coverage for create/edit workflow state
 
 **Files:**
-
 - Create: `apps/leads-app/src/app/leads.component.spec.ts`
 - Test: `apps/leads-app/src/app/leads.component.spec.ts`
 
@@ -80,7 +79,6 @@ git commit -m "test: add failing leads edit workflow specs"
 ### Task 2: Refactor `LeadsComponent` form state to support both create and edit modes
 
 **Files:**
-
 - Modify: `apps/leads-app/src/app/leads.component.ts`
 - Test: `apps/leads-app/src/app/leads.component.spec.ts`
 
@@ -131,7 +129,6 @@ git commit -m "feat: add lead edit mode state to leads component"
 ### Task 3: Wire the panel submit action to `createLead()` or `updateLead()` based on mode
 
 **Files:**
-
 - Modify: `apps/leads-app/src/app/leads.component.ts`
 - Modify: `apps/leads-app/src/app/leads.service.spec.ts`
 - Test: `apps/leads-app/src/app/leads.component.spec.ts`
@@ -204,7 +201,6 @@ git commit -m "feat: wire leads panel save action to create and update flows"
 ### Task 4: Update the template so edit mode is visible and understandable
 
 **Files:**
-
 - Modify: `apps/leads-app/src/app/leads.component.html`
 - Modify: `apps/leads-app/src/app/leads.component.scss`
 - Test: `apps/leads-app/src/app/leads.component.spec.ts`
@@ -247,7 +243,6 @@ git commit -m "feat: surface edit mode in leads panel ui"
 ### Task 5: Expand the lead form to cover the fields users expect to edit
 
 **Files:**
-
 - Modify: `apps/leads-app/src/app/leads.component.html`
 - Modify: `apps/leads-app/src/app/leads.component.ts`
 - Modify: `apps/leads-app/src/app/leads.component.spec.ts`
@@ -276,7 +271,6 @@ Expected: FAIL for fields that are not currently editable in the panel.
 Add only the missing fields that are already supported by `UpdateLeadDto`.
 
 Recommendation:
-
 - show `status` in the always-visible section for edit mode
 - keep secondary fields under the existing “More details” section
 - if `nextFollowUp` is included, use a date input and normalize the outbound payload format
@@ -296,7 +290,6 @@ git commit -m "feat: support editing core lead fields from leads panel"
 ### Task 6: Validate the gateway and service contract around lead updates
 
 **Files:**
-
 - Modify: `apps/gateway/src/controllers/leads/leads.controller.spec.ts`
 - Modify: `apps/lead-tracker/src/app/leads.controller.spec.ts`
 - Modify: `apps/lead-tracker/src/app/leads.service.spec.ts`
@@ -343,7 +336,6 @@ git commit -m "test: verify lead update contract for edit workflow"
 ### Task 7: Verify the full edit workflow and development build
 
 **Files:**
-
 - Modify: none unless regressions are found
 - Test: `apps/leads-app/src/app/leads.component.spec.ts`
 - Test: `apps/leads-app/src/app/leads.service.spec.ts`

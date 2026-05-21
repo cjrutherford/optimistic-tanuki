@@ -62,8 +62,7 @@ describe('UpworkApiService', () => {
       tokenUrl: 'https://www.upwork.com/api/v3/oauth2/token',
       searchLimit: 5,
       tenantId: 'org-123',
-      searchQueryDocument:
-        'query SearchJobs($query: String!, $limit: Int!) { marketplaceJobPostSearch(query: $query, limit: $limit) { edges { node { id title description jobUrl skills { name } client { companyName } } } } }',
+      searchQueryDocument: 'query SearchJobs($query: String!, $limit: Int!) { marketplaceJobPostSearch(query: $query, limit: $limit) { edges { node { id title description jobUrl skills { name } client { companyName } } } } }',
     });
     httpService.post
       .mockReturnValueOnce(
@@ -84,8 +83,7 @@ describe('UpworkApiService', () => {
                     node: {
                       id: 'job-123',
                       title: 'React Dashboard Developer',
-                      description:
-                        'Build a React analytics dashboard for a SaaS client.',
+                      description: 'Build a React analytics dashboard for a SaaS client.',
                       jobUrl: 'https://www.upwork.com/jobs/~0123456789abcdef',
                       skills: [{ name: 'React' }, { name: 'Dashboard' }],
                       client: { companyName: 'Acme Health' },

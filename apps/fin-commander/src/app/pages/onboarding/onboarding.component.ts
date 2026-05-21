@@ -207,7 +207,11 @@ type SetupStep =
           </p>
 
           <div class="button-stack">
-            <button type="button" class="primary-btn" (click)="openLedger()">
+            <button
+              type="button"
+              class="primary-btn"
+              (click)="openLedger()"
+            >
               Open ledger
             </button>
             <button
@@ -603,11 +607,7 @@ export class OnboardingComponent implements OnInit {
   }
 
   async finishFinanceAccountSetup(): Promise<void> {
-    await this.router.navigate([
-      '/finance',
-      this.primaryWorkspace(),
-      'accounts',
-    ]);
+    await this.router.navigate(['/finance', this.primaryWorkspace(), 'accounts']);
   }
 
   async continueFromFinanceAccountStep(): Promise<void> {
@@ -623,11 +623,7 @@ export class OnboardingComponent implements OnInit {
   }
 
   async openBudgetSetup(): Promise<void> {
-    await this.router.navigate([
-      '/finance',
-      this.primaryWorkspace(),
-      'budgets',
-    ]);
+    await this.router.navigate(['/finance', this.primaryWorkspace(), 'budgets']);
   }
 
   async refreshSetupProgress(preferredStep?: SetupStep): Promise<void> {

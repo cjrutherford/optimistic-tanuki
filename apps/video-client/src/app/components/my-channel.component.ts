@@ -10,10 +10,7 @@ import {
   ProgramBlockDto,
   VideoDto,
 } from '@optimistic-tanuki/ui-models';
-import {
-  ChannelHeaderComponent,
-  VideoGridComponent,
-} from '@optimistic-tanuki/video-ui';
+import { ChannelHeaderComponent, VideoGridComponent } from '@optimistic-tanuki/video-ui';
 
 @Component({
   selector: 'app-my-channel',
@@ -22,7 +19,7 @@ import {
   template: `
     <div class="my-channel">
       <div class="channel-header-section" *ngIf="channel">
-        <channel-header
+        <channel-header 
           [channel]="channel"
           [isSubscribed]="false"
           (subscribe)="onSubscribe($event)"
@@ -31,25 +28,22 @@ import {
 
       <div class="channel-content">
         <div class="channel-tabs">
-          <button
+          <button 
             class="tab-button"
             [class.active]="activeTab === 'videos'"
-            (click)="activeTab = 'videos'"
-          >
+            (click)="activeTab = 'videos'">
             Videos ({{ videos.length }})
           </button>
-          <button
+          <button 
             class="tab-button"
             [class.active]="activeTab === 'analytics'"
-            (click)="activeTab = 'analytics'"
-          >
+            (click)="activeTab = 'analytics'">
             Analytics
           </button>
-          <button
+          <button 
             class="tab-button"
             [class.active]="activeTab === 'programming'"
-            (click)="activeTab = 'programming'"
-          >
+            (click)="activeTab = 'programming'">
             Programming
           </button>
         </div>
@@ -62,10 +56,7 @@ import {
                 + Upload Video
               </button>
             </div>
-            <video-grid
-              [videos]="videos"
-              (videoClick)="onVideoClick($event)"
-            ></video-grid>
+            <video-grid [videos]="videos" (videoClick)="onVideoClick($event)"></video-grid>
           </div>
 
           <div *ngIf="activeTab === 'analytics'" class="analytics-tab">
@@ -81,29 +72,17 @@ import {
               </div>
               <div class="stat-card">
                 <h3>Subscribers</h3>
-                <p class="stat-value">
-                  {{ channel?.subscriberCount || 0 | number }}
-                </p>
+                <p class="stat-value">{{ channel?.subscriberCount || 0 | number }}</p>
               </div>
             </div>
           </div>
 
           <div *ngIf="activeTab === 'programming'" class="settings-tab">
             <h2>Programming Workspace</h2>
-            <p *ngIf="feed">
-              Feed mode: <strong>{{ feed.currentMode }}</strong> ({{
-                feed.timezone
-              }})
-            </p>
-            <p *ngIf="schedule.length > 0">
-              Scheduled blocks: {{ schedule.length }}
-            </p>
+            <p *ngIf="feed">Feed mode: <strong>{{ feed.currentMode }}</strong> ({{ feed.timezone }})</p>
+            <p *ngIf="schedule.length > 0">Scheduled blocks: {{ schedule.length }}</p>
             <div class="workspace-actions">
-              <button
-                class="upload-button"
-                (click)="scheduleFeaturedVideo()"
-                [disabled]="videos.length === 0 || !channel"
-              >
+              <button class="upload-button" (click)="scheduleFeaturedVideo()" [disabled]="videos.length === 0 || !channel">
                 Schedule Next Video
               </button>
               <button
@@ -122,11 +101,7 @@ import {
               >
                 End Live
               </button>
-              <button
-                class="tab-button active"
-                *ngIf="channel"
-                (click)="openPublicChannel()"
-              >
+              <button class="tab-button active" *ngIf="channel" (click)="openPublicChannel()">
                 Open Public Channel
               </button>
             </div>
@@ -137,128 +112,124 @@ import {
       <div class="no-channel" *ngIf="!channel && !loading">
         <h2>You don't have a channel yet</h2>
         <p>Create a channel to start uploading videos</p>
-        <button class="create-button" (click)="createChannel()">
-          Create Channel
-        </button>
+        <button class="create-button" (click)="createChannel()">Create Channel</button>
       </div>
     </div>
   `,
-  styles: [
-    `
-      .my-channel {
-        min-height: 100vh;
-      }
+  styles: [`
+    .my-channel {
+      min-height: 100vh;
+    }
 
-      .channel-content {
-        padding: 2rem;
-        max-width: 1200px;
-        margin: 0 auto;
-      }
+    .channel-content {
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
 
-      .channel-tabs {
-        display: flex;
-        gap: 1rem;
-        border-bottom: 1px solid #ddd;
-        margin-bottom: 2rem;
-      }
+    .channel-tabs {
+      display: flex;
+      gap: 1rem;
+      border-bottom: 1px solid #ddd;
+      margin-bottom: 2rem;
+    }
 
-      .tab-button {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        background: none;
-        cursor: pointer;
-        font-size: 1rem;
-        font-weight: 500;
-        border-bottom: 2px solid transparent;
-        transition: border-color 0.2s;
-      }
+    .tab-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
 
-      .tab-button.active {
-        border-bottom-color: #2196f3;
-        color: #2196f3;
-      }
+    .tab-button.active {
+      border-bottom-color: #2196f3;
+      color: #2196f3;
+    }
 
-      .videos-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1.5rem;
-      }
+    .videos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
 
-      .videos-header h2 {
-        margin: 0;
-      }
+    .videos-header h2 {
+      margin: 0;
+    }
 
-      .upload-button,
-      .create-button {
-        padding: 0.75rem 1.5rem;
-        border: none;
-        border-radius: 4px;
-        background: #2196f3;
-        color: white;
-        font-weight: 500;
-        cursor: pointer;
-        transition: background 0.2s;
-      }
+    .upload-button,
+    .create-button {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      background: #2196f3;
+      color: white;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
 
-      .upload-button:hover,
-      .create-button:hover {
-        background: #1976d2;
-      }
+    .upload-button:hover,
+    .create-button:hover {
+      background: #1976d2;
+    }
 
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5rem;
-        margin-top: 1.5rem;
-      }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
 
-      .stat-card {
-        padding: 1.5rem;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-      }
+    .stat-card {
+      padding: 1.5rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
 
-      .stat-card h3 {
-        margin: 0 0 0.5rem 0;
-        font-size: 0.875rem;
-        opacity: 0.7;
-      }
+    .stat-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.875rem;
+      opacity: 0.7;
+    }
 
-      .stat-value {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 600;
-      }
+    .stat-value {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 600;
+    }
 
-      .no-channel {
-        padding: 4rem 2rem;
-        text-align: center;
-      }
+    .no-channel {
+      padding: 4rem 2rem;
+      text-align: center;
+    }
 
-      .no-channel h2 {
-        margin: 0 0 1rem 0;
-      }
+    .no-channel h2 {
+      margin: 0 0 1rem 0;
+    }
 
-      .no-channel p {
-        margin: 0 0 2rem 0;
-        opacity: 0.7;
-      }
+    .no-channel p {
+      margin: 0 0 2rem 0;
+      opacity: 0.7;
+    }
 
-      .workspace-actions {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        margin-top: 1rem;
-      }
-    `,
-  ],
+    .workspace-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+  `]
 })
 export class MyChannelComponent implements OnInit {
   private readonly videoService = inject(VideoService);
   private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
-
+  
   channel: ChannelDto | null = null;
   videos: VideoDto[] = [];
   feed: ChannelFeedDto | null = null;
@@ -275,13 +246,9 @@ export class MyChannelComponent implements OnInit {
         );
         if (channels.length > 0) {
           this.channel = channels[0];
-          this.videos = await this.videoService.getChannelVideos(
-            this.channel.id
-          );
+          this.videos = await this.videoService.getChannelVideos(this.channel.id);
           const slugOrId = this.channel.communitySlug ?? this.channel.id;
-          this.feed = await firstValueFrom(
-            this.videoService.getChannelFeed(slugOrId)
-          );
+          this.feed = await firstValueFrom(this.videoService.getChannelFeed(slugOrId));
           this.schedule = await firstValueFrom(
             this.videoService.getChannelSchedule(slugOrId)
           );
@@ -307,15 +274,11 @@ export class MyChannelComponent implements OnInit {
         userId: profile.userId,
         name: `${profile.profileName}'s Channel`,
         description: 'My video channel',
-        communitySlug: profile.profileName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-'),
+        communitySlug: profile.profileName.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
       this.feed = await firstValueFrom(
-        this.videoService.getChannelFeed(
-          this.channel.communitySlug ?? this.channel.id
-        )
+        this.videoService.getChannelFeed(this.channel.communitySlug ?? this.channel.id)
       );
       this.schedule = [];
     } catch (error) {
@@ -343,9 +306,7 @@ export class MyChannelComponent implements OnInit {
     const nextVideo = this.videos[0];
     const start = new Date();
     start.setHours(start.getHours() + 1, 0, 0, 0);
-    const end = new Date(
-      start.getTime() + Math.max(nextVideo.durationSeconds ?? 1800, 1800) * 1000
-    );
+    const end = new Date(start.getTime() + Math.max(nextVideo.durationSeconds ?? 1800, 1800) * 1000);
     const slugOrId = this.channel.communitySlug ?? this.channel.id;
 
     await firstValueFrom(
@@ -361,9 +322,7 @@ export class MyChannelComponent implements OnInit {
       })
     );
 
-    this.schedule = await firstValueFrom(
-      this.videoService.getChannelSchedule(slugOrId)
-    );
+    this.schedule = await firstValueFrom(this.videoService.getChannelSchedule(slugOrId));
   }
 
   async goLive() {
@@ -391,9 +350,7 @@ export class MyChannelComponent implements OnInit {
 
     const slugOrId = this.channel.communitySlug ?? this.channel.id;
     await firstValueFrom(this.videoService.stopLiveSession(slugOrId));
-    this.feed = await firstValueFrom(
-      this.videoService.getChannelFeed(slugOrId)
-    );
+    this.feed = await firstValueFrom(this.videoService.getChannelFeed(slugOrId));
   }
 
   openPublicChannel() {

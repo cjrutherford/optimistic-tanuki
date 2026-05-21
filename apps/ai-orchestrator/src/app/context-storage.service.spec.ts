@@ -63,29 +63,20 @@ describe('ContextStorageService', () => {
   describe('initialization', () => {
     it('should handle object config', async () => {
       jest.clearAllMocks();
-      (configService.get as jest.Mock).mockReturnValue({
-        host: 'redis',
-        port: 6379,
-      });
-
+      (configService.get as jest.Mock).mockReturnValue({ host: 'redis', port: 6379 });
+      
       const newService = new ContextStorageService(configService);
       // Wait for init
-      await new Promise((r) => setTimeout(r, 10));
-
+      await new Promise(r => setTimeout(r, 10));
+      
       expect(mockRedisClient.connect).toHaveBeenCalled();
     });
 
     it('should handle redis connection events', async () => {
       // Simulate events
-      const errorHandler = mockRedisClient.on.mock.calls.find(
-        (call) => call[0] === 'error'
-      )[1];
-      const connectHandler = mockRedisClient.on.mock.calls.find(
-        (call) => call[0] === 'connect'
-      )[1];
-      const disconnectHandler = mockRedisClient.on.mock.calls.find(
-        (call) => call[0] === 'disconnect'
-      )[1];
+      const errorHandler = mockRedisClient.on.mock.calls.find(call => call[0] === 'error')[1];
+      const connectHandler = mockRedisClient.on.mock.calls.find(call => call[0] === 'connect')[1];
+      const disconnectHandler = mockRedisClient.on.mock.calls.find(call => call[0] === 'disconnect')[1];
 
       // Execute handlers to cover them
       errorHandler(new Error('Test Redis Error'));
@@ -97,20 +88,17 @@ describe('ContextStorageService', () => {
   describe('clearAllContexts', () => {
     it('should clear all contexts', async () => {
       mockRedisClient.keys.mockResolvedValue(['ai-context:1', 'ai-context:2']);
-
+      
       await service.clearAllContexts();
-
-      expect(mockRedisClient.del).toHaveBeenCalledWith([
-        'ai-context:1',
-        'ai-context:2',
-      ]);
+      
+      expect(mockRedisClient.del).toHaveBeenCalledWith(['ai-context:1', 'ai-context:2']);
     });
 
     it('should do nothing if no keys found', async () => {
       mockRedisClient.keys.mockResolvedValue([]);
-
+      
       await service.clearAllContexts();
-
+      
       expect(mockRedisClient.del).not.toHaveBeenCalled();
     });
 

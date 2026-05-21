@@ -39,7 +39,7 @@ describe('ContactService', () => {
     const dto = { name: 'Test', email: 'test@example.com', message: 'hello' };
     contactRepo.create.mockReturnValue(dto as any);
     contactRepo.save.mockResolvedValue(dto as any);
-
+    
     const result = await service.create(dto as any);
     expect(contactRepo.create).toHaveBeenCalledWith(dto);
     expect(result).toEqual(dto);
@@ -47,12 +47,12 @@ describe('ContactService', () => {
 
   it('findAll should return contacts with filters', async () => {
     contactRepo.find.mockResolvedValue([]);
-    const query = {
-      name: 'test',
-      email: 'test@example.com',
-      message: 'hello',
-      phone: '123',
-      createdAt: ['2024-01-01', '2024-12-31'],
+    const query = { 
+        name: 'test', 
+        email: 'test@example.com',
+        message: 'hello',
+        phone: '123',
+        createdAt: ['2024-01-01', '2024-12-31']
     };
     await service.findAll(query as any);
     expect(contactRepo.find).toHaveBeenCalled();

@@ -1,5 +1,9 @@
 import { Injectable, inject } from '@angular/core';
-import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
+import {
+  ActivatedRouteSnapshot,
+  CanActivate,
+  Router,
+} from '@angular/router';
 import { AuthStateService } from '../services/auth-state.service';
 import { CommunityService } from '../services/community.service';
 import { firstValueFrom } from 'rxjs';
@@ -48,11 +52,7 @@ export class MemberGuard implements CanActivate {
 
       return true;
     } catch (error) {
-      console.error(
-        'MemberGuard: membership check failed for slug:',
-        slug,
-        error
-      );
+      console.error('MemberGuard: membership check failed for slug:', slug, error);
       this.router.navigate(['/c', slug]);
       return false;
     }

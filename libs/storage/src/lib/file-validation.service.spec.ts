@@ -12,7 +12,7 @@ describe('FileValidationService', () => {
       'feature-film.mp4',
       'video/mp4',
       20 * 1024 * 1024 * 1024,
-      'video'
+      'video',
     );
 
     expect(result.isValid).toBe(true);

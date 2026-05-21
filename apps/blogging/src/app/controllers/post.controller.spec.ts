@@ -203,22 +203,14 @@ describe('PostController', () => {
 
   describe('generateRssFeed', () => {
     it('should generate RSS feed for published posts', async () => {
-      const blogInfo = {
-        title: 'Blog',
-        description: 'Desc',
-        link: 'url',
-        feedUrl: 'feed',
-      };
+      const blogInfo = { title: 'Blog', description: 'Desc', link: 'url', feedUrl: 'feed' };
       postService.findPublished.mockResolvedValue([mockPublishedPost]);
       rssService.generateRssFeed.mockReturnValue('rss-xml');
 
       const result = await controller.generateRssFeed({ blogInfo });
 
       expect(postService.findPublished).toHaveBeenCalled();
-      expect(rssService.generateRssFeed).toHaveBeenCalledWith(
-        [mockPublishedPost],
-        blogInfo
-      );
+      expect(rssService.generateRssFeed).toHaveBeenCalledWith([mockPublishedPost], blogInfo);
       expect(result).toBe('rss-xml');
     });
   });
@@ -226,35 +218,20 @@ describe('PostController', () => {
   describe('generateSeoMetadata', () => {
     it('should generate SEO metadata for a post', async () => {
       postService.findOne.mockResolvedValue(mockPublishedPost);
-      const mockSeo = {
-        title: 'SEO',
-        description: 'Desc',
-        keywords: [],
-        url: 'url',
-        image: 'img',
-      };
+      const mockSeo = { title: 'SEO', description: 'Desc', keywords: [], url: 'url', image: 'img' };
       seoService.generatePostMetadata.mockReturnValue(mockSeo as any);
 
-      const result = await controller.generateSeoMetadata({
-        postId: 'post-2',
-        baseUrl: 'url',
-      });
+      const result = await controller.generateSeoMetadata({ postId: 'post-2', baseUrl: 'url' });
 
       expect(postService.findOne).toHaveBeenCalledWith('post-2');
-      expect(seoService.generatePostMetadata).toHaveBeenCalledWith(
-        mockPublishedPost,
-        'url',
-        undefined
-      );
+      expect(seoService.generatePostMetadata).toHaveBeenCalledWith(mockPublishedPost, 'url', undefined);
       expect(result).toEqual(mockSeo);
     });
 
     it('should throw error if post not found for SEO', async () => {
       postService.findOne.mockResolvedValue(null);
 
-      await expect(
-        controller.generateSeoMetadata({ postId: 'none', baseUrl: 'url' })
-      ).rejects.toThrow('Post not found');
+      await expect(controller.generateSeoMetadata({ postId: 'none', baseUrl: 'url' })).rejects.toThrow('Post not found');
     });
   });
 

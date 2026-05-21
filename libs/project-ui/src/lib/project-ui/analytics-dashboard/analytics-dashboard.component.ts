@@ -1,10 +1,4 @@
-import {
-  Component,
-  Input,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 import {
@@ -76,10 +70,7 @@ export class AnalyticsDashboardComponent implements OnInit, OnChanges {
   }
 
   getProgressPercentage(taskSeconds: number): number {
-    if (
-      !this.projectAnalytics ||
-      this.projectAnalytics.totalTimeSeconds === 0
-    ) {
+    if (!this.projectAnalytics || this.projectAnalytics.totalTimeSeconds === 0) {
       return 0;
     }
     return (taskSeconds / this.projectAnalytics.totalTimeSeconds) * 100;

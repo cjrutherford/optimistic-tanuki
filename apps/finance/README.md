@@ -38,14 +38,12 @@ pnpm exec nx serve finance
 ## Entities
 
 ### Account
-
 - Supports multiple account types: bank, credit, cash, investment, other
 - Tracks balance in different currencies
 - Maintains active/inactive status
 - Links to user and profile
 
 ### Transaction
-
 - Records debits and credits
 - Categorizes transactions (groceries, rent, salary, etc.)
 - Supports recurring transactions
@@ -53,14 +51,12 @@ pnpm exec nx serve finance
 - Optional reference numbers
 
 ### InventoryItem
-
 - Tracks items with quantity and unit value
 - Automatic total value calculation
 - SKU and location tracking
 - Categories for organization
 
 ### Budget
-
 - Set spending limits by category
 - Track actual spending vs budget
 - Multiple time periods: daily, weekly, monthly, yearly
@@ -71,7 +67,6 @@ pnpm exec nx serve finance
 All endpoints are available through the gateway at `/api/finance/*`
 
 ### Accounts
-
 - `POST /api/finance/account` - Create account
 - `GET /api/finance/account/:id` - Get account by ID
 - `GET /api/finance/accounts` - List all accounts
@@ -79,7 +74,6 @@ All endpoints are available through the gateway at `/api/finance/*`
 - `DELETE /api/finance/account/:id` - Delete account
 
 ### Transactions
-
 - `POST /api/finance/transaction` - Create transaction
 - `GET /api/finance/transaction/:id` - Get transaction by ID
 - `GET /api/finance/transactions` - List all transactions
@@ -88,7 +82,6 @@ All endpoints are available through the gateway at `/api/finance/*`
 - `DELETE /api/finance/transaction/:id` - Delete transaction
 
 ### Inventory Items
-
 - `POST /api/finance/inventory-item` - Create item
 - `GET /api/finance/inventory-item/:id` - Get item by ID
 - `GET /api/finance/inventory-items` - List all items
@@ -96,7 +89,6 @@ All endpoints are available through the gateway at `/api/finance/*`
 - `DELETE /api/finance/inventory-item/:id` - Delete item
 
 ### Budgets
-
 - `POST /api/finance/budget` - Create budget
 - `GET /api/finance/budget/:id` - Get budget by ID
 - `GET /api/finance/budgets` - List all budgets
@@ -112,7 +104,6 @@ Uses PostgreSQL database `ot_finance` with TypeORM migrations.
 Migrations run automatically as part of `pnpm run db:setup`.
 
 To run manually:
-
 ```bash
 cd apps/finance
 export POSTGRES_DB=ot_finance
@@ -127,7 +118,6 @@ pnpm exec typeorm -d src/app/staticDatabase.ts migration:run
 The service includes a seed script with realistic sample data. See [SEED_DATA.md](./SEED_DATA.md) for details.
 
 Run seeding:
-
 ```bash
 docker compose exec finance node /usr/src/app/seed-finance.js
 ```

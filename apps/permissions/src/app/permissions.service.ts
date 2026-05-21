@@ -15,7 +15,7 @@ export class PermissionsService {
     private permissionsRepository: Repository<Permission>,
     @InjectRepository(RoleAssignment)
     private roleAssignmentsRepository: Repository<RoleAssignment>
-  ) {}
+  ) { }
 
   async createPermission(
     createPermissionDto: CreatePermissionDto
@@ -55,15 +55,16 @@ export class PermissionsService {
 
     const roleIds = userRoles.map((assignment) => assignment.roleId);
 
-    const permissions = await this.permissionsRepository.find({
-      where: {
-        name: Like(`${query}%`),
-        roles: {
-          id: In(roleIds),
+    const permissions = await this.permissionsRepository
+      .find({
+        where: {
+          name: Like(`${query}%`),
+          roles: {
+            id: In(roleIds),
+          },
         },
-      },
-      relations: ['roles'],
-    });
+        relations: ['roles'],
+      });
 
     return permissions.map((perm) => perm.name);
   }

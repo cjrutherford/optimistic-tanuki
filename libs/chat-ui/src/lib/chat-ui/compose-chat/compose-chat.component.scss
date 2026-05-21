@@ -5,8 +5,7 @@
   border: 1px solid var(--border);
   border-radius: var(--border-radius-lg, 12px);
   overflow: hidden;
-  transition: border-color var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  transition: border-color var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:focus-within {
     border-color: var(--accent);
@@ -34,8 +33,7 @@
   color: var(--foreground);
   border-radius: var(--border-radius-md, 6px);
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:hover {
     background: color-mix(in srgb, var(--complement) 15%, transparent);
@@ -113,8 +111,7 @@
   color: var(--primary-foreground);
   border-radius: 50%;
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 150ms) var(--animation-easing, ease);
 
   &:disabled {
     background: var(--muted, var(--foreground));

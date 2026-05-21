@@ -81,10 +81,7 @@ describe('AttachmentService', () => {
       const attachment = { id: '1' } as Attachment;
       repo.findOne.mockResolvedValue(attachment);
       await service.findOne('1', { relations: ['post'] });
-      expect(repo.findOne).toHaveBeenCalledWith({
-        where: { id: '1' },
-        relations: ['post'],
-      });
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['post'] });
     });
   });
 

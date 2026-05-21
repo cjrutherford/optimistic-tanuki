@@ -114,12 +114,7 @@ describe('AssetController', () => {
       { profileId: 'profile-1', type: 'image' }
     );
     expect(response).toEqual([
-      {
-        id: 'asset-1',
-        profileId: 'profile-1',
-        type: 'image',
-        url: '/api/asset/asset-1',
-      },
+      { id: 'asset-1', profileId: 'profile-1', type: 'image', url: '/api/asset/asset-1' },
     ]);
   });
 });

@@ -58,7 +58,7 @@ describe('TopicComponent', () => {
     component.canEdit = true;
     fixture.detectChanges();
     jest.spyOn(component.editClicked, 'emit');
-
+    
     const editButton = fixture.nativeElement.querySelector('lib-button');
     if (editButton) {
       component.onEdit();

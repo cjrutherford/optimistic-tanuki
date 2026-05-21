@@ -97,8 +97,7 @@ export class NavigationUiPageComponent {
       headline: 'Collapsible side navigation',
       importName: 'NavSidebarComponent',
       selector: 'otui-nav-sidebar',
-      summary:
-        'Action-oriented sidebar for app sections and contextual navigation.',
+      summary: 'Action-oriented sidebar for app sections and contextual navigation.',
       props: [],
     },
   ];

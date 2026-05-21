@@ -8,7 +8,7 @@ export interface PostThemeConfig {
    * Theme mode for the post
    */
   theme: 'light' | 'dark';
-
+  
   /**
    * Accent color for the post (hex color code)
    */

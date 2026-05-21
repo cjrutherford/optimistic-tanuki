@@ -10,7 +10,7 @@ export interface UsageEventRepository {
   findByEventKey(
     tenantId: string,
     appScope: string,
-    eventKey: string
+    eventKey: string,
   ): Promise<UsageEvent | undefined>;
 
   save(event: UsageEvent): Promise<UsageEvent>;

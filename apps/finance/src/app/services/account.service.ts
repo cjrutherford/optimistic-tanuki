@@ -2,7 +2,10 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Account } from '../../entities/account.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
-import { CreateAccountDto, UpdateAccountDto } from '@optimistic-tanuki/models';
+import {
+  CreateAccountDto,
+  UpdateAccountDto,
+} from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 import {
   FinanceScope,
@@ -28,9 +31,7 @@ export class AccountService {
     const account = this.accountRepo.create({
       ...createAccountDto,
       name: this.sanitizeContent(createAccountDto.name),
-      description: createAccountDto.description
-        ? this.sanitizeContent(createAccountDto.description)
-        : undefined,
+      description: createAccountDto.description ? this.sanitizeContent(createAccountDto.description) : undefined,
     });
     return await this.accountRepo.save(account);
   }
@@ -39,9 +40,7 @@ export class AccountService {
     scope?: FinanceScope,
     options?: FindManyOptions<Account>
   ): Promise<Account[]> {
-    return await this.accountRepo.find(
-      withScopedFindManyOptions(scope, options)
-    );
+    return await this.accountRepo.find(withScopedFindManyOptions(scope, options));
   }
 
   async findOne(
@@ -63,15 +62,13 @@ export class AccountService {
     if (!account) {
       throw new NotFoundException(`Account with ID ${id} not found`);
     }
-
+    
     const updatedData: Partial<Account> = {};
     if (updateAccountDto.name) {
       updatedData.name = this.sanitizeContent(updateAccountDto.name);
     }
     if (updateAccountDto.description !== undefined) {
-      updatedData.description = updateAccountDto.description
-        ? this.sanitizeContent(updateAccountDto.description)
-        : null;
+      updatedData.description = updateAccountDto.description ? this.sanitizeContent(updateAccountDto.description) : null;
     }
     if (updateAccountDto.balance !== undefined) {
       updatedData.balance = updateAccountDto.balance;
@@ -120,7 +117,7 @@ export class AccountService {
     if (!account) {
       throw new NotFoundException(`Account with ID ${id} not found`);
     }
-
+    
     const newBalance = Number(account.balance) + amount;
     await this.accountRepo.update(id, { balance: newBalance });
     return await this.findOne(id, scope);

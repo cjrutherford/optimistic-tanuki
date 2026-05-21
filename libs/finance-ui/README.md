@@ -32,8 +32,8 @@ import { financeRoutes } from '@optimistic-tanuki/finance-ui';
 const routes: Routes = [
   {
     path: 'finance',
-    children: financeRoutes,
-  },
+    children: financeRoutes
+  }
 ];
 ```
 

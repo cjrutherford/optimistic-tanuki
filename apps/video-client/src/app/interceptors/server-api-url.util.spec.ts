@@ -3,7 +3,7 @@ describe('resolveServerApiUrl', () => {
     const { resolveServerApiUrl } = await import('./server-api-url.util');
 
     expect(resolveServerApiUrl('/api/videos/trending?limit=10', true)).toBe(
-      'http://127.0.0.1:4000/api/videos/trending?limit=10'
+      'http://127.0.0.1:4000/api/videos/trending?limit=10',
     );
   });
 
@@ -11,7 +11,7 @@ describe('resolveServerApiUrl', () => {
     const { resolveServerApiUrl } = await import('./server-api-url.util');
 
     expect(resolveServerApiUrl('/api/videos/trending?limit=10', false)).toBe(
-      '/api/videos/trending?limit=10'
+      '/api/videos/trending?limit=10',
     );
   });
 
@@ -21,8 +21,8 @@ describe('resolveServerApiUrl', () => {
     expect(
       resolveServerApiUrl(
         'http://127.0.0.1:8089/api/videos/trending?limit=10',
-        true
-      )
+        true,
+      ),
     ).toBe('http://127.0.0.1:8089/api/videos/trending?limit=10');
   });
 });

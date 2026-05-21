@@ -1,11 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import {
-  Inject,
-  Injectable,
-  InjectionToken,
-  OnDestroy,
-  PLATFORM_ID,
-} from '@angular/core';
+import { Inject, Injectable, InjectionToken, OnDestroy, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
   AppRegistration,
@@ -48,8 +42,7 @@ export class AppRegistryService implements OnDestroy {
 
   constructor(
     private readonly http: HttpClient,
-    @Inject(APP_REGISTRY_URL)
-    private readonly registryUrl = '/api/registry/apps',
+    @Inject(APP_REGISTRY_URL) private readonly registryUrl = '/api/registry/apps',
     @Inject(APP_REGISTRY_REFRESH_INTERVAL_MS)
     private readonly refreshIntervalMs = 300000,
     @Inject(PLATFORM_ID) private readonly platformId: object
@@ -87,9 +80,8 @@ export class AppRegistryService implements OnDestroy {
     return this.getAllApps().pipe(
       map(
         (apps) =>
-          apps.find(
-            (app) => app.domain === domain || app.uiBaseUrl.includes(domain)
-          ) ?? null
+          apps.find((app) => app.domain === domain || app.uiBaseUrl.includes(domain)) ??
+          null
       )
     );
   }
@@ -143,9 +135,7 @@ export class AppRegistryService implements OnDestroy {
 
   private fetchFromGateway(): Observable<AppRegistry> {
     return this.http.get<AppRegistryResponse>(this.registryUrl).pipe(
-      map((response) =>
-        response.success ? response.data : DEFAULT_APP_REGISTRY
-      ),
+      map((response) => (response.success ? response.data : DEFAULT_APP_REGISTRY)),
       catchError(() => of(DEFAULT_APP_REGISTRY))
     );
   }
@@ -161,6 +151,4 @@ export class AppRegistryService implements OnDestroy {
   }
 }
 
-export const APP_REGISTRY = new InjectionToken<AppRegistryService>(
-  'APP_REGISTRY'
-);
+export const APP_REGISTRY = new InjectionToken<AppRegistryService>('APP_REGISTRY');

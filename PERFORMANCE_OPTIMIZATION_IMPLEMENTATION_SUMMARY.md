@@ -20,16 +20,17 @@ Implemented performance optimization features for the social network, including 
 - Zero performance impact when not in use
 
 **Features:**
-
 - Emits `scrolled` event when trigger element enters viewport
 - Root margin configuration for preloading
 - Prevents duplicate loading with `disabled` flag
 - Browser-native performance with IntersectionObserver
 
 **Usage Example:**
-
 ```html
-<div appInfiniteScroll [scrollThreshold]="300" [disabled]="isLoading" (scrolled)="loadMore()">
+<div appInfiniteScroll 
+     [scrollThreshold]="300" 
+     [disabled]="isLoading" 
+     (scrolled)="loadMore()">
   <!-- Content -->
 </div>
 ```
@@ -44,22 +45,21 @@ Implemented performance optimization features for the social network, including 
 - Automatic cleanup after loading
 
 **Features:**
-
 - Uses native `loading="lazy"` when supported
 - Falls back to IntersectionObserver for older browsers
 - Placeholder image support during load
 - Works with all image sources (URLs, relative paths, data URIs)
 
 **Usage Example:**
-
 ```html
-<img [appLazyLoad]="imageUrl" [placeholder]="placeholderUrl" alt="Description" />
+<img [appLazyLoad]="imageUrl" 
+     [placeholder]="placeholderUrl" 
+     alt="Description" />
 ```
 
 ## Test Coverage
 
 ### Infinite Scroll Directive Tests
-
 **File:** `infinite-scroll.directive.spec.ts`
 
 ✅ **14 tests - all passing**
@@ -82,7 +82,6 @@ Implemented performance optimization features for the social network, including 
 ```
 
 **Coverage Areas:**
-
 - Initialization and configuration
 - Intersection detection logic
 - Disabled state handling
@@ -90,7 +89,6 @@ Implemented performance optimization features for the social network, including 
 - Edge cases (zero, negative, large thresholds)
 
 ### Lazy Load Directive Tests
-
 **File:** `lazy-load.directive.spec.ts`
 
 ✅ **14 tests - all passing**
@@ -113,7 +111,6 @@ Implemented performance optimization features for the social network, including 
 ```
 
 **Coverage Areas:**
-
 - Native lazy loading support
 - IntersectionObserver fallback
 - Placeholder image handling
@@ -123,14 +120,12 @@ Implemented performance optimization features for the social network, including 
 ## Performance Benefits
 
 ### Infinite Scroll
-
 - **Reduced Initial Load Time:** Only loads first page of content
 - **Memory Efficient:** Loads content on-demand
 - **Smooth UX:** No pagination clicks, seamless scrolling
 - **Bandwidth Savings:** Only loads what user sees
 
 ### Lazy Loading
-
 - **Faster Page Loads:** Images load as needed
 - **Reduced Bandwidth:** Images below fold don't load until viewed
 - **Better Mobile Experience:** Critical for slow connections
@@ -147,30 +142,33 @@ Both directives use modern APIs with graceful fallbacks:
 ## Integration Examples
 
 ### Feed with Infinite Scroll
-
 ```typescript
 @Component({
   template: `
     <div class="feed">
       @for (post of posts(); track post.id) {
-      <app-post-card [post]="post" />
+        <app-post-card [post]="post" />
       }
-
-      <div appInfiniteScroll [disabled]="isLoading() || !hasMore()" (scrolled)="loadMore()" class="scroll-trigger">
+      
+      <div appInfiniteScroll 
+           [disabled]="isLoading() || !hasMore()" 
+           (scrolled)="loadMore()"
+           class="scroll-trigger">
         @if (isLoading()) {
-        <app-spinner />
-        } @if (!hasMore()) {
-        <p>You've reached the end</p>
+          <app-spinner />
+        }
+        @if (!hasMore()) {
+          <p>You've reached the end</p>
         }
       </div>
     </div>
-  `,
+  `
 })
 export class FeedComponent {
   posts = signal<Post[]>([]);
   isLoading = signal(false);
   hasMore = signal(true);
-
+  
   loadMore() {
     // Load next page
   }
@@ -178,11 +176,13 @@ export class FeedComponent {
 ```
 
 ### Image Gallery with Lazy Loading
-
 ```html
 <div class="gallery">
   @for (image of images; track image.id) {
-  <img [appLazyLoad]="image.url" [placeholder]="image.thumbnail" [alt]="image.description" class="gallery-image" />
+    <img [appLazyLoad]="image.url" 
+         [placeholder]="image.thumbnail" 
+         [alt]="image.description" 
+         class="gallery-image" />
   }
 </div>
 ```
@@ -207,7 +207,6 @@ To apply these optimizations across the application:
 ## Performance Metrics
 
 Expected improvements:
-
 - **Initial Page Load:** 30-50% faster
 - **Bandwidth Usage:** 40-60% reduction on image-heavy pages
 - **Time to Interactive:** 20-30% improvement

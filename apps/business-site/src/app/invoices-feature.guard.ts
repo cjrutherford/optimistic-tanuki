@@ -7,13 +7,9 @@ export const invoicesFeatureGuard: CanActivateFn = () => {
   const siteConfig = inject(BusinessSiteConfigStore);
   const router = inject(Router);
 
-  return siteConfig
-    .fetch()
-    .pipe(
-      map((site) =>
-        site.features.invoices.enabled
-          ? true
-          : router.createUrlTree(['/client/dashboard'])
-      )
-    );
+  return siteConfig.fetch().pipe(
+    map((site) =>
+      site.features.invoices.enabled ? true : router.createUrlTree(['/client/dashboard'])
+    )
+  );
 };

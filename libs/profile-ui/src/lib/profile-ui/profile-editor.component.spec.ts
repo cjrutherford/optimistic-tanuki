@@ -1,11 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ProfileEditorComponent } from './profile-editor.component';
 import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
-import {
-  ProfileDto,
-  CreateProfileDto,
-  UpdateProfileDto,
-} from '@optimistic-tanuki/ui-models';
+import { ProfileDto, CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 import { SimpleChange, EventEmitter } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 
@@ -56,7 +52,7 @@ describe('ProfileEditorComponent', () => {
     it('should require profileName', () => {
       const profileNameControl = component.profileForm.get('profileName');
       expect(profileNameControl?.hasError('required')).toBe(true);
-
+      
       profileNameControl?.setValue('Test Name');
       expect(profileNameControl?.hasError('required')).toBe(false);
     });
@@ -64,7 +60,7 @@ describe('ProfileEditorComponent', () => {
     it('should not require other fields', () => {
       const descriptionControl = component.profileForm.get('description');
       const bioControl = component.profileForm.get('bio');
-
+      
       expect(descriptionControl?.hasError('required')).toBe(false);
       expect(bioControl?.hasError('required')).toBe(false);
     });
@@ -75,21 +71,19 @@ describe('ProfileEditorComponent', () => {
       component.profile = mockProfileDto;
       // NgOnChanges checks this.open, so we need to set it to the new value
       component.open = true;
-
+      
       component.ngOnChanges({
         open: new SimpleChange(false, true, false),
       });
 
       expect(component.profileForm.get('profileName')?.value).toBe('Test User');
-      expect(component.profileForm.get('profilePic')?.value).toBe(
-        'data:image/png;base64,test'
-      );
+      expect(component.profileForm.get('profilePic')?.value).toBe('data:image/png;base64,test');
     });
 
     it('should load profile into form when profile changes and editor is open', () => {
       component.open = true;
       component.profile = mockProfileDto;
-
+      
       component.ngOnChanges({
         profile: new SimpleChange(null, mockProfileDto, false),
       });
@@ -103,11 +97,11 @@ describe('ProfileEditorComponent', () => {
         profileName: 'Old Name',
         bio: 'Old bio',
       });
-
+      
       component.profile = null;
       component.defaultName = '';
       component.open = true;
-
+      
       component.ngOnChanges({
         open: new SimpleChange(false, true, false),
       });
@@ -120,7 +114,7 @@ describe('ProfileEditorComponent', () => {
       component.profile = null;
       component.defaultName = 'John Doe';
       component.open = true;
-
+      
       component.ngOnChanges({
         open: new SimpleChange(false, true, false),
       });

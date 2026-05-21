@@ -14,19 +14,18 @@ async function bootstrap() {
   const configService = configApp.get(ConfigService);
   const port = configService.get<number>('port') || 3015;
 
-  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
-    AppModule,
-    {
-      transport: Transport.TCP,
-      options: {
-        host: '0.0.0.0',
-        port,
-      },
-    }
-  );
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(AppModule, {
+    transport: Transport.TCP,
+    options: {
+      host: '0.0.0.0',
+      port,
+    },
+  });
 
   await app.listen();
-  Logger.log(`🚀 Forum microservice is listening on: tcp://0.0.0.0:${port}`);
+  Logger.log(
+    `🚀 Forum microservice is listening on: tcp://0.0.0.0:${port}`
+  );
 }
 
 bootstrap();

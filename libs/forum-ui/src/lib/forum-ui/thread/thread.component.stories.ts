@@ -14,8 +14,7 @@ type Story = StoryObj<ThreadComponent>;
 const mockThread: ThreadDto = {
   id: '1',
   title: 'Welcome to the Forum',
-  description:
-    'This is a the main thread for introductions and general discussion.',
+  description: 'This is a the main thread for introductions and general discussion.',
   userId: 'user-1',
   profileId: 'profile-1',
   topicId: 'topic-1',

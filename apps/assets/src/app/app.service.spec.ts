@@ -127,11 +127,11 @@ describe('AppService', () => {
         .mockRejectedValue(new Error('Storage error'));
 
       await expect(appService.createAsset(dto)).rejects.toThrow(
-        new RpcException('Failed to create asset')
+        new RpcException('Failed to create asset'),
       );
       expect(logger.error).toHaveBeenCalledWith(
         'Error creating asset:',
-        expect.any(Error)
+        expect.any(Error),
       );
     });
 
@@ -158,7 +158,7 @@ describe('AppService', () => {
         dto.name,
         dto.profileId,
         dto.type,
-        dto.content.length
+        dto.content.length,
       );
     });
 
@@ -188,7 +188,7 @@ describe('AppService', () => {
         'test',
         'image/jpeg',
         expect.any(Number),
-        'image'
+        'image',
       );
       expect(virusScanService.scanFile).toHaveBeenCalled();
       expect(result.name).toBe('sanitized_test.jpg');
@@ -213,12 +213,12 @@ describe('AppService', () => {
         'episode.mkv',
         'video/x-matroska',
         expect.any(Number),
-        'video'
+        'video',
       );
       expect(assetRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'episode.mkv',
-        })
+        }),
       );
     });
 
@@ -240,7 +240,7 @@ describe('AppService', () => {
         'stream.m3u8',
         'application/vnd.apple.mpegurl',
         expect.any(Number),
-        'video'
+        'video',
       );
     });
 
@@ -266,14 +266,14 @@ describe('AppService', () => {
         'episode.mp4',
         'video/mp4',
         4,
-        'video'
+        'video',
       );
       expect(virusScanService.scanFile).toHaveBeenCalledWith(
         Buffer.from([0, 1, 2, 3]),
-        'episode.mp4'
+        'episode.mp4',
       );
       expect(
-        (storageAdapter.create as jest.Mock).mock.calls[0][0].content
+        (storageAdapter.create as jest.Mock).mock.calls[0][0].content,
       ).toEqual(Buffer.from([0, 1, 2, 3]));
     });
 
@@ -297,16 +297,16 @@ describe('AppService', () => {
         'episode.mp4',
         'video/mp4',
         expect.any(Number),
-        'video'
+        'video',
       );
       expect(virusScanService.scanFile).toHaveBeenCalledWith(
         expect.any(Buffer),
-        'episode.mp4'
+        'episode.mp4',
       );
       expect(storageAdapter.create).toHaveBeenCalledWith(
         expect.objectContaining({
           sourcePath: '/tmp/imports/episode.mp4',
-        })
+        }),
       );
     });
 
@@ -355,7 +355,7 @@ describe('AppService', () => {
         'test',
         'application/pdf',
         4,
-        'image'
+        'image',
       );
     });
 
@@ -376,7 +376,7 @@ describe('AppService', () => {
         'test',
         'application/octet-stream',
         expect.any(Number),
-        'image'
+        'image',
       );
     });
   });
@@ -401,7 +401,7 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
 
       await expect(appService.removeAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
+        new RpcException(`Asset with id ${handle.id} not found`),
       );
     });
 
@@ -435,7 +435,7 @@ describe('AppService', () => {
       jest.spyOn(assetRepo, 'findOneBy').mockResolvedValue(null);
 
       await expect(appService.retrieveAsset(handle)).rejects.toThrow(
-        new RpcException(`Asset with id ${handle.id} not found`)
+        new RpcException(`Asset with id ${handle.id} not found`),
       );
     });
 
@@ -449,7 +449,7 @@ describe('AppService', () => {
 
       expect(logSpy).toHaveBeenCalledWith(
         'Retrieving asset with data:',
-        handle
+        handle,
       );
     });
   });
@@ -476,7 +476,7 @@ describe('AppService', () => {
       jest.spyOn(storageAdapter, 'read').mockResolvedValue(null);
 
       await expect(appService.readAsset(handle)).rejects.toThrow(
-        new RpcException(`Failed to read asset with id ${handle.id}`)
+        new RpcException(`Failed to read asset with id ${handle.id}`),
       );
     });
 
@@ -494,16 +494,14 @@ describe('AppService', () => {
       expect(logSpy).toHaveBeenCalledWith('Retrieved asset:', asset);
       expect(logSpy).toHaveBeenCalledWith(
         'Read asset content length:',
-        content.length
+        content.length,
       );
     });
   });
 
   describe('listAssets', () => {
     it('should list assets by profile and type', async () => {
-      const assets = [
-        { id: '1', profileId: 'profile-1', type: 'image' },
-      ] as AssetEntity[];
+      const assets = [{ id: '1', profileId: 'profile-1', type: 'image' }] as AssetEntity[];
       jest.spyOn(assetRepo, 'find').mockResolvedValue(assets);
 
       const result = await appService.listAssets({

@@ -15,4 +15,4 @@ export default {
   },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/permissions-e2e',
-};
+  }

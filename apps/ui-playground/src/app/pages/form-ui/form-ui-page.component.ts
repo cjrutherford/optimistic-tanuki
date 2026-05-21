@@ -164,24 +164,9 @@ export class FormUiPageComponent {
       selector: 'lib-text-input',
       summary: 'Text input field with label and validation support.',
       props: [
-        {
-          name: 'label',
-          type: 'string',
-          defaultValue: "'Label'",
-          description: 'Input label text.',
-        },
-        {
-          name: 'placeholder',
-          type: 'string',
-          defaultValue: "'Enter text...'",
-          description: 'Placeholder text.',
-        },
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the input.',
-        },
+        { name: 'label', type: 'string', defaultValue: "'Label'", description: 'Input label text.' },
+        { name: 'placeholder', type: 'string', defaultValue: "'Enter text...'", description: 'Placeholder text.' },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the input.' },
       ],
     },
     {
@@ -192,24 +177,9 @@ export class FormUiPageComponent {
       selector: 'lib-text-area',
       summary: 'Multi-line textarea for longer content.',
       props: [
-        {
-          name: 'label',
-          type: 'string',
-          defaultValue: "'Label'",
-          description: 'Textarea label.',
-        },
-        {
-          name: 'placeholder',
-          type: 'string',
-          defaultValue: "'Enter text...'",
-          description: 'Placeholder text.',
-        },
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the textarea.',
-        },
+        { name: 'label', type: 'string', defaultValue: "'Label'", description: 'Textarea label.' },
+        { name: 'placeholder', type: 'string', defaultValue: "'Enter text...'", description: 'Placeholder text.' },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the textarea.' },
       ],
     },
     {
@@ -220,18 +190,8 @@ export class FormUiPageComponent {
       selector: 'lib-checkbox',
       summary: 'Checkbox for boolean values.',
       props: [
-        {
-          name: 'label',
-          type: 'string',
-          defaultValue: "'Check me'",
-          description: 'Checkbox label.',
-        },
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the checkbox.',
-        },
+        { name: 'label', type: 'string', defaultValue: "'Check me'", description: 'Checkbox label.' },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the checkbox.' },
       ],
     },
     {
@@ -242,25 +202,9 @@ export class FormUiPageComponent {
       selector: 'lib-radio-button',
       summary: 'Selectable option group with layout variants.',
       props: [
-        {
-          name: 'label',
-          type: 'string',
-          defaultValue: "'Preferred channel'",
-          description: 'Field label.',
-        },
-        {
-          name: 'layout',
-          type: 'string',
-          defaultValue: "'vertical'",
-          description: 'Layout variant.',
-          options: ['vertical', 'horizontal', 'grid'],
-        },
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the radio group.',
-        },
+        { name: 'label', type: 'string', defaultValue: "'Preferred channel'", description: 'Field label.' },
+        { name: 'layout', type: 'string', defaultValue: "'vertical'", description: 'Layout variant.', options: ['vertical', 'horizontal', 'grid'] },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the radio group.' },
       ],
     },
     {
@@ -271,12 +215,7 @@ export class FormUiPageComponent {
       selector: 'lib-select',
       summary: 'Dropdown selector for compact option lists.',
       props: [
-        {
-          name: 'disabled',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the select input.',
-        },
+        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the select input.' },
       ],
     },
     {
@@ -285,15 +224,9 @@ export class FormUiPageComponent {
       headline: 'Drag-and-drop media input',
       importName: 'ImageUploadComponent',
       selector: 'lib-image-upload',
-      summary:
-        'Dropzone with preview support for avatars, covers, and attachments.',
+      summary: 'Dropzone with preview support for avatars, covers, and attachments.',
       props: [
-        {
-          name: 'currentImage',
-          type: 'string',
-          defaultValue: "''",
-          description: 'Optional initial image preview.',
-        },
+        { name: 'currentImage', type: 'string', defaultValue: "''", description: 'Optional initial image preview.' },
       ],
     },
   ];
@@ -312,10 +245,7 @@ export class FormUiPageComponent {
     }
   }
 
-  private parseDefault(prop: {
-    type: string;
-    defaultValue: string;
-  }): number | string | boolean {
+  private parseDefault(prop: { type: string; defaultValue: string }): number | string | boolean {
     const value = prop.defaultValue;
     if (prop.type === 'boolean') return value === 'true';
     if (prop.type === 'number') return parseFloat(value) || 0;

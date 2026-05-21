@@ -45,7 +45,7 @@ describe('ToolsService', () => {
 
     service = module.get<ToolsService>(ToolsService);
     configService = module.get<ConfigService>(ConfigService);
-
+    
     // Get the mock instance of Client created in the constructor/connect
     // Note: connect is called in onModuleInit, so we need to access it after init or spy on it
     // But Client is new'd up inside connect().
@@ -63,9 +63,7 @@ describe('ToolsService', () => {
     it('should connect to MCP server on module init', async () => {
       await service.onModuleInit();
       expect(Client).toHaveBeenCalled();
-      expect(StreamableHTTPClientTransport).toHaveBeenCalledWith(
-        new URL('http://mock-gateway')
-      );
+      expect(StreamableHTTPClientTransport).toHaveBeenCalledWith(new URL('http://mock-gateway'));
     });
   });
 
@@ -74,8 +72,7 @@ describe('ToolsService', () => {
       // Initialize service to set up client
       await service.onModuleInit();
       // Get the instance created - use results because we returned a custom object
-      mockClientInstance = (Client as unknown as jest.Mock).mock.results[0]
-        .value;
+      mockClientInstance = (Client as unknown as jest.Mock).mock.results[0].value;
     });
 
     it('should list tools', async () => {
@@ -101,9 +98,7 @@ describe('ToolsService', () => {
 
     it('should list resources', async () => {
       const mockResources = [{ uri: 'test://resource' }];
-      mockClientInstance.listResources.mockResolvedValue({
-        resources: mockResources,
-      });
+      mockClientInstance.listResources.mockResolvedValue({ resources: mockResources });
 
       const resources = await service.listResources();
       expect(resources).toEqual(mockResources);
@@ -116,9 +111,7 @@ describe('ToolsService', () => {
 
       const result = await service.getResource('test://resource');
       expect(result).toEqual(mockResource);
-      expect(mockClientInstance.subscribeResource).toHaveBeenCalledWith({
-        uri: 'test://resource',
-      });
+      expect(mockClientInstance.subscribeResource).toHaveBeenCalledWith({ uri: 'test://resource' });
     });
   });
 
@@ -138,9 +131,7 @@ describe('ToolsService', () => {
       }).compile();
       const uninitService = module.get<ToolsService>(ToolsService);
 
-      await expect(uninitService.listTools()).rejects.toThrow(
-        'MCP Client not connected'
-      );
+      await expect(uninitService.listTools()).rejects.toThrow('MCP Client not connected');
     });
   });
 });

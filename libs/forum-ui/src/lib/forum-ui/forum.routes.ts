@@ -1,3 +1,4 @@
+
 import { ResolveFn, Route } from '@angular/router';
 import { ForumShellComponent } from './shell/forum-shell.component';
 
@@ -13,8 +14,8 @@ export function provideForumRoutes(
       resolve: {
         userValidPermissions: permissionsResolver,
         userLoggedIn: isLoggedInResolver,
-        currentUserId: userIdResolver,
-      },
+        currentUserId: userIdResolver
+      }
     },
     {
       path: 'topic/:topicId',
@@ -22,8 +23,8 @@ export function provideForumRoutes(
       resolve: {
         userValidPermissions: permissionsResolver,
         userLoggedIn: isLoggedInResolver,
-        currentUserId: userIdResolver,
-      },
+        currentUserId: userIdResolver
+      }
     },
     {
       path: 'thread/:threadId',
@@ -31,9 +32,11 @@ export function provideForumRoutes(
       resolve: {
         userValidPermissions: permissionsResolver,
         userLoggedIn: isLoggedInResolver,
-        currentUserId: userIdResolver,
-      },
+        currentUserId: userIdResolver
+      }
     },
   ];
   return forumRoutes;
 }
+
+

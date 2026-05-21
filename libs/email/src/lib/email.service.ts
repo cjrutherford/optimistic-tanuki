@@ -30,7 +30,9 @@ export class EmailService {
       return await provider.sendEmail(message);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to send email via ${provider.name}: ${errMsg}`);
+      this.logger.error(
+        `Failed to send email via ${provider.name}: ${errMsg}`
+      );
       return { success: false, error: errMsg };
     }
   }

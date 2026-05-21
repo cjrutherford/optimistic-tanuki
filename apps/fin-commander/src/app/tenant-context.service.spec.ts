@@ -144,7 +144,7 @@ describe('TenantContextService', () => {
     ]);
     expect(service.activeTenant()?.id).toBe('tenant-2');
     expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
-      'tenant-2'
+      'tenant-2',
     );
   });
 
@@ -332,13 +332,15 @@ describe('TenantContextService', () => {
             type: 'business',
           },
         ]),
-      getCurrentTenant: jest.fn().mockResolvedValue({
-        id: 'tenant-1',
-        name: 'Household',
-        profileId: 'profile-1',
-        appScope: 'finance',
-        type: 'household',
-      }),
+      getCurrentTenant: jest
+        .fn()
+        .mockResolvedValue({
+          id: 'tenant-1',
+          name: 'Household',
+          profileId: 'profile-1',
+          appScope: 'finance',
+          type: 'household',
+        }),
       createTenant: jest.fn().mockResolvedValue({
         id: 'tenant-2',
         name: 'Studio',
@@ -389,7 +391,7 @@ describe('TenantContextService', () => {
       profileId: 'profile-1',
     });
     expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
-      'tenant-2'
+      'tenant-2',
     );
   });
 

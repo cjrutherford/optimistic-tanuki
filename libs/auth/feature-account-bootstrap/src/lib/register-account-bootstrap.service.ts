@@ -13,7 +13,7 @@ export class RegisterAccountBootstrapService {
   constructor(
     private readonly authClient: Pick<ClientProxy, 'send'>,
     private readonly profileClient: Pick<ClientProxy, 'send'>,
-    private readonly roleInit: Pick<RoleInitService, 'processNow'>
+    private readonly roleInit: Pick<RoleInitService, 'processNow'>,
   ) {}
 
   async register(data: RegisterRequest, appScope: string) {
@@ -26,19 +26,19 @@ export class RegisterAccountBootstrapService {
       const existingGlobalProfiles = (await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.GetAll },
-          { where: { appScope: 'global' } }
-        )
+          { where: { appScope: 'global' } },
+        ),
       )) as Array<{ id: string }>;
 
       if (existingGlobalProfiles.length > 0) {
         throw new Error(
-          'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
+          'Owner Console registration is closed. An existing owner must invite or provision additional operators.',
         );
       }
     }
 
     const result = await firstValueFrom(
-      this.authClient.send({ cmd: AuthCommands.Register }, normalizedRequest)
+      this.authClient.send({ cmd: AuthCommands.Register }, normalizedRequest),
     );
 
     const newProfile: CreateProfileDto & { appScope: string } = {
@@ -56,7 +56,7 @@ export class RegisterAccountBootstrapService {
     };
 
     const createdProfile = await firstValueFrom(
-      this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile)
+      this.profileClient.send({ cmd: ProfileCommands.Create }, newProfile),
     );
 
     if (appScope === 'owner-console') {
@@ -67,7 +67,7 @@ export class RegisterAccountBootstrapService {
           .assignOwnerRole()
           .addOwnerScopeDefaults()
           .addAssetOwnerPermissions()
-          .build()
+          .build(),
       );
       return result;
     }
@@ -80,7 +80,7 @@ export class RegisterAccountBootstrapService {
         .addDefaultProfileOwner(createdProfile.id, effectiveScope)
         .addAppScopeDefaults()
         .addAssetOwnerPermissions()
-        .build()
+        .build(),
     );
 
     return result;

@@ -17,11 +17,11 @@ import {
 export class UsageBlocksService {
   constructor(
     @Inject(USAGE_BLOCK_REPOSITORY)
-    private readonly usageBlockRepository: UsageBlockRepository
+    private readonly usageBlockRepository: UsageBlockRepository,
   ) {}
 
   async grantUsageBlock(
-    input: GrantUsageBlockDto
+    input: GrantUsageBlockDto,
   ): Promise<GrantUsageBlockResult> {
     const scope = assertBillingScope(input);
     const now = new Date();
@@ -41,7 +41,7 @@ export class UsageBlocksService {
   }
 
   async consumeUsageBlock(
-    input: ConsumeUsageBlockDto
+    input: ConsumeUsageBlockDto,
   ): Promise<ConsumeUsageBlockResult> {
     const scope = assertBillingScope(input);
     const occurredAt = input.occurredAt ?? new Date();
@@ -104,7 +104,7 @@ export class UsageBlocksService {
 
     return available.reduce(
       (total, grant) => total + grant.remainingQuantity,
-      0
+      0,
     );
   }
 }

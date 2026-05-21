@@ -5,10 +5,9 @@
 **Goal:** Fix the site-config bootstrap (graceful 404 → default handling, create-on-first-save) and add a real client auth flow to the trainer-site (login page, `clientAuthGuard`, replace hardcoded `'client-demo'` IDs with the authenticated user's `profileId`).
 
 **Architecture:**
-
 - Gateway `GET /trainer/site-config` catches microservice 404/null and returns the Angular default config shape so the frontend never crashes.
 - Gateway `PUT /trainer/site-config` accepts an optional `configId`; when absent it calls `AppConfigCommands.Create` instead of `Update`.
-- Client auth mirrors the existing trainer auth: a `clientAuthGuard`, a `TrainerClientLoginPageComponent`, and a `clientUser` signal in `TrainerAuthService` (or a separate lightweight `ClientAuthService`). Because both owner and client share the same gateway auth endpoints the simplest approach is to extend `TrainerAuthService` with a second `loginClient()` method and a dedicated localStorage key `trainer-site:client`.
+- Client auth mirrors the existing trainer auth: a `clientAuthGuard`, a `TrainerClientLoginPageComponent`, and a `clientUser` signal in `TrainerAuthService` (or a separate lightweight `ClientAuthService`).  Because both owner and client share the same gateway auth endpoints the simplest approach is to extend `TrainerAuthService` with a second `loginClient()` method and a dedicated localStorage key `trainer-site:client`.
 
 **Tech Stack:** Angular 18 (signals, `toSignal`), NestJS gateway, RxJS, `APP_CONFIGURATOR_SERVICE` TCP microservice.
 
@@ -17,7 +16,6 @@
 ### Task 1: Gateway — graceful fallback for `GET /trainer/site-config`
 
 **Files:**
-
 - Modify: `apps/gateway/src/controllers/trainer/trainer.controller.ts`
 
 **Context:**
@@ -53,7 +51,6 @@ async getSiteConfig() {
 ```bash
 pnpm nx build gateway
 ```
-
 Expected: successful build, no errors.
 
 **Step 3: Commit**
@@ -68,7 +65,6 @@ git commit -m "fix(gateway): return null-safe default when trainer site-config n
 ### Task 2: Gateway — create-on-first-save for `PUT /trainer/site-config`
 
 **Files:**
-
 - Modify: `apps/gateway/src/controllers/trainer/trainer.controller.ts`
 
 **Context:**
@@ -108,7 +104,6 @@ async updateSiteConfig(
 ```bash
 pnpm nx build gateway
 ```
-
 Expected: clean build.
 
 **Step 3: Commit**
@@ -123,7 +118,6 @@ git commit -m "feat(gateway): create trainer site-config on first save when no c
 ### Task 3: Angular — wire `configId` through site-config flow
 
 **Files:**
-
 - Modify: `libs/trainer-data-access/src/lib/trainer-site.config.ts`
 - Modify: `libs/trainer-data-access/src/lib/trainer-api.service.ts`
 - Modify: `libs/trainer-portal-ui/src/lib/trainer-site-editor-page.component.ts`
@@ -131,13 +125,12 @@ git commit -m "feat(gateway): create trainer site-config on first save when no c
 
 **Context:**
 The gateway now returns `{ configId, config }` or `{ configId: null, config: null }`. Angular needs to:
-
 1. Store the `configId` from the GET response.
 2. Pass it back on PUT so the gateway can choose create vs update.
 
 **Step 1: Add `configId` to the GET response interface in `trainer-api.service.ts`**
 
-In `getOffers()` the return type is inferred; add an explicit interface for the site-config response. In `trainer-api.service.ts`, after the imports, add:
+In `getOffers()` the return type is inferred; add an explicit interface for the site-config response.  In `trainer-api.service.ts`, after the imports, add:
 
 ```typescript
 export interface SiteConfigResponse {
@@ -174,7 +167,9 @@ Add a `configId = signal<string | null>(null)` field. In `ngOnInit` where `getSi
 this.api.getSiteConfig().subscribe({
   next: (res) => {
     this.configId.set(res.configId ?? null);
-    const merged = res.config ? { ...DEFAULT_TRAINER_SITE_CONFIG, ...res.config } : DEFAULT_TRAINER_SITE_CONFIG;
+    const merged = res.config
+      ? { ...DEFAULT_TRAINER_SITE_CONFIG, ...res.config }
+      : DEFAULT_TRAINER_SITE_CONFIG;
     this.site.set(merged);
   },
   error: () => this.site.set(DEFAULT_TRAINER_SITE_CONFIG),
@@ -183,7 +178,7 @@ this.api.getSiteConfig().subscribe({
 
 **Step 3: Update `trainer-site-editor-page.component.ts` — pass `configId` on save**
 
-The editor loads config via `getSiteConfig()` and saves via `updateSiteConfig()`. Store the configId locally:
+The editor loads config via `getSiteConfig()` and saves via `updateSiteConfig()`.  Store the configId locally:
 
 ```typescript
 private configId: string | null = null;
@@ -215,7 +210,6 @@ save() {
 ```bash
 pnpm nx build trainer-site
 ```
-
 Expected: clean build.
 
 **Step 5: Commit**
@@ -232,7 +226,6 @@ git commit -m "feat(trainer-site): thread configId through site-config get/save 
 ### Task 4: `TrainerAuthService` — add client login support
 
 **Files:**
-
 - Modify: `libs/trainer-data-access/src/lib/trainer-auth.service.ts`
 
 **Context:**
@@ -339,7 +332,6 @@ private loadClientUser(): TrainerAuthUser | null {
 ```bash
 pnpm nx lint trainer-data-access
 ```
-
 Expected: no errors.
 
 **Step 3: Commit**
@@ -354,7 +346,6 @@ git commit -m "feat(trainer-auth): add client login/logout signals to TrainerAut
 ### Task 5: Create `TrainerClientLoginPageComponent`
 
 **Files:**
-
 - Create: `libs/trainer-portal-ui/src/lib/trainer-client-login-page.component.ts`
 - Modify: `libs/trainer-portal-ui/src/index.ts`
 
@@ -386,7 +377,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
             <input type="password" [(ngModel)]="password" name="password" autocomplete="current-password" />
           </label>
           @if (error()) {
-          <p class="error">{{ error() }}</p>
+            <p class="error">{{ error() }}</p>
           }
           <otui-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Signing in…' : 'Sign in' }}
@@ -395,47 +386,45 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       </otui-card>
     </section>
   `,
-  styles: [
-    `
-      .center {
-        display: flex;
-        justify-content: center;
-        padding: 4rem 1rem;
-      }
-      .form-card {
-        width: 100%;
-        max-width: 420px;
-      }
-      h2 {
-        margin: 0 0 1.25rem;
-        font-family: var(--font-heading, system-ui);
-        font-weight: 700;
-      }
-      .form {
-        display: grid;
-        gap: 1rem;
-      }
-      label {
-        display: grid;
-        gap: 0.35rem;
-        font-size: 0.88rem;
-        font-weight: 600;
-      }
-      input {
-        font: inherit;
-        padding: 0.8rem 0.9rem;
-        border-radius: var(--personality-input-radius, 1rem);
-        border: 1px solid var(--border);
-        background: rgba(255, 255, 255, 0.04);
-        color: inherit;
-      }
-      .error {
-        color: var(--destructive, #e11d48);
-        margin: 0;
-        font-size: 0.88rem;
-      }
-    `,
-  ],
+  styles: [`
+    .center {
+      display: flex;
+      justify-content: center;
+      padding: 4rem 1rem;
+    }
+    .form-card {
+      width: 100%;
+      max-width: 420px;
+    }
+    h2 {
+      margin: 0 0 1.25rem;
+      font-family: var(--font-heading, system-ui);
+      font-weight: 700;
+    }
+    .form {
+      display: grid;
+      gap: 1rem;
+    }
+    label {
+      display: grid;
+      gap: 0.35rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    input {
+      font: inherit;
+      padding: 0.8rem 0.9rem;
+      border-radius: var(--personality-input-radius, 1rem);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: inherit;
+    }
+    .error {
+      color: var(--destructive, #e11d48);
+      margin: 0;
+      font-size: 0.88rem;
+    }
+  `],
 })
 export class TrainerClientLoginPageComponent {
   private readonly auth = inject(TrainerAuthService);
@@ -466,7 +455,6 @@ export class TrainerClientLoginPageComponent {
 **Step 2: Export from `libs/trainer-portal-ui/src/index.ts`**
 
 Add:
-
 ```typescript
 export * from './lib/trainer-client-login-page.component';
 ```
@@ -476,7 +464,6 @@ export * from './lib/trainer-client-login-page.component';
 ```bash
 pnpm nx lint trainer-portal-ui
 ```
-
 Expected: no errors.
 
 **Step 4: Commit**
@@ -492,7 +479,6 @@ git commit -m "feat(trainer-portal-ui): add TrainerClientLoginPageComponent"
 ### Task 6: Create `clientAuthGuard`
 
 **Files:**
-
 - Create: `apps/trainer-site/src/app/client-auth.guard.ts`
 
 **Step 1: Create the guard**
@@ -517,7 +503,6 @@ export const clientAuthGuard: CanActivateFn = () => {
 ```bash
 pnpm nx lint trainer-site
 ```
-
 Expected: no errors.
 
 **Step 3: Commit**
@@ -532,12 +517,10 @@ git commit -m "feat(trainer-site): add clientAuthGuard redirecting to /client/lo
 ### Task 7: Wire client routes — add login route, apply guard
 
 **Files:**
-
 - Modify: `apps/trainer-site/src/app/app.routes.ts`
 
 **Context:**
 Current `/client` routes have no guards and no login page. We need:
-
 - `GET /client/login` → `TrainerClientLoginPageComponent` (unguarded)
 - `/client` parent and children → `canActivate: [clientAuthGuard]`
 
@@ -578,7 +561,6 @@ import { clientAuthGuard } from './client-auth.guard';
 ```bash
 pnpm nx build trainer-site
 ```
-
 Expected: clean build.
 
 **Step 3: Commit**
@@ -593,7 +575,6 @@ git commit -m "feat(trainer-site): guard /client routes with clientAuthGuard, ad
 ### Task 8: Replace hardcoded `'client-demo'` with authenticated `profileId`
 
 **Files:**
-
 - Modify: `libs/trainer-portal-ui/src/lib/trainer-client-dashboard-page.component.ts`
 - Modify: `libs/trainer-portal-ui/src/lib/trainer-client-routines-page.component.ts`
 - Modify: `libs/trainer-portal-ui/src/lib/trainer-client-billing-page.component.ts`
@@ -648,7 +629,6 @@ This component only uses `DEFAULT_TRAINER_SITE_CONFIG.clientPortal` for display 
 ```bash
 pnpm nx build trainer-site
 ```
-
 Expected: clean build.
 
 **Step 6: Lint**
@@ -656,7 +636,6 @@ Expected: clean build.
 ```bash
 pnpm nx lint trainer-portal-ui
 ```
-
 Expected: no errors.
 
 **Step 7: Commit**
@@ -673,12 +652,10 @@ git commit -m "feat(trainer-portal-ui): replace hardcoded client-demo with authe
 ### Task 9: Update `app.component.ts` topbar — client auth state
 
 **Files:**
-
 - Modify: `apps/trainer-site/src/app/app.component.ts`
 
 **Context:**
 The topbar currently shows a "Client Login" ghost link always pointing to `/client`. Now that we have a real client auth flow:
-
 - If `isClientAuthenticated`: show "Client Portal" → `/client/dashboard` and a "Sign Out" (client) action.
 - If not: show "Client Login" → `/client/login`.
 
@@ -702,10 +679,10 @@ Replace the static `/client` link block with:
 
 ```html
 @if (isClientAuthenticated()) {
-<a routerLink="/client/dashboard" class="nav-link">Client Portal</a>
-<button class="btn-ghost" (click)="signOutClient()">Sign Out (Client)</button>
+  <a routerLink="/client/dashboard" class="nav-link">Client Portal</a>
+  <button class="btn-ghost" (click)="signOutClient()">Sign Out (Client)</button>
 } @else {
-<a routerLink="/client/login" class="btn-ghost">Client Login</a>
+  <a routerLink="/client/login" class="btn-ghost">Client Login</a>
 }
 ```
 
@@ -714,7 +691,6 @@ Replace the static `/client` link block with:
 ```bash
 pnpm nx build trainer-site
 ```
-
 Expected: clean build.
 
 **Step 4: Commit**
@@ -728,16 +704,16 @@ git commit -m "feat(trainer-site): show client auth state in topbar, wire sign-o
 
 ## Summary of changes
 
-| Area                                  | What changed                                                                    |
-| ------------------------------------- | ------------------------------------------------------------------------------- |
-| Gateway `GET /trainer/site-config`    | Returns `{ configId: null, config: null }` on 404/error instead of throwing     |
-| Gateway `PUT /trainer/site-config`    | Calls `Create` when `configId` absent, `Update` otherwise                       |
-| `TrainerApiService`                   | `SiteConfigResponse` type, `configId` threaded through get/save                 |
-| `TrainerSiteEditorPageComponent`      | Stores `configId`, persists new id after create                                 |
-| `app.component.ts`                    | Stores `configId` from GET, merges with default correctly                       |
-| `TrainerAuthService`                  | `loginClient()`, `logoutClient()`, `clientUser` signal, `isClientAuthenticated` |
-| NEW `TrainerClientLoginPageComponent` | Login form, navigates to `/client/dashboard` on success                         |
-| NEW `clientAuthGuard`                 | Redirects unauthenticated visitors to `/client/login`                           |
-| `app.routes.ts`                       | `/client/login` added, client shell children guarded                            |
-| Client portal pages                   | `'client-demo'` replaced with `auth.clientUser()?.profileId`                    |
-| `app.component.ts` topbar             | Conditional client auth nav                                                     |
+| Area | What changed |
+|---|---|
+| Gateway `GET /trainer/site-config` | Returns `{ configId: null, config: null }` on 404/error instead of throwing |
+| Gateway `PUT /trainer/site-config` | Calls `Create` when `configId` absent, `Update` otherwise |
+| `TrainerApiService` | `SiteConfigResponse` type, `configId` threaded through get/save |
+| `TrainerSiteEditorPageComponent` | Stores `configId`, persists new id after create |
+| `app.component.ts` | Stores `configId` from GET, merges with default correctly |
+| `TrainerAuthService` | `loginClient()`, `logoutClient()`, `clientUser` signal, `isClientAuthenticated` |
+| NEW `TrainerClientLoginPageComponent` | Login form, navigates to `/client/dashboard` on success |
+| NEW `clientAuthGuard` | Redirects unauthenticated visitors to `/client/login` |
+| `app.routes.ts` | `/client/login` added, client shell children guarded |
+| Client portal pages | `'client-demo'` replaced with `auth.clientUser()?.profileId` |
+| `app.component.ts` topbar | Conditional client auth nav |

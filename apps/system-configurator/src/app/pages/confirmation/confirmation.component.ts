@@ -8,10 +8,7 @@ import { HardwareService, Order } from '../../services/hardware.service';
   standalone: true,
   imports: [CommonModule, DatePipe],
   template: `
-    <section
-      class="confirmation-shell"
-      *ngIf="order() as currentOrder; else confirmationState"
-    >
+    <section class="confirmation-shell" *ngIf="order() as currentOrder; else confirmationState">
       <div class="confirmation-card">
         <p class="eyebrow">HAI Confirmation</p>
         <h1>Order accepted into the integration queue.</h1>
@@ -35,9 +32,7 @@ import { HardwareService, Order } from '../../services/hardware.service';
           </article>
           <article *ngIf="currentOrder.estimatedDelivery">
             <span>Estimated delivery</span>
-            <strong>{{
-              currentOrder.estimatedDelivery | date : 'mediumDate'
-            }}</strong>
+            <strong>{{ currentOrder.estimatedDelivery | date: 'mediumDate' }}</strong>
           </article>
         </div>
 
@@ -65,13 +60,7 @@ import { HardwareService, Order } from '../../services/hardware.service';
       <section class="confirmation-shell">
         <div class="confirmation-card">
           <p class="eyebrow">HAI Confirmation</p>
-          <h1>
-            {{
-              loading()
-                ? 'Loading order confirmation...'
-                : 'Order confirmation unavailable'
-            }}
-          </h1>
+          <h1>{{ loading() ? 'Loading order confirmation...' : 'Order confirmation unavailable' }}</h1>
           <p class="lede">
             {{
               errorMessage() ||
@@ -100,16 +89,9 @@ import { HardwareService, Order } from '../../services/hardware.service';
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 2rem;
         padding: clamp(1.5rem, 4vw, 3rem);
-        background: radial-gradient(
-            circle at top right,
-            rgba(45, 212, 191, 0.16),
-            transparent 30%
-          ),
-          linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(255, 255, 255, 0.015)
-          ),
+        background:
+          radial-gradient(circle at top right, rgba(45, 212, 191, 0.16), transparent 30%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
           rgba(4, 12, 15, 0.84);
       }
 

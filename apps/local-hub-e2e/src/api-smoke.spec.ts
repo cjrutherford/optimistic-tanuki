@@ -11,12 +11,10 @@ test.describe('API smoke', () => {
     await getCommunities(request);
   });
 
-  test('exposes city data through communities endpoint', async ({
-    request,
-  }) => {
+  test('exposes city data through communities endpoint', async ({ request }) => {
     const communities = await getCommunities(request);
     const cities = communities.filter(
-      (community) => community.localityType === 'city'
+      (community) => community.localityType === 'city',
     );
 
     expect(Array.isArray(cities)).toBeTruthy();
@@ -37,7 +35,7 @@ test.describe('Authentication API', () => {
           password: 'TestPass123!',
           confirmPassword: 'TestPass123!',
         },
-      }
+      },
     );
 
     expectOkOrStatus(response, [400]);

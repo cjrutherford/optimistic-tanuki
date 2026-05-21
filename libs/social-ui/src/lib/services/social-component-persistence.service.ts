@@ -4,7 +4,7 @@ import { Observable, forkJoin } from 'rxjs';
 import {
   SocialComponentDto,
   CreateSocialComponentDto,
-  UpdateSocialComponentDto,
+  UpdateSocialComponentDto
 } from '@optimistic-tanuki/ui-models';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
@@ -17,13 +17,13 @@ export interface ComponentExtractionResult {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class SocialComponentPersistenceService {
   private readonly baseApiUrl = inject(API_BASE_URL);
   private readonly gatewayUrl = `${this.baseApiUrl}/social-components`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   /**
    * Extracts component data from HTML content for database persistence
@@ -47,24 +47,17 @@ export class SocialComponentPersistenceService {
             componentType: componentId,
             componentData: JSON.parse(dataStr),
             position: index,
-            domNode: node as HTMLElement,
+            domNode: node as HTMLElement
           });
         } catch (error) {
-          console.warn(
-            '[SocialComponentPersistence] Failed to parse component data:',
-            instanceId,
-            error
-          );
+          console.warn('[SocialComponentPersistence] Failed to parse component data:', instanceId, error);
         }
       } else {
-        console.warn(
-          '[SocialComponentPersistence] Component missing required attributes:',
-          {
-            componentId,
-            instanceId,
-            hasData: !!dataStr,
-          }
-        );
+        console.warn('[SocialComponentPersistence] Component missing required attributes:', {
+          componentId,
+          instanceId,
+          hasData: !!dataStr
+        });
       }
     });
 
@@ -74,30 +67,24 @@ export class SocialComponentPersistenceService {
   /**
    * Saves components to the database using RPC
    */
-  saveComponents(
-    postId: string,
-    components: ComponentExtractionResult[]
-  ): Observable<SocialComponentDto[]> {
+  saveComponents(postId: string, components: ComponentExtractionResult[]): Observable<SocialComponentDto[]> {
     if (components.length === 0) {
-      return new Observable((observer) => {
+      return new Observable(observer => {
         observer.next([]);
         observer.complete();
       });
     }
 
-    const saveRequests = components.map((comp) => {
+    const saveRequests = components.map(comp => {
       const createDto: CreateSocialComponentDto = {
         postId,
         instanceId: comp.instanceId,
         componentType: comp.componentType,
         componentData: comp.componentData,
-        position: comp.position,
+        position: comp.position
       };
 
-      return this.http.post<SocialComponentDto>(
-        `${this.gatewayUrl}`,
-        createDto
-      );
+      return this.http.post<SocialComponentDto>(`${this.gatewayUrl}`, createDto);
     });
 
     return forkJoin(saveRequests);
@@ -107,28 +94,19 @@ export class SocialComponentPersistenceService {
    * Gets stored components for a social post using RPC
    */
   getComponentsForPost(postId: string): Observable<SocialComponentDto[]> {
-    return this.http.get<SocialComponentDto[]>(
-      `${this.gatewayUrl}/post/${postId}`
-    );
+    return this.http.get<SocialComponentDto[]>(`${this.gatewayUrl}/post/${postId}`);
   }
 
   /**
    * Updates a component in the database using RPC
    */
-  updateComponent(
-    componentId: string,
-    componentData: Record<string, any>,
-    position?: number
-  ): Observable<SocialComponentDto> {
+  updateComponent(componentId: string, componentData: Record<string, any>, position?: number): Observable<SocialComponentDto> {
     const updateDto: UpdateSocialComponentDto = {
       componentData,
-      ...(position !== undefined && { position }),
+      ...(position !== undefined && { position })
     };
 
-    return this.http.put<SocialComponentDto>(
-      `${this.gatewayUrl}/${componentId}`,
-      updateDto
-    );
+    return this.http.put<SocialComponentDto>(`${this.gatewayUrl}/${componentId}`, updateDto);
   }
 
   /**
@@ -154,7 +132,7 @@ export class SocialComponentPersistenceService {
     const doc = parser.parseFromString(content, 'text/html');
     const componentNodes = doc.querySelectorAll('[data-angular-component]');
 
-    componentNodes.forEach((node) => {
+    componentNodes.forEach(node => {
       // Remove data attributes but keep structure for reconstruction
       node.removeAttribute('data-component-data');
       // Keep data-component-id and data-instance-id for reconstruction

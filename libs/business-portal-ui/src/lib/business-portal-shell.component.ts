@@ -22,13 +22,12 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         </div>
         <nav class="subnav">
           @for (link of links(); track link.path; let i = $index) {
-          <a
-            [routerLink]="link.path"
-            routerLinkActive="active"
-            class="subnav-link"
-            [style.animation-delay]="0.06 * i + 's'"
-            >{{ link.label }}</a
-          >
+            <a
+              [routerLink]="link.path"
+              routerLinkActive="active"
+              class="subnav-link"
+              [style.animation-delay]="0.06 * i + 's'"
+            >{{ link.label }}</a>
           }
         </nav>
       </header>
@@ -77,10 +76,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         border-radius: var(--personality-card-radius, 1.5rem);
         background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
         padding: var(--personality-card-padding, 1.5rem);
-        box-shadow: var(
-          --personality-card-shadow,
-          0 18px 44px rgba(15, 23, 42, 0.06)
-        );
+        box-shadow: var(--personality-card-shadow, 0 18px 44px rgba(15, 23, 42, 0.06));
         position: relative;
         overflow: hidden;
       }
@@ -117,12 +113,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
 
       h1 {
         margin: 0;
-        font-family: var(
-          --font-heading,
-          'Source Sans Pro',
-          system-ui,
-          sans-serif
-        );
+        font-family: var(--font-heading, 'Source Sans Pro', system-ui, sans-serif);
         font-size: clamp(1.4rem, 2.8vw, 2.2rem);
         font-weight: 700;
         color: var(--foreground, #0f172a);
@@ -146,9 +137,9 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         font-size: 0.88rem;
         font-weight: 500;
         background: var(--background);
-        transition: background 0.2s ease, color 0.2s ease,
-          border-color 0.2s ease,
-          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+        transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease,
+          transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+          box-shadow 0.2s ease;
         animation: link-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
         will-change: transform;
       }
@@ -156,17 +147,12 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
       .subnav-link:hover {
         transform: translateY(-2px);
         border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
-        box-shadow: 0 6px 16px
-          color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.04));
+        box-shadow: 0 6px 16px color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.04));
         color: var(--foreground);
       }
 
       .subnav-link.active {
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 12%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--primary, #1f7a63) 12%, transparent);
         border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
         color: var(--primary);
         font-weight: 600;

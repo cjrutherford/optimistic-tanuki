@@ -72,9 +72,7 @@ export class VideoService {
   }
 
   getUserChannels(userId: string): Observable<ChannelDto[]> {
-    return this.http.get<ChannelDto[]>(
-      `${this.API_URL}/channels/user/${userId}`
-    );
+    return this.http.get<ChannelDto[]>(`${this.API_URL}/channels/user/${userId}`);
   }
 
   async getMyChannels(): Promise<ChannelDto[]> {
@@ -135,9 +133,7 @@ export class VideoService {
   }
 
   // Subscription operations
-  subscribeToChannel(
-    subscription: SubscribeDto
-  ): Observable<ChannelSubscriptionDto> {
+  subscribeToChannel(subscription: SubscribeDto): Observable<ChannelSubscriptionDto> {
     return this.http.post<ChannelSubscriptionDto>(
       `${this.API_URL}/subscriptions`,
       subscription
@@ -145,12 +141,9 @@ export class VideoService {
   }
 
   unsubscribeFromChannel(channelId: string, userId: string): Observable<void> {
-    return this.http.delete<void>(
-      `${this.API_URL}/subscriptions/${channelId}`,
-      {
-        body: { userId },
-      }
-    );
+    return this.http.delete<void>(`${this.API_URL}/subscriptions/${channelId}`, {
+      body: { userId },
+    });
   }
 
   getUserSubscriptions(userId: string): Observable<ChannelSubscriptionDto[]> {
@@ -159,9 +152,7 @@ export class VideoService {
     );
   }
 
-  getChannelSubscribers(
-    channelId: string
-  ): Observable<ChannelSubscriptionDto[]> {
+  getChannelSubscribers(channelId: string): Observable<ChannelSubscriptionDto[]> {
     return this.http.get<ChannelSubscriptionDto[]>(
       `${this.API_URL}/subscriptions/channel/${channelId}`
     );

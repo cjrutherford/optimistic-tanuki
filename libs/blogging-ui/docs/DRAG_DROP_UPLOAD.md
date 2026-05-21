@@ -1,17 +1,14 @@
 # Drag-and-Drop Image Upload - Implementation Guide
 
 ## Overview
-
 All TipTap editor components now support drag-and-drop image uploads with automatic upload to the Assets service. This provides a seamless user experience for adding images to blog posts, social posts, forum posts, and comments.
 
 ## Components with Drag-and-Drop
 
 ### 1. Blog Compose Component
-
 **Location**: `libs/blogging-ui/src/lib/blog-compose/blog-compose.component.ts`
 
 **Features**:
-
 - ✅ Drag-and-drop enabled
 - ✅ Uploads to Assets service
 - ✅ Automatic image sizing (95% of editor width)
@@ -21,18 +18,15 @@ All TipTap editor components now support drag-and-drop image uploads with automa
 - ✅ Error handling
 
 **Event Handlers**:
-
 - `handleDragEnter()` - Shows drag overlay
 - `handleDragOver()` - Maintains drag state
 - `handleDragLeave()` - Hides drag overlay
 - `handleDrop()` - Processes dropped files
 
 ### 2. Social Compose Component
-
 **Location**: `libs/social-ui/src/lib/social-ui/compose/compose.component.ts`
 
 **Features**:
-
 - ✅ Drag-and-drop enabled
 - ✅ Uploads to Assets service
 - ✅ Multiple file support
@@ -45,11 +39,9 @@ All TipTap editor components now support drag-and-drop image uploads with automa
 Supports both custom upload callbacks (for legacy) and Assets service (default).
 
 ### 3. Forum Compose Component
-
 **Location**: `libs/forum-ui/src/lib/forum-ui/compose-forum-post/compose-forum-post.component.ts`
 
 **Features** (NEW):
-
 - ✅ Drag-and-drop enabled
 - ✅ Uploads to Assets service
 - ✅ Visual feedback overlay
@@ -59,7 +51,6 @@ Supports both custom upload callbacks (for legacy) and Assets service (default).
 - ✅ Error handling
 
 **Visual States**:
-
 - Normal: Standard editor appearance
 - Dragging: Blue border highlight
 - Drag Over: "Drop images here" overlay
@@ -119,7 +110,7 @@ async handleDrop(e: DragEvent): Promise<void> {
   // Filter for images only
   const files = Array.from(e.dataTransfer.files);
   const imageFiles = files.filter(file => file.type.startsWith('image/'));
-
+  
   if (imageFiles.length === 0) {
     alert('Please drop image files only');
     return;
@@ -133,7 +124,7 @@ async handleDrop(e: DragEvent): Promise<void> {
         this.profileId,
         `component-drag-drop-${Date.now()}`
       );
-
+      
       this.editor.chain().focus().setImage({ src: assetUrl }).run();
     } catch (error) {
       console.error('Error uploading dropped file:', error);
@@ -146,7 +137,12 @@ async handleDrop(e: DragEvent): Promise<void> {
 ### HTML Template Pattern
 
 ```html
-<div class="editor-container" [class.dragover]="isDragOver" (dragenter)="handleDragEnter($event)" (dragover)="handleDragOver($event)" (dragleave)="handleDragLeave($event)" (drop)="handleDrop($event)">
+<div class="editor-container"
+     [class.dragover]="isDragOver"
+     (dragenter)="handleDragEnter($event)"
+     (dragover)="handleDragOver($event)"
+     (dragleave)="handleDragLeave($event)"
+     (drop)="handleDrop($event)">
   <tiptap-editor [editor]="editor"></tiptap-editor>
 </div>
 ```
@@ -189,7 +185,7 @@ async handleDrop(e: DragEvent): Promise<void> {
 Only image files are accepted:
 
 ```typescript
-const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+const imageFiles = files.filter(file => file.type.startsWith('image/'));
 
 if (imageFiles.length === 0) {
   alert('Please drop image files only');
@@ -198,7 +194,6 @@ if (imageFiles.length === 0) {
 ```
 
 **Supported Types**:
-
 - image/png
 - image/jpeg
 - image/jpg
@@ -207,7 +202,6 @@ if (imageFiles.length === 0) {
 - image/svg+xml
 
 **Rejected**:
-
 - Documents (PDF, Word, etc.)
 - Videos
 - Audio files
@@ -226,7 +220,6 @@ if (!this.profileId) {
 ```
 
 **Error Scenarios**:
-
 - User not authenticated
 - Profile not loaded
 - ProfileId not passed to component
@@ -247,7 +240,6 @@ for (const file of imageFiles) {
 ```
 
 **Behavior**:
-
 - Each file uploaded sequentially
 - Each file inserted as separate image
 - Errors reported per file (doesn't stop other uploads)
@@ -258,20 +250,17 @@ for (const file of imageFiles) {
 Comprehensive error handling at multiple levels:
 
 **Missing ProfileId**:
-
 ```
 Alert: "Unable to upload image: User profile not found"
 Console: "Profile ID is required for image upload"
 ```
 
 **No Image Files**:
-
 ```
 Alert: "Please drop image files only"
 ```
 
 **Upload Failure**:
-
 ```
 Alert: "Failed to upload {filename}. Please try again."
 Console: Full error details
@@ -280,12 +269,10 @@ Console: Full error details
 ### 5. Visual Feedback
 
 **Blog & Social Compose**:
-
 - `isDragOver` property toggles
 - Can add custom styling
 
 **Forum Compose**:
-
 - Border highlights blue
 - Background tint applied
 - "Drop images here" overlay appears
@@ -300,14 +287,10 @@ const editorElement = this.editor.view.dom;
 const editorWidth = editorElement.clientWidth;
 const defaultWidth = Math.floor(editorWidth * 0.95);
 
-this.editor
-  .chain()
-  .focus()
-  .setImage({
-    src: assetUrl,
-    width: `${defaultWidth}px`,
-  })
-  .run();
+this.editor.chain().focus().setImage({
+  src: assetUrl,
+  width: `${defaultWidth}px`,
+}).run();
 ```
 
 **Benefit**: Images fit editor width automatically, maintaining responsive design.
@@ -317,23 +300,19 @@ this.editor
 ### Drag-and-Drop Flow
 
 1. **User drags image file from desktop/folder**
-
    - Cursor shows drag indicator
 
 2. **User hovers over editor**
-
    - Border highlights (forum)
    - Overlay appears (forum)
    - Visual feedback confirms drop zone
 
 3. **User releases file**
-
    - Overlay disappears
    - Upload begins (background)
    - Image appears in editor when ready
 
 4. **Success**
-
    - Image inserted at cursor position
    - Asset URL used (not base64)
    - Can continue editing
@@ -366,7 +345,7 @@ Parent components must provide `profileId`:
 // Example: Blog page component
 export class BlogPageComponent {
   profileService = inject(ProfileService);
-
+  
   get currentProfileId(): string | undefined {
     return this.profileService.getCurrentUserProfile()?.id;
   }
@@ -375,7 +354,10 @@ export class BlogPageComponent {
 
 ```html
 <!-- Template -->
-<lib-blog-compose [profileId]="currentProfileId" [(ngModel)]="postData"> </lib-blog-compose>
+<lib-blog-compose 
+  [profileId]="currentProfileId"
+  [(ngModel)]="postData">
+</lib-blog-compose>
 ```
 
 ### For New Components
@@ -383,25 +365,21 @@ export class BlogPageComponent {
 To add drag-and-drop to a new editor component:
 
 1. **Add property**:
-
 ```typescript
 isDragOver = false;
 ```
 
 2. **Inject service**:
-
 ```typescript
 private imageUploadService = inject(ImageUploadService);
 ```
 
 3. **Add Input**:
-
 ```typescript
 @Input() profileId?: string;
 ```
 
 4. **Add event handlers**:
-
 ```typescript
 handleDragEnter(e: DragEvent): void { ... }
 handleDragOver(e: DragEvent): void { ... }
@@ -410,15 +388,17 @@ async handleDrop(e: DragEvent): Promise<void> { ... }
 ```
 
 5. **Update template**:
-
 ```html
-<div (dragenter)="handleDragEnter($event)" (dragover)="handleDragOver($event)" (dragleave)="handleDragLeave($event)" (drop)="handleDrop($event)" [class.dragover]="isDragOver">
+<div (dragenter)="handleDragEnter($event)"
+     (dragover)="handleDragOver($event)"
+     (dragleave)="handleDragLeave($event)"
+     (drop)="handleDrop($event)"
+     [class.dragover]="isDragOver">
   <tiptap-editor [editor]="editor"></tiptap-editor>
 </div>
 ```
 
 6. **Add styles**:
-
 ```scss
 .dragover {
   // Visual feedback styles
@@ -447,19 +427,25 @@ Example test:
 it('should upload dropped images to Assets service', async () => {
   const mockFile = new File(['image'], 'test.png', { type: 'image/png' });
   const mockAssetUrl = '/asset/123';
-
-  spyOn(imageUploadService, 'uploadFile').and.returnValue(Promise.resolve(mockAssetUrl));
-
+  
+  spyOn(imageUploadService, 'uploadFile').and.returnValue(
+    Promise.resolve(mockAssetUrl)
+  );
+  
   const dataTransfer = new DataTransfer();
   dataTransfer.items.add(mockFile);
-
+  
   const dropEvent = new DragEvent('drop', { dataTransfer });
   await component.handleDrop(dropEvent);
-
-  expect(imageUploadService.uploadFile).toHaveBeenCalledWith(mockFile, component.profileId, jasmine.any(String));
-
+  
+  expect(imageUploadService.uploadFile).toHaveBeenCalledWith(
+    mockFile,
+    component.profileId,
+    jasmine.any(String)
+  );
+  
   expect(mockEditor.chain().focus().setImage).toHaveBeenCalledWith({
-    src: mockAssetUrl,
+    src: mockAssetUrl
   });
 });
 ```
@@ -469,14 +455,12 @@ it('should upload dropped images to Assets service', async () => {
 ### Issue: Drag-and-drop not working
 
 **Possible Causes**:
-
 1. Event handlers not bound in template
 2. `isDragOver` property not defined
 3. CSS preventing pointer events
 4. Browser security restrictions
 
 **Solutions**:
-
 - Verify event handlers in HTML
 - Check browser console for errors
 - Test in different browser
@@ -485,14 +469,12 @@ it('should upload dropped images to Assets service', async () => {
 ### Issue: Images not uploading
 
 **Possible Causes**:
-
 1. Missing profileId
 2. Network issues
 3. Assets service down
 4. File too large
 
 **Solutions**:
-
 - Check profileId is passed to component
 - Verify network connectivity
 - Check browser console for errors
@@ -501,12 +483,10 @@ it('should upload dropped images to Assets service', async () => {
 ### Issue: Non-image files accepted
 
 **Possible Causes**:
-
 1. File filter not applied
 2. MIME type detection failing
 
 **Solutions**:
-
 - Verify image filter code present
 - Check file.type property
 - Add additional validation
@@ -516,16 +496,18 @@ it('should upload dropped images to Assets service', async () => {
 ### Upload Performance
 
 **Sequential Uploads**:
-
 - Files uploaded one at a time
 - Prevents overwhelming server
 - Better error handling
 
 **Parallel Option** (future):
 Could implement parallel uploads:
-
 ```typescript
-await Promise.all(imageFiles.map((file) => this.imageUploadService.uploadFile(file, profileId)));
+await Promise.all(
+  imageFiles.map(file => 
+    this.imageUploadService.uploadFile(file, profileId)
+  )
+);
 ```
 
 ### Large Files
@@ -533,7 +515,6 @@ await Promise.all(imageFiles.map((file) => this.imageUploadService.uploadFile(fi
 **Current**: No client-side size limit
 
 **Recommendation**: Add size check:
-
 ```typescript
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -548,12 +529,10 @@ if (file.size > MAX_FILE_SIZE) {
 ### File Validation
 
 **Client-side** (basic):
-
 - MIME type check
 - File extension check (implicit)
 
 **Server-side** (comprehensive):
-
 - MIME type verification
 - Magic number check
 - Virus scanning
@@ -574,27 +553,22 @@ if (file.size > MAX_FILE_SIZE) {
 ### Possible Improvements
 
 1. **Upload Progress**
-
    - Show progress bar during upload
    - Cancel upload option
 
 2. **Image Preview**
-
    - Show thumbnail while uploading
    - Preview before final insert
 
 3. **Batch Upload**
-
    - Single progress indicator for multiple files
    - Retry failed uploads
 
 4. **Paste Support**
-
    - Handle Ctrl+V with image in clipboard
    - Same upload flow
 
 5. **Advanced Filtering**
-
    - File size preview before upload
    - Image dimension preview
    - Format conversion options

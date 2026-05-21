@@ -68,8 +68,11 @@
         </div>
         <div class="map-note">
           <span class="map-note-kicker">Visible now</span>
-          @if (userLocation()) { nearby localities from } @else { total
-          localities from }
+          @if (userLocation()) {
+          nearby localities from
+          } @else {
+          total localities from
+          }
           <strong>{{ filteredCities().length }}</strong> results and
           <strong>{{ filteredCommunities().length }}</strong> communities
         </div>

@@ -25,4 +25,4 @@ export default {
     '!src/role-assignments/entities/**',
     '!src/roles/entities/**',
   ],
-};
+  }

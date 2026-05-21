@@ -3,7 +3,9 @@ import { PageAnalysis, SearchResult } from './discovery.types';
 export const normalizeTopicTerms = (values: string[]): string[] => {
   return Array.from(
     new Set(
-      (values || []).map((value) => value.trim().toLowerCase()).filter(Boolean)
+      (values || [])
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean)
     )
   );
 };
@@ -25,10 +27,7 @@ export const buildAnalysisHaystack = (
     .toLowerCase();
 };
 
-export const getMatchedTerms = (
-  haystack: string,
-  terms: string[]
-): string[] => {
+export const getMatchedTerms = (haystack: string, terms: string[]): string[] => {
   return terms.filter((term) => haystack.includes(term));
 };
 

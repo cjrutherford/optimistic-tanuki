@@ -30,9 +30,11 @@ body {
 
 /* Smooth transitions for theme changes */
 * {
-  transition: background-color var(--animation-duration-fast, 160ms)
+  transition:
+    background-color var(--animation-duration-fast, 160ms)
       var(--animation-easing, ease),
-    color var(--animation-duration-fast, 160ms) var(--animation-easing, ease),
+    color var(--animation-duration-fast, 160ms)
+      var(--animation-easing, ease),
     border-color var(--animation-duration-fast, 160ms)
       var(--animation-easing, ease),
     box-shadow var(--animation-duration-fast, 160ms)
@@ -159,10 +161,7 @@ otui-card {
   background: var(--surface, #ffffff);
   border: 1px solid var(--border, #e2e8f0);
   border-radius: var(--personality-border-radius, 12px);
-  box-shadow: var(
-    --personality-card-shadow,
-    var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05))
-  );
+  box-shadow: var(--personality-card-shadow, var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.05)));
 
   &:hover {
     box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));

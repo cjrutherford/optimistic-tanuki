@@ -44,56 +44,50 @@ describe('TitleBarComponent', () => {
   it('navigateToRoute should navigate and close menu', () => {
     const spy = jest.spyOn(router, 'navigate');
     component.menuOpen.set(true);
-
+    
     component.navigateToRoute('/test');
-
+    
     expect(spy).toHaveBeenCalledWith(['/test']);
     expect(component.menuOpen()).toBe(false);
   });
 
   it('navItems should have labels and working actions', () => {
-    expect(component.navItems.length).toBeGreaterThan(0);
-    const aboutItem = component.navItems.find((i) => i.label === 'About');
-    expect(aboutItem).toBeDefined();
+      expect(component.navItems.length).toBeGreaterThan(0);
+      const aboutItem = component.navItems.find(i => i.label === 'About');
+      expect(aboutItem).toBeDefined();
+      
+      const navigateSpy = jest.spyOn(component, 'navigateTo');
+      const navigateRouteSpy = jest.spyOn(component, 'navigateToRoute');
 
-    const navigateSpy = jest.spyOn(component, 'navigateTo');
-    const navigateRouteSpy = jest.spyOn(component, 'navigateToRoute');
+      aboutItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#about');
 
-    aboutItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#about');
+      const benefitsItem = component.navItems.find(i => i.label === 'Benefits');
+      benefitsItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#benefits');
 
-    const benefitsItem = component.navItems.find((i) => i.label === 'Benefits');
-    benefitsItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#benefits');
+      const communityItem = component.navItems.find(i => i.label === 'Community');
+      communityItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#community');
 
-    const communityItem = component.navItems.find(
-      (i) => i.label === 'Community'
-    );
-    communityItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#community');
+      const resourcesItem = component.navItems.find(i => i.label === 'Resources');
+      resourcesItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#resources');
 
-    const resourcesItem = component.navItems.find(
-      (i) => i.label === 'Resources'
-    );
-    resourcesItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#resources');
+      const blogItem = component.navItems.find(i => i.label === 'Blog');
+      blogItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#blog');
 
-    const blogItem = component.navItems.find((i) => i.label === 'Blog');
-    blogItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#blog');
+      const contactItem = component.navItems.find(i => i.label === 'Contact');
+      contactItem?.action?.();
+      expect(navigateSpy).toHaveBeenCalledWith('#contact');
 
-    const contactItem = component.navItems.find((i) => i.label === 'Contact');
-    contactItem?.action?.();
-    expect(navigateSpy).toHaveBeenCalledWith('#contact');
+      const blogPostsItem = component.navItems.find(i => i.label === 'Blog Posts');
+      blogPostsItem?.action?.();
+      expect(navigateRouteSpy).toHaveBeenCalledWith('/blog');
 
-    const blogPostsItem = component.navItems.find(
-      (i) => i.label === 'Blog Posts'
-    );
-    blogPostsItem?.action?.();
-    expect(navigateRouteSpy).toHaveBeenCalledWith('/blog');
-
-    const forumItem = component.navItems.find((i) => i.label === 'Forum');
-    forumItem?.action?.();
-    expect(navigateRouteSpy).toHaveBeenCalledWith('/forum');
+      const forumItem = component.navItems.find(i => i.label === 'Forum');
+      forumItem?.action?.();
+      expect(navigateRouteSpy).toHaveBeenCalledWith('/forum');
   });
 });

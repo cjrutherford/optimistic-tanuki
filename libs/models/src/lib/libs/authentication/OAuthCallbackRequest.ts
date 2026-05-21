@@ -16,22 +16,16 @@ export class OAuthCallbackRequest {
 
   @IsString()
   @IsNotEmpty()
-  @ApiProperty({
-    description: 'The authorization code from the OAuth provider',
-  })
+  @ApiProperty({ description: 'The authorization code from the OAuth provider' })
   code!: string;
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({
-    description: 'The state parameter for CSRF protection',
-  })
+  @ApiPropertyOptional({ description: 'The state parameter for CSRF protection' })
   state?: string;
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({
-    description: 'The redirect URI used in the OAuth flow',
-  })
+  @ApiPropertyOptional({ description: 'The redirect URI used in the OAuth flow' })
   redirectUri?: string;
 }

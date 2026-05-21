@@ -688,8 +688,7 @@ export class ProjectsComponent implements OnInit {
       error: (error) => {
         console.error('Error starting timer:', error);
         this.messageService.addMessage({
-          content:
-            'Error starting timer: ' + (error.message || 'Unknown error'),
+          content: 'Error starting timer: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },
@@ -732,8 +731,7 @@ export class ProjectsComponent implements OnInit {
       error: (error) => {
         console.error('Error stopping timer:', error);
         this.messageService.addMessage({
-          content:
-            'Error stopping timer: ' + (error.message || 'Unknown error'),
+          content: 'Error stopping timer: ' + (error.message || 'Unknown error'),
           type: 'error',
         });
       },

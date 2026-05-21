@@ -20,12 +20,7 @@ interface PortfolioProject {
 
 @Component({
   selector: 'app-project-grid',
-  imports: [
-    CommonModule,
-    TileComponent,
-    HeadingComponent,
-    BlogPostCardComponent,
-  ],
+  imports: [CommonModule, TileComponent, HeadingComponent, BlogPostCardComponent],
   templateUrl: './project-grid.component.html',
   styleUrl: './project-grid.component.scss',
 })
@@ -44,8 +39,7 @@ export class ProjectGridComponent {
   portfolioProjects(apps: HaiResolvedAppLink[]): PortfolioProject[] {
     return apps.map((app) => ({
       title: app.name,
-      bannerImage:
-        this.bannerImages[app.appId] ?? 'assets/images/custom-app.png',
+      bannerImage: this.bannerImages[app.appId] ?? 'assets/images/custom-app.png',
       excerpt: app.portfolioSummary,
       readMoreText: app.isPublic ? 'Open Project' : 'View Repository',
       readMoreLink: app.resolvedHref,

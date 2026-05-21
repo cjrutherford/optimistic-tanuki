@@ -28,9 +28,8 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
           <span class="eyebrow">Studio brief</span>
           <h1>Build a campaign system that matches the offer.</h1>
           <p>
-            Define the product, audience, strategy, outputs, and brand
-            direction. The result is a grouped workbench with channel drafts and
-            material-ready copy.
+            Define the product, audience, strategy, outputs, and brand direction. The result is a
+            grouped workbench with channel drafts and material-ready copy.
           </p>
         </div>
 
@@ -54,15 +53,10 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                   *ngFor="let offering of offerings"
                   type="button"
                   class="selection-card"
-                  [class.selected]="
-                    request.selectedOfferingId === offering.id &&
-                    request.offeringKind !== 'custom-app'
-                  "
+                  [class.selected]="request.selectedOfferingId === offering.id && request.offeringKind !== 'custom-app'"
                   (click)="selectPreset(offering)"
                 >
-                  <span class="badge">{{
-                    offering.kind === 'service' ? 'Service' : 'App'
-                  }}</span>
+                  <span class="badge">{{ offering.kind === 'service' ? 'Service' : 'App' }}</span>
                   <strong>{{ offering.name }}</strong>
                   <small>{{ offering.summary }}</small>
                 </button>
@@ -75,16 +69,11 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                 >
                   <span class="badge">Custom</span>
                   <strong>Custom app brief</strong>
-                  <small
-                    >Define a product from scratch for this campaign run.</small
-                  >
+                  <small>Define a product from scratch for this campaign run.</small>
                 </button>
               </div>
 
-              <div
-                *ngIf="request.offeringKind === 'custom-app'"
-                class="brief-form"
-              >
+              <div *ngIf="request.offeringKind === 'custom-app'" class="brief-form">
                 <h3>Custom app brief</h3>
                 <label>
                   <span>Name</span>
@@ -92,17 +81,11 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                 </label>
                 <label>
                   <span>Category</span>
-                  <input
-                    [(ngModel)]="request.customApp.category"
-                    name="category"
-                  />
+                  <input [(ngModel)]="request.customApp.category" name="category" />
                 </label>
                 <label>
                   <span>Summary</span>
-                  <textarea
-                    [(ngModel)]="request.customApp.summary"
-                    name="summary"
-                  ></textarea>
+                  <textarea [(ngModel)]="request.customApp.summary" name="summary"></textarea>
                 </label>
                 <label>
                   <span>Features</span>
@@ -122,17 +105,11 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                 </label>
                 <label>
                   <span>Primary goal</span>
-                  <input
-                    [(ngModel)]="request.customApp.primaryGoal"
-                    name="primaryGoal"
-                  />
+                  <input [(ngModel)]="request.customApp.primaryGoal" name="primaryGoal" />
                 </label>
               </div>
 
-              <p
-                class="validation-copy"
-                *ngIf="request.offeringKind === 'custom-app' && !canAdvance()"
-              >
+              <p class="validation-copy" *ngIf="request.offeringKind === 'custom-app' && !canAdvance()">
                 Complete the custom app brief before moving forward.
               </p>
             </section>
@@ -158,10 +135,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
               <h2>Strategy</h2>
               <label>
                 <span>Intent</span>
-                <select
-                  [(ngModel)]="request.campaignIntent"
-                  name="campaignIntent"
-                >
+                <select [(ngModel)]="request.campaignIntent" name="campaignIntent">
                   <option value="awareness">Awareness</option>
                   <option value="conversion">Conversion</option>
                   <option value="launch">Launch</option>
@@ -189,8 +163,8 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
             <section *ngSwitchCase="3" class="block outputs-block">
               <h2>Outputs</h2>
               <p class="section-copy">
-                The primary channel always produces a native draft. Choose the
-                supporting material outputs you want in the same run.
+                The primary channel always produces a native draft. Choose the supporting material
+                outputs you want in the same run.
               </p>
 
               <div class="channel-banner">
@@ -204,9 +178,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                   *ngFor="let option of deliverableOptions"
                   type="button"
                   class="deliverable-card"
-                  [class.selected]="
-                    isDeliverableSelected(option.type, option.formatId)
-                  "
+                  [class.selected]="isDeliverableSelected(option.type, option.formatId)"
                   (click)="toggleDeliverable(option.type, option.formatId)"
                 >
                   <strong>{{ option.label }}</strong>
@@ -220,10 +192,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
               <div class="brand-grid">
                 <label>
                   <span>Business name</span>
-                  <input
-                    [(ngModel)]="request.brand.businessName"
-                    name="businessName"
-                  />
+                  <input [(ngModel)]="request.brand.businessName" name="businessName" />
                 </label>
                 <label>
                   <span>Tagline</span>
@@ -231,24 +200,15 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                 </label>
                 <label>
                   <span>Primary color</span>
-                  <input
-                    [(ngModel)]="request.brand.primaryColor"
-                    name="primaryColor"
-                  />
+                  <input [(ngModel)]="request.brand.primaryColor" name="primaryColor" />
                 </label>
                 <label>
                   <span>Secondary color</span>
-                  <input
-                    [(ngModel)]="request.brand.secondaryColor"
-                    name="secondaryColor"
-                  />
+                  <input [(ngModel)]="request.brand.secondaryColor" name="secondaryColor" />
                 </label>
                 <label>
                   <span>Accent color</span>
-                  <input
-                    [(ngModel)]="request.brand.accentColor"
-                    name="accentColor"
-                  />
+                  <input [(ngModel)]="request.brand.accentColor" name="accentColor" />
                 </label>
                 <label>
                   <span>Logo URL</span>
@@ -256,10 +216,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                 </label>
                 <label class="full-width">
                   <span>Visual style</span>
-                  <input
-                    [(ngModel)]="request.brand.visualStyle"
-                    name="visualStyle"
-                  />
+                  <input [(ngModel)]="request.brand.visualStyle" name="visualStyle" />
                 </label>
                 <label class="full-width">
                   <span>Visual direction</span>
@@ -270,19 +227,11 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                   ></textarea>
                 </label>
                 <label class="checkbox full-width">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="request.generateImages"
-                    name="generateImages"
-                  />
+                  <input type="checkbox" [(ngModel)]="request.generateImages" name="generateImages" />
                   <span>Prepare image prompts for generation</span>
                 </label>
                 <label class="checkbox full-width">
-                  <input
-                    type="checkbox"
-                    [(ngModel)]="request.includeAiPolish"
-                    name="includeAiPolish"
-                  />
+                  <input type="checkbox" [(ngModel)]="request.includeAiPolish" name="includeAiPolish" />
                   <span>Apply AI polish where available</span>
                 </label>
               </div>
@@ -293,32 +242,15 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
               <div class="review-card">
                 <p><strong>Offer:</strong> {{ summaryOffering() }}</p>
                 <p><strong>Audience:</strong> {{ summaryAudience() }}</p>
-                <p>
-                  <strong>Strategy:</strong> {{ request.campaignIntent }} /
-                  {{ request.channel }} / {{ request.tone }}
-                </p>
-                <p>
-                  <strong>Outputs:</strong> {{ selectedDeliverableSummary() }}
-                </p>
-                <p>
-                  <strong>Brand:</strong>
-                  {{
-                    request.brand.businessName || 'Unspecified brand profile'
-                  }}
-                </p>
+                <p><strong>Strategy:</strong> {{ request.campaignIntent }} / {{ request.channel }} / {{ request.tone }}</p>
+                <p><strong>Outputs:</strong> {{ selectedDeliverableSummary() }}</p>
+                <p><strong>Brand:</strong> {{ request.brand.businessName || 'Unspecified brand profile' }}</p>
               </div>
             </section>
           </ng-container>
 
           <div class="actions">
-            <button
-              type="button"
-              class="ghost"
-              (click)="back()"
-              [disabled]="step() === 0"
-            >
-              Back
-            </button>
+            <button type="button" class="ghost" (click)="back()" [disabled]="step() === 0">Back</button>
             <button
               type="button"
               class="ghost"
@@ -328,11 +260,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
             >
               Next
             </button>
-            <button
-              type="submit"
-              class="primary"
-              *ngIf="step() === stepLabels.length - 1"
-            >
+            <button type="submit" class="primary" *ngIf="step() === stepLabels.length - 1">
               Generate workbench
             </button>
           </div>
@@ -381,11 +309,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
       .channel-banner {
         border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
         border-radius: var(--border-radius-lg, 20px);
-        background: color-mix(
-          in srgb,
-          var(--surface, #10151c) 90%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--surface, #10151c) 90%, transparent);
         box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25));
       }
 
@@ -428,14 +352,11 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
       .selection-card,
       .persona-card,
       .deliverable-card {
-        transition: transform var(--animation-duration-fast, 180ms)
-            var(--animation-easing, ease),
-          background var(--animation-duration-fast, 180ms)
-            var(--animation-easing, ease),
-          border-color var(--animation-duration-fast, 180ms)
-            var(--animation-easing, ease),
-          box-shadow var(--animation-duration-fast, 180ms)
-            var(--animation-easing, ease);
+        transition:
+          transform var(--animation-duration-fast, 180ms) var(--animation-easing, ease),
+          background var(--animation-duration-fast, 180ms) var(--animation-easing, ease),
+          border-color var(--animation-duration-fast, 180ms) var(--animation-easing, ease),
+          box-shadow var(--animation-duration-fast, 180ms) var(--animation-easing, ease);
       }
 
       .steps button,
@@ -449,10 +370,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
 
       .steps button.active {
         color: var(--background, #081018);
-        background: var(
-          --primary-gradient,
-          linear-gradient(135deg, #f59e0b, #0ea5e9)
-        );
+        background: var(--primary-gradient, linear-gradient(135deg, #f59e0b, #0ea5e9));
         border-color: transparent;
       }
 
@@ -483,11 +401,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
       .deliverable-card.selected {
         border-color: var(--primary, #f59e0b);
         transform: translateY(-2px);
-        background: color-mix(
-          in srgb,
-          var(--primary, #f59e0b) 14%,
-          var(--surface, #10151c)
-        );
+        background: color-mix(in srgb, var(--primary, #f59e0b) 14%, var(--surface, #10151c));
       }
 
       .selection-card strong,
@@ -553,18 +467,9 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
       textarea {
         width: 100%;
         border-radius: var(--border-radius-md, 14px);
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--border, rgba(255, 255, 255, 0.12)) 90%,
-            transparent
-          );
+        border: 1px solid color-mix(in srgb, var(--border, rgba(255, 255, 255, 0.12)) 90%, transparent);
         padding: 0.85rem 0.95rem;
-        background: color-mix(
-          in srgb,
-          var(--surface, #10151c) 86%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--surface, #10151c) 86%, transparent);
         color: var(--foreground, #f7f1e6);
       }
 
@@ -601,10 +506,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
 
       .primary {
         color: var(--background, #081018);
-        background: var(
-          --primary-gradient,
-          linear-gradient(135deg, #f59e0b, #0ea5e9)
-        );
+        background: var(--primary-gradient, linear-gradient(135deg, #f59e0b, #0ea5e9));
         border-color: transparent;
       }
 
@@ -647,27 +549,17 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
   ],
 })
 export class CreatePageComponent {
-  protected readonly stepLabels = [
-    'Offer',
-    'Audience',
-    'Strategy',
-    'Outputs',
-    'Brand',
-    'Review',
-  ];
+  protected readonly stepLabels = ['Offer', 'Audience', 'Strategy', 'Outputs', 'Brand', 'Review'];
   protected readonly offerings = OFFERING_PRESETS;
   protected readonly personas = AUDIENCE_PERSONAS;
   protected readonly step = signal(0);
-  protected readonly request = cloneRequest(
-    inject(MarketingStateService).request()
-  );
+  protected readonly request = cloneRequest(inject(MarketingStateService).request());
   protected readonly deliverableOptions = this.buildDeliverableOptions();
   protected readonly summaryOffering = computed(() =>
     this.request.offeringKind === 'custom-app'
       ? this.request.customApp.name || 'Custom app'
-      : this.offerings.find(
-          (offering) => offering.id === this.request.selectedOfferingId
-        )?.name || 'Select an offering'
+      : this.offerings.find((offering) => offering.id === this.request.selectedOfferingId)
+          ?.name || 'Select an offering'
   );
   protected readonly summaryAudience = computed(
     () =>
@@ -714,19 +606,14 @@ export class CreatePageComponent {
       return;
     }
 
-    this.step.update((value) =>
-      Math.min(value + 1, this.stepLabels.length - 1)
-    );
+    this.step.update((value) => Math.min(value + 1, this.stepLabels.length - 1));
   }
 
   back(): void {
     this.step.update((value) => Math.max(value - 1, 0));
   }
 
-  isDeliverableSelected(
-    type: MarketingMaterialType,
-    formatId: string
-  ): boolean {
+  isDeliverableSelected(type: MarketingMaterialType, formatId: string): boolean {
     return this.request.deliverables.some(
       (item) => item.type === type && item.formatId === formatId
     );
@@ -763,12 +650,10 @@ export class CreatePageComponent {
     }
 
     return this.request.deliverables
-      .map(
-        (item) =>
-          this.deliverableOptions.find(
-            (option) =>
-              option.type === item.type && option.formatId === item.formatId
-          )?.label || item.type
+      .map((item) =>
+        this.deliverableOptions.find(
+          (option) => option.type === item.type && option.formatId === item.formatId
+        )?.label || item.type
       )
       .join(', ');
   }
@@ -783,10 +668,7 @@ export class CreatePageComponent {
       this.request as GenerationRequest
     );
     const concepts = this.request.includeAiPolish
-      ? await this.enrichmentApi.enrichConcepts(
-          this.request as GenerationRequest,
-          baseConcepts
-        )
+      ? await this.enrichmentApi.enrichConcepts(this.request as GenerationRequest, baseConcepts)
       : baseConcepts;
     this.state.setConcepts(concepts);
     await this.router.navigate(['/results']);
@@ -801,22 +683,14 @@ export class CreatePageComponent {
     return (
       Object.entries(MATERIAL_FORMAT_PRESETS) as [
         MarketingMaterialType,
-        Array<{
-          id: string;
-          label: string;
-          surfaces: string[];
-          width: number;
-          height: number;
-        }>
+        Array<{ id: string; label: string; surfaces: string[]; width: number; height: number }>
       ][]
     ).flatMap(([type, presets]) =>
       presets.map((preset) => ({
         type,
         formatId: preset.id,
         label: preset.label,
-        meta: `${preset.width}×${preset.height} · ${
-          preset.surfaces.length
-        } surface${preset.surfaces.length > 1 ? 's' : ''}`,
+        meta: `${preset.width}×${preset.height} · ${preset.surfaces.length} surface${preset.surfaces.length > 1 ? 's' : ''}`,
       }))
     );
   }

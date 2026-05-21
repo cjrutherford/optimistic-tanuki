@@ -27,8 +27,7 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     appId: 'optimistic-tanuki',
     configName: 'client-interface',
     name: 'Optimistic Tanuki',
-    tagline:
-      'General social media, identity, messaging, and utility workflows.',
+    tagline: 'General social media, identity, messaging, and utility workflows.',
     href: '/optimistic-tanuki',
     category: 'Social Platform',
     appPath: 'client-interface',

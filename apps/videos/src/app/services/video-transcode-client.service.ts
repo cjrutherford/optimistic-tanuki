@@ -25,21 +25,17 @@ export class VideoTranscodeClientService {
     process.env['VIDEO_TRANSCODER_HOST'] || 'video-transcoder-worker';
   private readonly port = Number.parseInt(
     process.env['VIDEO_TRANSCODER_PORT'] || '3023',
-    10
+    10,
   );
 
-  async transcode(
-    request: VideoTranscodeRequest
-  ): Promise<VideoTranscodeResult> {
+  async transcode(request: VideoTranscodeRequest): Promise<VideoTranscodeResult> {
     const response = await this.sendRequest({
       command: 'transcode-video',
       request,
     });
 
     if (!response.ok) {
-      throw new Error(
-        'error' in response ? response.error : 'Transcode failed'
-      );
+      throw new Error('error' in response ? response.error : 'Transcode failed');
     }
 
     return response.result;

@@ -31,17 +31,7 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [
-  Project,
-  Task,
-  Risk,
-  Change,
-  Timer,
-  ProjectJournal,
-  TaskTag,
-  TaskTimeEntry,
-  TaskNote,
-];
+const entities = [Project, Task, Risk, Change, Timer, ProjectJournal, TaskTag, TaskTimeEntry, TaskNote];
 
 console.log(
   `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`

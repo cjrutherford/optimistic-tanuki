@@ -16,7 +16,13 @@ import { Task, TaskTag } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-task-manager',
-  template: ` <lib-task-form [task]="selectedTask" [availableTags]="availableTags" (formSubmit)="onTaskSubmit($event)"></lib-task-form> `,
+  template: `
+    <lib-task-form
+      [task]="selectedTask"
+      [availableTags]="availableTags"
+      (formSubmit)="onTaskSubmit($event)"
+    ></lib-task-form>
+  `
 })
 export class TaskManagerComponent {
   selectedTask: Task | null = null;
@@ -34,7 +40,6 @@ export class TaskManagerComponent {
 ```
 
 ### Visual Features
-
 - Multi-select tag interface with colored badges
 - Click to toggle selection
 - Selected tags highlighted with background color
@@ -54,7 +59,17 @@ import { Task, CreateTask } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-tasks-view',
-  template: ` <lib-ag-tasks-table [tasks]="tasks" [loading]="loading" (createTask)="onCreate($event)" (editTask)="onEdit($event)" (deleteTask)="onDelete($event)" (startTimer)="onStartTimer($event)" (stopTimer)="onStopTimer($event)"></lib-ag-tasks-table> `,
+  template: `
+    <lib-ag-tasks-table
+      [tasks]="tasks"
+      [loading]="loading"
+      (createTask)="onCreate($event)"
+      (editTask)="onEdit($event)"
+      (deleteTask)="onDelete($event)"
+      (startTimer)="onStartTimer($event)"
+      (stopTimer)="onStopTimer($event)"
+    ></lib-ag-tasks-table>
+  `
 })
 export class TasksViewComponent {
   tasks: Task[] = [];
@@ -81,7 +96,6 @@ export class TasksViewComponent {
 ```
 
 ### Timer Button Behavior
-
 - **Green "▶ Start" button**: Shown when no active timer
 - **Red "⏸ Stop" button**: Shown when timer is running
 - Auto-detects timer state from `task.timeEntries`
@@ -101,7 +115,12 @@ import { ProjectAnalytics, TagAnalytics } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-analytics',
-  template: ` <lib-analytics-dashboard [projectAnalytics]="projectAnalytics" [tagAnalytics]="tagAnalytics"></lib-analytics-dashboard> `,
+  template: `
+    <lib-analytics-dashboard
+      [projectAnalytics]="projectAnalytics"
+      [tagAnalytics]="tagAnalytics"
+    ></lib-analytics-dashboard>
+  `
 })
 export class AnalyticsComponent implements OnInit {
   projectAnalytics: ProjectAnalytics | null = null;
@@ -113,24 +132,20 @@ export class AnalyticsComponent implements OnInit {
 
   loadAnalytics() {
     // Fetch project analytics from backend
-    this.analyticsService
-      .getProjectAnalytics({
-        projectId: this.projectId,
-        startDate: this.startDate,
-        endDate: this.endDate,
-      })
-      .subscribe((data) => {
-        this.projectAnalytics = data;
-      });
+    this.analyticsService.getProjectAnalytics({
+      projectId: this.projectId,
+      startDate: this.startDate,
+      endDate: this.endDate
+    }).subscribe(data => {
+      this.projectAnalytics = data;
+    });
 
     // Fetch tag analytics from backend
-    this.analyticsService
-      .getTagAnalytics({
-        projectId: this.projectId,
-      })
-      .subscribe((data) => {
-        this.tagAnalytics = data;
-      });
+    this.analyticsService.getTagAnalytics({
+      projectId: this.projectId
+    }).subscribe(data => {
+      this.tagAnalytics = data;
+    });
   }
 }
 ```
@@ -138,26 +153,22 @@ export class AnalyticsComponent implements OnInit {
 ### Dashboard Features
 
 **Project Summary Card:**
-
 - Total time spent (formatted as hours and minutes)
 - Total task count
 - Number of unique tags used
 
 **Top Tasks by Time:**
-
 - Lists top 5 tasks by time spent
 - Visual progress bars showing relative time
 - Displays number of time entries per task
 - Shows associated tags for each task
 
 **Top Tags by Time:**
-
 - Lists top 5 tags by time spent
 - Visual progress bars showing relative time distribution
 - Shows number of tasks per tag
 
 **Empty State:**
-
 - Displays helpful message when no data available
 - Encourages users to start tracking time
 
@@ -178,19 +189,24 @@ import { Task, TaskTimeEntry } from '@optimistic-tanuki/ui-models';
   template: `
     <div class="task-detail">
       <h2>{{ task.title }}</h2>
-
-      <lib-time-tracker [taskId]="task.id" [timeEntries]="task.timeEntries || []" (startTimer)="onStartTimer($event)" (stopTimer)="onStopTimer($event)"></lib-time-tracker>
-
+      
+      <lib-time-tracker
+        [taskId]="task.id"
+        [timeEntries]="task.timeEntries || []"
+        (startTimer)="onStartTimer($event)"
+        (stopTimer)="onStopTimer($event)"
+      ></lib-time-tracker>
+      
       <h3>Time Entries</h3>
       <ul>
         <li *ngFor="let entry of task.timeEntries">
-          {{ entry.startTime | date : 'short' }} -
-          {{ entry.endTime ? (entry.endTime | date : 'short') : 'Running' }}
+          {{ entry.startTime | date:'short' }} - 
+          {{ entry.endTime ? (entry.endTime | date:'short') : 'Running' }}
           ({{ formatSeconds(entry.elapsedSeconds) }})
         </li>
       </ul>
     </div>
-  `,
+  `
 })
 export class TaskDetailComponent {
   task: Task;
@@ -212,7 +228,6 @@ export class TaskDetailComponent {
 ```
 
 ### Time Tracker Features
-
 - Real-time countdown when timer is running
 - Total time aggregation across all entries
 - Automatic detection of active timers
@@ -353,40 +368,52 @@ Here's a complete example combining all components:
     <div class="project-dashboard">
       <!-- Analytics at the top -->
       <section class="analytics-section">
-        <lib-analytics-dashboard [projectAnalytics]="analytics" [tagAnalytics]="tagAnalytics"></lib-analytics-dashboard>
+        <lib-analytics-dashboard
+          [projectAnalytics]="analytics"
+          [tagAnalytics]="tagAnalytics"
+        ></lib-analytics-dashboard>
       </section>
 
       <!-- Task management below -->
       <section class="tasks-section">
-        <lib-ag-tasks-table [tasks]="tasks" (createTask)="onCreate($event)" (editTask)="onEdit($event)" (deleteTask)="onDelete($event)" (startTimer)="onStartTimer($event)" (stopTimer)="onStopTimer($event)"></lib-ag-tasks-table>
+        <lib-ag-tasks-table
+          [tasks]="tasks"
+          (createTask)="onCreate($event)"
+          (editTask)="onEdit($event)"
+          (deleteTask)="onDelete($event)"
+          (startTimer)="onStartTimer($event)"
+          (stopTimer)="onStopTimer($event)"
+        ></lib-ag-tasks-table>
       </section>
 
       <!-- Task form modal -->
       <div *ngIf="showTaskForm" class="modal">
-        <lib-task-form [task]="selectedTask" [availableTags]="availableTags" (formSubmit)="onTaskSubmit($event)"></lib-task-form>
+        <lib-task-form
+          [task]="selectedTask"
+          [availableTags]="availableTags"
+          (formSubmit)="onTaskSubmit($event)"
+        ></lib-task-form>
       </div>
     </div>
   `,
-  styles: [
-    `
-      .project-dashboard {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        padding: 24px;
-      }
+  styles: [`
+    .project-dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      padding: 24px;
+    }
 
-      .analytics-section {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
+    .analytics-section {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
 
-      .tasks-section {
-        flex: 1;
-      }
-    `,
-  ],
+    .tasks-section {
+      flex: 1;
+    }
+  `]
 })
 export class ProjectDashboardComponent implements OnInit {
   tasks: Task[] = [];

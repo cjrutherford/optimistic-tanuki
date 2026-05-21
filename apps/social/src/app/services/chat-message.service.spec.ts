@@ -1,11 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  ChatMessageService,
-  CreateMessageData,
-  AddReactionData,
-} from './chat-message.service';
+import { ChatMessageService, CreateMessageData, AddReactionData } from './chat-message.service';
 import { ChatMessage, MessageType } from '../../entities/chat-message.entity';
 
 describe('ChatMessageService', () => {
@@ -132,9 +128,7 @@ describe('ChatMessageService', () => {
 
       const result = await service.findOne('msg-123');
 
-      expect(messageRepo.findOne).toHaveBeenCalledWith({
-        where: { id: 'msg-123' },
-      });
+      expect(messageRepo.findOne).toHaveBeenCalledWith({ where: { id: 'msg-123' } });
       expect(result).toEqual(mockChatMessage);
     });
 
@@ -166,10 +160,7 @@ describe('ChatMessageService', () => {
       const result = await service.addReaction(reactionData);
 
       expect(service.findOne).toHaveBeenCalledWith('msg-123');
-      expect(result.reactions).toContainEqual({
-        emoji: '👍',
-        userId: 'user-2',
-      });
+      expect(result.reactions).toContainEqual({ emoji: '👍', userId: 'user-2' });
     });
 
     it('should throw error if message not found', async () => {
@@ -181,9 +172,7 @@ describe('ChatMessageService', () => {
 
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(service.addReaction(reactionData)).rejects.toThrow(
-        'Message not found'
-      );
+      await expect(service.addReaction(reactionData)).rejects.toThrow('Message not found');
     });
 
     it('should throw error if reaction already exists', async () => {
@@ -200,9 +189,7 @@ describe('ChatMessageService', () => {
 
       jest.spyOn(service, 'findOne').mockResolvedValue(messageWithReaction);
 
-      await expect(service.addReaction(reactionData)).rejects.toThrow(
-        'Reaction already exists'
-      );
+      await expect(service.addReaction(reactionData)).rejects.toThrow('Reaction already exists');
     });
   });
 
@@ -232,9 +219,9 @@ describe('ChatMessageService', () => {
     it('should throw error if message not found', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(
-        service.removeReaction('non-existent', '👍', 'user-2')
-      ).rejects.toThrow('Message not found');
+      await expect(service.removeReaction('non-existent', '👍', 'user-2')).rejects.toThrow(
+        'Message not found'
+      );
     });
   });
 
@@ -248,10 +235,7 @@ describe('ChatMessageService', () => {
 
       const result = await service.toggleReaction('msg-123', '👍', 'user-2');
 
-      expect(result.reactions).toContainEqual({
-        emoji: '👍',
-        userId: 'user-2',
-      });
+      expect(result.reactions).toContainEqual({ emoji: '👍', userId: 'user-2' });
     });
 
     it('should remove reaction if it exists', async () => {
@@ -274,9 +258,9 @@ describe('ChatMessageService', () => {
     it('should throw error if message not found', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(
-        service.toggleReaction('non-existent', '👍', 'user-2')
-      ).rejects.toThrow('Message not found');
+      await expect(service.toggleReaction('non-existent', '👍', 'user-2')).rejects.toThrow(
+        'Message not found'
+      );
     });
   });
 
@@ -311,9 +295,9 @@ describe('ChatMessageService', () => {
     it('should throw error if message not found', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(
-        service.markAsRead('non-existent', 'user-2')
-      ).rejects.toThrow('Message not found');
+      await expect(service.markAsRead('non-existent', 'user-2')).rejects.toThrow(
+        'Message not found'
+      );
     });
   });
 
@@ -326,11 +310,9 @@ describe('ChatMessageService', () => {
       ];
 
       jest.spyOn(messageRepo, 'find').mockResolvedValue(messages);
-      jest
-        .spyOn(messageRepo, 'save')
-        .mockImplementation((msg: any) =>
-          Promise.resolve({ ...msg, readBy: [...(msg.readBy || []), 'user-1'] })
-        );
+      jest.spyOn(messageRepo, 'save').mockImplementation((msg: any) =>
+        Promise.resolve({ ...msg, readBy: [...(msg.readBy || []), 'user-1'] })
+      );
 
       await service.markConversationAsRead('conv-123', 'user-1');
 
@@ -372,9 +354,9 @@ describe('ChatMessageService', () => {
     it('should throw error if message not found', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(
-        service.editMessage('non-existent', 'New content')
-      ).rejects.toThrow('Message not found');
+      await expect(service.editMessage('non-existent', 'New content')).rejects.toThrow(
+        'Message not found'
+      );
     });
   });
 
@@ -402,9 +384,7 @@ describe('ChatMessageService', () => {
     it('should throw error if message not found', async () => {
       jest.spyOn(service, 'findOne').mockResolvedValue(null);
 
-      await expect(service.deleteMessage('non-existent')).rejects.toThrow(
-        'Message not found'
-      );
+      await expect(service.deleteMessage('non-existent')).rejects.toThrow('Message not found');
     });
   });
 
@@ -412,12 +392,7 @@ describe('ChatMessageService', () => {
     it('should return count of unread messages', async () => {
       const messages = [
         { ...mockChatMessage, id: 'msg-1', readBy: [], senderId: undefined },
-        {
-          ...mockChatMessage,
-          id: 'msg-2',
-          readBy: ['user-2'],
-          senderId: undefined,
-        },
+        { ...mockChatMessage, id: 'msg-2', readBy: ['user-2'], senderId: undefined },
         { ...mockChatMessage, id: 'msg-3', readBy: [], senderId: undefined },
       ];
 
@@ -433,18 +408,8 @@ describe('ChatMessageService', () => {
 
     it('should return 0 if all messages are read', async () => {
       const messages = [
-        {
-          ...mockChatMessage,
-          id: 'msg-1',
-          readBy: ['user-1', 'user-2'],
-          senderId: undefined,
-        },
-        {
-          ...mockChatMessage,
-          id: 'msg-2',
-          readBy: ['user-1'],
-          senderId: undefined,
-        },
+        { ...mockChatMessage, id: 'msg-1', readBy: ['user-1', 'user-2'], senderId: undefined },
+        { ...mockChatMessage, id: 'msg-2', readBy: ['user-1'], senderId: undefined },
       ];
 
       jest.spyOn(messageRepo, 'find').mockResolvedValue(messages);

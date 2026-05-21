@@ -17,7 +17,7 @@ import {
 export class UsageMeteringService {
   constructor(
     @Inject(USAGE_EVENT_REPOSITORY)
-    private readonly usageEventRepository: UsageEventRepository
+    private readonly usageEventRepository: UsageEventRepository,
   ) {}
 
   async recordUsage(input: RecordUsageDto): Promise<RecordUsageResult> {
@@ -25,7 +25,7 @@ export class UsageMeteringService {
     const existing = await this.usageEventRepository.findByEventKey(
       scope.tenantId,
       scope.appScope,
-      input.eventKey
+      input.eventKey,
     );
 
     if (existing) {
@@ -57,7 +57,7 @@ export class UsageMeteringService {
   }
 
   async batchRecordUsage(
-    input: BatchRecordUsageDto
+    input: BatchRecordUsageDto,
   ): Promise<RecordUsageResult[]> {
     const results: RecordUsageResult[] = [];
 

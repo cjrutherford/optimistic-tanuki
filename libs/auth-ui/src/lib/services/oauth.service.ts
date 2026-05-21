@@ -147,7 +147,9 @@ export class OAuthService {
       this.messageSubscription = fromEvent<MessageEvent>(window, 'message')
         .pipe(
           filter((event) => event.origin === window.location.origin),
-          filter((event) => event.data && event.data.type === 'oauth-callback'),
+          filter(
+            (event) => event.data && event.data.type === 'oauth-callback'
+          ),
           take(1),
           timeout(300000)
         )

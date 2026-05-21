@@ -17,17 +17,11 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         <aside class="hero-aside">
           <div class="hero-panel">
             <span class="hero-label">Use Case</span>
-            <p>
-              Curated implementation reference with live previews and
-              high-signal defaults.
-            </p>
+            <p>Curated implementation reference with live previews and high-signal defaults.</p>
           </div>
           <div class="hero-panel">
             <span class="hero-label">Focus</span>
-            <p>
-              Import quickly, compare variants, and understand the exposed
-              inputs before wiring features.
-            </p>
+            <p>Import quickly, compare variants, and understand the exposed inputs before wiring features.</p>
           </div>
         </aside>
       </header>
@@ -86,11 +80,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .hero-copy,
       .hero-panel {
         border: 1px solid rgba(129, 168, 222, 0.12);
-        background: radial-gradient(
-            circle at top right,
-            rgba(125, 183, 255, 0.12),
-            transparent 35%
-          ),
+        background:
+          radial-gradient(circle at top right, rgba(125, 183, 255, 0.12), transparent 35%),
           linear-gradient(180deg, rgba(15, 24, 38, 0.84), rgba(8, 14, 24, 0.94));
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       }
@@ -252,13 +243,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
           flex-wrap: nowrap;
           overflow-x: auto;
           padding-bottom: 0.25rem;
-          mask-image: linear-gradient(
-            90deg,
-            transparent,
-            #000 4%,
-            #000 96%,
-            transparent
-          );
+          mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
         }
 
         .import-panel {

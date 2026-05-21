@@ -26,10 +26,7 @@ import { ClassifiedAdDto } from '../models/index';
         <div class="seller-row">
           <div class="seller-avatar" [class.has-image]="!!ad.sellerProfilePic">
             @if (ad.sellerProfilePic) {
-            <img
-              [src]="ad.sellerProfilePic"
-              [alt]="ad.sellerProfileName || 'Seller'"
-            />
+            <img [src]="ad.sellerProfilePic" [alt]="ad.sellerProfileName || 'Seller'" />
             } @else {
             <span>{{ sellerInitials }}</span>
             }
@@ -81,28 +78,21 @@ import { ClassifiedAdDto } from '../models/index';
   styles: [
     `
       .classified-card {
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
         border-radius: 18px;
         overflow: hidden;
         background: color-mix(in srgb, var(--surface) 94%, transparent);
-        transition: box-shadow 0.2s ease, transform 0.2s ease,
+        transition:
+          box-shadow 0.2s ease,
+          transform 0.2s ease,
           border-color 0.2s ease;
         &:hover {
           box-shadow: var(--shadow-card, 0 18px 40px rgba(15, 23, 42, 0.12));
           transform: translateY(-3px);
-          border-color: color-mix(
-            in srgb,
-            var(--primary) 35%,
-            var(--border, var(--muted))
-          );
+          border-color: color-mix(in srgb, var(--primary) 35%, var(--border, var(--muted)));
         }
         &.featured {
-          border-color: color-mix(
-            in srgb,
-            var(--primary) 55%,
-            var(--secondary, var(--primary))
-          );
+          border-color: color-mix(in srgb, var(--primary) 55%, var(--secondary, var(--primary)));
           box-shadow: 0 20px 44px rgba(var(--primary-rgb, 63, 81, 181), 0.18);
         }
       }
@@ -152,17 +142,12 @@ import { ClassifiedAdDto } from '../models/index';
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: color-mix(
-          in srgb,
-          var(--secondary, var(--primary)) 22%,
-          var(--surface)
-        );
+        background: color-mix(in srgb, var(--secondary, var(--primary)) 22%, var(--surface));
         color: var(--foreground);
         font-size: 0.8rem;
         font-weight: 700;
         overflow: hidden;
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 85%, transparent);
       }
       .seller-avatar img {
         width: 100%;
@@ -193,17 +178,12 @@ import { ClassifiedAdDto } from '../models/index';
       .card-category {
         display: inline-block;
         font-size: 0.75rem;
-        background: color-mix(
-          in srgb,
-          var(--secondary, var(--primary)) 18%,
-          var(--surface)
-        );
+        background: color-mix(in srgb, var(--secondary, var(--primary)) 18%, var(--surface));
         color: var(--foreground, #212121);
         padding: 4px 10px;
         border-radius: 999px;
         margin-bottom: 6px;
-        border: 1px solid
-          color-mix(in srgb, var(--secondary, var(--primary)) 28%, transparent);
+        border: 1px solid color-mix(in srgb, var(--secondary, var(--primary)) 28%, transparent);
       }
       .card-description {
         font-size: 0.85rem;
@@ -226,15 +206,10 @@ import { ClassifiedAdDto } from '../models/index';
         font-size: 0.7rem;
         font-weight: 500;
         color: var(--foreground, #212121);
-        background: color-mix(
-          in srgb,
-          var(--surface-variant, var(--surface)) 88%,
-          var(--surface)
-        );
+        background: color-mix(in srgb, var(--surface-variant, var(--surface)) 88%, var(--surface));
         padding: 4px 8px;
         border-radius: 999px;
-        border: 1px solid
-          color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, var(--muted)) 75%, transparent);
       }
       .card-footer {
         display: flex;
@@ -274,8 +249,7 @@ import { ClassifiedAdDto } from '../models/index';
       }
       .btn-secondary {
         background: color-mix(in srgb, var(--surface) 82%, transparent);
-        border: 1px solid
-          color-mix(in srgb, var(--primary) 30%, var(--border, var(--muted)));
+        border: 1px solid color-mix(in srgb, var(--primary) 30%, var(--border, var(--muted)));
         color: var(--primary, #3f51b5);
         &:hover {
           background: color-mix(in srgb, var(--primary) 8%, var(--surface));

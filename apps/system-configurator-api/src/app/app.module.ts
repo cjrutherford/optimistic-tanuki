@@ -55,8 +55,7 @@ import { PcPartPickerSyncService } from '../hardware/pcpartpicker-sync.service';
     },
     {
       provide: getRepositoryToken(SavedConfigurationEntity),
-      useFactory: (ds: DataSource) =>
-        ds.getRepository(SavedConfigurationEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(SavedConfigurationEntity),
       inject: ['SYSTEM-CONFIGURATOR_CONNECTION'],
     },
   ],

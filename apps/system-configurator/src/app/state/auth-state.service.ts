@@ -26,9 +26,8 @@ export class AuthStateService {
 
   private readonly tokenSubject = new BehaviorSubject<string | null>(null);
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
-  private readonly decodedTokenSubject = new BehaviorSubject<UserData | null>(
-    null
-  );
+  private readonly decodedTokenSubject =
+    new BehaviorSubject<UserData | null>(null);
 
   private authenticated = false;
 

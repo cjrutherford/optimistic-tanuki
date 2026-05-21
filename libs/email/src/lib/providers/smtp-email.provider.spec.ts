@@ -62,9 +62,7 @@ describe('SmtpEmailProvider', () => {
   });
 
   it('should handle send errors', async () => {
-    mockTransporter.sendMail.mockRejectedValue(
-      new Error('SMTP connection refused')
-    );
+    mockTransporter.sendMail.mockRejectedValue(new Error('SMTP connection refused'));
 
     const result = await provider.sendEmail({
       to: 'user@example.com',

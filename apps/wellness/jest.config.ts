@@ -10,4 +10,4 @@ export default {
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: '../../coverage/apps/wellness',
   testMatch: ['**/+(*.)+(spec).+(ts)'],
-};
+  }

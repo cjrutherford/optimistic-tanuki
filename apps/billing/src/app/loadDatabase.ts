@@ -6,9 +6,7 @@ import {
 } from '@optimistic-tanuki/billing-data-access';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
-const loadDatabase = (
-  configService: ConfigService
-): PostgresConnectionOptions => {
+const loadDatabase = (configService: ConfigService): PostgresConnectionOptions => {
   const database = configService.get('database');
 
   return {

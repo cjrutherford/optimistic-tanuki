@@ -14,7 +14,7 @@ describe('RegisterAccountBootstrapService', () => {
               lastName: 'User',
             },
           },
-        })
+        }),
       ),
     };
     const profileClient = {
@@ -25,14 +25,14 @@ describe('RegisterAccountBootstrapService', () => {
           of({
             id: 'owner-profile',
             appScope: 'global',
-          })
+          }),
         ),
     };
     const roleInit = { processNow: jest.fn().mockResolvedValue(undefined) };
     const service = new RegisterAccountBootstrapService(
       authClient as any,
       profileClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     const result = await service.register(
@@ -44,7 +44,7 @@ describe('RegisterAccountBootstrapService', () => {
         confirm: 'secret',
         bio: '',
       },
-      'owner-console'
+      'owner-console',
     );
 
     expect(profileClient.send).toHaveBeenCalledWith(
@@ -52,7 +52,7 @@ describe('RegisterAccountBootstrapService', () => {
       expect.objectContaining({
         userId: 'owner-user',
         appScope: 'global',
-      })
+      }),
     );
     expect(roleInit.processNow).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -60,18 +60,18 @@ describe('RegisterAccountBootstrapService', () => {
         assignments: expect.arrayContaining([
           expect.objectContaining({ roleName: 'owner' }),
         ]),
-      })
+      }),
     );
     expect(authClient.send).toHaveBeenCalledWith(
       { cmd: AuthCommands.Register },
-      expect.objectContaining({ email: 'owner@test.com' })
+      expect.objectContaining({ email: 'owner@test.com' }),
     );
     expect(result).toEqual(
       expect.objectContaining({
         data: expect.objectContaining({
           user: expect.objectContaining({ id: 'owner-user' }),
         }),
-      })
+      }),
     );
   });
 
@@ -86,7 +86,7 @@ describe('RegisterAccountBootstrapService', () => {
     const service = new RegisterAccountBootstrapService(
       authClient as any,
       profileClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     await expect(
@@ -99,10 +99,10 @@ describe('RegisterAccountBootstrapService', () => {
           confirm: 'secret',
           bio: '',
         },
-        'owner-console'
-      )
+        'owner-console',
+      ),
     ).rejects.toThrow(
-      'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
+      'Owner Console registration is closed. An existing owner must invite or provision additional operators.',
     );
     expect(authClient.send).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe('RegisterAccountBootstrapService', () => {
               lastName: 'User',
             },
           },
-        })
+        }),
       ),
     };
     const profileClient = {
@@ -126,14 +126,14 @@ describe('RegisterAccountBootstrapService', () => {
         of({
           id: 'leads-profile',
           appScope: 'leads-app',
-        })
+        }),
       ),
     };
     const roleInit = { processNow: jest.fn().mockResolvedValue(undefined) };
     const service = new RegisterAccountBootstrapService(
       authClient as any,
       profileClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     await service.register(
@@ -145,7 +145,7 @@ describe('RegisterAccountBootstrapService', () => {
         confirm: 'secret',
         bio: '',
       },
-      'leads-app'
+      'leads-app',
     );
 
     expect(roleInit.processNow).toHaveBeenCalledWith(
@@ -157,7 +157,7 @@ describe('RegisterAccountBootstrapService', () => {
             profileId: 'leads-profile',
           }),
         ]),
-      })
+      }),
     );
   });
 });

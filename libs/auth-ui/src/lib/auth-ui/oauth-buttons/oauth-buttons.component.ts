@@ -7,7 +7,12 @@ export interface OAuthProviderEvent {
   provider: 'google' | 'github' | 'microsoft' | 'facebook';
 }
 
-const VALID_PROVIDERS = ['google', 'github', 'microsoft', 'facebook'] as const;
+const VALID_PROVIDERS = [
+  'google',
+  'github',
+  'microsoft',
+  'facebook',
+] as const;
 
 @Component({
   selector: 'lib-oauth-buttons',

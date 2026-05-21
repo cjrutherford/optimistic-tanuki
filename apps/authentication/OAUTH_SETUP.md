@@ -215,7 +215,6 @@ For issues specific to OAuth provider configuration, refer to the official docum
 ### Google OAuth 2.0 Setup
 
 **Step 1: Create a Google Cloud Project**
-
 1. Open [Google Cloud Console](https://console.cloud.google.com/)
 2. Click the project dropdown at the top
 3. Select "New Project"
@@ -223,13 +222,11 @@ For issues specific to OAuth provider configuration, refer to the official docum
 5. Click "Create"
 
 **Step 2: Enable the Google+ API**
-
 1. In the left sidebar, go to "APIs & Services" > "Library"
 2. Search for "Google+ API"
 3. Click on it and select "Enable"
 
 **Step 3: Create OAuth Credentials**
-
 1. Go to "APIs & Services" > "Credentials"
 2. Click "Create Credentials" > "OAuth client ID"
 3. If prompted, click "Configure OAuth consent screen"
@@ -251,7 +248,6 @@ For issues specific to OAuth provider configuration, refer to the official docum
 14. Copy the Client ID and Client Secret
 
 **Step 4: Configure in Optimistic Tanuki**
-
 ```bash
 export GOOGLE_CLIENT_ID="your-client-id"
 export GOOGLE_CLIENT_SECRET="your-client-secret"
@@ -261,13 +257,11 @@ export GOOGLE_REDIRECT_URI="https://your-domain.com/oauth/callback"
 ### GitHub OAuth Setup
 
 **Step 1: Access Developer Settings**
-
 1. Go to [GitHub Settings > Developer Settings > OAuth Apps](https://github.com/settings/developers)
 2. Click "New OAuth App"
 
 **Step 2: Register Application**
 Fill in the form:
-
 - **Application name:** `Optimistic Tanuki`
 - **Homepage URL:** `https://your-domain.com`
 - **Application description:** `OAuth authentication for Optimistic Tanuki platform`
@@ -276,13 +270,11 @@ Fill in the form:
 Click "Register application"
 
 **Step 3: Generate Client Secret**
-
 1. You'll see your Client ID on the app page
 2. Click "Generate a new client secret"
 3. Copy both the Client ID and Client Secret immediately (you won't see the secret again)
 
 **Step 4: Configure in Optimistic Tanuki**
-
 ```bash
 export GITHUB_CLIENT_ID="your-client-id"
 export GITHUB_CLIENT_SECRET="your-client-secret"
@@ -292,20 +284,17 @@ export GITHUB_REDIRECT_URI="https://your-domain.com/oauth/callback"
 ### Microsoft Identity Platform Setup
 
 **Step 1: Register Application**
-
 1. Go to [Azure Portal](https://portal.azure.com/)
 2. Search for "App registrations" in the top search bar
 3. Click "New registration"
 
 **Step 2: Configure Registration**
-
 - **Name:** `Optimistic Tanuki`
 - **Supported account types:** Select "Accounts in any organizational directory and personal Microsoft accounts"
 - **Redirect URI:** Select "Web" and enter `https://your-domain.com/oauth/callback`
 - Click "Register"
 
 **Step 3: Add Authentication**
-
 1. In the left menu, go to "Authentication"
 2. Under "Platform configurations", click "Add a platform"
 3. Select "Web"
@@ -316,7 +305,6 @@ export GITHUB_REDIRECT_URI="https://your-domain.com/oauth/callback"
 6. Click "Configure"
 
 **Step 4: Create Client Secret**
-
 1. Go to "Certificates & secrets" in the left menu
 2. Click "New client secret"
 3. Enter description: `OAuth application`
@@ -325,12 +313,10 @@ export GITHUB_REDIRECT_URI="https://your-domain.com/oauth/callback"
 6. Copy the secret Value immediately
 
 **Step 5: Get Application ID**
-
 1. Go to "Overview" in the left menu
 2. Copy the "Application (client) ID"
 
 **Step 6: Configure in Optimistic Tanuki**
-
 ```bash
 export MICROSOFT_CLIENT_ID="your-application-id"
 export MICROSOFT_CLIENT_SECRET="your-client-secret"
@@ -340,19 +326,16 @@ export MICROSOFT_REDIRECT_URI="https://your-domain.com/oauth/callback"
 ### Facebook Login Setup
 
 **Step 1: Create or Select App**
-
 1. Go to [Facebook Developers](https://developers.facebook.com/)
 2. Click "My Apps" dropdown
 3. Click "Create App" or select existing app
 
 **Step 2: Add Facebook Login Product**
-
 1. On the app dashboard, click "Add Product"
 2. Find "Facebook Login" and click "Set Up"
 3. Select "Web" as your platform
 
 **Step 3: Configure OAuth Redirect URIs**
-
 1. In the left menu, go to "Settings" > "Basic"
 2. Note your App ID and App Secret (copy both)
 3. Go to "Products" > "Facebook Login" > "Settings"
@@ -362,7 +345,6 @@ export MICROSOFT_REDIRECT_URI="https://your-domain.com/oauth/callback"
 5. Save changes
 
 **Step 4: Configure in Optimistic Tanuki**
-
 ```bash
 export FACEBOOK_CLIENT_ID="your-app-id"
 export FACEBOOK_CLIENT_SECRET="your-app-secret"

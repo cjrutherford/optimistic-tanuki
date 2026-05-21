@@ -117,8 +117,7 @@ import loadConfig from '../config';
     },
     {
       provide: getRepositoryToken(LeadOnboardingProfileRecord),
-      useFactory: (ds: DataSource) =>
-        ds.getRepository(LeadOnboardingProfileRecord),
+      useFactory: (ds: DataSource) => ds.getRepository(LeadOnboardingProfileRecord),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

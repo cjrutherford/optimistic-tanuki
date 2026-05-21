@@ -83,8 +83,6 @@ describe('ProfileService', () => {
     await activationPromise;
 
     expect(authStateStub.setToken).toHaveBeenCalledWith('fresh-token');
-    expect(authStateStub.persistSelectedProfile).toHaveBeenCalledWith(
-      leadsProfile
-    );
+    expect(authStateStub.persistSelectedProfile).toHaveBeenCalledWith(leadsProfile);
   });
 });

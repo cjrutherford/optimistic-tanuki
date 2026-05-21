@@ -1,5 +1,9 @@
 import { Logger } from '@nestjs/common';
-import { EmailProvider, EmailMessage, EmailSendResult } from '../interfaces';
+import {
+  EmailProvider,
+  EmailMessage,
+  EmailSendResult,
+} from '../interfaces';
 
 /**
  * Console email provider plugin.
@@ -23,9 +27,7 @@ export class ConsoleEmailProvider implements EmailProvider {
       this.logger.log(`[Console Email] Body: ${message.text}`);
     }
     if (message.html) {
-      this.logger.log(
-        `[Console Email] HTML body length: ${message.html.length}`
-      );
+      this.logger.log(`[Console Email] HTML body length: ${message.html.length}`);
     }
     return { success: true, messageId };
   }

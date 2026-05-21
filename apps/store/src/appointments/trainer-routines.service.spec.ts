@@ -20,10 +20,7 @@ describe('TrainerRoutinesService', () => {
   });
 
   function createService() {
-    return new TrainerRoutinesService(
-      routineRepo as never,
-      checkInRepo as never
-    );
+    return new TrainerRoutinesService(routineRepo as never, checkInRepo as never);
   }
 
   it('creates and queries routine assignments by clientId', async () => {
@@ -47,9 +44,7 @@ describe('TrainerRoutinesService', () => {
     const service = createService();
 
     await expect(service.assignRoutine(payload)).resolves.toEqual(savedRoutine);
-    await expect(service.getClientRoutines('profile-1')).resolves.toEqual([
-      savedRoutine,
-    ]);
+    await expect(service.getClientRoutines('profile-1')).resolves.toEqual([savedRoutine]);
     await expect(service.getAllRoutines()).resolves.toEqual([savedRoutine]);
 
     expect(routineRepo.create).toHaveBeenCalledWith(payload);
@@ -82,9 +77,7 @@ describe('TrainerRoutinesService', () => {
     const service = createService();
 
     await expect(service.submitCheckIn(payload)).resolves.toEqual(savedCheckIn);
-    await expect(service.getClientCheckIns('profile-1')).resolves.toEqual([
-      savedCheckIn,
-    ]);
+    await expect(service.getClientCheckIns('profile-1')).resolves.toEqual([savedCheckIn]);
 
     expect(checkInRepo.create).toHaveBeenCalledWith(payload);
     expect(checkInRepo.find).toHaveBeenCalledWith({
@@ -108,9 +101,7 @@ describe('TrainerRoutinesService', () => {
       completeRoutine(id: string): Promise<unknown>;
     };
 
-    await expect(service.completeRoutine('routine-1')).resolves.toEqual(
-      savedRoutine
-    );
+    await expect(service.completeRoutine('routine-1')).resolves.toEqual(savedRoutine);
     expect(routineRepo.update).toHaveBeenCalledWith('routine-1', {
       status: 'completed',
       completedAt: expect.any(Date),

@@ -20,7 +20,6 @@
 ### Task 1: Add Regression Coverage For Current Failures
 
 **Files:**
-
 - Modify: `apps/lead-tracker/src/app/discovery.service.spec.ts`
 - Create: `apps/lead-tracker/src/app/discovery/himalayas-discovery.provider.spec.ts`
 - Create: `apps/lead-tracker/src/app/discovery/jobicy-discovery.provider.spec.ts`
@@ -31,7 +30,6 @@
 **Step 1: Write the failing backend tests**
 
 Add provider-level tests that prove:
-
 - Himalayas returns a warning, not an exception, when the upstream responds with HTML/404.
 - Jobicy returns a warning, not an exception, when the upstream responds with HTML or a non-OK status.
 - Google Maps can retain a candidate when the query intent is “service buyer” even if topic keywords are absent from the place name.
@@ -46,7 +44,6 @@ Expected: provider tests fail because the providers parse JSON unconditionally a
 **Step 3: Write the failing frontend tests**
 
 Add Angular tests that prove:
-
 - topic create/update payloads include `excludedTerms` and `discoveryIntent`
 - the form validates Google Maps settings differently for service-buyer topics
 - the edit form round-trips the new fields
@@ -67,7 +64,6 @@ git commit -m "test: add lead discovery regression coverage"
 ### Task 2: Harden Third-Party Provider Fetching
 
 **Files:**
-
 - Create: `apps/lead-tracker/src/app/discovery/provider-http.util.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/himalayas-discovery.provider.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/jobicy-discovery.provider.ts`
@@ -76,7 +72,6 @@ git commit -m "test: add lead discovery regression coverage"
 **Step 1: Write the failing helper-focused tests**
 
 Add tests for a small shared helper that:
-
 - checks `response.ok`
 - checks `content-type` for JSON
 - reads a short body preview
@@ -91,7 +86,6 @@ Expected: failure because the provider still calls `response.json()` directly.
 **Step 3: Write minimal implementation**
 
 Implement a shared fetch/read helper used by Himalayas, Jobicy, and Google Maps so every provider:
-
 - handles `!response.ok`
 - rejects non-JSON responses before parsing
 - includes status code and content-type in warnings
@@ -115,7 +109,6 @@ git commit -m "fix: harden discovery provider response handling"
 ### Task 3: Add Topic Excluded Terms And Discovery Intent
 
 **Files:**
-
 - Modify: `libs/models/src/lib/libs/leads/lead-topic.model.ts`
 - Create: `libs/models/src/lib/libs/leads/lead-topic-discovery-intent.enum.ts`
 - Modify: `libs/models/src/lib/libs/leads/create-lead-topic.dto.ts`
@@ -129,7 +122,6 @@ git commit -m "fix: harden discovery provider response handling"
 **Step 1: Write the failing model/service tests**
 
 Add tests that prove:
-
 - `excludedTerms` are normalized, deduplicated, and saved
 - `discoveryIntent` defaults to a job-oriented value for existing topics
 - disabling Google Maps clears only Google Maps-specific inputs, not the new generic topic metadata
@@ -143,7 +135,6 @@ Expected: failure because DTOs/entities do not expose the new fields.
 **Step 3: Write minimal implementation**
 
 Add:
-
 - `excludedTerms: string[]`
 - `discoveryIntent: 'job-openings' | 'service-buyers'`
 
@@ -165,7 +156,6 @@ git commit -m "feat: add topic discovery intent and excluded terms"
 ### Task 4: Make Google Maps Discovery Match Service-Buyer Topics
 
 **Files:**
-
 - Modify: `apps/lead-tracker/src/app/discovery/google-maps-discovery.provider.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/discovery.types.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/provider-result-analysis.util.ts`
@@ -174,13 +164,11 @@ git commit -m "feat: add topic discovery intent and excluded terms"
 **Step 1: Write the failing behavior test**
 
 Add a test with a topic such as:
-
 - `discoveryIntent = service-buyers`
 - `googleMapsTypes = ['dental office']`
 - `excludedTerms = ['wordpress', 'php']`
 
 Expected behavior:
-
 - a business returned from Google Maps is eligible based on business type + local query context
 - a result whose name/query/notes includes `wordpress` or `php` is rejected
 
@@ -193,7 +181,6 @@ Expected: failure because the provider still requires positive keyword matches f
 **Step 3: Write minimal implementation**
 
 Refactor Google Maps matching so:
-
 - `job-openings` topics keep current keyword-driven behavior
 - `service-buyers` topics treat the city/type query itself as a positive signal
 - optional topic keywords still strengthen a match rather than acting as a hard gate
@@ -217,7 +204,6 @@ git commit -m "feat: improve google maps service-buyer matching"
 ### Task 5: Apply Excluded-Term Filtering Across Discovery Providers
 
 **Files:**
-
 - Modify: `apps/lead-tracker/src/app/discovery/source-provider.util.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/himalayas-discovery.provider.ts`
 - Modify: `apps/lead-tracker/src/app/discovery/jobicy-discovery.provider.ts`
@@ -241,7 +227,6 @@ Expected: providers still return blocked results.
 **Step 3: Write minimal implementation**
 
 Add shared helpers for:
-
 - normalized positive terms
 - normalized excluded terms
 - `hasExcludedTerms(text, excludedTerms)`
@@ -264,7 +249,6 @@ git commit -m "feat: enforce excluded terms across discovery providers"
 ### Task 6: Extend The Topics UI For Intent And Excluded Terms
 
 **Files:**
-
 - Modify: `apps/leads-app/src/app/leads.types.ts`
 - Modify: `apps/leads-app/src/app/topics.component.ts`
 - Modify: `apps/leads-app/src/app/topics.component.html`
@@ -274,7 +258,6 @@ git commit -m "feat: enforce excluded terms across discovery providers"
 **Step 1: Write the failing UI tests**
 
 Add tests that prove:
-
 - the form shows an intent control
 - the form shows an excluded-terms input
 - the payload includes the new fields on create/update
@@ -289,7 +272,6 @@ Expected: failure because the form does not render or submit the new fields.
 **Step 3: Write minimal implementation**
 
 Update the topic form to:
-
 - add a discovery intent selector
 - add an excluded-terms comma-separated input
 - keep Google Maps city/type inputs only when Google Maps is selected
@@ -311,14 +293,12 @@ git commit -m "feat: add discovery intent and excluded terms to topics ui"
 ### Task 7: Verify End-To-End Discovery Diagnostics
 
 **Files:**
-
 - Modify: `apps/lead-tracker/src/app/discovery.service.ts`
 - Modify: `apps/leads-app/src/app/topics.component.html`
 
 **Step 1: Write the failing diagnostics test**
 
 Add coverage that provider warnings surface enough detail to distinguish:
-
 - dead endpoint
 - non-JSON upstream response
 - missing API key

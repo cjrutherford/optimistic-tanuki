@@ -2,11 +2,7 @@
   padding: 12px 18px;
   background: linear-gradient(
     color-mix(in srgb, var(--local-accent, var(--accent)) 8%, transparent),
-    color-mix(
-      in srgb,
-      var(--local-complement, var(--complement)) 5%,
-      transparent
-    )
+    color-mix(in srgb, var(--local-complement, var(--complement)) 5%, transparent)
   );
   display: flex;
   gap: 16px;
@@ -31,11 +27,7 @@
   flex-direction: row;
   font-size: 0.85rem;
   color: var(--local-foreground);
-  background: color-mix(
-    in srgb,
-    var(--local-complement, var(--complement)) 10%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--local-complement, var(--complement)) 10%, transparent);
   border: 1px solid var(--local-borderColor, var(--border));
   border-radius: var(--border-radius-full, 20px);
   padding: 4px 12px 4px 4px;

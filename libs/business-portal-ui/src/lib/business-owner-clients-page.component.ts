@@ -21,8 +21,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <p class="eyebrow">Client Studio</p>
           <h1>Manage active relationships</h1>
           <p class="headline-body">
-            Stay in the flow of who is approved, who is booked, and what each
-            client needs next.
+            Stay in the flow of who is approved, who is booked, and what each client needs next.
           </p>
         </div>
         <div class="headline-band">
@@ -31,20 +30,12 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
             <strong>{{ acceptedClients().length }}</strong>
             <small>Cleared to book against availability.</small>
           </div>
-          <button
-            type="button"
-            class="metric-tile metric-button"
-            (click)="scrollToSection('owner-client-bookings')"
-          >
+          <button type="button" class="metric-tile metric-button" (click)="scrollToSection('owner-client-bookings')">
             <span>Bookings</span>
             <strong>{{ bookings().length }}</strong>
             <small>Upcoming and in-flight sessions.</small>
           </button>
-          <button
-            type="button"
-            class="metric-tile metric-button"
-            (click)="scrollToSection('owner-client-routines')"
-          >
+          <button type="button" class="metric-tile metric-button" (click)="scrollToSection('owner-client-routines')">
             <span>Routines</span>
             <strong>{{ routines().length }}</strong>
             <small>Assigned plans in motion.</small>
@@ -64,234 +55,195 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
           <div class="roster-list">
             @for (client of acceptedClients(); track client.userId) {
-            <button
-              type="button"
-              class="roster-item"
-              [class.selected]="client.userId === clientId()"
-              (click)="selectClient(client.userId)"
-            >
-              <div class="roster-topline">
-                <span class="avatar-seal">{{
-                  client.name?.slice(0, 1) || 'C'
-                }}</span>
-                <div class="roster-identity">
-                  <strong>{{ client.name }}</strong>
-                  <span>{{ client.email || client.userId }}</span>
+              <button
+                type="button"
+                class="roster-item"
+                [class.selected]="client.userId === clientId()"
+                (click)="selectClient(client.userId)"
+              >
+                <div class="roster-topline">
+                  <span class="avatar-seal">{{ client.name?.slice(0, 1) || 'C' }}</span>
+                  <div class="roster-identity">
+                    <strong>{{ client.name }}</strong>
+                    <span>{{ client.email || client.userId }}</span>
+                  </div>
                 </div>
-              </div>
-              <div class="roster-meta">
-                <small
-                  >{{
-                    selectedClientBookingsCount(client.userId)
-                  }}
-                  bookings</small
-                >
-                <small
-                  >{{
-                    selectedClientRoutinesCount(client.userId)
-                  }}
-                  routines</small
-                >
-              </div>
-            </button>
+                <div class="roster-meta">
+                  <small>{{ selectedClientBookingsCount(client.userId) }} bookings</small>
+                  <small>{{ selectedClientRoutinesCount(client.userId) }} routines</small>
+                </div>
+              </button>
             } @empty {
-            <p class="empty">
-              Accepted clients will appear here once the owner approves them.
-            </p>
+              <p class="empty">Accepted clients will appear here once the owner approves them.</p>
             }
           </div>
         </otui-card>
 
         <otui-card class="workspace-card">
           @if (selectedClient(); as client) {
-          <div class="workspace-header">
-            <div class="workspace-title">
-              <p class="eyebrow">Selected Client</p>
-              <h2>{{ client.name }}</h2>
-              <p class="detail-copy">
-                {{ client.email || 'No email' }} ·
-                {{ client.phone || 'No phone' }}
-              </p>
+            <div class="workspace-header">
+              <div class="workspace-title">
+                <p class="eyebrow">Selected Client</p>
+                <h2>{{ client.name }}</h2>
+                <p class="detail-copy">{{ client.email || 'No email' }} · {{ client.phone || 'No phone' }}</p>
+              </div>
+              <div class="status-pill">
+                <span>{{ client.leadStatus }}</span>
+              </div>
             </div>
-            <div class="status-pill">
-              <span>{{ client.leadStatus }}</span>
-            </div>
-          </div>
 
-          <div class="insight-ribbon">
-            <div class="insight-chip">
-              <span>Booking status</span>
-              <strong>{{
-                selectedClientBookings().length
-                  ? 'Active'
-                  : 'Awaiting first session'
-              }}</strong>
+            <div class="insight-ribbon">
+              <div class="insight-chip">
+                <span>Booking status</span>
+                <strong>{{ selectedClientBookings().length ? 'Active' : 'Awaiting first session' }}</strong>
+              </div>
+              <div class="insight-chip">
+                <span>Availability fit</span>
+                <strong>Owner calendar enforced</strong>
+              </div>
+              <div class="insight-chip">
+                <span>Next step</span>
+                <strong>{{ selectedClientRoutines().length ? 'Routine assigned' : 'Routine pending' }}</strong>
+              </div>
             </div>
-            <div class="insight-chip">
-              <span>Availability fit</span>
-              <strong>Owner calendar enforced</strong>
-            </div>
-            <div class="insight-chip">
-              <span>Next step</span>
-              <strong>{{
-                selectedClientRoutines().length
-                  ? 'Routine assigned'
-                  : 'Routine pending'
-              }}</strong>
-            </div>
-          </div>
 
-          <div class="workspace-layout">
-            <aside class="overview-rail">
-              <div class="overview-card">
-                <p class="rail-label">Relationship overview</p>
-                <div class="overview-list">
-                  <div class="overview-row">
-                    <span>Name</span>
-                    <strong>{{ client.name }}</strong>
-                  </div>
-                  <div class="overview-row">
-                    <span>Email</span>
-                    <strong>{{ client.email || 'Not provided' }}</strong>
-                  </div>
-                  <div class="overview-row">
-                    <span>Phone</span>
-                    <strong>{{ client.phone || 'Not provided' }}</strong>
-                  </div>
-                  <div class="overview-row">
-                    <span>Lead state</span>
-                    <strong>{{ client.leadStatus }}</strong>
+            <div class="workspace-layout">
+              <aside class="overview-rail">
+                <div class="overview-card">
+                  <p class="rail-label">Relationship overview</p>
+                  <div class="overview-list">
+                    <div class="overview-row">
+                      <span>Name</span>
+                      <strong>{{ client.name }}</strong>
+                    </div>
+                    <div class="overview-row">
+                      <span>Email</span>
+                      <strong>{{ client.email || 'Not provided' }}</strong>
+                    </div>
+                    <div class="overview-row">
+                      <span>Phone</span>
+                      <strong>{{ client.phone || 'Not provided' }}</strong>
+                    </div>
+                    <div class="overview-row">
+                      <span>Lead state</span>
+                      <strong>{{ client.leadStatus }}</strong>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="overview-card muted">
-                <p class="rail-label">Workspace notes</p>
-                <p class="rail-copy">
-                  This client can only book inside the owner’s published
-                  availability. Use this workspace to keep the relationship
-                  moving.
-                </p>
-              </div>
-            </aside>
+                <div class="overview-card muted">
+                  <p class="rail-label">Workspace notes</p>
+                  <p class="rail-copy">
+                    This client can only book inside the owner’s published availability. Use this workspace to keep the relationship moving.
+                  </p>
+                </div>
+              </aside>
 
-            <div class="activity-stage">
-              <div class="activity-grid">
-                <div class="activity-card" id="owner-client-bookings">
-                  <div class="activity-head">
-                    <h3>Bookings</h3>
-                    <span>{{ selectedClientBookings().length }}</span>
-                  </div>
-                  <div class="timeline">
-                    @for (booking of selectedClientBookings(); track booking.id)
-                    {
-                    <div class="timeline-item booking">
-                      <div class="timeline-marker"></div>
-                      <div class="timeline-content">
-                        <div class="item-topline">
-                          <strong>{{ booking.title }}</strong>
-                          <span class="status-tag">{{ booking.status }}</span>
+              <div class="activity-stage">
+                <div class="activity-grid">
+                  <div class="activity-card" id="owner-client-bookings">
+                    <div class="activity-head">
+                      <h3>Bookings</h3>
+                      <span>{{ selectedClientBookings().length }}</span>
+                    </div>
+                    <div class="timeline">
+                      @for (booking of selectedClientBookings(); track booking.id) {
+                        <div class="timeline-item booking">
+                          <div class="timeline-marker"></div>
+                          <div class="timeline-content">
+                            <div class="item-topline">
+                              <strong>{{ booking.title }}</strong>
+                              <span class="status-tag">{{ booking.status }}</span>
+                            </div>
+                            <p>{{ booking.startTime | date:'medium' }} - {{ booking.endTime | date:'shortTime' }}</p>
+                          </div>
                         </div>
-                        <p>
-                          {{ booking.startTime | date : 'medium' }} -
-                          {{ booking.endTime | date : 'shortTime' }}
-                        </p>
+                      } @empty {
+                        <p class="empty">No bookings yet for this client.</p>
+                      }
+                    </div>
+                  </div>
+
+                  @if (siteConfig.site().features.clientTasks.enabled) {
+                    <div class="activity-card" id="owner-client-routines">
+                      <div class="activity-head">
+                        <h3>Current routines</h3>
+                        <span>{{ selectedClientRoutines().length }}</span>
+                      </div>
+                      <div class="timeline">
+                        @for (routine of selectedClientRoutines(); track routine.id) {
+                          <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                              <div class="item-topline">
+                                <strong>{{ routine.title }}</strong>
+                                <span>{{ routine.clientName }}</span>
+                              </div>
+                              <p>{{ routine.summary }}</p>
+                            </div>
+                          </div>
+                        } @empty {
+                          <p class="empty">No routines assigned yet.</p>
+                        }
                       </div>
                     </div>
-                    } @empty {
-                    <p class="empty">No bookings yet for this client.</p>
-                    }
-                  </div>
+                  }
                 </div>
 
                 @if (siteConfig.site().features.clientTasks.enabled) {
-                <div class="activity-card" id="owner-client-routines">
-                  <div class="activity-head">
-                    <h3>Current routines</h3>
-                    <span>{{ selectedClientRoutines().length }}</span>
-                  </div>
-                  <div class="timeline">
-                    @for (routine of selectedClientRoutines(); track routine.id)
-                    {
-                    <div class="timeline-item">
-                      <div class="timeline-marker"></div>
-                      <div class="timeline-content">
-                        <div class="item-topline">
-                          <strong>{{ routine.title }}</strong>
-                          <span>{{ routine.clientName }}</span>
-                        </div>
-                        <p>{{ routine.summary }}</p>
+                  <form class="assignment-card" (ngSubmit)="assignRoutine()">
+                    <div class="section-head compact section-head-spread">
+                      <div>
+                        <p class="eyebrow">Next Action</p>
+                        <h3>Assign a routine</h3>
                       </div>
+                      <span class="section-count">Live</span>
                     </div>
-                    } @empty {
-                    <p class="empty">No routines assigned yet.</p>
-                    }
-                  </div>
-                </div>
+                    <div class="assignment-grid">
+                      <label>
+                        Title
+                        <input [(ngModel)]="title" name="title" />
+                      </label>
+                      <label class="full">
+                        Summary
+                        <textarea [(ngModel)]="summary" name="summary"></textarea>
+                      </label>
+                    </div>
+                    <otui-button type="submit" variant="primary">Assign routine</otui-button>
+                  </form>
                 }
               </div>
-
-              @if (siteConfig.site().features.clientTasks.enabled) {
-              <form class="assignment-card" (ngSubmit)="assignRoutine()">
-                <div class="section-head compact section-head-spread">
-                  <div>
-                    <p class="eyebrow">Next Action</p>
-                    <h3>Assign a routine</h3>
-                  </div>
-                  <span class="section-count">Live</span>
-                </div>
-                <div class="assignment-grid">
-                  <label>
-                    Title
-                    <input [(ngModel)]="title" name="title" />
-                  </label>
-                  <label class="full">
-                    Summary
-                    <textarea [(ngModel)]="summary" name="summary"></textarea>
-                  </label>
-                </div>
-                <otui-button type="submit" variant="primary"
-                  >Assign routine</otui-button
-                >
-              </form>
-              }
             </div>
-          </div>
           } @else {
-          <div class="empty-state">
-            <p class="eyebrow">Client Detail</p>
-            <h2>
-              Select a client to manage bookings, routines, and contact context.
-            </h2>
-            <p class="empty">
-              The owner view is centered on approved clients and what they
-              currently have in flight.
-            </p>
-          </div>
+            <div class="empty-state">
+              <p class="eyebrow">Client Detail</p>
+              <h2>Select a client to manage bookings, routines, and contact context.</h2>
+              <p class="empty">The owner view is centered on approved clients and what they currently have in flight.</p>
+            </div>
           }
         </otui-card>
       </div>
 
       @if (siteConfig.site().features.clientTasks.enabled) {
-      <otui-card class="all-routines-card">
-        <div class="section-head section-head-spread">
-          <div>
-            <p class="eyebrow">Shared Work</p>
-            <h2>Current routines across clients</h2>
+        <otui-card class="all-routines-card">
+          <div class="section-head section-head-spread">
+            <div>
+              <p class="eyebrow">Shared Work</p>
+              <h2>Current routines across clients</h2>
+            </div>
+            <span class="section-count">{{ routines().length }}</span>
           </div>
-          <span class="section-count">{{ routines().length }}</span>
-        </div>
-        <div class="routine-board">
-          @for (routine of routines(); track routine.id) {
-          <div class="routine-board-card">
-            <small>{{ routine.clientName }}</small>
-            <strong>{{ routine.title }}</strong>
-            <p>{{ routine.summary }}</p>
+          <div class="routine-board">
+            @for (routine of routines(); track routine.id) {
+              <div class="routine-board-card">
+                <small>{{ routine.clientName }}</small>
+                <strong>{{ routine.title }}</strong>
+                <p>{{ routine.summary }}</p>
+              </div>
+            } @empty {
+              <p class="empty">No client routines assigned yet.</p>
+            }
           </div>
-          } @empty {
-          <p class="empty">No client routines assigned yet.</p>
-          }
-        </div>
-      </otui-card>
+        </otui-card>
       }
     </section>
   `,
@@ -305,44 +257,15 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         display: grid;
         gap: 1.25rem;
         --studio-base: var(--background, #ffffff);
-        --studio-elevated: var(
-          --background-elevated,
-          var(--surface, var(--background, #ffffff))
-        );
-        --studio-surface: color-mix(
-          in srgb,
-          var(--studio-elevated) 86%,
-          var(--studio-base)
-        );
-        --studio-surface-strong: color-mix(
-          in srgb,
-          var(--studio-elevated) 94%,
-          var(--studio-base)
-        );
-        --studio-surface-soft: color-mix(
-          in srgb,
-          var(--studio-base) 76%,
-          var(--studio-elevated)
-        );
-        --studio-accent-surface: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 12%,
-          var(--studio-elevated)
-        );
-        --studio-border: color-mix(
-          in srgb,
-          var(--border, #d0d7de) 78%,
-          var(--primary, #1f7a63) 22%
-        );
-        --studio-border-soft: color-mix(
-          in srgb,
-          var(--border, #d0d7de) 88%,
-          transparent
-        );
-        --studio-shadow: 0 16px 36px
-          color-mix(in srgb, var(--foreground, #0f172a) 10%, transparent);
-        --studio-shadow-soft: 0 10px 24px
-          color-mix(in srgb, var(--foreground, #0f172a) 8%, transparent);
+        --studio-elevated: var(--background-elevated, var(--surface, var(--background, #ffffff)));
+        --studio-surface: color-mix(in srgb, var(--studio-elevated) 86%, var(--studio-base));
+        --studio-surface-strong: color-mix(in srgb, var(--studio-elevated) 94%, var(--studio-base));
+        --studio-surface-soft: color-mix(in srgb, var(--studio-base) 76%, var(--studio-elevated));
+        --studio-accent-surface: color-mix(in srgb, var(--primary, #1f7a63) 12%, var(--studio-elevated));
+        --studio-border: color-mix(in srgb, var(--border, #d0d7de) 78%, var(--primary, #1f7a63) 22%);
+        --studio-border-soft: color-mix(in srgb, var(--border, #d0d7de) 88%, transparent);
+        --studio-shadow: 0 16px 36px color-mix(in srgb, var(--foreground, #0f172a) 10%, transparent);
+        --studio-shadow-soft: 0 10px 24px color-mix(in srgb, var(--foreground, #0f172a) 8%, transparent);
       }
       .headline-card ::ng-deep .card,
       .roster-card ::ng-deep .card,
@@ -375,16 +298,9 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 1.1rem;
         padding: 1.4rem;
         border-radius: 1.6rem;
-        background: radial-gradient(
-            circle at top left,
-            color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent),
-            transparent 38%
-          ),
-          linear-gradient(
-            135deg,
-            var(--studio-accent-surface),
-            var(--studio-surface-strong)
-          );
+        background:
+          radial-gradient(circle at top left, color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent), transparent 38%),
+          linear-gradient(135deg, var(--studio-accent-surface), var(--studio-surface-strong));
         overflow: hidden;
       }
       .headline-copy {
@@ -395,12 +311,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .section-head h2,
       .workspace-title h2 {
         margin: 0;
-        font-family: var(
-          --font-heading,
-          'Baskervville',
-          'Times New Roman',
-          serif
-        );
+        font-family: var(--font-heading, 'Baskervville', 'Times New Roman', serif);
         font-weight: 700;
         line-height: 0.98;
       }
@@ -428,19 +339,14 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         text-align: left;
         color: inherit;
         cursor: pointer;
-        transition: transform 0.2s ease, border-color 0.2s ease,
-          box-shadow 0.2s ease;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
       }
       .metric-button:hover {
         transform: translateY(-2px);
         border-color: var(--studio-border);
       }
       .metric-tile.accent {
-        background: linear-gradient(
-          135deg,
-          var(--studio-accent-surface),
-          var(--studio-surface)
-        );
+        background: linear-gradient(135deg, var(--studio-accent-surface), var(--studio-surface));
         border-color: var(--studio-border);
       }
       .metric-tile span,
@@ -454,12 +360,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       }
       .metric-tile strong {
         font-size: clamp(1.6rem, 2vw, 2.2rem);
-        font-family: var(
-          --font-heading,
-          'Baskervville',
-          'Times New Roman',
-          serif
-        );
+        font-family: var(--font-heading, 'Baskervville', 'Times New Roman', serif);
         line-height: 1;
       }
       .metric-tile small,
@@ -512,11 +413,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         padding: 0.45rem 0.7rem;
         border-radius: 999px;
         border: 1px solid var(--studio-border);
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 12%,
-          var(--studio-elevated)
-        );
+        background: color-mix(in srgb, var(--primary, #1f7a63) 12%, var(--studio-elevated));
         color: var(--primary, #1f7a63);
       }
       .status-pill,
@@ -535,8 +432,8 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         background: var(--studio-surface);
         text-align: left;
         color: inherit;
-        transition: transform 0.2s ease, border-color 0.2s ease,
-          box-shadow 0.2s ease, background 0.2s ease;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+          background 0.2s ease;
       }
       .roster-item:hover {
         transform: translateY(-2px);
@@ -544,11 +441,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         box-shadow: var(--studio-shadow-soft);
       }
       .roster-item.selected {
-        background: linear-gradient(
-          135deg,
-          var(--studio-accent-surface),
-          var(--studio-surface-strong)
-        );
+        background: linear-gradient(135deg, var(--studio-accent-surface), var(--studio-surface-strong));
         border-color: var(--studio-border);
       }
       .roster-topline {
@@ -562,19 +455,10 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         width: 2.5rem;
         height: 2.5rem;
         border-radius: 0.9rem;
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 28%,
-            var(--border, #d0d7de)
-          );
+        border: 1px solid color-mix(in srgb, var(--primary, #1f7a63) 28%, var(--border, #d0d7de));
         background: linear-gradient(
           135deg,
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 22%,
-            var(--studio-elevated)
-          ),
+          color-mix(in srgb, var(--primary, #1f7a63) 22%, var(--studio-elevated)),
           color-mix(in srgb, var(--primary, #1f7a63) 10%, var(--studio-base))
         );
         color: var(--primary, #1f7a63);
@@ -592,11 +476,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .roster-meta small {
         padding: 0.3rem 0.55rem;
         border-radius: 999px;
-        background: color-mix(
-          in srgb,
-          var(--foreground, #0f172a) 6%,
-          var(--studio-elevated)
-        );
+        background: color-mix(in srgb, var(--foreground, #0f172a) 6%, var(--studio-elevated));
       }
       .insight-ribbon {
         display: grid;
@@ -609,11 +489,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         padding: 0.9rem 1rem;
         border-radius: 1.05rem;
         border: 1px solid var(--studio-border-soft);
-        background: linear-gradient(
-          180deg,
-          var(--studio-surface),
-          var(--studio-surface-soft)
-        );
+        background: linear-gradient(180deg, var(--studio-surface), var(--studio-surface-soft));
       }
       .insight-chip strong {
         color: var(--foreground, #0f172a);
@@ -637,11 +513,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         background: var(--studio-surface);
       }
       .overview-card.muted {
-        background: linear-gradient(
-          180deg,
-          var(--studio-surface-soft),
-          var(--studio-surface)
-        );
+        background: linear-gradient(180deg, var(--studio-surface-soft), var(--studio-surface));
       }
       .overview-rail {
         position: sticky;
@@ -653,8 +525,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       .overview-row {
         align-items: baseline;
         padding-bottom: 0.65rem;
-        border-bottom: 1px solid
-          color-mix(in srgb, var(--border, #d0d7de) 78%, transparent);
+        border-bottom: 1px solid color-mix(in srgb, var(--border, #d0d7de) 78%, transparent);
       }
       .overview-row:last-child {
         padding-bottom: 0;
@@ -695,8 +566,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         margin-top: 0.35rem;
         border-radius: 999px;
         background: var(--primary, #1f7a63);
-        box-shadow: 0 0 0 6px
-          color-mix(in srgb, var(--primary, #1f7a63) 10%, transparent);
+        box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary, #1f7a63) 10%, transparent);
       }
       .timeline-content {
         display: grid;
@@ -730,11 +600,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         padding: 0.85rem 0.95rem;
         border-radius: 0.95rem;
         border: 1px solid var(--studio-border);
-        background: color-mix(
-          in srgb,
-          var(--studio-elevated) 92%,
-          var(--studio-base)
-        );
+        background: color-mix(in srgb, var(--studio-elevated) 92%, var(--studio-base));
         color: inherit;
       }
       textarea {
@@ -749,11 +615,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         padding: 1rem;
         border-radius: 1rem;
         border: 1px solid var(--studio-border-soft);
-        background: linear-gradient(
-          180deg,
-          var(--studio-surface),
-          var(--studio-surface-soft)
-        );
+        background: linear-gradient(180deg, var(--studio-surface), var(--studio-surface-soft));
       }
       .routine-board-card small {
         color: var(--primary, #1f7a63);
@@ -789,10 +651,7 @@ export class BusinessOwnerClientsPageComponent {
     }))
   );
   readonly selectedClient = computed(
-    () =>
-      this.acceptedClients().find(
-        (client) => client.userId === this.clientId()
-      ) ?? null
+    () => this.acceptedClients().find((client) => client.userId === this.clientId()) ?? null
   );
   readonly selectedClientBookings = computed(() =>
     this.bookings().filter((booking) => booking.userId === this.clientId())
@@ -805,12 +664,8 @@ export class BusinessOwnerClientsPageComponent {
   summary = '3 lifting sessions, mobility finishers, and recovery check-ins.';
 
   constructor() {
-    this.api
-      .getAllRoutines()
-      .subscribe((routines) => this.routines.set(routines));
-    this.api
-      .getOwnerBookings()
-      .subscribe((bookings) => this.bookings.set(bookings));
+    this.api.getAllRoutines().subscribe((routines) => this.routines.set(routines));
+    this.api.getOwnerBookings().subscribe((bookings) => this.bookings.set(bookings));
     this.api.getAcceptedClients().subscribe((clients) => {
       this.acceptedClients.set(clients);
       this.clientId.set(
@@ -845,24 +700,20 @@ export class BusinessOwnerClientsPageComponent {
 
   selectedClientLabel(): string {
     return (
-      this.activeClients().find((client) => client.id === this.clientId())
-        ?.label ?? this.clientId()
+      this.activeClients().find((client) => client.id === this.clientId())?.label ??
+      this.clientId()
     );
   }
 
   scrollToSection(id: string): void {
-    document
-      .getElementById(id)
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   selectedClientBookingsCount(clientId: string): number {
-    return this.bookings().filter((booking) => booking.userId === clientId)
-      .length;
+    return this.bookings().filter((booking) => booking.userId === clientId).length;
   }
 
   selectedClientRoutinesCount(clientId: string): number {
-    return this.routines().filter((routine) => routine.clientId === clientId)
-      .length;
+    return this.routines().filter((routine) => routine.clientId === clientId).length;
   }
 }

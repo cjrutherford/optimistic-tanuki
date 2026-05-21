@@ -32,9 +32,7 @@ describe('ResultsPageComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('Material outputs');
-    expect(
-      compiled.querySelectorAll('.material-card').length
-    ).toBeGreaterThanOrEqual(1);
+    expect(compiled.querySelectorAll('.material-card').length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders grouped channel and material outputs for the selected concept', async () => {
@@ -145,12 +143,7 @@ describe('ResultsPageComponent', () => {
     const block = surface.textBlocks[0];
 
     component.selectMaterialOutput(material.id, surface.id);
-    component.updateMaterialTextBlock(
-      material.id,
-      surface.id,
-      block.id,
-      'Flyer hero rewrite'
-    );
+    component.updateMaterialTextBlock(material.id, surface.id, block.id, 'Flyer hero rewrite');
     fixture.detectChanges();
 
     expect(

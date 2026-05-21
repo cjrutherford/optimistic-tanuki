@@ -34,10 +34,7 @@ export class AppConfigController {
   @RequirePermissions('app-config.create')
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Create a new app configuration' })
-  @ApiResponse({
-    status: 201,
-    description: 'Configuration created successfully',
-  })
+  @ApiResponse({ status: 201, description: 'Configuration created successfully' })
   @Post()
   async createConfiguration(@Body() createDto: CreateAppConfigDto) {
     this.logger.log('Creating app configuration');
@@ -102,7 +99,10 @@ export class AppConfigController {
   ) {
     this.logger.log(`Updating app configuration: ${id}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Update }, { id, ...updateDto })
+      this.client.send(
+        { cmd: AppConfigCommands.Update },
+        { id, ...updateDto }
+      )
     );
   }
 

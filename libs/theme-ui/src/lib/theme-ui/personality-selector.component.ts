@@ -374,7 +374,7 @@ export class PersonalitySelectorComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private themeService: ThemeService) {}
+  constructor(private themeService: ThemeService) { }
 
   ngOnInit(): void {
     this.groupPersonalities();

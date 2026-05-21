@@ -4,9 +4,7 @@ const baseUrl = 'http://127.0.0.1:4201';
 
 async function runScenario(name, handlers, assertion) {
   const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 960 },
-  });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 960 } });
   const seenRequests = [];
 
   page.on('console', (msg) => {
@@ -99,9 +97,7 @@ results.push(
 
       return {
         url: page.url(),
-        setupInterviewVisible: await page
-          .locator('text=Setup Interview')
-          .isVisible(),
+        setupInterviewVisible: await page.locator('text=Setup Interview').isVisible(),
         primaryNavVisible: await page.locator('.nav-links').count(),
       };
     }
@@ -113,17 +109,13 @@ results.push(
     'configured workspace leaves onboarding',
     configuredWorkspaceHandlers,
     async (page) => {
-      await page.goto(`${baseUrl}/onboarding`, {
-        waitUntil: 'domcontentloaded',
-      });
+      await page.goto(`${baseUrl}/onboarding`, { waitUntil: 'domcontentloaded' });
       await page.waitForURL(`${baseUrl}/`);
       await page.waitForSelector('text=Lead Command');
 
       return {
         url: page.url(),
-        dashboardVisible: await page
-          .locator('text=Pipeline Overview')
-          .isVisible(),
+        dashboardVisible: await page.locator('text=Pipeline Overview').isVisible(),
         primaryNavVisible: await page.locator('.nav-links').isVisible(),
       };
     }

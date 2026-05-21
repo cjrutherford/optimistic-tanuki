@@ -8,14 +8,7 @@ import { invoicesFeatureGuard } from './invoices-feature.guard';
 describe('appRoutes', () => {
   it('exposes public, client, and owner route families', () => {
     expect(appRoutes.map((route) => route.path)).toEqual(
-      expect.arrayContaining([
-        '',
-        'book',
-        'client',
-        'owner/login',
-        'owner',
-        '**',
-      ])
+      expect.arrayContaining(['', 'book', 'client', 'owner/login', 'owner', '**'])
     );
   });
 
@@ -28,22 +21,15 @@ describe('appRoutes', () => {
     expect((clientRoute?.children ?? []).map((route) => route.path)).toEqual(
       expect.arrayContaining(['login', 'register', ''])
     );
+    expect((portalShellRoute?.children ?? []).map((route) => route.path)).toEqual(
+      expect.arrayContaining(['', 'dashboard', 'routines', 'billing'])
+    );
+    expect(portalShellRoute?.canActivate).toEqual([clientAuthGuard, clientPortalFeatureGuard]);
     expect(
-      (portalShellRoute?.children ?? []).map((route) => route.path)
-    ).toEqual(expect.arrayContaining(['', 'dashboard', 'routines', 'billing']));
-    expect(portalShellRoute?.canActivate).toEqual([
-      clientAuthGuard,
-      clientPortalFeatureGuard,
-    ]);
-    expect(
-      (portalShellRoute?.children ?? []).find(
-        (route) => route.path === 'routines'
-      )?.canActivate
+      (portalShellRoute?.children ?? []).find((route) => route.path === 'routines')?.canActivate
     ).toEqual([clientTasksFeatureGuard]);
     expect(
-      (portalShellRoute?.children ?? []).find(
-        (route) => route.path === 'billing'
-      )?.canActivate
+      (portalShellRoute?.children ?? []).find((route) => route.path === 'billing')?.canActivate
     ).toEqual([invoicesFeatureGuard]);
   });
 
@@ -62,13 +48,7 @@ describe('appRoutes', () => {
   it('registers owner workspace child routes', () => {
     const ownerRoute = appRoutes.find((route) => route.path === 'owner');
     expect((ownerRoute?.children ?? []).map((route) => route.path)).toEqual(
-      expect.arrayContaining([
-        'dashboard',
-        'site',
-        'requests',
-        'clients',
-        'availability',
-      ])
+      expect.arrayContaining(['dashboard', 'site', 'requests', 'clients', 'availability'])
     );
   });
 

@@ -1,4 +1,7 @@
-import { createCatalogEntry, validateCatalogEntries } from './app-catalog';
+import {
+  createCatalogEntry,
+  validateCatalogEntries,
+} from './app-catalog';
 
 describe('app catalog contracts', () => {
   it('creates immutable developer catalog entries', () => {
@@ -9,7 +12,7 @@ describe('app catalog contracts', () => {
         releaseChannel: 'beta',
         deploymentMode: 'publishable-lib',
         billingEligibility: ['metered', 'usage-block'],
-      })
+      }),
     ).toEqual({
       name: '@optimistic-tanuki/billing-sdk',
       ownerDomain: 'billing',
@@ -29,7 +32,7 @@ describe('app catalog contracts', () => {
           deploymentMode: 'app-service',
           billingEligibility: ['none'],
         },
-      ])
+      ]),
     ).toThrow('app-service entries must declare billable eligibility');
   });
 
@@ -50,7 +53,7 @@ describe('app catalog contracts', () => {
           deploymentMode: 'publishable-lib',
           billingEligibility: ['none'],
         },
-      ])
+      ]),
     ).toThrow('Duplicate developer catalog entry');
   });
 });

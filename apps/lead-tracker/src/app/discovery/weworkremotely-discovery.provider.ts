@@ -1,13 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
-import {
-  LeadDiscoverySource,
-  LeadSource,
-} from '@optimistic-tanuki/models/leads-contracts';
-import {
-  ProviderSearchResult,
-  TopicDiscoveryProvider,
-} from './discovery.types';
+import { LeadDiscoverySource, LeadSource } from '@optimistic-tanuki/models/leads-contracts';
+import { ProviderSearchResult, TopicDiscoveryProvider } from './discovery.types';
 import {
   createLeadEntity,
   getMatchedKeywords,
@@ -30,9 +24,7 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
 
     try {
-      const response = await fetch(
-        'https://weworkremotely.com/remote-jobs.rss'
-      );
+      const response = await fetch('https://weworkremotely.com/remote-jobs.rss');
       const xml = await response.text();
       let excludedCount = 0;
       let staleCount = 0;
@@ -63,25 +55,17 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
               company: company || 'We Work Remotely opportunity',
               source: LeadSource.WE_WORK_REMOTELY,
               originalPostingUrl: item.link,
-              notes: `Discovered via We Work Remotely. Source: ${
-                item.link
-              }. ${stripHtml(item.description)}`,
+              notes: `Discovered via We Work Remotely. Source: ${item.link}. ${stripHtml(item.description)}`,
               searchKeywords: matchedKeywords,
             }),
             matchedKeywords,
             providerName: this.providerName,
           };
         })
-        .filter((candidate): candidate is NonNullable<typeof candidate> =>
-          Boolean(candidate)
-        );
+        .filter((candidate): candidate is NonNullable<typeof candidate> => Boolean(candidate));
 
       const warnings = excludedCount
-        ? [
-            `Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(
-              ', '
-            )}.`,
-          ]
+        ? [`Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(', ')}.`]
         : [];
       if (staleCount) {
         warnings.push(
@@ -89,9 +73,7 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
         );
       }
       if (!candidates.length) {
-        warnings.push(
-          'We Work Remotely returned no feed items that matched the configured topic keywords.'
-        );
+        warnings.push('We Work Remotely returned no feed items that matched the configured topic keywords.');
       }
 
       return {
@@ -100,18 +82,10 @@ export class WeWorkRemotelyDiscoveryProvider implements TopicDiscoveryProvider {
         queries: ['https://weworkremotely.com/remote-jobs.rss'],
       };
     } catch (error) {
-      this.logger.warn(
-        `We Work Remotely discovery failed for topic ${topic.id}: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      this.logger.warn(`We Work Remotely discovery failed for topic ${topic.id}: ${error instanceof Error ? error.message : String(error)}`);
       return {
         candidates: [],
-        warnings: [
-          `We Work Remotely request failed: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
-        ],
+        warnings: [`We Work Remotely request failed: ${error instanceof Error ? error.message : 'Unknown error'}`],
         queries: ['https://weworkremotely.com/remote-jobs.rss'],
       };
     }

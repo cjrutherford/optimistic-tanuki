@@ -126,9 +126,7 @@ describe('GoogleMapsLocationAutocompleteService', () => {
 
     expect(result).toEqual([]);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Google Maps autocomplete returned a non-OK payload'
-      )
+      expect.stringContaining('Google Maps autocomplete returned a non-OK payload')
     );
   });
 });

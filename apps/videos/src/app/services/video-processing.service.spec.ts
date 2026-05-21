@@ -27,7 +27,7 @@ describe('VideoProcessingService', () => {
       transcodeClient as never,
       {
         assetStorageRoot,
-      }
+      },
     );
 
     return { service, videoRepository, assetsClient, transcodeClient };
@@ -35,7 +35,7 @@ describe('VideoProcessingService', () => {
 
   it('transcodes a source asset and persists mp4 plus hls playback assets', async () => {
     const workingDir = await fs.mkdtemp(
-      path.join(os.tmpdir(), 'video-processing-spec-')
+      path.join(os.tmpdir(), 'video-processing-spec-'),
     );
     const assetStorageRoot = path.join(workingDir, 'asset-storage');
     const playbackPath = path.join(workingDir, 'playback.mp4');
@@ -48,7 +48,7 @@ describe('VideoProcessingService', () => {
     await fs.writeFile(playbackPath, Buffer.from('mp4'));
     await fs.writeFile(
       manifestPath,
-      '#EXTM3U\n#EXTINF:6.0,\nsegment-000.ts\n#EXT-X-ENDLIST\n'
+      '#EXTM3U\n#EXTINF:6.0,\nsegment-000.ts\n#EXT-X-ENDLIST\n',
     );
     await fs.writeFile(segmentPath, Buffer.from('ts'));
 
@@ -58,26 +58,24 @@ describe('VideoProcessingService', () => {
       assetId: 'source-asset',
       sourceAssetId: 'source-asset',
     } as Video);
-    assetsClient.send.mockImplementation(
-      (pattern: { cmd: string }, payload) => {
-        if (pattern.cmd === AssetCommands.RETRIEVE) {
-          return of({
-            id: 'source-asset',
-            name: 'upload.mkv',
-            profileId: 'profile-1',
-            storagePath: 'assets/source-asset/upload.mkv',
-          });
-        }
-
-        if (pattern.cmd === AssetCommands.CREATE) {
-          return of({
-            id: `created-${(payload as { name: string }).name}`,
-          });
-        }
-
-        throw new Error(`Unexpected asset command ${pattern.cmd}`);
+    assetsClient.send.mockImplementation((pattern: { cmd: string }, payload) => {
+      if (pattern.cmd === AssetCommands.RETRIEVE) {
+        return of({
+          id: 'source-asset',
+          name: 'upload.mkv',
+          profileId: 'profile-1',
+          storagePath: 'assets/source-asset/upload.mkv',
+        });
       }
-    );
+
+      if (pattern.cmd === AssetCommands.CREATE) {
+        return of({
+          id: `created-${(payload as { name: string }).name}`,
+        });
+      }
+
+      throw new Error(`Unexpected asset command ${pattern.cmd}`);
+    });
     transcodeClient.transcode.mockResolvedValue({
       playbackPath,
       hlsManifestPath: manifestPath,
@@ -91,7 +89,10 @@ describe('VideoProcessingService', () => {
 
     expect(transcodeClient.transcode).toHaveBeenCalledWith({
       videoId: 'video-1',
-      sourcePath: path.join(assetStorageRoot, 'assets/source-asset/upload.mkv'),
+      sourcePath: path.join(
+        assetStorageRoot,
+        'assets/source-asset/upload.mkv',
+      ),
     });
     expect(assetsClient.send).toHaveBeenCalledWith(
       { cmd: AssetCommands.CREATE },
@@ -100,24 +101,24 @@ describe('VideoProcessingService', () => {
         type: 'video',
         sourcePath: expect.stringMatching(
           new RegExp(
-            `^${assetStorageRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
-          )
+            `^${assetStorageRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
+          ),
         ),
-      })
+      }),
     );
     expect(assetsClient.send).toHaveBeenCalledWith(
       { cmd: AssetCommands.CREATE },
       expect.not.objectContaining({
         name: 'playback.mp4',
         content: expect.any(String),
-      })
+      }),
     );
     expect(assetsClient.send).toHaveBeenCalledWith(
       { cmd: AssetCommands.CREATE },
       expect.objectContaining({
         name: 'stream.m3u8',
         type: 'video',
-      })
+      }),
     );
     expect(videoRepository.update).toHaveBeenCalledWith(
       'video-1',
@@ -126,7 +127,7 @@ describe('VideoProcessingService', () => {
         playbackAssetId: 'created-playback.mp4',
         hlsManifestAssetId: 'created-stream.m3u8',
         processingStatus: 'ready',
-      })
+      }),
     );
   });
 
@@ -145,7 +146,7 @@ describe('VideoProcessingService', () => {
         name: 'upload.mov',
         profileId: 'profile-1',
         storagePath: 'assets/source-asset/upload.mov',
-      })
+      }),
     );
     transcodeClient.transcode.mockRejectedValue(new Error('ffmpeg failed'));
 
@@ -156,7 +157,7 @@ describe('VideoProcessingService', () => {
       expect.objectContaining({
         processingStatus: 'failed',
         processingError: 'ffmpeg failed',
-      })
+      }),
     );
   });
 });

@@ -49,9 +49,7 @@ describe('AuthCommands', () => {
   });
 
   it('should have a SendMfaVerificationEmail command', () => {
-    expect(AuthCommands.SendMfaVerificationEmail).toBe(
-      'SendMfaVerificationEmail'
-    );
+    expect(AuthCommands.SendMfaVerificationEmail).toBe('SendMfaVerificationEmail');
   });
 
   it('should have a GetOAuthConfig command', () => {

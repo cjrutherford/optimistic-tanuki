@@ -102,22 +102,8 @@ export class StoreUiPageComponent {
   };
 
   readonly sampleProducts = [
-    {
-      id: '1',
-      name: 'Product 1',
-      price: 19.99,
-      imageUrl: '',
-      stock: 5,
-      type: 'physical',
-    },
-    {
-      id: '2',
-      name: 'Product 2',
-      price: 39.99,
-      imageUrl: '',
-      stock: 3,
-      type: 'digital',
-    },
+    { id: '1', name: 'Product 1', price: 19.99, imageUrl: '', stock: 5, type: 'physical' },
+    { id: '2', name: 'Product 2', price: 39.99, imageUrl: '', stock: 3, type: 'digital' },
   ];
 
   readonly sampleCartItems = [
@@ -133,12 +119,7 @@ export class StoreUiPageComponent {
       selector: 'store-product-card',
       summary: 'Card displaying product info with add to cart.',
       props: [
-        {
-          name: 'product',
-          type: 'Product',
-          defaultValue: '{}',
-          description: 'Product data object.',
-        },
+        { name: 'product', type: 'Product', defaultValue: '{}', description: 'Product data object.' },
       ],
     },
     {
@@ -149,12 +130,7 @@ export class StoreUiPageComponent {
       selector: 'store-product-list',
       summary: 'Responsive grid of product cards.',
       props: [
-        {
-          name: 'products',
-          type: 'Product[]',
-          defaultValue: '[]',
-          description: 'Array of products.',
-        },
+        { name: 'products', type: 'Product[]', defaultValue: '[]', description: 'Array of products.' },
       ],
     },
     {
@@ -165,12 +141,7 @@ export class StoreUiPageComponent {
       selector: 'store-shopping-cart',
       summary: 'Shopping cart display with totals.',
       props: [
-        {
-          name: 'items',
-          type: 'CartItem[]',
-          defaultValue: '[]',
-          description: 'Cart items array.',
-        },
+        { name: 'items', type: 'CartItem[]', defaultValue: '[]', description: 'Cart items array.' },
       ],
     },
     {

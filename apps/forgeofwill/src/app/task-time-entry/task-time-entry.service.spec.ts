@@ -55,9 +55,7 @@ describe('TaskTimeEntryService', () => {
 
     it('should throw error if profile is not available', () => {
       profileService.getCurrentUserProfile.mockReturnValue(null);
-      expect(() => service.createTaskTimeEntry({} as any)).toThrow(
-        'User profile is not available'
-      );
+      expect(() => service.createTaskTimeEntry({} as any)).toThrow('User profile is not available');
     });
   });
 
@@ -133,9 +131,7 @@ describe('TaskTimeEntryService', () => {
 
     it('should throw error if profile is not available', () => {
       profileService.getCurrentUserProfile.mockReturnValue(null);
-      expect(() => service.startTimer('task-123')).toThrow(
-        'User profile is not available'
-      );
+      expect(() => service.startTimer('task-123')).toThrow('User profile is not available');
     });
   });
 

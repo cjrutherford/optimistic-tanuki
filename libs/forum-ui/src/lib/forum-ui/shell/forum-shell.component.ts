@@ -1,12 +1,9 @@
+
 import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 
-import {
-  CardComponent,
-  ButtonComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { CardComponent, ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import { ComposeForumPostComponent } from '../compose-forum-post/compose-forum-post.component';
 import { ForumPostComponent } from '../post/post.component';
 
@@ -19,7 +16,7 @@ import {
   ForumPostDto,
   CreateTopicDto,
   CreateThreadDto,
-  CreateForumPostDto,
+  CreateForumPostDto
 } from '../models';
 import { ForumPostData } from '../compose-forum-post/compose-forum-post.component';
 import { CreateTopicComponent } from '../create-topic/create-topic.component';
@@ -75,7 +72,7 @@ export class ForumShellComponent implements OnInit {
 
   ngOnInit() {
     // Read resolved data from route
-    this.route.data.subscribe((data) => {
+    this.route.data.subscribe(data => {
       this.userValidPermissions = data['userValidPermissions'] || [];
       this.userLoggedIn = data['userLoggedIn'] || false;
       this.currentUserId = data['currentUserId'] || '';
@@ -87,7 +84,7 @@ export class ForumShellComponent implements OnInit {
     this.loadTopics();
 
     // Watch route params for navigation
-    this.route.params.subscribe((params) => {
+    this.route.params.subscribe(params => {
       if (params['topicId']) {
         this.loadTopic(params['topicId']);
       }
@@ -184,9 +181,7 @@ export class ForumShellComponent implements OnInit {
         const newThread: CreateThreadDto = {
           title: postData.newThreadTitle,
           description: `Thread: ${postData.newThreadTitle}`,
-          content: `${
-            postData.content
-          } - created at ${new Date().toLocaleDateString()}`,
+          content: `${postData.content} - created at ${new Date().toLocaleDateString()}`,
           topicId: topicId,
           userId: this.currentUserId,
           profileId: this.currentUserId,
@@ -219,6 +214,7 @@ export class ForumShellComponent implements OnInit {
 
         this.showComposer.set(false);
       }
+
     } catch (error) {
       this.error.set('Failed to create post');
       console.error('Error creating post:', error);
@@ -259,6 +255,7 @@ export class ForumShellComponent implements OnInit {
 
       // Navigate to the new topic
       this.router.navigate(['/forum/topic', createdTopic.id]);
+
     } catch (error) {
       this.error.set('Failed to create topic');
       console.error('Error creating topic:', error);
@@ -299,6 +296,7 @@ export class ForumShellComponent implements OnInit {
 
       // Navigate to the new thread
       this.router.navigate(['/forum/thread', createdThread.id]);
+
     } catch (error) {
       this.error.set('Failed to create thread');
       console.error('Error creating thread:', error);

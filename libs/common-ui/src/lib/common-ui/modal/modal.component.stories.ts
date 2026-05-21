@@ -1,3 +1,4 @@
+ 
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
 import { ModalComponent, ModalSize, ModalPosition } from './modal.component';
@@ -13,8 +14,7 @@ const meta: Meta<ModalComponent> = {
     }),
   ],
   parameters: {
-    componentSubtitle:
-      'A fully accessible modal dialog with focus trap and theme support',
+    componentSubtitle: 'A fully accessible modal dialog with focus trap and theme support',
     docs: {
       description: {
         component: `
@@ -205,8 +205,7 @@ export const SidebarRight: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Sidebar modals slide in from the side and take up the full height.',
+        story: 'Sidebar modals slide in from the side and take up the full height.',
       },
     },
   },
@@ -262,8 +261,7 @@ export const BottomSheet: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Bottom sheet modals slide up from the bottom, commonly used on mobile.',
+        story: 'Bottom sheet modals slide up from the bottom, commonly used on mobile.',
       },
     },
   },
@@ -364,8 +362,7 @@ export const Gradient: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Gradient variant applies a theme-based gradient to the modal background.',
+        story: 'Gradient variant applies a theme-based gradient to the modal background.',
       },
     },
   },
@@ -437,8 +434,7 @@ export const Accessibility: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'This example showcases the accessibility features built into the modal component.',
+        story: 'This example showcases the accessibility features built into the modal component.',
       },
     },
   },
@@ -485,8 +481,7 @@ export const Interactive: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Interactive example showing how to control modal visibility programmatically.',
+        story: 'Interactive example showing how to control modal visibility programmatically.',
       },
     },
   },

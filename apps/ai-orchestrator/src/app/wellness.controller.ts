@@ -1,9 +1,6 @@
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern } from '@nestjs/microservices';
-import {
-  WellnessPromptService,
-  WellnessContextType,
-} from './wellness-prompt.service';
+import { WellnessPromptService, WellnessContextType } from './wellness-prompt.service';
 import { WellnessAiCommands } from '@optimistic-tanuki/constants';
 
 interface GeneratePromptDto {
@@ -40,10 +37,8 @@ export class WellnessController {
 
   @MessagePattern({ cmd: WellnessAiCommands.GENERATE_PROMPT })
   generatePrompt(data: GeneratePromptDto) {
-    this.logger.log(
-      `Generating wellness prompt for context: ${data.contextType}`
-    );
-
+    this.logger.log(`Generating wellness prompt for context: ${data.contextType}`);
+    
     const prompt = this.wellnessPromptService.generatePrompt({
       userInput: data.userInput,
       contextType: data.contextType,
@@ -56,17 +51,15 @@ export class WellnessController {
   @MessagePattern({ cmd: WellnessAiCommands.GET_CONTEXT })
   getContext(data: GetContextDto) {
     this.logger.log(`Getting context for: ${data.contextType}`);
-
-    const context = this.wellnessPromptService.getPromptContext(
-      data.contextType
-    );
+    
+    const context = this.wellnessPromptService.getPromptContext(data.contextType);
     return { context };
   }
 
   @MessagePattern({ cmd: WellnessAiCommands.GET_AFFIRMATION })
   getAffirmation(data: GetAffirmationDto) {
     this.logger.log('Generating affirmation suggestion');
-
+    
     const suggestion = this.wellnessPromptService.generateAffirmationSuggestion(
       data.userGoals
     );
@@ -76,18 +69,17 @@ export class WellnessController {
   @MessagePattern({ cmd: WellnessAiCommands.GET_MINDFUL_ACTIVITY })
   getMindfulActivity(data: GetMindfulActivityDto) {
     this.logger.log('Generating mindful activity suggestion');
-
-    const suggestion =
-      this.wellnessPromptService.generateMindfulActivitySuggestion(
-        data.previousActivities
-      );
+    
+    const suggestion = this.wellnessPromptService.generateMindfulActivitySuggestion(
+      data.previousActivities
+    );
     return { suggestion };
   }
 
   @MessagePattern({ cmd: WellnessAiCommands.ANALYZE_GRATITUDE })
   analyzeGratitude(data: AnalyzeGratitudeDto) {
     this.logger.log('Analyzing gratitude entry');
-
+    
     const analysis = this.wellnessPromptService.generateGratitudeAnalysis(
       data.gratitudeEntry
     );
@@ -97,7 +89,7 @@ export class WellnessController {
   @MessagePattern({ cmd: WellnessAiCommands.REFLECT_JUDGMENT })
   reflectJudgment(data: ReflectJudgmentDto) {
     this.logger.log('Generating judgment reflection');
-
+    
     const reflection = this.wellnessPromptService.generateJudgmentReflection(
       data.judgment
     );

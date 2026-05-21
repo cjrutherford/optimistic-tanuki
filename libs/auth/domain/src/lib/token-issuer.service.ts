@@ -17,7 +17,7 @@ export type AuthTokenExpiry = '1h';
 export type TokenSigner = {
   sign(
     payload: AuthTokenPayload,
-    options: { secret: string; expiresIn: AuthTokenExpiry }
+    options: { secret: string; expiresIn: AuthTokenExpiry },
   ): string;
 };
 
@@ -25,7 +25,7 @@ export class TokenIssuerService {
   constructor(
     private readonly signer: TokenSigner,
     private readonly secret: string,
-    private readonly expiresIn: AuthTokenExpiry = '1h'
+    private readonly expiresIn: AuthTokenExpiry = '1h',
   ) {}
 
   issueForUser(user: AuthTokenUser, profileId?: string): string {
@@ -39,7 +39,7 @@ export class TokenIssuerService {
       {
         secret: this.secret,
         expiresIn: this.expiresIn,
-      }
+      },
     );
   }
 }

@@ -7,9 +7,7 @@ import { BusinessOwnerAvailabilityPageComponent } from './business-owner-availab
 
 describe('BusinessOwnerAvailabilityPageComponent', () => {
   it('updates an existing weekly availability when editing', async () => {
-    const updateOwnerAvailability = jest
-      .fn()
-      .mockReturnValue(of({ id: 'availability-1' }));
+    const updateOwnerAvailability = jest.fn().mockReturnValue(of({ id: 'availability-1' }));
 
     await TestBed.configureTestingModule({
       imports: [BusinessOwnerAvailabilityPageComponent],
@@ -19,20 +17,12 @@ describe('BusinessOwnerAvailabilityPageComponent', () => {
           useValue: {
             getOwnerAvailabilities: jest.fn().mockReturnValue(of([])),
             getOwnerAvailabilityOverrides: jest.fn().mockReturnValue(of([])),
-            createOwnerAvailability: jest
-              .fn()
-              .mockReturnValue(of({ id: 'availability-2' })),
+            createOwnerAvailability: jest.fn().mockReturnValue(of({ id: 'availability-2' })),
             updateOwnerAvailability,
             removeOwnerAvailability: jest.fn().mockReturnValue(of(void 0)),
-            createOwnerAvailabilityOverride: jest
-              .fn()
-              .mockReturnValue(of({ id: 'override-1' })),
-            updateOwnerAvailabilityOverride: jest
-              .fn()
-              .mockReturnValue(of({ id: 'override-1' })),
-            removeOwnerAvailabilityOverride: jest
-              .fn()
-              .mockReturnValue(of(void 0)),
+            createOwnerAvailabilityOverride: jest.fn().mockReturnValue(of({ id: 'override-1' })),
+            updateOwnerAvailabilityOverride: jest.fn().mockReturnValue(of({ id: 'override-1' })),
+            removeOwnerAvailabilityOverride: jest.fn().mockReturnValue(of(void 0)),
           },
         },
       ],

@@ -15,11 +15,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
-import {
-  ServiceTokens,
-  WellnessCommands,
-  WellnessAiCommands,
-} from '@optimistic-tanuki/constants';
+import { ServiceTokens, WellnessCommands, WellnessAiCommands } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { User } from '../../decorators/user.decorator';
 
@@ -42,8 +38,7 @@ export class WellnessController {
   @ApiOperation({ summary: 'Generate an AI wellness prompt' })
   @ApiResponse({ status: 200, description: 'AI prompt generated successfully' })
   async generateAiPrompt(
-    @Body()
-    data: {
+    @Body() data: {
       userInput: string;
       contextType: string;
       additionalContext?: string;
@@ -69,7 +64,9 @@ export class WellnessController {
   @Post('ai/context')
   @ApiOperation({ summary: 'Get wellness context description' })
   @ApiResponse({ status: 200, description: 'Context description returned' })
-  async getWellnessContext(@Body() data: { contextType: string }) {
+  async getWellnessContext(
+    @Body() data: { contextType: string }
+  ) {
     try {
       return await firstValueFrom(
         this.aiOrchestrationClient.send(
@@ -89,7 +86,9 @@ export class WellnessController {
   @Post('ai/affirmation')
   @ApiOperation({ summary: 'Get AI affirmation suggestion' })
   @ApiResponse({ status: 200, description: 'Affirmation suggestion returned' })
-  async getAffirmationSuggestion(@Body() data: { userGoals?: string[] }) {
+  async getAffirmationSuggestion(
+    @Body() data: { userGoals?: string[] }
+  ) {
     try {
       return await firstValueFrom(
         this.aiOrchestrationClient.send(
@@ -131,7 +130,9 @@ export class WellnessController {
   @Post('ai/gratitude-analysis')
   @ApiOperation({ summary: 'Get AI gratitude analysis' })
   @ApiResponse({ status: 200, description: 'Gratitude analysis returned' })
-  async analyzeGratitude(@Body() data: { gratitudeEntry: string }) {
+  async analyzeGratitude(
+    @Body() data: { gratitudeEntry: string }
+  ) {
     try {
       return await firstValueFrom(
         this.aiOrchestrationClient.send(
@@ -151,7 +152,9 @@ export class WellnessController {
   @Post('ai/judgment-reflection')
   @ApiOperation({ summary: 'Get AI judgment reflection' })
   @ApiResponse({ status: 200, description: 'Judgment reflection returned' })
-  async reflectJudgment(@Body() data: { judgment: string }) {
+  async reflectJudgment(
+    @Body() data: { judgment: string }
+  ) {
     try {
       return await firstValueFrom(
         this.aiOrchestrationClient.send(
@@ -172,8 +175,7 @@ export class WellnessController {
   @ApiOperation({ summary: 'Create a Daily Four entry' })
   @ApiResponse({ status: 201, description: 'Entry created successfully' })
   async createDailyFour(
-    @Body()
-    data: {
+    @Body() data: {
       affirmation: string;
       mindfulActivity: string;
       gratitude: string;
@@ -184,9 +186,7 @@ export class WellnessController {
     @AppScope() appScope: string
   ) {
     try {
-      this.logger.log(
-        `Creating DailyFour for user ${userId} in scope ${appScope}`
-      );
+      this.logger.log(`Creating DailyFour for user ${userId} in scope ${appScope}`);
       return await firstValueFrom(
         this.wellnessClient.send(
           { cmd: WellnessCommands.CREATE_DAILY_FOUR },
@@ -236,8 +236,7 @@ export class WellnessController {
   @ApiOperation({ summary: 'Update a Daily Four entry' })
   async updateDailyFour(
     @Param('id') id: string,
-    @Body()
-    data: {
+    @Body() data: {
       affirmation?: string;
       mindfulActivity?: string;
       gratitude?: string;
@@ -284,8 +283,7 @@ export class WellnessController {
   @ApiOperation({ summary: 'Create a Daily Six entry' })
   @ApiResponse({ status: 201, description: 'Entry created successfully' })
   async createDailySix(
-    @Body()
-    data: {
+    @Body() data: {
       affirmation: string;
       judgement: string;
       nonJudgement: string;
@@ -297,9 +295,7 @@ export class WellnessController {
     @AppScope() appScope: string
   ) {
     try {
-      this.logger.log(
-        `Creating DailySix for user ${userId} in scope ${appScope}`
-      );
+      this.logger.log(`Creating DailySix for user ${userId} in scope ${appScope}`);
       return await firstValueFrom(
         this.wellnessClient.send(
           { cmd: WellnessCommands.CREATE_DAILY_SIX },
@@ -349,8 +345,7 @@ export class WellnessController {
   @ApiOperation({ summary: 'Update a Daily Six entry' })
   async updateDailySix(
     @Param('id') id: string,
-    @Body()
-    data: {
+    @Body() data: {
       affirmation?: string;
       judgement?: string;
       nonJudgement?: string;

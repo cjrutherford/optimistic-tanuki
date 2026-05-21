@@ -5,7 +5,6 @@ slug: prerequisites
 summary: Install the core tools required for local development in the monorepo.
 order: 10
 ---
-
 # Prerequisites
 
 Install and verify:

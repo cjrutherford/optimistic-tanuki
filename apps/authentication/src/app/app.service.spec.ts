@@ -87,7 +87,7 @@ describe('AppService.getPublicOAuthConfig', () => {
           .split('.')
           .reduce<unknown>(
             (current, key) => (current as Record<string, unknown>)?.[key],
-            config
+            config,
           );
         return value;
       }),
@@ -107,7 +107,7 @@ describe('AppService.getPublicOAuthConfig', () => {
       'jwt-secret',
       {} as never,
       {} as JwtService,
-      {} as EmailService
+      {} as EmailService,
     );
 
     expect(service.getPublicOAuthConfig('tenant.example.com')).toEqual({
@@ -161,7 +161,7 @@ describe('AppService', () => {
           useValue: {
             validateHash: jest.fn((p, h, s) => Promise.resolve(true)),
             createNewHash: jest.fn((p) =>
-              Promise.resolve({ hash: 'mockHash', salt: 'mockSalt' })
+              Promise.resolve({ hash: 'mockHash', salt: 'mockSalt' }),
             ),
           },
         },
@@ -201,7 +201,7 @@ describe('AppService', () => {
               {
                 sign: (payload, options) => jwtService.sign(payload, options),
               },
-              'test-secret'
+              'test-secret',
             ),
           inject: [JwtService],
         },
@@ -232,10 +232,10 @@ describe('AppService', () => {
 
     service = module.get<AppService>(AppService);
     userRepo = module.get<Repository<UserEntity>>(
-      getRepositoryToken(UserEntity)
+      getRepositoryToken(UserEntity),
     );
     tokenRepo = module.get<Repository<TokenEntity>>(
-      getRepositoryToken(TokenEntity)
+      getRepositoryToken(TokenEntity),
     );
     keyRepo = module.get<Repository<KeyDatum>>(getRepositoryToken(KeyDatum));
     saltedHashService = module.get<SaltedHashService>(SaltedHashService);
@@ -283,7 +283,7 @@ describe('AppService', () => {
       expect(saltedHashService.validateHash).toHaveBeenCalledWith(
         'password',
         'hashedPassword',
-        'someSalt'
+        'someSalt',
       );
       expect(signSpy).toHaveBeenCalled();
       expect(tokenRepo.save).toHaveBeenCalled();
@@ -307,7 +307,7 @@ describe('AppService', () => {
       const result = await service.login(
         'test@example.com',
         'password',
-        '123456'
+        '123456',
       );
       expect(result).toEqual({
         message: 'Login successful',
@@ -316,7 +316,7 @@ describe('AppService', () => {
       });
       expect(authenticator.check).toHaveBeenCalledWith(
         '123456',
-        'someTotpSecret'
+        'someTotpSecret',
       );
     });
   });

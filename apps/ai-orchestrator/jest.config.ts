@@ -24,4 +24,4 @@ export default {
       isolatedModules: true, // Faster compilation, less memory
     },
   },
-};
+  }

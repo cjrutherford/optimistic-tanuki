@@ -25,13 +25,9 @@ describe('BusinessOwnerDashboardPageComponent', () => {
                 { id: 'booking-2', status: 'completed' },
               ])
             ),
-            getAllRoutines: jest
-              .fn()
-              .mockReturnValue(of([{ id: 'routine-1' }])),
+            getAllRoutines: jest.fn().mockReturnValue(of([{ id: 'routine-1' }])),
             getAllCheckIns,
-            getOwnerProspects: jest
-              .fn()
-              .mockReturnValue(of([{ id: 'lead-1' }])),
+            getOwnerProspects: jest.fn().mockReturnValue(of([{ id: 'lead-1' }])),
           },
         },
         {
@@ -53,9 +49,7 @@ describe('BusinessOwnerDashboardPageComponent', () => {
       ],
     }).compileComponents();
 
-    const fixture = TestBed.createComponent(
-      BusinessOwnerDashboardPageComponent
-    );
+    const fixture = TestBed.createComponent(BusinessOwnerDashboardPageComponent);
     fixture.detectChanges();
 
     expect(getAllCheckIns).toHaveBeenCalled();

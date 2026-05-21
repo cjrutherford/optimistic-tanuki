@@ -228,7 +228,7 @@ export class WatchComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private videoService: VideoService
+    private videoService: VideoService,
   ) {}
 
   ngOnInit() {
@@ -316,7 +316,7 @@ export class WatchComponent implements OnInit {
       const url = window.location.href;
       navigator.clipboard.writeText(url).then(
         () => alert('Link copied to clipboard!'),
-        () => alert('Failed to copy link')
+        () => alert('Failed to copy link'),
       );
     }
   }

@@ -9,19 +9,16 @@ Implement a tiered API usage billing system with volume discounts, per-service p
 ### Components
 
 1. **Usage Tracker Service** (`apps/usage-tracker/`)
-
    - Middleware in gateway to track all API requests
    - Stores usage metrics with service/endpoint granularity
    - Secure aggregated metrics per API key
 
 2. **API Key Management** (`apps/api-key-service/`)
-
    - CRUD for API keys with plan association
    - Key rotation and revocation
    - Usage quotas and plan enforcement
 
 3. **Billing Plans Service** (`apps/billing/plans/`)
-
    - Tier management with pricing rules
    - Per-service pricing configuration
    - Bundle ("everything at table") configuration
@@ -99,23 +96,23 @@ CREATE TABLE user_subscriptions (
 
 ## Pricing Tiers
 
-| Tier | Name       | Requests/Month | Price | Price/1K |
-| ---- | ---------- | -------------- | ----- | -------- |
-| 0    | Free       | 500,000        | $0    | $0.00    |
-| 1    | Starter    | 750,000        | $25   | $0.10    |
-| 2    | Growth     | 1,250,000      | $50   | $0.05    |
-| 3    | Scale      | 2,000,000      | $75   | $0.04    |
-| 4    | Enterprise | 2,500,000      | $100  | $0.04    |
+| Tier | Name | Requests/Month | Price | Price/1K |
+|------|------|---------------|-------|----------|
+| 0 | Free | 500,000 | $0 | $0.00 |
+| 1 | Starter | 750,000 | $25 | $0.10 |
+| 2 | Growth | 1,250,000 | $50 | $0.05 |
+| 3 | Scale | 2,000,000 | $75 | $0.04 |
+| 4 | Enterprise | 2,500,000 | $100 | $0.04 |
 
 ### Volume Discount Logic
 
 ```typescript
 function calculatePrice(requests: number): number {
-  if (requests <= 500000) return 0; // Free tier
-  if (requests <= 750000) return 2500; // $25 flat
+  if (requests <= 500000) return 0;       // Free tier
+  if (requests <= 750000) return 2500;     // $25 flat
   if (requests <= 1250000) return 5000;
   if (requests <= 2000000) return 7500;
-  return 10000; // $100 for up to 2.5M
+  return 10000;                         // $100 for up to 2.5M
 }
 ```
 
@@ -139,20 +136,20 @@ function calculatePrice(requests: number): number {
 
 Each gateway controller group is priced independently:
 
-| Service          | Price per 1K requests |
-| ---------------- | --------------------- |
-| social           | $0.30                 |
-| finance          | $0.40                 |
-| blogging         | $0.25                 |
-| store            | $0.35                 |
-| classifieds      | $0.25                 |
-| profile          | $0.20                 |
-| payments         | $0.50                 |
-| project-planning | $0.25                 |
-| videos           | $0.40                 |
-| wellness         | $0.20                 |
-| forum            | $0.25                 |
-| leads            | $0.30                 |
+| Service | Price per 1K requests |
+|---------|-------------------|
+| social | $0.30 |
+| finance | $0.40 |
+| blogging | $0.25 |
+| store | $0.35 |
+| classifieds | $0.25 |
+| profile | $0.20 |
+| payments | $0.50 |
+| project-planning | $0.25 |
+| videos | $0.40 |
+| wellness | $0.20 |
+| forum | $0.25 |
+| leads | $0.30 |
 
 ## "Everything at the Table" Bundle
 
@@ -241,19 +238,19 @@ app.use('/api', async (req, res, next) => {
 
   // Require API key for all external requests (including free tier)
   if (!req.apiKeyId) {
-    return res.status(401).json({
+    return res.status(401).json({ 
       error: 'API key required',
-      message: 'Include your API key in X-API-Key header',
+      message: 'Include your API key in X-API-Key header'
     });
   }
 
   // Check subscription status for non-free plans
   const subscription = await getSubscription(req.userId);
   if (subscription?.status === 'unpaid' || subscription?.status === 'past_due') {
-    return res.status(402).json({
+    return res.status(402).json({ 
       error: 'Payment required',
       message: 'Subscription inactive. Please update payment method.',
-      upgrade_url: '/billing/upgrade',
+      upgrade_url: '/billing/upgrade'
     });
   }
 
@@ -271,10 +268,10 @@ app.use('/api', async (req, res, next) => {
 
   // Free tier hard stop at 500k
   if (plan.tierLevel === 0 && usage.total >= 500000) {
-    return res.status(402).json({
+    return res.status(402).json({ 
       error: 'Payment required',
       message: 'Free tier limit reached. Upgrade to continue.',
-      upgrade_url: '/billing/upgrade',
+      upgrade_url: '/billing/upgrade'
     });
   }
 
@@ -289,11 +286,11 @@ app.use('/api', async (req, res, next) => {
 
 ### Error Codes
 
-| HTTP | Code               | Meaning                                |
-| ---- | ------------------ | -------------------------------------- |
-| 401  | `API_KEY_REQUIRED` | No API key provided                    |
-| 402  | `PAYMENT_REQUIRED` | Free tier limit or unpaid subscription |
-| 429  | `QUOTA_EXCEEDED`   | Paid tier limit reached                |
+| HTTP | Code | Meaning |
+|------|------|---------|
+| 401 | `API_KEY_REQUIRED` | No API key provided |
+| 402 | `PAYMENT_REQUIRED` | Free tier limit or unpaid subscription |
+| 429 | `QUOTA_EXCEEDED` | Paid tier limit reached |
 
 ## Dashboard
 
@@ -306,13 +303,11 @@ app.use('/api', async (req, res, next) => {
 ### Features
 
 1. **API Key Management**
-
    - Create/regenerate/revoke keys
    - Assign plans
    - View usage dashboard
 
 2. **Usage Analytics**
-
    - Daily/weekly/monthly charts (bar chart)
    - Per-service breakdown (pie chart)
    - Usage alerts configuration
@@ -340,7 +335,7 @@ apps/
       usage.service.ts
       metrics.controller.ts
       middleware/usage.middleware.ts
-
+  
   api-key-service/
     src/
       api-key.module.ts
@@ -348,7 +343,7 @@ apps/
       api-key.service.ts
       plans.controller.ts
       plans.service.ts
-
+  
   developer-portal/
     src/
       developer-portal.module.ts

@@ -13,9 +13,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       <header class="hero">
         <div class="hero-copy">
           <p class="eyebrow">HAI Computer</p>
-          <h1>
-            Purpose-built systems for teams that need calm, durable compute.
-          </h1>
+          <h1>Purpose-built systems for teams that need calm, durable compute.</h1>
           <p class="lede">
             Hovering Alien Invaders Computers designs integration-ready
             workstations, storage nodes, and deployment platforms with a tighter
@@ -23,11 +21,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           </p>
 
           <div class="hero-actions">
-            <button
-              type="button"
-              class="primary-action"
-              (click)="jumpToSystems()"
-            >
+            <button type="button" class="primary-action" (click)="jumpToSystems()">
               Start a configuration
             </button>
             <div class="trust-strip">
@@ -63,26 +57,17 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         <article class="preset">
           <p>Edge + local AI</p>
           <strong>Dense quiet tower</strong>
-          <span
-            >For hybrid inference, content pipelines, and onsite
-            operations.</span
-          >
+          <span>For hybrid inference, content pipelines, and onsite operations.</span>
         </article>
         <article class="preset">
           <p>Storage anchor</p>
           <strong>NAS-first frame</strong>
-          <span
-            >For mirrored archives, backups, and media-heavy team
-            workflows.</span
-          >
+          <span>For mirrored archives, backups, and media-heavy team workflows.</span>
         </article>
         <article class="preset">
           <p>Developer floor</p>
           <strong>Compile and test node</strong>
-          <span
-            >For CI staging, local orchestration, and durable dev
-            environments.</span
-          >
+          <span>For CI staging, local orchestration, and durable dev environments.</span>
         </article>
       </section>
 
@@ -94,15 +79,11 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           </div>
           <p class="section-copy">
             Each HAI build begins with a chassis class tuned for a workload and
-            physical footprint. Selection here seeds the full configuration
-            draft.
+            physical footprint. Selection here seeds the full configuration draft.
           </p>
         </div>
 
-        <div
-          class="empty-state"
-          *ngIf="!loading() && chassisList().length === 0"
-        >
+        <div class="empty-state" *ngIf="!loading() && chassisList().length === 0">
           No hardware families are available right now.
         </div>
 
@@ -110,14 +91,9 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
           {{ errorMessage() }}
         </div>
 
-        <div class="empty-state" *ngIf="loading()">
-          Loading active hardware families...
-        </div>
+        <div class="empty-state" *ngIf="loading()">Loading active hardware families...</div>
 
-        <div
-          class="systems-grid"
-          *ngIf="!loading() && chassisList().length > 0"
-        >
+        <div class="systems-grid" *ngIf="!loading() && chassisList().length > 0">
           <button
             *ngFor="let chassis of chassisList()"
             type="button"
@@ -187,11 +163,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .preset,
       .system-card {
         border: 1px solid rgba(207, 250, 244, 0.08);
-        background: linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.05),
-            rgba(255, 255, 255, 0.02)
-          ),
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
           rgba(4, 12, 15, 0.8);
         backdrop-filter: blur(14px);
       }
@@ -211,11 +184,7 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         position: absolute;
         inset: auto -10% -35% 25%;
         height: 18rem;
-        background: radial-gradient(
-          circle,
-          rgba(45, 212, 191, 0.24),
-          transparent 70%
-        );
+        background: radial-gradient(circle, rgba(45, 212, 191, 0.24), transparent 70%);
         pointer-events: none;
       }
 
@@ -294,11 +263,8 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
       .hero-stack article {
         border-radius: 1.5rem;
         padding: 1.1rem;
-        background: linear-gradient(
-            135deg,
-            rgba(45, 212, 191, 0.12),
-            transparent 50%
-          ),
+        background:
+          linear-gradient(135deg, rgba(45, 212, 191, 0.12), transparent 50%),
           rgba(255, 255, 255, 0.03);
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
@@ -360,7 +326,9 @@ import { ConfiguratorStateService } from '../../state/configurator-state.service
         color: inherit;
         text-align: left;
         cursor: pointer;
-        transition: transform 180ms ease, border-color 180ms ease,
+        transition:
+          transform 180ms ease,
+          border-color 180ms ease,
           box-shadow 180ms ease;
       }
 

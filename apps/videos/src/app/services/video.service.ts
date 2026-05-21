@@ -18,7 +18,7 @@ export class VideoService {
     private readonly videoRepository: Repository<Video>,
     @InjectRepository(Channel)
     private readonly channelRepository: Repository<Channel>,
-    private readonly videoProcessingService?: VideoProcessingService
+    private readonly videoProcessingService?: VideoProcessingService,
   ) {}
 
   async create(createVideoDto: CreateVideoDto): Promise<Video> {
@@ -131,7 +131,7 @@ export class VideoService {
 
   async completeProcessing(
     id: string,
-    result: CompleteVideoProcessingResultDto
+    result: CompleteVideoProcessingResultDto,
   ): Promise<void> {
     const video = await this.findOneOrFail(id);
 

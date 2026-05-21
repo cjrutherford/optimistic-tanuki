@@ -11,18 +11,13 @@ describe('AppointmentsService', () => {
   let appointmentRepository: jest.Mocked<Repository<AppointmentEntity>>;
   let invoiceRepository: jest.Mocked<Repository<InvoiceEntity>>;
   let availabilityRepository: jest.Mocked<Repository<AvailabilityEntity>>;
-  let availabilityOverrideRepository: jest.Mocked<
-    Repository<AvailabilityOverrideEntity>
-  >;
+  let availabilityOverrideRepository: jest.Mocked<Repository<AvailabilityOverrideEntity>>;
   let service: AppointmentsService;
 
   beforeEach(() => {
     appointmentRepository = {
       create: jest.fn((payload) => payload as AppointmentEntity),
-      save: jest.fn(
-        async (payload) =>
-          ({ id: 'booking-1', ...payload } as AppointmentEntity)
-      ),
+      save: jest.fn(async (payload) => ({ id: 'booking-1', ...payload }) as AppointmentEntity),
       find: jest.fn(),
     } as unknown as jest.Mocked<Repository<AppointmentEntity>>;
     invoiceRepository = {} as jest.Mocked<Repository<InvoiceEntity>>;

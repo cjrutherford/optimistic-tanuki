@@ -83,9 +83,9 @@ describe('map utils', () => {
       userLocation,
     });
 
-    expect(result.markers.map((marker: { id: string }) => marker.id)).toEqual([
-      'savannah',
-    ]);
+    expect(
+      result.markers.map((marker: { id: string }) => marker.id)
+    ).toEqual(['savannah']);
   });
 
   it('treats nullish and zero-zero coordinates as non-renderable', () => {

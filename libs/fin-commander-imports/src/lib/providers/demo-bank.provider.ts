@@ -4,8 +4,7 @@ export const demoBankImportProvider: FinCommanderImportProvider = {
   manifest: {
     id: 'demo-bank',
     name: 'Demo Bank Feed',
-    description:
-      'Load a mock bank feed to validate the preview-and-commit workflow.',
+    description: 'Load a mock bank feed to validate the preview-and-commit workflow.',
     inputLabel: 'Optional note',
     placeholder: 'No raw input required for the demo bank feed.',
     inputOptional: true,
@@ -13,12 +12,8 @@ export const demoBankImportProvider: FinCommanderImportProvider = {
   async preview(input: string) {
     return {
       providerId: 'demo-bank',
-      title: input?.trim()
-        ? `Demo feed: ${input.trim()}`
-        : 'Demo bank feed preview',
-      warnings: [
-        'Demo feed transactions are synthetic and intended for workflow validation only.',
-      ],
+      title: input?.trim() ? `Demo feed: ${input.trim()}` : 'Demo bank feed preview',
+      warnings: ['Demo feed transactions are synthetic and intended for workflow validation only.'],
       transactions: [
         {
           postedOn: '2026-04-09',

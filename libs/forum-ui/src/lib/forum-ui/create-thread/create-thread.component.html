@@ -62,12 +62,8 @@
     </div>
 
     <div class="actions">
-      <otui-button type="submit" [disabled]="!title || !selectedTopicId"
-        >Create Thread</otui-button
-      >
-      <otui-button type="button" variant="secondary" (click)="onCancel()"
-        >Cancel</otui-button
-      >
+      <otui-button type="submit" [disabled]="!title || !selectedTopicId">Create Thread</otui-button>
+      <otui-button type="button" variant="secondary" (click)="onCancel()">Cancel</otui-button>
     </div>
   </form>
 </otui-card>

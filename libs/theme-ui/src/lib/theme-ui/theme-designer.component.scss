@@ -79,8 +79,7 @@
       background: #e5e7eb;
       border-radius: 3px;
       position: relative;
-      transition: all var(--animation-duration-fast, 200ms)
-        var(--animation-easing, ease);
+      transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
       &::after {
         content: '';
@@ -92,8 +91,7 @@
         background: #fff;
         border-radius: 2px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-        transition: transform var(--animation-duration-fast, 200ms)
-          var(--animation-easing, ease);
+        transition: transform var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
       }
 
       &:checked {
@@ -158,8 +156,7 @@
     font-size: 0.75rem;
     background: #fafafa;
     color: #1f2937;
-    transition: all var(--animation-duration-fast, 200ms)
-      var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
     &:focus {
       outline: none;
@@ -195,8 +192,7 @@
     font-size: 0.75rem;
     background: #fafafa;
     color: #4b5563;
-    transition: all var(--animation-duration-fast, 200ms)
-      var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
     &:focus {
       outline: none;
@@ -282,8 +278,7 @@
     font-family: var(--font-mono, monospace);
     font-size: 1rem;
     line-height: 1;
-    transition: all var(--animation-duration-fast, 200ms)
-      var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
     &:hover {
       background: #dc2626;
@@ -303,8 +298,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: all var(--animation-duration-fast, 200ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
   &:hover {
     background: #059669;
@@ -349,8 +343,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     white-space: nowrap;
-    transition: all var(--animation-duration-fast, 200ms)
-      var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
     &:hover {
       background: var(--primary-dark, var(--primary));
@@ -380,8 +373,7 @@
   font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: all var(--animation-duration-fast, 200ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
   &:hover {
     background: color-mix(in srgb, var(--primary) 10%, transparent);
@@ -412,8 +404,7 @@
   border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent);
   border-radius: 3px;
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 200ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
   &.active {
     border-color: var(--primary);
@@ -459,8 +450,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all var(--animation-duration-fast, 200ms)
-      var(--animation-easing, ease);
+    transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
   }
 
   .btn-edit-palette {
@@ -496,8 +486,7 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  transition: all var(--animation-duration-fast, 200ms)
-    var(--animation-easing, ease);
+  transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
 
   &:hover {
     background: #059669;
@@ -558,8 +547,7 @@
       font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      transition: all var(--animation-duration-fast, 200ms)
-        var(--animation-easing, ease);
+      transition: all var(--animation-duration-fast, 200ms) var(--animation-easing, ease);
     }
 
     .btn-cancel {

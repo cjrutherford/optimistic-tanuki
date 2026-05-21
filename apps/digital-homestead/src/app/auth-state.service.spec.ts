@@ -138,9 +138,7 @@ describe('AuthStateService', () => {
     });
 
     it('should reject login on server', async () => {
-      await expect(
-        serverService.login({ username: 'u', password: 'p' })
-      ).rejects.toMatch('Login is not available');
+        await expect(serverService.login({ username: 'u', password: 'p' })).rejects.toMatch('Login is not available');
     });
   });
 });

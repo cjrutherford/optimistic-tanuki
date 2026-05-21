@@ -18,7 +18,7 @@ export class TaskTimeEntryService {
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
-  ) {}
+  ) { }
 
   createTaskTimeEntry(data: CreateTaskTimeEntry) {
     const currentProfile = this.profileService.getCurrentUserProfile();

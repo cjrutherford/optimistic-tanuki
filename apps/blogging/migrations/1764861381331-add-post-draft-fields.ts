@@ -16,6 +16,8 @@ export class AddPostDraftFields1764861381331 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "publishedAt"`);
     await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "isDraft"`);
-    await queryRunner.query(`ALTER TABLE "post" DROP COLUMN "appScope"`);
+    await queryRunner.query(
+      `ALTER TABLE "post" DROP COLUMN "appScope"`
+    );
   }
 }

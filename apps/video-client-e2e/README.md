@@ -35,7 +35,6 @@ pnpm exec nx run video-client-e2e:down
 ## Overview
 
 This test suite validates the complete video platform workflow including:
-
 1. Creating a channel
 2. Posting/uploading a video
 3. Updating a video
@@ -67,43 +66,36 @@ pnpm exec playwright test apps/video-client-e2e/src/video-platform.spec.ts --deb
 ## Test Workflows
 
 ### 1. Channel Creation
-
 - Creates a test channel via API
 - Verifies channel page loads
 - Checks channel header displays
 
 ### 2. Video Upload
-
 - Creates mock video asset
 - Posts video to channel
 - Verifies video appears on channel
 
 ### 3. Video Update
-
 - Updates video metadata (title, description)
 - Verifies changes are reflected
 
 ### 4. Video Playback
-
 - Navigates to watch page
 - Loads video player
 - Checks for HTML5 video element
 - Displays video metadata
 
 ### 5. Comments
-
 - Posts comment on video (via social API)
 - Posts comment on channel (via social API)
 - Tests social integration
 
 ### 6. Subscriptions
-
 - Subscribes to channel via API
 - Verifies subscribe button on UI
 - Tests channel subscription flow
 
 ### 7. Video Interactions
-
 - Like/unlike videos
 - Share video links
 - View tracking
@@ -111,23 +103,21 @@ pnpm exec playwright test apps/video-client-e2e/src/video-platform.spec.ts --deb
 ## Test Data
 
 Tests use timestamped data to avoid conflicts:
-
 ```typescript
 const testChannel = {
   name: `E2E Test Channel ${Date.now()}`,
-  description: 'E2E test channel',
+  description: 'E2E test channel'
 };
 
 const testVideo = {
   title: `E2E Test Video ${Date.now()}`,
-  description: 'E2E test video',
+  description: 'E2E test video'
 };
 ```
 
 ## Services Required
 
 The e2e tests require these backend services:
-
 - PostgreSQL database
 - Authentication service
 - Profile service
@@ -143,14 +133,12 @@ All services are orchestrated via Docker Compose.
 ## Configuration
 
 ### Playwright Config
-
 - Base URL: `http://localhost:8086`
 - Browsers: Chromium, Firefox, WebKit
 - Timeout: 10-15 seconds for most operations
 - Retries: Configured in playwright.config.ts
 
 ### Docker Compose
-
 - File: `e2e/docker-compose.video-client-e2e.yaml`
 - Port: 8086 (video-client)
 - Gateway: 3000
@@ -159,7 +147,6 @@ All services are orchestrated via Docker Compose.
 ## Troubleshooting
 
 ### Tests Fail with Timeout
-
 ```bash
 # Increase wait time in global-setup.ts
 # Or manually wait longer before running tests
@@ -168,7 +155,6 @@ pnpm exec nx run video-client-e2e:e2e
 ```
 
 ### Backend Services Not Starting
-
 ```bash
 # Check logs
 docker compose -f e2e/docker-compose.video-client-e2e.yaml logs
@@ -178,7 +164,6 @@ docker compose -f e2e/docker-compose.video-client-e2e.yaml up -d --build gateway
 ```
 
 ### Database Issues
-
 ```bash
 # Clean up and restart
 pnpm exec nx run video-client-e2e:down
@@ -187,7 +172,6 @@ pnpm exec nx run video-client-e2e:up
 ```
 
 ### Port Conflicts
-
 ```bash
 # Check if ports are in use
 lsof -i :8086
@@ -199,7 +183,6 @@ lsof -i :3000
 ## Test Reports
 
 After running tests:
-
 ```bash
 # View HTML report
 pnpm exec playwright show-report
@@ -211,7 +194,6 @@ dist/.playwright/apps/video-client-e2e/playwright-report
 ## CI/CD Integration
 
 For continuous integration:
-
 ```bash
 # Set BASE_URL for deployed app
 BASE_URL=https://video.example.com pnpm exec nx run video-client-e2e:e2e

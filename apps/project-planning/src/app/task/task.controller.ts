@@ -10,7 +10,7 @@ import { TaskCommands } from '@optimistic-tanuki/constants';
 
 @Controller()
 export class TaskController {
-  constructor(private readonly taskService: TaskService) {}
+  constructor(private readonly taskService: TaskService) { }
 
   @MessagePattern({ cmd: TaskCommands.CREATE })
   async create(@Payload() createTaskDto: CreateTaskDto) {

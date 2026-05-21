@@ -70,9 +70,7 @@ export class EmailModule {
    */
   static forRootAsync(asyncOptions: {
     inject?: any[];
-    useFactory: (
-      ...args: any[]
-    ) => EmailModuleOptions | Promise<EmailModuleOptions>;
+    useFactory: (...args: any[]) => EmailModuleOptions | Promise<EmailModuleOptions>;
   }): DynamicModule {
     return {
       module: EmailModule,

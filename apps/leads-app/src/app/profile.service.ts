@@ -26,16 +26,12 @@ export class ProfileService {
 
   getEffectiveProfile(): ProfileDto | null {
     const profiles = this.getCurrentUserProfiles();
-    const localProfile = profiles.find((profile) =>
-      this.isLocalProfile(profile)
-    );
+    const localProfile = profiles.find((profile) => this.isLocalProfile(profile));
     if (localProfile) {
       return localProfile;
     }
 
-    const globalProfile = profiles.find((profile) =>
-      this.isGlobalProfile(profile)
-    );
+    const globalProfile = profiles.find((profile) => this.isGlobalProfile(profile));
     return globalProfile || null;
   }
 
@@ -46,9 +42,9 @@ export class ProfileService {
   }
 
   selectProfile(profile: ProfileDto) {
-    const matchingProfile = this.getCurrentUserProfiles().find(
-      (candidate) => candidate.id === profile.id
-    );
+    const matchingProfile = this
+      .getCurrentUserProfiles()
+      .find((candidate) => candidate.id === profile.id);
 
     if (matchingProfile) {
       this.currentUserProfile.set(matchingProfile);
@@ -64,8 +60,7 @@ export class ProfileService {
       return;
     }
 
-    const tokenProfileId =
-      this.authState.getDecodedTokenValue()?.profileId || '';
+    const tokenProfileId = this.authState.getDecodedTokenValue()?.profileId || '';
     if (tokenProfileId === matchingProfile.id) {
       return;
     }
@@ -159,10 +154,7 @@ export class ProfileService {
     return createdProfile;
   }
 
-  async updateProfile(
-    id: string,
-    profile: UpdateProfileDto
-  ): Promise<ProfileDto> {
+  async updateProfile(id: string, profile: UpdateProfileDto): Promise<ProfileDto> {
     const updatedProfile = await firstValueFrom(
       this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${id}`, profile)
     );

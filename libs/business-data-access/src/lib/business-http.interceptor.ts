@@ -15,9 +15,7 @@ export const businessHttpInterceptor: HttpInterceptorFn = (request, next) => {
   const prefersOwnerToken =
     request.url.startsWith('/api/business/owner/') ||
     request.url === '/api/business/site-config';
-  const token = prefersOwnerToken
-    ? ownerToken ?? clientToken
-    : clientToken ?? ownerToken;
+  const token = prefersOwnerToken ? ownerToken ?? clientToken : clientToken ?? ownerToken;
   let headers = request.headers;
 
   if (!headers.has('x-ot-appscope')) {

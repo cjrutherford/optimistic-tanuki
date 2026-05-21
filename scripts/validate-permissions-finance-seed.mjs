@@ -3,16 +3,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const seedData = JSON.parse(
-  readFileSync('apps/permissions/src/assets/default-permissions.json', 'utf8')
+  readFileSync('apps/permissions/src/assets/default-permissions.json', 'utf8'),
 );
 const shellSeed = readFileSync('seed-permissions.sh', 'utf8');
 const financeController = readFileSync(
   'apps/gateway/src/controllers/finance/finance.controller.ts',
-  'utf8'
+  'utf8',
 );
 const finCommanderProfile = readFileSync(
   'apps/fin-commander/src/app/profile.service.ts',
-  'utf8'
+  'utf8',
 );
 
 const financePermissions = [
@@ -53,46 +53,46 @@ const expectedRoles = [
 const guardedFinancePermissions = [
   ...new Set(
     [...financeController.matchAll(/RequirePermissions\('([^']+)'\)/g)].map(
-      ([, permission]) => permission
-    )
+      ([, permission]) => permission,
+    ),
   ),
 ].sort();
 
 assert.equal(
   seedData.app_scopes.some((scope) => scope.name === 'finance'),
   true,
-  'default permissions seed must include the finance app scope'
+  'default permissions seed must include the finance app scope',
 );
 
 assert.deepEqual(
   financePermissions.toSorted(),
   guardedFinancePermissions,
-  'finance seed permission catalog must match the permissions required by the finance gateway controller'
+  'finance seed permission catalog must match the permissions required by the finance gateway controller',
 );
 
 assert.match(
   finCommanderProfile,
   /readonly\s+appScope\s*=\s*'finance'/,
-  'fin-commander must continue to use the finance app scope'
+  'fin-commander must continue to use the finance app scope',
 );
 
 for (const role of expectedRoles) {
   assert.equal(
     seedData.roles.some(
-      (entry) => entry.name === role && entry.appScope === 'finance'
+      (entry) => entry.name === role && entry.appScope === 'finance',
     ),
     true,
-    `default permissions seed must include ${role}`
+    `default permissions seed must include ${role}`,
   );
 }
 
 for (const permission of financePermissions) {
   assert.equal(
     seedData.permissions.some(
-      (entry) => entry.name === permission && entry.appScope === 'finance'
+      (entry) => entry.name === permission && entry.appScope === 'finance',
     ),
     true,
-    `default permissions seed must include ${permission}`
+    `default permissions seed must include ${permission}`,
   );
 }
 
@@ -102,10 +102,10 @@ for (const role of expectedRoles) {
       (entry) =>
         entry.role === role &&
         entry.permissionAppScope === 'finance' &&
-        financePermissions.includes(entry.permission)
+        financePermissions.includes(entry.permission),
     ),
     true,
-    `default permissions seed must map permissions for ${role}`
+    `default permissions seed must map permissions for ${role}`,
   );
 }
 
@@ -119,10 +119,10 @@ for (const managerPermission of [
       (entry) =>
         entry.role === 'finance_manager' &&
         entry.permission === managerPermission &&
-        entry.permissionAppScope === 'finance'
+        entry.permissionAppScope === 'finance',
     ),
     true,
-    `default permissions seed must map ${managerPermission} to finance_manager`
+    `default permissions seed must map ${managerPermission} to finance_manager`,
   );
 }
 
@@ -157,10 +157,10 @@ for (const soloUserPermission of [
       (entry) =>
         entry.role === 'finance_member' &&
         entry.permission === soloUserPermission &&
-        entry.permissionAppScope === 'finance'
+        entry.permissionAppScope === 'finance',
     ),
     true,
-    `default permissions seed must map ${soloUserPermission} to finance_member`
+    `default permissions seed must map ${soloUserPermission} to finance_member`,
   );
 }
 
@@ -174,9 +174,5 @@ for (const token of [
   "'finance.bank.manage'",
   "'finance.member.manage'",
 ]) {
-  assert.equal(
-    shellSeed.includes(token),
-    true,
-    `seed-permissions.sh must include ${token}`
-  );
+  assert.equal(shellSeed.includes(token), true, `seed-permissions.sh must include ${token}`);
 }

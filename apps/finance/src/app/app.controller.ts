@@ -202,10 +202,7 @@ export class AppController {
   @MessagePattern({ cmd: FinanceBankingCommands.SYNC_CONNECTION })
   async syncBankConnection(
     @Payload()
-    payload: {
-      connectionId: string;
-      transactions?: CreateTransactionDto[];
-    } & FinanceScope
+    payload: { connectionId: string; transactions?: CreateTransactionDto[] } & FinanceScope
   ) {
     return this.bankConnectionService.syncConnection(
       payload.connectionId,

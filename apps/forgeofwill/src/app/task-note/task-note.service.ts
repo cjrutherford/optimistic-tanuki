@@ -14,7 +14,7 @@ import { ProfileService } from '../profile/profile.service';
 })
 export class TaskNoteService {
   private baseUrl = '/api/project-planning/task-notes';
-
+  
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService

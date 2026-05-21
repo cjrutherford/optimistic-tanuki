@@ -13,7 +13,7 @@ export class LemonSqueezyAdapter implements BillingProviderAdapter {
   constructor(private readonly catalog: ProviderStoreCatalog) {}
 
   createCheckoutSession(
-    input: CreateCheckoutInput
+    input: CreateCheckoutInput,
   ): Promise<CreateCheckoutResult> {
     const storeConfig = this.getStoreConfig(input.appScope);
     const providerReference = input.providerPriceRef || storeConfig.storeId;
@@ -24,7 +24,7 @@ export class LemonSqueezyAdapter implements BillingProviderAdapter {
     const query = Object.entries(customData)
       .map(
         ([key, value]) =>
-          `checkout[custom][${key}]=${encodeURIComponent(String(value))}`
+          `checkout[custom][${key}]=${encodeURIComponent(String(value))}`,
       )
       .join('&');
 
@@ -76,7 +76,9 @@ export class LemonSqueezyAdapter implements BillingProviderAdapter {
     return this.catalog.default;
   }
 
-  private toStringRecord(input: unknown): Record<string, string> | undefined {
+  private toStringRecord(
+    input: unknown,
+  ): Record<string, string> | undefined {
     if (!input || typeof input !== 'object' || Array.isArray(input)) {
       return undefined;
     }
@@ -85,7 +87,7 @@ export class LemonSqueezyAdapter implements BillingProviderAdapter {
       Object.entries(input as Record<string, unknown>).map(([key, value]) => [
         key,
         String(value),
-      ])
+      ]),
     );
   }
 }

@@ -1,7 +1,4 @@
-import {
-  LeadDiscoverySource,
-  LeadTopicDiscoveryIntent,
-} from '@optimistic-tanuki/models/leads-contracts';
+import { LeadDiscoverySource, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
 import { ClutchDiscoveryProvider } from './clutch-discovery.provider';
 
@@ -12,9 +9,7 @@ describe('ClutchDiscoveryProvider', () => {
       searchWeb: jest.fn().mockResolvedValue([]),
       analyzePage: jest.fn(),
     };
-    const provider = new ClutchDiscoveryProvider(
-      searchAcquisitionService as any
-    );
+    const provider = new ClutchDiscoveryProvider(searchAcquisitionService as any);
     const topic = {
       id: 'topic-1',
       name: 'Healthcare analytics consulting',
@@ -35,11 +30,9 @@ describe('ClutchDiscoveryProvider', () => {
     const queries = searchAcquisitionService.searchWeb.mock.calls.map(
       (call) => call[0] as string
     );
-    expect(
-      queries.some((query) => query.includes('site:clutch.co/agencies'))
-    ).toBe(true);
-    expect(queries.some((query) => query.includes('"client reviews"'))).toBe(
+    expect(queries.some((query) => query.includes('site:clutch.co/agencies'))).toBe(
       true
     );
+    expect(queries.some((query) => query.includes('"client reviews"'))).toBe(true);
   });
 });

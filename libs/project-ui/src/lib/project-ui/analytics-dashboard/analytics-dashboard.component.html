@@ -26,9 +26,7 @@
         <div class="task-item" *ngFor="let task of topTasks">
           <div class="task-header">
             <span class="task-title">{{ task.taskTitle }}</span>
-            <span class="task-time">{{
-              formatTime(task.totalTimeSeconds)
-            }}</span>
+            <span class="task-time">{{ formatTime(task.totalTimeSeconds) }}</span>
           </div>
           <div class="progress-bar">
             <div
@@ -70,12 +68,7 @@
   </div>
 
   <!-- Empty State -->
-  <div
-    class="empty-state"
-    *ngIf="!projectAnalytics && tagAnalytics.length === 0"
-  >
-    <p>
-      No analytics data available. Start tracking time on tasks to see insights.
-    </p>
+  <div class="empty-state" *ngIf="!projectAnalytics && tagAnalytics.length === 0">
+    <p>No analytics data available. Start tracking time on tasks to see insights.</p>
   </div>
 </div>

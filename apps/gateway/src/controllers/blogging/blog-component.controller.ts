@@ -13,10 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import {
-  BlogComponentCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+import { BlogComponentCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   BlogComponentQueryDto,
   CreateBlogComponentDto,
@@ -158,12 +155,7 @@ export class BlogComponentController {
     @User() user: UserDetails
   ) {
     try {
-      this.l.log(
-        'Deleting blog components for post for user:',
-        user.userId,
-        'postId:',
-        postId
-      );
+      this.l.log('Deleting blog components for post for user:', user.userId, 'postId:', postId);
       return await firstValueFrom(
         this.blogService.send(
           { cmd: BlogComponentCommands.DELETE_BY_POST },
@@ -184,10 +176,7 @@ export class BlogComponentController {
     try {
       this.l.log('Finding blog components by query:', query);
       return await firstValueFrom(
-        this.blogService.send(
-          { cmd: BlogComponentCommands.FIND_BY_QUERY },
-          query
-        )
+        this.blogService.send({ cmd: BlogComponentCommands.FIND_BY_QUERY }, query)
       );
     } catch (error) {
       this.l.error('Error finding blog components by query:', error);

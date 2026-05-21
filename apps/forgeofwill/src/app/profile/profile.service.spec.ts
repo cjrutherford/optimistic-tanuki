@@ -5,11 +5,7 @@ import {
 } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from '../auth-state.service';
-import {
-  ProfileDto,
-  CreateProfileDto,
-  UpdateProfileDto,
-} from '@optimistic-tanuki/ui-models';
+import { ProfileDto, CreateProfileDto, UpdateProfileDto } from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -28,19 +24,19 @@ describe('ProfileService', () => {
     occupation: '',
     interests: '',
     skills: '',
-    created_at: new Date('2026-01-29T02:09:44.371Z'),
+    created_at: new Date('2026-01-29T02:09:44.371Z')
   };
 
   const mockGlobalProfile: ProfileDto = {
     ...mockProfile,
     id: '2',
-    appScope: 'global',
+    appScope: 'global'
   };
 
   beforeEach(() => {
     authStateService = {
       getDecodedTokenValue: jest.fn(() => ({ userId: 'user1' } as any)),
-      setToken: jest.fn(),
+      setToken: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -109,13 +105,13 @@ describe('ProfileService', () => {
         mockProfile,
         { ...mockProfile, id: '3', userId: 'other' },
         mockGlobalProfile,
-        { ...mockProfile, id: '4', appScope: 'other-app' },
+        { ...mockProfile, id: '4', appScope: 'other-app' }
       ]);
       await promise;
       // Should have mockProfile (forgeofwill) and mockGlobalProfile (global)
       expect(service.currentUserProfiles().length).toBe(2);
-      expect(service.currentUserProfiles().map((p) => p.id)).toContain('1');
-      expect(service.currentUserProfiles().map((p) => p.id)).toContain('2');
+      expect(service.currentUserProfiles().map(p => p.id)).toContain('1');
+      expect(service.currentUserProfiles().map(p => p.id)).toContain('2');
     });
 
     it('getProfileById should fetch and set', async () => {
@@ -139,7 +135,7 @@ describe('ProfileService', () => {
         location: '',
         occupation: '',
         interests: '',
-        skills: '',
+        skills: ''
       };
 
       const promise = service.createProfile(createDto);
@@ -168,18 +164,11 @@ describe('ProfileService', () => {
 
       // 4. Profile PUT to update URLs
       const req4 = httpMock.expectOne('/api/profile/new-id');
-      req4.flush({
-        ...mockProfile,
-        id: 'new-id',
-        profilePic: '/api/asset/asset-pic',
-        coverPic: '/api/asset/asset-cover',
-      });
+      req4.flush({ ...mockProfile, id: 'new-id', profilePic: '/api/asset/asset-pic', coverPic: '/api/asset/asset-cover' });
 
       await promise;
 
-      expect(service.currentUserProfiles()).toContainEqual(
-        expect.objectContaining({ id: 'new-id' })
-      );
+      expect(service.currentUserProfiles()).toContainEqual(expect.objectContaining({ id: 'new-id' }));
     });
 
     it('deleteProfile should call API and update state', async () => {
@@ -199,17 +188,13 @@ describe('ProfileService', () => {
     });
 
     it('updateProfile should handle asset replacement', async () => {
-      const initialProfile = {
-        ...mockProfile,
-        profilePic: '/api/asset/old-pic',
-        coverPic: '/api/asset/old-cover',
-      };
+      const initialProfile = { ...mockProfile, profilePic: '/api/asset/old-pic', coverPic: '/api/asset/old-cover' };
       service.currentUserProfiles.set([initialProfile]);
 
       const updateDto: UpdateProfileDto = {
         id: '1',
         profilePic: 'data:image/png;base64,new-pic',
-        coverPic: 'data:image/png;base64,new-cover',
+        coverPic: 'data:image/png;base64,new-cover'
       };
 
       const promise = service.updateProfile('1', updateDto);
@@ -252,49 +237,33 @@ describe('ProfileService', () => {
 
       // 7. PUT profile update
       const reqPut = httpMock.expectOne('/api/profile/1');
-      reqPut.flush({
-        ...initialProfile,
-        profilePic: '/api/asset/new-pic-id',
-        coverPic: '/api/asset/new-cover-id',
-      });
+      reqPut.flush({ ...initialProfile, profilePic: '/api/asset/new-pic-id', coverPic: '/api/asset/new-cover-id' });
 
       await promise;
 
-      expect(service.currentUserProfiles()[0].profilePic).toBe(
-        '/api/asset/new-pic-id'
-      );
+      expect(service.currentUserProfiles()[0].profilePic).toBe('/api/asset/new-pic-id');
     });
 
     it('updateProfile should create local profile if updating global and no local exists', async () => {
       service.currentUserProfiles.set([mockGlobalProfile]);
       const updateDto: UpdateProfileDto = { id: '2', bio: 'new bio' };
 
-      const createSpy = jest
-        .spyOn(service, 'createProfile')
-        .mockResolvedValue(undefined);
+      const createSpy = jest.spyOn(service, 'createProfile').mockResolvedValue(undefined);
 
       await service.updateProfile('2', updateDto);
 
-      expect(createSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          appScope: 'forgeofwill',
-          bio: 'new bio',
-        })
-      );
+      expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
+        appScope: 'forgeofwill',
+        bio: 'new bio'
+      }));
     });
 
     it('createProfile should handle newToken in response', async () => {
       const createDto: CreateProfileDto = {
         name: 'New',
         userId: 'user1',
-        description: '',
-        bio: '',
-        location: '',
-        occupation: '',
-        interests: '',
-        skills: '',
-        profilePic: '',
-        coverPic: '',
+        description: '', bio: '', location: '', occupation: '', interests: '', skills: '',
+        profilePic: '', coverPic: ''
       };
 
       const promise = service.createProfile(createDto);
@@ -308,12 +277,8 @@ describe('ProfileService', () => {
 
   describe('Helper methods', () => {
     it('getFileExtensionFromDataUrl should return correct extension', () => {
-      expect(
-        service.getFileExtensionFromDataUrl('data:image/jpeg;base64,abc')
-      ).toBe('jpeg');
-      expect(
-        service.getFileExtensionFromDataUrl('data:image/png;base64,abc')
-      ).toBe('png');
+      expect(service.getFileExtensionFromDataUrl('data:image/jpeg;base64,abc')).toBe('jpeg');
+      expect(service.getFileExtensionFromDataUrl('data:image/png;base64,abc')).toBe('png');
       expect(service.getFileExtensionFromDataUrl('')).toBe('');
       expect(service.getFileExtensionFromDataUrl(null)).toBe('');
       expect(service.getFileExtensionFromDataUrl('invalid')).toBe('');
@@ -335,9 +300,7 @@ describe('ProfileService', () => {
       expect(loadedProfiles[0].id).toBe(mockProfile.id);
       expect(loadedProfiles[0].profileName).toBe(mockProfile.profileName);
       // Check date as string since it was JSON stringified
-      expect(loadedProfiles[0].created_at.toString()).toBe(
-        mockProfile.created_at.toISOString()
-      );
+      expect(loadedProfiles[0].created_at.toString()).toBe(mockProfile.created_at.toISOString());
 
       expect(service.currentUserProfile()?.id).toBe(mockProfile.id);
     });

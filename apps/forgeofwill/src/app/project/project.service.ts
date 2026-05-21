@@ -16,7 +16,7 @@ export class ProjectService {
   constructor(
     private readonly http: HttpClient,
     private readonly profileService: ProfileService
-  ) {}
+  ) { }
 
   createProject(data: CreateProject) {
     const profile = this.profileService.getCurrentUserProfile();

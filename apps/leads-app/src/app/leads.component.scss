@@ -351,20 +351,12 @@ tr:hover {
   }
 
   &.warning:hover {
-    background: color-mix(
-      in srgb,
-      var(--app-warning) 16%,
-      var(--app-surface) 84%
-    );
+    background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface) 84%);
     color: var(--app-warning);
   }
 
   &.danger:hover {
-    background: color-mix(
-      in srgb,
-      var(--app-danger) 16%,
-      var(--app-surface) 84%
-    );
+    background: color-mix(in srgb, var(--app-danger) 16%, var(--app-surface) 84%);
     color: var(--app-danger);
   }
 }
@@ -602,18 +594,10 @@ form {
 
 // Flagged row indicator
 tr.flagged {
-  background: color-mix(
-    in srgb,
-    var(--app-warning) 8%,
-    var(--app-background) 92%
-  );
+  background: color-mix(in srgb, var(--app-warning) 8%, var(--app-background) 92%);
 
   &:hover {
-    background: color-mix(
-      in srgb,
-      var(--app-warning) 12%,
-      var(--app-background) 88%
-    );
+    background: color-mix(in srgb, var(--app-warning) 12%, var(--app-background) 88%);
   }
 }
 
@@ -646,11 +630,7 @@ tr.flagged {
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: color-mix(
-    in srgb,
-    var(--app-warning) 16%,
-    var(--app-surface) 84%
-  );
+  background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface) 84%);
   border-radius: var(--radius-sm);
   color: var(--app-warning);
   cursor: pointer;

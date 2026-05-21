@@ -9,10 +9,7 @@ import {
   ThemeService,
 } from '@optimistic-tanuki/theme-lib';
 import { LoginType } from '@optimistic-tanuki/ui-models';
-import {
-  OAuthButtonsComponent,
-  OAuthProviderEvent,
-} from '../oauth-buttons/oauth-buttons.component';
+import { OAuthButtonsComponent, OAuthProviderEvent } from '../oauth-buttons/oauth-buttons.component';
 
 @Component({
   selector: 'lib-login-block',

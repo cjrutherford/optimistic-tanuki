@@ -38,42 +38,30 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
           </div>
           <div class="review-item">
             <span class="label">Contact</span>
-            <span class="value"
-              >{{ config.contact.email }} | {{ config.contact.phone }}</span
-            >
+            <span class="value">{{ config.contact.email }} | {{ config.contact.phone }}</span>
           </div>
         </section>
 
         <section class="review-section">
           <h2>Features</h2>
           <div class="features-list">
-            <span [class.enabled]="config.features.booking.enabled"
-              >Booking</span
-            >
-            <span [class.enabled]="config.features.clientPortal.enabled"
-              >Client Portal</span
-            >
-            <span [class.enabled]="config.features.clientTasks.enabled"
-              >Client Tasks</span
-            >
-            <span [class.enabled]="config.features.invoices.enabled"
-              >Invoices</span
-            >
-            <span [class.enabled]="config.features.testimonials.enabled"
-              >Testimonials</span
-            >
+            <span [class.enabled]="config.features.booking.enabled">Booking</span>
+            <span [class.enabled]="config.features.clientPortal.enabled">Client Portal</span>
+            <span [class.enabled]="config.features.clientTasks.enabled">Client Tasks</span>
+            <span [class.enabled]="config.features.invoices.enabled">Invoices</span>
+            <span [class.enabled]="config.features.testimonials.enabled">Testimonials</span>
           </div>
         </section>
 
         <section class="review-section">
           <h2>Services ({{ config.services.length }})</h2>
           @for (service of config.services; track service.id) {
-          <div class="service-item">
-            <span>{{ service.name }}</span>
-            <span>\${{ service.price }} / {{ service.duration }}min</span>
-          </div>
+            <div class="service-item">
+              <span>{{ service.name }}</span>
+              <span>\${{ service.price }} / {{ service.duration }}min</span>
+            </div>
           } @empty {
-          <p class="empty">No services configured</p>
+            <p class="empty">No services configured</p>
           }
         </section>
 
@@ -86,10 +74,7 @@ import { BusinessConfigStateService } from '../../state/business-config-state.se
           <div class="review-item">
             <span class="label">Primary Color</span>
             <span class="value">
-              <span
-                class="color-dot"
-                [style.background]="config.theme.primaryColor"
-              ></span>
+              <span class="color-dot" [style.background]="config.theme.primaryColor"></span>
               {{ config.theme.primaryColor }}
             </span>
           </div>

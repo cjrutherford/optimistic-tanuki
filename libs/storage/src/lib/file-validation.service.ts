@@ -101,7 +101,7 @@ export class FileValidationService {
     filename: string,
     mimeType: string,
     sizeBytes: number,
-    fileType: 'image' | 'document' | 'video' | 'audio'
+    fileType: 'image' | 'document' | 'video' | 'audio',
   ): FileValidationResult {
     const errors: string[] = [];
     const config = this.fileTypeConfigs[fileType];
@@ -116,8 +116,8 @@ export class FileValidationService {
     if (!config.allowedExtensions.includes(extension.toLowerCase())) {
       errors.push(
         `File extension ${extension} not allowed. Allowed extensions: ${config.allowedExtensions.join(
-          ', '
-        )}`
+          ', ',
+        )}`,
       );
     }
 
@@ -125,8 +125,8 @@ export class FileValidationService {
     if (!config.allowedMimeTypes.includes(mimeType.toLowerCase())) {
       errors.push(
         `MIME type ${mimeType} not allowed. Allowed types: ${config.allowedMimeTypes.join(
-          ', '
-        )}`
+          ', ',
+        )}`,
       );
     }
 
@@ -135,7 +135,7 @@ export class FileValidationService {
       const maxSizeMB = (config.maxSizeBytes / (1024 * 1024)).toFixed(2);
       const actualSizeMB = (sizeBytes / (1024 * 1024)).toFixed(2);
       errors.push(
-        `File size ${actualSizeMB}MB exceeds maximum allowed size of ${maxSizeMB}MB`
+        `File size ${actualSizeMB}MB exceeds maximum allowed size of ${maxSizeMB}MB`,
       );
     }
 
@@ -147,7 +147,7 @@ export class FileValidationService {
 
     if (errors.length > 0) {
       this.logger.warn(
-        `File validation failed for ${filename}: ${errors.join(', ')}`
+        `File validation failed for ${filename}: ${errors.join(', ')}`,
       );
       return { isValid: false, errors };
     }
@@ -217,7 +217,7 @@ export class FileValidationService {
    * Get allowed MIME types for a file type
    */
   getAllowedMimeTypes(
-    fileType: 'image' | 'document' | 'video' | 'audio'
+    fileType: 'image' | 'document' | 'video' | 'audio',
   ): string[] {
     return this.fileTypeConfigs[fileType]?.allowedMimeTypes || [];
   }

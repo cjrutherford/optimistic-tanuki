@@ -10,19 +10,19 @@ export class InvoicePreviewService {
     const scope = assertBillingScope(input);
     const includedQuantity = Math.min(
       input.usageQuantity,
-      input.meter.includedQuantity
+      input.meter.includedQuantity,
     );
     const remainingAfterIncluded = Math.max(
       input.usageQuantity - includedQuantity,
-      0
+      0,
     );
     const usageBlockQuantity = Math.min(
       remainingAfterIncluded,
-      input.usageBlockBalance
+      input.usageBlockBalance,
     );
     const overageQuantity = Math.max(
       remainingAfterIncluded - usageBlockQuantity,
-      0
+      0,
     );
 
     const lines: InvoiceLine[] = [

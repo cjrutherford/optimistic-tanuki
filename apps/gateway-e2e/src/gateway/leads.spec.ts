@@ -159,9 +159,7 @@ describe('Leads API E2E Tests', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.data)).toBe(true);
-      expect(
-        res.data.some((topic: { id: string }) => topic.id === topicId)
-      ).toBe(true);
+      expect(res.data.some((topic: { id: string }) => topic.id === topicId)).toBe(true);
     });
 
     it('should toggle a topic', async () => {

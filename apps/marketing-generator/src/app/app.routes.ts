@@ -12,9 +12,7 @@ export const appRoutes: Route[] = [
   {
     path: 'create',
     loadComponent: () =>
-      import('./pages/create-page.component').then(
-        (m) => m.CreatePageComponent
-      ),
+      import('./pages/create-page.component').then((m) => m.CreatePageComponent),
     title: 'Build Marketing Workbench',
   },
   {

@@ -39,504 +39,386 @@ import {
   ],
   template: `
     <ng-template #renderMotion let-section>
-      @if (motion(section); as motionConfig) { @switch (motionConfig.kind) {
-      @case ('particle-veil') {
-      <otui-particle-veil
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 18"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.65"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-particle-veil>
-      } @case ('parallax-grid-warp') {
-      <otui-parallax-grid-warp
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.7"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-parallax-grid-warp>
-      } @case ('aurora-ribbon') {
-      <otui-aurora-ribbon
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 3"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.72"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-aurora-ribbon>
-      } @case ('glass-fog') {
-      <otui-glass-fog
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 4"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.66"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-glass-fog>
-      } @case ('pulse-rings') {
-      <otui-pulse-rings
-        [height]="motionHeight(motionConfig)"
-        [ringCount]="motionConfig.ringCount ?? 4"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.7"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-pulse-rings>
-      } @case ('signal-mesh') {
-      <otui-signal-mesh
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 5"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.68"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-signal-mesh>
-      } @case ('topographic-drift') {
-      <otui-topographic-drift
-        [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.64"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-      ></otui-topographic-drift>
-      } @case ('shimmer-beam') {
-      <otui-shimmer-beam
-        [height]="motionHeight(motionConfig)"
-        [speed]="motionConfig.speed ?? 1"
-        [intensity]="motionConfig.intensity ?? 0.65"
-        [reducedMotion]="motionConfig.reducedMotion ?? false"
-        [direction]="motionConfig.direction ?? 'diagonal'"
-      ></otui-shimmer-beam>
-      } } }
+      @if (motion(section); as motionConfig) {
+        @switch (motionConfig.kind) {
+          @case ('particle-veil') {
+            <otui-particle-veil
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 18"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.65"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-particle-veil>
+          }
+          @case ('parallax-grid-warp') {
+            <otui-parallax-grid-warp
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 6"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.7"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-parallax-grid-warp>
+          }
+          @case ('aurora-ribbon') {
+            <otui-aurora-ribbon
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 3"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.72"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-aurora-ribbon>
+          }
+          @case ('glass-fog') {
+            <otui-glass-fog
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 4"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.66"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-glass-fog>
+          }
+          @case ('pulse-rings') {
+            <otui-pulse-rings
+              [height]="motionHeight(motionConfig)"
+              [ringCount]="motionConfig.ringCount ?? 4"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.7"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-pulse-rings>
+          }
+          @case ('signal-mesh') {
+            <otui-signal-mesh
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 5"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.68"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-signal-mesh>
+          }
+          @case ('topographic-drift') {
+            <otui-topographic-drift
+              [height]="motionHeight(motionConfig)"
+              [density]="motionConfig.density ?? 6"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.64"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+            ></otui-topographic-drift>
+          }
+          @case ('shimmer-beam') {
+            <otui-shimmer-beam
+              [height]="motionHeight(motionConfig)"
+              [speed]="motionConfig.speed ?? 1"
+              [intensity]="motionConfig.intensity ?? 0.65"
+              [reducedMotion]="motionConfig.reducedMotion ?? false"
+              [direction]="motionConfig.direction ?? 'diagonal'"
+            ></otui-shimmer-beam>
+          }
+        }
+      }
     </ng-template>
 
     <ng-template #renderSection let-section>
-      @switch (section.type) { @case ('hero') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        <section class="hero" id="about">
-          <div class="hero-motion">
-            <ng-container
-              [ngTemplateOutlet]="renderMotion"
-              [ngTemplateOutletContext]="{ $implicit: section }"
-            ></ng-container>
+      @switch (section.type) {
+        @case ('hero') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            <section class="hero" id="about">
+              <div class="hero-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+              <div class="hero-content">
+                <otui-card class="copy entrance" style="animation-delay: 0.1s">
+                  <p class="eyebrow">{{ site().brand.businessName }}</p>
+                  <h1>{{ site().brand.tagline }}</h1>
+                  <p class="lede">{{ site().brand.intro }}</p>
+                  <p class="body">{{ site().brand.longBio }}</p>
+                  <div class="actions">
+                    @if (site().features.booking.enabled) {
+                      <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+                    }
+                    @if (site().features.clientPortal.enabled) {
+                      <a class="cta-secondary" routerLink="/client">Client Portal</a>
+                    }
+                  </div>
+                </otui-card>
+                <otui-card class="profile entrance" style="animation-delay: 0.25s">
+                  <div class="profile-header">
+                    <span class="avatar-mark">{{ site().brand.monogram }}</span>
+                    <div>
+                      <p class="eyebrow">Owner</p>
+                      <h2>{{ ownerName() }}</h2>
+                    </div>
+                  </div>
+                  <ul class="credential-list">
+                    @for (credential of site().brand.credentials; track credential) {
+                      <li>{{ credential }}</li>
+                    }
+                  </ul>
+                  <div class="specialties">
+                    @for (item of site().brand.specializations; track item) {
+                      <span data-theme-aware="true">{{ item }}</span>
+                    }
+                  </div>
+                </otui-card>
+              </div>
+            </section>
           </div>
-          <div class="hero-content">
-            <otui-card class="copy entrance" style="animation-delay: 0.1s">
-              <p class="eyebrow">{{ site().brand.businessName }}</p>
-              <h1>{{ site().brand.tagline }}</h1>
-              <p class="lede">{{ site().brand.intro }}</p>
+        }
+        @case ('about') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" style="animation-delay: 0.18s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ site().brand.businessName }}</h2>
+              </div>
+              <p class="body">{{ ownerName() }}</p>
               <p class="body">{{ site().brand.longBio }}</p>
-              <div class="actions">
-                @if (site().features.booking.enabled) {
-                <a class="cta-primary" routerLink="/book">{{
-                  site().contact.consultationLabel
-                }}</a>
-                } @if (site().features.clientPortal.enabled) {
-                <a class="cta-secondary" routerLink="/client">Client Portal</a>
+            </otui-card>
+          </div>
+        }
+        @case ('services') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="entrance section-surface" id="results" style="animation-delay: 0.2s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Choose a starting point, then build the right engagement from there.</h2>
+              </div>
+              <div class="offer-stack">
+                @for (offer of offers(); track offer.id; let i = $index) {
+                  <div class="offer entrance" [style.animation-delay]="0.25 + i * 0.06 + 's'">
+                    <div class="offer-header">
+                      <span class="offer-badge">{{ offer.serviceType }}</span>
+                      <h3>{{ offer.label }}</h3>
+                    </div>
+                    <p>{{ offer.description }}</p>
+                    <div class="offer-rate">
+                      <span>From</span>
+                      <strong>{{ '$' + offer.startingRate }}<small>/hr</small></strong>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="offer entrance" style="animation-delay: 0.25s">
+                    <h3>Consultation-led services</h3>
+                    <p>Availability-backed service options will appear here as the schedule is published.</p>
+                  </div>
                 }
               </div>
             </otui-card>
-            <otui-card class="profile entrance" style="animation-delay: 0.25s">
-              <div class="profile-header">
-                <span class="avatar-mark">{{ site().brand.monogram }}</span>
-                <div>
-                  <p class="eyebrow">Owner</p>
-                  <h2>{{ ownerName() }}</h2>
+          </div>
+        }
+        @case ('testimonials') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="entrance section-surface" style="animation-delay: 0.15s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Services that fit real schedules and still move the needle.</h2>
+              </div>
+              <div class="testimonial-stack">
+                @for (testimonial of site().testimonials; track testimonial.clientName; let i = $index) {
+                  <blockquote class="testimonial entrance" [style.animation-delay]="0.2 + i * 0.08 + 's'">
+                    <p>"{{ testimonial.quote }}"</p>
+                    <footer>
+                      <strong>{{ testimonial.clientName }}</strong>
+                      <span>{{ testimonial.clientDetail }}</span>
+                    </footer>
+                  </blockquote>
+                }
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('booking') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" style="animation-delay: 0.24s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Book the right starting point when you are ready.</h2>
+              </div>
+              <div class="actions">
+                <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+              </div>
+            </otui-card>
+          </div>
+        }
+        @case ('contact') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="contact entrance section-surface" id="contact" style="animation-delay: 0.3s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>Reach out when you are ready to talk goals, schedule, and fit.</h2>
+              </div>
+              <div class="contact-grid">
+                <div class="contact-info">
+                  <div class="contact-row">
+                    <span class="contact-label">Email</span>
+                    <strong>{{ site().contact.email }}</strong>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Phone</span>
+                    <span>{{ site().contact.phone }}</span>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Location</span>
+                    <span>{{ site().contact.location }}</span>
+                  </div>
+                </div>
+                <div class="actions">
+                  @if (site().features.booking.enabled) {
+                    <a class="cta-primary" routerLink="/book">{{ site().contact.consultationLabel }}</a>
+                  }
+                  @if (site().features.clientPortal.enabled) {
+                    <a class="cta-secondary" routerLink="/client">Client Login</a>
+                  }
                 </div>
               </div>
-              <ul class="credential-list">
-                @for (credential of site().brand.credentials; track credential)
-                {
-                <li>{{ credential }}</li>
-                }
-              </ul>
-              <div class="specialties">
-                @for (item of site().brand.specializations; track item) {
-                <span data-theme-aware="true">{{ item }}</span>
+            </otui-card>
+          </div>
+        }
+        @case ('custom') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="custom-section entrance section-surface" [attr.data-section-id]="section.id" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              @if (section.body) {
+                <p class="body">{{ section.body }}</p>
+              }
+              @if (section.ctaLabel && section.ctaHref) {
+                <div class="actions">
+                  <a class="cta-primary" [routerLink]="section.ctaHref">{{ section.ctaLabel }}</a>
+                </div>
+              }
+            </otui-card>
+          </div>
+        }
+        @case ('image') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="image-section entrance section-surface" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              @if (section.image?.src) {
+                <figure class="media-figure" [class]="'aspect-' + (section.image?.aspect ?? 'landscape')">
+                  <img
+                    [src]="section.image?.src"
+                    [alt]="section.image?.alt || section.title"
+                    [style.object-fit]="section.image?.fit ?? 'cover'"
+                    [style.object-position]="mediaObjectPosition(section.image)"
+                  />
+                  @if (section.image?.caption) {
+                    <figcaption>{{ section.image?.caption }}</figcaption>
+                  }
+                </figure>
+              }
+            </otui-card>
+          </div>
+        }
+        @case ('gallery') {
+          <div class="layout-item section-shell" [attr.data-section-id]="section.id" [attr.data-motion-kind]="section.motion?.kind ?? 'none'">
+            @if (motion(section)) {
+              <div class="section-motion">
+                <ng-container [ngTemplateOutlet]="renderMotion" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+              </div>
+            }
+            <otui-card class="gallery-section entrance section-surface" style="animation-delay: 0.22s">
+              <div class="section-head">
+                <p class="eyebrow">{{ section.title }}</p>
+                <h2>{{ section.title }}</h2>
+              </div>
+              <div
+                class="gallery-grid"
+                [class.gallery-masonry]="section.gallery?.style === 'masonry'"
+                [style.grid-template-columns]="'repeat(' + (section.gallery?.columns ?? 3) + ', minmax(0, 1fr))'"
+              >
+                @for (item of section.gallery?.items ?? []; track item.src + '-' + $index) {
+                  @if (item.src) {
+                    <figure class="gallery-item" [class]="'aspect-' + (item.aspect ?? 'square')">
+                      <img
+                        [src]="item.src"
+                        [alt]="item.alt || section.title"
+                        [style.object-fit]="item.fit ?? 'cover'"
+                        [style.object-position]="mediaObjectPosition(item)"
+                      />
+                      @if (item.caption) {
+                        <figcaption>{{ item.caption }}</figcaption>
+                      }
+                    </figure>
+                  }
                 }
               </div>
             </otui-card>
           </div>
-        </section>
-      </div>
-      } @case ('about') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
         }
-        <otui-card
-          class="contact entrance section-surface"
-          style="animation-delay: 0.18s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>{{ site().brand.businessName }}</h2>
-          </div>
-          <p class="body">{{ ownerName() }}</p>
-          <p class="body">{{ site().brand.longBio }}</p>
-        </otui-card>
-      </div>
-      } @case ('services') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="entrance section-surface"
-          id="results"
-          style="animation-delay: 0.2s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>
-              Choose a starting point, then build the right engagement from
-              there.
-            </h2>
-          </div>
-          <div class="offer-stack">
-            @for (offer of offers(); track offer.id; let i = $index) {
-            <div
-              class="offer entrance"
-              [style.animation-delay]="0.25 + i * 0.06 + 's'"
-            >
-              <div class="offer-header">
-                <span class="offer-badge">{{ offer.serviceType }}</span>
-                <h3>{{ offer.label }}</h3>
-              </div>
-              <p>{{ offer.description }}</p>
-              <div class="offer-rate">
-                <span>From</span>
-                <strong
-                  >{{ '$' + offer.startingRate }}<small>/hr</small></strong
-                >
-              </div>
-            </div>
-            } @empty {
-            <div class="offer entrance" style="animation-delay: 0.25s">
-              <h3>Consultation-led services</h3>
-              <p>
-                Availability-backed service options will appear here as the
-                schedule is published.
-              </p>
-            </div>
-            }
-          </div>
-        </otui-card>
-      </div>
-      } @case ('testimonials') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="entrance section-surface"
-          style="animation-delay: 0.15s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>Services that fit real schedules and still move the needle.</h2>
-          </div>
-          <div class="testimonial-stack">
-            @for (testimonial of site().testimonials; track
-            testimonial.clientName; let i = $index) {
-            <blockquote
-              class="testimonial entrance"
-              [style.animation-delay]="0.2 + i * 0.08 + 's'"
-            >
-              <p>"{{ testimonial.quote }}"</p>
-              <footer>
-                <strong>{{ testimonial.clientName }}</strong>
-                <span>{{ testimonial.clientDetail }}</span>
-              </footer>
-            </blockquote>
-            }
-          </div>
-        </otui-card>
-      </div>
-      } @case ('booking') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="contact entrance section-surface"
-          style="animation-delay: 0.24s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>Book the right starting point when you are ready.</h2>
-          </div>
-          <div class="actions">
-            <a class="cta-primary" routerLink="/book">{{
-              site().contact.consultationLabel
-            }}</a>
-          </div>
-        </otui-card>
-      </div>
-      } @case ('contact') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="contact entrance section-surface"
-          id="contact"
-          style="animation-delay: 0.3s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>
-              Reach out when you are ready to talk goals, schedule, and fit.
-            </h2>
-          </div>
-          <div class="contact-grid">
-            <div class="contact-info">
-              <div class="contact-row">
-                <span class="contact-label">Email</span>
-                <strong>{{ site().contact.email }}</strong>
-              </div>
-              <div class="contact-row">
-                <span class="contact-label">Phone</span>
-                <span>{{ site().contact.phone }}</span>
-              </div>
-              <div class="contact-row">
-                <span class="contact-label">Location</span>
-                <span>{{ site().contact.location }}</span>
-              </div>
-            </div>
-            <div class="actions">
-              @if (site().features.booking.enabled) {
-              <a class="cta-primary" routerLink="/book">{{
-                site().contact.consultationLabel
-              }}</a>
-              } @if (site().features.clientPortal.enabled) {
-              <a class="cta-secondary" routerLink="/client">Client Login</a>
-              }
-            </div>
-          </div>
-        </otui-card>
-      </div>
-      } @case ('custom') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="custom-section entrance section-surface"
-          [attr.data-section-id]="section.id"
-          style="animation-delay: 0.22s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>{{ section.title }}</h2>
-          </div>
-          @if (section.body) {
-          <p class="body">{{ section.body }}</p>
-          } @if (section.ctaLabel && section.ctaHref) {
-          <div class="actions">
-            <a class="cta-primary" [routerLink]="section.ctaHref">{{
-              section.ctaLabel
-            }}</a>
-          </div>
-          }
-        </otui-card>
-      </div>
-      } @case ('image') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="image-section entrance section-surface"
-          style="animation-delay: 0.22s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>{{ section.title }}</h2>
-          </div>
-          @if (section.image?.src) {
-          <figure
-            class="media-figure"
-            [class]="'aspect-' + (section.image?.aspect ?? 'landscape')"
-          >
-            <img
-              [src]="section.image?.src"
-              [alt]="section.image?.alt || section.title"
-              [style.object-fit]="section.image?.fit ?? 'cover'"
-              [style.object-position]="mediaObjectPosition(section.image)"
-            />
-            @if (section.image?.caption) {
-            <figcaption>{{ section.image?.caption }}</figcaption>
-            }
-          </figure>
-          }
-        </otui-card>
-      </div>
-      } @case ('gallery') {
-      <div
-        class="layout-item section-shell"
-        [attr.data-section-id]="section.id"
-        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
-      >
-        @if (motion(section)) {
-        <div class="section-motion">
-          <ng-container
-            [ngTemplateOutlet]="renderMotion"
-            [ngTemplateOutletContext]="{ $implicit: section }"
-          ></ng-container>
-        </div>
-        }
-        <otui-card
-          class="gallery-section entrance section-surface"
-          style="animation-delay: 0.22s"
-        >
-          <div class="section-head">
-            <p class="eyebrow">{{ section.title }}</p>
-            <h2>{{ section.title }}</h2>
-          </div>
-          <div
-            class="gallery-grid"
-            [class.gallery-masonry]="section.gallery?.style === 'masonry'"
-            [style.grid-template-columns]="
-              'repeat(' + (section.gallery?.columns ?? 3) + ', minmax(0, 1fr))'
-            "
-          >
-            @for (item of section.gallery?.items ?? []; track item.src + '-' +
-            $index) { @if (item.src) {
-            <figure
-              class="gallery-item"
-              [class]="'aspect-' + (item.aspect ?? 'square')"
-            >
-              <img
-                [src]="item.src"
-                [alt]="item.alt || section.title"
-                [style.object-fit]="item.fit ?? 'cover'"
-                [style.object-position]="mediaObjectPosition(item)"
-              />
-              @if (item.caption) {
-              <figcaption>{{ item.caption }}</figcaption>
-              }
-            </figure>
-            } }
-          </div>
-        </otui-card>
-      </div>
-      } }
+      }
     </ng-template>
 
     @if (activeLayout() === 'single-column') {
-    <div class="landing-shell layout-single-column">
-      <div class="layout-column" data-layout-zone="single-column:main">
-        @for (section of visibleSections(); track section.id) {
-        <ng-container
-          [ngTemplateOutlet]="renderSection"
-          [ngTemplateOutletContext]="{ $implicit: section }"
-        ></ng-container>
-        }
+      <div class="landing-shell layout-single-column">
+        <div class="layout-column" data-layout-zone="single-column:main">
+          @for (section of visibleSections(); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
       </div>
-    </div>
     } @else if (activeLayout() === 'split') {
-    <div class="landing-shell layout-split">
-      <div class="layout-column" data-layout-zone="split:primary">
-        @for (section of sectionsForZone('split', 'primary'); track section.id)
-        {
-        <ng-container
-          [ngTemplateOutlet]="renderSection"
-          [ngTemplateOutletContext]="{ $implicit: section }"
-        ></ng-container>
-        }
+      <div class="landing-shell layout-split">
+        <div class="layout-column" data-layout-zone="split:primary">
+          @for (section of sectionsForZone('split', 'primary'); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
+        <div class="layout-column" data-layout-zone="split:secondary">
+          @for (section of sectionsForZone('split', 'secondary'); track section.id) {
+            <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+          }
+        </div>
       </div>
-      <div class="layout-column" data-layout-zone="split:secondary">
-        @for (section of sectionsForZone('split', 'secondary'); track
-        section.id) {
-        <ng-container
-          [ngTemplateOutlet]="renderSection"
-          [ngTemplateOutletContext]="{ $implicit: section }"
-        ></ng-container>
-        }
-      </div>
-    </div>
     } @else {
-    <div class="landing-shell layout-grid">
-      @for (zone of gridZones; track zone) {
-      <div
-        class="layout-column"
-        [class]="'grid-zone-' + zone"
-        [attr.data-layout-zone]="'grid:' + zone"
-      >
-        @for (section of sectionsForZone('grid', zone); track section.id) {
-        <ng-container
-          [ngTemplateOutlet]="renderSection"
-          [ngTemplateOutletContext]="{ $implicit: section }"
-        ></ng-container>
+      <div class="landing-shell layout-grid">
+        @for (zone of gridZones; track zone) {
+          <div class="layout-column" [class]="'grid-zone-' + zone" [attr.data-layout-zone]="'grid:' + zone">
+            @for (section of sectionsForZone('grid', zone); track section.id) {
+              <ng-container [ngTemplateOutlet]="renderSection" [ngTemplateOutletContext]="{ $implicit: section }"></ng-container>
+            }
+          </div>
         }
       </div>
-      }
-    </div>
     }
   `,
   styles: [
@@ -587,11 +469,7 @@ import {
       .section-surface {
         position: relative;
         z-index: 1;
-        background: color-mix(
-          in srgb,
-          var(--background, #ffffff) 90%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--background, #ffffff) 90%, transparent);
         backdrop-filter: blur(10px);
       }
 
@@ -634,10 +512,7 @@ import {
         border-radius: var(--personality-card-radius, 1.5rem);
         overflow: hidden;
         border: var(--personality-border-width, 1px) solid var(--border);
-        box-shadow: var(
-          --personality-card-shadow,
-          0 18px 44px rgba(15, 23, 42, 0.06)
-        );
+        box-shadow: var(--personality-card-shadow, 0 18px 44px rgba(15, 23, 42, 0.06));
       }
 
       .hero-motion {
@@ -665,11 +540,7 @@ import {
         display: grid;
         gap: 1rem;
         align-content: start;
-        background: color-mix(
-          in srgb,
-          var(--background, #ffffff) 86%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--background, #ffffff) 86%, transparent);
         backdrop-filter: blur(12px);
       }
 
@@ -688,12 +559,7 @@ import {
       h2,
       h3 {
         margin: 0;
-        font-family: var(
-          --font-heading,
-          'Source Sans Pro',
-          system-ui,
-          sans-serif
-        );
+        font-family: var(--font-heading, 'Source Sans Pro', system-ui, sans-serif);
         font-weight: 700;
         color: var(--foreground, #0f172a);
       }
@@ -755,13 +621,11 @@ import {
       .cta-primary {
         background: var(--primary, #1f7a63);
         color: var(--primary-foreground, white);
-        box-shadow: 0 6px 18px
-          color-mix(in srgb, var(--primary) 24%, transparent);
+        box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 24%, transparent);
       }
 
       .cta-primary:hover {
-        box-shadow: 0 10px 28px
-          color-mix(in srgb, var(--primary) 32%, transparent);
+        box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 32%, transparent);
         background: color-mix(in srgb, var(--primary) 92%, black);
       }
 
@@ -780,11 +644,7 @@ import {
         display: grid;
         gap: 1rem;
         align-content: start;
-        background: color-mix(
-          in srgb,
-          var(--background, #ffffff) 86%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--background, #ffffff) 86%, transparent);
         backdrop-filter: blur(12px);
       }
 
@@ -808,8 +668,7 @@ import {
           var(--primary, #1f7a63),
           color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
         );
-        box-shadow: 0 4px 12px
-          color-mix(in srgb, var(--primary) 30%, transparent);
+        box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 30%, transparent);
       }
 
       .credential-list {
@@ -829,17 +688,12 @@ import {
       .specialties span {
         padding: 0.4rem 0.85rem;
         border-radius: var(--personality-button-radius, 999px);
-        background: color-mix(
-          in srgb,
-          var(--surface, var(--background, #ffffff)) 82%,
-          var(--primary, #1f7a63) 18%
-        );
+        background: color-mix(in srgb, var(--surface, var(--background, #ffffff)) 82%, var(--primary, #1f7a63) 18%);
         color: color-mix(in srgb, var(--foreground, #0f172a) 88%, transparent);
         font-size: 0.85rem;
         font-weight: 600;
         border: var(--personality-border-width, 1px) solid var(--border);
-        box-shadow: inset 0 1px 0
-          color-mix(in srgb, var(--primary) 10%, transparent);
+        box-shadow: inset 0 1px 0 color-mix(in srgb, var(--primary) 10%, transparent);
       }
 
       .proof-grid {
@@ -870,8 +724,7 @@ import {
 
       .testimonial:hover {
         transform: translateY(-3px);
-        box-shadow: 0 12px 32px
-          color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
+        box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
       }
 
       .testimonial p {
@@ -903,15 +756,13 @@ import {
         border: var(--personality-border-width, 1px) solid var(--border);
         border-radius: var(--personality-card-radius, 1rem);
         background: var(--background);
-        transition: transform 0.25s ease, box-shadow 0.25s ease,
-          border-color 0.25s ease;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
       }
 
       .offer:hover {
         transform: translateY(-3px);
         border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
-        box-shadow: 0 12px 32px
-          color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
+        box-shadow: 0 12px 32px color-mix(in srgb, var(--primary) 8%, rgba(0, 0, 0, 0.06));
       }
 
       .offer-header {
@@ -924,8 +775,7 @@ import {
         padding: 0.25rem 0.65rem;
         border-radius: var(--personality-button-radius, 999px);
         background: color-mix(in srgb, var(--primary) 12%, transparent);
-        border: var(--personality-border-width, 1px) solid
-          color-mix(in srgb, var(--primary) 24%, transparent);
+        border: var(--personality-border-width, 1px) solid color-mix(in srgb, var(--primary) 24%, transparent);
       }
 
       .offer-rate {
@@ -973,11 +823,7 @@ import {
         overflow: hidden;
         border-radius: var(--personality-card-radius, 1rem);
         border: var(--personality-border-width, 1px) solid var(--border);
-        background: color-mix(
-          in srgb,
-          var(--surface, #fff) 84%,
-          var(--background, #fff)
-        );
+        background: color-mix(in srgb, var(--surface, #fff) 84%, var(--background, #fff));
       }
 
       .media-figure img,
@@ -1068,17 +914,9 @@ export class BusinessLandingPageComponent {
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   readonly site = this.siteConfig.site;
   readonly activeLayout = computed(() => this.site().landingPage.layout);
-  readonly layoutClass = computed(
-    () => `layout-${this.site().landingPage.layout}`
-  );
+  readonly layoutClass = computed(() => `layout-${this.site().landingPage.layout}`);
   readonly offers = toSignal(this.api.getOffers(), { initialValue: [] });
-  readonly gridZones = [
-    'hero-wide',
-    'top-left',
-    'top-right',
-    'bottom-left',
-    'bottom-right',
-  ];
+  readonly gridZones = ['hero-wide', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
   readonly visibleSections = computed(() =>
     [...this.site().landingPage.sections]
       .sort((a, b) => a.order - b.order)
@@ -1087,18 +925,11 @@ export class BusinessLandingPageComponent {
   );
 
   ownerName(): string {
-    return (
-      this.site().brand.ownerName ||
-      this.site().brand.trainerName ||
-      'Business Owner'
-    );
+    return this.site().brand.ownerName || this.site().brand.trainerName || 'Business Owner';
   }
 
   motion(section: LandingSection): LandingSectionMotionConfig | null {
-    if (
-      section.type === 'hero' &&
-      (!section.motion?.kind || section.motion.kind === 'none')
-    ) {
+    if (section.type === 'hero' && (!section.motion?.kind || section.motion.kind === 'none')) {
       return {
         kind: 'particle-veil',
         density: 18,
@@ -1109,9 +940,7 @@ export class BusinessLandingPageComponent {
       };
     }
 
-    return section.motion?.kind && section.motion.kind !== 'none'
-      ? section.motion
-      : null;
+    return section.motion?.kind && section.motion.kind !== 'none' ? section.motion : null;
   }
 
   motionHeight(motion: LandingSectionMotionConfig): string {
@@ -1153,10 +982,8 @@ export class BusinessLandingPageComponent {
   sectionsForZone(layout: 'split' | 'grid', zoneId: string) {
     return this.visibleSections().filter((section) =>
       layout === 'split'
-        ? (section.layoutPlacement?.split ??
-            this.defaultSplitSlot(section.id)) === zoneId
-        : (section.layoutPlacement?.grid ??
-            this.defaultGridSlot(section.id)) === zoneId
+        ? (section.layoutPlacement?.split ?? this.defaultSplitSlot(section.id)) === zoneId
+        : (section.layoutPlacement?.grid ?? this.defaultGridSlot(section.id)) === zoneId
     );
   }
 
@@ -1165,23 +992,19 @@ export class BusinessLandingPageComponent {
   }
 
   private defaultSplitSlot(sectionId: string): 'primary' | 'secondary' {
-    return ['hero', 'about', 'services'].includes(sectionId)
-      ? 'primary'
-      : 'secondary';
+    return ['hero', 'about', 'services'].includes(sectionId) ? 'primary' : 'secondary';
   }
 
   private defaultGridSlot(sectionId: string): string {
     return (
-      (
-        {
-          hero: 'hero-wide',
-          about: 'top-left',
-          services: 'top-right',
-          testimonials: 'bottom-left',
-          contact: 'bottom-right',
-          booking: 'bottom-right',
-        } as Record<string, string>
-      )[sectionId] ?? 'bottom-right'
-    );
+      {
+        hero: 'hero-wide',
+        about: 'top-left',
+        services: 'top-right',
+        testimonials: 'bottom-left',
+        contact: 'bottom-right',
+        booking: 'bottom-right',
+      } as Record<string, string>
+    )[sectionId] ?? 'bottom-right';
   }
 }

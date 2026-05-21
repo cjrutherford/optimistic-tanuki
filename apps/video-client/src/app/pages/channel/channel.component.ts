@@ -118,8 +118,8 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
                 </p>
                 <h3>{{ block.title }}</h3>
                 <p>
-                  {{ block.startsAt | date : 'medium' }} to
-                  {{ block.endsAt | date : 'medium' }}
+                  {{ block.startsAt | date: 'medium' }} to
+                  {{ block.endsAt | date: 'medium' }}
                 </p>
                 <p>Status: {{ block.status }}</p>
               </article>
@@ -244,7 +244,8 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
         padding: 1.5rem;
         margin-bottom: 1rem;
         color: var(--foreground);
-        transition: transform var(--animation-duration-fast, 0.15s)
+        transition:
+          transform var(--animation-duration-fast, 0.15s)
             var(--animation-easing, ease),
           box-shadow var(--animation-duration-fast, 0.15s)
             var(--animation-easing, ease);
@@ -307,7 +308,7 @@ export class ChannelComponent implements OnInit {
 
   constructor(
     private route: ActivatedRoute,
-    private videoService: VideoService
+    private videoService: VideoService,
   ) {}
 
   ngOnInit() {

@@ -35,9 +35,7 @@ export class RecurringItemService {
     });
   }
 
-  async create(
-    createRecurringItemDto: CreateRecurringItemDto
-  ): Promise<RecurringItem> {
+  async create(createRecurringItemDto: CreateRecurringItemDto): Promise<RecurringItem> {
     const recurringItem = this.recurringItemRepo.create({
       ...createRecurringItemDto,
       name: this.sanitize(createRecurringItemDto.name),
@@ -53,9 +51,7 @@ export class RecurringItemService {
     scope?: FinanceScope,
     options?: FindManyOptions<RecurringItem>
   ): Promise<RecurringItem[]> {
-    return await this.recurringItemRepo.find(
-      withScopedFindManyOptions(scope, options)
-    );
+    return await this.recurringItemRepo.find(withScopedFindManyOptions(scope, options));
   }
 
   async findOne(
@@ -101,9 +97,7 @@ export class RecurringItemService {
       updatedData.status = updateRecurringItemDto.status;
     }
     if (updateRecurringItemDto.payeeOrVendor !== undefined) {
-      updatedData.payeeOrVendor = this.sanitize(
-        updateRecurringItemDto.payeeOrVendor
-      );
+      updatedData.payeeOrVendor = this.sanitize(updateRecurringItemDto.payeeOrVendor);
     }
     if (updateRecurringItemDto.notes !== undefined) {
       updatedData.notes = this.sanitize(updateRecurringItemDto.notes);

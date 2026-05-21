@@ -43,23 +43,17 @@ export class BusinessAuthService {
   readonly isAuthenticated = computed(() => !!this._user());
   readonly token = computed(() => this._user()?.token ?? null);
 
-  private readonly _clientUser = signal<BusinessAuthUser | null>(
-    this.loadClientUser()
-  );
+  private readonly _clientUser = signal<BusinessAuthUser | null>(this.loadClientUser());
 
   readonly clientUser = this._clientUser.asReadonly();
   readonly isClientAuthenticated = computed(() => !!this._clientUser());
   readonly clientToken = computed(() => this._clientUser()?.token ?? null);
 
-  private extractToken(
-    response:
-      | {
-          token?: string;
-          newToken?: string;
-          data?: { token?: string; newToken?: string };
-        }
-      | undefined
-  ): string | null {
+  private extractToken(response: {
+    token?: string;
+    newToken?: string;
+    data?: { token?: string; newToken?: string };
+  } | undefined): string | null {
     return (
       response?.data?.newToken ||
       response?.data?.token ||
@@ -90,8 +84,14 @@ export class BusinessAuthService {
 
     return {
       token: exchangeToken || baseToken,
-      profileId: exchangeClaims.profileId || baseClaims.profileId || '',
-      userId: baseClaims.userId || loginResult.userId || '',
+      profileId:
+        exchangeClaims.profileId ||
+        baseClaims.profileId ||
+        '',
+      userId:
+        baseClaims.userId ||
+        loginResult.userId ||
+        '',
       email: loginResult?.email || baseClaims.email || '',
       name: exchangeClaims.name || baseClaims.name || '',
     };
@@ -192,9 +192,7 @@ export class BusinessAuthService {
       );
   }
 
-  exchangeForAppScope(
-    baseToken: string
-  ): Observable<{ token: string; profileId: string }> {
+  exchangeForAppScope(baseToken: string): Observable<{ token: string; profileId: string }> {
     return this.http
       .post<{ token: string; profileId: string; targetAppId: string }>(
         '/api/authentication/exchange',

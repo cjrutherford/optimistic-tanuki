@@ -11,10 +11,7 @@ import {
   BusinessBusyWindow,
   BusinessSiteConfigStore,
 } from '@optimistic-tanuki/business-data-access';
-import {
-  Availability,
-  AvailabilityOverride,
-} from '@optimistic-tanuki/ui-models';
+import { Availability, AvailabilityOverride } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
 type BookableSlot = {
@@ -29,34 +26,24 @@ type BookableSlot = {
 @Component({
   selector: 'business-booking-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    RouterLink,
-    ButtonComponent,
-    CardComponent,
-  ],
+  imports: [CommonModule, FormsModule, RouterLink, ButtonComponent, CardComponent],
   template: `
     <section class="layout">
       <div class="copy">
         <p class="eyebrow">Relationship Setup</p>
         <h1>{{ site().contact.consultationLabel }}</h1>
         <p>
-          Tell us what you need, what kind of support would help, and when you
-          would like to get started. We review every request before confirming
-          any schedule.
+          Tell us what you need, what kind of support would help, and when you would
+          like to get started. We review every request before confirming any schedule.
         </p>
         <p class="support-copy">
-          Choose any published one-hour time block first, then optionally pair
-          it with the offer that fits your goals.
+          Choose any published one-hour time block first, then optionally pair it with the offer that fits your goals.
         </p>
         <p class="support-copy">
-          Create an account to track your request, schedule sessions faster, and
-          access your client workspace.
+          Create an account to track your request, schedule sessions faster, and access
+          your client workspace.
         </p>
-        <a class="cta-link" [routerLink]="['/client/register']"
-          >Create account</a
-        >
+        <a class="cta-link" [routerLink]="['/client/register']">Create account</a>
       </div>
 
       <otui-card>
@@ -67,28 +54,18 @@ type BookableSlot = {
           </label>
           <label>
             Email
-            <input
-              [(ngModel)]="form.email"
-              name="email"
-              type="email"
-              autocomplete="email"
-            />
+            <input [(ngModel)]="form.email" name="email" type="email" autocomplete="email" />
           </label>
           <label>
             Phone
-            <input
-              [(ngModel)]="form.phone"
-              name="phone"
-              type="tel"
-              autocomplete="tel"
-            />
+            <input [(ngModel)]="form.phone" name="phone" type="tel" autocomplete="tel" />
           </label>
           <label>
             Requested offer
             <select [(ngModel)]="selectedOfferId" name="selectedOfferId">
               <option value="">Choose an offer later</option>
               @for (offer of offers(); track offer.id) {
-              <option [value]="offer.id">{{ offer.label }}</option>
+                <option [value]="offer.id">{{ offer.label }}</option>
               }
             </select>
           </label>
@@ -97,7 +74,7 @@ type BookableSlot = {
             <select [(ngModel)]="selectedSlotKey" name="selectedSlotKey">
               <option value="">Choose a published time</option>
               @for (slot of availableSlots(); track slot.key) {
-              <option [value]="slot.key">{{ slot.label }}</option>
+                <option [value]="slot.key">{{ slot.label }}</option>
               }
             </select>
           </label>
@@ -106,20 +83,17 @@ type BookableSlot = {
             <input [(ngModel)]="form.goal" name="goal" />
           </label>
           @if (!availableSlots().length) {
-          <p class="message">
-            Booking opens when the owner publishes availability. You can still
-            submit a request for follow-up.
-          </p>
+            <p class="message">
+              Booking opens when the owner publishes availability. You can still submit a request for follow-up.
+            </p>
           }
           <label>
             Context
             <textarea [(ngModel)]="form.context" name="context"></textarea>
           </label>
-          <otui-button type="submit" variant="primary"
-            >Send request</otui-button
-          >
+          <otui-button type="submit" variant="primary">Send request</otui-button>
           @if (message()) {
-          <p class="message">{{ message() }}</p>
+            <p class="message">{{ message() }}</p>
           }
         </form>
       </otui-card>
@@ -139,10 +113,7 @@ type BookableSlot = {
         border-radius: var(--personality-card-radius, 1.5rem);
         background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
         padding: var(--personality-card-padding, 1.5rem);
-        box-shadow: var(
-          --personality-card-shadow,
-          0 18px 44px rgba(15, 23, 42, 0.06)
-        );
+        box-shadow: var(--personality-card-shadow, 0 18px 44px rgba(15, 23, 42, 0.06));
       }
       .form {
         display: grid;
@@ -168,12 +139,7 @@ type BookableSlot = {
       }
       h1 {
         margin: 0;
-        font-family: var(
-          --font-heading,
-          'Source Sans Pro',
-          system-ui,
-          sans-serif
-        );
+        font-family: var(--font-heading, 'Source Sans Pro', system-ui, sans-serif);
         font-size: clamp(2.4rem, 5vw, 4rem);
         font-weight: 700;
         line-height: 0.98;
@@ -219,8 +185,7 @@ export class BusinessBookingPageComponent {
   readonly availabilityOverrides = signal<AvailabilityOverride[]>([]);
   readonly busyWindows = signal<BusinessBusyWindow[]>([]);
   readonly selectedOffer = computed(
-    () =>
-      this.offers().find((offer) => offer.id === this.selectedOfferId) ?? null
+    () => this.offers().find((offer) => offer.id === this.selectedOfferId) ?? null
   );
   selectedSlotKey = '';
   selectedOfferId = '';
@@ -243,17 +208,12 @@ export class BusinessBookingPageComponent {
 
   constructor() {
     this.api.getOffers().subscribe((offers) => {
-      const bookableOffers = offers.filter(
-        (offer) => offer.allowOnlineBooking !== false
-      );
+      const bookableOffers = offers.filter((offer) => offer.allowOnlineBooking !== false);
       this.offers.set(bookableOffers);
-      this.selectedOfferId =
-        this.selectedOfferId || bookableOffers[0]?.id || '';
+      this.selectedOfferId = this.selectedOfferId || bookableOffers[0]?.id || '';
     });
     this.api.getAvailabilities().subscribe((availabilities) => {
-      const activeAvailabilities = availabilities.filter(
-        (entry) => entry.isActive !== false
-      );
+      const activeAvailabilities = availabilities.filter((entry) => entry.isActive !== false);
       this.availabilities.set(activeAvailabilities);
       this.selectedSlotKey =
         this.selectedSlotKey ||
@@ -262,12 +222,10 @@ export class BusinessBookingPageComponent {
           this.availabilityOverrides(),
           this.busyWindows()
         )[0]?.key ||
-        '';
+          '';
     });
     this.api.getAvailabilityOverrides().subscribe((overrides) => {
-      this.availabilityOverrides.set(
-        overrides.filter((entry) => entry.isActive !== false)
-      );
+      this.availabilityOverrides.set(overrides.filter((entry) => entry.isActive !== false));
     });
     this.api.getBusyWindows().subscribe((busyWindows) => {
       this.busyWindows.set(busyWindows);
@@ -279,11 +237,7 @@ export class BusinessBookingPageComponent {
         return;
       }
 
-      this.form.name =
-        this.form.name ||
-        clientUser.name ||
-        clientUser.email.split('@')[0] ||
-        '';
+      this.form.name = this.form.name || clientUser.name || clientUser.email.split('@')[0] || '';
       this.form.email = this.form.email || clientUser.email || '';
     });
 
@@ -322,32 +276,20 @@ export class BusinessBookingPageComponent {
     const acceptedClient = !!clientUser && this.isAcceptedClient();
     const slot = this.selectedSlot();
 
-    if (
-      !clientUser &&
-      (!this.form.name.trim() ||
-        !this.form.email.trim() ||
-        !this.form.phone.trim())
-    ) {
-      this.message.set(
-        'Name, email, and phone are required before sending a request.'
-      );
+    if (!clientUser && (!this.form.name.trim() || !this.form.email.trim() || !this.form.phone.trim())) {
+      this.message.set('Name, email, and phone are required before sending a request.');
       return;
     }
 
     if (acceptedClient) {
       if (!slot) {
-        this.message.set(
-          'Choose a published availability window before submitting.'
-        );
+        this.message.set('Choose a published availability window before submitting.');
         return;
       }
 
       this.api
         .createBooking({
-          title:
-            this.selectedOffer()?.label ||
-            this.form.goal ||
-            this.site().contact.consultationLabel,
+          title: this.selectedOffer()?.label || this.form.goal || this.site().contact.consultationLabel,
           description: this.bookingDescription(),
           startTime: slot.start,
           endTime: slot.end,
@@ -356,10 +298,7 @@ export class BusinessBookingPageComponent {
         })
         .pipe(
           catchError((error) => {
-            this.message.set(
-              error?.error?.message ||
-                'We could not submit this booking request.'
-            );
+            this.message.set(error?.error?.message || 'We could not submit this booking request.');
             return EMPTY;
           })
         )
@@ -391,16 +330,14 @@ export class BusinessBookingPageComponent {
       })
       .pipe(
         catchError((error) => {
-          this.message.set(
-            error?.error?.message || 'We could not submit this request.'
-          );
+          this.message.set(error?.error?.message || 'We could not submit this request.');
           return EMPTY;
         })
       )
       .subscribe(() => {
         this.message.set(
           clientUser
-            ? "Your request is in review. We'll follow up in your client workspace and by email."
+            ? 'Your request is in review. We\'ll follow up in your client workspace and by email.'
             : 'Your request is in review. Create an account now to make scheduling faster.'
         );
       });
@@ -415,26 +352,19 @@ export class BusinessBookingPageComponent {
       this.form.name ? `Client: ${this.form.name}` : null,
       this.form.email ? `Email: ${this.form.email}` : null,
       this.form.phone ? `Phone: ${this.form.phone}` : null,
-      this.selectedOffer()?.label
-        ? `Offer: ${this.selectedOffer()?.label}`
-        : null,
+      this.selectedOffer()?.label ? `Offer: ${this.selectedOffer()?.label}` : null,
     ]
       .filter(Boolean)
       .join('\n');
   }
 
   private selectedSlot(): BookableSlot | null {
-    return (
-      this.availableSlots().find((slot) => slot.key === this.selectedSlotKey) ??
-      null
-    );
+    return this.availableSlots().find((slot) => slot.key === this.selectedSlotKey) ?? null;
   }
 
   private bookingDescription(): string {
     return [
-      this.selectedOffer()?.label
-        ? `Requested offer: ${this.selectedOffer()?.label}`
-        : null,
+      this.selectedOffer()?.label ? `Requested offer: ${this.selectedOffer()?.label}` : null,
       this.form.context || null,
     ]
       .filter(Boolean)
@@ -443,9 +373,7 @@ export class BusinessBookingPageComponent {
 
   private intakeContext(): string {
     return [
-      this.selectedOffer()?.label
-        ? `Requested offer: ${this.selectedOffer()?.label}`
-        : null,
+      this.selectedOffer()?.label ? `Requested offer: ${this.selectedOffer()?.label}` : null,
       this.form.context || null,
     ]
       .filter(Boolean)
@@ -480,11 +408,7 @@ export class BusinessBookingPageComponent {
           const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
           if (
             slotStart > now &&
-            !this.isBlockedByOverride(
-              slotStart,
-              slotEnd,
-              availabilityOverrides
-            ) &&
+            !this.isBlockedByOverride(slotStart, slotEnd, availabilityOverrides) &&
             !this.overlapsBusyWindow(slotStart, slotEnd, busyWindows)
           ) {
             slots.push({
@@ -493,13 +417,10 @@ export class BusinessBookingPageComponent {
               serviceType: availability.serviceType || 'Consultation',
               start: new Date(slotStart),
               end: slotEnd,
-              label: `${slotStart.toLocaleDateString()} · ${slotStart.toLocaleTimeString(
-                [],
-                {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                }
-              )} - ${slotEnd.toLocaleTimeString([], {
+              label: `${slotStart.toLocaleDateString()} · ${slotStart.toLocaleTimeString([], {
+                hour: 'numeric',
+                minute: '2-digit',
+              })} - ${slotEnd.toLocaleTimeString([], {
                 hour: 'numeric',
                 minute: '2-digit',
               })}`,
@@ -522,9 +443,7 @@ export class BusinessBookingPageComponent {
 
   private toDateTimeLocal(date: Date): string {
     const pad = (value: number) => String(value).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-      date.getDate()
-    )}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
   }
 
   private isBlockedByOverride(
@@ -550,12 +469,7 @@ export class BusinessBookingPageComponent {
     busyWindows: BusinessBusyWindow[]
   ): boolean {
     return busyWindows.some((window) =>
-      this.rangesOverlap(
-        start,
-        end,
-        new Date(window.startTime),
-        new Date(window.endTime)
-      )
+      this.rangesOverlap(start, end, new Date(window.startTime), new Date(window.endTime))
     );
   }
 
@@ -565,8 +479,6 @@ export class BusinessBookingPageComponent {
     startB: Date,
     endB: Date
   ): boolean {
-    return (
-      startA.getTime() < endB.getTime() && startB.getTime() < endA.getTime()
-    );
+    return startA.getTime() < endB.getTime() && startB.getTime() < endA.getTime();
   }
 }

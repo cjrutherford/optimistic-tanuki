@@ -18,9 +18,7 @@ console.log(
     {
       navigations,
       finalUrl: page.url(),
-      setupInterviewVisible: await page
-        .locator('text=Setup Interview')
-        .isVisible(),
+      setupInterviewVisible: await page.locator('text=Setup Interview').isVisible(),
       navLinksVisible: await page.locator('.nav-links').count(),
     },
     null,

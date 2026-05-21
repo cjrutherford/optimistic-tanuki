@@ -24,7 +24,10 @@ const loadConfig = (): SystemConfiguratorApiConfig => {
   const configData = yaml.load(configFile) as SystemConfiguratorApiConfig;
 
   return {
-    listenPort: parseInt(process.env.PORT || String(configData.listenPort), 10),
+    listenPort: parseInt(
+      process.env.PORT || String(configData.listenPort),
+      10
+    ),
     database: {
       host:
         process.env.DB_HOST ||

@@ -13,7 +13,11 @@ export class DiscoveryPipelineService {
     onboardingProfile: UserOnboardingProfile | null
   ): Promise<LeadAnalysis> {
     const relevance = this.calculateRelevance(lead, topic);
-    const difficulty = this.calculateDifficulty(lead, topic, onboardingProfile);
+    const difficulty = this.calculateDifficulty(
+      lead,
+      topic,
+      onboardingProfile
+    );
     const userFit = this.calculateUserFit(lead, topic, onboardingProfile);
     const finalScore = this.calculateFinalScore([
       relevance.score,
@@ -95,9 +99,7 @@ export class DiscoveryPipelineService {
     return {
       score: normalizedScore,
       status: this.toStageStatus(normalizedScore),
-      reasons: reasons.length
-        ? reasons
-        : ['No meaningful topic signals matched.'],
+      reasons: reasons.length ? reasons : ['No meaningful topic signals matched.'],
     };
   }
 
@@ -139,12 +141,7 @@ export class DiscoveryPipelineService {
       reasons.push(`Sales/delivery friction: ${frictionMatches.join(', ')}.`);
     }
 
-    const positiveSignalTerms = [
-      'urgent',
-      'budget',
-      'approved',
-      'this quarter',
-    ];
+    const positiveSignalTerms = ['urgent', 'budget', 'approved', 'this quarter'];
     const positiveMatches = positiveSignalTerms.filter((term) =>
       text.includes(term)
     );
@@ -217,16 +214,16 @@ export class DiscoveryPipelineService {
     const skillMatches = [
       ...(onboardingProfile.skills || []),
       ...(onboardingProfile.resumeDerivedSkills || []),
-    ].filter((skill) => text.includes(skill.toLowerCase()));
+    ].filter((skill) =>
+      text.includes(skill.toLowerCase())
+    );
     if (skillMatches.length) {
       score += Math.min(skillMatches.length * 12, 30);
-      reasons.push(
-        `Lead overlaps with user skills: ${skillMatches.join(', ')}.`
-      );
+      reasons.push(`Lead overlaps with user skills: ${skillMatches.join(', ')}.`);
     }
 
-    const industryMatches = (onboardingProfile.industries || []).filter(
-      (industry) => text.includes(industry.toLowerCase())
+    const industryMatches = (onboardingProfile.industries || []).filter((industry) =>
+      text.includes(industry.toLowerCase())
     );
     if (industryMatches.length) {
       score += Math.min(industryMatches.length * 10, 20);
@@ -238,9 +235,9 @@ export class DiscoveryPipelineService {
     if (
       onboardingProfile.idealCustomer &&
       topic?.buyerPersona &&
-      (topic.buyerPersona
-        .toLowerCase()
-        .includes(onboardingProfile.idealCustomer.toLowerCase()) ||
+      (topic.buyerPersona.toLowerCase().includes(
+        onboardingProfile.idealCustomer.toLowerCase()
+      ) ||
         onboardingProfile.idealCustomer
           .toLowerCase()
           .split(/[^a-z0-9]+/g)
@@ -257,9 +254,7 @@ export class DiscoveryPipelineService {
     ].filter((term) => text.includes(term.toLowerCase()));
     if (excludedMatches.length) {
       score -= 60;
-      reasons.push(
-        `Excluded onboarding terms matched: ${excludedMatches.join(', ')}.`
-      );
+      reasons.push(`Excluded onboarding terms matched: ${excludedMatches.join(', ')}.`);
     }
 
     const normalizedScore = Math.max(0, Math.min(100, score));

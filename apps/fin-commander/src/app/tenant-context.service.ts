@@ -53,7 +53,7 @@ export class TenantContextService {
   }
 
   async loadTenantContext(
-    expectedLoadVersion = this.loadVersion
+    expectedLoadVersion = this.loadVersion,
   ): Promise<void> {
     const tenants = await this.financeService.getTenants();
 
@@ -91,7 +91,7 @@ export class TenantContextService {
             tenantId: this.activeTenant()!.id,
             profileId,
           }
-        : null
+        : null,
     );
   }
 
@@ -106,7 +106,7 @@ export class TenantContextService {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem(
         TenantContextService.activeTenantStorageKey,
-        tenant.id
+        tenant.id,
       );
     }
     this.activeTenant.set(tenant);
@@ -118,7 +118,7 @@ export class TenantContextService {
             tenantId: tenant.id,
             profileId,
           }
-        : null
+        : null,
     );
   }
 
@@ -134,7 +134,7 @@ export class TenantContextService {
 
   private resolveActiveTenant(
     tenants: FinanceTenant[],
-    fallbackTenant: FinanceTenant | null
+    fallbackTenant: FinanceTenant | null,
   ): FinanceTenant | null {
     const persistedId =
       typeof localStorage !== 'undefined'

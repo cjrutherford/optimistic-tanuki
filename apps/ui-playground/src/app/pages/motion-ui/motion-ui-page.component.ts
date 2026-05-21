@@ -126,7 +126,9 @@ import {
           [density]="$any(configs['parallax-grid-warp']['density'])"
           [speed]="$any(configs['parallax-grid-warp']['speed'])"
           [intensity]="$any(configs['parallax-grid-warp']['intensity'])"
-          [reducedMotion]="$any(configs['parallax-grid-warp']['reducedMotion'])"
+          [reducedMotion]="
+            $any(configs['parallax-grid-warp']['reducedMotion'])
+          "
         />
         } }
       </pg-element-card>
@@ -150,45 +152,11 @@ export class MotionUiPageComponent {
       summary:
         'Layered blur bands for hero panels, editorial headers, and atmospheric section backgrounds.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '3',
-          description: 'Controls how many ribbon layers are rendered.',
-          min: 1,
-          max: 6,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales the drift animation rate.',
-          min: 0.1,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.72',
-          description: 'Raises or lowers overall visual brightness.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables animation and shows static state.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '3', description: 'Controls how many ribbon layers are rendered.', min: 1, max: 6, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales the drift animation rate.', min: 0.1, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.72', description: 'Raises or lowers overall visual brightness.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Disables animation and shows static state.' },
       ],
     },
     {
@@ -199,45 +167,11 @@ export class MotionUiPageComponent {
       selector: 'otui-signal-mesh',
       summary: 'A network grid with glowing junctions for systems dashboards.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '5',
-          description: 'Controls grid columns and junctions.',
-          min: 3,
-          max: 7,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales node pulse cadence.',
-          min: 0.1,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.68',
-          description: 'Adjusts line glow and node bloom.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Freezes the junction pulses.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '5', description: 'Controls grid columns and junctions.', min: 3, max: 7, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales node pulse cadence.', min: 0.1, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.68', description: 'Adjusts line glow and node bloom.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Freezes the junction pulses.' },
       ],
     },
     {
@@ -248,36 +182,10 @@ export class MotionUiPageComponent {
       selector: 'otui-murmuration-scene',
       summary: 'Three.js-driven flocking accent for hero scenes.',
       props: [
-        {
-          name: 'count',
-          type: 'number',
-          defaultValue: '48',
-          description: 'Particle count for the flock.',
-          min: 10,
-          max: 100,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '0.35',
-          description: 'Controls flock turn and orbit velocity.',
-          min: 0.05,
-          max: 1,
-          step: 0.05,
-        },
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the scene container height.',
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables WebGL animation.',
-        },
+        { name: 'count', type: 'number', defaultValue: '48', description: 'Particle count for the flock.', min: 10, max: 100, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '0.35', description: 'Controls flock turn and orbit velocity.', min: 0.05, max: 1, step: 0.05 },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the scene container height.' },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Disables WebGL animation.' },
       ],
     },
     {
@@ -288,45 +196,11 @@ export class MotionUiPageComponent {
       selector: 'otui-particle-veil',
       summary: 'Soft drifting field for background texture.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '24',
-          description: 'Controls the number of particles.',
-          min: 6,
-          max: 48,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales particle drift duration.',
-          min: 0.2,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.6',
-          description: 'Changes glow and particle presence.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Freezes the veil.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '24', description: 'Controls the number of particles.', min: 6, max: 48, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales particle drift duration.', min: 0.2, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.6', description: 'Changes glow and particle presence.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Freezes the veil.' },
       ],
     },
     {
@@ -337,45 +211,11 @@ export class MotionUiPageComponent {
       selector: 'otui-topographic-drift',
       summary: 'Contour-like line bands for editorial layouts.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '6',
-          description: 'Controls how many contour bands are rendered.',
-          min: 4,
-          max: 10,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales drift phase timing.',
-          min: 0.25,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.64',
-          description: 'Changes line prominence.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Stops the contour drift.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '6', description: 'Controls how many contour bands are rendered.', min: 4, max: 10, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales drift phase timing.', min: 0.25, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.64', description: 'Changes line prominence.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Stops the contour drift.' },
       ],
     },
     {
@@ -386,45 +226,11 @@ export class MotionUiPageComponent {
       selector: 'otui-pulse-rings',
       summary: 'Concentric signal rings for focal callouts.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'20rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'ringCount',
-          type: 'number',
-          defaultValue: '4',
-          description: 'Sets how many rings are shown.',
-          min: 2,
-          max: 8,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales pulse propagation speed.',
-          min: 0.1,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.7',
-          description: 'Controls ring visibility.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Removes ring animation.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'20rem'", description: 'Sets the rendered block height.' },
+        { name: 'ringCount', type: 'number', defaultValue: '4', description: 'Sets how many rings are shown.', min: 2, max: 8, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales pulse propagation speed.', min: 0.1, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.7', description: 'Controls ring visibility.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Removes ring animation.' },
       ],
     },
     {
@@ -435,43 +241,11 @@ export class MotionUiPageComponent {
       selector: 'otui-shimmer-beam',
       summary: 'Directional sweep accent for section caps.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'18rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'direction',
-          type: "'diagonal' | 'horizontal'",
-          defaultValue: "'diagonal'",
-          description: 'Selects the sweep axis.',
-          options: ['diagonal', 'horizontal'],
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales beam travel duration.',
-          min: 0.1,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.65',
-          description: 'Changes beam brightness.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Locks the beam in static state.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'18rem'", description: 'Sets the rendered block height.' },
+        { name: 'direction', type: "'diagonal' | 'horizontal'", defaultValue: "'diagonal'", description: 'Selects the sweep axis.', options: ['diagonal', 'horizontal'] },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales beam travel duration.', min: 0.1, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.65', description: 'Changes beam brightness.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Locks the beam in static state.' },
       ],
     },
     {
@@ -482,45 +256,11 @@ export class MotionUiPageComponent {
       selector: 'otui-glass-fog',
       summary: 'Layered atmospheric fog for modal shells.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '4',
-          description: 'Controls how many haze blobs.',
-          min: 3,
-          max: 7,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales drift speed.',
-          min: 0.25,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.66',
-          description: 'Haze brightness and refraction weight.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Disables the floating haze.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '4', description: 'Controls how many haze blobs.', min: 3, max: 7, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales drift speed.', min: 0.25, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.66', description: 'Haze brightness and refraction weight.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Disables the floating haze.' },
       ],
     },
     {
@@ -531,45 +271,11 @@ export class MotionUiPageComponent {
       selector: 'otui-parallax-grid-warp',
       summary: 'Perspective grid distortion for feature explainers.',
       props: [
-        {
-          name: 'height',
-          type: 'string',
-          defaultValue: "'24rem'",
-          description: 'Sets the rendered block height.',
-        },
-        {
-          name: 'density',
-          type: 'number',
-          defaultValue: '6',
-          description: 'Controls animated perspective beams.',
-          min: 4,
-          max: 9,
-          step: 1,
-        },
-        {
-          name: 'speed',
-          type: 'number',
-          defaultValue: '1',
-          description: 'Scales grid-beam drift rate.',
-          min: 0.25,
-          max: 3,
-          step: 0.1,
-        },
-        {
-          name: 'intensity',
-          type: 'number',
-          defaultValue: '0.7',
-          description: 'Beam contrast and focal glow.',
-          min: 0,
-          max: 1,
-          step: 0.01,
-        },
-        {
-          name: 'reducedMotion',
-          type: 'boolean',
-          defaultValue: 'false',
-          description: 'Stops the beam drift.',
-        },
+        { name: 'height', type: 'string', defaultValue: "'24rem'", description: 'Sets the rendered block height.' },
+        { name: 'density', type: 'number', defaultValue: '6', description: 'Controls animated perspective beams.', min: 4, max: 9, step: 1 },
+        { name: 'speed', type: 'number', defaultValue: '1', description: 'Scales grid-beam drift rate.', min: 0.25, max: 3, step: 0.1 },
+        { name: 'intensity', type: 'number', defaultValue: '0.7', description: 'Beam contrast and focal glow.', min: 0, max: 1, step: 0.01 },
+        { name: 'reducedMotion', type: 'boolean', defaultValue: 'false', description: 'Stops the beam drift.' },
       ],
     },
   ];
@@ -588,10 +294,7 @@ export class MotionUiPageComponent {
     }
   }
 
-  private parseDefault(prop: {
-    type: string;
-    defaultValue: string;
-  }): number | string | boolean {
+  private parseDefault(prop: { type: string; defaultValue: string }): number | string | boolean {
     const v = prop.defaultValue;
     if (prop.type === 'boolean') return v === 'true';
     if (prop.type === 'number') return parseFloat(v) || 0;

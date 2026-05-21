@@ -30,7 +30,7 @@ describe('LoginAccountBootstrapService', () => {
               createdAt: new Date(),
               updatedAt: new Date(),
             },
-          ])
+          ]),
         )
         .mockReturnValueOnce(
           of({
@@ -43,7 +43,7 @@ describe('LoginAccountBootstrapService', () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             appScope: 'forgeofwill',
-          })
+          }),
         ),
     };
     const permissionsClient = {
@@ -54,12 +54,12 @@ describe('LoginAccountBootstrapService', () => {
       authClient as any,
       profileClient as any,
       permissionsClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     const result = await service.login(
       { email: 'cross@app.com', password: 'secret' },
-      'forgeofwill'
+      'forgeofwill',
     );
 
     expect(profileClient.send).toHaveBeenCalledWith(
@@ -69,7 +69,7 @@ describe('LoginAccountBootstrapService', () => {
         name: 'Global User',
         appScope: 'forgeofwill',
         copyPermissionsFromGlobalProfile: false,
-      })
+      }),
     );
     expect(roleInit.processNow).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -79,7 +79,7 @@ describe('LoginAccountBootstrapService', () => {
             profileId: 'profile-forge',
           }),
         ]),
-      })
+      }),
     );
     expect(authClient.send).toHaveBeenLastCalledWith(
       { cmd: AuthCommands.Login },
@@ -87,7 +87,7 @@ describe('LoginAccountBootstrapService', () => {
         email: 'cross@app.com',
         password: 'secret',
         profileId: 'profile-forge',
-      }
+      },
     );
     expect(result).toEqual({ code: 0, data: { token: 'jwt' } });
   });
@@ -113,23 +113,25 @@ describe('LoginAccountBootstrapService', () => {
             updatedAt: new Date(),
             appScope: 'global',
           },
-        ])
+        ]),
       ),
     };
     const permissionsClient = {
-      send: jest.fn().mockReturnValueOnce(of([{ role: { name: 'owner' } }])),
+      send: jest.fn().mockReturnValueOnce(
+        of([{ role: { name: 'owner' } }]),
+      ),
     };
     const roleInit = { processNow: jest.fn() };
     const service = new LoginAccountBootstrapService(
       authClient as any,
       profileClient as any,
       permissionsClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     await service.login(
       { email: 'owner@app.com', password: 'secret' },
-      'owner-console'
+      'owner-console',
     );
 
     expect(authClient.send).toHaveBeenLastCalledWith(
@@ -138,12 +140,12 @@ describe('LoginAccountBootstrapService', () => {
         email: 'owner@app.com',
         password: 'secret',
         profileId: 'profile-global',
-      }
+      },
     );
     expect(roleInit.processNow).not.toHaveBeenCalled();
     expect(permissionsClient.send).toHaveBeenCalledWith(
       { cmd: RoleCommands.GetUserRoles },
-      { profileId: 'profile-global', appScope: 'global' }
+      { profileId: 'profile-global', appScope: 'global' },
     );
   });
 
@@ -165,29 +167,29 @@ describe('LoginAccountBootstrapService', () => {
             updatedAt: new Date(),
             appScope: 'global',
           },
-        ])
+        ]),
       ),
     };
     const permissionsClient = {
-      send: jest
-        .fn()
-        .mockReturnValueOnce(of([{ role: { name: 'community_member' } }])),
+      send: jest.fn().mockReturnValueOnce(
+        of([{ role: { name: 'community_member' } }]),
+      ),
     };
     const roleInit = { processNow: jest.fn() };
     const service = new LoginAccountBootstrapService(
       authClient as any,
       profileClient as any,
       permissionsClient as any,
-      roleInit as any
+      roleInit as any,
     );
 
     await expect(
       service.login(
         { email: 'member@app.com', password: 'secret' },
-        'owner-console'
-      )
+        'owner-console',
+      ),
     ).rejects.toThrow(
-      'This account is not authorized for Owner Console access.'
+      'This account is not authorized for Owner Console access.',
     );
   });
 });

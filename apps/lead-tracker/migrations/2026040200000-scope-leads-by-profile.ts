@@ -99,13 +99,21 @@ export class ScopeLeadsByProfile2026040200000 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "lead_onboarding_profiles" DROP COLUMN "profileId"`
     );
-    await queryRunner.query(`ALTER TABLE "lead_flags" DROP COLUMN "userId"`);
-    await queryRunner.query(`ALTER TABLE "lead_flags" DROP COLUMN "profileId"`);
-    await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "userId"`);
+    await queryRunner.query(
+      `ALTER TABLE "lead_flags" DROP COLUMN "userId"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "lead_flags" DROP COLUMN "profileId"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" DROP COLUMN "userId"`
+    );
     await queryRunner.query(
       `ALTER TABLE "lead_topics" DROP COLUMN "profileId"`
     );
-    await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "appScope"`);
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" DROP COLUMN "appScope"`
+    );
     await queryRunner.query(`ALTER TABLE "leads" DROP COLUMN "userId"`);
     await queryRunner.query(`ALTER TABLE "leads" DROP COLUMN "profileId"`);
     await queryRunner.query(`ALTER TABLE "leads" DROP COLUMN "appScope"`);

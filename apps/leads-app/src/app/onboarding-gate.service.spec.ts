@@ -193,9 +193,7 @@ describe('OnboardingGateService', () => {
   });
 
   it('blocks the onboarding route at match time once setup is complete', () => {
-    const onboardingRoute = appRoutes.find(
-      (route) => route.path === 'onboarding'
-    );
+    const onboardingRoute = appRoutes.find((route) => route.path === 'onboarding');
 
     expect(onboardingRoute?.canMatch).toContain(onboardingPageMatchGuard);
   });

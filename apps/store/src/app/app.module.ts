@@ -112,8 +112,7 @@ import loadDatabase from './loadDatabase';
     },
     {
       provide: getRepositoryToken(AvailabilityOverrideEntity),
-      useFactory: (ds: DataSource) =>
-        ds.getRepository(AvailabilityOverrideEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AvailabilityOverrideEntity),
       inject: ['STORE_CONNECTION'],
     },
     {
@@ -128,14 +127,12 @@ import loadDatabase from './loadDatabase';
     },
     {
       provide: getRepositoryToken(TrainerRoutineAssignmentEntity),
-      useFactory: (ds: DataSource) =>
-        ds.getRepository(TrainerRoutineAssignmentEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(TrainerRoutineAssignmentEntity),
       inject: ['STORE_CONNECTION'],
     },
     {
       provide: getRepositoryToken(TrainerProgressCheckInEntity),
-      useFactory: (ds: DataSource) =>
-        ds.getRepository(TrainerProgressCheckInEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(TrainerProgressCheckInEntity),
       inject: ['STORE_CONNECTION'],
     },
     {

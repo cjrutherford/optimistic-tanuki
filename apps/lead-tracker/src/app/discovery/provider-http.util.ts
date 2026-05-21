@@ -21,18 +21,14 @@ export const readJsonResponse = async <T>(
   if (!response.ok) {
     return {
       ok: false,
-      warning: `${providerName} request failed with HTTP ${
-        response.status
-      }. Expected JSON but received ${contentType}.${buildBodyPreview(body)}`,
+      warning: `${providerName} request failed with HTTP ${response.status}. Expected JSON but received ${contentType}.${buildBodyPreview(body)}`,
     };
   }
 
   if (!/application\/json/i.test(contentType)) {
     return {
       ok: false,
-      warning: `${providerName} request failed. Expected JSON but received ${contentType}.${buildBodyPreview(
-        body
-      )}`,
+      warning: `${providerName} request failed. Expected JSON but received ${contentType}.${buildBodyPreview(body)}`,
     };
   }
 
@@ -44,9 +40,7 @@ export const readJsonResponse = async <T>(
   } catch (error) {
     return {
       ok: false,
-      warning: `${providerName} returned invalid JSON: ${
-        error instanceof Error ? error.message : 'Unknown parse error'
-      }.${buildBodyPreview(body)}`,
+      warning: `${providerName} returned invalid JSON: ${error instanceof Error ? error.message : 'Unknown parse error'}.${buildBodyPreview(body)}`,
     };
   }
 };

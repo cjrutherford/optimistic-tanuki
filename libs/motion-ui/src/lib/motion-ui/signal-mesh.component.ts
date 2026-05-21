@@ -63,10 +63,7 @@ export class SignalMeshComponent {
         left: `${left.toFixed(2)}%`,
         top: `${top.toFixed(2)}%`,
         delay: `${(-0.4 * ((column + row) % 6)).toFixed(2)}s`,
-        duration: `${(
-          4.6 +
-          ((column * 3 + row * 2) % 5) / Math.max(this.speed, 0.25)
-        ).toFixed(2)}s`,
+        duration: `${(4.6 + ((column * 3 + row * 2) % 5) / Math.max(this.speed, 0.25)).toFixed(2)}s`,
       };
     });
   }

@@ -17,11 +17,7 @@
   &.selected {
     border-color: var(--local-accent, var(--accent, #667eea));
     box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
-    background: color-mix(
-      in srgb,
-      var(--local-accent, var(--accent, #667eea)) 5%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--local-accent, var(--accent, #667eea)) 5%, transparent);
   }
 }
 
@@ -113,11 +109,7 @@
 
 .angular-component-container.drag-over {
   border-color: var(--local-accent, var(--accent, #667eea));
-  background: color-mix(
-    in srgb,
-    var(--local-accent, var(--accent, #667eea)) 10%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--local-accent, var(--accent, #667eea)) 10%, transparent);
 }
 
 /* Animation for component insertion */

@@ -20,20 +20,8 @@ export const appRoutes: Route[] = [
   { path: 'c/:slugOrId', component: ChannelComponent },
   { path: 'channel/:slugOrId', component: ChannelComponent },
   { path: 'upload', component: UploadComponent, canActivate: [authGuard] },
-  {
-    path: 'profile',
-    component: ProfileSettingsComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'history',
-    component: ViewHistoryComponent,
-    canActivate: [authGuard],
-  },
-  {
-    path: 'my-channel',
-    component: MyChannelComponent,
-    canActivate: [authGuard],
-  },
+  { path: 'profile', component: ProfileSettingsComponent, canActivate: [authGuard] },
+  { path: 'history', component: ViewHistoryComponent, canActivate: [authGuard] },
+  { path: 'my-channel', component: MyChannelComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: '' },
 ];

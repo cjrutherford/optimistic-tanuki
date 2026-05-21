@@ -9,18 +9,12 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
   template: `
     <section class="hero-grid">
       <article class="hero-copy">
-        <span class="eyebrow"
-          >Marketing studio for products with actual shape</span
-        >
-        <h1>
-          Turn product context into strategy, channel drafts, and material-ready
-          campaign outputs.
-        </h1>
+        <span class="eyebrow">Marketing studio for products with actual shape</span>
+        <h1>Turn product context into strategy, channel drafts, and material-ready campaign outputs.</h1>
         <p class="lede">
-          Signal Foundry creates grouped marketing workbenches for repo-backed
-          products, custom apps, and web development services. Start with a
-          studio brief, choose your outputs, then tune the copy after
-          generation.
+          Signal Foundry creates grouped marketing workbenches for repo-backed products, custom apps,
+          and web development services. Start with a studio brief, choose your outputs, then tune the
+          copy after generation.
         </p>
 
         <div class="hero-actions">
@@ -54,24 +48,15 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
       <div class="cards">
         <article class="card">
           <h3>Strategy + outputs</h3>
-          <p>
-            Each run produces concept directions, channel-native drafts, and
-            selected material deliverables.
-          </p>
+          <p>Each run produces concept directions, channel-native drafts, and selected material deliverables.</p>
         </article>
         <article class="card">
           <h3>Custom app briefs</h3>
-          <p>
-            Define a new product with features, differentiators, and a primary
-            goal before generation.
-          </p>
+          <p>Define a new product with features, differentiators, and a primary goal before generation.</p>
         </article>
         <article class="card">
           <h3>Brand-guided runs</h3>
-          <p>
-            Carry colors, style notes, and image intent into the generated
-            outputs instead of relying on hidden defaults.
-          </p>
+          <p>Carry colors, style notes, and image intent into the generated outputs instead of relying on hidden defaults.</p>
         </article>
       </div>
     </section>
@@ -94,11 +79,8 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
       .hero-panel,
       .card {
         border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
-        background: linear-gradient(
-            180deg,
-            color-mix(in srgb, var(--primary, #d97706) 12%, transparent),
-            transparent
-          ),
+        background:
+          linear-gradient(180deg, color-mix(in srgb, var(--primary, #d97706) 12%, transparent), transparent),
           color-mix(in srgb, var(--surface, #10151c) 92%, transparent);
         border-radius: var(--border-radius-lg, 20px);
         box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25));
@@ -157,10 +139,7 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
 
       .cta.primary {
         color: var(--background, #081018);
-        background: var(
-          --primary-gradient,
-          linear-gradient(135deg, #d97706, #2563eb)
-        );
+        background: var(--primary-gradient, linear-gradient(135deg, #d97706, #2563eb));
         border-color: transparent;
       }
 
@@ -177,17 +156,8 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
       .metric-card {
         padding: 1.1rem;
         border-radius: 1.2rem;
-        background: color-mix(
-          in srgb,
-          var(--surface, #10151c) 84%,
-          transparent
-        );
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--border, rgba(255, 255, 255, 0.12)) 90%,
-            transparent
-          );
+        background: color-mix(in srgb, var(--surface, #10151c) 84%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border, rgba(255, 255, 255, 0.12)) 90%, transparent);
       }
 
       .metric-card strong {

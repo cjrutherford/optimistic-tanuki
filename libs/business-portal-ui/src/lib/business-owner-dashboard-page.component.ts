@@ -1,10 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import {
-  BusinessApiService,
-  BusinessSiteConfigStore,
-} from '@optimistic-tanuki/business-data-access';
+import { BusinessApiService, BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
@@ -26,14 +23,14 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <strong>{{ completedBookings() }}</strong>
       </otui-card>
       @if (siteConfig.site().features.clientTasks.enabled) {
-      <otui-card class="stat">
-        <span>Assigned routines</span>
-        <strong>{{ routines().length }}</strong>
-      </otui-card>
-      <otui-card class="stat">
-        <span>Client check-ins</span>
-        <strong>{{ checkIns().length }}</strong>
-      </otui-card>
+        <otui-card class="stat">
+          <span>Assigned routines</span>
+          <strong>{{ routines().length }}</strong>
+        </otui-card>
+        <otui-card class="stat">
+          <span>Client check-ins</span>
+          <strong>{{ checkIns().length }}</strong>
+        </otui-card>
       }
     </section>
   `,
@@ -62,23 +59,17 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
 export class BusinessOwnerDashboardPageComponent {
   private readonly api = inject(BusinessApiService);
   protected readonly siteConfig = inject(BusinessSiteConfigStore);
-  readonly prospects = toSignal(this.api.getOwnerProspects(), {
-    initialValue: [],
-  });
-  readonly bookings = toSignal(this.api.getOwnerBookings(), {
-    initialValue: [],
-  });
+  readonly prospects = toSignal(this.api.getOwnerProspects(), { initialValue: [] });
+  readonly bookings = toSignal(this.api.getOwnerBookings(), { initialValue: [] });
   readonly routines = toSignal(this.api.getAllRoutines(), { initialValue: [] });
   readonly checkIns = toSignal(this.api.getAllCheckIns(), {
     initialValue: [],
   });
   readonly pendingBookings = computed(
-    () =>
-      this.bookings().filter((booking) => booking.status === 'pending').length
+    () => this.bookings().filter((booking) => booking.status === 'pending').length
   );
   readonly completedBookings = computed(
-    () =>
-      this.bookings().filter((booking) => booking.status === 'completed').length
+    () => this.bookings().filter((booking) => booking.status === 'completed').length
   );
 
   constructor() {

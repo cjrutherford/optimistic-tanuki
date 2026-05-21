@@ -11,7 +11,9 @@
       >
         <otui-icon
           [name]="
-            sidebarCollapsed() ? 'keyboard-arrow-right' : 'keyboard-arrow-left'
+            sidebarCollapsed()
+              ? 'keyboard-arrow-right'
+              : 'keyboard-arrow-left'
           "
         ></otui-icon>
       </button>
@@ -25,12 +27,7 @@
       <button class="group-item" (click)="navigateToCommunity(community)">
         @if (community.logoUrl || community.logoAssetId || community.imageUrl) {
         <img
-          [src]="
-            community.logoUrl ||
-            (community.logoAssetId
-              ? '/api/asset/' + community.logoAssetId
-              : community.imageUrl)
-          "
+          [src]="community.logoUrl || (community.logoAssetId ? '/api/asset/' + community.logoAssetId : community.imageUrl)"
           alt=""
           class="community-logo"
         />

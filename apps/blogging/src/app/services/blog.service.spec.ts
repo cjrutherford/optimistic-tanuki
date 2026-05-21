@@ -39,7 +39,7 @@ describe('BlogService', () => {
     const dto = { name: 'Test Blog', ownerId: 'user-1' };
     blogRepo.create.mockReturnValue(dto as any);
     blogRepo.save.mockResolvedValue(dto as any);
-
+    
     const result = await service.create(dto as any);
     expect(blogRepo.create).toHaveBeenCalledWith(dto);
     expect(blogRepo.save).toHaveBeenCalled();
@@ -48,23 +48,21 @@ describe('BlogService', () => {
 
   it('findAll should return blogs with filters', async () => {
     blogRepo.find.mockResolvedValue([]);
-    const query = {
-      name: 'test',
-      description: 'desc',
-      ownerId: 'owner',
-      createdAt: ['2024-01-01', '2024-12-31'],
-      updatedAt: ['2024-01-01', '2024-12-31'],
+    const query = { 
+        name: 'test', 
+        description: 'desc', 
+        ownerId: 'owner',
+        createdAt: ['2024-01-01', '2024-12-31'],
+        updatedAt: ['2024-01-01', '2024-12-31']
     };
     await service.findAll(query as any);
-    expect(blogRepo.find).toHaveBeenCalledWith(
-      expect.objectContaining({
+    expect(blogRepo.find).toHaveBeenCalledWith(expect.objectContaining({
         where: expect.objectContaining({
-          name: expect.anything(),
-          description: expect.anything(),
-          ownerId: 'owner',
-        }),
-      })
-    );
+            name: expect.anything(),
+            description: expect.anything(),
+            ownerId: 'owner'
+        })
+    }));
   });
 
   it('findOne should return a blog', async () => {

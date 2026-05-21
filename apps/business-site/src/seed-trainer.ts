@@ -55,7 +55,8 @@ async function sleep(ms: number): Promise<void> {
 async function bootstrap() {
   const logger = new Logger('BusinessSeedScript-HTTP');
 
-  const gatewayUrl = process.env['GATEWAY_URL'] || 'http://ot_gateway:3000/api';
+  const gatewayUrl =
+    process.env['GATEWAY_URL'] || 'http://ot_gateway:3000/api';
   const appScope = process.env['APP_SCOPE'] || 'business-site';
 
   logger.log(`=== Starting Business User Seed ===`);
@@ -266,11 +267,7 @@ async function bootstrap() {
   logger.log(`Successfully authenticated ${authenticatedUsers.length} users`);
 
   for (const user of authenticatedUsers) {
-    logger.log(
-      `Email: ${user.email}, Password: ${
-        SEED_USERS.find((u) => u.email === user.email)?.password
-      }`
-    );
+    logger.log(`Email: ${user.email}, Password: ${SEED_USERS.find(u => u.email === user.email)?.password}`);
   }
 }
 

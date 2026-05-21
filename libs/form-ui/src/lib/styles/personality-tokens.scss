@@ -210,12 +210,15 @@ $technical-easing: 'cubic-bezier(0.23, 1, 0.32, 1)';
   background: var(--surface, var(--background));
   border: var(--personality-input-border-width, var(--border-width, 1px))
     var(--personality-border-style, solid) var(--border);
-  border-radius: var(--personality-input-radius, var(--border-radius-md, 4px));
+  border-radius: var(
+    --personality-input-radius,
+    var(--border-radius-md, 4px)
+  );
   outline: none;
   transition: var(
     --personality-transition,
     border-color var(--animation-duration-fast) var(--animation-easing),
-    box-shadow var(--animation-duration-fast) var(--animation-easing)
+      box-shadow var(--animation-duration-fast) var(--animation-easing)
   );
 
   &:focus {

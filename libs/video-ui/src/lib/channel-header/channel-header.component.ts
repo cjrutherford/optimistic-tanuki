@@ -143,7 +143,8 @@ import { Subscription } from 'rxjs';
         border-radius: 50%;
         overflow: hidden;
         flex-shrink: 0;
-        box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 100, 100, 255), 0.4),
+        box-shadow:
+          0 0 0 3px rgba(var(--accent-rgb, 100, 100, 255), 0.4),
           0 0 20px 4px rgba(var(--accent-rgb, 100, 100, 255), 0.15);
         border: 3px solid rgba(var(--accent-rgb, 100, 100, 255), 0.5);
       }
@@ -198,7 +199,8 @@ import { Subscription } from 'rxjs';
         -webkit-backdrop-filter: blur(12px);
         background: rgba(var(--foreground-rgb, 255, 255, 255), 0.08);
         color: var(--foreground, #fff);
-        transition: background var(--animation-duration-fast, 0.2s)
+        transition:
+          background var(--animation-duration-fast, 0.2s)
             var(--animation-easing, ease),
           transform var(--animation-duration-fast, 0.2s)
             var(--animation-easing, ease),
@@ -246,7 +248,7 @@ export class ChannelHeaderComponent implements OnInit, OnDestroy {
     this.themeSub = this.themeService.themeColors$.subscribe(
       (colors: ThemeColors | undefined) => {
         // Theme colors now applied via CSS custom properties
-      }
+      },
     );
   }
 

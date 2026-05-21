@@ -27,8 +27,7 @@ import loadConfig from './config';
     DailySixService,
     {
       provide: getRepositoryToken(DailyFourEntity),
-      useFactory: (dataSource: any) =>
-        dataSource.getRepository(DailyFourEntity),
+      useFactory: (dataSource: any) => dataSource.getRepository(DailyFourEntity),
       inject: ['WELLNESS_CONNECTION'],
     },
     {

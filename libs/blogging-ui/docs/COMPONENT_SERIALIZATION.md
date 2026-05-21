@@ -1,13 +1,10 @@
 # Component Serialization and Reconstruction
 
 ## Overview
-
 This document describes how Angular components inserted in the TipTap editor are serialized to HTML and reconstructed when displayed in the blog viewer.
 
 ## Problem Statement
-
 When users insert Angular components (like callout boxes, code snippets, etc.) into blog posts using the editor, the component data needs to:
-
 1. Be serialized to HTML when saving content
 2. Be persisted to the backend database
 3. Be reconstructed with the same data when viewed
@@ -19,11 +16,9 @@ Without proper serialization, components would appear as empty placeholders when
 ### Two-Phase Approach
 
 #### Phase 1: Serialization (Editor → HTML → Backend)
-
 When content is saved from the editor, component data is serialized into HTML data attributes using JSON.
 
 #### Phase 2: Reconstruction (Backend → HTML → Viewer)
-
 When content is loaded in the viewer, component data is parsed from HTML and components are dynamically created.
 
 ---
@@ -31,13 +26,11 @@ When content is loaded in the viewer, component data is parsed from HTML and com
 ## Phase 1: Serialization
 
 ### Implementation Location
-
 **File**: `libs/compose-lib/src/lib/extensions/angular-component-node.extension.ts`
 
 ### Updated Methods
 
 #### renderHTML()
-
 Converts TipTap node to HTML with component data serialized as JSON in data attributes.
 
 ```typescript
@@ -86,7 +79,6 @@ renderHTML({
 ```
 
 #### parseHTML()
-
 Parses HTML back to TipTap node attributes, extracting component data from data attributes.
 
 ```typescript
@@ -115,7 +107,6 @@ parseHTML(): Array<{ tag: string; getAttrs?: (dom: HTMLElement) => Record<string
 ### HTML Output Example
 
 **Before (No Data)**:
-
 ```html
 <div data-angular-component="" class="angular-component-node">
   <div class="component-placeholder">Angular Component Loading...</div>
@@ -123,29 +114,32 @@ parseHTML(): Array<{ tag: string; getAttrs?: (dom: HTMLElement) => Record<string
 ```
 
 **After (With Data)**:
-
 ```html
-<div data-angular-component="" data-component-id="callout-box" data-instance-id="callout-123" data-component-data='{"title":"Important Note","content":"This is important","type":"info"}' data-component-def='{"id":"callout-box","name":"Callout Box","category":"Blogging"}' class="angular-component-node">
+<div data-angular-component="" 
+     data-component-id="callout-box"
+     data-instance-id="callout-123"
+     data-component-data='{"title":"Important Note","content":"This is important","type":"info"}'
+     data-component-def='{"id":"callout-box","name":"Callout Box","category":"Blogging"}'
+     class="angular-component-node">
   <div class="component-placeholder">Callout Box</div>
 </div>
 ```
 
 ### Data Attributes
 
-| Attribute                | Description                     | Example                               |
-| ------------------------ | ------------------------------- | ------------------------------------- |
-| `data-angular-component` | Marker attribute (always empty) | `""`                                  |
-| `data-component-id`      | Component type identifier       | `"callout-box"`                       |
-| `data-instance-id`       | Unique instance identifier      | `"callout-123"`                       |
-| `data-component-data`    | Component properties as JSON    | `'{"title":"Note","type":"info"}'`    |
-| `data-component-def`     | Component definition as JSON    | `'{"id":"callout-box","name":"..."}'` |
+| Attribute | Description | Example |
+|-----------|-------------|---------|
+| `data-angular-component` | Marker attribute (always empty) | `""` |
+| `data-component-id` | Component type identifier | `"callout-box"` |
+| `data-instance-id` | Unique instance identifier | `"callout-123"` |
+| `data-component-data` | Component properties as JSON | `'{"title":"Note","type":"info"}'` |
+| `data-component-def` | Component definition as JSON | `'{"id":"callout-box","name":"..."}'` |
 
 ---
 
 ## Phase 2: Reconstruction
 
 ### Implementation Location
-
 **File**: `apps/digital-homestead/src/app/components/blog-viewer/blog-viewer.component.ts`
 
 ### Component Map
@@ -159,16 +153,16 @@ const COMPONENT_MAP: Record<string, any> = {
   'video-player': VideoPlayerComponent,
   'image-gallery': ImageGalleryComponent,
   'quote-block': QuoteBlockComponent,
-  timeline: TimelineComponent,
+  'timeline': TimelineComponent,
   'stats-display': StatsDisplayComponent,
   'pricing-table': PricingTableComponent,
-  testimonial: TestimonialComponent,
+  'testimonial': TestimonialComponent,
   'faq-item': FaqItemComponent,
   'social-share': SocialShareComponent,
-  button: ButtonComponent,
-  card: CardComponent,
-  accordion: AccordionComponent,
-  modal: ModalComponent,
+  'button': ButtonComponent,
+  'card': CardComponent,
+  'accordion': AccordionComponent,
+  'modal': ModalComponent,
   'hero-section': HeroSectionComponent,
   'content-section': ContentSectionComponent,
 };
@@ -268,7 +262,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 
   ngOnDestroy() {
     // Clean up component references
-    this.componentRefs.forEach((ref) => ref.destroy());
+    this.componentRefs.forEach(ref => ref.destroy());
     this.componentRefs = [];
   }
 }
@@ -336,7 +330,6 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 ## Error Handling
 
 ### Missing Component ID
-
 ```typescript
 if (!componentId) {
   console.warn('Component node missing data-component-id:', node);
@@ -345,7 +338,6 @@ if (!componentId) {
 ```
 
 ### Unknown Component Type
-
 ```typescript
 if (!ComponentClass) {
   console.warn(`Component not found in map: ${componentId}`);
@@ -359,7 +351,6 @@ if (!ComponentClass) {
 ```
 
 ### JSON Parse Errors
-
 ```typescript
 try {
   const componentData = dataStr ? JSON.parse(dataStr) : {};
@@ -370,7 +361,6 @@ try {
 ```
 
 ### General Reconstruction Errors
-
 ```typescript
 try {
   // ... reconstruction logic ...
@@ -387,13 +377,11 @@ try {
 To make a new component available in the blog viewer:
 
 1. **Import the component**:
-
 ```typescript
 import { MyNewComponent } from '@optimistic-tanuki/common-ui';
 ```
 
 2. **Add to component map**:
-
 ```typescript
 const COMPONENT_MAP: Record<string, any> = {
   // ... existing components ...
@@ -402,7 +390,6 @@ const COMPONENT_MAP: Record<string, any> = {
 ```
 
 3. **Add to imports array**:
-
 ```typescript
 @Component({
   imports: [
@@ -421,14 +408,12 @@ That's it! The component will now be reconstructed automatically.
 ### Test Serialization
 
 1. **Insert component in editor**:
-
    - Open blog editor
    - Click "Components" button
    - Select a component (e.g., Callout Box)
    - Configure properties
 
 2. **Verify HTML output**:
-
    ```typescript
    const html = editor.getHTML();
    console.log(html);
@@ -442,13 +427,14 @@ That's it! The component will now be reconstructed automatically.
 ### Test Deserialization
 
 1. **Create test HTML**:
-
    ```html
-   <div data-angular-component="" data-component-id="callout-box" data-component-data='{"title":"Test","content":"Content","type":"info"}'></div>
+   <div data-angular-component=""
+        data-component-id="callout-box"
+        data-component-data='{"title":"Test","content":"Content","type":"info"}'>
+   </div>
    ```
 
 2. **Load in blog viewer**:
-
    ```typescript
    viewer.content = testHTML;
    ```
@@ -461,26 +447,22 @@ That's it! The component will now be reconstructed automatically.
 ### Test Error Handling
 
 1. **Missing component ID**:
-
    ```html
    <div data-angular-component=""></div>
    ```
-
    - Should log warning
    - Should show placeholder
 
 2. **Unknown component**:
-
    ```html
    <div data-component-id="unknown-component"></div>
    ```
-
    - Should log warning
    - Should show helpful message
 
 3. **Malformed JSON**:
    ```html
-   <div data-component-data='{"invalid json' }></div>
+   <div data-component-data='{"invalid json'}></div>
    ```
    - Should catch error
    - Should use empty object as fallback
@@ -490,20 +472,17 @@ That's it! The component will now be reconstructed automatically.
 ## Performance Considerations
 
 ### Serialization Performance
-
 - **JSON.stringify()**: O(n) where n is the number of properties
 - Minimal impact as most components have few properties
 - Happens once per component when saving
 
 ### Deserialization Performance
-
 - **querySelectorAll()**: O(n) where n is total DOM nodes
 - **JSON.parse()**: O(m) where m is JSON string length
 - Happens once on page load
 - Negligible impact for typical blog posts
 
 ### Optimization Tips
-
 1. Keep component data minimal (only necessary properties)
 2. Avoid deeply nested objects in component data
 3. Consider lazy loading for heavy components
@@ -514,7 +493,6 @@ That's it! The component will now be reconstructed automatically.
 ## Security Considerations
 
 ### DOMPurify Integration
-
 All HTML is sanitized before being set in the viewer:
 
 ```typescript
@@ -524,14 +502,12 @@ this.sanitizedContent = DOMPurify.sanitize(this.content);
 This prevents XSS attacks while preserving component data attributes.
 
 ### JSON Safety
-
 - JSON.parse() is wrapped in try-catch
 - Invalid JSON defaults to empty object
 - No eval() or dangerous string execution
 - All component creation is type-safe
 
 ### Component Isolation
-
 - Components cannot execute arbitrary code
 - Only registered components can be created
 - Component inputs are validated by Angular
@@ -544,7 +520,6 @@ This prevents XSS attacks while preserving component data attributes.
 ### Components not appearing in viewer
 
 **Check**:
-
 1. Is component imported in blog-viewer?
 2. Is component in COMPONENT_MAP?
 3. Is component in imports array?
@@ -553,7 +528,6 @@ This prevents XSS attacks while preserving component data attributes.
 ### Component data not preserved
 
 **Check**:
-
 1. Is renderHTML() receiving node parameter?
 2. Is data-component-data attribute in HTML?
 3. Is JSON valid?
@@ -562,17 +536,14 @@ This prevents XSS attacks while preserving component data attributes.
 ### Console warnings
 
 **"Component node missing data-component-id"**:
-
 - HTML is missing the data-component-id attribute
 - Check renderHTML() implementation
 
 **"Component not found in map"**:
-
 - Component not registered in COMPONENT_MAP
 - Add component to map and imports
 
 **"Error parsing component data"**:
-
 - Invalid JSON in data-component-data
 - Check JSON.stringify() in renderHTML()
 
@@ -581,7 +552,6 @@ This prevents XSS attacks while preserving component data attributes.
 ## Future Enhancements
 
 ### Potential Improvements
-
 1. **Lazy Loading**: Load component modules on demand
 2. **Versioning**: Handle component schema changes
 3. **Migration**: Convert old component formats
@@ -591,7 +561,6 @@ This prevents XSS attacks while preserving component data attributes.
 7. **SSR**: Server-side rendering support
 
 ### Advanced Features
-
 1. **Component Nesting**: Allow components within components
 2. **Cross-References**: Link components together
 3. **State Persistence**: Save component state separately

@@ -16,7 +16,7 @@ describe('AppController video limit handling', () => {
       videoService as never,
       {} as never,
       {} as never,
-      {} as never
+      {} as never,
     );
 
     return { controller, videoService };
@@ -93,7 +93,7 @@ describe('AppController video limit handling', () => {
 
     expect(videoService.failProcessing).toHaveBeenCalledWith(
       'video-1',
-      'ffmpeg failed'
+      'ffmpeg failed',
     );
   });
 });

@@ -66,18 +66,12 @@ describe('LeadsController', () => {
       providers: [
         { provide: LeadsService, useValue: mockService },
         { provide: DiscoveryService, useValue: mockDiscoveryService },
-        {
-          provide: OnboardingAnalysisService,
-          useValue: mockOnboardingAnalysisService,
-        },
+        { provide: OnboardingAnalysisService, useValue: mockOnboardingAnalysisService },
         {
           provide: GoogleMapsLocationAutocompleteService,
           useValue: mockGoogleMapsLocationAutocompleteService,
         },
-        {
-          provide: LeadQualificationService,
-          useValue: mockLeadQualificationService,
-        },
+        { provide: LeadQualificationService, useValue: mockLeadQualificationService },
       ],
     }).compile();
 
@@ -137,18 +131,12 @@ describe('LeadsController', () => {
       { name: 'Cloud', description: '', keywords: ['aws'] },
       context
     );
-    expect(discoveryService.request).toHaveBeenCalledWith(
-      'topic-1',
-      'profile-1'
-    );
+    expect(discoveryService.request).toHaveBeenCalledWith('topic-1', 'profile-1');
     expect(service.findTopicById).toHaveBeenCalledWith('topic-1', 'profile-1');
   });
 
   it('uses exported onboarding command handlers while saving scoped onboarding data', async () => {
-    service.createTopic.mockResolvedValue({
-      id: 'topic-1',
-      enabled: false,
-    } as any);
+    service.createTopic.mockResolvedValue({ id: 'topic-1', enabled: false } as any);
 
     await controller.confirmOnboarding({
       profile: { currentStep: 4 } as any,
@@ -166,23 +154,17 @@ describe('LeadsController', () => {
   });
 
   it('uses exported onboarding command implementations for helper flows', async () => {
-    onboardingAnalysisService.analyzeMadLib.mockResolvedValue({
-      summary: 'x',
-    } as any);
+    onboardingAnalysisService.analyzeMadLib.mockResolvedValue({ summary: 'x' } as any);
     googleMapsLocationAutocompleteService.searchCities.mockResolvedValue([]);
 
     await controller.analyzeMadLib({ text: 'hello' });
     await controller.autocompleteLocations({ query: 'sav' });
 
-    expect(onboardingAnalysisService.analyzeMadLib).toHaveBeenCalledWith(
-      'hello'
+    expect(onboardingAnalysisService.analyzeMadLib).toHaveBeenCalledWith('hello');
+    expect(googleMapsLocationAutocompleteService.searchCities).toHaveBeenCalledWith(
+      'sav'
     );
-    expect(
-      googleMapsLocationAutocompleteService.searchCities
-    ).toHaveBeenCalledWith('sav');
-    expect(LeadOnboardingCommands.ANALYZE_MAD_LIB).toBe(
-      'leads.onboarding.mad-lib.analyze'
-    );
+    expect(LeadOnboardingCommands.ANALYZE_MAD_LIB).toBe('leads.onboarding.mad-lib.analyze');
     expect(LeadAnalysisCommands.RUN).toBe('leads.analysis.run');
   });
 });

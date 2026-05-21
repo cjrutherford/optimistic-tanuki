@@ -51,84 +51,65 @@ const clientUserAfterOwnerLogin = await page.evaluate(() =>
 console.log('owner user after owner login', ownerUser);
 console.log('client user after owner login', clientUserAfterOwnerLogin);
 
-const siteConfig = await page.evaluate(
-  async ({ ownerToken }) => {
-    const response = await fetch('/api/business/site-config', {
-      headers: {
-        Authorization: `Bearer ${ownerToken}`,
-        'x-ot-appscope': 'business-site',
-      },
-    });
-    return response.json();
-  },
-  { ownerToken: ownerUser?.token }
-);
+const siteConfig = await page.evaluate(async ({ ownerToken }) => {
+  const response = await fetch('/api/business/site-config', {
+    headers: {
+      Authorization: `Bearer ${ownerToken}`,
+      'x-ot-appscope': 'business-site',
+    },
+  });
+  return response.json();
+}, { ownerToken: ownerUser?.token });
 
 siteConfig.config.features.clientTasks.enabled = true;
 siteConfig.config.features.clientTasks.allowClientCompletion = true;
 
-await page.evaluate(
-  async ({ ownerToken, configId, config }) => {
-    await fetch('/api/business/site-config', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${ownerToken}`,
-        'x-ot-appscope': 'business-site',
-      },
-      body: JSON.stringify({ configId, config }),
-    });
-  },
-  {
-    ownerToken: ownerUser?.token,
-    configId: siteConfig.id,
-    config: siteConfig.config,
-  }
-);
+await page.evaluate(async ({ ownerToken, configId, config }) => {
+  await fetch('/api/business/site-config', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${ownerToken}`,
+      'x-ot-appscope': 'business-site',
+    },
+    body: JSON.stringify({ configId, config }),
+  });
+}, { ownerToken: ownerUser?.token, configId: siteConfig.id, config: siteConfig.config });
 
 const routineTitle = `debug-routine-${Date.now()}`;
-const createdRoutine = await page.evaluate(
-  async ({ ownerToken, clientId, routineTitle }) => {
-    const response = await fetch('/api/business/owner/routines', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${ownerToken}`,
-        'x-ot-appscope': 'business-site',
-      },
-      body: JSON.stringify({
-        clientId,
-        clientName: 'Debug Client',
-        title: routineTitle,
-        summary: 'Debug summary',
-        focusAreas: ['Strength'],
-      }),
-    });
-    return response.json();
-  },
-  {
-    ownerToken: ownerUser?.token,
-    clientId: clientUserAfterOwnerLogin?.userId,
-    routineTitle,
-  }
-);
+const createdRoutine = await page.evaluate(async ({ ownerToken, clientId, routineTitle }) => {
+  const response = await fetch('/api/business/owner/routines', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${ownerToken}`,
+      'x-ot-appscope': 'business-site',
+    },
+    body: JSON.stringify({
+      clientId,
+      clientName: 'Debug Client',
+      title: routineTitle,
+      summary: 'Debug summary',
+      focusAreas: ['Strength'],
+    }),
+  });
+  return response.json();
+}, {
+  ownerToken: ownerUser?.token,
+  clientId: clientUserAfterOwnerLogin?.userId,
+  routineTitle,
+});
 console.log('created routine', createdRoutine);
 
-const apiRoutines = await page.evaluate(
-  async ({ clientToken, clientId }) => {
-    const response = await fetch(
-      `/api/business/client/routines?clientId=${encodeURIComponent(clientId)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${clientToken}`,
-          'x-ot-appscope': 'business-site',
-        },
-      }
-    );
-    return response.json();
-  },
-  { clientToken, clientId: clientUserAfterOwnerLogin?.userId }
-);
+const apiRoutines = await page.evaluate(async ({ clientToken, clientId }) => {
+  const response = await fetch(`/api/business/client/routines?clientId=${encodeURIComponent(clientId)}`, {
+    headers: {
+      Authorization: `Bearer ${clientToken}`,
+      'x-ot-appscope': 'business-site',
+    },
+  });
+  return response.json();
+}, { clientToken, clientId: clientUserAfterOwnerLogin?.userId });
 console.log('api routines direct', apiRoutines);
 
 await page.goto(`${BASE_URL}/client/routines`);

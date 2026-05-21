@@ -22,10 +22,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import {
-  SocialEventCommands as EventCommands,
-  ServiceTokens,
-} from '@optimistic-tanuki/constants';
+import { SocialEventCommands as EventCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   CreateEventDto,
   UpdateEventDto,

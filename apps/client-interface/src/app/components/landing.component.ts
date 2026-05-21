@@ -8,12 +8,7 @@ import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [
-    CommonModule,
-    CardComponent,
-    ButtonComponent,
-    MurmurationSceneComponent,
-  ],
+  imports: [CommonModule, CardComponent, ButtonComponent, MurmurationSceneComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })

@@ -99,18 +99,14 @@ export class SanitizationService {
     console.log('Content sanitized successfully');
     console.log(`Sanitized Content: ${sanitizedContent}`);
     const dom = new JSDOM(sanitizedContent);
-    const componentNodes = dom.window.document.querySelectorAll(
-      'div.angular-component-node'
-    );
+    const componentNodes = dom.window.document.querySelectorAll('div.angular-component-node');
 
     componentNodes.forEach((node) => {
       const componentId = node.getAttribute('componentid');
       const instanceId = node.getAttribute('instanceid');
       const data = node.getAttribute('data');
       console.log(
-        `Found component node - componentId: ${componentId}, instanceId: ${instanceId} data: ${JSON.stringify(
-          data
-        )}`
+        `Found component node - componentId: ${componentId}, instanceId: ${instanceId} data: ${JSON.stringify(data)}`
       );
     });
 

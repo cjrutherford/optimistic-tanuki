@@ -45,7 +45,9 @@ const oauthEnvPrefixes: Record<OAuthProviderName, string> = {
 };
 
 const isPlaceholderValue = (value: unknown): value is string =>
-  typeof value === 'string' && value.startsWith('${') && value.endsWith('}');
+  typeof value === 'string' &&
+  value.startsWith('${') &&
+  value.endsWith('}');
 
 const envValue = (key: string): string | undefined => {
   const value = process.env[key]?.trim();
@@ -68,8 +70,7 @@ const mergeOAuthProviderConfig = (
   }
 
   const prefix = oauthEnvPrefixes[provider];
-  const clientId =
-    envValue(`${prefix}_CLIENT_ID`) ?? configValue(config.clientId);
+  const clientId = envValue(`${prefix}_CLIENT_ID`) ?? configValue(config.clientId);
   const clientSecret =
     envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(config.clientSecret);
   const redirectUri =
@@ -81,8 +82,7 @@ const mergeOAuthProviderConfig = (
     clientSecret: clientSecret ?? '',
     redirectUri: redirectUri ?? '',
     enabled:
-      config.enabled !== false &&
-      Boolean(clientId && clientSecret && redirectUri),
+      config.enabled !== false && Boolean(clientId && clientSecret && redirectUri),
   };
 };
 
@@ -92,10 +92,7 @@ const mergeOAuthConfig = (
   const merged: AuthConfigType['oauth'] = {};
 
   for (const provider of oauthProviders) {
-    const providerConfig = mergeOAuthProviderConfig(
-      provider,
-      oauth?.[provider]
-    );
+    const providerConfig = mergeOAuthProviderConfig(provider, oauth?.[provider]);
     if (providerConfig) {
       merged[provider] = providerConfig;
     }

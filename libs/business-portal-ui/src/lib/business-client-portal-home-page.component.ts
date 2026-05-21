@@ -15,9 +15,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <h2>{{ site().clientPortal.headline }}</h2>
         <p>{{ site().clientPortal.description }}</p>
         <div class="actions">
-          <a class="cta-primary" routerLink="/client/dashboard"
-            >Open dashboard</a
-          >
+          <a class="cta-primary" routerLink="/client/dashboard">Open dashboard</a>
           <a class="cta-secondary" routerLink="/book">Request coaching</a>
         </div>
       </otui-card>
@@ -26,7 +24,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <h3>Inside the portal</h3>
         <ul>
           @for (item of site().clientPortal.capabilities; track item) {
-          <li>{{ item }}</li>
+            <li>{{ item }}</li>
           }
         </ul>
       </otui-card>
@@ -50,12 +48,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       h2,
       h3 {
         margin: 0;
-        font-family: var(
-          --font-heading,
-          'Source Sans Pro',
-          system-ui,
-          sans-serif
-        );
+        font-family: var(--font-heading, 'Source Sans Pro', system-ui, sans-serif);
         font-weight: 700;
       }
       ul {

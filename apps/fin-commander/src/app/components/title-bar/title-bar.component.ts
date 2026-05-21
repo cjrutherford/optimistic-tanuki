@@ -35,13 +35,8 @@ type GuidanceAction = {
 function hasBlockingChecklistItems(
   checklist: Array<{ id: string; complete: boolean }>
 ): boolean {
-  const blockingChecklist = checklist.filter(
-    (item) => !item.id.startsWith('setup-')
-  );
-  return (
-    blockingChecklist.length === 0 ||
-    blockingChecklist.some((item) => !item.complete)
-  );
+  const blockingChecklist = checklist.filter((item) => !item.id.startsWith('setup-'));
+  return blockingChecklist.length === 0 || blockingChecklist.some((item) => !item.complete);
 }
 
 @Component({

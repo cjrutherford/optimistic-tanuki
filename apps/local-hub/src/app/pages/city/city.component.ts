@@ -219,9 +219,7 @@ export class CityComponent implements OnInit, OnDestroy {
             { pageSize: 12 }
           );
           this.classifieds.set(
-            await this.enrichClassifiedSellerProfiles(
-              classifiedsData.data ?? []
-            )
+            await this.enrichClassifiedSellerProfiles(classifiedsData.data ?? [])
           );
         } catch {
           // Non-fatal - classifieds are optional
@@ -681,8 +679,7 @@ export class CityComponent implements OnInit, OnDestroy {
         const profile = profileMap.get(ad.profileId);
         return {
           ...ad,
-          sellerProfileName:
-            ad.sellerProfileName || profile?.profileName || null,
+          sellerProfileName: ad.sellerProfileName || profile?.profileName || null,
           sellerProfilePic: ad.sellerProfilePic || profile?.profilePic || null,
         };
       });

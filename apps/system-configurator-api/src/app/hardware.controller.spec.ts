@@ -90,8 +90,6 @@ describe('System Configurator HardwareController', () => {
   });
 
   it('exposes the shared hardware command contract', () => {
-    expect(HardwareCommands.GET_CHASSIS).toContain(
-      'system-configurator.hardware'
-    );
+    expect(HardwareCommands.GET_CHASSIS).toContain('system-configurator.hardware');
   });
 });

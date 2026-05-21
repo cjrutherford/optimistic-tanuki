@@ -1,11 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  Component,
-  inject,
-  OnDestroy,
-  OnInit,
-  PLATFORM_ID,
-} from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -50,8 +44,7 @@ export class LoginComponent implements OnDestroy, OnInit {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.themeSub = this.themeService.themeColors$
-        .pipe(filter((x) => !!x))
+      this.themeSub = this.themeService.themeColors$.pipe(filter((x) => !!x))
         .subscribe((colors) => {
           this.themeStyles = {
             backgroundColor: colors.background,

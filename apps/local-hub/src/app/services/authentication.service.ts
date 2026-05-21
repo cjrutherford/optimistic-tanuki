@@ -1,10 +1,6 @@
 import { Injectable, Inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {
-  LoginRequest,
-  RegisterRequest,
-  UserDto,
-} from '@optimistic-tanuki/ui-models';
+import { LoginRequest, RegisterRequest, UserDto } from '@optimistic-tanuki/ui-models';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
@@ -12,11 +8,8 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
   providedIn: 'root',
 })
 export class AuthenticationService {
-  isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(
-    false
-  );
-  userData: BehaviorSubject<UserDto | null> =
-    new BehaviorSubject<UserDto | null>(null);
+  isAuthenticated: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
+  userData: BehaviorSubject<UserDto | null> = new BehaviorSubject<UserDto | null>(null);
   private baseUrl: string;
 
   constructor(
