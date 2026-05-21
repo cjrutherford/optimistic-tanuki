@@ -22,7 +22,7 @@ import { resolveNextSetupRoute } from '../setup-route-policy';
     <lib-register-block
       registerHeader="Create Fin Commander Account"
       registerButtonText="Register"
-      heroSrc="'images/register-splash.png'"
+      heroSource="images/register-splash.png"
       callToAction="Create an account for your finance workspace."
       (submitEvent)="onSubmit($event)"
       (oauthProviderSelected)="onOAuthProvider($event)"

@@ -15,38 +15,86 @@ import { HttpClient } from '@angular/common/http';
   standalone: true,
   imports: [CommonModule, RouterModule, RegisterBlockComponent],
   template: `
-    <div class="register-container">
-      <lib-register-block
-        registerHeader="Owner Console Registration"
-        callToAction="Create an owner account with full administrative access to all apps"
-        registerButtonText="Register as Owner"
-        [heroSource]="
-          'https://images.unsplash.com/photo-1551434678-e076c223a692?q=80&w=2070'
-        "
-        (submitEvent)="onRegister($event)"
-        (oauthProviderSelected)="onOAuthProvider($event)"
-      ></lib-register-block>
-      <div class="login-link">
-        <a routerLink="/login">Already have an account? Login</a>
+    <section class="auth-shell">
+      <div class="auth-story">
+        <p class="eyebrow">Owner Console</p>
+        <h1>Provision the operator account that controls the stack.</h1>
+        <p class="lede">
+          Registration here is for platform operators who need role assignment,
+          permissions control, and full administrative access.
+        </p>
       </div>
-      <div *ngIf="error" class="error-message">{{ error }}</div>
-      <div *ngIf="success" class="success-message">{{ success }}</div>
-    </div>
+      <div class="auth-panel">
+        <lib-register-block
+          registerHeader="Owner Console Registration"
+          callToAction="Create an owner account with full administrative access to all apps."
+          registerButtonText="Register as Owner"
+          [heroSource]="'/tempest-in-a-teacup.png'"
+          (submitEvent)="onRegister($event)"
+          (oauthProviderSelected)="onOAuthProvider($event)"
+        ></lib-register-block>
+        <div class="login-link">
+          <a routerLink="/login">Already have an account? Login</a>
+        </div>
+        <div *ngIf="error" class="error-message">{{ error }}</div>
+        <div *ngIf="success" class="success-message">{{ success }}</div>
+      </div>
+    </section>
   `,
   styles: [
     `
-      .register-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+      .auth-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 28rem) minmax(20rem, 35rem);
+        gap: 3rem;
         align-items: center;
+        justify-content: center;
         min-height: 100vh;
-        padding: 2rem;
+        padding: 2rem 1.25rem 3rem;
+        background: radial-gradient(
+            circle at top left,
+            rgba(102, 126, 234, 0.2),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(118, 75, 162, 0.18),
+            transparent 24rem
+          ),
+          linear-gradient(180deg, #111827 0%, #1f2937 100%);
       }
 
-      lib-register-block {
-        width: 100%;
-        max-width: 800px;
+      .auth-story {
+        display: grid;
+        gap: 1rem;
+        color: #f3f4f6;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 0.8rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #a5b4fc;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.4rem, 5vw, 4.2rem);
+        line-height: 0.95;
+        letter-spacing: -0.05em;
+      }
+
+      .lede {
+        margin: 0;
+        color: rgba(243, 244, 246, 0.8);
+        line-height: 1.7;
+      }
+
+      .auth-panel {
+        display: grid;
+        gap: 0.9rem;
       }
 
       .error-message {
@@ -64,7 +112,6 @@ import { HttpClient } from '@angular/common/http';
       }
 
       .login-link {
-        margin-top: 1rem;
         text-align: center;
       }
 
@@ -75,6 +122,12 @@ import { HttpClient } from '@angular/common/http';
 
       .login-link a:hover {
         text-decoration: underline;
+      }
+
+      @media (max-width: 960px) {
+        .auth-shell {
+          grid-template-columns: 1fr;
+        }
       }
     `,
   ],
@@ -96,7 +149,9 @@ export class RegisterComponent implements OnInit {
   private async loadOAuthConfig(): Promise<void> {
     try {
       const domain = window.location.hostname;
-      const config: any = await this.http.get(`/api/oauth/config?domain=${encodeURIComponent(domain)}`).toPromise();
+      const config: any = await this.http
+        .get(`/api/oauth/config?domain=${encodeURIComponent(domain)}`)
+        .toPromise();
       if (config) {
         this.oauthService.configureProviders(config);
       }

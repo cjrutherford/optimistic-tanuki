@@ -23,11 +23,21 @@ import { ProfileService } from './profile.service';
           Authentication, profile setup, onboarding, and workspace access all
           run through the same app-scoped flow.
         </p>
+        <div class="signal-grid" aria-hidden="true">
+          <span>Pipeline</span>
+          <span>Outreach</span>
+          <span>Scoring</span>
+          <span>Follow-up</span>
+        </div>
       </div>
-      <lib-login-block
-        (submitEvent)="onSubmit($event)"
-        (oauthProviderSelected)="onOAuthProvider($event)"
-      ></lib-login-block>
+      <div class="auth-panel">
+        <lib-login-block
+          title="Lead Command Login"
+          description="Sign in to resume onboarding, triage, and workspace routing."
+          (submitEvent)="onSubmit($event)"
+          (oauthProviderSelected)="onOAuthProvider($event)"
+        ></lib-login-block>
+      </div>
     </section>
   `,
   styles: [
@@ -40,12 +50,25 @@ import { ProfileService } from './profile.service';
         align-items: center;
         justify-content: center;
         padding: 3rem 1.5rem;
+        background: radial-gradient(
+            circle at top left,
+            rgba(13, 148, 136, 0.12),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(14, 165, 233, 0.14),
+            transparent 26rem
+          ),
+          linear-gradient(180deg, #f5fbfb 0%, #eef6ff 100%);
       }
       .auth-copy {
-        max-width: 28rem;
+        max-width: 30rem;
+        display: grid;
+        gap: 1rem;
       }
       .eyebrow {
-        margin: 0 0 0.75rem;
+        margin: 0;
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.14em;
@@ -53,13 +76,34 @@ import { ProfileService } from './profile.service';
         color: var(--app-primary);
       }
       h1 {
-        margin: 0 0 1rem;
-        font-size: clamp(2rem, 3vw, 3rem);
-        line-height: 1;
+        margin: 0;
+        font-size: clamp(2.2rem, 4vw, 3.6rem);
+        line-height: 0.98;
+        letter-spacing: -0.04em;
       }
       p {
         margin: 0;
         color: var(--app-foreground-muted);
+        line-height: 1.7;
+      }
+      .signal-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.8rem;
+        margin-top: 0.25rem;
+      }
+      .signal-grid span {
+        padding: 0.9rem 1rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(8, 47, 73, 0.08);
+        box-shadow: 0 18px 34px rgba(13, 68, 93, 0.08);
+        font-size: 0.92rem;
+        font-weight: 600;
+        color: #124860;
+      }
+      .auth-panel {
+        width: 100%;
       }
       @media (max-width: 900px) {
         .auth-shell {

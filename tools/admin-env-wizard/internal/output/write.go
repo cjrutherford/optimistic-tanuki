@@ -59,6 +59,18 @@ func (w *Writer) WriteGatewayComposition(data []byte) error {
 	return w.WriteFile(filepath.Join("gateway", "composition.yaml"), data)
 }
 
+func (w *Writer) WriteAppRegistry(data []byte) error {
+	return w.WriteFile(filepath.Join("config", "app-registry.generated.json"), data)
+}
+
+func (w *Writer) WriteRuntimeEnv(data []byte) error {
+	return w.WriteFile(filepath.Join("config", "runtime.env"), data)
+}
+
+func (w *Writer) WriteValidationReport(data []byte) error {
+	return w.WriteFile(filepath.Join("reports", "validation.txt"), data)
+}
+
 func (w *Writer) WriteK8sFiles(files map[string][]byte) error {
 	for name, data := range files {
 		relPath := filepath.Join("k8s", name)

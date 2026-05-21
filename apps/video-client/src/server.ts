@@ -12,6 +12,7 @@ const indexHtml = join(serverDistFolder, 'index.server.html');
 
 const app = express();
 const commonEngine = new CommonEngine();
+const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 
 /**
  * Proxy API requests to the gateway
@@ -19,7 +20,7 @@ const commonEngine = new CommonEngine();
 app.use(
   '/api',
   createProxyMiddleware({
-    target: 'http://gateway:3000/api',
+    target: `${gatewayUrl}/api`,
     changeOrigin: true,
   })
 );

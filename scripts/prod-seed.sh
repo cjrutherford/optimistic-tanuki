@@ -2,11 +2,19 @@
 
 set -eu
 
-COMPOSE_FILES="-f docker-compose.yaml"
+COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-}"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
 APP_RUNTIME_DIR="/usr/src/app"
+
+compose_cmd() {
+  if [ -n "$COMPOSE_ENV_FILE" ]; then
+    docker compose --env-file "$COMPOSE_ENV_FILE" -f docker-compose.yaml "$@"
+  else
+    docker compose -f docker-compose.yaml "$@"
+  fi
+}
 
 if [ -n "${HOST_GATEWAY_READY_URL:-}" ]; then
   :
@@ -20,14 +28,14 @@ run_seed() {
   shift 2
 
   echo "Seeding ${service}..."
-  docker compose ${COMPOSE_FILES} exec -T -w "${workdir}" "$service" "$@"
+  compose_cmd exec -T -w "${workdir}" "$service" "$@"
 }
 
 restart_service() {
   service="$1"
 
   echo "Restarting ${service}..."
-  docker compose ${COMPOSE_FILES} restart "$service"
+  compose_cmd restart "$service"
 }
 
 wait_for_gateway() {
@@ -62,11 +70,16 @@ echo "=========================================="
 echo "Production Seed Script"
 echo "=========================================="
 
+if [ -n "$COMPOSE_ENV_FILE" ]; then
+  echo "Using compose env file: $COMPOSE_ENV_FILE"
+fi
+
 echo "Restarting services before seeding..."
 restart_service permissions
 restart_service gateway
 sleep 5
 
+run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 
 echo "Seeding social service (including local communities)..."

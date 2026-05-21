@@ -1,17 +1,43 @@
+x-service-db-env: &service_db_env
+  DATABASE_HOST: ${POSTGRES_HOST:-db}
+  DATABASE_PORT: ${POSTGRES_PORT:-5432}
+  DATABASE_USER: ${POSTGRES_USER:-postgres}
+  DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  DATABASE_NAME: ${POSTGRES_DB:-postgres}
+  DB_HOST: ${POSTGRES_HOST:-db}
+  DB_PORT: ${POSTGRES_PORT:-5432}
+  DB_USER: ${POSTGRES_USER:-postgres}
+  DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  DB_NAME: ${POSTGRES_DB:-postgres}
+  POSTGRES_HOST: ${POSTGRES_HOST:-db}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  POSTGRES_DB: ${POSTGRES_DB:-postgres}
+
+x-gateway-client-env: &gateway_client_env
+  GATEWAY_URL: ${GATEWAY_URL:-http://gateway:3000}
+  GATEWAY_WS_URL: ${GATEWAY_WS_URL:-http://gateway:3300}
+
 services:
   postgres:
     image: postgres:17
     restart: always
     container_name: db # Changed back from ot_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -32,9 +58,10 @@ services:
     volumes:
       - .:/workspace
     environment:
-      POSTGRES_HOST: db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     depends_on:
       postgres:
         condition: service_healthy
@@ -44,7 +71,7 @@ services:
     image: redis:latest
     container_name: redis
     ports:
-      - '6379:6379'
+      - '${REDIS_PORT:-6379}:6379'
     restart: always
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
@@ -67,20 +94,22 @@ services:
       dockerfile: ./apps/authentication/Dockerfile
     image: cjrutherford/optimistic_tanuki_authentication:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3001:3001'
+      - '${AUTHENTICATION_PORT:-3001}:3001'
     environment:
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-}
-      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
-      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
-      - MICROSOFT_REDIRECT_URI=${MICROSOFT_REDIRECT_URI:-}
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
-      - FACEBOOK_REDIRECT_URI=${FACEBOOK_REDIRECT_URI:-}
+      <<: *service_db_env
+      JWT_SECRET: ${JWT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,7 +131,9 @@ services:
       dockerfile: ./apps/client-interface/Dockerfile
     image: cjrutherford/optimistic_tanuki_client-interface:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8080:4000'
+      - '${CLIENT_INTERFACE_PORT:-8080}:4000'
+    environment:
+      <<: *gateway_client_env
     deploy:
       resources:
         limits:
@@ -119,7 +150,9 @@ services:
       dockerfile: ./apps/forgeofwill/Dockerfile
     image: cjrutherford/optimistic_tanuki_forgeofwill:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8081:4000'
+      - '${FORGE_OF_WILL_PORT:-8081}:4000'
+    environment:
+      <<: *gateway_client_env
     deploy:
       resources:
         limits:
@@ -136,7 +169,9 @@ services:
       dockerfile: ./apps/digital-homestead/Dockerfile
     image: cjrutherford/optimistic_tanuki_digital-homestead:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8082:4000'
+      - '${DIGITAL_HOMESTEAD_PORT:-8082}:4000'
+    environment:
+      <<: *gateway_client_env
 
   hai-client-interface:
     container_name: hai_client_interface
@@ -145,9 +180,9 @@ services:
       dockerfile: ./apps/hai/Dockerfile
     image: cjrutherford/optimistic_tanuki_hai:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8088:4000'
+      - '${HAI_PORT:-8088}:4000'
     environment:
-      - GATEWAY_URL=http://gateway:3000
+      <<: *gateway_client_env
 
   fin-commander:
     container_name: ot_fin_commander
@@ -156,11 +191,11 @@ services:
       dockerfile: ./apps/fin-commander/Dockerfile
     image: cjrutherford/optimistic_tanuki_fin-commander:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8089:4000'
+      - '${FIN_COMMANDER_PORT:-8089}:4000'
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - GATEWAY_URL=http://gateway:3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
     depends_on:
       - gateway
 
@@ -171,11 +206,11 @@ services:
       dockerfile: ./apps/marketing-generator/Dockerfile
     image: cjrutherford/optimistic_tanuki_marketing-generator:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8092:4000'
+      - '${MARKETING_GENERATOR_PORT:-8092}:4000'
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - GATEWAY_URL=http://gateway:3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
     depends_on:
       - gateway
 
@@ -186,11 +221,11 @@ services:
       dockerfile: ./apps/business-site/Dockerfile
     image: cjrutherford/optimistic_tanuki_business-site:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8094:4000'
+      - '${BUSINESS_SITE_PORT:-8094}:4000'
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - GATEWAY_URL=http://gateway:3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
     depends_on:
       - gateway
 
@@ -201,7 +236,9 @@ services:
       dockerfile: ./apps/christopherrutherford-net/Dockerfile
     image: cjrutherford/optimistic_tanuki_christopherrutherford-net:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8083:4000'
+      - '${CHRISTOPHERRUTHERFORD_NET_PORT:-8083}:4000'
+    environment:
+      <<: *gateway_client_env
 
   owner-console:
     container_name: owner_console
@@ -209,8 +246,10 @@ services:
       context: .
       dockerfile: ./apps/owner-console/Dockerfile
     ports:
-      - '8084:4000'
+      - '${OWNER_CONSOLE_PORT:-8084}:4000'
     image: cjrutherford/optimistic_tanuki_owner-console:${PRODUCTION_IMAGE_TAG:-latest}
+    environment:
+      <<: *gateway_client_env
 
   leads-app:
     container_name: ot_leads_app
@@ -218,8 +257,10 @@ services:
       context: .
       dockerfile: ./apps/leads-app/Dockerfile
     ports:
-      - '4201:4000'
+      - '${LEADS_APP_PORT:-4201}:4000'
     image: cjrutherford/optimistic_tanuki_leads-app:${PRODUCTION_IMAGE_TAG:-latest}
+    environment:
+      <<: *gateway_client_env
 
   system-configurator:
     container_name: ot_system_configurator
@@ -228,11 +269,11 @@ services:
       dockerfile: ./apps/system-configurator/Dockerfile
     image: cjrutherford/optimistic_tanuki_system-configurator:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8091:4000'
+      - '${SYSTEM_CONFIGURATOR_PORT:-8091}:4000'
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - GATEWAY_URL=http://gateway:3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
     depends_on:
       - gateway
       - system-configurator-api
@@ -244,39 +285,45 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
-      - APP_REGISTRY_PATH=${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GITHUB_REDIRECT_URI=${GITHUB_REDIRECT_URI:-}
-      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
-      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
-      - MICROSOFT_REDIRECT_URI=${MICROSOFT_REDIRECT_URI:-}
-      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
-      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
-      - FACEBOOK_REDIRECT_URI=${FACEBOOK_REDIRECT_URI:-}
-      - CLIENT_INTERFACE_DOMAIN=${CLIENT_INTERFACE_DOMAIN:-}
-      - CLIENT_INTERFACE_UI_BASE_URL=${CLIENT_INTERFACE_UI_BASE_URL:-}
-      - CI_GOOGLE_CLIENT_ID=${CI_GOOGLE_CLIENT_ID:-}
-      - CI_GOOGLE_CLIENT_SECRET=${CI_GOOGLE_CLIENT_SECRET:-}
-      - CI_GOOGLE_REDIRECT_URI=${CI_GOOGLE_REDIRECT_URI:-}
-      - CI_GITHUB_CLIENT_ID=${CI_GITHUB_CLIENT_ID:-}
-      - CI_GITHUB_CLIENT_SECRET=${CI_GITHUB_CLIENT_SECRET:-}
-      - CI_GITHUB_REDIRECT_URI=${CI_GITHUB_REDIRECT_URI:-}
-      - CI_MICROSOFT_CLIENT_ID=${CI_MICROSOFT_CLIENT_ID:-}
-      - CI_MICROSOFT_CLIENT_SECRET=${CI_MICROSOFT_CLIENT_SECRET:-}
-      - CI_MICROSOFT_REDIRECT_URI=${CI_MICROSOFT_REDIRECT_URI:-}
-      - CI_FACEBOOK_CLIENT_ID=${CI_FACEBOOK_CLIENT_ID:-}
-      - CI_FACEBOOK_CLIENT_SECRET=${CI_FACEBOOK_CLIENT_SECRET:-}
-      - CI_FACEBOOK_REDIRECT_URI=${CI_FACEBOOK_REDIRECT_URI:-}
+      <<: *service_db_env
+      PORT: 3000
+      LISTEN_PORT: ${GATEWAY_PORT:-3000}
+      SOCKET_PORT: ${GATEWAY_CHAT_SOCKET_PORT:-3300}
+      SOCIAL_SOCKET_PORT: ${GATEWAY_SOCIAL_SOCKET_PORT:-3301}
+      JWT_SECRET: ${JWT_SECRET:-}
+      APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
+      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
+      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
+      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
+      CLIENT_INTERFACE_DOMAIN: ${CLIENT_INTERFACE_DOMAIN:-}
+      CLIENT_INTERFACE_UI_BASE_URL: ${CLIENT_INTERFACE_UI_BASE_URL:-}
+      CI_GOOGLE_CLIENT_ID: ${CI_GOOGLE_CLIENT_ID:-}
+      CI_GOOGLE_CLIENT_SECRET: ${CI_GOOGLE_CLIENT_SECRET:-}
+      CI_GOOGLE_REDIRECT_URI: ${CI_GOOGLE_REDIRECT_URI:-}
+      CI_GITHUB_CLIENT_ID: ${CI_GITHUB_CLIENT_ID:-}
+      CI_GITHUB_CLIENT_SECRET: ${CI_GITHUB_CLIENT_SECRET:-}
+      CI_GITHUB_REDIRECT_URI: ${CI_GITHUB_REDIRECT_URI:-}
+      CI_MICROSOFT_CLIENT_ID: ${CI_MICROSOFT_CLIENT_ID:-}
+      CI_MICROSOFT_CLIENT_SECRET: ${CI_MICROSOFT_CLIENT_SECRET:-}
+      CI_MICROSOFT_REDIRECT_URI: ${CI_MICROSOFT_REDIRECT_URI:-}
+      CI_FACEBOOK_CLIENT_ID: ${CI_FACEBOOK_CLIENT_ID:-}
+      CI_FACEBOOK_CLIENT_SECRET: ${CI_FACEBOOK_CLIENT_SECRET:-}
+      CI_FACEBOOK_REDIRECT_URI: ${CI_FACEBOOK_REDIRECT_URI:-}
     volumes:
       - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro
     ports:
-      - '3000:3000'
-      - '3300:3300' # Chat WebSocket
-      - '3301:3301' # Social WebSocket
+      - '${GATEWAY_PORT:-3000}:3000'
+      - '${GATEWAY_CHAT_SOCKET_PORT:-3300}:3300' # Chat WebSocket
+      - '${GATEWAY_SOCIAL_SOCKET_PORT:-3301}:3301' # Social WebSocket
     healthcheck:
       test:
         [
@@ -349,15 +396,16 @@ services:
       dockerfile: ./apps/lead-tracker/Dockerfile
     image: cjrutherford/optimistic_tanuki_lead-tracker:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3020:3020'
+      - '${LEAD_TRACKER_PORT:-3020}:3020'
     environment:
-      - POSTGRES_HOST=postgres
-      - OLLAMA_HOST=192.168.50.14
-      - OLLAMA_MODEL=gemma3:4b
-      - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
-      - LEAD_DISCOVERY_SEARCH_GOOGLE_CX=${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
-      - LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY=${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
-      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}
+      <<: *service_db_env
+      OLLAMA_HOST: ${OLLAMA_HOST:-prompt-proxy}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma3}
+      LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY: ${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
+      LEAD_DISCOVERY_SEARCH_GOOGLE_CX: ${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
+      LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY: ${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -373,7 +421,9 @@ services:
       dockerfile: ./apps/profile/Dockerfile
     image: cjrutherford/optimistic_tanuki_profile:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3002:3002'
+      - '${PROFILE_PORT:-3002}:3002'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -388,7 +438,9 @@ services:
       dockerfile: ./apps/social/Dockerfile
     image: cjrutherford/optimistic_tanuki_social:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3003:3003'
+      - '${SOCIAL_PORT:-3003}:3003'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -402,7 +454,9 @@ services:
       dockerfile: ./apps/forum/Dockerfile
     image: cjrutherford/optimistic_tanuki_forum:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - 3015:3015
+      - '${FORUM_PORT:-3015}:3015'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -416,7 +470,9 @@ services:
       dockerfile: ./apps/finance/Dockerfile
     image: cjrutherford/optimistic_tanuki_finance:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - 3016:3016
+      - '${FINANCE_PORT:-3016}:3016'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -443,7 +499,9 @@ services:
       dockerfile: ./apps/chat-collector/Dockerfile
     image: cjrutherford/optimistic_tanuki_chat-collector:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3007:3007'
+      - '${CHAT_COLLECTOR_PORT:-3007}:3007'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -456,13 +514,14 @@ services:
       context: .
       dockerfile: ./apps/assets/Dockerfile
     ports:
-      - '3005:3005'
+      - '${ASSETS_PORT:-3005}:3005'
     image: cjrutherford/optimistic_tanuki_assets:${PRODUCTION_IMAGE_TAG:-latest}
     volumes:
       - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
     environment:
-      - STORAGE_STRATEGY=local
-      - LOCAL_STORAGE_PATH=/usr/src/app/storage
+      <<: *service_db_env
+      STORAGE_STRATEGY: ${STORAGE_STRATEGY:-local}
+      LOCAL_STORAGE_PATH: /usr/src/app/storage
     depends_on:
       postgres:
         condition: service_healthy
@@ -476,7 +535,9 @@ services:
       dockerfile: ./apps/prompt-proxy/Dockerfile
     image: cjrutherford/optimistic_tanuki_prompt-proxy:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3009:3009'
+      - '${PROMPT_PROXY_PORT:-3009}:3009'
+    environment:
+      <<: *service_db_env
     volumes:
       - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml
     depends_on:
@@ -491,7 +552,14 @@ services:
       dockerfile: ./apps/ai-orchestrator/Dockerfile
     image: cjrutherford/optimistic_tanuki_ai-orchestrator:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3010:3010'
+      - '${AI_ORCHESTRATION_PORT:-3010}:3010'
+    environment:
+      <<: *service_db_env
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      OLLAMA_HOST: ${OLLAMA_HOST:-prompt-proxy}
+      OLLAMA_PORT: ${OLLAMA_PORT:-11434}
     depends_on:
       postgres:
         condition: service_healthy
@@ -517,7 +585,9 @@ services:
       dockerfile: ./apps/telos-docs-service/Dockerfile
     image: cjrutherford/optimistic_tanuki_telos-docs-service:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3008:3008'
+      - '${TELOS_DOCS_PORT:-3008}:3008'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -530,7 +600,9 @@ services:
       dockerfile: ./apps/blogging/Dockerfile
     image: cjrutherford/optimistic_tanuki_blogging:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3011:3011'
+      - '${BLOGGING_PORT:-3011}:3011'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -544,7 +616,9 @@ services:
       dockerfile: ./apps/permissions/Dockerfile
     image: cjrutherford/optimistic_tanuki_permissions:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3012:3012'
+      - '${PERMISSIONS_PORT:-3012}:3012'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -558,7 +632,9 @@ services:
       dockerfile: ./apps/project-planning/Dockerfile
     image: cjrutherford/optimistic_tanuki_project-planning:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3006:3006'
+      - '${PROJECT_PLANNING_PORT:-3006}:3006'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -571,7 +647,9 @@ services:
       dockerfile: ./apps/store-client/Dockerfile
     image: cjrutherford/optimistic_tanuki_store-client:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8085:4000'
+      - '${STORE_CLIENT_PORT:-8085}:4000'
+    environment:
+      <<: *gateway_client_env
     depends_on:
       - gateway
   store:
@@ -581,7 +659,9 @@ services:
       dockerfile: ./apps/store/Dockerfile
     image: cjrutherford/optimistic_tanuki_store:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3013:3009'
+      - '${STORE_PORT:-3013}:3009'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -595,7 +675,12 @@ services:
       dockerfile: ./apps/app-configurator/Dockerfile
     image: cjrutherford/optimistic_tanuki_app-configurator:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3014:3014'
+      - '${APP_CONFIGURATOR_PORT:-3014}:3014'
+    environment:
+      <<: *service_db_env
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -611,16 +696,13 @@ services:
       dockerfile: ./apps/system-configurator-api/Dockerfile
     image: cjrutherford/optimistic_tanuki_system-configurator-api:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3021:3021'
+      - '${SYSTEM_CONFIGURATOR_API_PORT:-3021}:3021'
     environment:
-      - NODE_ENV=production
-      - PORT=3021
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=ot_system_configurator
-      - PCPARTPICKER_SYNC_ON_START=false
+      <<: *service_db_env
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3021
+      DB_NAME: ot_system_configurator
+      PCPARTPICKER_SYNC_ON_START: 'false'
     depends_on:
       postgres:
         condition: service_healthy
@@ -634,12 +716,9 @@ services:
       dockerfile: ./apps/app-configurator/Dockerfile
     image: cjrutherford/optimistic_tanuki_app-configurator:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - DB_NAME=ot_app_configurator
-      - PORT=3014
+      <<: *service_db_env
+      DB_NAME: ot_app_configurator
+      PORT: 3014
     depends_on:
       app-configurator:
         condition: service_started
@@ -653,7 +732,9 @@ services:
       dockerfile: ./apps/configurable-client/Dockerfile
     image: cjrutherford/optimistic_tanuki_configurable-client:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8090:4000'
+      - '${CONFIGURABLE_CLIENT_PORT:-8090}:4000'
+    environment:
+      <<: *gateway_client_env
     depends_on:
       - gateway
       - app-configurator
@@ -666,7 +747,9 @@ services:
       dockerfile: ./apps/wellness/Dockerfile
     image: cjrutherford/optimistic_tanuki_wellness:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3018:3018'
+      - '${WELLNESS_PORT:-3018}:3018'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -680,7 +763,9 @@ services:
       dockerfile: ./apps/classifieds/Dockerfile
     image: cjrutherford/optimistic_tanuki_classifieds:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3017:3017'
+      - '${CLASSIFIEDS_PORT:-3017}:3017'
+    environment:
+      <<: *service_db_env
     depends_on:
       postgres:
         condition: service_healthy
@@ -694,7 +779,12 @@ services:
       dockerfile: ./apps/payments/Dockerfile
     image: cjrutherford/optimistic_tanuki_payments:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3004:3004'
+      - '${PAYMENTS_PORT:-3004}:3004'
+    environment:
+      <<: *service_db_env
+      LEMON_SQUEEZY_API_KEY: ${LEMON_SQUEEZY_API_KEY:-}
+      LEMON_SQUEEZY_STORE_ID: ${LEMON_SQUEEZY_STORE_ID:-}
+      LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -708,10 +798,9 @@ services:
       dockerfile: ./apps/local-hub/Dockerfile
     image: cjrutherford/optimistic_tanuki_local-hub:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8087:4000'
+      - '${LOCAL_HUB_PORT:-8087}:4000'
     environment:
-      - GATEWAY_URL=http://gateway:3000
-      - GATEWAY_WS_URL=http://gateway:3300
+      <<: *gateway_client_env
     depends_on:
       - gateway
 
@@ -722,7 +811,9 @@ services:
       dockerfile: ./apps/d6/Dockerfile
     image: cjrutherford/optimistic_tanuki_d6:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8086:4000'
+      - '${D6_PORT:-8086}:4000'
+    environment:
+      <<: *gateway_client_env
     depends_on:
       - gateway
 
@@ -733,20 +824,17 @@ services:
       dockerfile: ./apps/videos/Dockerfile
     image: cjrutherford/optimistic_tanuki_videos:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3022:3022'
+      - '${VIDEOS_PORT:-3022}:3022'
     environment:
-      - POSTGRES_HOST=db
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=ot_videos
-      - PORT=3022
-      - VIDEO_SEED_SOURCE_DIR=${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
-      - ASSETS_HOST=${ASSETS_HOST:-assets}
-      - ASSETS_PORT=${ASSETS_PORT:-3005}
-      - LOCAL_STORAGE_PATH=/usr/src/app/storage
-      - VIDEO_TRANSCODER_HOST=${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
-      - VIDEO_TRANSCODER_PORT=${VIDEO_TRANSCODER_PORT:-3023}
+      <<: *service_db_env
+      POSTGRES_DB: ot_videos
+      PORT: 3022
+      VIDEO_SEED_SOURCE_DIR: ${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}
+      ASSETS_HOST: ${ASSETS_HOST:-assets}
+      ASSETS_PORT: ${ASSETS_PORT:-3005}
+      LOCAL_STORAGE_PATH: /usr/src/app/storage
+      VIDEO_TRANSCODER_HOST: ${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
+      VIDEO_TRANSCODER_PORT: ${VIDEO_TRANSCODER_PORT:-3023}
     volumes:
       - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
       - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
@@ -768,7 +856,7 @@ services:
       dockerfile: ./apps/video-transcoder-worker/Dockerfile
     image: cjrutherford/optimistic_tanuki_video-transcoder-worker:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '3023:3023'
+      - '${VIDEO_TRANSCODER_PORT:-3023}:3023'
     environment:
       - PORT=3023
       - HOST=0.0.0.0
@@ -784,11 +872,11 @@ services:
       dockerfile: ./apps/video-client/Dockerfile
     image: cjrutherford/optimistic_tanuki_video-client:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '8093:4000'
+      - '${VIDEO_CLIENT_PORT:-8093}:4000'
     environment:
-      - NODE_ENV=production
-      - PORT=4000
-      - GATEWAY_URL=http://gateway:3000
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
     depends_on:
       - gateway
       - videos

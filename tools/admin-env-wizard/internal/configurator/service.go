@@ -10,11 +10,14 @@ import (
 )
 
 type GenerateResult struct {
-	OutputDir    string
-	ComposePath  string
-	K8sPath      string
-	DeployScript string
-	GeneratedK8s []string
+	OutputDir            string
+	ComposePath          string
+	K8sPath              string
+	DeployScript         string
+	RegistryPath         string
+	RuntimeEnvPath       string
+	ValidationReportPath string
+	GeneratedK8s         []string
 }
 
 func DefaultEnvironment() *domain.EnvironmentDefinition {

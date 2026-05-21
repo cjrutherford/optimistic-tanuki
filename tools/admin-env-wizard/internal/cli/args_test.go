@@ -46,6 +46,34 @@ func TestParseArgsTUI(t *testing.T) {
 	}
 }
 
+func TestParseArgsValidateDeployment(t *testing.T) {
+	cmd, err := ParseArgs([]string{
+		"validate",
+		"-deployment", "deployment.yaml",
+		"-secrets", "deployment.secrets.env",
+	})
+	if err != nil {
+		t.Fatalf("ParseArgs() error = %v", err)
+	}
+
+	if cmd.Name != "validate" {
+		t.Fatalf("expected validate command, got %s", cmd.Name)
+	}
+	if cmd.DeploymentPath != "deployment.yaml" {
+		t.Fatalf("expected deployment path, got %q", cmd.DeploymentPath)
+	}
+	if cmd.SecretsPath != "deployment.secrets.env" {
+		t.Fatalf("expected secrets path, got %q", cmd.SecretsPath)
+	}
+}
+
+func TestParseArgsValidateRequiresDeployment(t *testing.T) {
+	_, err := ParseArgs([]string{"validate"})
+	if err == nil {
+		t.Fatal("expected error when deployment path is missing")
+	}
+}
+
 func TestParseArgsGenerateWorkspaceConfig(t *testing.T) {
 	cmd, err := ParseArgs([]string{
 		"generate",

@@ -11,7 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type DeploymentConfig struct {
+type WorkspaceDeploymentConfig struct {
 	Name         string   `yaml:"name"`
 	Provider     string   `yaml:"provider"`
 	Capabilities []string `yaml:"capabilities"`
@@ -19,12 +19,12 @@ type DeploymentConfig struct {
 }
 
 type WorkspaceDefinition struct {
-	Deployments []DeploymentConfig `yaml:"deployments"`
+	Deployments []WorkspaceDeploymentConfig `yaml:"deployments"`
 }
 
 type WorkspaceResult struct {
-	OutputDir    string
-	Deployments  []GenerateResult
+	OutputDir   string
+	Deployments []GenerateResult
 }
 
 func LoadWorkspace(path string) (*WorkspaceDefinition, error) {

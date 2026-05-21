@@ -1,9 +1,26 @@
-<lib-login-block
-  [title]="'Optomistic Tanuki'"
-  [description]="'Login to your account'"
-  heroSrc="assets/tanuki.jpg"
-  heroAlt="The Optomistic Tanuki"
-  (submitEvent)="onSubmit($event)"
-  (oauthProviderSelected)="onOAuthProvider($event)"
->
-</lib-login-block>
+<section class="auth-shell">
+  <div class="auth-story">
+    <p class="eyebrow">Optimistic Tanuki</p>
+    <h1>Return to your feed, your circles, and your next conversation.</h1>
+    <p class="lede">
+      Sign in to pick up where you left off across your social profile,
+      communities, and shared updates.
+    </p>
+    <ul class="auth-points">
+      <li>Restore your active profile context</li>
+      <li>Reconnect to your feed and messages</li>
+      <li>Continue with email or OAuth</li>
+    </ul>
+  </div>
+  <lib-login-block
+    [title]="'Welcome back to Optimistic Tanuki'"
+    [description]="
+      'Sign in to continue inside your app-scoped social workspace.'
+    "
+    heroSrc="assets/tanuki.jpg"
+    heroAlt="Optimistic Tanuki brand illustration"
+    (submitEvent)="onSubmit($event)"
+    (oauthProviderSelected)="onOAuthProvider($event)"
+  >
+  </lib-login-block>
+</section>
