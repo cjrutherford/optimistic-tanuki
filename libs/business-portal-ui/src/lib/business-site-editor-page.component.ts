@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, effect, inject, signal } from '@angular/core';
 import {
   CdkDragDrop,
   DragDropModule,
@@ -8,22 +8,43 @@ import {
   transferArrayItem,
 } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import {
+  type BlockFieldDefinition,
+  type BlockDefinition,
+  type BlockInstance,
+} from '@optimistic-tanuki/app-config-models';
 import {
   BusinessAssetLibraryItem,
   BusinessApiService,
   BusinessAuthService,
+  BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
   BusinessSiteConfig,
   BusinessSiteConfigStore,
   BusinessStoreProduct,
+  businessSiteConfigToConfigDocument,
   cloneBusinessSiteConfig,
+  configDocumentToBusinessSiteConfig,
   GridLayoutSlot,
   LandingSection,
   LandingSectionMediaItem,
   LandingSectionMotionKind,
+  LandingSectionRichContent,
   normalizeLandingSections,
   SplitLayoutSlot,
 } from '@optimistic-tanuki/business-data-access';
+import { BusinessLandingPageComponent } from '@optimistic-tanuki/business-public-ui';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  EditorBlockTreeComponent,
+  EditorDesignSystemPanelComponent,
+  type EditorThemeDraftValue,
+  SchemaBlockInspectorComponent,
+  SchemaCollectionPanelComponent,
+  SchemaFormPanelComponent,
+  SchemaStringListPanelComponent,
+} from '@optimistic-tanuki/configurable-client-ui';
+import { ComposeComponent, type PostData } from '@optimistic-tanuki/social-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PREDEFINED_PERSONALITIES } from '@optimistic-tanuki/theme-models';
 import { firstValueFrom } from 'rxjs';
@@ -36,524 +57,657 @@ interface AssetUploadPayload {
   fileExtension: string;
 }
 
+type EditorMode = 'guided' | 'studio';
+type SupportedThemeFieldKey = keyof BusinessSiteConfig['theme'];
+
+interface GuidedStepDefinition {
+  id: string;
+  label: string;
+  summary: string;
+  anchorId: string;
+}
+
+type EditorPanelId =
+  | 'design'
+  | 'business-info'
+  | 'contact'
+  | 'features'
+  | 'layout'
+  | 'offers'
+  | 'review'
+  | 'testimonials';
+
+const BRAND_IDENTITY_FIELDS: BlockFieldDefinition[] = [
+  {
+    key: 'brand.businessName',
+    type: 'string',
+    label: 'Business Name',
+    editor: 'text',
+    placeholder: 'North Star Coaching',
+  },
+  {
+    key: 'brand.monogram',
+    type: 'string',
+    label: 'Monogram',
+    editor: 'text',
+    placeholder: 'NS',
+  },
+  {
+    key: 'brand.ownerName',
+    type: 'string',
+    label: 'Owner Name',
+    editor: 'text',
+    placeholder: 'Jordan Vale',
+  },
+  {
+    key: 'businessType',
+    type: 'select',
+    label: 'Business Type',
+    editor: 'select',
+    options: [
+      { label: 'General', value: 'general' },
+      { label: 'Consulting', value: 'consulting' },
+      { label: 'Coaching', value: 'coaching' },
+      { label: 'Wellness', value: 'wellness' },
+      { label: 'Fitness', value: 'fitness' },
+    ],
+  },
+  {
+    key: 'brand.trainerName',
+    type: 'string',
+    label: 'Alternate Public Name',
+    editor: 'text',
+    placeholder: 'Jordan Vale',
+  },
+  {
+    key: 'brand.tagline',
+    type: 'string',
+    label: 'Tagline',
+    editor: 'text',
+    placeholder: 'Confident growth, deliberate systems.',
+  },
+  {
+    key: 'brand.intro',
+    type: 'string',
+    label: 'Short Intro',
+    editor: 'textarea',
+    rows: 3,
+    placeholder: 'Short positioning statement for the top of the page.',
+  },
+  {
+    key: 'brand.longBio',
+    type: 'string',
+    label: 'Full Bio',
+    editor: 'textarea',
+    rows: 5,
+    placeholder: 'Longer editorial biography for visitors.',
+  },
+];
+
+const CONTACT_FIELDS: BlockFieldDefinition[] = [
+  {
+    key: 'contact.email',
+    type: 'string',
+    label: 'Email',
+    editor: 'text',
+    placeholder: 'hello@example.com',
+  },
+  {
+    key: 'contact.phone',
+    type: 'string',
+    label: 'Phone',
+    editor: 'text',
+    placeholder: '(555) 555-5555',
+  },
+  {
+    key: 'contact.location',
+    type: 'string',
+    label: 'Location / Notes',
+    editor: 'textarea',
+    rows: 3,
+    placeholder: 'Remote, New York, or by appointment.',
+  },
+  {
+    key: 'contact.consultationLabel',
+    type: 'string',
+    label: 'Consultation CTA Label',
+    editor: 'text',
+    placeholder: 'Book a consultation',
+  },
+];
+
+const CLIENT_PORTAL_FIELDS: BlockFieldDefinition[] = [
+  {
+    key: 'clientPortal.headline',
+    type: 'string',
+    label: 'Headline',
+    editor: 'text',
+    placeholder: 'Everything your clients need in one place.',
+  },
+  {
+    key: 'clientPortal.description',
+    type: 'string',
+    label: 'Description',
+    editor: 'textarea',
+    rows: 4,
+    placeholder: 'Describe the client portal experience.',
+  },
+];
+
+const SERVICE_FIELDS: BlockFieldDefinition[] = [
+  {
+    key: 'name',
+    type: 'string',
+    label: 'Offer Name',
+    editor: 'text',
+    placeholder: 'Strategy Intensive',
+  },
+  {
+    key: 'price',
+    type: 'number',
+    label: 'Hourly Price',
+    editor: 'text',
+    placeholder: '150',
+  },
+  {
+    key: 'duration',
+    type: 'number',
+    label: 'Duration (minutes)',
+    editor: 'text',
+    placeholder: '60',
+  },
+  {
+    key: 'allowOnlineBooking',
+    type: 'boolean',
+    label: 'Public Booking',
+    description: 'Allow clients to book this offer from the public site.',
+  },
+  {
+    key: 'description',
+    type: 'string',
+    label: 'Description',
+    editor: 'textarea',
+    rows: 3,
+    placeholder: 'Describe what this engagement includes.',
+  },
+];
+
+const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
+  {
+    key: 'quote',
+    type: 'string',
+    label: 'Quote',
+    editor: 'textarea',
+    rows: 3,
+    placeholder: 'Share a concrete client result or impression.',
+  },
+  {
+    key: 'clientName',
+    type: 'string',
+    label: 'Client Name',
+    editor: 'text',
+    placeholder: 'Avery Stone',
+  },
+  {
+    key: 'clientDetail',
+    type: 'string',
+    label: 'Client Detail',
+    editor: 'text',
+    placeholder: 'Founder, Northfield Studio',
+  },
+];
+
 @Component({
   selector: 'business-site-editor-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, CardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DragDropModule,
+    CardComponent,
+    BusinessLandingPageComponent,
+    EditorBlockTreeComponent,
+    EditorDesignSystemPanelComponent,
+    SchemaBlockInspectorComponent,
+    SchemaCollectionPanelComponent,
+    SchemaFormPanelComponent,
+    SchemaStringListPanelComponent,
+    ComposeComponent,
+  ],
   template: `
     <div class="editor-shell">
       <div class="page-header entrance">
-        <h1>Site Content Editor</h1>
-        <p>
-          Edit your public landing-page copy, brand identity, and visual theme.
-          Changes take effect after saving.
-        </p>
+        <div class="page-header-copy">
+          <p class="workspace-kicker">
+            {{ editorMode() === 'guided' ? 'Guided Setup' : 'Studio' }}
+            workspace
+          </p>
+          <h1>Site Content Editor</h1>
+          <p>
+            Edit your public landing-page copy, brand identity, and visual
+            theme. Changes take effect after saving.
+          </p>
+          <p class="workspace-theme-note">
+            Active personality:
+            <strong>{{ currentPersonalityLabel() }}</strong>
+          </p>
+        </div>
+        <div class="workspace-controls">
+          <div class="mode-switch" data-editor-mode-switch>
+            <button
+              type="button"
+              class="mode-switch-btn"
+              [class.active]="editorMode() === 'guided'"
+              (click)="setEditorMode('guided')"
+            >
+              Guided Setup
+            </button>
+            <button
+              type="button"
+              class="mode-switch-btn"
+              [class.active]="editorMode() === 'studio'"
+              (click)="setEditorMode('studio')"
+            >
+              Studio
+            </button>
+          </div>
+        </div>
       </div>
 
-      @if (loading()) {
-      <p class="status-msg entrance">Loading current site content…</p>
-      } @else {
-
-      <!-- Theme & Appearance section -->
-      <otui-card class="section-card entrance" style="animation-delay: 0.06s">
-        <h2 class="section-title">
-          <span class="section-icon">🎨</span>
-          Theme &amp; Appearance
-        </h2>
-        <div class="field-grid">
-          <label>
-            Primary Color
-            <div class="color-field">
-              <input type="color" [(ngModel)]="draft().theme.primaryColor" />
-              <input
-                type="text"
-                [(ngModel)]="draft().theme.primaryColor"
-                maxlength="7"
-              />
-            </div>
-          </label>
-          <label>
-            Mode
-            <select [(ngModel)]="draft().theme.mode">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
-          <label class="full">
-            Personality
-            <div class="personality-grid">
-              @for (p of personalities; track p.id) {
-              <button
-                type="button"
-                class="personality-chip"
-                [class.selected]="draft().theme.personalityId === p.id"
-                (click)="draft().theme.personalityId = p.id"
-              >
-                <span class="personality-name">{{ p.name }}</span>
-                <span class="personality-desc">{{ p.category }}</span>
-              </button>
-              }
-            </div>
-          </label>
+      @if (editorMode() === 'guided') {
+      <div class="guided-rail entrance">
+        <div class="guided-rail-copy">
+          <strong>{{ guidedSteps[guidedStep()].label }}</strong>
+          <p>{{ guidedSteps[guidedStep()].summary }}</p>
         </div>
-      </otui-card>
-
-      <!-- Brand section -->
-      <otui-card class="section-card entrance" style="animation-delay: 0.12s">
-        <h2 class="section-title">
-          <span class="section-icon">✦</span>
-          Brand &amp; Identity
-        </h2>
-        <div class="field-grid">
-          <label>
-            Business Name
-            <input [(ngModel)]="draft().brand.businessName" />
-          </label>
-          <label>
-            Monogram (2 letters)
-            <input [(ngModel)]="draft().brand.monogram" maxlength="3" />
-          </label>
-          <label>
-            Owner Name
-            <input [(ngModel)]="draft().brand.ownerName" />
-          </label>
-          <label>
-            Business Type
-            <select [(ngModel)]="draft().businessType">
-              <option value="general">General</option>
-              <option value="consulting">Consulting</option>
-              <option value="coaching">Coaching</option>
-              <option value="wellness">Wellness</option>
-              <option value="fitness">Fitness</option>
-            </select>
-          </label>
-          <label>
-            Alternate Public Name
-            <input [(ngModel)]="draft().brand.trainerName" />
-          </label>
-          <label class="full">
-            Tagline
-            <input [(ngModel)]="draft().brand.tagline" />
-          </label>
-          <label class="full">
-            Short Intro
-            <input [(ngModel)]="draft().brand.intro" />
-          </label>
-          <label class="full">
-            Full Bio
-            <textarea rows="4" [(ngModel)]="draft().brand.longBio"></textarea>
-          </label>
-          <label class="full">
-            Credentials
-            <div class="tag-list">
-              @for (cred of draft().brand.credentials; track $index) {
-              <div class="tag-item">
-                <input [(ngModel)]="draft().brand.credentials[$index]" />
-                <button
-                  type="button"
-                  class="tag-remove"
-                  (click)="removeCredential($index)"
-                >
-                  ×
-                </button>
-              </div>
-              }
-              <button type="button" class="tag-add" (click)="addCredential()">
-                + Add credential
-              </button>
-            </div>
-          </label>
-          <label class="full">
-            Specializations
-            <div class="tag-list">
-              @for (spec of draft().brand.specializations; track $index) {
-              <div class="tag-item">
-                <input [(ngModel)]="draft().brand.specializations[$index]" />
-                <button
-                  type="button"
-                  class="tag-remove"
-                  (click)="removeSpecialization($index)"
-                >
-                  ×
-                </button>
-              </div>
-              }
-              <button
-                type="button"
-                class="tag-add"
-                (click)="addSpecialization()"
-              >
-                + Add specialization
-              </button>
-            </div>
-          </label>
-        </div>
-      </otui-card>
-
-      <!-- Contact section -->
-      <otui-card class="section-card entrance" style="animation-delay: 0.18s">
-        <h2 class="section-title">
-          <span class="section-icon">✉</span>
-          Contact Details
-        </h2>
-        <div class="field-grid">
-          <label>
-            Email
-            <input type="email" [(ngModel)]="draft().contact.email" />
-          </label>
-          <label>
-            Phone
-            <input type="tel" [(ngModel)]="draft().contact.phone" />
-          </label>
-          <label class="full">
-            Location / Notes
-            <input [(ngModel)]="draft().contact.location" />
-          </label>
-          <label>
-            Consultation CTA Label
-            <input [(ngModel)]="draft().contact.consultationLabel" />
-          </label>
-        </div>
-      </otui-card>
-
-      <otui-card class="section-card entrance" style="animation-delay: 0.21s">
-        <h2 class="section-title">
-          <span class="section-icon">⚙</span>
-          Features
-        </h2>
-        <div class="feature-row">
-          <label class="toggle-card">
-            <span class="toggle-copy">
-              <strong>Booking</strong>
-              <small
-                >Show public booking entry points and booking-related landing
-                content.</small
-              >
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.booking.enabled"
-            />
-          </label>
-          <label
-            class="toggle-card dependent"
-            [class.disabled]="!draft().features.booking.enabled"
-          >
-            <span class="toggle-copy">
-              <strong>Online payment</strong>
-              <small>Allow online payment only when booking is enabled.</small>
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.booking.allowOnlinePayment"
-              [disabled]="!draft().features.booking.enabled"
-            />
-          </label>
-          <label class="toggle-card">
-            <span class="toggle-copy">
-              <strong>Client portal</strong>
-              <small
-                >Show client portal calls to action on the public site.</small
-              >
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.clientPortal.enabled"
-            />
-          </label>
-          <label class="toggle-card">
-            <span class="toggle-copy">
-              <strong>Testimonials</strong>
-              <small>Render testimonials on the public landing page.</small>
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.testimonials.enabled"
-            />
-          </label>
-          <label class="toggle-card">
-            <span class="toggle-copy">
-              <strong>Invoices</strong>
-              <small>Keep invoice-related portal features available.</small>
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.invoices.enabled"
-            />
-          </label>
-          <label class="toggle-card">
-            <span class="toggle-copy">
-              <strong>Client tasks</strong>
-              <small
-                >Enable routines and check-ins across the client and owner
-                portal.</small
-              >
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.clientTasks.enabled"
-            />
-          </label>
-          <label
-            class="toggle-card dependent"
-            [class.disabled]="!draft().features.clientTasks.enabled"
-          >
-            <span class="toggle-copy">
-              <strong>Client completion</strong>
-              <small
-                >Allow clients to mark assigned work complete when tasks are
-                enabled.</small
-              >
-            </span>
-            <input
-              type="checkbox"
-              [(ngModel)]="draft().features.clientTasks.allowClientCompletion"
-              [disabled]="!draft().features.clientTasks.enabled"
-            />
-          </label>
-        </div>
-      </otui-card>
-
-      <otui-card class="section-card entrance" style="animation-delay: 0.225s">
-        <h2 class="section-title">
-          <span class="section-icon">☰</span>
-          Landing Page Layout
-        </h2>
-        <div class="layout-option-grid">
-          @for (option of layoutOptions; track option.value) {
+        <div class="guided-steps">
+          @for (step of guidedSteps; track step.id; let i = $index) {
           <button
             type="button"
-            class="layout-option-card"
-            [class.selected]="draft().landingPage.layout === option.value"
-            (click)="setLandingLayout(option.value)"
+            class="guided-step-chip"
+            [class.active]="guidedStep() === i"
+            (click)="setGuidedStep(i)"
           >
-            <div
-              class="layout-option-preview"
-              [class]="'preview-' + option.value"
-            >
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-            <div class="layout-option-copy">
-              <strong>{{ option.label }}</strong>
-              <small>{{ option.description }}</small>
-            </div>
+            <span>{{ i + 1 }}</span>
+            {{ step.label }}
           </button>
           }
         </div>
-        <div class="layout-toolbar">
+        <div class="guided-actions">
           <button
             type="button"
-            class="layout-toolbar-btn"
-            (click)="restoreRecommendedSectionState()"
+            class="guided-nav-btn"
+            (click)="prevGuidedStep()"
+            [disabled]="guidedStep() === 0"
           >
-            Show recommended
+            Back
           </button>
           <button
             type="button"
-            class="layout-toolbar-btn"
-            (click)="setAllSectionsEnabled(true)"
+            class="guided-nav-btn primary"
+            (click)="nextGuidedStep()"
+            [disabled]="guidedStep() === guidedSteps.length - 1"
           >
-            Enable all
-          </button>
-          <button
-            type="button"
-            class="layout-toolbar-btn"
-            (click)="setAllSectionsEnabled(false)"
-          >
-            Disable all
-          </button>
-          <button
-            type="button"
-            class="layout-toolbar-btn"
-            (click)="resetSectionOrder()"
-          >
-            Reset order
+            Next
           </button>
         </div>
-        <div class="layout-canvas-shell">
-          @if (draft().landingPage.layout === 'single-column') {
-          <div class="canvas-frame">
-            <div class="canvas-heading">
-              <strong>Single-column canvas</strong>
-              <small
-                >Drag sections up or down to control the public narrative
-                flow.</small
-              >
-            </div>
-            <div
-              class="layout-drop-zone column-zone"
-              data-drop-zone="single-column:main"
-              cdkDropList
-              [id]="dropListId('single-column', 'main')"
-              [cdkDropListData]="sectionIdsForZone('single-column', 'main')"
-              [cdkDropListConnectedTo]="connectedDropLists()"
-              (cdkDropListDropped)="
-                dropSection($event, 'single-column', 'main')
-              "
-            >
-              @for (section of sectionsForZone('single-column', 'main'); track
-              section.id) {
-              <div class="canvas-card" cdkDrag>
-                <div class="canvas-card-header">
-                  <span class="canvas-card-type">{{
-                    section.type | titlecase
-                  }}</span>
-                  <span class="canvas-card-order"
-                    >#{{ section.order + 1 }}</span
-                  >
-                </div>
-                @if (sectionPreviewImage(section); as previewImage) {
-                <div class="canvas-card-media">
-                  <img
-                    [src]="previewImage.src"
-                    [alt]="previewImage.alt || section.title"
-                  />
-                </div>
-                }
-                <label class="section-toggle">
-                  <input
-                    type="checkbox"
-                    [ngModel]="section.enabled"
-                    (ngModelChange)="toggleSectionEnabled(section.id, $event)"
-                  />
-                  <span>{{ section.title }}</span>
-                </label>
-                <p class="section-help">
-                  {{ sectionDescription(section.type) }}
-                </p>
-                <p class="canvas-card-summary">{{ sectionSummary(section) }}</p>
-                <div class="canvas-card-meta">
-                  @if (section.motion?.kind && section.motion?.kind !== 'none')
-                  {
-                  <span class="canvas-card-chip accent"
-                    >Motion:
-                    {{ motionLabel(section.motion?.kind ?? 'none') }}</span
-                  >
-                  } @if (section.type === 'gallery') {
-                  <span class="canvas-card-chip"
-                    >Gallery •
-                    {{ section.gallery?.items?.length ?? 0 }} items</span
-                  >
-                  } @if (section.type === 'image') {
-                  <span class="canvas-card-chip">Image block</span>
-                  }
-                </div>
-              </div>
-              }
-            </div>
-          </div>
-          } @else if (draft().landingPage.layout === 'split') {
-          <div class="canvas-frame">
-            <div class="canvas-heading">
-              <strong>Split canvas</strong>
-              <small
-                >Drag sections between the primary and secondary columns to
-                mirror the live layout.</small
-              >
-            </div>
-            <div class="split-canvas">
-              @for (zone of splitZones; track zone.id) {
-              <div class="canvas-lane">
-                <div class="canvas-lane-head">
-                  <strong>{{ zone.label }}</strong>
-                  <small>{{ zone.description }}</small>
-                </div>
-                <div
-                  class="layout-drop-zone"
-                  [attr.data-drop-zone]="'split:' + zone.id"
-                  cdkDropList
-                  [id]="dropListId('split', zone.id)"
-                  [cdkDropListData]="sectionIdsForZone('split', zone.id)"
-                  [cdkDropListConnectedTo]="connectedDropLists()"
-                  (cdkDropListDropped)="dropSection($event, 'split', zone.id)"
-                >
-                  @for (section of sectionsForZone('split', zone.id); track
-                  section.id) {
-                  <div class="canvas-card" cdkDrag>
-                    <div class="canvas-card-header">
-                      <span class="canvas-card-type">{{
-                        section.type | titlecase
-                      }}</span>
-                      <span class="canvas-card-order"
-                        >#{{ section.order + 1 }}</span
-                      >
-                    </div>
-                    @if (sectionPreviewImage(section); as previewImage) {
-                    <div class="canvas-card-media">
-                      <img
-                        [src]="previewImage.src"
-                        [alt]="previewImage.alt || section.title"
-                      />
-                    </div>
-                    }
-                    <label class="section-toggle">
-                      <input
-                        type="checkbox"
-                        [ngModel]="section.enabled"
-                        (ngModelChange)="
-                          toggleSectionEnabled(section.id, $event)
-                        "
-                      />
-                      <span>{{ section.title }}</span>
-                    </label>
-                    <p class="section-help">
-                      {{ sectionDescription(section.type) }}
-                    </p>
-                    <p class="canvas-card-summary">
-                      {{ sectionSummary(section) }}
-                    </p>
-                    <div class="canvas-card-meta">
-                      @if (section.motion?.kind && section.motion?.kind !==
-                      'none') {
-                      <span class="canvas-card-chip accent"
-                        >Motion:
-                        {{ motionLabel(section.motion?.kind ?? 'none') }}</span
-                      >
-                      } @if (section.type === 'gallery') {
-                      <span class="canvas-card-chip"
-                        >Gallery •
-                        {{ section.gallery?.items?.length ?? 0 }} items</span
-                      >
-                      } @if (section.type === 'image') {
-                      <span class="canvas-card-chip">Image block</span>
-                      }
-                    </div>
-                  </div>
-                  }
-                </div>
-              </div>
-              }
-            </div>
-          </div>
+      </div>
+      }
+
+      <div class="workspace-layout">
+        <div
+          class="editor-pane"
+          (input)="refreshDraftSignalFromTemplate()"
+          (change)="refreshDraftSignalFromTemplate()"
+        >
+          @if (loading()) {
+          <p class="status-msg entrance">Loading current site content…</p>
           } @else {
-          <div class="canvas-frame">
-            <div class="canvas-heading">
-              <strong>Grid canvas</strong>
-              <small
-                >Place sections into the grid slots the public landing page will
-                use.</small
-              >
+
+          <!-- Theme & Appearance section -->
+          <otui-card
+            id="guided-design"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('design')"
+            style="animation-delay: 0.06s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('design')"
+              (click)="togglePanel('design')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">🎨</span>
+                Theme &amp; Appearance
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('design') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('design')) {
+            <app-editor-design-system-panel
+              [theme]="draft().theme"
+              (themeFieldChange)="
+                updateDraftThemeField($event.key, $event.value)
+              "
+            ></app-editor-design-system-panel>
+            }
+          </otui-card>
+
+          <!-- Brand section -->
+          <otui-card
+            id="guided-business-info"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('business-info')"
+            style="animation-delay: 0.12s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('business-info')"
+              (click)="togglePanel('business-info')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">✦</span>
+                Brand &amp; Identity
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('business-info') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('business-info')) {
+            <app-schema-form-panel
+              [model]="draft()"
+              [fields]="brandIdentityFields"
+              (fieldChanged)="patchDraftField($event.key, $event.value)"
+            ></app-schema-form-panel>
+            <div class="field-grid">
+              <app-schema-string-list-panel
+                title="Credentials"
+                description="List the credentials or certifications that build trust."
+                [items]="draft().brand.credentials"
+                addLabel="+ Add credential"
+                emptyText="No credentials added yet."
+                itemPlaceholder="Certified Nutrition Specialist"
+                (itemAdded)="addCredential()"
+                (itemRemoved)="removeCredential($event)"
+                (itemChanged)="
+                  updateStringListItem(
+                    'brand.credentials',
+                    $event.index,
+                    $event.value
+                  )
+                "
+              ></app-schema-string-list-panel>
+              <app-schema-string-list-panel
+                title="Specializations"
+                description="List the types of outcomes, audiences, or domains you focus on."
+                [items]="draft().brand.specializations"
+                addLabel="+ Add specialization"
+                emptyText="No specializations added yet."
+                itemPlaceholder="Executive coaching"
+                (itemAdded)="addSpecialization()"
+                (itemRemoved)="removeSpecialization($event)"
+                (itemChanged)="
+                  updateStringListItem(
+                    'brand.specializations',
+                    $event.index,
+                    $event.value
+                  )
+                "
+              ></app-schema-string-list-panel>
             </div>
-            <div class="grid-canvas">
-              @for (zone of gridZones; track zone.id) {
-              <div class="canvas-lane" [class]="'grid-zone-' + zone.id">
-                <div class="canvas-lane-head">
-                  <strong>{{ zone.label }}</strong>
-                  <small>{{ zone.description }}</small>
+            }
+          </otui-card>
+
+          <!-- Contact section -->
+          <otui-card
+            id="guided-contact"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('contact')"
+            style="animation-delay: 0.18s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('contact')"
+              (click)="togglePanel('contact')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">✉</span>
+                Contact Details
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('contact') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('contact')) {
+            <app-schema-form-panel
+              [model]="draft()"
+              [fields]="contactFields"
+              (fieldChanged)="patchDraftField($event.key, $event.value)"
+            ></app-schema-form-panel>
+            }
+          </otui-card>
+
+          <otui-card
+            id="guided-features"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('features')"
+            style="animation-delay: 0.21s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('features')"
+              (click)="togglePanel('features')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">⚙</span>
+                Features
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('features') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('features')) {
+            <div class="feature-row">
+              <label class="toggle-card">
+                <span class="toggle-copy">
+                  <strong>Booking</strong>
+                  <small
+                    >Show public booking entry points and booking-related
+                    landing content.</small
+                  >
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.booking.enabled"
+                />
+              </label>
+              <label
+                class="toggle-card dependent"
+                [class.disabled]="!draft().features.booking.enabled"
+              >
+                <span class="toggle-copy">
+                  <strong>Online payment</strong>
+                  <small
+                    >Allow online payment only when booking is enabled.</small
+                  >
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.booking.allowOnlinePayment"
+                  [disabled]="!draft().features.booking.enabled"
+                />
+              </label>
+              <label class="toggle-card">
+                <span class="toggle-copy">
+                  <strong>Client portal</strong>
+                  <small
+                    >Show client portal calls to action on the public
+                    site.</small
+                  >
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.clientPortal.enabled"
+                />
+              </label>
+              <label class="toggle-card">
+                <span class="toggle-copy">
+                  <strong>Testimonials</strong>
+                  <small>Render testimonials on the public landing page.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.testimonials.enabled"
+                />
+              </label>
+              <label class="toggle-card">
+                <span class="toggle-copy">
+                  <strong>Invoices</strong>
+                  <small>Keep invoice-related portal features available.</small>
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.invoices.enabled"
+                />
+              </label>
+              <label class="toggle-card">
+                <span class="toggle-copy">
+                  <strong>Client tasks</strong>
+                  <small
+                    >Enable routines and check-ins across the client and owner
+                    portal.</small
+                  >
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="draft().features.clientTasks.enabled"
+                />
+              </label>
+              <label
+                class="toggle-card dependent"
+                [class.disabled]="!draft().features.clientTasks.enabled"
+              >
+                <span class="toggle-copy">
+                  <strong>Client completion</strong>
+                  <small
+                    >Allow clients to mark assigned work complete when tasks are
+                    enabled.</small
+                  >
+                </span>
+                <input
+                  type="checkbox"
+                  [(ngModel)]="
+                    draft().features.clientTasks.allowClientCompletion
+                  "
+                  [disabled]="!draft().features.clientTasks.enabled"
+                />
+              </label>
+            </div>
+            }
+          </otui-card>
+
+          <otui-card
+            id="guided-services"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('layout')"
+            style="animation-delay: 0.225s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('layout')"
+              (click)="togglePanel('layout')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">☰</span>
+                Landing Page Layout
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('layout') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('layout')) {
+            <div class="layout-option-grid">
+              @for (option of layoutOptions; track option.value) {
+              <button
+                type="button"
+                class="layout-option-card"
+                [class.selected]="draft().landingPage.layout === option.value"
+                (click)="setLandingLayout(option.value)"
+              >
+                <div
+                  class="layout-option-preview"
+                  [class]="'preview-' + option.value"
+                >
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="layout-option-copy">
+                  <strong>{{ option.label }}</strong>
+                  <small>{{ option.description }}</small>
+                </div>
+              </button>
+              }
+            </div>
+            <div class="layout-toolbar">
+              <button
+                type="button"
+                class="layout-toolbar-btn"
+                (click)="restoreRecommendedSectionState()"
+              >
+                Show recommended
+              </button>
+              <button
+                type="button"
+                class="layout-toolbar-btn"
+                (click)="setAllSectionsEnabled(true)"
+              >
+                Enable all
+              </button>
+              <button
+                type="button"
+                class="layout-toolbar-btn"
+                (click)="setAllSectionsEnabled(false)"
+              >
+                Disable all
+              </button>
+              <button
+                type="button"
+                class="layout-toolbar-btn"
+                (click)="resetSectionOrder()"
+              >
+                Reset order
+              </button>
+            </div>
+            <div class="layout-canvas-shell">
+              @if (draft().landingPage.layout === 'single-column') {
+              <div class="canvas-frame">
+                <div class="canvas-heading">
+                  <strong>Single-column canvas</strong>
+                  <small
+                    >Drag sections up or down to control the public narrative
+                    flow.</small
+                  >
                 </div>
                 <div
-                  class="layout-drop-zone"
-                  [attr.data-drop-zone]="'grid:' + zone.id"
+                  class="layout-drop-zone column-zone"
+                  data-drop-zone="single-column:main"
                   cdkDropList
-                  [id]="dropListId('grid', zone.id)"
-                  [cdkDropListData]="sectionIdsForZone('grid', zone.id)"
+                  [id]="dropListId('single-column', 'main')"
+                  [cdkDropListData]="sectionIdsForZone('single-column', 'main')"
                   [cdkDropListConnectedTo]="connectedDropLists()"
-                  (cdkDropListDropped)="dropSection($event, 'grid', zone.id)"
+                  (cdkDropListDropped)="
+                    dropSection($event, 'single-column', 'main')
+                  "
                 >
-                  @for (section of sectionsForZone('grid', zone.id); track
-                  section.id) {
+                  @for (section of sectionsForZone('single-column', 'main');
+                  track section.id) {
                   <div class="canvas-card" cdkDrag>
                     <div class="canvas-card-header">
                       <span class="canvas-card-type">{{
@@ -607,304 +761,297 @@ interface AssetUploadPayload {
                   }
                 </div>
               </div>
-              }
-            </div>
-          </div>
-          }
-        </div>
-        <div class="layout-list">
-          @for (section of draft().landingPage.sections; track section.id; let i
-          = $index) {
-          <div class="layout-row">
-            <div class="layout-row-main">
-              <label class="full">
-                Title
-                <input [(ngModel)]="draft().landingPage.sections[i].title" />
-              </label>
-              @if (section.type === 'custom') {
-              <label class="full">
-                Body
-                <textarea
-                  [(ngModel)]="draft().landingPage.sections[i].body"
-                  rows="3"
-                ></textarea>
-              </label>
-              <label>
-                CTA Label
-                <input [(ngModel)]="draft().landingPage.sections[i].ctaLabel" />
-              </label>
-              <label>
-                CTA Link
-                <input [(ngModel)]="draft().landingPage.sections[i].ctaHref" />
-              </label>
-              } @if (section.type === 'image') {
-              <div class="full media-editor">
-                <div class="media-editor-head">
-                  <strong>Image block</strong>
+              } @else if (draft().landingPage.layout === 'split') {
+              <div class="canvas-frame">
+                <div class="canvas-heading">
+                  <strong>Split canvas</strong>
                   <small
-                    >Choose a direct URL or an asset-backed path and control the
-                    image treatment.</small
+                    >Drag sections between the primary and secondary columns to
+                    mirror the live layout.</small
                   >
                 </div>
-                <div class="field-grid">
-                  <label>
-                    Source Type
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].image!.sourceType
+                <div class="split-canvas">
+                  @for (zone of splitZones; track zone.id) {
+                  <div class="canvas-lane">
+                    <div class="canvas-lane-head">
+                      <strong>{{ zone.label }}</strong>
+                      <small>{{ zone.description }}</small>
+                    </div>
+                    <div
+                      class="layout-drop-zone"
+                      [attr.data-drop-zone]="'split:' + zone.id"
+                      cdkDropList
+                      [id]="dropListId('split', zone.id)"
+                      [cdkDropListData]="sectionIdsForZone('split', zone.id)"
+                      [cdkDropListConnectedTo]="connectedDropLists()"
+                      (cdkDropListDropped)="
+                        dropSection($event, 'split', zone.id)
                       "
                     >
-                      <option value="url">External URL</option>
-                      <option value="asset">Asset path</option>
-                    </select>
-                  </label>
-                  <label class="full">
-                    {{
-                      draft().landingPage.sections[i].image!.sourceType ===
-                      'asset'
-                        ? 'Asset path'
-                        : 'Image URL'
-                    }}
-                    <input
-                      [(ngModel)]="draft().landingPage.sections[i].image!.src"
-                    />
-                  </label>
-                  <label>
-                    Alt Text
-                    <input
-                      [(ngModel)]="draft().landingPage.sections[i].image!.alt"
-                    />
-                  </label>
-                  <label>
-                    Caption
-                    <input
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].image!.caption
-                      "
-                    />
-                  </label>
-                  <label>
-                    Aspect
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].image!.aspect
-                      "
-                    >
-                      <option value="landscape">Landscape</option>
-                      <option value="square">Square</option>
-                      <option value="portrait">Portrait</option>
-                      <option value="auto">Auto</option>
-                    </select>
-                  </label>
-                  <label>
-                    Fit
-                    <select
-                      [(ngModel)]="draft().landingPage.sections[i].image!.fit"
-                    >
-                      <option value="cover">Cover</option>
-                      <option value="contain">Contain</option>
-                    </select>
-                  </label>
-                  <label>
-                    Focal Point
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].image!.focalPoint
-                      "
-                    >
-                      <option value="center">Center</option>
-                      <option value="top">Top</option>
-                      <option value="right">Right</option>
-                      <option value="bottom">Bottom</option>
-                      <option value="left">Left</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="media-actions">
-                  <input
-                    #imageUploadInput
-                    type="file"
-                    accept="image/*"
-                    class="visually-hidden"
-                    (change)="onAssetFileSelected(i, null, $event)"
-                  />
-                  <button
-                    type="button"
-                    class="layout-btn"
-                    (click)="imageUploadInput.click()"
-                  >
-                    {{
-                      isUploading(assetTargetKey(i))
-                        ? 'Uploading…'
-                        : 'Upload image'
-                    }}
-                  </button>
-                  <button
-                    type="button"
-                    class="layout-btn"
-                    (click)="toggleAssetPicker(i)"
-                  >
-                    {{
-                      isAssetPickerOpen(i)
-                        ? 'Hide asset library'
-                        : 'Choose existing asset'
-                    }}
-                  </button>
-                  <button
-                    type="button"
-                    class="layout-btn"
-                    (click)="loadOwnerAssets(true)"
-                  >
-                    Refresh assets
-                  </button>
-                </div>
-                @if (isAssetPickerOpen(i)) {
-                <div class="asset-picker">
-                  <div class="asset-picker-head">
-                    <strong>Asset library</strong>
-                    <small
-                      >Choose from previously uploaded images tied to your owner
-                      profile.</small
-                    >
+                      @for (section of sectionsForZone('split', zone.id); track
+                      section.id) {
+                      <div class="canvas-card" cdkDrag>
+                        <div class="canvas-card-header">
+                          <span class="canvas-card-type">{{
+                            section.type | titlecase
+                          }}</span>
+                          <span class="canvas-card-order"
+                            >#{{ section.order + 1 }}</span
+                          >
+                        </div>
+                        @if (sectionPreviewImage(section); as previewImage) {
+                        <div class="canvas-card-media">
+                          <img
+                            [src]="previewImage.src"
+                            [alt]="previewImage.alt || section.title"
+                          />
+                        </div>
+                        }
+                        <label class="section-toggle">
+                          <input
+                            type="checkbox"
+                            [ngModel]="section.enabled"
+                            (ngModelChange)="
+                              toggleSectionEnabled(section.id, $event)
+                            "
+                          />
+                          <span>{{ section.title }}</span>
+                        </label>
+                        <p class="section-help">
+                          {{ sectionDescription(section.type) }}
+                        </p>
+                        <p class="canvas-card-summary">
+                          {{ sectionSummary(section) }}
+                        </p>
+                        <div class="canvas-card-meta">
+                          @if (section.motion?.kind && section.motion?.kind !==
+                          'none') {
+                          <span class="canvas-card-chip accent"
+                            >Motion:
+                            {{
+                              motionLabel(section.motion?.kind ?? 'none')
+                            }}</span
+                          >
+                          } @if (section.type === 'gallery') {
+                          <span class="canvas-card-chip"
+                            >Gallery •
+                            {{
+                              section.gallery?.items?.length ?? 0
+                            }}
+                            items</span
+                          >
+                          } @if (section.type === 'image') {
+                          <span class="canvas-card-chip">Image block</span>
+                          }
+                        </div>
+                      </div>
+                      }
+                    </div>
                   </div>
-                  @if (assetsLoading()) {
-                  <p class="section-help">Loading assets…</p>
-                  } @else if (assetLibraryError()) {
-                  <p class="status-msg error">{{ assetLibraryError() }}</p>
-                  } @else if (assetLibrary().length) {
-                  <div class="asset-grid">
-                    @for (asset of assetLibrary(); track asset.id) {
-                    <button
-                      type="button"
-                      class="asset-tile"
-                      (click)="selectAsset(i, null, asset)"
-                    >
-                      <img [src]="asset.url" [alt]="asset.name" />
-                      <span>{{ asset.name }}</span>
-                    </button>
-                    }
-                  </div>
-                  } @else {
-                  <p class="section-help">No uploaded image assets yet.</p>
                   }
                 </div>
-                }
               </div>
-              } @if (section.type === 'gallery') {
-              <div class="full media-editor">
-                <div class="media-editor-head">
-                  <strong>Gallery block</strong>
+              } @else {
+              <div class="canvas-frame">
+                <div class="canvas-heading">
+                  <strong>Grid canvas</strong>
                   <small
-                    >Build a client-facing image collection with layout and
-                    per-item metadata.</small
+                    >Place sections into the grid slots the public landing page
+                    will use.</small
                   >
                 </div>
-                <div class="field-grid">
-                  <label>
-                    Style
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].gallery!.style
+                <div class="grid-canvas">
+                  @for (zone of gridZones; track zone.id) {
+                  <div class="canvas-lane" [class]="'grid-zone-' + zone.id">
+                    <div class="canvas-lane-head">
+                      <strong>{{ zone.label }}</strong>
+                      <small>{{ zone.description }}</small>
+                    </div>
+                    <div
+                      class="layout-drop-zone"
+                      [attr.data-drop-zone]="'grid:' + zone.id"
+                      cdkDropList
+                      [id]="dropListId('grid', zone.id)"
+                      [cdkDropListData]="sectionIdsForZone('grid', zone.id)"
+                      [cdkDropListConnectedTo]="connectedDropLists()"
+                      (cdkDropListDropped)="
+                        dropSection($event, 'grid', zone.id)
                       "
                     >
-                      <option value="grid">Grid</option>
-                      <option value="masonry">Masonry</option>
-                    </select>
-                  </label>
-                  <label>
-                    Columns
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].gallery!.columns
-                      "
-                    >
-                      <option [ngValue]="2">2 columns</option>
-                      <option [ngValue]="3">3 columns</option>
-                      <option [ngValue]="4">4 columns</option>
-                    </select>
-                  </label>
+                      @for (section of sectionsForZone('grid', zone.id); track
+                      section.id) {
+                      <div class="canvas-card" cdkDrag>
+                        <div class="canvas-card-header">
+                          <span class="canvas-card-type">{{
+                            section.type | titlecase
+                          }}</span>
+                          <span class="canvas-card-order"
+                            >#{{ section.order + 1 }}</span
+                          >
+                        </div>
+                        @if (sectionPreviewImage(section); as previewImage) {
+                        <div class="canvas-card-media">
+                          <img
+                            [src]="previewImage.src"
+                            [alt]="previewImage.alt || section.title"
+                          />
+                        </div>
+                        }
+                        <label class="section-toggle">
+                          <input
+                            type="checkbox"
+                            [ngModel]="section.enabled"
+                            (ngModelChange)="
+                              toggleSectionEnabled(section.id, $event)
+                            "
+                          />
+                          <span>{{ section.title }}</span>
+                        </label>
+                        <p class="section-help">
+                          {{ sectionDescription(section.type) }}
+                        </p>
+                        <p class="canvas-card-summary">
+                          {{ sectionSummary(section) }}
+                        </p>
+                        <div class="canvas-card-meta">
+                          @if (section.motion?.kind && section.motion?.kind !==
+                          'none') {
+                          <span class="canvas-card-chip accent"
+                            >Motion:
+                            {{
+                              motionLabel(section.motion?.kind ?? 'none')
+                            }}</span
+                          >
+                          } @if (section.type === 'gallery') {
+                          <span class="canvas-card-chip"
+                            >Gallery •
+                            {{
+                              section.gallery?.items?.length ?? 0
+                            }}
+                            items</span
+                          >
+                          } @if (section.type === 'image') {
+                          <span class="canvas-card-chip">Image block</span>
+                          }
+                        </div>
+                      </div>
+                      }
+                    </div>
+                  </div>
+                  }
                 </div>
-                <div class="gallery-list">
-                  @for (item of draft().landingPage.sections[i].gallery!.items;
-                  track $index) {
-                  <div class="gallery-item-editor">
-                    <div class="testimonial-header">
-                      <span class="testimonial-number"
-                        >Image #{{ $index + 1 }}</span
-                      >
+              </div>
+              }
+            </div>
+            <div class="layout-list">
+              <div class="section-editor-grid">
+                <div class="section-side-panel">
+                  <app-editor-block-tree
+                    [blocks]="landingPageBlocks()"
+                    [selectedBlockId]="selectedSectionId()"
+                    [fallbackTitle]="landingBlockFallbackTitle"
+                    (blockSelected)="selectSection($event)"
+                  ></app-editor-block-tree>
+                </div>
+
+                <div class="selected-section-shell">
+                  @if (selectedSection(); as section) {
+                  <div class="selected-section-head">
+                    <div>
+                      <strong>{{
+                        selectedSectionDefinition()?.name || section.type
+                      }}</strong>
+                      <p>{{ sectionSummary(section) }}</p>
+                    </div>
+                    <div class="layout-actions">
                       <button
                         type="button"
-                        class="tag-remove"
-                        (click)="removeGalleryItem(i, $index)"
+                        class="layout-btn"
+                        (click)="moveSectionUp(selectedSectionIndex())"
+                        [disabled]="selectedSectionIndex() === 0"
+                      >
+                        Move up
+                      </button>
+                      <button
+                        type="button"
+                        class="layout-btn"
+                        (click)="moveSectionDown(selectedSectionIndex())"
+                        [disabled]="
+                          selectedSectionIndex() ===
+                          draft().landingPage.sections.length - 1
+                        "
+                      >
+                        Move down
+                      </button>
+                      @if (section.type === 'custom' || section.type === 'image'
+                      || section.type === 'gallery') {
+                      <button
+                        type="button"
+                        class="layout-btn"
+                        (click)="removeSection(selectedSectionIndex())"
                       >
                         Remove
                       </button>
+                      }
                     </div>
-                    <div class="field-grid">
-                      <label>
-                        Source Type
-                        <select
-                          [(ngModel)]="
-                            draft().landingPage.sections[i].gallery!.items[
-                              $index
-                            ].sourceType
-                          "
-                        >
-                          <option value="url">External URL</option>
-                          <option value="asset">Asset path</option>
-                        </select>
-                      </label>
-                      <label class="full">
-                        {{
-                          draft().landingPage.sections[i].gallery!.items[$index]
-                            .sourceType === 'asset'
-                            ? 'Asset path'
-                            : 'Image URL'
-                        }}
-                        <input
-                          [(ngModel)]="
-                            draft().landingPage.sections[i].gallery!.items[
-                              $index
-                            ].src
-                          "
-                        />
-                      </label>
-                      <label>
-                        Alt Text
-                        <input
-                          [(ngModel)]="
-                            draft().landingPage.sections[i].gallery!.items[
-                              $index
-                            ].alt
-                          "
-                        />
-                      </label>
-                      <label>
-                        Caption
-                        <input
-                          [(ngModel)]="
-                            draft().landingPage.sections[i].gallery!.items[
-                              $index
-                            ].caption
-                          "
-                        />
-                      </label>
+                  </div>
+
+                  <app-schema-block-inspector
+                    [block]="selectedSectionBlock()"
+                    [definition]="selectedSectionDefinition()"
+                    (fieldChanged)="
+                      patchSelectedSectionField($event.key, $event.value)
+                    "
+                  ></app-schema-block-inspector>
+
+                  @if (section.type === 'custom') {
+                  <div class="media-editor custom-compose-editor">
+                    <div class="media-editor-head">
+                      <strong>Custom section composition</strong>
+                      <small
+                        >Use the shared compose runtime to author richer
+                        layouts, callouts, and galleries inside this
+                        section.</small
+                      >
+                    </div>
+                    <lib-social-compose
+                      [profileId]="ownerProfileId()"
+                      [ngModel]="selectedCustomSectionComposeValue()"
+                      (ngModelChange)="
+                        updateSelectedCustomSectionRichContent($event)
+                      "
+                    ></lib-social-compose>
+                  </div>
+                  } @if (section.type === 'image') {
+                  <div class="media-editor">
+                    <div class="media-editor-head">
+                      <strong>Image asset workflow</strong>
+                      <small
+                        >Upload or choose an existing owner asset for the
+                        selected image block.</small
+                      >
                     </div>
                     <div class="media-actions">
                       <input
-                        #galleryUploadInput
+                        #imageUploadInput
                         type="file"
                         accept="image/*"
                         class="visually-hidden"
-                        (change)="onAssetFileSelected(i, $index, $event)"
+                        (change)="
+                          onAssetFileSelected(
+                            selectedSectionIndex(),
+                            null,
+                            $event
+                          )
+                        "
                       />
                       <button
                         type="button"
                         class="layout-btn"
-                        (click)="galleryUploadInput.click()"
+                        (click)="imageUploadInput.click()"
                       >
                         {{
-                          isUploading(assetTargetKey(i, $index))
+                          isUploading(assetTargetKey(selectedSectionIndex()))
                             ? 'Uploading…'
                             : 'Upload image'
                         }}
@@ -912,22 +1059,29 @@ interface AssetUploadPayload {
                       <button
                         type="button"
                         class="layout-btn"
-                        (click)="toggleAssetPicker(i, $index)"
+                        (click)="toggleAssetPicker(selectedSectionIndex())"
                       >
                         {{
-                          isAssetPickerOpen(i, $index)
+                          isAssetPickerOpen(selectedSectionIndex())
                             ? 'Hide asset library'
                             : 'Choose existing asset'
                         }}
                       </button>
+                      <button
+                        type="button"
+                        class="layout-btn"
+                        (click)="loadOwnerAssets(true)"
+                      >
+                        Refresh assets
+                      </button>
                     </div>
-                    @if (isAssetPickerOpen(i, $index)) {
+                    @if (isAssetPickerOpen(selectedSectionIndex())) {
                     <div class="asset-picker">
                       <div class="asset-picker-head">
                         <strong>Asset library</strong>
                         <small
-                          >Select an uploaded image for this gallery
-                          slot.</small
+                          >Choose from previously uploaded images tied to your
+                          owner profile.</small
                         >
                       </div>
                       @if (assetsLoading()) {
@@ -940,7 +1094,9 @@ interface AssetUploadPayload {
                         <button
                           type="button"
                           class="asset-tile"
-                          (click)="selectAsset(i, $index, asset)"
+                          (click)="
+                            selectAsset(selectedSectionIndex(), null, asset)
+                          "
                         >
                           <img [src]="asset.url" [alt]="asset.name" />
                           <span>{{ asset.name }}</span>
@@ -953,415 +1109,652 @@ interface AssetUploadPayload {
                     </div>
                     }
                   </div>
+                  } @if (section.type === 'gallery') {
+                  <div class="media-editor">
+                    <div class="media-editor-head">
+                      <strong>Gallery images</strong>
+                      <small
+                        >Manage the media items inside the selected gallery
+                        block.</small
+                      >
+                    </div>
+                    <div class="gallery-list">
+                      @for (item of section.gallery?.items ?? []; track $index)
+                      {
+                      <div class="gallery-item-editor">
+                        <div class="testimonial-header">
+                          <span class="testimonial-number"
+                            >Image #{{ $index + 1 }}</span
+                          >
+                          <button
+                            type="button"
+                            class="tag-remove"
+                            (click)="
+                              removeGalleryItem(selectedSectionIndex(), $index)
+                            "
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div class="field-grid">
+                          <label>
+                            Source Type
+                            <select
+                              [(ngModel)]="
+                                section.gallery!.items[$index].sourceType
+                              "
+                            >
+                              <option value="url">External URL</option>
+                              <option value="asset">Asset path</option>
+                            </select>
+                          </label>
+                          <label class="full">
+                            {{
+                              section.gallery!.items[$index].sourceType ===
+                              'asset'
+                                ? 'Asset path'
+                                : 'Image URL'
+                            }}
+                            <input
+                              [(ngModel)]="section.gallery!.items[$index].src"
+                            />
+                          </label>
+                          <label>
+                            Alt Text
+                            <input
+                              [(ngModel)]="section.gallery!.items[$index].alt"
+                            />
+                          </label>
+                          <label>
+                            Caption
+                            <input
+                              [(ngModel)]="
+                                section.gallery!.items[$index].caption
+                              "
+                            />
+                          </label>
+                        </div>
+                        <div class="media-actions">
+                          <input
+                            #galleryUploadInput
+                            type="file"
+                            accept="image/*"
+                            class="visually-hidden"
+                            (change)="
+                              onAssetFileSelected(
+                                selectedSectionIndex(),
+                                $index,
+                                $event
+                              )
+                            "
+                          />
+                          <button
+                            type="button"
+                            class="layout-btn"
+                            (click)="galleryUploadInput.click()"
+                          >
+                            {{
+                              isUploading(
+                                assetTargetKey(selectedSectionIndex(), $index)
+                              )
+                                ? 'Uploading…'
+                                : 'Upload image'
+                            }}
+                          </button>
+                          <button
+                            type="button"
+                            class="layout-btn"
+                            (click)="
+                              toggleAssetPicker(selectedSectionIndex(), $index)
+                            "
+                          >
+                            {{
+                              isAssetPickerOpen(selectedSectionIndex(), $index)
+                                ? 'Hide asset library'
+                                : 'Choose existing asset'
+                            }}
+                          </button>
+                        </div>
+                        @if (isAssetPickerOpen(selectedSectionIndex(), $index))
+                        {
+                        <div class="asset-picker">
+                          <div class="asset-picker-head">
+                            <strong>Asset library</strong>
+                            <small
+                              >Select an uploaded image for this gallery
+                              slot.</small
+                            >
+                          </div>
+                          @if (assetsLoading()) {
+                          <p class="section-help">Loading assets…</p>
+                          } @else if (assetLibraryError()) {
+                          <p class="status-msg error">
+                            {{ assetLibraryError() }}
+                          </p>
+                          } @else if (assetLibrary().length) {
+                          <div class="asset-grid">
+                            @for (asset of assetLibrary(); track asset.id) {
+                            <button
+                              type="button"
+                              class="asset-tile"
+                              (click)="
+                                selectAsset(
+                                  selectedSectionIndex(),
+                                  $index,
+                                  asset
+                                )
+                              "
+                            >
+                              <img [src]="asset.url" [alt]="asset.name" />
+                              <span>{{ asset.name }}</span>
+                            </button>
+                            }
+                          </div>
+                          } @else {
+                          <p class="section-help">
+                            No uploaded image assets yet.
+                          </p>
+                          }
+                        </div>
+                        }
+                      </div>
+                      }
+                      <button
+                        type="button"
+                        class="tag-add"
+                        (click)="addGalleryItem(selectedSectionIndex())"
+                      >
+                        + Add gallery image
+                      </button>
+                    </div>
+                  </div>
+                  } } @else {
+                  <p class="section-help">
+                    Select a landing-page section to edit its content and
+                    design.
+                  </p>
                   }
-                  <button
-                    type="button"
-                    class="tag-add"
-                    (click)="addGalleryItem(i)"
-                  >
-                    + Add gallery image
-                  </button>
                 </div>
               </div>
+            </div>
+            <div class="layout-footer">
+              <button
+                type="button"
+                class="tag-add"
+                (click)="addCustomSection()"
+              >
+                + Add custom section
+              </button>
+              <button type="button" class="tag-add" (click)="addImageSection()">
+                + Add image block
+              </button>
+              <button
+                type="button"
+                class="tag-add"
+                (click)="addGallerySection()"
+              >
+                + Add gallery block
+              </button>
+            </div>
+            }
+          </otui-card>
+
+          <otui-card
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('offers')"
+            style="animation-delay: 0.235s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('offers')"
+              (click)="togglePanel('offers')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">◫</span>
+                Offers
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('offers') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('offers')) {
+            <div class="service-list">
+              <label class="full">
+                Offer source
+                <select [(ngModel)]="draft().serviceCatalog.source">
+                  <option value="manual">Manual business-site offers</option>
+                  <option value="store">Store service catalog</option>
+                </select>
+              </label>
+
+              @if (draft().serviceCatalog.source === 'store') {
+              <p class="section-help">
+                The public business site will use active store products with
+                type
+                <code>service</code>. Manage pricing and activation from the
+                store workspace.
+              </p>
+              @if (storeProductsLoading()) {
+              <p class="status-msg">Loading active store service products…</p>
+              } @if (storeProductsError()) {
+              <p class="status-msg error">{{ storeProductsError() }}</p>
               }
-              <div class="full motion-editor">
-                <div class="media-editor-head">
-                  <strong>Motion layer</strong>
-                  <small
-                    >Apply an optional motion-ui treatment behind this section
-                    and tune the effect.</small
-                  >
+              <button
+                type="button"
+                class="tag-add"
+                (click)="loadStoreProducts()"
+              >
+                Refresh store services
+              </button>
+              @for (product of storeServiceProducts(); track product.id) {
+              <div class="service-card">
+                <div class="testimonial-header">
+                  <span class="testimonial-number">{{ product.name }}</span>
+                  <span class="status-msg success">Store-backed</span>
                 </div>
                 <div class="field-grid">
                   <label>
-                    Motion Component
-                    <select
-                      [(ngModel)]="draft().landingPage.sections[i].motion!.kind"
-                    >
-                      @for (option of motionOptions; track option.value) {
-                      <option [value]="option.value">{{ option.label }}</option>
-                      }
-                    </select>
+                    Product type
+                    <input [ngModel]="product.type" disabled />
                   </label>
                   <label>
-                    Height
-                    <input
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.height
-                      "
-                    />
+                    Price
+                    <input [ngModel]="product.price" disabled />
                   </label>
-                  <label>
-                    Density
-                    <input
-                      type="number"
-                      min="1"
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.density
-                      "
-                    />
+                  <label class="full">
+                    Description
+                    <textarea
+                      rows="3"
+                      [ngModel]="product.description || ''"
+                      disabled
+                    ></textarea>
                   </label>
-                  <label>
-                    Speed
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.speed
-                      "
-                    />
-                  </label>
-                  <label>
-                    Intensity
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.intensity
-                      "
-                    />
-                  </label>
-                  <label class="checkbox-line">
-                    <span>Reduced Motion</span>
-                    <input
-                      type="checkbox"
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.reducedMotion
-                      "
-                    />
-                  </label>
-                  @if (draft().landingPage.sections[i].motion!.kind ===
-                  'shimmer-beam') {
-                  <label>
-                    Direction
-                    <select
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.direction
-                      "
-                    >
-                      <option value="diagonal">Diagonal</option>
-                      <option value="horizontal">Horizontal</option>
-                    </select>
-                  </label>
-                  } @if (draft().landingPage.sections[i].motion!.kind ===
-                  'pulse-rings') {
-                  <label>
-                    Ring Count
-                    <input
-                      type="number"
-                      min="1"
-                      max="8"
-                      [(ngModel)]="
-                        draft().landingPage.sections[i].motion!.ringCount
-                      "
-                    />
-                  </label>
-                  }
                 </div>
               </div>
-            </div>
-            <div class="layout-actions">
-              <button
-                type="button"
-                class="layout-btn"
-                (click)="moveSectionUp(i)"
-                [disabled]="i === 0"
-              >
-                Move up
-              </button>
-              <button
-                type="button"
-                class="layout-btn"
-                (click)="moveSectionDown(i)"
-                [disabled]="i === draft().landingPage.sections.length - 1"
-              >
-                Move down
-              </button>
-              @if (section.type === 'custom') {
-              <button
-                type="button"
-                class="layout-btn"
-                (click)="removeSection(i)"
-              >
-                Remove
+              } @empty {
+              <p class="status-msg">
+                No active store service products found. Create one in the store
+                product workspace to power this section.
+              </p>
+              } } @else { @if (draft().services.length) {
+              <app-schema-collection-panel
+                title="Manual Offers"
+                description="Define the offers the public site should explain and optionally book."
+                [items]="servicesCollectionItems()"
+                [fields]="serviceFields"
+                addLabel="+ Add offer"
+                emptyText="No offers defined yet."
+                [itemLabel]="serviceItemLabel"
+                [trackBy]="trackCollectionItemById"
+                (itemAdded)="addService()"
+                (itemRemoved)="removeService($event)"
+                (itemFieldChanged)="
+                  patchServiceField($event.index, $event.key, $event.value)
+                "
+              ></app-schema-collection-panel>
+              } @else {
+              <p class="status-msg">
+                No offers defined yet. Add at least one offer so the public site
+                can describe what you sell.
+              </p>
+              }
+              <button type="button" class="tag-add" (click)="addService()">
+                + Add offer
               </button>
               }
             </div>
+            }
+          </otui-card>
+
+          <!-- Client Portal copy section -->
+          <otui-card
+            id="guided-review"
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('review')"
+            style="animation-delay: 0.24s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('review')"
+              (click)="togglePanel('review')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">◈</span>
+                Client Portal Copy
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('review') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('review')) {
+            <app-schema-form-panel
+              [model]="draft()"
+              [fields]="clientPortalFields"
+              (fieldChanged)="patchDraftField($event.key, $event.value)"
+            ></app-schema-form-panel>
+            <app-schema-string-list-panel
+              title="Capabilities"
+              description="List the things clients can do or access inside the portal."
+              [items]="draft().clientPortal.capabilities"
+              addLabel="+ Add capability"
+              emptyText="No portal capabilities added yet."
+              itemPlaceholder="Track billing"
+              (itemAdded)="addCapability()"
+              (itemRemoved)="removeCapability($event)"
+              (itemChanged)="
+                updateStringListItem(
+                  'clientPortal.capabilities',
+                  $event.index,
+                  $event.value
+                )
+              "
+            ></app-schema-string-list-panel>
+            }
+          </otui-card>
+
+          <!-- Testimonials section -->
+          <otui-card
+            class="section-card entrance"
+            [class.collapsed]="!isPanelExpanded('testimonials')"
+            style="animation-delay: 0.3s"
+          >
+            <button
+              type="button"
+              class="section-toggle-header"
+              [attr.aria-expanded]="isPanelExpanded('testimonials')"
+              (click)="togglePanel('testimonials')"
+            >
+              <h2 class="section-title">
+                <span class="section-icon">❝</span>
+                Testimonials
+              </h2>
+              <span class="section-toggle-indicator">{{
+                isPanelExpanded('testimonials') ? 'Hide' : 'Show'
+              }}</span>
+            </button>
+            @if (isPanelExpanded('testimonials')) {
+            <app-schema-collection-panel
+              title="Client Testimonials"
+              description="Shape the social proof that appears across the public business experience."
+              [items]="testimonialCollectionItems()"
+              [fields]="testimonialFields"
+              addLabel="+ Add testimonial"
+              emptyText="No testimonials added yet."
+              [itemLabel]="testimonialItemLabel"
+              [trackBy]="trackCollectionItemByIndex"
+              (itemAdded)="addTestimonial()"
+              (itemRemoved)="removeTestimonial($event)"
+              (itemFieldChanged)="
+                patchTestimonialField($event.index, $event.key, $event.value)
+              "
+            ></app-schema-collection-panel>
+            }
+          </otui-card>
+
+          <!-- Actions -->
+          @if (successMsg()) {
+          <p class="status-msg success entrance">{{ successMsg() }}</p>
+          } @if (errorMsg()) {
+          <p class="status-msg error entrance">{{ errorMsg() }}</p>
+          }
+
+          <div class="actions entrance" style="animation-delay: 0.36s">
+            <button
+              class="otui-btn primary"
+              [disabled]="saving()"
+              (click)="save()"
+            >
+              @if (saving()) { Saving… } @else { Save Changes }
+            </button>
+            <button class="otui-btn ghost" (click)="reset()">
+              Reset to Defaults
+            </button>
           </div>
           }
         </div>
-        <div class="layout-footer">
-          <button type="button" class="tag-add" (click)="addCustomSection()">
-            + Add custom section
-          </button>
-          <button type="button" class="tag-add" (click)="addImageSection()">
-            + Add image block
-          </button>
-          <button type="button" class="tag-add" (click)="addGallerySection()">
-            + Add gallery block
-          </button>
-        </div>
-      </otui-card>
 
-      <otui-card class="section-card entrance" style="animation-delay: 0.235s">
-        <h2 class="section-title">
-          <span class="section-icon">◫</span>
-          Offers
-        </h2>
-        <div class="service-list">
-          <label class="full">
-            Offer source
-            <select [(ngModel)]="draft().serviceCatalog.source">
-              <option value="manual">Manual business-site offers</option>
-              <option value="store">Store service catalog</option>
-            </select>
-          </label>
-
-          @if (draft().serviceCatalog.source === 'store') {
-          <p class="section-help">
-            The public business site will use active store products with type
-            <code>service</code>. Manage pricing and activation from the store
-            workspace.
-          </p>
-          @if (storeProductsLoading()) {
-          <p class="status-msg">Loading active store service products…</p>
-          } @if (storeProductsError()) {
-          <p class="status-msg error">{{ storeProductsError() }}</p>
-          }
-          <button type="button" class="tag-add" (click)="loadStoreProducts()">
-            Refresh store services
-          </button>
-          @for (product of storeServiceProducts(); track product.id) {
-          <div class="service-card">
-            <div class="testimonial-header">
-              <span class="testimonial-number">{{ product.name }}</span>
-              <span class="status-msg success">Store-backed</span>
-            </div>
-            <div class="field-grid">
-              <label>
-                Product type
-                <input [ngModel]="product.type" disabled />
-              </label>
-              <label>
-                Price
-                <input [ngModel]="product.price" disabled />
-              </label>
-              <label class="full">
-                Description
-                <textarea
-                  rows="3"
-                  [ngModel]="product.description || ''"
-                  disabled
-                ></textarea>
-              </label>
-            </div>
+        <aside class="preview-pane" data-live-preview>
+          <div class="preview-pane-header entrance">
+            <p class="workspace-kicker">Rendered preview</p>
+            <h2>Live landing page</h2>
+            <p>
+              The public page stays visible in guided and studio modes. Unsaved
+              edits render here immediately.
+            </p>
           </div>
-          } @empty {
-          <p class="status-msg">
-            No active store service products found. Create one in the store
-            product workspace to power this section.
-          </p>
-          } } @else { @for (service of draft().services; track service.id; let i
-          = $index) {
-          <div class="service-card">
-            <div class="testimonial-header">
-              <span class="testimonial-number">Offer #{{ $index + 1 }}</span>
-              <button
-                type="button"
-                class="tag-remove"
-                (click)="removeService(i)"
-              >
-                Remove
-              </button>
-            </div>
-            <div class="field-grid">
-              <label>
-                Offer name
-                <input [(ngModel)]="draft().services[i].name" />
-              </label>
-              <label>
-                Hourly price
-                <input type="number" [(ngModel)]="draft().services[i].price" />
-              </label>
-              <label>
-                Duration (minutes)
-                <input
-                  type="number"
-                  [(ngModel)]="draft().services[i].duration"
-                />
-              </label>
-              <label>
-                Public booking
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().services[i].allowOnlineBooking"
-                />
-              </label>
-              <label class="full">
-                Description
-                <textarea
-                  rows="3"
-                  [(ngModel)]="draft().services[i].description"
-                ></textarea>
-              </label>
-            </div>
+          <div class="mobile-preview-actions">
+            <button
+              type="button"
+              class="mobile-preview-btn primary"
+              (click)="
+                openMobileSheet(selectedSection() ? 'inspector' : 'structure')
+              "
+            >
+              {{
+                selectedSection()
+                  ? 'Edit Selected Section'
+                  : 'Edit Page Structure'
+              }}
+            </button>
+            @if (selectedSection()) {
+            <button
+              type="button"
+              class="mobile-preview-btn"
+              (click)="openMobileSheet('structure')"
+            >
+              Structure
+            </button>
+            }
           </div>
-          } @empty {
-          <p class="status-msg">
-            No offers defined yet. Add at least one offer so the public site can
-            describe what you sell.
-          </p>
+          @if (loading()) {
+          <p class="status-msg entrance">Preparing preview…</p>
+          } @else {
+          <business-landing-page
+            [embeddedPreview]="true"
+            [selectedSectionId]="selectedSectionId()"
+            (sectionSelected)="selectSection($event)"
+          ></business-landing-page>
           }
-          <button type="button" class="tag-add" (click)="addService()">
-            + Add offer
-          </button>
-          }
-        </div>
-      </otui-card>
-
-      <!-- Client Portal copy section -->
-      <otui-card class="section-card entrance" style="animation-delay: 0.24s">
-        <h2 class="section-title">
-          <span class="section-icon">◈</span>
-          Client Portal Copy
-        </h2>
-        <div class="field-grid">
-          <label class="full">
-            Headline
-            <input [(ngModel)]="draft().clientPortal.headline" />
-          </label>
-          <label class="full">
-            Description
-            <textarea
-              rows="3"
-              [(ngModel)]="draft().clientPortal.description"
-            ></textarea>
-          </label>
-          <label class="full">
-            Capabilities
-            <div class="tag-list">
-              @for (capability of draft().clientPortal.capabilities; track
-              $index) {
-              <div class="tag-item">
-                <input
-                  [(ngModel)]="draft().clientPortal.capabilities[$index]"
-                />
-                <button
-                  type="button"
-                  class="tag-remove"
-                  (click)="removeCapability($index)"
-                >
-                  ×
-                </button>
-              </div>
-              }
-              <button type="button" class="tag-add" (click)="addCapability()">
-                + Add capability
-              </button>
-            </div>
-          </label>
-        </div>
-      </otui-card>
-
-      <!-- Testimonials section -->
-      <otui-card class="section-card entrance" style="animation-delay: 0.3s">
-        <h2 class="section-title">
-          <span class="section-icon">❝</span>
-          Testimonials
-        </h2>
-        <div class="testimonial-list">
-          @for (t of draft().testimonials; track $index) {
-          <div class="testimonial-entry">
-            <div class="testimonial-header">
-              <span class="testimonial-number">#{{ $index + 1 }}</span>
-              <button
-                type="button"
-                class="tag-remove"
-                (click)="removeTestimonial($index)"
-              >
-                Remove
-              </button>
-            </div>
-            <label>
-              Quote
-              <textarea rows="2" [(ngModel)]="t.quote"></textarea>
-            </label>
-            <label>
-              Client Name
-              <input [(ngModel)]="t.clientName" />
-            </label>
-            <label>
-              Client Detail
-              <input [(ngModel)]="t.clientDetail" />
-            </label>
-          </div>
-          }
-          <button type="button" class="tag-add" (click)="addTestimonial()">
-            + Add testimonial
-          </button>
-        </div>
-      </otui-card>
-
-      <!-- Actions -->
-      @if (successMsg()) {
-      <p class="status-msg success entrance">{{ successMsg() }}</p>
-      } @if (errorMsg()) {
-      <p class="status-msg error entrance">{{ errorMsg() }}</p>
-      }
-
-      <div class="actions entrance" style="animation-delay: 0.36s">
-        <button class="otui-btn primary" [disabled]="saving()" (click)="save()">
-          @if (saving()) { Saving… } @else { Save Changes }
-        </button>
-        <button class="otui-btn ghost" (click)="reset()">
-          Reset to Defaults
-        </button>
+        </aside>
       </div>
+
+      @if (mobileSheetOpen()) {
+      <button
+        type="button"
+        class="mobile-sheet-backdrop"
+        aria-label="Close editor sheet"
+        (click)="closeMobileSheet()"
+      ></button>
       }
+
+      <div
+        class="mobile-editor-sheet"
+        [class.open]="mobileSheetOpen()"
+        data-mobile-sheet
+      >
+        <div class="mobile-sheet-handle"></div>
+        <div class="mobile-sheet-header">
+          <div>
+            <p class="mobile-sheet-kicker">
+              {{
+                mobileSheetMode() === 'inspector' ? 'Inspector' : 'Structure'
+              }}
+            </p>
+            <h3>{{ mobileSheetTitle() }}</h3>
+          </div>
+          <button
+            type="button"
+            class="mobile-sheet-close"
+            (click)="closeMobileSheet()"
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="mobile-sheet-tabs">
+          <button
+            type="button"
+            class="mobile-sheet-tab"
+            [class.active]="mobileSheetMode() === 'structure'"
+            (click)="openMobileSheet('structure')"
+          >
+            Structure
+          </button>
+          @if (selectedSection()) {
+          <button
+            type="button"
+            class="mobile-sheet-tab"
+            [class.active]="mobileSheetMode() === 'inspector'"
+            (click)="openMobileSheet('inspector')"
+          >
+            Inspector
+          </button>
+          }
+        </div>
+
+        <div class="mobile-sheet-body">
+          @if (mobileSheetMode() === 'structure') {
+          <div class="mobile-sheet-panel">
+            <app-editor-block-tree
+              [blocks]="landingPageBlocks()"
+              [selectedBlockId]="selectedSectionId()"
+              [fallbackTitle]="landingBlockFallbackTitle"
+              (blockSelected)="selectSection($event)"
+            ></app-editor-block-tree>
+            <div class="mobile-sheet-structure-actions">
+              <button
+                type="button"
+                class="tag-add"
+                (click)="addCustomSection()"
+              >
+                + Add custom section
+              </button>
+              <button type="button" class="tag-add" (click)="addImageSection()">
+                + Add image block
+              </button>
+              <button
+                type="button"
+                class="tag-add"
+                (click)="addGallerySection()"
+              >
+                + Add gallery block
+              </button>
+            </div>
+          </div>
+          } @else {
+          <div class="mobile-sheet-panel">
+            <app-schema-block-inspector
+              [block]="selectedSectionBlock()"
+              [definition]="selectedSectionDefinition()"
+              (fieldChanged)="
+                patchSelectedSectionField($event.key, $event.value)
+              "
+            ></app-schema-block-inspector>
+          </div>
+          }
+        </div>
+      </div>
     </div>
   `,
   styles: [
     `
-      @keyframes entrance-up {
-        from {
-          opacity: 0;
-          transform: translateY(16px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
       .editor-shell {
         display: grid;
+        gap: 1.25rem;
+        width: 100%;
+        margin-inline: auto;
+      }
+
+      .workspace-layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 1fr) minmax(0, 3fr);
         gap: 1.5rem;
+        align-items: start;
       }
 
-      .entrance {
-        animation: entrance-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-        opacity: 0;
+      .editor-pane {
+        display: grid;
+        gap: 1rem;
+        min-width: 0;
       }
 
-      .page-header h1 {
-        margin: 0 0 0.4rem;
-        font-family: var(--font-heading, 'Instrument Serif', serif);
-        font-weight: 400;
-        font-size: 2rem;
-        color: var(--foreground);
+      .preview-pane {
+        position: sticky;
+        top: 1rem;
+        display: grid;
+        gap: 1rem;
+        min-width: 0;
+        padding: 1rem;
+        border-radius: 1.5rem;
+        border: 1px solid var(--border, #e2e8f0);
+        background: linear-gradient(
+          180deg,
+          color-mix(
+              in srgb,
+              var(--primary, #1f7a63) 5%,
+              var(--background, #fff)
+            )
+            0%,
+          var(--background, #fff) 100%
+        );
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
       }
 
-      .page-header p {
+      .mobile-preview-actions,
+      .mobile-editor-sheet,
+      .mobile-sheet-backdrop {
+        display: none;
+      }
+
+      .preview-pane-header {
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .preview-pane-header h2,
+      .preview-pane-header p {
         margin: 0;
-        color: var(--muted, #6b7280);
       }
 
       .section-card {
         display: grid;
         gap: 1.2rem;
+      }
+
+      .section-toggle-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .section-toggle-indicator {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 4.25rem;
+        padding: 0.38rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
+        background: color-mix(in srgb, var(--surface, #fff) 90%, transparent);
+        color: color-mix(in srgb, var(--foreground) 70%, transparent);
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .section-card.collapsed {
+        gap: 0;
       }
 
       .section-title {
@@ -1379,6 +1772,11 @@ interface AssetUploadPayload {
       .section-icon {
         font-size: 1.1rem;
         opacity: 0.7;
+      }
+
+      .section-card.collapsed .section-title {
+        border-bottom: 0;
+        padding-bottom: 0;
       }
 
       .field-grid {
@@ -1884,6 +2282,45 @@ interface AssetUploadPayload {
         gap: 0.9rem;
       }
 
+      .section-editor-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+      }
+
+      .section-side-panel,
+      .selected-section-shell {
+        display: grid;
+        gap: 0.85rem;
+        padding: 1rem;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: var(--personality-card-radius, 1rem);
+        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+      }
+
+      .custom-compose-editor {
+        overflow: hidden;
+      }
+
+      .custom-compose-editor lib-social-compose {
+        display: block;
+      }
+
+      .selected-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .selected-section-head p {
+        margin: 0.2rem 0 0;
+        color: var(--muted, #6b7280);
+        line-height: 1.45;
+      }
+
       .layout-footer {
         display: flex;
         justify-content: flex-start;
@@ -1982,6 +2419,12 @@ interface AssetUploadPayload {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 0.7rem;
+      }
+
+      @media (max-width: 960px) {
+        .section-editor-grid {
+          grid-template-columns: 1fr;
+        }
       }
 
       .asset-tile {
@@ -2196,6 +2639,121 @@ interface AssetUploadPayload {
       }
 
       @media (max-width: 640px) {
+        .workspace-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .preview-pane {
+          position: static;
+          order: -1;
+        }
+
+        .mobile-preview-actions {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+        }
+
+        .mobile-preview-btn,
+        .mobile-sheet-close,
+        .mobile-sheet-tab {
+          border: 1px solid var(--border, #e2e8f0);
+          background: var(--surface, #fff);
+          color: var(--foreground, #0f172a);
+          border-radius: 999px;
+          padding: 0.7rem 0.95rem;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .mobile-preview-btn.primary,
+        .mobile-sheet-tab.active {
+          background: var(--primary, #1f7a63);
+          border-color: var(--primary, #1f7a63);
+          color: white;
+        }
+
+        .mobile-sheet-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 39;
+          border: 0;
+          background: rgba(15, 23, 42, 0.38);
+        }
+
+        .mobile-editor-sheet {
+          display: grid;
+          gap: 0.9rem;
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 40;
+          max-height: 82vh;
+          padding: 0.85rem 1rem 1rem;
+          border-radius: 20px 20px 0 0;
+          border: 1px solid var(--border, #e2e8f0);
+          background: var(--background, #fff);
+          box-shadow: 0 -18px 48px rgba(15, 23, 42, 0.18);
+          transform: translateY(calc(100% + 2rem));
+          transition: transform 0.24s ease;
+        }
+
+        .mobile-editor-sheet.open {
+          transform: translateY(0);
+        }
+
+        .mobile-sheet-handle {
+          width: 3rem;
+          height: 0.32rem;
+          margin: 0 auto;
+          border-radius: 999px;
+          background: color-mix(
+            in srgb,
+            var(--foreground, #0f172a) 16%,
+            transparent
+          );
+        }
+
+        .mobile-sheet-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+
+        .mobile-sheet-header h3,
+        .mobile-sheet-kicker {
+          margin: 0;
+        }
+
+        .mobile-sheet-kicker {
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          font-size: 0.72rem;
+          color: var(--primary, #1f7a63);
+          font-weight: 700;
+        }
+
+        .mobile-sheet-tabs {
+          display: flex;
+          gap: 0.6rem;
+          flex-wrap: wrap;
+        }
+
+        .mobile-sheet-body {
+          overflow: auto;
+          min-height: 0;
+          padding-bottom: 0.25rem;
+        }
+
+        .mobile-sheet-panel,
+        .mobile-sheet-structure-actions {
+          display: grid;
+          gap: 0.9rem;
+        }
+
         .field-grid {
           grid-template-columns: 1fr;
         }
@@ -2230,6 +2788,7 @@ export class BusinessSiteEditorPageComponent {
   private readonly http = inject(HttpClient);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly themeService = inject(ThemeService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   loading = signal(true);
   saving = signal(false);
@@ -2244,7 +2803,47 @@ export class BusinessSiteEditorPageComponent {
   activeAssetPicker = signal<string | null>(null);
   uploadingTargets = signal<Record<string, boolean>>({});
   private configId: string | null = null;
+  private readonly draftPreviewReady = signal(false);
+  readonly editorMode = signal<EditorMode>('studio');
+  readonly guidedStep = signal(0);
   readonly personalities = PREDEFINED_PERSONALITIES;
+  readonly guidedSteps: GuidedStepDefinition[] = [
+    {
+      id: 'business-info',
+      label: 'Business Info',
+      summary:
+        'Set your business identity, contact details, and the public voice visitors see first.',
+      anchorId: 'guided-business-info',
+    },
+    {
+      id: 'features',
+      label: 'Features',
+      summary:
+        'Enable the capabilities clients can book, access, and use across the public site and portal.',
+      anchorId: 'guided-features',
+    },
+    {
+      id: 'services',
+      label: 'Offers',
+      summary:
+        'Shape the services and proof blocks that make the WYSIWYG site commercially useful.',
+      anchorId: 'guided-services',
+    },
+    {
+      id: 'design',
+      label: 'Design',
+      summary:
+        'Tune theme, personality, layout, and landing-page composition with the live canvas nearby.',
+      anchorId: 'guided-design',
+    },
+    {
+      id: 'review',
+      label: 'Review',
+      summary:
+        'Check portal messaging, testimonials, and final polish before saving or switching fully into studio mode.',
+      anchorId: 'guided-review',
+    },
+  ];
   readonly splitZones: Array<{
     id: SplitLayoutSlot;
     label: string;
@@ -2326,7 +2925,29 @@ export class BusinessSiteEditorPageComponent {
     { value: 'topographic-drift', label: 'Topographic Drift' },
     { value: 'shimmer-beam', label: 'Shimmer Beam' },
   ];
+  readonly brandIdentityFields = BRAND_IDENTITY_FIELDS;
+  readonly contactFields = CONTACT_FIELDS;
+  readonly clientPortalFields = CLIENT_PORTAL_FIELDS;
+  readonly serviceFields = SERVICE_FIELDS;
+  readonly testimonialFields = TESTIMONIAL_FIELDS;
   draft = signal<BusinessSiteConfig>(cloneBusinessSiteConfig());
+  readonly selectedSectionId = signal<string | null>(
+    this.draft().landingPage.sections[0]?.id ?? null
+  );
+  readonly expandedPanels = signal<Record<EditorPanelId, boolean>>({
+    design: true,
+    'business-info': true,
+    contact: false,
+    features: false,
+    layout: true,
+    offers: false,
+    review: false,
+    testimonials: false,
+  });
+  readonly mobileSheetOpen = signal(false);
+  readonly mobileSheetView = signal<'auto' | 'structure' | 'inspector'>('auto');
+  readonly landingBlockFallbackTitle = (block: BlockInstance, index: number) =>
+    this.blockFallbackTitle(block, index);
 
   private applyDraftTheme(): void {
     const theme = this.draft().theme;
@@ -2335,18 +2956,413 @@ export class BusinessSiteEditorPageComponent {
     void this.themeService.setPersonality(theme.personalityId);
   }
 
+  currentPersonalityLabel(): string {
+    return (
+      this.personalities.find(
+        (personality) => personality.id === this.draft().theme.personalityId
+      )?.name ?? this.draft().theme.personalityId
+    );
+  }
+
+  updateDraftThemeField(key: keyof EditorThemeDraftValue, value: string): void {
+    if (!this.isSupportedThemeFieldKey(key)) {
+      return;
+    }
+
+    this.draft.update((draft) => {
+      switch (key) {
+        case 'mode':
+          if (value === 'light' || value === 'dark') {
+            draft.theme.mode = value;
+          }
+          break;
+        case 'personalityId':
+          draft.theme.personalityId = value;
+          break;
+        case 'primaryColor':
+          draft.theme.primaryColor = value;
+          break;
+      }
+      return draft;
+    });
+  }
+
+  private isSupportedThemeFieldKey(
+    key: keyof EditorThemeDraftValue
+  ): key is SupportedThemeFieldKey {
+    return key === 'mode' || key === 'personalityId' || key === 'primaryColor';
+  }
+
+  selectPersonality(personalityId: string): void {
+    this.draft.update((draft) => {
+      draft.theme.personalityId = personalityId;
+      return draft;
+    });
+  }
+
+  ownerProfileId(): string | undefined {
+    return this.auth.user()?.profileId;
+  }
+
   constructor() {
+    effect(() => {
+      if (!this.draftPreviewReady()) {
+        return;
+      }
+
+      this.siteConfig.setSite(
+        cloneBusinessSiteConfig(this.draft()),
+        this.configId
+      );
+      this.applyDraftTheme();
+    });
+
+    const initialMode = this.route?.snapshot.data['editorMode'];
+    if (initialMode === 'guided' || initialMode === 'studio') {
+      this.editorMode.set(initialMode);
+      this.syncPanelsForEditorMode();
+    }
+
     this.siteConfig.fetch().subscribe({
       next: (site) => {
         this.loading.set(false);
         this.configId = this.siteConfig.configId();
         this.draft.set(cloneBusinessSiteConfig(site));
+        this.selectedSectionId.set(
+          this.draft().landingPage.sections[0]?.id ?? null
+        );
+        this.syncPanelsForEditorMode();
+        this.draftPreviewReady.set(true);
       },
       error: () => {
         this.loading.set(false);
+        this.draftPreviewReady.set(true);
       },
     });
     void this.loadStoreProducts();
+  }
+
+  refreshDraftSignalFromTemplate(): void {
+    if (!this.draftPreviewReady()) {
+      return;
+    }
+
+    this.draft.set(cloneBusinessSiteConfig(this.draft()));
+  }
+
+  landingPageBlocks(): BlockInstance[] {
+    return businessSiteConfigToConfigDocument(this.draft()).blocks;
+  }
+
+  selectedSection(): LandingSection | null {
+    return (
+      this.draft().landingPage.sections.find(
+        (section) => section.id === this.selectedSectionId()
+      ) ?? null
+    );
+  }
+
+  selectedSectionIndex(): number {
+    const index = this.draft().landingPage.sections.findIndex(
+      (section) => section.id === this.selectedSectionId()
+    );
+    return index === -1 ? 0 : index;
+  }
+
+  selectedSectionBlock(): BlockInstance | null {
+    return (
+      this.landingPageBlocks().find(
+        (block) => block.id === this.selectedSectionId()
+      ) ?? null
+    );
+  }
+
+  selectedSectionDefinition(): BlockDefinition | null {
+    const type = this.selectedSection()?.type;
+    return type ? BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS[type] : null;
+  }
+
+  selectSection(sectionId: string): void {
+    this.selectedSectionId.set(sectionId);
+    this.expandPanel('layout');
+    if (this.isMobileViewport()) {
+      this.openMobileSheet('inspector');
+    }
+  }
+
+  patchSelectedSectionField(fieldKey: string, rawValue: string): void {
+    const section = this.selectedSection();
+    const definition = this.selectedSectionDefinition();
+    if (!section || !definition) {
+      return;
+    }
+
+    const field = definition.fields?.find(
+      (candidate) => candidate.key === fieldKey
+    );
+    const nextValue = this.coerceInspectorValue(field?.type, rawValue);
+    const sectionId = section.id;
+
+    this.draft.update((draft) => {
+      const target = draft.landingPage.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      if (!target) {
+        return draft;
+      }
+
+      this.writeSectionPath(target, fieldKey, nextValue);
+      return draft;
+    });
+  }
+
+  patchDraftField(fieldKey: string, rawValue: string): void {
+    const nextValue = this.coerceInspectorValue(
+      this.rootFieldType(fieldKey),
+      rawValue
+    );
+
+    this.draft.update((draft) => {
+      this.writeRootPath(draft, fieldKey, nextValue);
+      return draft;
+    });
+  }
+
+  servicesCollectionItems(): Array<Record<string, unknown>> {
+    return this.draft().services as unknown as Array<Record<string, unknown>>;
+  }
+
+  testimonialCollectionItems(): Array<Record<string, unknown>> {
+    return this.draft().testimonials as unknown as Array<
+      Record<string, unknown>
+    >;
+  }
+
+  readonly serviceItemLabel = (
+    index: number,
+    item: Record<string, unknown>
+  ): string =>
+    typeof item['name'] === 'string' && item['name'].trim().length > 0
+      ? String(item['name'])
+      : `Offer #${index + 1}`;
+
+  readonly testimonialItemLabel = (
+    index: number,
+    item: Record<string, unknown>
+  ): string =>
+    typeof item['clientName'] === 'string' &&
+    item['clientName'].trim().length > 0
+      ? String(item['clientName'])
+      : `Testimonial #${index + 1}`;
+
+  readonly trackCollectionItemById = (
+    item: Record<string, unknown>,
+    index: number
+  ) => (typeof item['id'] === 'string' ? item['id'] : index);
+
+  readonly trackCollectionItemByIndex = (
+    _item: Record<string, unknown>,
+    index: number
+  ) => index;
+
+  updateStringListItem(path: string, index: number, value: string): void {
+    this.draft.update((draft) => {
+      const list = this.readRootPath(draft, path);
+      if (Array.isArray(list) && typeof list[index] === 'string') {
+        list[index] = value;
+      }
+      return draft;
+    });
+  }
+
+  patchServiceField(
+    index: number,
+    fieldKey: string,
+    rawValue: string | boolean
+  ): void {
+    const fieldType = this.serviceFields.find(
+      (field) => field.key === fieldKey
+    )?.type;
+    const nextValue =
+      typeof rawValue === 'boolean'
+        ? rawValue
+        : this.coerceInspectorValue(fieldType, rawValue);
+
+    this.draft.update((draft) => {
+      const service = draft.services[index];
+      if (service) {
+        this.writeRootPath(
+          service as unknown as Record<string, unknown>,
+          fieldKey,
+          nextValue
+        );
+      }
+      return draft;
+    });
+  }
+
+  patchTestimonialField(
+    index: number,
+    fieldKey: string,
+    rawValue: string | boolean
+  ): void {
+    const fieldType = this.testimonialFields.find(
+      (field) => field.key === fieldKey
+    )?.type;
+    const nextValue =
+      typeof rawValue === 'boolean'
+        ? rawValue
+        : this.coerceInspectorValue(fieldType, rawValue);
+
+    this.draft.update((draft) => {
+      const testimonial = draft.testimonials[index];
+      if (testimonial) {
+        this.writeRootPath(
+          testimonial as unknown as Record<string, unknown>,
+          fieldKey,
+          nextValue
+        );
+      }
+      return draft;
+    });
+  }
+
+  openMobileSheet(view: 'auto' | 'structure' | 'inspector' = 'auto'): void {
+    this.mobileSheetView.set(view);
+    this.mobileSheetOpen.set(true);
+  }
+
+  closeMobileSheet(): void {
+    this.mobileSheetOpen.set(false);
+  }
+
+  mobileSheetMode(): 'structure' | 'inspector' {
+    if (this.mobileSheetView() === 'structure') {
+      return 'structure';
+    }
+
+    if (this.mobileSheetView() === 'inspector' && this.selectedSection()) {
+      return 'inspector';
+    }
+
+    return this.selectedSection() ? 'inspector' : 'structure';
+  }
+
+  mobileSheetTitle(): string {
+    return this.mobileSheetMode() === 'inspector'
+      ? this.selectedSection()?.title || 'Selected Section'
+      : 'Landing Page Structure';
+  }
+
+  setEditorMode(mode: EditorMode): void {
+    this.editorMode.set(mode);
+    this.syncPanelsForEditorMode();
+    if (mode === 'guided') {
+      this.focusGuidedStep();
+    }
+  }
+
+  setGuidedStep(index: number): void {
+    this.guidedStep.set(index);
+    this.expandPanel(this.panelIdForGuidedStep(index));
+    this.focusGuidedStep();
+  }
+
+  nextGuidedStep(): void {
+    if (this.guidedStep() >= this.guidedSteps.length - 1) {
+      return;
+    }
+    this.guidedStep.update((step) => step + 1);
+    this.expandPanel(this.panelIdForGuidedStep(this.guidedStep()));
+    this.focusGuidedStep();
+  }
+
+  prevGuidedStep(): void {
+    if (this.guidedStep() === 0) {
+      return;
+    }
+    this.guidedStep.update((step) => step - 1);
+    this.expandPanel(this.panelIdForGuidedStep(this.guidedStep()));
+    this.focusGuidedStep();
+  }
+
+  isPanelExpanded(panelId: EditorPanelId): boolean {
+    return this.expandedPanels()[panelId];
+  }
+
+  togglePanel(panelId: EditorPanelId): void {
+    if (this.editorMode() === 'guided') {
+      this.expandPanel(panelId);
+      return;
+    }
+
+    this.expandedPanels.update((panels) => ({
+      ...panels,
+      [panelId]: !panels[panelId],
+    }));
+  }
+
+  selectedCustomSectionComposeValue(): PostData {
+    const section = this.selectedSection();
+    const richContent = section?.richContent;
+    return {
+      title: richContent?.title ?? section?.title ?? '',
+      content: richContent?.content ?? '',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: richContent?.injectedComponents ?? [],
+      themeConfig: {
+        theme: richContent?.themeConfig?.theme ?? this.draft().theme.mode,
+        accentColor:
+          richContent?.themeConfig?.accentColor ??
+          this.draft().theme.primaryColor,
+      },
+    };
+  }
+
+  updateSelectedCustomSectionRichContent(value: PostData): void {
+    const section = this.selectedSection();
+    if (!section || section.type !== 'custom') {
+      return;
+    }
+
+    this.draft.update((draft) => {
+      const target = draft.landingPage.sections.find(
+        (candidate) => candidate.id === section.id
+      );
+      if (!target || target.type !== 'custom') {
+        return draft;
+      }
+
+      target.richContent = {
+        title: value.title?.trim() || target.title,
+        content: value.content ?? '',
+        injectedComponents: value.injectedComponentsNew ?? [],
+        themeConfig: {
+          theme: value.themeConfig?.theme,
+          accentColor: value.themeConfig?.accentColor,
+        },
+      } satisfies LandingSectionRichContent;
+      target.body = this.plainTextFromHtml(value.content ?? '');
+      return draft;
+    });
+  }
+
+  private focusGuidedStep(): void {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const step = this.guidedSteps[this.guidedStep()];
+    const element = document.getElementById(step.anchorId);
+    if (typeof element?.scrollIntoView !== 'function') {
+      return;
+    }
+
+    element.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
 
   async loadStoreProducts(): Promise<void> {
@@ -2449,9 +3465,13 @@ export class BusinessSiteEditorPageComponent {
   }
 
   addCustomSection(): void {
+    let nextSectionId = '';
     this.draft.update((draft) => {
+      nextSectionId = `custom-${Date.now()}-${
+        draft.landingPage.sections.length + 1
+      }`;
       draft.landingPage.sections.push({
-        id: `custom-${Date.now()}-${draft.landingPage.sections.length + 1}`,
+        id: nextSectionId,
         type: 'custom',
         title: 'Custom section',
         enabled: true,
@@ -2460,18 +3480,32 @@ export class BusinessSiteEditorPageComponent {
         ctaLabel: '',
         ctaHref: '',
         motion: this.createDefaultMotion(),
+        richContent: {
+          title: 'Custom section',
+          content: '',
+          injectedComponents: [],
+          themeConfig: {
+            theme: draft.theme.mode,
+            accentColor: draft.theme.primaryColor,
+          },
+        },
       });
       draft.landingPage.sections = normalizeLandingSections(
         draft.landingPage.sections
       );
       return draft;
     });
+    this.selectedSectionId.set(nextSectionId);
   }
 
   addImageSection(): void {
+    let nextSectionId = '';
     this.draft.update((draft) => {
+      nextSectionId = `image-${Date.now()}-${
+        draft.landingPage.sections.length + 1
+      }`;
       draft.landingPage.sections.push({
-        id: `image-${Date.now()}-${draft.landingPage.sections.length + 1}`,
+        id: nextSectionId,
         type: 'image',
         title: 'Image block',
         enabled: true,
@@ -2484,12 +3518,17 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
+    this.selectedSectionId.set(nextSectionId);
   }
 
   addGallerySection(): void {
+    let nextSectionId = '';
     this.draft.update((draft) => {
+      nextSectionId = `gallery-${Date.now()}-${
+        draft.landingPage.sections.length + 1
+      }`;
       draft.landingPage.sections.push({
-        id: `gallery-${Date.now()}-${draft.landingPage.sections.length + 1}`,
+        id: nextSectionId,
         type: 'gallery',
         title: 'Gallery block',
         enabled: true,
@@ -2506,6 +3545,7 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
+    this.selectedSectionId.set(nextSectionId);
   }
 
   addGalleryItem(sectionIndex: number): void {
@@ -2839,10 +3879,19 @@ export class BusinessSiteEditorPageComponent {
 
   removeSection(index: number): void {
     this.draft.update((draft) => {
+      const removedId = draft.landingPage.sections[index]?.id;
       draft.landingPage.sections.splice(index, 1);
       draft.landingPage.sections = normalizeLandingSections(
         draft.landingPage.sections
       );
+      if (removedId && this.selectedSectionId() === removedId) {
+        this.selectedSectionId.set(
+          draft.landingPage.sections[index]?.id ??
+            draft.landingPage.sections[index - 1]?.id ??
+            null
+        );
+        this.mobileSheetView.set('structure');
+      }
       return draft;
     });
   }
@@ -2906,6 +3955,13 @@ export class BusinessSiteEditorPageComponent {
 
   sectionSummary(section: LandingSection): string {
     if (section.type === 'custom') {
+      if (section.richContent?.content?.trim()) {
+        return (
+          this.plainTextFromHtml(section.richContent.content) ||
+          'Compose richer editorial content, callouts, and visual blocks.'
+        );
+      }
+
       return section.body?.trim() || 'Add supporting copy and an optional CTA.';
     }
 
@@ -3070,6 +4126,173 @@ export class BusinessSiteEditorPageComponent {
     };
   }
 
+  private syncPanelsForEditorMode(): void {
+    if (this.editorMode() === 'guided') {
+      this.expandPanel(this.panelIdForGuidedStep(this.guidedStep()));
+      return;
+    }
+
+    this.expandedPanels.update((panels) => ({
+      ...panels,
+      design: true,
+      'business-info': true,
+      layout: true,
+    }));
+  }
+
+  private expandPanel(panelId: EditorPanelId): void {
+    if (this.editorMode() === 'guided') {
+      this.expandedPanels.set({
+        design: false,
+        'business-info': false,
+        contact: false,
+        features: false,
+        layout: false,
+        offers: false,
+        review: false,
+        testimonials: false,
+        [panelId]: true,
+      });
+      return;
+    }
+
+    this.expandedPanels.update((panels) => ({
+      ...panels,
+      [panelId]: true,
+    }));
+  }
+
+  private panelIdForGuidedStep(index: number): EditorPanelId {
+    switch (this.guidedSteps[index]?.id) {
+      case 'business-info':
+        return 'business-info';
+      case 'features':
+        return 'features';
+      case 'services':
+        return 'offers';
+      case 'design':
+        return 'design';
+      case 'review':
+        return 'review';
+      default:
+        return 'business-info';
+    }
+  }
+
+  private blockFallbackTitle(block: BlockInstance, index: number): string {
+    return (
+      this.selectedSectionDefinitionForType(block.type)?.name ??
+      `Section ${index + 1}`
+    );
+  }
+
+  private selectedSectionDefinitionForType(
+    sectionType: string
+  ): BlockDefinition | null {
+    return (
+      BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS[
+        sectionType as LandingSection['type']
+      ] ?? null
+    );
+  }
+
+  private coerceInspectorValue(
+    fieldType:
+      | 'string'
+      | 'number'
+      | 'boolean'
+      | 'array'
+      | 'object'
+      | 'url'
+      | 'select'
+      | undefined,
+    rawValue: string
+  ): unknown {
+    if (fieldType === 'number') {
+      const parsed = Number(rawValue);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    if (fieldType === 'boolean') {
+      return rawValue === 'true';
+    }
+
+    return rawValue;
+  }
+
+  private rootFieldType(
+    fieldKey: string
+  ): BlockFieldDefinition['type'] | undefined {
+    return [
+      ...this.brandIdentityFields,
+      ...this.contactFields,
+      ...this.clientPortalFields,
+    ].find((field) => field.key === fieldKey)?.type;
+  }
+
+  private writeSectionPath(
+    section: LandingSection,
+    path: string,
+    value: unknown
+  ): void {
+    const segments = path.split('.');
+    const last = segments.pop();
+    if (!last) {
+      return;
+    }
+
+    let current = section as unknown as Record<string, unknown>;
+    for (const segment of segments) {
+      const next = current[segment];
+      if (!next || typeof next !== 'object') {
+        current[segment] = {};
+      }
+      current = current[segment] as Record<string, unknown>;
+    }
+
+    current[last] = value;
+  }
+
+  private readRootPath(model: unknown, path: string): unknown {
+    return path.split('.').reduce<unknown>((current, segment) => {
+      if (!current || typeof current !== 'object') {
+        return undefined;
+      }
+      return (current as Record<string, unknown>)[segment];
+    }, model);
+  }
+
+  private writeRootPath(
+    draft: Record<string, unknown> | BusinessSiteConfig,
+    path: string,
+    value: unknown
+  ): void {
+    const segments = path.split('.');
+    const last = segments.pop();
+    if (!last) {
+      return;
+    }
+
+    let current = draft as unknown as Record<string, unknown>;
+    for (const segment of segments) {
+      const next = current[segment];
+      if (!next || typeof next !== 'object') {
+        current[segment] = {};
+      }
+      current = current[segment] as Record<string, unknown>;
+    }
+
+    current[last] = value;
+  }
+
+  private isMobileViewport(): boolean {
+    return (
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 768px)').matches
+    );
+  }
+
   private async uploadAsset(file: File, profileId: string): Promise<string> {
     const content = await this.fileToBase64(file);
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'png';
@@ -3095,6 +4318,22 @@ export class BusinessSiteEditorPageComponent {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  private plainTextFromHtml(value: string): string {
+    if (!value.trim()) {
+      return '';
+    }
+
+    if (typeof DOMParser === 'undefined') {
+      return value
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    const parsed = new DOMParser().parseFromString(value, 'text/html');
+    return parsed.body.textContent?.replace(/\s+/g, ' ').trim() ?? '';
   }
 
   private sanitizedDraft(): BusinessSiteConfig {
@@ -3154,10 +4393,28 @@ export class BusinessSiteEditorPageComponent {
                 })),
               }
             : undefined,
+          richContent: section.richContent
+            ? {
+                ...section.richContent,
+                title:
+                  section.richContent.title?.trim() || section.title.trim(),
+                content: section.richContent.content?.trim() ?? '',
+                injectedComponents:
+                  section.richContent.injectedComponents?.map((component) => ({
+                    ...component,
+                    componentData: { ...component.componentData },
+                  })) ?? [],
+                themeConfig: section.richContent.themeConfig
+                  ? { ...section.richContent.themeConfig }
+                  : undefined,
+              }
+            : undefined,
         }))
     );
 
-    return draft;
+    return configDocumentToBusinessSiteConfig(
+      businessSiteConfigToConfigDocument(draft)
+    );
   }
 
   save(): void {
@@ -3173,8 +4430,6 @@ export class BusinessSiteEditorPageComponent {
           this.configId = saved.id;
         }
         this.draft.set(payload);
-        this.siteConfig.setSite(payload, this.configId);
-        this.applyDraftTheme();
         this.successMsg.set('Site content saved successfully.');
       },
       error: (err) => {
@@ -3189,8 +4444,13 @@ export class BusinessSiteEditorPageComponent {
   }
 
   reset(): void {
+    this.draftPreviewReady.set(false);
     this.draft.set(cloneBusinessSiteConfig());
+    this.selectedSectionId.set(
+      this.draft().landingPage.sections[0]?.id ?? null
+    );
     this.successMsg.set('');
     this.errorMsg.set('');
+    this.draftPreviewReady.set(true);
   }
 }

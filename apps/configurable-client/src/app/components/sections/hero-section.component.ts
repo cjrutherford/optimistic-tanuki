@@ -11,14 +11,16 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       <div class="hero-content">
         <h1>{{ section.title }}</h1>
         @if (section.subtitle) {
-          <p class="subtitle">{{ section.subtitle }}</p>
-        }
-        @if (section.ctaText && section.ctaLink) {
-          <a [href]="section.ctaLink" class="cta-button">{{ section.ctaText }}</a>
+        <p class="subtitle">{{ section.subtitle }}</p>
+        } @if (section.ctaText && section.ctaLink) {
+        <a [href]="section.ctaLink" class="cta-button">{{ section.ctaText }}</a>
         }
       </div>
       @if (section.backgroundImage) {
-        <div class="hero-background" [style.background-image]="'url(' + section.backgroundImage + ')'"></div>
+      <div
+        class="hero-background"
+        [style.background-image]="'url(' + section.backgroundImage + ')'"
+      ></div>
       }
     </section>
   `,
@@ -33,6 +35,8 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
         padding: 4rem 2rem;
         text-align: center;
         overflow: hidden;
+        color: var(--foreground, var(--text-color, #111827));
+        background: var(--background, var(--background-color, #ffffff));
       }
 
       .hero-background {
@@ -66,8 +70,8 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       .cta-button {
         display: inline-block;
         padding: 1rem 2rem;
-        background-color: var(--primary-color, #007bff);
-        color: white;
+        background-color: var(--primary, var(--primary-color, #007bff));
+        color: var(--primary-foreground, white);
         text-decoration: none;
         border-radius: 4px;
         font-weight: 600;
@@ -75,7 +79,11 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       }
 
       .cta-button:hover {
-        background-color: var(--primary-color-dark, #0056b3);
+        background-color: color-mix(
+          in srgb,
+          var(--primary, var(--primary-color, #007bff)) 88%,
+          black
+        );
       }
     `,
   ],

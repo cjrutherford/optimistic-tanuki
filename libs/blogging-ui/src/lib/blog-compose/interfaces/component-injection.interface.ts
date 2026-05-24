@@ -1,4 +1,9 @@
 import { ComponentRef, Type } from '@angular/core';
+import {
+  type BlockDefinition,
+  type BlockFieldDefinition,
+  type BlockRenderContext,
+} from '@optimistic-tanuki/app-config-models';
 
 /**
  * Interface for components that can be injected into the blog editor
@@ -43,18 +48,19 @@ export interface InjectableComponent {
    * Editable properties for the component
    */
   properties?: PropertyDefinition[];
+
+  /**
+   * Shared block definition for registry-driven editors and persistence.
+   */
+  blockDefinition?: BlockDefinition;
+
+  /**
+   * Supported render contexts for this component.
+   */
+  renderContexts?: BlockRenderContext[];
 }
 
-export interface PropertyDefinition {
-  key: string;
-  type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'url' | 'select';
-  label: string;
-  description?: string;
-  defaultValue?: any;
-  options?: { label: string; value: any }[];
-  isOutput?: boolean;
-  outputSchema?: any;
-}
+export type PropertyDefinition = BlockFieldDefinition;
 
 /**
  * Interface for managing injected component instances

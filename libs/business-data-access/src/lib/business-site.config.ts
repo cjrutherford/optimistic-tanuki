@@ -119,6 +119,23 @@ export interface LandingSectionMotionConfig {
   ringCount?: number;
 }
 
+export interface LandingSectionRichContentComponent {
+  instanceId: string;
+  componentType: string;
+  componentData: Record<string, unknown>;
+  position?: number;
+}
+
+export interface LandingSectionRichContent {
+  title?: string;
+  content: string;
+  injectedComponents?: LandingSectionRichContentComponent[];
+  themeConfig?: {
+    theme?: 'light' | 'dark';
+    accentColor?: string;
+  };
+}
+
 export interface LandingSection {
   id: string;
   type: LandingSectionType;
@@ -135,6 +152,7 @@ export interface LandingSection {
   image?: LandingSectionMediaItem;
   gallery?: LandingSectionGalleryConfig;
   motion?: LandingSectionMotionConfig;
+  richContent?: LandingSectionRichContent;
 }
 
 export interface BusinessSiteConfig {
@@ -187,6 +205,20 @@ function cloneSection(section: LandingSection): LandingSection {
         }
       : undefined,
     motion: section.motion ? { ...section.motion } : undefined,
+    richContent: section.richContent
+      ? {
+          ...section.richContent,
+          injectedComponents: section.richContent.injectedComponents?.map(
+            (component) => ({
+              ...component,
+              componentData: { ...component.componentData },
+            })
+          ),
+          themeConfig: section.richContent.themeConfig
+            ? { ...section.richContent.themeConfig }
+            : undefined,
+        }
+      : undefined,
   };
 }
 
@@ -251,6 +283,23 @@ function mergeLandingSections(
       direction: section.motion?.direction ?? 'diagonal',
       ringCount: section.motion?.ringCount ?? 4,
     },
+    richContent: section.richContent
+      ? {
+          title: section.richContent.title ?? '',
+          content: section.richContent.content ?? '',
+          injectedComponents: (
+            section.richContent.injectedComponents ?? []
+          ).map((component) => ({
+            instanceId: component.instanceId,
+            componentType: component.componentType,
+            componentData: { ...(component.componentData ?? {}) },
+            position: component.position,
+          })),
+          themeConfig: section.richContent.themeConfig
+            ? { ...section.richContent.themeConfig }
+            : undefined,
+        }
+      : undefined,
     order: typeof section.order === 'number' ? section.order : index,
   }));
 }

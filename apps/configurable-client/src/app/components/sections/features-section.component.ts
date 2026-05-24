@@ -11,13 +11,13 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
       <h2>{{ section.title }}</h2>
       <div class="features-grid">
         @for (feature of section.features; track feature.title) {
-          <div class="feature-card">
-            @if (feature.icon) {
-              <div class="feature-icon">{{ feature.icon }}</div>
-            }
-            <h3>{{ feature.title }}</h3>
-            <p>{{ feature.description }}</p>
-          </div>
+        <div class="feature-card">
+          @if (feature.icon) {
+          <div class="feature-icon">{{ feature.icon }}</div>
+          }
+          <h3>{{ feature.title }}</h3>
+          <p>{{ feature.description }}</p>
+        </div>
         }
       </div>
     </section>
@@ -26,6 +26,8 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
     `
       .features-section {
         padding: 4rem 2rem;
+        color: var(--foreground, var(--text-color, #111827));
+        background: var(--background, var(--background-color, #ffffff));
       }
 
       h2 {
@@ -44,9 +46,10 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
 
       .feature-card {
         padding: 2rem;
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--border, #e0e0e0);
         border-radius: 8px;
         text-align: center;
+        background: var(--surface, #ffffff);
       }
 
       .feature-icon {
@@ -60,7 +63,7 @@ import { FeaturesSection } from '@optimistic-tanuki/app-config-models';
       }
 
       p {
-        color: #666;
+        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
         line-height: 1.6;
       }
     `,

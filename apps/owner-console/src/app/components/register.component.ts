@@ -43,26 +43,26 @@ import { HttpClient } from '@angular/common/http';
   `,
   styles: [
     `
-      .auth-shell {
-        display: grid;
-        grid-template-columns: minmax(0, 28rem) minmax(20rem, 35rem);
-        gap: 3rem;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-        padding: 2rem 1.25rem 3rem;
-        background: radial-gradient(
-            circle at top left,
-            rgba(102, 126, 234, 0.2),
-            transparent 24rem
-          ),
-          radial-gradient(
-            circle at bottom right,
-            rgba(118, 75, 162, 0.18),
-            transparent 24rem
-          ),
-          linear-gradient(180deg, #111827 0%, #1f2937 100%);
-      }
+      // .auth-shell {
+      //   display: grid;
+      //   grid-template-columns: minmax(0, 28rem) minmax(20rem, 35rem);
+      //   gap: 3rem;
+      //   align-items: center;
+      //   justify-content: center;
+      //   min-height: 100vh;
+      //   padding: 2rem 1.25rem 3rem;
+      //   background: radial-gradient(
+      //       circle at top left,
+      //       rgba(102, 126, 234, 0.2),
+      //       transparent 24rem
+      //     ),
+      //     radial-gradient(
+      //       circle at bottom right,
+      //       rgba(118, 75, 162, 0.18),
+      //       transparent 24rem
+      //     ),
+      //     linear-gradient(180deg, #111827 0%, #1f2937 100%);
+      // }
 
       .auth-story {
         display: grid;
@@ -125,9 +125,9 @@ import { HttpClient } from '@angular/common/http';
       }
 
       @media (max-width: 960px) {
-        .auth-shell {
-          grid-template-columns: 1fr;
-        }
+        // .auth-shell {
+        //   grid-template-columns: 1fr;
+        // }
       }
     `,
   ],

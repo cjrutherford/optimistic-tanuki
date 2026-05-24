@@ -472,7 +472,26 @@ async function bootstrap() {
       cityCommSlug = c.slug;
       logger.log(`Created city community: ${c.name} (${c.id})`);
     } catch (err: any) {
-      logger.error(`Failed to create city community: ${err.message}`);
+      logger.warn(
+        `Failed to create city community directly, checking for existing slug: ${
+          err.response?.data?.message || err.message
+        }`
+      );
+      try {
+        const existing = await httpClient.get('/communities/slug/savannah-ga');
+        const c = existing.data?.data || existing.data;
+        if (c?.id) {
+          cityCommId = c.id;
+          cityCommSlug = c.slug;
+          logger.log(`Recovered existing city community: ${c.name} (${c.id})`);
+        }
+      } catch (lookupError: any) {
+        logger.error(
+          `Failed to recover city community: ${
+            lookupError.response?.data?.message || lookupError.message
+          }`
+        );
+      }
     }
   }
 
@@ -523,7 +542,29 @@ async function bootstrap() {
       foodieCommId = c.id;
       logger.log(`Created foodies community: ${c.name} (${c.id})`);
     } catch (err: any) {
-      logger.warn(`Failed to create foodies community: ${err.message}`);
+      logger.warn(
+        `Failed to create foodies community directly, checking for existing slug: ${
+          err.response?.data?.message || err.message
+        }`
+      );
+      try {
+        const existing = await httpClient.get(
+          '/communities/slug/savannah-foodies'
+        );
+        const c = existing.data?.data || existing.data;
+        if (c?.id) {
+          foodieCommId = c.id;
+          logger.log(
+            `Recovered existing foodies community: ${c.name} (${c.id})`
+          );
+        }
+      } catch (lookupError: any) {
+        logger.warn(
+          `Failed to recover foodies community: ${
+            lookupError.response?.data?.message || lookupError.message
+          }`
+        );
+      }
     }
   }
 

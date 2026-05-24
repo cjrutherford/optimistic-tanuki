@@ -19,7 +19,33 @@ fi
 
 export PGPASSWORD="$POSTGRES_PASSWORD"
 
+ensure_permissions_schema() {
+  if psql -tAc "SELECT to_regclass('public.app_scope')" \
+    -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" |
+    grep -q 'app_scope'; then
+    return 0
+  fi
+
+  echo "Permissions schema missing in $POSTGRES_DB. Running permissions migrations first..."
+
+  ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  if [ ! -d "$ROOT_DIR/node_modules" ]; then
+    echo "Installing dependencies required for permission migrations..."
+    (cd "$ROOT_DIR" && corepack enable && pnpm install --frozen-lockfile)
+  fi
+
+  (
+    cd "$ROOT_DIR/apps/permissions"
+    export TS_NODE_PROJECT=./tsconfig.app.json
+    export POSTGRES_DB="$POSTGRES_DB"
+    node -r ts-node/register -r tsconfig-paths/register \
+      "$ROOT_DIR/node_modules/typeorm/cli.js" \
+      -d ./src/app/staticDatabase.ts migration:run
+  )
+}
+
 echo "Seeding app scopes into database: $POSTGRES_DB on $POSTGRES_HOST:$POSTGRES_PORT"
+ensure_permissions_schema
 
 psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<'SQL'
 INSERT INTO "app_scope" ("name", "description", "active") VALUES

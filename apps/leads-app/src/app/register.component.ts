@@ -46,26 +46,26 @@ import { ProfileService } from './profile.service';
   `,
   styles: [
     `
-      .auth-shell {
-        min-height: calc(100vh - 56px);
-        display: grid;
-        grid-template-columns: minmax(0, 420px) minmax(320px, 520px);
-        gap: 3rem;
-        align-items: center;
-        justify-content: center;
-        padding: 3rem 1.5rem;
-        background: radial-gradient(
-            circle at top left,
-            rgba(13, 148, 136, 0.12),
-            transparent 24rem
-          ),
-          radial-gradient(
-            circle at bottom right,
-            rgba(14, 165, 233, 0.14),
-            transparent 26rem
-          ),
-          linear-gradient(180deg, #f5fbfb 0%, #eef6ff 100%);
-      }
+      // .auth-shell {
+      //   min-height: calc(100vh - 56px);
+      //   display: grid;
+      //   grid-template-columns: minmax(0, 420px) minmax(320px, 520px);
+      //   gap: 3rem;
+      //   align-items: center;
+      //   justify-content: center;
+      //   padding: 3rem 1.5rem;
+      //   background: radial-gradient(
+      //       circle at top left,
+      //       rgba(13, 148, 136, 0.12),
+      //       transparent 24rem
+      //     ),
+      //     radial-gradient(
+      //       circle at bottom right,
+      //       rgba(14, 165, 233, 0.14),
+      //       transparent 26rem
+      //     ),
+      //     linear-gradient(180deg, #f5fbfb 0%, #eef6ff 100%);
+      // }
       .auth-copy {
         max-width: 30rem;
         display: grid;
@@ -110,9 +110,9 @@ import { ProfileService } from './profile.service';
         width: 100%;
       }
       @media (max-width: 900px) {
-        .auth-shell {
-          grid-template-columns: 1fr;
-        }
+        // .auth-shell {
+        //   grid-template-columns: 1fr;
+        // }
       }
     `,
   ],

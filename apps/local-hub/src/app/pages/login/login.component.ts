@@ -16,7 +16,7 @@ import { AuthStateService } from '../../services/auth-state.service';
   imports: [CommonModule, LoginBlockComponent, RouterModule],
   template: `
     <section class="auth-shell">
-      <div class="auth-story">
+      <!-- <div class="auth-story">
         <p class="eyebrow">Towne Square</p>
         <h1>Your city, your people, your next block-level update.</h1>
         <p class="lede">
@@ -36,7 +36,7 @@ import { AuthStateService } from '../../services/auth-state.service';
             >
           </div>
         </div>
-      </div>
+      </div> -->
       <div class="auth-panel">
         <lib-login-block
           title="Welcome to Towne Square"
@@ -58,21 +58,21 @@ import { AuthStateService } from '../../services/auth-state.service';
   `,
   styles: [
     `
-      .auth-shell {
-        min-height: 100vh;
-        display: grid;
-        grid-template-columns: minmax(0, 30rem) minmax(20rem, 34rem);
-        gap: 2.5rem;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem 3rem;
-        background: radial-gradient(
-            circle at top right,
-            rgba(47, 123, 255, 0.14),
-            transparent 24rem
-          ),
-          linear-gradient(180deg, #f7fbff 0%, #edf6f2 100%);
-      }
+      // .auth-shell {
+      //   min-height: 100vh;
+      //   display: grid;
+      //   grid-template-columns: minmax(0, 30rem) minmax(20rem, 34rem);
+      //   gap: 2.5rem;
+      //   align-items: center;
+      //   justify-content: center;
+      //   padding: 2rem 1rem 3rem;
+      //   background: radial-gradient(
+      //       circle at top right,
+      //       rgba(47, 123, 255, 0.14),
+      //       transparent 24rem
+      //     ),
+      //     linear-gradient(180deg, #f7fbff 0%, #edf6f2 100%);
+      // }
       .auth-story {
         display: grid;
         gap: 1rem;
@@ -147,9 +147,9 @@ import { AuthStateService } from '../../services/auth-state.service';
         }
       }
       @media (max-width: 960px) {
-        .auth-shell {
-          grid-template-columns: 1fr;
-        }
+        // .auth-shell {
+        //   grid-template-columns: 1fr;
+        // }
       }
     `,
   ],

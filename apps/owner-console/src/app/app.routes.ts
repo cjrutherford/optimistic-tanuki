@@ -185,6 +185,10 @@ export const appRoutes: Route[] = [
           import(
             './components/app-config-designer/app-config-designer.component'
           ).then((m) => m.AppConfigDesignerComponent),
+        data: {
+          editorMode: 'guided',
+          workspaceKind: 'app-config',
+        },
       },
       {
         path: 'app-config/designer/:id',
@@ -192,6 +196,10 @@ export const appRoutes: Route[] = [
           import(
             './components/app-config-designer/app-config-designer.component'
           ).then((m) => m.AppConfigDesignerComponent),
+        data: {
+          editorMode: 'studio',
+          workspaceKind: 'app-config',
+        },
       },
       {
         path: 'store/appointments',

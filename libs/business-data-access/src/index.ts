@@ -17,6 +17,11 @@ export {
   mergeBusinessSiteConfig,
   normalizeLandingSections,
 } from './lib/business-site.config';
+export {
+  BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
+  businessSiteConfigToConfigDocument,
+  configDocumentToBusinessSiteConfig,
+} from './lib/business-site-blocks';
 export type { BusinessSiteConfig } from './lib/business-site.config';
 export type { BusinessSiteConfig as TrainerSiteConfig } from './lib/business-site.config';
 
@@ -31,6 +36,8 @@ export type {
   LandingSectionGalleryConfig,
   LandingSectionMotionConfig,
   LandingSectionMotionKind,
+  LandingSectionRichContent,
+  LandingSectionRichContentComponent,
   LandingSectionMediaSourceType,
   LandingSectionMediaAspect,
   LandingSectionMediaFit,

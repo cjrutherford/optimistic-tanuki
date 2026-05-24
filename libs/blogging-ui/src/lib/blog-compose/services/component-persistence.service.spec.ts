@@ -127,6 +127,30 @@ describe('ComponentPersistenceService', () => {
         }
       );
     });
+
+    it('extracts shared block instances from component markup', () => {
+      const html = `
+        <div>
+          <div
+            data-angular-component="true"
+            data-component-id="author-profile"
+            data-instance-id="instance-1"
+            data-component-data='{"name":"John Doe","bio":"Test bio"}'
+          ></div>
+        </div>
+      `;
+
+      expect(service.extractBlocksFromContent(html)).toEqual([
+        {
+          id: 'instance-1',
+          type: 'author-profile',
+          order: 0,
+          enabled: true,
+          renderContext: 'rich-text',
+          data: { name: 'John Doe', bio: 'Test bio' },
+        },
+      ]);
+    });
   });
 
   describe('saveComponents', () => {

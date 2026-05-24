@@ -607,19 +607,7 @@ services:
     volumes:
       - ./dist/apps/social:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
-    command:
-      [
-        'dumb-init',
-        './node_modules/.bin/nodemon',
-        '--watch',
-        '/usr/src/app',
-        '--ext',
-        'js,json',
-        '--exec',
-        'node --inspect=0.0.0.0:9232',
-        '-L',
-        'main.js',
-      ]
+    command: ['dumb-init', 'node', '--inspect=0.0.0.0:9232', 'main.js']
     ports:
       - '9232:9232'
     environment:
@@ -827,19 +815,7 @@ services:
       - /mnt/valhalla/media:/media:ro
     environment:
       - VIDEO_SEED_SOURCE_DIR=/media/Tv
-    command:
-      [
-        'dumb-init',
-        './node_modules/.bin/nodemon',
-        '--watch',
-        '/usr/src/app/dist/apps/videos',
-        '--ext',
-        'js,json',
-        '--exec',
-        'node',
-        '-L',
-        'dist/apps/videos/main.js',
-      ]
+    command: ['dumb-init', 'node', 'dist/apps/videos/main.js']
 
   video-transcoder-worker:
     container_name: ot_video_transcoder_worker

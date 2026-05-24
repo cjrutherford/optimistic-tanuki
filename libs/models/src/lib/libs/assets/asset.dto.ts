@@ -52,7 +52,7 @@ export class CreateAssetDto {
     required: false,
   })
   @IsOptional()
-  content?: Buffer | string;
+  content?: Uint8Array | string;
 
   @ApiProperty({
     description: 'Optional existing file path to ingest without inline content',
@@ -93,7 +93,7 @@ export class AssetDto {
   profileId!: string;
 
   @ApiProperty({ description: 'Optional content', required: false })
-  content?: Buffer;
+  content?: Uint8Array;
 }
 
 export class AssetHandle {
@@ -114,7 +114,11 @@ export class AssetListQuery {
   @IsUUID()
   profileId!: string;
 
-  @ApiProperty({ description: 'Optional asset type filter', enum: AssetType, required: false })
+  @ApiProperty({
+    description: 'Optional asset type filter',
+    enum: AssetType,
+    required: false,
+  })
   @IsOptional()
   @IsEnum(AssetType)
   type?: AssetType;

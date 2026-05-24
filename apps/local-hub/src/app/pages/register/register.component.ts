@@ -61,21 +61,21 @@ import { AuthStateService } from '../../services/auth-state.service';
   `,
   styles: [
     `
-      .auth-shell {
-        min-height: 100vh;
-        display: grid;
-        grid-template-columns: minmax(0, 30rem) minmax(20rem, 35rem);
-        gap: 2.5rem;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem 3rem;
-        background: radial-gradient(
-            circle at top right,
-            rgba(47, 123, 255, 0.14),
-            transparent 24rem
-          ),
-          linear-gradient(180deg, #f7fbff 0%, #edf6f2 100%);
-      }
+      // .auth-shell {
+      //   min-height: 100vh;
+      //   display: grid;
+      //   grid-template-columns: minmax(0, 30rem) minmax(20rem, 35rem);
+      //   gap: 2.5rem;
+      //   align-items: center;
+      //   justify-content: center;
+      //   padding: 2rem 1rem 3rem;
+      //   background: radial-gradient(
+      //       circle at top right,
+      //       rgba(47, 123, 255, 0.14),
+      //       transparent 24rem
+      //     ),
+      //     linear-gradient(180deg, #f7fbff 0%, #edf6f2 100%);
+      // }
       .auth-story {
         display: grid;
         gap: 1rem;
@@ -150,9 +150,9 @@ import { AuthStateService } from '../../services/auth-state.service';
         }
       }
       @media (max-width: 960px) {
-        .auth-shell {
-          grid-template-columns: 1fr;
-        }
+        // .auth-shell {
+        //   grid-template-columns: 1fr;
+        // }
       }
     `,
   ],

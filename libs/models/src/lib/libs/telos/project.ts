@@ -1,4 +1,4 @@
-import type { ProfileTelosDto } from './profile';
+import { ProfileTelosDto } from './profile';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -9,8 +9,8 @@ export class ProjectTelosDto {
   @IsString()
   id!: string;
 
-  @ApiProperty({ type: () => require('./profile').ProfileTelosDto })
-  @Type(() => require('./profile').ProfileTelosDto)
+  @ApiProperty({ type: () => ProfileTelosDto })
+  @Type(() => ProfileTelosDto)
   profile!: ProfileTelosDto;
 
   @ApiProperty()

@@ -114,7 +114,14 @@ describe('ComponentInjectionService', () => {
       const registered = service.getRegisteredComponents();
 
       expect(registered.length).toBe(1);
-      expect(registered[0]).toEqual(component);
+      expect(registered[0]).toMatchObject(component);
+      expect(registered[0].renderContexts).toEqual(['rich-text']);
+      expect(registered[0].blockDefinition).toMatchObject({
+        type: 'test',
+        name: 'Test',
+        category: 'Test',
+        icon: 'code',
+      });
     });
 
     it('should get components by category', () => {

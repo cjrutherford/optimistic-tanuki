@@ -1,3 +1,5 @@
+@use '../../../libs/business-portal-ui/src/lib/business-site-editor-shell';
+
 :root {
   --background-color: var(--background);
   --foreground-color: var(--foreground);
@@ -19,8 +21,7 @@ body {
 
 body {
   margin: 0;
-  background:
-    radial-gradient(
+  background: radial-gradient(
       circle at top left,
       color-mix(in srgb, var(--primary, #1f7a63) 9%, transparent),
       transparent 30%
@@ -31,7 +32,10 @@ body {
       color-mix(in srgb, var(--background, #ffffff) 92%, #eef2f7)
     );
   color: var(--foreground, #0f172a);
-  font-family: var(--personality-font-family, var(--font-body, 'Source Sans Pro', system-ui, sans-serif));
+  font-family: var(
+    --personality-font-family,
+    var(--font-body, 'Source Sans Pro', system-ui, sans-serif)
+  );
 }
 
 button,

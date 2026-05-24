@@ -1,11 +1,13 @@
 import { signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import {
   BusinessApiService,
   BusinessAuthService,
+  BusinessSiteConfigStore,
   DEFAULT_BUSINESS_SITE_CONFIG,
 } from '@optimistic-tanuki/business-data-access';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -17,15 +19,33 @@ describe('BusinessSiteEditorPageComponent', () => {
   const updateSiteConfig = jest.fn();
   const listAssets = jest.fn();
   const getStoreProducts = jest.fn();
+  const getOffers = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
   const setPrimaryColor = jest.fn();
   const setPersonality = jest.fn().mockResolvedValue(undefined);
+  const getTheme = jest.fn(() => 'light');
   const themeColors$ = of({
     background: '#ffffff',
     foreground: '#0f172a',
     accent: '#1f7a63',
   });
+
+  function mockMobileViewport(matches: boolean) {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: jest.fn().mockImplementation(() => ({
+        matches,
+        media: '(max-width: 768px)',
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+      })),
+    });
+  }
 
   function createComponent() {
     getSiteConfig.mockReturnValue(
@@ -48,6 +68,7 @@ describe('BusinessSiteEditorPageComponent', () => {
         },
       ])
     );
+    getOffers.mockReturnValue(of([]));
     listAssets.mockReturnValue(
       of([
         {
@@ -64,12 +85,14 @@ describe('BusinessSiteEditorPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessSiteEditorPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: BusinessApiService,
           useValue: {
             getSiteConfig,
             updateSiteConfig,
             getStoreProducts,
+            getOffers,
             listAssets,
           },
         },
@@ -89,6 +112,7 @@ describe('BusinessSiteEditorPageComponent', () => {
         {
           provide: ThemeService,
           useValue: {
+            getTheme,
             setTheme,
             setPrimaryColor,
             setPersonality,
@@ -108,6 +132,8 @@ describe('BusinessSiteEditorPageComponent', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    getTheme.mockReturnValue('light');
+    mockMobileViewport(false);
   });
 
   it('saves store-backed service catalog mode without persisting manual offers', () => {
@@ -222,13 +248,158 @@ describe('BusinessSiteEditorPageComponent', () => {
   });
 
   it('renders the features editor as a horizontal feature row', () => {
-    const { fixture } = createComponent();
+    const { fixture, component } = createComponent();
+
+    component.togglePanel('features');
+    fixture.detectChanges();
 
     const featureRow = fixture.nativeElement.querySelector('.feature-row');
     expect(featureRow).toBeTruthy();
     expect(featureRow.querySelectorAll('.toggle-card').length).toBeGreaterThan(
       1
     );
+  });
+
+  it('renders a persistent guided and studio mode switch', () => {
+    const { fixture } = createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const modeSwitch = host.querySelector('[data-editor-mode-switch]');
+
+    expect(modeSwitch).toBeTruthy();
+    expect(modeSwitch?.textContent).toContain('Guided Setup');
+    expect(modeSwitch?.textContent).toContain('Studio');
+  });
+
+  it('renders the editor beside a live business landing-page preview', () => {
+    const { fixture, component } = createComponent();
+    component.togglePanel('contact');
+    component.togglePanel('review');
+    component.togglePanel('offers');
+    component.togglePanel('testimonials');
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('[data-live-preview]')).toBeTruthy();
+    expect(host.querySelector('[data-design-system-panel]')).toBeTruthy();
+    expect(host.querySelector('app-editor-block-tree')).toBeTruthy();
+    expect(host.querySelector('app-schema-block-inspector')).toBeTruthy();
+    expect(
+      host.querySelectorAll('app-schema-form-panel').length
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      host.querySelectorAll('app-schema-string-list-panel').length
+    ).toBeGreaterThanOrEqual(3);
+    expect(
+      host.querySelectorAll('app-schema-collection-panel').length
+    ).toBeGreaterThanOrEqual(1);
+    expect(host.querySelector('business-landing-page')).toBeTruthy();
+  });
+
+  it('pushes unsaved draft changes into the shared preview store and theme service', () => {
+    const { fixture, component } = createComponent();
+    const store = TestBed.inject(BusinessSiteConfigStore);
+    const setSiteSpy = jest.spyOn(store, 'setSite');
+
+    component.draft().brand.tagline = 'Live preview headline';
+    component.draft().theme.primaryColor = '#0f766e';
+    component.draft().theme.mode = 'dark';
+    component.draft().theme.personalityId = 'bold';
+
+    component.refreshDraftSignalFromTemplate();
+    fixture.detectChanges();
+
+    expect(setSiteSpy).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          tagline: 'Live preview headline',
+        }),
+        theme: expect.objectContaining({
+          primaryColor: '#0f766e',
+          mode: 'dark',
+          personalityId: 'bold',
+        }),
+      }),
+      'config-1'
+    );
+    expect(setTheme).toHaveBeenLastCalledWith('dark');
+    expect(setPrimaryColor).toHaveBeenLastCalledWith('#0f766e');
+    expect(setPersonality).toHaveBeenLastCalledWith('bold');
+    expect(hostText(fixture)).toContain('Live preview headline');
+  });
+
+  it('ignores unsupported theme fields emitted by the design panel', () => {
+    const { component } = createComponent();
+
+    component.updateDraftThemeField('secondaryColor', '#ff4081');
+
+    expect(component.draft().theme).toEqual(
+      expect.objectContaining({
+        mode: 'light',
+        personalityId: 'professional',
+        primaryColor: '#1f7a63',
+      })
+    );
+    expect(
+      (component.draft().theme as unknown as Record<string, unknown>)[
+        'secondaryColor'
+      ]
+    ).toBeUndefined();
+  });
+
+  it('lets the rendered business preview drive section selection', () => {
+    const { fixture, component } = createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const previewSection = host.querySelector(
+      '[data-live-preview] [data-section-id="hero"]'
+    ) as HTMLElement;
+
+    previewSection.click();
+    fixture.detectChanges();
+
+    expect(component.selectedSectionId()).toBe('hero');
+    expect(previewSection.classList.contains('preview-section-selected')).toBe(
+      true
+    );
+  });
+
+  it('opens the contextual mobile sheet in inspector mode after selecting from preview', () => {
+    mockMobileViewport(true);
+    const { fixture, component } = createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    const previewSection = host.querySelector(
+      '[data-live-preview] [data-section-id="hero"]'
+    ) as HTMLElement;
+
+    previewSection.click();
+    fixture.detectChanges();
+
+    expect(component.mobileSheetOpen()).toBe(true);
+    expect(component.mobileSheetMode()).toBe('inspector');
+    expect(host.querySelector('[data-mobile-sheet]')).toBeTruthy();
+  });
+
+  it('uses single-open major panels in guided mode and multi-open panels in studio mode', () => {
+    const { fixture, component } = createComponent();
+
+    component.setEditorMode('guided');
+    fixture.detectChanges();
+    expect(component.isPanelExpanded('business-info')).toBe(true);
+    expect(component.isPanelExpanded('layout')).toBe(false);
+
+    component.togglePanel('layout');
+    fixture.detectChanges();
+    expect(component.isPanelExpanded('layout')).toBe(true);
+    expect(component.isPanelExpanded('business-info')).toBe(false);
+
+    component.setEditorMode('studio');
+    component.togglePanel('offers');
+    fixture.detectChanges();
+
+    expect(component.isPanelExpanded('layout')).toBe(true);
+    expect(component.isPanelExpanded('offers')).toBe(true);
   });
 
   it('saves business type, portal capabilities, layout, and custom sections', () => {
@@ -272,6 +443,64 @@ describe('BusinessSiteEditorPageComponent', () => {
               body: 'This is a custom proof section.',
               ctaLabel: 'Request a call',
               ctaHref: '/book',
+            }),
+          ]),
+        }),
+      })
+    );
+  });
+
+  it('saves compose-backed custom section content and rich component metadata', () => {
+    const { component } = createComponent();
+
+    component.addCustomSection();
+    const customSection = component
+      .draft()
+      .landingPage.sections.find((section) => section.type === 'custom');
+    expect(customSection).toBeTruthy();
+
+    component.selectSection(customSection!.id);
+    component.updateSelectedCustomSectionRichContent({
+      title: 'What collaboration looks like',
+      content:
+        '<p>Every engagement starts with a working session.</p><div data-angular-component data-instance-id="callout-1"></div>',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: [
+        {
+          instanceId: 'callout-1',
+          componentType: 'callout-box',
+          componentData: {
+            title: 'Decision rhythm',
+            content: 'Weekly review and shared action log.',
+            type: 'info',
+          },
+        },
+      ],
+      themeConfig: {
+        theme: 'light',
+        accentColor: '#1f7a63',
+      },
+    });
+
+    component.save();
+
+    expect(updateSiteConfig).toHaveBeenCalledWith(
+      'config-1',
+      expect.objectContaining({
+        landingPage: expect.objectContaining({
+          sections: expect.arrayContaining([
+            expect.objectContaining({
+              id: customSection!.id,
+              richContent: expect.objectContaining({
+                content: expect.stringContaining('Every engagement starts'),
+                injectedComponents: expect.arrayContaining([
+                  expect.objectContaining({
+                    instanceId: 'callout-1',
+                    componentType: 'callout-box',
+                  }),
+                ]),
+              }),
             }),
           ]),
         }),
@@ -497,6 +726,23 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(host.textContent).toContain('Add gallery block');
   });
 
+  it('saves the same live draft currently rendered in the embedded preview', () => {
+    const { component } = createComponent();
+
+    component.draft().brand.tagline = 'Draft visible before save';
+    component.refreshDraftSignalFromTemplate();
+    component.save();
+
+    expect(updateSiteConfig).toHaveBeenCalledWith(
+      'config-1',
+      expect.objectContaining({
+        brand: expect.objectContaining({
+          tagline: 'Draft visible before save',
+        }),
+      })
+    );
+  });
+
   it('moves a section into a split canvas zone and persists that placement', () => {
     const { component } = createComponent();
 
@@ -535,4 +781,8 @@ describe('BusinessSiteEditorPageComponent', () => {
       host.querySelector('[data-drop-zone="grid:bottom-right"]')
     ).toBeTruthy();
   });
+
+  function hostText(fixture: { nativeElement: HTMLElement }): string {
+    return fixture.nativeElement.textContent ?? '';
+  }
 });
