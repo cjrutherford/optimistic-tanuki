@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { type BlockFieldDefinition } from '@optimistic-tanuki/app-config-models';
 import {
+  CheckboxComponent,
   SelectComponent,
   TextAreaComponent,
   TextInputComponent,
@@ -16,6 +17,7 @@ import {
     FormsModule,
     TextInputComponent,
     TextAreaComponent,
+    CheckboxComponent,
     SelectComponent,
   ],
   template: `
@@ -54,6 +56,13 @@ import {
             "
             [options]="fieldOptions(field)"
           ></lib-select>
+          } @case ('boolean') {
+          <lib-checkbox
+            [value]="booleanFieldValue(field.key)"
+            (changeEvent)="
+              fieldChanged.emit({ key: field.key, value: $event })
+            "
+          ></lib-checkbox>
           } @default {
           <lib-text-input
             [id]="'field-' + field.key"
@@ -127,7 +136,7 @@ export class SchemaFormPanelComponent {
   @Input() model: object | null = null;
   @Input() fields: BlockFieldDefinition[] = [];
 
-  @Output() fieldChanged = new EventEmitter<{ key: string; value: string }>();
+  @Output() fieldChanged = new EventEmitter<{ key: string; value: string | number | boolean }>();
 
   fieldValue(fieldKey: string): string {
     const value = this.readPath(fieldKey);
@@ -140,6 +149,11 @@ export class SchemaFormPanelComponent {
     }
 
     return '';
+  }
+
+  booleanFieldValue(fieldKey: string): boolean {
+    const value = this.readPath(fieldKey);
+    return typeof value === 'boolean' ? value : false;
   }
 
   fieldOptions(

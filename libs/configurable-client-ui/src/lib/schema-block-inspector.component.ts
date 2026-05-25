@@ -7,6 +7,7 @@ import {
   BlockInstance,
 } from '@optimistic-tanuki/app-config-models';
 import {
+  CheckboxComponent,
   SelectComponent,
   TextAreaComponent,
   TextInputComponent,
@@ -20,6 +21,7 @@ import {
     FormsModule,
     TextInputComponent,
     TextAreaComponent,
+    CheckboxComponent,
     SelectComponent,
   ],
   template: `
@@ -56,6 +58,13 @@ import {
             "
             [options]="fieldOptions(field)"
           ></lib-select>
+          } @case ('boolean') {
+          <lib-checkbox
+            [value]="booleanFieldValue(field.key)"
+            (changeEvent)="
+              fieldChanged.emit({ key: field.key, value: $event })
+            "
+          ></lib-checkbox>
           } @default {
           <lib-text-input
             [id]="'field-' + field.key"
@@ -85,7 +94,7 @@ export class SchemaBlockInspectorComponent {
   @Input() block: BlockInstance | null = null;
   @Input() definition: BlockDefinition | null = null;
 
-  @Output() fieldChanged = new EventEmitter<{ key: string; value: string }>();
+  @Output() fieldChanged = new EventEmitter<{ key: string; value: string | number | boolean }>();
 
   fieldValue(fieldKey: string): string {
     if (!this.block) {
@@ -106,6 +115,11 @@ export class SchemaBlockInspectorComponent {
     }
 
     return '';
+  }
+
+  booleanFieldValue(fieldKey: string): boolean {
+    const value = this.readPath(fieldKey);
+    return typeof value === 'boolean' ? value : false;
   }
 
   fieldOptions(

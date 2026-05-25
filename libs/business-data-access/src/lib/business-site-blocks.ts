@@ -95,11 +95,7 @@ const MOTION_SECTION_FIELDS: BlockFieldDefinition[] = [
     key: 'motion.reducedMotion',
     type: 'boolean',
     label: 'Reduced Motion',
-    editor: 'select',
-    options: [
-      { label: 'Off', value: false },
-      { label: 'On', value: true },
-    ],
+    editor: 'boolean',
   },
   {
     key: 'motion.direction',

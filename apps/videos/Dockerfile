@@ -4,8 +4,7 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/videos/ ./apps/videos/
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile \
-  && pnpm add -w nodemon
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build videos --configuration=development
 
 FROM docker.io/node:24-alpine AS runner

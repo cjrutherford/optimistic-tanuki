@@ -52,7 +52,7 @@ export class CreateAssetDto {
     required: false,
   })
   @IsOptional()
-  content?: Uint8Array | string;
+  content?: string;
 
   @ApiProperty({
     description: 'Optional existing file path to ingest without inline content',
@@ -93,7 +93,7 @@ export class AssetDto {
   profileId!: string;
 
   @ApiProperty({ description: 'Optional content', required: false })
-  content?: Uint8Array;
+  content?: string;
 }
 
 export class AssetHandle {

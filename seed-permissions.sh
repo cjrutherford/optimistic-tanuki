@@ -11,6 +11,7 @@ POSTGRES_USER=${POSTGRES_USER:-postgres}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
 POSTGRES_DB=${POSTGRES_DB:-ot_permissions}
 SKIP_PERMISSION_USER_ASSIGNMENTS=${SKIP_PERMISSION_USER_ASSIGNMENTS:-false}
+RUN_MIGRATIONS=${RUN_MIGRATIONS:-false}
 
 if ! command -v psql >/dev/null 2>&1; then
   echo "psql not found in PATH. Please install the Postgres client." >&2
@@ -24,6 +25,12 @@ ensure_permissions_schema() {
     -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" |
     grep -q 'app_scope'; then
     return 0
+  fi
+
+  if [ "$RUN_MIGRATIONS" != "true" ]; then
+    echo "Permissions schema missing in $POSTGRES_DB." >&2
+    echo "Re-run with RUN_MIGRATIONS=true to automatically apply migrations, or run migrations manually first." >&2
+    exit 1
   fi
 
   echo "Permissions schema missing in $POSTGRES_DB. Running permissions migrations first..."
