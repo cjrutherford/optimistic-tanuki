@@ -3,17 +3,14 @@ x-service-db-env: &service_db_env
   DATABASE_PORT: ${POSTGRES_PORT:-5432}
   DATABASE_USER: ${POSTGRES_USER:-postgres}
   DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-  DATABASE_NAME: ${POSTGRES_DB:-postgres}
   DB_HOST: ${POSTGRES_HOST:-db}
   DB_PORT: ${POSTGRES_PORT:-5432}
   DB_USER: ${POSTGRES_USER:-postgres}
   DB_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-  DB_NAME: ${POSTGRES_DB:-postgres}
   POSTGRES_HOST: ${POSTGRES_HOST:-db}
   POSTGRES_PORT: ${POSTGRES_PORT:-5432}
   POSTGRES_USER: ${POSTGRES_USER:-postgres}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-  POSTGRES_DB: ${POSTGRES_DB:-postgres}
 
 x-gateway-client-env: &gateway_client_env
   GATEWAY_URL: ${GATEWAY_URL:-http://gateway:3000}
@@ -619,6 +616,9 @@ services:
       - '${PERMISSIONS_PORT:-3012}:3012'
     environment:
       <<: *service_db_env
+      DATABASE_NAME: ot_permissions
+      DB_NAME: ot_permissions
+      POSTGRES_DB: ot_permissions
     depends_on:
       postgres:
         condition: service_healthy

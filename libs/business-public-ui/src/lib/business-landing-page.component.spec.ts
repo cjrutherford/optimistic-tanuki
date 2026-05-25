@@ -24,7 +24,8 @@ describe('BusinessLandingPageComponent', () => {
     {
       id: 'offer-1',
       label: 'Strategy Intensive',
-      description: 'A bookable service built from active business availability.',
+      description:
+        'A bookable service built from active business availability.',
       serviceType: 'consulting',
       startingRate: 145,
     },
@@ -34,10 +35,11 @@ describe('BusinessLandingPageComponent', () => {
     ...DEFAULT_BUSINESS_SITE_CONFIG,
     landingPage: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
-      sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map((section) =>
-        section.id === 'services'
-          ? { ...section, enabled: true, title: 'How Services Start' }
-          : section
+      sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+        (section) =>
+          section.id === 'services'
+            ? { ...section, enabled: true, title: 'How Services Start' }
+            : section
       ),
     },
   };
@@ -51,7 +53,9 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
-            getSiteConfig: jest.fn().mockReturnValue(of({ configId: null, config })),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(of({ configId: null, config })),
           },
         },
       ],
@@ -80,8 +84,76 @@ describe('BusinessLandingPageComponent', () => {
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Strategy Intensive');
-    expect(text).toContain('A bookable service built from active business availability.');
+    expect(text).toContain(
+      'A bookable service built from active business availability.'
+    );
     expect(text).not.toContain('active trainer availability');
+  });
+
+  it('marks embedded preview mode explicitly for editor-hosted rendering', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.componentRef.setInput('embeddedPreview', true);
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-embedded-preview-root]')).toBeTruthy();
+  });
+
+  it('emits preview section selection and highlights the selected section in embedded mode', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    const component = fixture.componentInstance;
+    const emitSpy = jest.spyOn(component.sectionSelected, 'emit');
+
+    fixture.componentRef.setInput('embeddedPreview', true);
+    fixture.componentRef.setInput('selectedSectionId', 'services');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const section = host.querySelector(
+      '[data-section-id="services"]'
+    ) as HTMLElement;
+
+    section.click();
+    fixture.detectChanges();
+
+    expect(emitSpy).toHaveBeenCalledWith('services');
+    expect(section.classList.contains('preview-section-selected')).toBe(true);
   });
 
   it('renders sections in configured order', async () => {
@@ -90,8 +162,20 @@ describe('BusinessLandingPageComponent', () => {
       landingPage: {
         ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
         sections: [
-          { id: 'contact', type: 'contact', title: 'Contact', enabled: true, order: 0 },
-          { id: 'hero', type: 'hero', title: 'Welcome', enabled: true, order: 1 },
+          {
+            id: 'contact',
+            type: 'contact',
+            title: 'Contact',
+            enabled: true,
+            order: 0,
+          },
+          {
+            id: 'hero',
+            type: 'hero',
+            title: 'Welcome',
+            enabled: true,
+            order: 1,
+          },
           {
             id: 'testimonials',
             type: 'testimonials',
@@ -104,9 +188,11 @@ describe('BusinessLandingPageComponent', () => {
     });
     const text = fixture.nativeElement.textContent;
 
-    expect(text.indexOf('Reach out when you are ready to talk goals, schedule, and fit.')).toBeLessThan(
-      text.indexOf(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline)
-    );
+    expect(
+      text.indexOf(
+        'Reach out when you are ready to talk goals, schedule, and fit.'
+      )
+    ).toBeLessThan(text.indexOf(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline));
   });
 
   it('hides booking, testimonials, and client portal entry points when their features are disabled', async () => {
@@ -179,11 +265,58 @@ describe('BusinessLandingPageComponent', () => {
     const customSection = host.querySelector('[data-section-id="custom-1"]');
 
     expect(host.querySelector('.layout-split')).toBeTruthy();
-    expect(customSection?.textContent).toContain('What working together looks like');
+    expect(customSection?.textContent).toContain(
+      'What working together looks like'
+    );
     expect(customSection?.textContent).toContain(
       'Every engagement starts with a scoped plan and a decision cadence.'
     );
     expect(customSection?.textContent).toContain('See options');
+  });
+
+  it('renders compose-backed custom section content without social post chrome', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'custom-1',
+            type: 'custom',
+            title: 'Working together',
+            enabled: true,
+            order: 0,
+            body: 'Fallback copy',
+            richContent: {
+              title: 'Working together',
+              content:
+                '<p>Start with a scoped working session.</p><div data-angular-component data-instance-id="callout-1"></div>',
+              injectedComponents: [
+                {
+                  instanceId: 'callout-1',
+                  componentType: 'callout-box',
+                  componentData: {
+                    title: 'Shared rhythm',
+                    content: 'Weekly review and clear owners.',
+                    type: 'info',
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    const customSection = host.querySelector('[data-section-id="custom-1"]');
+
+    expect(customSection?.textContent).toContain(
+      'Start with a scoped working session.'
+    );
+    expect(customSection?.textContent).toContain('Shared rhythm');
+    expect(customSection?.textContent).not.toContain('Comment');
+    expect(customSection?.textContent).not.toContain('Save');
   });
 
   it('renders split layout sections inside their assigned canvas columns', async () => {
@@ -213,11 +346,19 @@ describe('BusinessLandingPageComponent', () => {
     } as BusinessSiteConfig);
 
     const host = fixture.nativeElement as HTMLElement;
-    const primaryZone = host.querySelector('[data-layout-zone="split:primary"]');
-    const secondaryZone = host.querySelector('[data-layout-zone="split:secondary"]');
+    const primaryZone = host.querySelector(
+      '[data-layout-zone="split:primary"]'
+    );
+    const secondaryZone = host.querySelector(
+      '[data-layout-zone="split:secondary"]'
+    );
 
-    expect(primaryZone?.textContent).toContain(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline);
-    expect(secondaryZone?.textContent).toContain('Reach out when you are ready to talk goals, schedule, and fit.');
+    expect(primaryZone?.textContent).toContain(
+      DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline
+    );
+    expect(secondaryZone?.textContent).toContain(
+      'Reach out when you are ready to talk goals, schedule, and fit.'
+    );
   });
 
   it('renders grid layout sections inside their assigned visual slots', async () => {
@@ -247,11 +388,19 @@ describe('BusinessLandingPageComponent', () => {
     } as BusinessSiteConfig);
 
     const host = fixture.nativeElement as HTMLElement;
-    const heroWideZone = host.querySelector('[data-layout-zone="grid:hero-wide"]');
-    const topRightZone = host.querySelector('[data-layout-zone="grid:top-right"]');
+    const heroWideZone = host.querySelector(
+      '[data-layout-zone="grid:hero-wide"]'
+    );
+    const topRightZone = host.querySelector(
+      '[data-layout-zone="grid:top-right"]'
+    );
 
-    expect(heroWideZone?.textContent).toContain(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline);
-    expect(topRightZone?.textContent).toContain('Choose a starting point, then build the right engagement from there.');
+    expect(heroWideZone?.textContent).toContain(
+      DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline
+    );
+    expect(topRightZone?.textContent).toContain(
+      'Choose a starting point, then build the right engagement from there.'
+    );
   });
 
   it('marks specialty chips as theme-aware in the owner profile block', async () => {
@@ -267,7 +416,9 @@ describe('BusinessLandingPageComponent', () => {
     ) as HTMLElement[];
 
     expect(chips.length).toBeGreaterThan(0);
-    expect(chips.every((chip) => chip.dataset['themeAware'] === 'true')).toBe(true);
+    expect(chips.every((chip) => chip.dataset['themeAware'] === 'true')).toBe(
+      true
+    );
   });
 
   it('renders image and gallery sections from saved landing config', async () => {
@@ -328,12 +479,22 @@ describe('BusinessLandingPageComponent', () => {
       },
     } as BusinessSiteConfig);
     const host = fixture.nativeElement as HTMLElement;
-    const images = Array.from(host.querySelectorAll('img')) as HTMLImageElement[];
+    const images = Array.from(
+      host.querySelectorAll('img')
+    ) as HTMLImageElement[];
 
-    expect(images.some((image) => image.src.includes('/assets/business/studio.jpg'))).toBe(true);
-    expect(images.some((image) => image.src.includes('https://cdn.example.com/one.jpg'))).toBe(true);
+    expect(
+      images.some((image) => image.src.includes('/assets/business/studio.jpg'))
+    ).toBe(true);
+    expect(
+      images.some((image) =>
+        image.src.includes('https://cdn.example.com/one.jpg')
+      )
+    ).toBe(true);
     expect(host.textContent).toContain('Private and prepared.');
     expect(host.querySelector('[data-motion-kind="signal-mesh"]')).toBeTruthy();
-    expect(host.querySelector('[data-motion-kind="shimmer-beam"]')).toBeTruthy();
+    expect(
+      host.querySelector('[data-motion-kind="shimmer-beam"]')
+    ).toBeTruthy();
   });
 });

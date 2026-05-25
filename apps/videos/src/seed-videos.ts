@@ -40,21 +40,21 @@ const APP_SCOPE = process.env.APP_SCOPE || 'video-client';
 
 const SEED_USERS: SeedUserCredentials[] = [
   {
-    email: 'alice@example.com',
+    email: 'videos.alice@example.com',
     firstName: 'Alice',
     lastName: 'Johnson',
     password: 'TestPassword123!',
     bio: 'Software developer and tech enthusiast',
   },
   {
-    email: 'bob@example.com',
+    email: 'videos.bob@example.com',
     firstName: 'Bob',
     lastName: 'Smith',
     password: 'TestPassword123!',
     bio: 'Full-stack developer | Open source contributor',
   },
   {
-    email: 'charlie@example.com',
+    email: 'videos.charlie@example.com',
     firstName: 'Charlie',
     lastName: 'Brown',
     password: 'TestPassword123!',

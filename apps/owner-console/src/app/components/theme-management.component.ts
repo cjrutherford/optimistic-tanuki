@@ -485,6 +485,8 @@ export class ThemeManagementComponent implements OnInit {
 
   private createDraft(theme?: ThemeConfig): ThemeDraft {
     return {
+      mode: theme?.mode ?? 'light',
+      personalityId: theme?.personalityId ?? 'professional',
       primaryColor: theme?.primaryColor ?? '#831843',
       secondaryColor: theme?.secondaryColor ?? '#f472b6',
       backgroundColor: theme?.backgroundColor ?? '#fff7fb',
@@ -496,6 +498,8 @@ export class ThemeManagementComponent implements OnInit {
 
   private applyPreviewTheme(): void {
     this.themeService.setPrimaryColor(this.themeDraft.primaryColor);
+    this.themeService.setTheme(this.themeDraft.mode);
+    void this.themeService.setPersonality(this.themeDraft.personalityId);
   }
 
   private withAlpha(hexColor: string, alpha: number): string {

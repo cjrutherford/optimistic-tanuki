@@ -23,6 +23,9 @@ describe('appRoutes', () => {
         'registry',
         'social-governance',
         'forum-governance',
+        'app-config',
+        'app-config/designer',
+        'app-config/designer/:id',
       ])
     );
   });
@@ -50,5 +53,26 @@ describe('appRoutes', () => {
     );
 
     expect(defaultChild?.redirectTo).toBe('overview');
+  });
+
+  it('assigns guided and studio workspace modes to app-config designer routes', () => {
+    const dashboardRoute = appRoutes.find(
+      (route) => route.path === 'dashboard'
+    );
+    const guidedRoute = dashboardRoute?.children?.find(
+      (route) => route.path === 'app-config/designer'
+    );
+    const studioRoute = dashboardRoute?.children?.find(
+      (route) => route.path === 'app-config/designer/:id'
+    );
+
+    expect(guidedRoute?.data).toMatchObject({
+      editorMode: 'guided',
+      workspaceKind: 'app-config',
+    });
+    expect(studioRoute?.data).toMatchObject({
+      editorMode: 'studio',
+      workspaceKind: 'app-config',
+    });
   });
 });

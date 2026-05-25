@@ -760,9 +760,17 @@ export class ComponentEditorWrapperComponent
   dynamicComponentRef: ComponentRef<unknown> | null = null;
   componentId: string; // New: Unique identifier for logging
 
+  private get propertyDefinitions(): PropertyDefinition[] {
+    return (
+      this.componentDef?.blockDefinition?.fields ??
+      this.componentDef?.properties ??
+      []
+    );
+  }
+
   get editableProperties(): PropertyDefinition[] {
     if (!this.componentDef?.id) return [];
-    const props = this.componentDef.properties || [];
+    const props = this.propertyDefinitions;
     // Include all non-output properties for editing
     return props.filter((p) => !p.isOutput);
   }
@@ -787,7 +795,7 @@ export class ComponentEditorWrapperComponent
     this.editingData = { ...this.componentData };
 
     // Initialize JSON strings for complex types
-    const props = this.componentDef?.properties || [];
+    const props = this.propertyDefinitions;
     props.forEach((prop) => {
       if (prop.type === 'array' || prop.type === 'object') {
         const value = this.editingData[prop.key];
@@ -1112,7 +1120,7 @@ export class ComponentEditorWrapperComponent
 
     // Clean up temporary JSON strings before saving
     const cleanedData = { ...this.editingData };
-    const props = this.componentDef?.properties || [];
+    const props = this.propertyDefinitions;
     props.forEach((prop) => {
       if (prop.type === 'array' || prop.type === 'object') {
         delete cleanedData[prop.key + '_json'];
@@ -1145,7 +1153,7 @@ export class ComponentEditorWrapperComponent
 
   getPreviewProperties(): PropertyDefinition[] {
     if (!this.componentDef?.id) return [];
-    const props = this.componentDef.properties || [];
+    const props = this.propertyDefinitions;
     // Show only simple properties in preview
     return props
       .filter(

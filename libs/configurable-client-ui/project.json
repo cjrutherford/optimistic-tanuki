@@ -1,0 +1,21 @@
+{
+  "name": "configurable-client-ui",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/configurable-client-ui/src",
+  "prefix": "otui",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:ui"],
+  "targets": {
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/configurable-client-ui/jest.config.ts",
+        "coverageReporters": ["json-summary", "lcov", "text"]
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

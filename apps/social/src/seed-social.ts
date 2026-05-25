@@ -41,7 +41,7 @@ interface CommentResponse {
 
 const SEED_USERS: SeedUser[] = [
   {
-    email: 'alice@example.com',
+    email: 'social.alice@example.com',
     firstName: 'Alice',
     lastName: 'Johnson',
     password: 'TestPassword123!',
@@ -49,7 +49,7 @@ const SEED_USERS: SeedUser[] = [
     profileName: 'Alice Johnson',
   },
   {
-    email: 'bob@example.com',
+    email: 'social.bob@example.com',
     firstName: 'Bob',
     lastName: 'Smith',
     password: 'TestPassword123!',
@@ -57,7 +57,7 @@ const SEED_USERS: SeedUser[] = [
     profileName: 'Bob Smith',
   },
   {
-    email: 'charlie@example.com',
+    email: 'social.charlie@example.com',
     firstName: 'Charlie',
     lastName: 'Brown',
     password: 'TestPassword123!',
@@ -65,7 +65,7 @@ const SEED_USERS: SeedUser[] = [
     profileName: 'Charlie Brown',
   },
   {
-    email: 'diana@example.com',
+    email: 'social.diana@example.com',
     firstName: 'Diana',
     lastName: 'Prince',
     password: 'TestPassword123!',
@@ -73,7 +73,7 @@ const SEED_USERS: SeedUser[] = [
     profileName: 'Diana Prince',
   },
   {
-    email: 'eve@example.com',
+    email: 'social.eve@example.com',
     firstName: 'Eve',
     lastName: 'Wilson',
     password: 'TestPassword123!',
@@ -170,6 +170,15 @@ const SAMPLE_COMMENTS = [
 ];
 
 const REACTION_VALUES = [1, 2, 3, 4, 5, 6]; // love, laugh, wow, sad, fire, clap
+
+function toSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
 async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -470,31 +479,47 @@ async function bootstrap() {
         logger.log(`Created community: ${community.name} (${community.id})`);
       }
     } catch (error: any) {
-      if (error.response?.status === 409) {
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message || '';
+      const shouldTryFetch =
+        status === 409 ||
+        `${message}`.toLowerCase().includes('already exists') ||
+        `${message}`.toLowerCase().includes('duplicate');
+
+      if (shouldTryFetch) {
         logger.log(
-          `Community ${communityData.name} already exists, fetching...`
+          `Community ${communityData.name} may already exist, fetching...`
         );
-        try {
-          const searchResponse = await httpClient.get('/social/community', {
-            params: { name: communityData.name },
-            headers: { Authorization: `Bearer ${owner.token}` },
-          });
-          const existing =
-            searchResponse.data?.data?.[0] || searchResponse.data?.[0];
-          if (existing?.id) {
-            createdCommunities.push(existing);
-            logger.log(
-              `Found existing community: ${existing.name} (${existing.id})`
-            );
-          }
-        } catch (e) {
-          logger.warn(`Could not fetch existing community: ${e}`);
+      }
+
+      try {
+        const slugResponse = await httpClient.get(
+          `/social/community/slug/${toSlug(communityData.name)}`
+        );
+        const existing = slugResponse.data?.data || slugResponse.data;
+        if (existing?.id) {
+          createdCommunities.push(existing);
+          logger.log(
+            `Found existing community: ${existing.name} (${existing.id})`
+          );
+          await sleep(50);
+          continue;
         }
+      } catch (fetchError: any) {
+        logger.debug(
+          `Could not fetch existing community ${communityData.name}: ${
+            fetchError.response?.data?.message || fetchError.message
+          }`
+        );
+      }
+
+      if (!shouldTryFetch) {
+        logger.warn(
+          `Failed to create community ${communityData.name}: ${message}`
+        );
       } else {
         logger.warn(
-          `Failed to create community ${communityData.name}: ${
-            error.response?.data?.message || error.message
-          }`
+          `Community ${communityData.name} could not be created or recovered: ${message}`
         );
       }
     }

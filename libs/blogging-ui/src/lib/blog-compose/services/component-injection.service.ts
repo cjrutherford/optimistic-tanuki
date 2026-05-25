@@ -76,7 +76,20 @@ export class ComponentInjectionService implements ComponentInjectionAPI {
    * Register a new component type
    */
   registerComponent(component: InjectableComponent): void {
-    this.registeredComponents.set(component.id, component);
+    this.registeredComponents.set(component.id, {
+      ...component,
+      renderContexts: component.renderContexts ?? ['rich-text'],
+      blockDefinition: component.blockDefinition ?? {
+        type: component.id,
+        name: component.name,
+        description: component.description,
+        category: component.category,
+        icon: component.icon,
+        renderContexts: component.renderContexts ?? ['rich-text'],
+        fields: component.properties,
+        defaultData: (component.data as Record<string, unknown>) ?? {},
+      },
+    });
   }
 
   /**

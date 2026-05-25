@@ -1,0 +1,190 @@
+@keyframes entrance-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+business-site-editor-page .editor-shell {
+  display: grid;
+  gap: 1.5rem;
+}
+
+business-site-editor-page .page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--personality-border-radius, 1rem);
+  background: radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--primary, #1f7a63) 18%, transparent) 0%,
+      transparent 44%
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--surface, #fff) 92%, var(--background, #fff)) 0%,
+      var(--surface, #fff) 100%
+    );
+}
+
+business-site-editor-page .page-header-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+business-site-editor-page .workspace-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary, #1f7a63);
+}
+
+business-site-editor-page .workspace-theme-note {
+  font-size: 0.82rem;
+}
+
+business-site-editor-page .workspace-controls {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+business-site-editor-page .mode-switch {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  padding: 0.3rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface, #fff) 86%, transparent);
+}
+
+business-site-editor-page .mode-switch-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  color: var(--muted, #6b7280);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+business-site-editor-page .mode-switch-btn.active {
+  background: var(--foreground, #0f172a);
+  color: var(--background, #fff);
+}
+
+business-site-editor-page .guided-rail {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: var(--personality-border-radius, 1rem);
+  background: color-mix(
+    in srgb,
+    var(--primary, #1f7a63) 6%,
+    var(--surface, #fff)
+  );
+}
+
+business-site-editor-page .guided-rail-copy {
+  display: grid;
+  gap: 0.25rem;
+}
+
+business-site-editor-page .guided-rail-copy strong {
+  font-size: 1rem;
+}
+
+business-site-editor-page .guided-rail-copy p {
+  margin: 0;
+  color: var(--muted, #6b7280);
+}
+
+business-site-editor-page .guided-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+business-site-editor-page .guided-step-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+  color: var(--foreground, #0f172a);
+  cursor: pointer;
+}
+
+business-site-editor-page .guided-step-chip span {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary, #1f7a63) 12%, transparent);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+business-site-editor-page .guided-step-chip.active {
+  border-color: var(--primary, #1f7a63);
+  color: var(--primary, #1f7a63);
+}
+
+business-site-editor-page .guided-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+business-site-editor-page .guided-nav-btn {
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #fff);
+  color: var(--foreground, #0f172a);
+  border-radius: 999px;
+  padding: 0.6rem 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+business-site-editor-page .guided-nav-btn.primary {
+  background: var(--primary, #1f7a63);
+  border-color: var(--primary, #1f7a63);
+  color: var(--primary-foreground, #fff);
+}
+
+business-site-editor-page .guided-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+business-site-editor-page .entrance {
+  animation: entrance-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  opacity: 0;
+}
+
+business-site-editor-page .page-header h1 {
+  margin: 0 0 0.4rem;
+  font-family: var(--font-heading, 'Instrument Serif', serif);
+  font-weight: 400;
+  font-size: 2rem;
+  color: var(--foreground);
+}
+
+business-site-editor-page .page-header p {
+  margin: 0;
+  color: var(--muted, #6b7280);
+}

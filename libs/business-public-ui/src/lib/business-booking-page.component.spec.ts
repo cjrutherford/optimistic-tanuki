@@ -19,6 +19,15 @@ import { BusinessBookingPageComponent } from './business-booking-page.component'
 class DummyRegisterPageComponent {}
 
 describe('BusinessBookingPageComponent', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-05-23T08:00:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   async function render(
     clientUser: {
       userId: string;

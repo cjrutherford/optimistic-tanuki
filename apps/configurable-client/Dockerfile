@@ -34,7 +34,7 @@ COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 
 # Install only production dependencies.
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile && pnpm add -w nodemon
 
 # Copy the built application (server and browser bundles) from the builder stage
 COPY --from=builder /usr/src/app/dist/apps/configurable-client ./dist/apps/configurable-client

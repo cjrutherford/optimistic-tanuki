@@ -37,12 +37,12 @@ export class NetworkStorageAdapter implements StorageAdapter {
       throw new Error('File content is missing in CreateAssetDto');
     }
 
+    if (!Buffer.isBuffer(data.content)) {
+      throw new Error('File content must be a Buffer before upload');
+    }
+
     try {
-      await this.s3Service.uploadObject(
-        s3Key,
-        data.content as Buffer,
-        data.type
-      ); // Use S3Service
+      await this.s3Service.uploadObject(s3Key, data.content, data.type); // Use S3Service
 
       const createdAsset: AssetDto = {
         id: newAssetId, // Use provided ID or generate one if needed

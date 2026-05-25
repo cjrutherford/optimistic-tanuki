@@ -1,8 +1,8 @@
-import type { ProfileTelosDto } from './profile';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsArray, IsUUID } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
+import type { ProfileTelosDto } from './profile';
 
 export class ProjectTelosDto {
   @ApiProperty()

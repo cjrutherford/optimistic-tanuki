@@ -1,11 +1,250 @@
 <otui-card class="app-config-designer">
   <div class="designer-header">
-    <h1>Application Configuration Designer</h1>
+    <div class="designer-header-copy">
+      <p class="workspace-kicker">
+        {{ workspaceMode === 'guided' ? 'Guided Setup' : 'Studio' }} workspace
+      </p>
+      <h1>Application Configuration Designer</h1>
+    </div>
     <div class="header-actions">
+      <div class="mode-switch" data-editor-mode-switch>
+        <button
+          type="button"
+          class="mode-switch-btn"
+          [class.active]="workspaceMode === 'guided'"
+          (click)="setWorkspaceMode('guided')"
+        >
+          Guided Setup
+        </button>
+        <button
+          type="button"
+          class="mode-switch-btn"
+          [class.active]="workspaceMode === 'studio'"
+          (click)="setWorkspaceMode('studio')"
+        >
+          Studio
+        </button>
+      </div>
       <otui-button variant="secondary" (action)="onCancel()"
         >Cancel</otui-button
       >
       <otui-button (action)="onSave()">Save Configuration</otui-button>
+    </div>
+  </div>
+
+  @if (workspaceMode === 'guided') {
+  <div class="guided-rail">
+    <div class="guided-rail-copy">
+      <strong>{{ tabs[guidedStepIndex()].label }}</strong>
+      <p>
+        Use the guided flow to move through the same shared config platform one
+        decision group at a time.
+      </p>
+    </div>
+    <div class="guided-steps">
+      @for (tab of tabs; track tab.id; let i = $index) {
+      <button
+        type="button"
+        class="guided-step-chip"
+        [class.active]="guidedStepIndex() === i"
+        (click)="selectGuidedStep(i)"
+      >
+        <span>{{ i + 1 }}</span>
+        {{ tab.label }}
+      </button>
+      }
+    </div>
+    <div class="guided-actions">
+      <button
+        type="button"
+        class="guided-nav-btn"
+        (click)="prevGuidedStep()"
+        [disabled]="guidedStepIndex() === 0"
+      >
+        Back
+      </button>
+      <button
+        type="button"
+        class="guided-nav-btn primary"
+        (click)="nextGuidedStep()"
+        [disabled]="guidedStepIndex() === tabs.length - 1"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+  }
+
+  <div class="shared-workspace" data-shared-canvas>
+    <div class="workspace-canvas">
+      <div class="workspace-surface-header">
+        <div>
+          <h2>Rendered Page Canvas</h2>
+          <p>
+            Guided Setup and Studio both edit the same landing-page document.
+          </p>
+        </div>
+        <div class="workspace-toolbar">
+          <otui-button variant="secondary" (action)="showSectionSelector()">
+            <otui-icon name="add"></otui-icon>
+            Insert Block
+          </otui-button>
+          @if (selectedCanvasBlock(); as selectedBlock) {
+          <otui-button variant="secondary" (action)="moveSelectedBlock(0)">
+            Move First
+          </otui-button>
+          <otui-button variant="secondary" (action)="removeSelectedBlock()">
+            Remove
+          </otui-button>
+          }
+        </div>
+      </div>
+
+      <app-editor-block-tree
+        [blocks]="canvasBlocks()"
+        [selectedBlockId]="selectedBlockId()"
+        [fallbackTitle]="blockFallbackTitle.bind(this)"
+        (blockSelected)="selectCanvasBlock($event)"
+      ></app-editor-block-tree>
+    </div>
+
+    <div class="workspace-inspector">
+      <h3>Inspector</h3>
+      @if (selectedCanvasBlock(); as selectedBlock) {
+      <app-schema-block-inspector
+        [block]="selectedBlock"
+        [definition]="selectedBlockDefinition()"
+        (fieldChanged)="patchSelectedField($event.key, $event.value)"
+      ></app-schema-block-inspector>
+      } @else {
+      <p>Select a block on the canvas to edit it.</p>
+      }
+    </div>
+
+    <div class="workspace-preview" data-rendered-preview>
+      <div class="workspace-surface-header">
+        <div>
+          <h2>Rendered Landing Page</h2>
+          <p>
+            The live landing page stays beside the editor in guided and studio
+            modes.
+          </p>
+        </div>
+      </div>
+      <div class="mobile-preview-actions">
+        <button
+          type="button"
+          class="mobile-preview-btn primary"
+          (click)="
+            openMobileSheet(selectedCanvasBlock() ? 'inspector' : 'structure')
+          "
+        >
+          {{
+            selectedCanvasBlock()
+              ? 'Edit Selected Section'
+              : 'Edit Page Structure'
+          }}
+        </button>
+        @if (selectedCanvasBlock()) {
+        <button
+          type="button"
+          class="mobile-preview-btn"
+          (click)="openMobileSheet('structure')"
+        >
+          Structure
+        </button>
+        }
+      </div>
+      <div class="preview-shell">
+        <app-landing-page
+          [config]="asAppConfiguration()"
+          [embeddedPreview]="true"
+          [selectedSectionId]="selectedBlockId()"
+          (sectionSelected)="selectCanvasBlock($event)"
+        ></app-landing-page>
+      </div>
+    </div>
+  </div>
+
+  @if (mobileSheetOpen()) {
+  <button
+    type="button"
+    class="mobile-sheet-backdrop"
+    aria-label="Close editor sheet"
+    (click)="closeMobileSheet()"
+  ></button>
+  }
+
+  <div
+    class="mobile-editor-sheet"
+    [class.open]="mobileSheetOpen()"
+    data-mobile-sheet
+  >
+    <div class="mobile-sheet-handle"></div>
+    <div class="mobile-sheet-header">
+      <div>
+        <p class="mobile-sheet-kicker">
+          {{ mobileSheetMode() === 'inspector' ? 'Inspector' : 'Structure' }}
+        </p>
+        <h3>{{ mobileSheetTitle() }}</h3>
+      </div>
+      <button
+        type="button"
+        class="mobile-sheet-close"
+        (click)="closeMobileSheet()"
+      >
+        Close
+      </button>
+    </div>
+
+    <div class="mobile-sheet-tabs">
+      <button
+        type="button"
+        class="mobile-sheet-tab"
+        [class.active]="mobileSheetMode() === 'structure'"
+        (click)="openMobileSheet('structure')"
+      >
+        Structure
+      </button>
+      @if (selectedCanvasBlock()) {
+      <button
+        type="button"
+        class="mobile-sheet-tab"
+        [class.active]="mobileSheetMode() === 'inspector'"
+        (click)="openMobileSheet('inspector')"
+      >
+        Inspector
+      </button>
+      }
+    </div>
+
+    <div class="mobile-sheet-body">
+      @if (mobileSheetMode() === 'structure') {
+      <div class="mobile-sheet-panel">
+        <div class="mobile-sheet-toolbar">
+          <otui-button variant="secondary" (action)="showSectionSelector()">
+            <otui-icon name="add"></otui-icon>
+            Insert Block
+          </otui-button>
+        </div>
+        <app-editor-block-tree
+          [blocks]="canvasBlocks()"
+          [selectedBlockId]="selectedBlockId()"
+          [fallbackTitle]="blockFallbackTitle.bind(this)"
+          (blockSelected)="selectCanvasBlock($event)"
+        ></app-editor-block-tree>
+      </div>
+      } @else {
+      <div class="mobile-sheet-panel">
+        @if (selectedCanvasBlock(); as selectedBlock) {
+        <app-schema-block-inspector
+          [block]="selectedBlock"
+          [definition]="selectedBlockDefinition()"
+          (fieldChanged)="patchSelectedField($event.key, $event.value)"
+        ></app-schema-block-inspector>
+        }
+      </div>
+      }
     </div>
   </div>
 
@@ -14,6 +253,7 @@
     [activeTab]="selectedTab"
     (tabChange)="onTabChange($event)"
     class="designer-tabs"
+    [class.guided-mode-tabs]="workspaceMode === 'guided'"
   >
     @if (selectedTab === 'general') {
     <div class="tab-content">
@@ -257,96 +497,14 @@
     </div>
     } @if (selectedTab === 'theme') {
     <div class="tab-content">
-      <h2>Theme Customization</h2>
-
-      <div class="theme-grid">
-        <div class="form-group">
-          <label for="primaryColor">Primary Color</label>
-          <div class="color-input-group">
-            <input
-              type="color"
-              id="primaryColor"
-              [(ngModel)]="config.theme.primaryColor"
-              class="color-picker"
-            />
-            <lib-text-input
-              [(ngModel)]="config.theme.primaryColor"
-              placeholder="#3f51b5"
-              type="text"
-            ></lib-text-input>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="secondaryColor">Secondary Color</label>
-          <div class="color-input-group">
-            <input
-              type="color"
-              id="secondaryColor"
-              [(ngModel)]="config.theme.secondaryColor"
-              class="color-picker"
-            />
-            <lib-text-input
-              [(ngModel)]="config.theme.secondaryColor"
-              placeholder="#ff4081"
-              type="text"
-            ></lib-text-input>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="backgroundColor">Background Color</label>
-          <div class="color-input-group">
-            <input
-              type="color"
-              id="backgroundColor"
-              [(ngModel)]="config.theme.backgroundColor"
-              class="color-picker"
-            />
-            <lib-text-input
-              [(ngModel)]="config.theme.backgroundColor"
-              placeholder="#ffffff"
-              type="text"
-            ></lib-text-input>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="textColor">Text Color</label>
-          <div class="color-input-group">
-            <input
-              type="color"
-              id="textColor"
-              [(ngModel)]="config.theme.textColor"
-              class="color-picker"
-            />
-            <lib-text-input
-              [(ngModel)]="config.theme.textColor"
-              placeholder="#000000"
-              type="text"
-            ></lib-text-input>
-          </div>
-        </div>
-
-        <div class="form-group full-width">
-          <label for="fontFamily">Font Family</label>
-          <lib-text-input
-            id="fontFamily"
-            [(ngModel)]="config.theme.fontFamily"
-            placeholder="Roboto, sans-serif"
-            type="text"
-          ></lib-text-input>
-        </div>
-
-        <div class="form-group full-width">
-          <label for="customCss">Custom CSS</label>
-          <lib-text-area
-            id="customCss"
-            [(ngModel)]="config.theme.customCss"
-            placeholder="/* Add custom CSS here */"
-          ></lib-text-area>
-        </div>
-      </div>
+      <h2>Unified Design System</h2>
+      <app-editor-design-system-panel
+        [theme]="config.theme"
+        [showExtendedPalette]="true"
+        [showTypographyFields]="true"
+        [showCustomCssField]="true"
+        (themeFieldChange)="updateThemeField($event.key, $event.value)"
+      ></app-editor-design-system-panel>
     </div>
     }
   </otui-tabs>

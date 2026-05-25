@@ -1,92 +1,46 @@
-import { Component, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  OnChanges,
+  OnInit,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ConfigurationService } from '../services/configuration.service';
-import { Section, AppConfiguration } from '@optimistic-tanuki/app-config-models';
-import { HeroSectionComponent } from './sections/hero-section.component';
-import { FeaturesSectionComponent } from './sections/features-section.component';
-import { ContentSectionComponent } from './sections/content-section.component';
-import { GridSectionComponent } from './sections/grid-section.component';
-import { CtaSectionComponent } from './sections/cta-section.component';
-import { FooterSectionComponent } from './sections/footer-section.component';
+import { AppConfiguration } from '@optimistic-tanuki/app-config-models';
+import { ConfigurableLandingPageComponent } from '@optimistic-tanuki/configurable-client-ui';
 
 @Component({
-  selector: 'app-landing-page',
+  selector: 'app-configurable-client-landing-page-shell',
   standalone: true,
-  imports: [
-    CommonModule,
-    HeroSectionComponent,
-    FeaturesSectionComponent,
-    ContentSectionComponent,
-    GridSectionComponent,
-    CtaSectionComponent,
-    FooterSectionComponent,
-  ],
+  imports: [CommonModule, ConfigurableLandingPageComponent],
   template: `
-    <div class="landing-page" [ngClass]="'layout-' + layout">
-      @for (section of sections; track section.id) {
-        @if (section.visible) {
-          @switch (section.type) {
-            @case ('hero') {
-              <app-hero-section [section]="section"></app-hero-section>
-            }
-            @case ('features') {
-              <app-features-section [section]="section"></app-features-section>
-            }
-            @case ('content') {
-              <app-content-section [section]="section"></app-content-section>
-            }
-            @case ('grid') {
-              <app-grid-section [section]="section"></app-grid-section>
-            }
-            @case ('cta') {
-              <app-cta-section [section]="section"></app-cta-section>
-            }
-            @case ('footer') {
-              <app-footer-section [section]="section"></app-footer-section>
-            }
-          }
-        }
-      }
-    </div>
+    <app-landing-page
+      [config]="resolvedConfig"
+      [embeddedPreview]="embeddedPreview"
+    ></app-landing-page>
   `,
-  styles: [
-    `
-      .landing-page {
-        width: 100%;
-      }
-
-      .layout-single-column {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
-
-      .layout-wide {
-        max-width: 100%;
-      }
-
-      .layout-sidebar {
-        display: grid;
-        grid-template-columns: 250px 1fr;
-        gap: 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
-      }
-    `,
-  ],
 })
-export class LandingPageComponent implements OnInit {
-  sections: Section[] = [];
-  layout = 'single-column';
+export class LandingPageComponent implements OnInit, OnChanges {
+  @Input() config: AppConfiguration | null = null;
+  @Input() embeddedPreview = false;
 
-  constructor(private configService: ConfigurationService) {}
+  resolvedConfig: AppConfiguration | null = null;
+
+  constructor(private readonly configService: ConfigurationService) {}
 
   ngOnInit(): void {
-    const config = this.configService.getCurrentConfiguration();
-    if (config) {
-      this.sections = config.landingPage.sections.sort(
-        (a, b) => a.order - b.order
-      );
-      this.layout = config.landingPage.layout;
+    this.syncConfig();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['config']) {
+      this.syncConfig();
     }
+  }
+
+  private syncConfig(): void {
+    this.resolvedConfig =
+      this.config ?? this.configService.getCurrentConfiguration();
   }
 }

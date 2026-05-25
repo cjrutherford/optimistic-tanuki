@@ -12,6 +12,8 @@ describe('ThemeManagementComponent', () => {
 
   const themeService = {
     setPrimaryColor: jest.fn(),
+    setTheme: jest.fn(),
+    setPersonality: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -27,6 +29,8 @@ describe('ThemeManagementComponent', () => {
           routes: [],
           features: {},
           theme: {
+            mode: 'light',
+            personalityId: 'professional',
             primaryColor: '#123456',
             secondaryColor: '#654321',
             backgroundColor: '#ffffff',
@@ -44,6 +48,8 @@ describe('ThemeManagementComponent', () => {
           routes: [],
           features: {},
           theme: {
+            mode: 'light',
+            personalityId: 'foundation',
             primaryColor: '#831843',
             secondaryColor: '#f472b6',
             backgroundColor: '#fff7fb',

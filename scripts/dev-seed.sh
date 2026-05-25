@@ -95,11 +95,20 @@ run_seed_from_workspace_env() {
   docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "${env_key}=${env_value}" -w "$workdir" "$service" "$@"
 }
 
-restart_service() {
+refresh_service() {
   service="$1"
 
-  echo "Restarting ${service}..."
-  docker compose ${COMPOSE_FILES} restart "$service"
+  echo "Refreshing ${service} with current compose configuration..."
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$service"
+}
+
+refresh_services() {
+  if [ "$#" -eq 0 ]; then
+    return 0
+  fi
+
+  echo "Refreshing services with current compose configuration..."
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$@"
 }
 
 wait_for_gateway() {
@@ -153,23 +162,21 @@ wait_for_chat_collector() {
   return 1
 }
 
+refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
+refresh_service permissions
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
-restart_service gateway
+refresh_service gateway
+refresh_services store authentication profile social payments assets chat-collector classifieds
 run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js
 wait_for_gateway
-restart_service authentication
-restart_service profile
-restart_service social
-restart_service payments
-restart_service assets
-restart_service gateway
 sleep 15
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
 wait_for_chat_collector
 run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./dist/apps/classifieds/seed-classifieds.js
+refresh_service payments
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
 run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
@@ -187,7 +194,16 @@ run_seed_with_media_volume() {
   ' sh "${workdir}" "$@"
 }
 
-run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
+run_seed_with_media_volume_from_image() {
+  service="$1"
+  workdir="$2"
+  shift 2
+
+  echo "Seeding ${service} from a one-shot container..."
+  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "ASSETS_HOST=assets" -w "$workdir" "$service" "$@"
+}
+
+run_seed_with_media_volume_from_image videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
 
