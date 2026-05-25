@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/forum-ui/.storybook",
         "browserTarget": "digital-homestead:build",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/forum-ui",
         "configDir": "libs/forum-ui/.storybook",
         "browserTarget": "digital-homestead:build",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

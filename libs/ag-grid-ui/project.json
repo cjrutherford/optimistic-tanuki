@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/ag-grid-ui/.storybook",
         "browserTarget": "ag-grid-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/ag-grid-ui",
         "configDir": "libs/ag-grid-ui/.storybook",
         "browserTarget": "ag-grid-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

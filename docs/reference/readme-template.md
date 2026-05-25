@@ -65,6 +65,12 @@ Add extra sections only when useful:
 - `## Components`
 - `## Configuration`
 - `## Dependencies`
+- `## Documentation`
+
+For Angular UI libraries, prefer a short `## Documentation` section that points to:
+
+- deeper markdown under `libs/<project>/docs/` when present
+- the generated Compodoc route in `ui-playground`, for example `/docs/api/<project>`
 
 ## E2E Project Template
 

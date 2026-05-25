@@ -118,7 +118,7 @@
     </div>
     } @else {
     <ul class="notification-list" role="none">
-      @for (notification of notifications; track trackById) {
+      @for (notification of notifications; track notification.id) {
       <li
         class="notification-item"
         [class]="'type-' + (notification.type || 'neutral')"
@@ -195,7 +195,7 @@
   [attr.aria-label]="ariaLabel || 'Notifications'"
   aria-live="polite"
 >
-  @for (notification of visibleNotifications; track trackById) {
+  @for (notification of visibleNotifications; track notification.id) {
   <div
     class="notification-toast"
     [class]="'notification-' + (notification.type || 'neutral')"

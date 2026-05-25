@@ -15,7 +15,6 @@ import { ChatContact } from '../chat-ui.component';
 import { ChatConversation, ChatMessage } from '../../types/message';
 import { CommonModule } from '@angular/common';
 import { MessageListComponent } from './message-list/message-list.component';
-import { ParticipantsComponent } from './participants/participants.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { Themeable, ThemeColors, hexToRgb } from '@optimistic-tanuki/theme-lib';
@@ -29,7 +28,6 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
   imports: [
     CommonModule,
     MessageListComponent,
-    ParticipantsComponent,
     ComposeChatComponent,
     ProfilePhotoComponent,
   ],

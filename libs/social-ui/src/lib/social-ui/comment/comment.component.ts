@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
-import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { TiptapEditorDirective } from 'ngx-tiptap';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -30,7 +30,6 @@ import { ImageUploadService } from '@optimistic-tanuki/compose-lib';
   standalone: true,
   imports: [
     FormsModule,
-    CardComponent,
     ButtonComponent,
     TiptapEditorDirective,
     RichTextToolbarComponent,

@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/social-ui/.storybook",
         "browserTarget": "social-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/social-ui",
         "configDir": "libs/social-ui/.storybook",
         "browserTarget": "social-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

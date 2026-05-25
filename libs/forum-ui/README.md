@@ -13,3 +13,7 @@
 pnpm exec nx build forum-ui
 pnpm exec nx test forum-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/forum-ui`

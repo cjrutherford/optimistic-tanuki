@@ -9,7 +9,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
     <section class="docs-shell">
       <header class="docs-hero">
         <div class="docs-hero-copy">
-          <span class="hero-kicker">Repository Atlas</span>
+          <span class="hero-kicker">Documentation</span>
           <h1>{{ title }}</h1>
           <p>{{ description }}</p>
         </div>

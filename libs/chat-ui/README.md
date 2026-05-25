@@ -13,3 +13,7 @@
 pnpm exec nx build chat-ui
 pnpm exec nx test chat-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/chat-ui`

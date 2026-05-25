@@ -1,11 +1,8 @@
-import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { AsyncPipe, CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import {
-  PageShellComponent,
-  IndexChipComponent,
-  ElementCardComponent,
-} from '../../shared';
+import { PageShellComponent, IndexChipComponent } from '../../shared';
+import { ApiDocsIndexService } from '../../docs/services/api-docs-index.service';
 
 interface LibraryDoc {
   id: string;
@@ -20,10 +17,10 @@ interface LibraryDoc {
   standalone: true,
   imports: [
     CommonModule,
+    AsyncPipe,
     RouterLink,
     PageShellComponent,
     IndexChipComponent,
-    ElementCardComponent,
   ],
   template: `
     <pg-page-shell
@@ -49,7 +46,9 @@ interface LibraryDoc {
           </p>
           <div class="doc-meta">
             <span class="meta-tag">Monorepo: <strong>Private</strong></span>
-            <span class="meta-tag">Libraries: <strong>Public packages</strong></span>
+            <span class="meta-tag"
+              >Libraries: <strong>Public packages</strong></span
+            >
             <span class="meta-tag">Package Manager: <strong>pnpm</strong></span>
           </div>
         </div>
@@ -57,8 +56,8 @@ interface LibraryDoc {
         <div class="doc-card">
           <h3>Package Manager Migration</h3>
           <p>
-            Successfully migrated to pnpm for improved workspace
-            management, faster installs, and better disk space utilization.
+            Successfully migrated to pnpm for improved workspace management,
+            faster installs, and better disk space utilization.
           </p>
           <pre class="code-block"><code>pnpm install
 pnpm exec nx build</code></pre>
@@ -87,6 +86,25 @@ pnpm exec nx build</code></pre>
             <span class="lib-package">{{ lib.package }}</span>
             <p class="lib-desc">{{ lib.description }}</p>
           </div>
+          }
+        </div>
+      </section>
+
+      <section class="doc-section" *ngIf="apiDocs$ | async as apiDocs">
+        <h2>Generated API Reference</h2>
+        <div class="library-grid">
+          @for (doc of apiDocs; track doc.slug) {
+          <a
+            [routerLink]="['/docs/api', doc.slug]"
+            class="library-card api-card"
+          >
+            <span class="lib-name">{{ doc.name }}</span>
+            <span class="lib-package">{{ doc.packageName }}</span>
+            <p class="lib-desc">{{ doc.summary }}</p>
+            <span class="api-state" [class.api-state-live]="doc.available">
+              {{ doc.available ? 'Compodoc ready' : 'Generate after install' }}
+            </span>
+          </a>
           }
         </div>
       </section>
@@ -212,6 +230,15 @@ pnpm exec nx build</code></pre>
         background: rgba(59, 130, 246, 0.08);
       }
 
+      .api-card {
+        background: radial-gradient(
+            circle at top right,
+            rgba(246, 207, 105, 0.12),
+            transparent 35%
+          ),
+          rgba(8, 13, 22, 0.48);
+      }
+
       .library-card-disabled {
         opacity: 0.65;
       }
@@ -236,6 +263,19 @@ pnpm exec nx build</code></pre>
         font-size: 0.8rem;
         color: var(--muted);
         line-height: 1.5;
+      }
+
+      .api-state {
+        display: inline-block;
+        margin-top: 0.85rem;
+        font: 600 0.72rem/1 'IBM Plex Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #f6cf69;
+      }
+
+      .api-state-live {
+        color: #8ae7bd;
       }
 
       .notes-card {
@@ -279,7 +319,10 @@ pnpm exec nx build</code></pre>
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DocsPageComponent {
+  private readonly apiDocs = inject(ApiDocsIndexService);
+
   readonly installSnippet = `pnpm add @optimistic-tanuki/common-ui`;
+  readonly apiDocs$ = this.apiDocs.getIndex();
 
   readonly uiLibraries: LibraryDoc[] = [
     {

@@ -13,6 +13,15 @@ See also:
 - `libs/theme-models`
 - `libs/theme-styles`
 
+## Key Surfaces
+
+- theme selectors, toggles, and presentation helpers
+- Angular-facing theme controls that sit on top of the broader theme system
+
+## Documentation
+
+- generated API reference in `ui-playground`: `/docs/api/theme-ui`
+
 ## Nx Commands
 
 ```bash

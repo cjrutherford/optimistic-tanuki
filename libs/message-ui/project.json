@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/message-ui/.storybook",
         "browserTarget": "message-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/message-ui",
         "configDir": "libs/message-ui/.storybook",
         "browserTarget": "message-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

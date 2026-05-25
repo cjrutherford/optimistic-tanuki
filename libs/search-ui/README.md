@@ -13,3 +13,7 @@
 pnpm exec nx build search-ui
 pnpm exec nx test search-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/search-ui`

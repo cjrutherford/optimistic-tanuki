@@ -19,7 +19,7 @@ export interface Product {
 @Component({
   selector: 'store-product-card',
   standalone: true,
-  imports: [CommonModule, ThemeHostBindingsDirective],
+  imports: [CommonModule],
   templateUrl: './product-card.component.html',
   styleUrls: ['./product-card.component.scss'],
   hostDirectives: [ThemeHostBindingsDirective],

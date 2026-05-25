@@ -13,3 +13,7 @@
 pnpm exec nx build notification-ui
 pnpm exec nx test notification-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/notification-ui`

@@ -16,12 +16,18 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
         <aside class="hero-aside">
           <div class="hero-panel">
-            <span class="hero-label">Use Case</span>
-            <p>Curated implementation reference with live previews and high-signal defaults.</p>
+            <span class="hero-label">Best for</span>
+            <p>
+              Use this page to compare components quickly before you commit to
+              an implementation path.
+            </p>
           </div>
           <div class="hero-panel">
-            <span class="hero-label">Focus</span>
-            <p>Import quickly, compare variants, and understand the exposed inputs before wiring features.</p>
+            <span class="hero-label">What you get</span>
+            <p>
+              Usage guidance, component previews, and input references for the
+              shared package surface.
+            </p>
           </div>
         </aside>
       </header>
@@ -30,7 +36,7 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         <div class="utility-section utility-section-index">
           <div class="section-heading">
             <span class="section-kicker">Jump To</span>
-            <h2>Component Index</h2>
+            <h2>Component index</h2>
           </div>
           <div class="index-strip">
             <ng-content select="[slot=index]"></ng-content>
@@ -40,8 +46,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         @if (importSnippet) {
         <div class="utility-section utility-section-import">
           <div class="section-heading">
-            <span class="section-kicker">Install</span>
-            <h2>Import Surface</h2>
+            <span class="section-kicker">Usage</span>
+            <h2>Import this package</h2>
           </div>
           <div class="import-panel">
             <pre><code>{{ importSnippet }}</code></pre>
@@ -52,8 +58,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 
       <section class="catalog-shell">
         <div class="section-heading catalog-heading">
-          <span class="section-kicker">Catalog</span>
-          <h2>Live Previews</h2>
+          <span class="section-kicker">Preview</span>
+          <h2>Component previews</h2>
         </div>
 
         <section class="catalog">
@@ -80,8 +86,11 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
       .hero-copy,
       .hero-panel {
         border: 1px solid rgba(129, 168, 222, 0.12);
-        background:
-          radial-gradient(circle at top right, rgba(125, 183, 255, 0.12), transparent 35%),
+        background: radial-gradient(
+            circle at top right,
+            rgba(125, 183, 255, 0.12),
+            transparent 35%
+          ),
           linear-gradient(180deg, rgba(15, 24, 38, 0.84), rgba(8, 14, 24, 0.94));
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
       }
@@ -243,7 +252,13 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
           flex-wrap: nowrap;
           overflow-x: auto;
           padding-bottom: 0.25rem;
-          mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+          mask-image: linear-gradient(
+            90deg,
+            transparent,
+            #000 4%,
+            #000 96%,
+            transparent
+          );
         }
 
         .import-panel {

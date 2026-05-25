@@ -40,7 +40,7 @@
         "port": 4400,
         "configDir": "libs/motion-ui/.storybook",
         "browserTarget": "motion-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -55,7 +55,7 @@
         "host": "0.0.0.0",
         "configDir": "libs/motion-ui/.storybook",
         "browserTarget": "motion-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       }
     },
     "build-storybook": {
@@ -65,7 +65,7 @@
         "outputDir": "dist/storybook/motion-ui",
         "configDir": "libs/motion-ui/.storybook",
         "browserTarget": "motion-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

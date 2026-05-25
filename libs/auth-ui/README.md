@@ -13,3 +13,7 @@
 pnpm exec nx build auth-ui
 pnpm exec nx test auth-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/auth-ui`

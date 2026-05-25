@@ -27,6 +27,14 @@ export type PlaygroundElement = {
   importName: string;
   selector: string;
   summary: string;
+  whenToUse?: string[];
+  avoidWhen?: string[];
+  accessibilityNotes?: string[];
+  statesCovered?: string[];
+  relatedComponents?: Array<{ label: string; href: string }>;
+  docsHref?: string;
+  apiHref?: string;
+  exampleContent?: string;
   props: PlaygroundProp[];
 };
 
@@ -107,15 +115,13 @@ export type ElementConfig = Record<string, number | string | boolean>;
                     [min]="prop.min"
                     [max]="prop.max"
                     [step]="prop.step"
-                    [ngModel]="draftConfig[prop.name] ?? config[prop.name]"
+                    [ngModel]="draftConfig[prop.name]"
                     (input)="
                       updateDraftProp(prop.name, +$any($event.target).value)
                     "
                     (change)="commitDraftProp(prop.name)"
                   />
-                  <span class="slider-value">{{
-                    draftConfig[prop.name] ?? config[prop.name]
-                  }}</span>
+                  <span class="slider-value">{{ draftConfig[prop.name] }}</span>
                 </div>
                 } @else {
                 <input
@@ -129,6 +135,76 @@ export type ElementConfig = Record<string, number | string | boolean>;
               }
             </div>
           </div>
+
+          @if ( element.whenToUse?.length || element.avoidWhen?.length ||
+          element.accessibilityNotes?.length || element.statesCovered?.length ||
+          element.relatedComponents?.length || element.docsHref ||
+          element.apiHref ) {
+          <section class="guidance-panel">
+            <div class="pane-heading">
+              <span class="pane-kicker">Adoption guidance</span>
+              <h3>Choose and implement with confidence</h3>
+            </div>
+
+            @if (element.whenToUse?.length) {
+            <div class="guidance-block">
+              <h4>When to use</h4>
+              <ul>
+                @for (item of element.whenToUse; track item) {
+                <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            } @if (element.avoidWhen?.length) {
+            <div class="guidance-block">
+              <h4>Avoid when</h4>
+              <ul>
+                @for (item of element.avoidWhen; track item) {
+                <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            } @if (element.accessibilityNotes?.length) {
+            <div class="guidance-block">
+              <h4>Accessibility notes</h4>
+              <ul>
+                @for (item of element.accessibilityNotes; track item) {
+                <li>{{ item }}</li>
+                }
+              </ul>
+            </div>
+            } @if (element.statesCovered?.length) {
+            <div class="guidance-block">
+              <h4>States covered</h4>
+              <div class="state-list">
+                @for (state of element.statesCovered; track state) {
+                <span class="state-pill">{{ state }}</span>
+                }
+              </div>
+            </div>
+            } @if (element.relatedComponents?.length) {
+            <div class="guidance-block">
+              <h4>Related components</h4>
+              <div class="related-links">
+                @for (item of element.relatedComponents; track item.href) {
+                <a [attr.href]="item.href">{{ item.label }}</a>
+                }
+              </div>
+            </div>
+            } @if (element.docsHref || element.apiHref) {
+            <div class="guidance-block">
+              <h4>Reference links</h4>
+              <div class="related-links">
+                @if (element.docsHref) {
+                <a [attr.href]="element.docsHref">Documentation</a>
+                } @if (element.apiHref) {
+                <a [attr.href]="element.apiHref">API reference</a>
+                }
+              </div>
+            </div>
+            }
+          </section>
+          }
 
           <section class="snippet-panel">
             <div class="pane-heading">
@@ -221,6 +297,10 @@ export class ElementCardComponent implements OnChanges {
       }
     }
     const attrStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+    if (this.element.exampleContent) {
+      return `<${this.element.selector}${attrStr}>${this.element.exampleContent}</${this.element.selector}>`;
+    }
+
     return `<${this.element.selector}${attrStr} />`;
   }
 

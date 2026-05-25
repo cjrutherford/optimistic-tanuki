@@ -1,5 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Input,
+} from '@angular/core';
 
 @Component({
   selector: 'pg-code-editor',
@@ -9,10 +14,19 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
     <div class="code-editor">
       <div class="editor-header">
         <span class="editor-label">{{ language }}</span>
-        <button class="copy-btn" (click)="copyCode()" [class.copied]="copied">
+        <button
+          class="copy-btn"
+          type="button"
+          (click)="copyCode()"
+          [class.copied]="copied"
+          aria-describedby="code-editor-status"
+        >
           {{ copied ? 'Copied!' : 'Copy' }}
         </button>
       </div>
+      <span id="code-editor-status" class="sr-only" aria-live="polite">{{
+        statusMessage
+      }}</span>
       <div class="editor-content">
         <pre><code [class]="'language-' + language">{{ code }}</code></pre>
       </div>
@@ -53,7 +67,8 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         font-size: 0.75rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: background-color 0.15s ease, border-color 0.15s ease,
+          color 0.15s ease;
       }
 
       .copy-btn:hover {
@@ -82,6 +97,18 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
         color: #d9ebff;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .language-html .tag {
         color: #7dd3fc;
       }
@@ -108,11 +135,27 @@ export class CodeEditorComponent {
   @Input() code = '';
   @Input() language = 'typescript';
   copied = false;
+  statusMessage = '';
+
+  constructor(private readonly cdr: ChangeDetectorRef) {}
 
   copyCode(): void {
-    navigator.clipboard.writeText(this.code).then(() => {
-      this.copied = true;
-      setTimeout(() => (this.copied = false), 2000);
-    });
+    navigator.clipboard
+      .writeText(this.code)
+      .then(() => {
+        this.copied = true;
+        this.statusMessage = 'Copied code to clipboard.';
+        this.cdr.markForCheck();
+
+        setTimeout(() => {
+          this.copied = false;
+          this.statusMessage = '';
+          this.cdr.markForCheck();
+        }, 2000);
+      })
+      .catch(() => {
+        this.statusMessage = 'Copy failed. Copy the code manually.';
+        this.cdr.markForCheck();
+      });
   }
 }

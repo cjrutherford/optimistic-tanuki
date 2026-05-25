@@ -13,12 +13,14 @@ import { CodeEditorComponent } from './code-editor.component';
         <span class="playground-title">{{ title }}</span>
         <div class="playground-tabs">
           <button
+            type="button"
             [class.active]="activeTab === 'preview'"
             (click)="activeTab = 'preview'"
           >
             Preview
           </button>
           <button
+            type="button"
             [class.active]="activeTab === 'code'"
             (click)="activeTab = 'code'"
           >
@@ -37,6 +39,9 @@ import { CodeEditorComponent } from './code-editor.component';
       <div class="playground-code">
         <textarea
           class="code-input"
+          aria-label="Editable code sample"
+          name="playground-code"
+          autocomplete="off"
           [(ngModel)]="editableCode"
           (input)="onCodeChange()"
           spellcheck="false"
@@ -87,7 +92,7 @@ import { CodeEditorComponent } from './code-editor.component';
         font-size: 0.8rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.15s ease;
+        transition: background-color 0.15s ease, color 0.15s ease;
       }
 
       .playground-tabs button.active {
@@ -125,8 +130,9 @@ import { CodeEditorComponent } from './code-editor.component';
         min-height: 200px;
       }
 
-      .code-input:focus {
-        outline: none;
+      .code-input:focus-visible {
+        outline: 2px solid var(--focus-ring-color);
+        outline-offset: -2px;
       }
 
       .code-output {

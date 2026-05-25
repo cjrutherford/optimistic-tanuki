@@ -122,3 +122,7 @@ These should be set at the root level of your application.
 - `@optimistic-tanuki/models` - For `PersonaTelosDto` type
 - `@optimistic-tanuki/ui-models` - For `API_BASE_URL` injection token
 - `@angular/common/http` - For HTTP client
+
+## API Reference
+
+- generated Compodoc: `/docs/api/persona-ui`

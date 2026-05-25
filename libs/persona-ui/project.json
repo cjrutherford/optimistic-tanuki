@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/persona-ui/.storybook",
         "browserTarget": "persona-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/persona-ui",
         "configDir": "libs/persona-ui/.storybook",
         "browserTarget": "persona-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

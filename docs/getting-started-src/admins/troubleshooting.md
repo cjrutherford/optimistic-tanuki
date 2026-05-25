@@ -9,7 +9,9 @@ order: 40
 
 # Troubleshooting
 
-For the current local-stack workflow, use the canonical guide: `docs/devops/docker-compose.md`.
+For the formal troubleshooting guide, use `docs/operators/troubleshooting.md`.
+
+This page keeps the day-one recovery path short:
 
 If the platform does not come up as expected:
 

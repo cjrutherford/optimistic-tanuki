@@ -13,3 +13,7 @@
 pnpm exec nx build store-ui
 pnpm exec nx test store-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/store-ui`

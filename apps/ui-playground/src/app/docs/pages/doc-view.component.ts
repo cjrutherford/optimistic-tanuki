@@ -1,12 +1,27 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { combineLatest, map, switchMap } from 'rxjs';
+import { combineLatest, map, of, switchMap } from 'rxjs';
 import { DocsIndexService } from '../services/docs-index.service';
 import { MarkdownRendererService } from '../services/markdown-renderer.service';
 import { DocsShellComponent } from '../shell/docs-shell.component';
 import { DocsTocComponent } from '../components/docs-toc.component';
 import { MarkdownContentComponent } from '../components/markdown-content.component';
+import { ApiDocsIndexService } from '../services/api-docs-index.service';
+import { getCatalogEntryByPackageSlug } from '../../catalog-data';
+import { toDocRouteSegments } from '../utils/docs-slug';
+
+function formatUpdatedLabel(timestamp?: string): string {
+  if (!timestamp) {
+    return 'Updated recently';
+  }
+
+  return `Updated ${new Date(timestamp).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })}`;
+}
 
 @Component({
   selector: 'pg-doc-view',
@@ -31,6 +46,19 @@ import { MarkdownContentComponent } from '../components/markdown-content.compone
 
         <section class="doc-layout">
           <div class="doc-main">
+            <nav class="doc-breadcrumbs">
+              <a routerLink="/docs">Docs</a>
+              <span *ngIf="vm.doc.section || vm.doc.category"
+                >/ {{ vm.doc.section || vm.doc.category }}</span
+              >
+              <ng-container *ngIf="vm.parentDoc">
+                <span>/</span>
+                <a [routerLink]="toDocRouteSegments(vm.parentDoc.slug)">{{
+                  vm.parentDoc.title
+                }}</a>
+              </ng-container>
+            </nav>
+
             <div class="doc-meta-row">
               <span class="meta-pill">{{ vm.doc.category }}</span>
               <a class="source-link" [attr.href]="vm.doc.sourcePath">{{
@@ -38,15 +66,69 @@ import { MarkdownContentComponent } from '../components/markdown-content.compone
               }}</a>
             </div>
 
+            <div class="doc-updated">{{ vm.updatedLabel }}</div>
+
+            <div
+              class="doc-context"
+              *ngIf="vm.doc.section || vm.doc.parent || vm.doc.docRole"
+            >
+              <span *ngIf="vm.doc.section" class="context-pill">{{
+                vm.doc.section
+              }}</span>
+              <span *ngIf="vm.doc.docRole" class="context-pill">{{
+                vm.doc.docRole
+              }}</span>
+              <span *ngIf="vm.parentDoc" class="context-copy"
+                >Parent: {{ vm.parentDoc.title }}</span
+              >
+            </div>
+
             <pg-markdown-content [html]="vm.rendered.html" />
+
+            <section class="related-block" *ngIf="vm.relatedDocs.length > 0">
+              <span class="meta-kicker">Section Navigation</span>
+              <div class="related-grid">
+                <a
+                  *ngFor="let document of vm.relatedDocs"
+                  [routerLink]="toDocRouteSegments(document.slug)"
+                >
+                  <strong>{{ document.title }}</strong>
+                  <span>{{ document.docRole || document.category }}</span>
+                </a>
+              </div>
+            </section>
+
+            <section
+              class="related-block"
+              *ngIf="vm.relatedPackages.length > 0"
+            >
+              <span class="meta-kicker">Related packages</span>
+              <div class="related-grid">
+                <div
+                  *ngFor="let pkg of vm.relatedPackages"
+                  class="package-link-group"
+                >
+                  @if (pkg.playgroundPath) {
+                  <a [routerLink]="[pkg.playgroundPath]">
+                    <strong>{{ pkg.name }} preview</strong>
+                    <span>Component page</span>
+                  </a>
+                  }
+                  <a [routerLink]="['/docs/api', pkg.slug]">
+                    <strong>{{ pkg.name }} API</strong>
+                    <span>API reference</span>
+                  </a>
+                </div>
+              </div>
+            </section>
 
             <nav class="pager">
               @if (vm.adjacent.previous) {
-              <a [routerLink]="['/docs', vm.adjacent.previous.slug]">{{
+              <a [routerLink]="toDocRouteSegments(vm.adjacent.previous.slug)">{{
                 vm.adjacent.previous.title
               }}</a>
               } @if (vm.adjacent.next) {
-              <a [routerLink]="['/docs', vm.adjacent.next.slug]">{{
+              <a [routerLink]="toDocRouteSegments(vm.adjacent.next.slug)">{{
                 vm.adjacent.next.title
               }}</a>
               }
@@ -121,10 +203,58 @@ import { MarkdownContentComponent } from '../components/markdown-content.compone
         margin-bottom: 1rem;
       }
 
+      .doc-breadcrumbs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+        color: var(--muted);
+        font: 500 0.78rem/1.3 'IBM Plex Mono', monospace;
+      }
+
+      .doc-breadcrumbs a {
+        color: color-mix(in srgb, var(--primary) 76%, white);
+        text-decoration: none;
+      }
+
+      .doc-context {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+      }
+
+      .doc-updated {
+        margin-bottom: 1rem;
+        color: color-mix(in srgb, var(--primary) 72%, white);
+        font: 600 0.72rem/1 'IBM Plex Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
       .meta-pill {
         padding: 0.45rem 0.7rem;
         border-radius: 999px;
         background: rgba(63, 81, 181, 0.14);
+      }
+
+      .context-pill,
+      .context-copy {
+        font: 600 0.75rem/1.3 'IBM Plex Mono', monospace;
+      }
+
+      .context-pill {
+        padding: 0.38rem 0.65rem;
+        border-radius: 999px;
+        background: rgba(246, 207, 105, 0.12);
+        color: #f6cf69;
+        text-transform: uppercase;
+      }
+
+      .context-copy {
+        color: var(--muted);
       }
 
       .source-link {
@@ -138,6 +268,46 @@ import { MarkdownContentComponent } from '../components/markdown-content.compone
         justify-content: space-between;
         gap: 0.8rem;
         margin-top: 1.2rem;
+      }
+
+      .related-block {
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(129, 168, 222, 0.12);
+      }
+
+      .related-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 0.8rem;
+        margin-top: 0.8rem;
+      }
+
+      .related-grid a {
+        display: grid;
+        gap: 0.35rem;
+        padding: 0.9rem;
+        border: 1px solid rgba(129, 168, 222, 0.12);
+        border-radius: 0.95rem;
+        background: rgba(10, 14, 22, 0.5);
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .package-link-group {
+        display: grid;
+        gap: 0.8rem;
+      }
+
+      .related-grid a strong {
+        font-family: var(--font-heading);
+      }
+
+      .related-grid a span {
+        color: var(--muted);
+        font: 600 0.68rem/1 'IBM Plex Mono', monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
       }
 
       .pager a,
@@ -159,23 +329,55 @@ export class DocViewComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly docsIndex = inject(DocsIndexService);
   private readonly markdownRenderer = inject(MarkdownRendererService);
+  private readonly apiDocsIndex = inject(ApiDocsIndexService);
+  protected readonly toDocRouteSegments = toDocRouteSegments;
 
   readonly vm$ = this.route.paramMap.pipe(
     map((params) => params.get('slug') ?? ''),
     switchMap((slug) =>
-      combineLatest([
-        this.docsIndex.getDocBySlug(slug),
-        this.docsIndex.getAdjacentDocs(slug),
-      ]).pipe(
-        map(([doc, adjacent]) => ({
-          doc,
-          adjacent,
-          rendered: doc
-            ? this.markdownRenderer.render(doc.body, {
-                sourcePath: doc.sourcePath,
-              })
-            : { html: '', toc: [], outboundLinks: [], embeddedBlocks: [] },
-        }))
+      this.docsIndex.getDocBySlug(slug).pipe(
+        switchMap((doc) =>
+          combineLatest([
+            this.docsIndex.getAdjacentDocs(slug),
+            doc?.parent ? this.docsIndex.getDocBySlug(doc.parent) : of(null),
+            doc?.section ? this.docsIndex.getSectionDocs(doc.section) : of([]),
+            this.apiDocsIndex.getIndex(),
+          ]).pipe(
+            map(([adjacent, parentDoc, sectionDocs, apiDocs]) => ({
+              doc,
+              parentDoc,
+              adjacent,
+              updatedLabel: formatUpdatedLabel(doc?.lastUpdated),
+              relatedDocs: (sectionDocs ?? [])
+                .filter((sectionDoc) => sectionDoc.slug !== doc?.slug)
+                .slice(0, 4),
+              relatedPackages: (doc?.relatedPackages ?? [])
+                .map((packageSlug) => {
+                  const apiDoc = apiDocs.find(
+                    (item) => item.slug === packageSlug
+                  );
+                  if (!apiDoc) {
+                    return null;
+                  }
+
+                  return {
+                    slug: apiDoc.slug,
+                    name: apiDoc.name,
+                    playgroundPath:
+                      getCatalogEntryByPackageSlug(apiDoc.slug)?.path ?? null,
+                  };
+                })
+                .filter(
+                  (value): value is NonNullable<typeof value> => value !== null
+                ),
+              rendered: doc
+                ? this.markdownRenderer.render(doc.body, {
+                    sourcePath: doc.sourcePath,
+                  })
+                : { html: '', toc: [], outboundLinks: [], embeddedBlocks: [] },
+            }))
+          )
+        )
       )
     )
   );

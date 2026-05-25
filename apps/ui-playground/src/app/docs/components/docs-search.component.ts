@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { DocsSearchDocument } from '../models/docs.models';
+import { toDocRouteSegments } from '../utils/docs-slug';
 
 @Component({
   selector: 'pg-docs-search',
@@ -16,6 +17,10 @@ import { DocsSearchDocument } from '../models/docs.models';
           [value]="query"
           (input)="setQuery($any($event.target).value)"
           placeholder="Search docs, headings, and tags"
+          name="docs-search"
+          autocomplete="off"
+          enterkeyhint="search"
+          spellcheck="false"
         />
       </label>
 
@@ -24,7 +29,7 @@ import { DocsSearchDocument } from '../models/docs.models';
           <a
             *ngFor="let document of filteredDocuments; trackBy: trackBySlug"
             class="search-result"
-            [routerLink]="['/docs', document.slug]"
+            [routerLink]="toDocRouteSegments(document.slug)"
           >
             <span class="result-title">{{ document.title }}</span>
             <span class="result-meta">{{ document.category }}</span>
@@ -79,6 +84,13 @@ import { DocsSearchDocument } from '../models/docs.models';
         background: rgba(8, 13, 22, 0.56);
         color: inherit;
         text-decoration: none;
+        transition: border-color 160ms ease, transform 160ms ease,
+          background-color 160ms ease;
+      }
+
+      .search-result:hover {
+        transform: translateY(-1px);
+        border-color: rgba(129, 168, 222, 0.24);
       }
 
       .result-title {
@@ -112,6 +124,8 @@ export class DocsSearchComponent {
   trackBySlug(_index: number, document: DocsSearchDocument): string {
     return document.slug;
   }
+
+  protected readonly toDocRouteSegments = toDocRouteSegments;
 
   get filteredDocuments(): DocsSearchDocument[] {
     const normalizedQuery = this.query.trim().toLowerCase();

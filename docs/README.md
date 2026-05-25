@@ -12,6 +12,7 @@ Use the shortest path that matches what you are doing:
 - local development workflow: [Docker Compose](./devops/docker-compose.md)
 - deployment generation and per-client outputs: [Deployment Generation](./devops/deployment-generation.md)
 - staging or production deployment flow: [DevOps README](./devops/README.md)
+- operator runbooks and server administration: [Operator Handbook](./operators/overview.md)
 
 ## Current State
 
@@ -34,6 +35,7 @@ The current branch has a few operational surfaces that matter more than the olde
 ### DevOps and Infrastructure
 
 - [DevOps README](./devops/README.md) - DevOps documentation index
+- [Operator Handbook](./operators/overview.md) - Formal operator docs for local and deployed environments
 - [Architecture Overview](./devops/architecture.md) - Infrastructure architecture
 - [Kubernetes Deployment](./devops/k8s.md) - Kustomize overlays, base resources, and deployment scripts
 - [Service Ports Reference](./devops/ports.md) - Port mappings for all services
@@ -100,16 +102,33 @@ Step-by-step guides for specific tasks:
 
 - [AI Orchestrator](../apps/ai-orchestrator/README.md)
 - [Assets](../apps/assets/README.md)
+  - [Assets Architecture](./services/assets/architecture.md)
+  - [Assets Operations](./services/assets/operations.md)
 - [Authentication](../apps/authentication/README.md)
+  - [Authentication Architecture](./services/authentication/architecture.md)
+  - [Authentication Operations](./services/authentication/operations.md)
+- [Billing](../apps/billing/README.md)
+  - [Billing Architecture](./services/billing/architecture.md)
+  - [Billing Operations](./services/billing/operations.md)
 - [Blogging](../apps/blogging/README.md)
 - [Chat Collector](../apps/chat-collector/README.md)
 - [Gateway](../apps/gateway/README.md)
+  - [Gateway Architecture](./services/gateway/architecture.md)
+  - [Gateway Operations](./services/gateway/operations.md)
 - [Permissions](../apps/permissions/README.md)
 - [Profile](../apps/profile/README.md)
 - [Project Planning](../apps/project-planning/README.md)
 - [Prompt Proxy](../apps/prompt-proxy/README.md)
 - [Social](../apps/social/README.md)
+- [App Configurator](../apps/app-configurator/README.md)
+  - [App Configurator Architecture](./services/app-configurator/architecture.md)
+  - [App Configurator Operations](./services/app-configurator/operations.md)
+- [System Configurator API](../apps/system-configurator-api/README.md)
+  - [System Configurator API Architecture](./services/system-configurator-api/architecture.md)
+  - [System Configurator API Operations](./services/system-configurator-api/operations.md)
 - [Telos Docs Service](../apps/telos-docs-service/README.md)
+  - [Telos Docs Service Architecture](./services/telos-docs-service/architecture.md)
+  - [Telos Docs Service Operations](./services/telos-docs-service/operations.md)
 
 ### Frontend Applications
 
@@ -125,16 +144,21 @@ Shared libraries used across applications:
 
 - [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration
 - [Auth UI](../libs/auth-ui/README.md) - Authentication UI components
+- [Business Portal UI](../libs/business-portal-ui/README.md) - Owner and client portal pages for business applications
+- [Business Public UI](../libs/business-public-ui/README.md) - Public landing and booking flows for business applications
 - [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components
   - [Component Injection](../libs/blogging-ui/COMPONENT_INJECTION.md)
 - [Chat UI](../libs/chat-ui/README.md) - Chat UI components
 - [Common UI](../libs/common-ui/README.md) - Common UI components
+- [Fin Commander Data Access](../libs/fin-commander-data-access/README.md) - Scoped plan state and overview helpers for Fin Commander
+- [Fin Commander Imports](../libs/fin-commander-imports/README.md) - Import workbench and provider registry for Fin Commander
 - [Form UI](../libs/form-ui/README.md) - Form components
 - [Message UI](../libs/message-ui/README.md) - Message UI components
 - [Navigation UI](../libs/navigation-ui/README.md) - Navigation components
 - [Persona UI](../libs/persona-ui/README.md) - Persona/avatar components
 - [Profile UI](../libs/profile-ui/README.md) - Profile UI components
 - [Project UI](../libs/project-ui/README.md) - Project management UI
+- [HAI UI](../libs/hai-ui/README.md) - HAI identity and cross-app discovery components
 - [Social UI](../libs/social-ui/README.md) - Social feature UI
 - [Store UI](../libs/store-ui/README.md) - Store/shopping UI
 - [Theme UI](../libs/theme-ui/README.md) - Theme management UI
@@ -143,18 +167,30 @@ Shared libraries used across applications:
 
 ### Core Libraries
 
+- [App Registry Backend](../libs/app-registry-backend/README.md) - App registry and navigation contracts with default seed data
+- [Auth Domain](../libs/auth/domain/README.md) - Password, MFA, and token-issuance domain logic
+- [Business Data Access](../libs/business-data-access/README.md) - Business-site API, auth, and config state helpers
+- [Billing Data Access](../libs/billing/data-access/README.md) - Billing persistence entities for accounts, usage events, and grants
+- [Billing Domain](../libs/billing/domain/README.md) - Billing scope validation and invoice preview logic
 - [Constants](../libs/constants/README.md) - Shared constants and tokens
 - [Database](../libs/database/README.md) - Database connection and TypeORM setup
 - [Email](./guides/email-providers.md) - Email service with plugin architecture
 - [Encryption](../libs/encryption/README.md) - Cryptographic operations
+- [Leads Data Access](../libs/leads/data-access/README.md) - Base CRUD and stats client for lead records
+- [Leads Feature Flags](../libs/leads/feature-flags/README.md) - Lead flagging and review client
+- [Leads Feature Onboarding](../libs/leads/feature-onboarding/README.md) - Multi-step onboarding and topic-suggestion client
+- [Leads Feature Topics](../libs/leads/feature-topics/README.md) - Topic management and discovery lifecycle client
 - [Logger](../libs/logger/README.md) - Logging service
 - [Models](../libs/models/README.md) - Shared data models
+- [Payments Domain](../libs/payments/domain/README.md) - Payment provider abstractions and Lemon Squeezy adapter logic
+- [Permissions Domain](../libs/permissions/domain/README.md) - App-scope policy registry and authorization model definitions
 - [UI Models](../libs/ui-models/README.md) - UI-specific data models
 - [Storage](../libs/storage/README.md) - Storage utilities
 - [Permission Lib](../libs/permission-lib/README.md) - Permission utilities
 - [Theme Lib](../libs/theme-lib/README.md) - Theme utilities
 - [Compose Lib](../libs/compose-lib/README.md) - Composition utilities
 - [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation
+
 ## Quick Links
 
 - [Main README](../README.md) - Project overview and quick start

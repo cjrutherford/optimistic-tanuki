@@ -198,6 +198,7 @@ export async function buildDocsManifest({
 
   for (const sourcePath of markdownPaths) {
     const absolutePath = path.join(root, sourcePath);
+    const stats = await fs.stat(absolutePath);
     const rawMarkdown = await fs.readFile(absolutePath, 'utf8');
     const { data, body } = extractFrontmatter(rawMarkdown);
     const headings = extractHeadings(body);
@@ -217,11 +218,27 @@ export async function buildDocsManifest({
       summary,
       sourcePath,
       category,
+      audience: typeof data.audience === 'string' ? data.audience : undefined,
+      section: typeof data.section === 'string' ? data.section : undefined,
+      parent: typeof data.parent === 'string' ? data.parent : undefined,
       tags: Array.isArray(data.tags) ? data.tags : [],
       kind: data.docType === 'deck' ? 'deck' : 'doc',
       headings,
       body,
       order: Number.isFinite(data.order) ? data.order : 999,
+      landing: data.landing === true,
+      docRole:
+        data.docRole === 'landing' ||
+        data.docRole === 'guide' ||
+        data.docRole === 'runbook' ||
+        data.docRole === 'reference'
+          ? data.docRole
+          : undefined,
+      featured: data.featured === true,
+      relatedPackages: Array.isArray(data.relatedPackages)
+        ? data.relatedPackages.filter((value) => typeof value === 'string')
+        : undefined,
+      lastUpdated: stats.mtime.toISOString(),
     });
   }
 

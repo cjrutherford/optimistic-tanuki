@@ -87,7 +87,8 @@ h2 {
 .preview-pane,
 .snippet-panel,
 .inputs-panel,
-.controls-panel {
+.controls-panel,
+.guidance-panel {
   border: 1px solid rgba(129, 168, 222, 0.12);
   border-radius: 1.15rem;
   background: rgba(5, 10, 18, 0.62);
@@ -140,8 +141,63 @@ h2 {
 
 .controls-panel,
 .snippet-panel,
-.inputs-panel {
+.inputs-panel,
+.guidance-panel {
   padding: 1rem;
+}
+
+.guidance-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.guidance-block {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.guidance-block h4 {
+  margin: 0;
+  font-size: 0.92rem;
+  letter-spacing: -0.02em;
+}
+
+.guidance-block ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.guidance-block li {
+  line-height: 1.55;
+}
+
+.state-list,
+.related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.state-pill,
+.related-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid rgba(129, 168, 222, 0.16);
+  border-radius: 999px;
+  background: rgba(10, 16, 26, 0.72);
+  font: 600 0.72rem/1 'IBM Plex Mono', monospace;
+  text-decoration: none;
+}
+
+.state-pill {
+  color: #90f0de;
+}
+
+.related-links a {
+  color: #d9ebff;
 }
 
 .controls-header {
@@ -181,6 +237,12 @@ h2 {
     background: rgba(30, 45, 68, 0.95);
     border-color: rgba(129, 168, 222, 0.36);
   }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 3px;
+    box-shadow: var(--focus-ring-shadow);
+  }
 }
 
 .controls-grid {
@@ -210,9 +272,11 @@ h2 {
   font: 400 0.88rem/1.3 'IBM Plex Mono', monospace;
   transition: border-color 160ms ease;
 
-  &:focus {
-    outline: none;
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
     border-color: rgba(129, 168, 222, 0.42);
+    box-shadow: var(--focus-ring-shadow);
   }
 }
 
@@ -248,6 +312,11 @@ h2 {
   &::-webkit-slider-thumb:active {
     cursor: grabbing;
     transform: scale(1.15);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 3px;
   }
 }
 
@@ -299,6 +368,12 @@ h2 {
 .toggle input:checked + .toggle-slider::before {
   transform: translateX(18px);
   background: #fff;
+}
+
+.toggle input:focus-visible + .toggle-slider {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 3px;
+  box-shadow: var(--focus-ring-shadow);
 }
 
 .usage-snippet {

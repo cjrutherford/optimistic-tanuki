@@ -4,6 +4,7 @@ packages:
   - 'libs/*/*'
 
 allowBuilds:
+  '@compodoc/compodoc': false
   '@nestjs/core': true
   '@parcel/watcher': true
   '@scarf/scarf': true

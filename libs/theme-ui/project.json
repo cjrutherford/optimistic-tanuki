@@ -22,7 +22,7 @@
         "port": 4400,
         "configDir": "libs/theme-ui/.storybook",
         "browserTarget": "theme-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -37,7 +37,7 @@
         "outputDir": "dist/storybook/theme-ui",
         "configDir": "libs/theme-ui/.storybook",
         "browserTarget": "theme-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

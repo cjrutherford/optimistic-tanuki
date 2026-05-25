@@ -15,6 +15,19 @@ describe('ElementCardComponent', () => {
     importName: 'MurmurationSceneComponent',
     selector: 'otui-murmuration-scene',
     summary: 'Three.js-driven flocking accent for hero scenes.',
+    whenToUse: ['Use this when a hero or empty state needs ambient motion.'],
+    avoidWhen: [
+      'Avoid this in dense data views where motion competes with content.',
+    ],
+    accessibilityNotes: [
+      'Respect reduced motion preferences and keep contrast on overlaid text.',
+    ],
+    relatedComponents: [
+      {
+        label: 'Motion UI',
+        href: '/motion-ui',
+      },
+    ],
     props: [
       {
         name: 'count',
@@ -58,5 +71,29 @@ describe('ElementCardComponent', () => {
 
     expect(component.config['count']).toBe(72);
     expect(emitSpy).toHaveBeenCalledWith({ count: 72 });
+  });
+
+  it('renders decision-support guidance sections when metadata is provided', () => {
+    const root = fixture.nativeElement as HTMLElement;
+
+    expect(root.textContent).toContain('When to use');
+    expect(root.textContent).toContain('Avoid when');
+    expect(root.textContent).toContain('Accessibility notes');
+    expect(root.textContent).toContain('Related components');
+  });
+
+  it('generates paired opening and closing tags for content-bearing elements', () => {
+    component.element = {
+      ...element,
+      selector: 'otui-button',
+      props: [],
+      exampleContent: 'Click me',
+    };
+    component.config = {};
+    fixture.detectChanges();
+
+    expect(component.generateUsage()).toBe(
+      '<otui-button>Click me</otui-button>'
+    );
   });
 });

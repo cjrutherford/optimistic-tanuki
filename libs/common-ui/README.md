@@ -7,6 +7,16 @@
 - common presentation building blocks
 - reduces duplication across app-specific UI libraries
 
+## Key Surfaces
+
+- buttons, cards, badges, and other shared primitives
+- shared style helpers under `libs/common-ui/src/lib/styles`
+
+## Documentation
+
+- generated API reference in `ui-playground`: `/docs/api/common-ui`
+- use `pnpm exec nx run ui-playground:api-docs-content` to regenerate the curated API index
+
 ## Nx Commands
 
 ```bash

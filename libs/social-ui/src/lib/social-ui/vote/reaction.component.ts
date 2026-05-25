@@ -1,6 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 export interface Reaction {
   emoji: string;
@@ -20,7 +19,7 @@ export const REACTIONS: Reaction[] = [
 @Component({
   selector: 'lib-reaction',
   standalone: true,
-  imports: [CommonModule, ButtonComponent],
+  imports: [CommonModule],
   templateUrl: './reaction.component.html',
   styleUrl: './reaction.component.scss',
 })

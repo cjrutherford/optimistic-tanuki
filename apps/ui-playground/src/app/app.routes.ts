@@ -35,6 +35,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'docs/api/:library',
+    loadComponent: () =>
+      import('./docs/pages/api-doc-view.component').then(
+        (m) => m.ApiDocViewComponent
+      ),
+  },
+  {
     matcher: docsSlugMatcher,
     loadComponent: () =>
       import('./docs/pages/doc-view.component').then((m) => m.DocViewComponent),

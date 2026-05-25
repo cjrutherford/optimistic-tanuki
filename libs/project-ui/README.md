@@ -13,3 +13,7 @@
 pnpm exec nx build project-ui
 pnpm exec nx test project-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/project-ui`

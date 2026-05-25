@@ -2,12 +2,22 @@
 id: admin-operations
 title: Operations Playbook
 slug: operations
-summary: Inspect service health, logs, and routine local-environment commands.
+summary: Route from onboarding into the formal operator handbook for local and deployed environments.
 order: 30
 ---
+
 # Operations Playbook
 
-Useful commands for the shared stack:
+Use the operator handbook in `docs/operators/` as the canonical server-administration surface.
+
+Start with:
+
+- `docs/operators/local-stack.md` for local Docker Compose administration
+- `docs/operators/deployment-environments.md` for generated deployment workspaces
+- `docs/operators/runbooks.md` for repeatable procedures
+- `docs/operators/troubleshooting.md` for recovery workflows
+
+Quick commands for the shared stack:
 
 ```bash
 pnpm run docker:dev:ps

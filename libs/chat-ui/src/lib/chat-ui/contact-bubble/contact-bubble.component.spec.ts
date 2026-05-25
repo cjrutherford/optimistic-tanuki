@@ -18,4 +18,13 @@ describe('ContactBubbleComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('should not render popup details when contacts are empty', () => {
+    component.contacts = [];
+    component.showPopup.set(true);
+    fixture.detectChanges();
+
+    expect(component.firstContact).toBeNull();
+    expect(fixture.nativeElement.querySelector('.contact-popup')).toBeNull();
+  });
 });
