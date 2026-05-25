@@ -117,7 +117,7 @@ import { HeroSectionComponent } from './sections/hero-section.component';
           ),
           radial-gradient(
             circle at bottom right,
-            color-mix(in srgb, var(--accent, #ff4081) 20%, transparent),
+            color-mix(in srgb, var(--secondary, #ff4081) 20%, transparent),
             transparent 42%
           );
         animation: preview-motion-drift 14s linear infinite;

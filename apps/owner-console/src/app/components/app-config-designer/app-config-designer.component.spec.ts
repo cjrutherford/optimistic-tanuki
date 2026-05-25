@@ -192,6 +192,25 @@ describe('AppConfigDesignerComponent', () => {
     expect(host.querySelector('app-landing-page')).toBeTruthy();
   });
 
+  it('renders shared block tree cards with title and type metadata', () => {
+    const { fixture } = createComponent('guided');
+    const host = fixture.nativeElement as HTMLElement;
+    const firstCard = host.querySelector(
+      '[data-block-tree] .canvas-block-card'
+    ) as HTMLElement;
+
+    expect(firstCard).toBeTruthy();
+    expect(
+      firstCard.querySelector('[data-block-index]')?.textContent
+    ).toContain('1');
+    expect(
+      firstCard.querySelector('[data-block-title]')?.textContent
+    ).toContain('Join');
+    expect(firstCard.querySelector('[data-block-type]')?.textContent).toContain(
+      'cta'
+    );
+  });
+
   it('round-trips section edits through the shared config document workspace', () => {
     const { component } = createComponent('studio');
 
@@ -237,6 +256,16 @@ describe('AppConfigDesignerComponent', () => {
 
     expect(host.textContent).toContain('Join today');
     expect(setPrimaryColor).toHaveBeenLastCalledWith('#0f766e');
+  });
+
+  it('drives theme-lib for mode and personality changes from the design workspace', () => {
+    const { component } = createComponent('studio');
+
+    component.updateThemeField('mode', 'dark');
+    component.updateThemeField('personalityId', 'electric');
+
+    expect(setTheme).toHaveBeenLastCalledWith('dark');
+    expect(setPersonality).toHaveBeenLastCalledWith('electric');
   });
 
   it('lets the rendered preview drive block selection', () => {
