@@ -18,7 +18,7 @@ export interface BlockFieldDefinition {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object' | 'url' | 'select';
   label: string;
   description?: string;
-  editor?: 'text' | 'textarea' | 'select' | 'url';
+  editor?: 'text' | 'textarea' | 'select' | 'url' | 'boolean';
   defaultValue?: unknown;
   options?: { label: string; value: unknown }[];
   placeholder?: string;

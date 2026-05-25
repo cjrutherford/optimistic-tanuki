@@ -835,9 +835,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                           } @if (section.type === 'gallery') {
                           <span class="canvas-card-chip"
                             >Gallery •
-                            {{
-                              section.gallery?.items?.length ?? 0
-                            }}
+                            {{ section.gallery?.items?.length ?? 0 }}
                             items</span
                           >
                           } @if (section.type === 'image') {
@@ -925,9 +923,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                           } @if (section.type === 'gallery') {
                           <span class="canvas-card-chip"
                             >Gallery •
-                            {{
-                              section.gallery?.items?.length ?? 0
-                            }}
+                            {{ section.gallery?.items?.length ?? 0 }}
                             items</span
                           >
                           } @if (section.type === 'image') {
@@ -3090,7 +3086,10 @@ export class BusinessSiteEditorPageComponent {
     }
   }
 
-  patchSelectedSectionField(fieldKey: string, rawValue: string): void {
+  patchSelectedSectionField(
+    fieldKey: string,
+    rawValue: string | number | boolean
+  ): void {
     const section = this.selectedSection();
     const definition = this.selectedSectionDefinition();
     if (!section || !definition) {
@@ -3116,7 +3115,7 @@ export class BusinessSiteEditorPageComponent {
     });
   }
 
-  patchDraftField(fieldKey: string, rawValue: string): void {
+  patchDraftField(fieldKey: string, rawValue: string | number | boolean): void {
     const nextValue = this.coerceInspectorValue(
       this.rootFieldType(fieldKey),
       rawValue
@@ -4206,8 +4205,12 @@ export class BusinessSiteEditorPageComponent {
       | 'url'
       | 'select'
       | undefined,
-    rawValue: string
+    rawValue: string | number | boolean
   ): unknown {
+    if (typeof rawValue === 'number' || typeof rawValue === 'boolean') {
+      return rawValue;
+    }
+
     if (fieldType === 'number') {
       const parsed = Number(rawValue);
       return Number.isFinite(parsed) ? parsed : 0;

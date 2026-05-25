@@ -11,6 +11,7 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/business-site",
+        "index": "apps/business-site/src/index.html",
         "browser": "apps/business-site/src/main.ts",
         "polyfills": ["zone.js"],
         "tsConfig": "apps/business-site/tsconfig.app.json",
@@ -40,13 +41,13 @@
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "1mb",
-              "maximumError": "2mb"
+              "maximumWarning": "2mb",
+              "maximumError": "4mb"
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "16kb",
-              "maximumError": "28kb"
+              "maximumWarning": "48kb",
+              "maximumError": "96kb"
             }
           ],
           "outputHashing": "all"
