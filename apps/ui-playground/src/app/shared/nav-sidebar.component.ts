@@ -2,17 +2,13 @@ import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   HostListener,
   Input,
+  ViewChild,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-
-type LibraryInfo = {
-  path: string;
-  name: string;
-  componentCount: number;
-  detail?: string;
-};
+import { CatalogEntry, navSections } from '../catalog-data';
 
 @Component({
   selector: 'pg-index-chip',
@@ -73,16 +69,18 @@ export class IndexChipComponent {
       <a class="mobile-logo" routerLink="/" (click)="closeMobileMenu()">
         <span class="mobile-logo-mark">UI</span>
         <span class="mobile-logo-copy">
-          <strong>Docs Atlas</strong>
-          <small>Repository Navigator</small>
+          <strong>UI Playground</strong>
+          <small>Components, docs, and validation</small>
         </span>
       </a>
 
       <button
+        #mobileMenuToggle
         class="mobile-menu-toggle"
         type="button"
         [attr.aria-expanded]="mobileMenuOpen"
-        aria-label="Toggle documentation menu"
+        aria-controls="playground-sidebar"
+        aria-label="Toggle navigation menu"
         (click)="toggleMobileMenu()"
       >
         <span></span>
@@ -94,18 +92,27 @@ export class IndexChipComponent {
     <button
       class="mobile-backdrop"
       type="button"
-      aria-label="Close documentation menu"
+      aria-label="Close navigation menu"
       (click)="closeMobileMenu()"
     ></button>
     }
 
-    <nav class="sidebar" [class.mobile-open]="mobileMenuOpen">
+    <nav
+      #sidebarPanel
+      id="playground-sidebar"
+      class="sidebar"
+      [hidden]="!isSidebarVisible"
+      [class.mobile-open]="mobileMenuOpen"
+      [attr.aria-label]="'UI playground navigation'"
+      [attr.aria-hidden]="!isSidebarVisible ? 'true' : null"
+      [attr.tabindex]="mobileMenuOpen ? '-1' : null"
+    >
       <div class="sidebar-inner">
         <a class="logo" routerLink="/" (click)="closeMobileMenu()">
           <span class="logo-mark">UI</span>
           <span class="logo-copy">
-            <strong>Docs Atlas</strong>
-            <small>Markdown-driven workspace guide</small>
+            <strong>UI Playground</strong>
+            <small>Components, docs, and validation</small>
           </span>
         </a>
 
@@ -113,29 +120,38 @@ export class IndexChipComponent {
           <span class="summary-label">Navigation</span>
           <span class="summary-value">{{ libraries.length }}</span>
           <p>
-            Start with docs, then branch into previews and validation when you
-            need implementation detail.
+            Use docs for guidance, component pages for previews, and validation
+            for system checks.
           </p>
         </div>
 
-        <div class="nav-section">
-          @for (lib of libraries; track lib.path) {
-          <a
-            class="nav-link"
-            [routerLink]="lib.path"
-            routerLinkActive="active"
-            (click)="closeMobileMenu()"
-          >
-            <span class="nav-copy">
-              <span class="lib-name">{{ lib.name }}</span>
-              <span class="lib-meta">{{
-                lib.detail ?? lib.componentCount + ' components'
-              }}</span>
-            </span>
-            <span class="count">{{ lib.componentCount }}</span>
-          </a>
-          }
-        </div>
+        @for (section of sections; track section.title) {
+        <section class="nav-group">
+          <div class="nav-group-heading">
+            <span class="nav-group-title">{{ section.title }}</span>
+            <p>{{ section.description }}</p>
+          </div>
+
+          <div class="nav-section">
+            @for (lib of section.entries; track lib.path) {
+            <a
+              class="nav-link"
+              [routerLink]="lib.path"
+              routerLinkActive="active"
+              (click)="closeMobileMenu(true)"
+            >
+              <span class="nav-copy">
+                <span class="lib-name">{{ lib.name }}</span>
+                <span class="lib-meta">{{
+                  lib.detail ?? lib.componentCount + ' components'
+                }}</span>
+              </span>
+              <span class="count">{{ lib.componentCount }}</span>
+            </a>
+            }
+          </div>
+        </section>
+        }
       </div>
     </nav>
   `,
@@ -324,6 +340,36 @@ export class IndexChipComponent {
         line-height: 1.55;
       }
 
+      .nav-group {
+        display: grid;
+        gap: 0.65rem;
+      }
+
+      .nav-group + .nav-group {
+        padding-top: 0.35rem;
+        border-top: 1px solid rgba(129, 168, 222, 0.08);
+      }
+
+      .nav-group-heading {
+        display: grid;
+        gap: 0.3rem;
+        padding: 0 0.2rem;
+      }
+
+      .nav-group-title {
+        color: color-mix(in srgb, var(--primary) 78%, white);
+        font: 600 0.7rem/1 'IBM Plex Mono', monospace;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+      }
+
+      .nav-group-heading p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.45;
+      }
+
       .nav-section {
         display: grid;
         gap: 0.42rem;
@@ -424,47 +470,49 @@ export class IndexChipComponent {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavSidebarComponent {
-  mobileMenuOpen = false;
+  @ViewChild('mobileMenuToggle')
+  private readonly mobileMenuToggle?: ElementRef<HTMLButtonElement>;
 
-  readonly libraries: LibraryInfo[] = [
-    {
-      path: '/docs',
-      name: 'Documentation',
-      componentCount: 12,
-      detail: 'Curated markdown sources',
-    },
-    { path: '/motion-ui', name: 'Motion UI', componentCount: 9 },
-    { path: '/common-ui', name: 'Common UI', componentCount: 18 },
-    { path: '/form-ui', name: 'Form UI', componentCount: 6 },
-    { path: '/theme-ui', name: 'Theme UI', componentCount: 6 },
-    { path: '/navigation-ui', name: 'Navigation UI', componentCount: 3 },
-    { path: '/social-ui', name: 'Social UI', componentCount: 4 },
-    { path: '/notification-ui', name: 'Notification UI', componentCount: 2 },
-    { path: '/store-ui', name: 'Store UI', componentCount: 4 },
-    { path: '/auth-ui', name: 'Auth UI', componentCount: 4 },
-    { path: '/profile-ui', name: 'Profile UI', componentCount: 3 },
-    { path: '/chat-ui', name: 'Chat UI', componentCount: 2 },
-    { path: '/message-ui', name: 'Message UI', componentCount: 1 },
-    { path: '/search-ui', name: 'Search UI', componentCount: 2 },
-    { path: '/persona-ui', name: 'Persona UI', componentCount: 1 },
-    { path: '/ag-grid-ui', name: 'AG Grid UI', componentCount: 1 },
-    { path: '/blogging-ui', name: 'Blogging UI', componentCount: 7 },
-    { path: '/business-ui', name: 'Business UI', componentCount: 1 },
-    { path: '/classified-ui', name: 'Classifieds UI', componentCount: 1 },
-    { path: '/community-ui', name: 'Community UI', componentCount: 1 },
-    { path: '/forum-ui', name: 'Forum UI', componentCount: 2 },
-    { path: '/hai-ui', name: 'HAI UI', componentCount: 3 },
-    { path: '/payments-ui', name: 'Payments UI', componentCount: 3 },
-    { path: '/project-ui', name: 'Project UI', componentCount: 3 },
-    { path: '/validation', name: 'Validation Board', componentCount: 15 },
-  ];
+  @ViewChild('sidebarPanel')
+  private readonly sidebarPanel?: ElementRef<HTMLElement>;
+
+  mobileMenuOpen = false;
+  readonly sections = navSections;
+
+  get isDesktopViewport(): boolean {
+    return typeof window === 'undefined' ? true : window.innerWidth > 960;
+  }
+
+  get isSidebarVisible(): boolean {
+    return this.isDesktopViewport || this.mobileMenuOpen;
+  }
+
+  get libraries(): CatalogEntry[] {
+    return this.sections.flatMap((section) => [...section.entries]);
+  }
 
   toggleMobileMenu(): void {
     this.mobileMenuOpen = !this.mobileMenuOpen;
+    if (this.mobileMenuOpen) {
+      this.sidebarPanel?.nativeElement.focus();
+    }
   }
 
-  closeMobileMenu(): void {
+  closeMobileMenu(restoreFocus = false): void {
     this.mobileMenuOpen = false;
+
+    if (restoreFocus) {
+      this.mobileMenuToggle?.nativeElement.focus();
+    }
+  }
+
+  handleEscapeKey(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || !this.mobileMenuOpen) {
+      return;
+    }
+
+    event.preventDefault();
+    this.closeMobileMenu(true);
   }
 
   @HostListener('window:resize')
@@ -472,5 +520,10 @@ export class NavSidebarComponent {
     if (typeof window !== 'undefined' && window.innerWidth > 960) {
       this.closeMobileMenu();
     }
+  }
+
+  @HostListener('window:keydown', ['$event'])
+  onWindowKeydown(event: KeyboardEvent): void {
+    this.handleEscapeKey(event);
   }
 }

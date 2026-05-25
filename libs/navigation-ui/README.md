@@ -7,6 +7,15 @@
 - shared navigation shells and primitives
 - supports consistent app navigation across Angular clients
 
+## Key Surfaces
+
+- app bars, sidebars, menus, and navigation shells
+- layout-oriented primitives used across multiple frontends
+
+## Documentation
+
+- generated API reference in `ui-playground`: `/docs/api/navigation-ui`
+
 ## Nx Commands
 
 ```bash

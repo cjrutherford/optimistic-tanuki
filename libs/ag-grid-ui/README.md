@@ -67,3 +67,7 @@ export class MyTableComponent {
   ];
 }
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/ag-grid-ui`

@@ -24,16 +24,17 @@ import { NavSidebarComponent } from './shared';
       [mode]="activeMode"
       [primaryColor]="primaryColor"
     >
+      <a class="skip-link" href="#main-content">Skip to main content</a>
       <div class="app-shell">
         <pg-nav-sidebar />
-        <main class="main-content">
+        <main id="main-content" class="main-content" tabindex="-1">
           <header class="theme-toolbar" aria-label="Global theme controls">
             <div class="toolbar-copy">
-              <span class="toolbar-label">Validation Sweep</span>
+              <span class="toolbar-label">Theme Controls</span>
               <strong>{{ activePersonalityName }}</strong>
               <p>
-                Switch personalities and mode globally before reading docs,
-                previews, and implementation references.
+                Preview personalities and color mode before reading docs,
+                reviewing components, or checking validation states.
               </p>
             </div>
 
@@ -67,7 +68,7 @@ import { NavSidebarComponent } from './shared';
               </button>
             </div>
 
-            <a class="validation-link" routerLink="/docs">Open Docs Atlas</a>
+            <a class="validation-link" routerLink="/docs">Open documentation</a>
           </header>
 
           <router-outlet />
@@ -84,6 +85,27 @@ import { NavSidebarComponent } from './shared';
 
       .app-shell {
         min-height: 100vh;
+      }
+
+      .skip-link {
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 300;
+        padding: 0.75rem 1rem;
+        border: 1px solid color-mix(in srgb, var(--primary) 42%, white);
+        border-radius: 999px;
+        background: rgba(7, 12, 21, 0.96);
+        color: #f5fbff;
+        text-decoration: none;
+        font: 600 0.82rem/1 var(--font-mono);
+        letter-spacing: 0.03em;
+        transform: translateY(calc(-100% - 1rem));
+        transition: transform 180ms ease;
+      }
+
+      .skip-link:focus-visible {
+        transform: translateY(0);
       }
 
       .main-content {

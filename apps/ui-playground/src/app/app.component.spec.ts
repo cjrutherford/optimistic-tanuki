@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterModule } from '@angular/router';
 import { AppComponent } from './app.component';
-import { PREDEFINED_PERSONALITIES, ThemeService } from '@optimistic-tanuki/theme-lib';
+import {
+  PREDEFINED_PERSONALITIES,
+  ThemeService,
+} from '@optimistic-tanuki/theme-lib';
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -28,6 +31,16 @@ describe('AppComponent', () => {
 
   it('should have main content area', () => {
     expect(fixture.nativeElement.querySelector('.main-content')).toBeTruthy();
+  });
+
+  it('provides a skip link to a focusable main content region', () => {
+    const root = fixture.nativeElement as HTMLElement;
+    const skipLink = root.querySelector('a.skip-link');
+    const mainContent = root.querySelector('main#main-content');
+
+    expect(skipLink?.getAttribute('href')).toBe('#main-content');
+    expect(skipLink?.textContent).toContain('Skip to main content');
+    expect(mainContent?.getAttribute('tabindex')).toBe('-1');
   });
 
   it('renders global theme controls for validation sweeps', () => {

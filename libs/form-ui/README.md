@@ -7,6 +7,15 @@
 - shared form presentation and interaction primitives
 - used across multiple app UIs in the monorepo
 
+## Key Surfaces
+
+- reusable form controls and wrappers
+- validation-oriented inputs and field presentation components
+
+## Documentation
+
+- generated API reference in `ui-playground`: `/docs/api/form-ui`
+
 ## Nx Commands
 
 ```bash

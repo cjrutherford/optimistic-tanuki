@@ -80,7 +80,9 @@ import {
         </div>
         } @case ('glass-container') {
         <otui-glass-container>
-          <p style="padding: 1.5rem; margin: 0;">Glassmorphic container content</p>
+          <p style="padding: 1.5rem; margin: 0;">
+            Glassmorphic container content
+          </p>
         </otui-glass-container>
         } }
       </pg-element-card>
@@ -118,9 +120,37 @@ export class CommonUiPageComponent {
       importName: 'ButtonComponent',
       selector: 'otui-button',
       summary: 'Versatile button component with variants, sizes, and states.',
+      whenToUse: [
+        'Use buttons for primary and secondary actions that move the user forward.',
+      ],
+      avoidWhen: [
+        'Avoid using button styling for simple navigation when a standard text link is clearer.',
+      ],
+      accessibilityNotes: [
+        'Keep the visible label specific and ensure disabled buttons still communicate why the action is unavailable.',
+      ],
+      statesCovered: ['Default', 'Disabled', 'Variant comparison'],
+      relatedComponents: [
+        { label: 'Badge', href: '/common-ui#badge' },
+        { label: 'Theme UI', href: '/theme-ui' },
+      ],
+      docsHref: '/docs/libs/common-ui/readme',
+      apiHref: '/docs/api/common-ui',
+      exampleContent: 'Click me',
       props: [
-        { name: 'variant', type: 'string', defaultValue: "'primary'", description: 'Visual style variant.', options: ['primary', 'secondary', 'outline', 'ghost', 'danger'] },
-        { name: 'disabled', type: 'boolean', defaultValue: 'false', description: 'Disables the button.' },
+        {
+          name: 'variant',
+          type: 'string',
+          defaultValue: "'primary'",
+          description: 'Visual style variant.',
+          options: ['primary', 'secondary', 'outline', 'ghost', 'danger'],
+        },
+        {
+          name: 'disabled',
+          type: 'boolean',
+          defaultValue: 'false',
+          description: 'Disables the button.',
+        },
       ],
     },
     {
@@ -130,6 +160,21 @@ export class CommonUiPageComponent {
       importName: 'CardComponent',
       selector: 'otui-card',
       summary: 'Flexible card component for grouping related content.',
+      whenToUse: [
+        'Use cards to group related content, actions, or summaries into a scannable block.',
+      ],
+      avoidWhen: [
+        'Avoid wrapping every small fragment in a card when simple spacing and headings are enough.',
+      ],
+      accessibilityNotes: [
+        'Preserve heading order inside cards so grouped content still reads correctly with assistive technology.',
+      ],
+      statesCovered: ['Content summary', 'Dense content'],
+      relatedComponents: [
+        { label: 'Glass Container', href: '/common-ui#glass-container' },
+      ],
+      docsHref: '/docs/libs/common-ui/readme',
+      apiHref: '/docs/api/common-ui',
       props: [],
     },
     {
@@ -139,6 +184,18 @@ export class CommonUiPageComponent {
       importName: 'SpinnerComponent',
       selector: 'otui-spinner',
       summary: 'Animated loading spinner for async operations.',
+      whenToUse: [
+        'Use a spinner for short loading moments when no deterministic progress value exists.',
+      ],
+      avoidWhen: [
+        'Avoid long-running spinners without supporting text or timeout handling.',
+      ],
+      accessibilityNotes: [
+        'Pair loading indicators with nearby text so screen-reader users know what is happening.',
+      ],
+      statesCovered: ['Loading'],
+      docsHref: '/docs/libs/common-ui/readme',
+      apiHref: '/docs/api/common-ui',
       props: [],
     },
     {
@@ -148,9 +205,35 @@ export class CommonUiPageComponent {
       importName: 'BadgeComponent',
       selector: 'otui-badge',
       summary: 'Small badge for status, counts, or labels.',
+      whenToUse: [
+        'Use badges for compact status, counts, or taxonomy labels next to primary content.',
+      ],
+      avoidWhen: [
+        'Avoid placing critical instructions only inside a badge because the small format is easy to miss.',
+      ],
+      accessibilityNotes: [
+        'Ensure color is not the only distinction between badge variants.',
+      ],
+      statesCovered: ['Default', 'Size variants', 'Status variants'],
+      relatedComponents: [{ label: 'Button', href: '/common-ui#button' }],
+      docsHref: '/docs/libs/common-ui/readme',
+      apiHref: '/docs/api/common-ui',
+      exampleContent: 'Badge',
       props: [
-        { name: 'variant', type: 'string', defaultValue: "'default'", description: 'Badge color variant.', options: ['default', 'primary', 'success', 'warning', 'danger'] },
-        { name: 'size', type: 'string', defaultValue: "'medium'", description: 'Badge size.', options: ['small', 'medium', 'large'] },
+        {
+          name: 'variant',
+          type: 'string',
+          defaultValue: "'default'",
+          description: 'Badge color variant.',
+          options: ['default', 'primary', 'success', 'warning', 'danger'],
+        },
+        {
+          name: 'size',
+          type: 'string',
+          defaultValue: "'medium'",
+          description: 'Badge size.',
+          options: ['small', 'medium', 'large'],
+        },
       ],
     },
     {
@@ -160,6 +243,18 @@ export class CommonUiPageComponent {
       importName: 'GlassContainerComponent',
       selector: 'otui-glass-container',
       summary: 'Frosted glass effect container for modern UI.',
+      whenToUse: [
+        'Use this for decorative surfaces where layered depth supports the surrounding visual system.',
+      ],
+      avoidWhen: [
+        'Avoid it in dense enterprise screens where the glass effect reduces clarity.',
+      ],
+      accessibilityNotes: [
+        'Validate contrast for content placed over translucent surfaces in both light and dark modes.',
+      ],
+      statesCovered: ['Decorative container'],
+      docsHref: '/docs/libs/common-ui/readme',
+      apiHref: '/docs/api/common-ui',
       props: [],
     },
   ];
@@ -178,7 +273,10 @@ export class CommonUiPageComponent {
     }
   }
 
-  private parseDefault(prop: { type: string; defaultValue: string }): number | string | boolean {
+  private parseDefault(prop: {
+    type: string;
+    defaultValue: string;
+  }): number | string | boolean {
     const v = prop.defaultValue;
     if (prop.type === 'boolean') return v === 'true';
     if (prop.type === 'number') return parseFloat(v) || 0;

@@ -1,14 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-
-type LibraryCard = {
-  path: string;
-  name: string;
-  description: string;
-  componentCount: number;
-  category: string;
-};
+import {
+  playgroundLibraries,
+  recommendedPaths,
+  taskPaths,
+} from '../../catalog-data';
 
 @Component({
   selector: 'pg-home',
@@ -21,17 +18,16 @@ type LibraryCard = {
           <span class="hero-kicker">Developer Toolkit</span>
           <h1>UI Playground</h1>
           <p class="tagline">
-            Explore the optimistic-tanuki design system as a curated engineering
-            surface: import paths, live previews, configurable props, and
-            implementation-ready examples.
+            Browse components, read package guidance, and validate theme
+            behavior from one shared workspace.
           </p>
 
           <div class="hero-actions">
             <a class="primary-action" routerLink="/common-ui"
-              >Start With Core UI</a
+              >Browse Components</a
             >
             <a class="secondary-action" routerLink="/docs"
-              >Read Documentation</a
+              >Open Documentation</a
             >
           </div>
         </div>
@@ -48,19 +44,66 @@ type LibraryCard = {
           <div class="note-panel">
             <span class="panel-kicker">Best Use</span>
             <p>
-              Reach for this first when you need the shortest path from
-              component discovery to implementation.
+              Start with recommended paths when you need orientation, then jump
+              into packages when you already know the surface.
             </p>
           </div>
         </aside>
       </header>
 
+      <section class="content-section recommended-section">
+        <div class="section-heading">
+          <span class="section-kicker">Start Here</span>
+          <h2>Recommended Paths</h2>
+          <p>
+            Choose the fastest route based on whether you need guidance,
+            previews, or system-level checks.
+          </p>
+        </div>
+
+        <div class="recommended-grid">
+          @for (path of recommendedPaths; track path.path) {
+          <a class="recommended-card" [routerLink]="path.path">
+            <h3>{{ path.title }}</h3>
+            <p>{{ path.description }}</p>
+            <span class="recommended-cta">{{ path.cta }}</span>
+          </a>
+          }
+        </div>
+      </section>
+
+      <section class="content-section task-section">
+        <div class="section-heading">
+          <span class="section-kicker">Browse by Task</span>
+          <h2>Find the right starting surface</h2>
+          <p>
+            Scan by user goal first, then jump directly into the package that
+            fits the job.
+          </p>
+        </div>
+
+        <div class="task-grid">
+          @for (task of taskPaths; track task.title) {
+          <section class="task-card">
+            <h3>{{ task.title }}</h3>
+            <p>{{ task.description }}</p>
+            <div class="task-links">
+              @for (entry of task.entries; track entry.path) {
+              <a [routerLink]="entry.path">{{ entry.name }}</a>
+              }
+            </div>
+          </section>
+          }
+        </div>
+      </section>
+
       <section class="content-section">
         <div class="section-heading">
-          <span class="section-kicker">Browse</span>
+          <span class="section-kicker">Browse by Package</span>
           <h2>Library Catalog</h2>
           <p>
-            Grouped by intent so the first scan tells you where to dig next.
+            Use the package catalog when you know the area you need and want the
+            full component inventory.
           </p>
         </div>
 
@@ -245,6 +288,84 @@ type LibraryCard = {
         margin-bottom: 1.2rem;
       }
 
+      .recommended-grid,
+      .task-grid {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .recommended-grid {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .recommended-card,
+      .task-card {
+        display: grid;
+        gap: 0.65rem;
+        padding: 1.05rem;
+        border: 1px solid rgba(129, 168, 222, 0.12);
+        border-radius: 1.2rem;
+        background: linear-gradient(
+          180deg,
+          rgba(18, 27, 42, 0.88),
+          rgba(11, 18, 30, 0.96)
+        );
+      }
+
+      .recommended-card {
+        color: inherit;
+        text-decoration: none;
+        transition: transform 180ms ease, border-color 180ms ease,
+          box-shadow 180ms ease;
+      }
+
+      .recommended-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(129, 168, 222, 0.24);
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
+      }
+
+      .recommended-card h3,
+      .task-card h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-family: var(--font-heading);
+        letter-spacing: -0.02em;
+      }
+
+      .recommended-card p,
+      .task-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.55;
+      }
+
+      .recommended-cta {
+        font: 600 0.74rem/1 'IBM Plex Mono', monospace;
+        color: #90f0de;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .task-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+      }
+
+      .task-links a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.25rem;
+        padding: 0.55rem 0.8rem;
+        border: 1px solid rgba(129, 168, 222, 0.14);
+        border-radius: 999px;
+        background: rgba(9, 15, 24, 0.84);
+        color: #dcecff;
+        text-decoration: none;
+        font: 600 0.75rem/1 'IBM Plex Mono', monospace;
+      }
+
       .section-heading {
         margin-bottom: 0.95rem;
       }
@@ -389,197 +510,9 @@ type LibraryCard = {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HomeComponent {
-  readonly libraries: LibraryCard[] = [
-    {
-      path: '/motion-ui',
-      name: 'Motion UI',
-      description:
-        'Ambient backgrounds and decorative motion primitives built with CSS and Three.js.',
-      componentCount: 9,
-      category: 'Decorative',
-    },
-    {
-      path: '/common-ui',
-      name: 'Common UI',
-      description:
-        'Core UI primitives: buttons, cards, modals, tables, lists, and layout components.',
-      componentCount: 18,
-      category: 'Core',
-    },
-    {
-      path: '/form-ui',
-      name: 'Form UI',
-      description:
-        'Form inputs: text fields, checkboxes, radio buttons, selects, and file uploads.',
-      componentCount: 6,
-      category: 'Forms',
-    },
-    {
-      path: '/theme-ui',
-      name: 'Theme UI',
-      description:
-        'Theming controls: palette selectors, personality previews, and design token managers.',
-      componentCount: 6,
-      category: 'Theming',
-    },
-    {
-      path: '/navigation-ui',
-      name: 'Navigation UI',
-      description:
-        'Navigation components: app bars, sidebars, and navigation menus.',
-      componentCount: 3,
-      category: 'Navigation',
-    },
-    {
-      path: '/social-ui',
-      name: 'Social UI',
-      description:
-        'Social components: posts, comments, compose editors, and activity feeds.',
-      componentCount: 4,
-      category: 'Social',
-    },
-    {
-      path: '/notification-ui',
-      name: 'Notification UI',
-      description:
-        'Notification components: bells, lists, and real-time update indicators.',
-      componentCount: 2,
-      category: 'Feedback',
-    },
-    {
-      path: '/store-ui',
-      name: 'Store UI',
-      description:
-        'E-commerce components: product cards, lists, shopping carts, and donations.',
-      componentCount: 4,
-      category: 'Commerce',
-    },
-    {
-      path: '/auth-ui',
-      name: 'Auth UI',
-      description:
-        'Authentication workflow primitives for login, registration, email confirmation, and MFA.',
-      componentCount: 4,
-      category: 'Workflow',
-    },
-    {
-      path: '/profile-ui',
-      name: 'Profile UI',
-      description:
-        'Profile management surfaces for selectors, editors, and identity banners.',
-      componentCount: 3,
-      category: 'Workflow',
-    },
-    {
-      path: '/chat-ui',
-      name: 'Chat UI',
-      description:
-        'Conversation primitives for contact rosters and embedded chat windows.',
-      componentCount: 2,
-      category: 'Workflow',
-    },
-    {
-      path: '/message-ui',
-      name: 'Message UI',
-      description:
-        'Dismissible message stack for system alerts and inline workflow feedback.',
-      componentCount: 1,
-      category: 'Workflow',
-    },
-    {
-      path: '/search-ui',
-      name: 'Search UI',
-      description:
-        'Search and exploration surfaces for people, communities, and content discovery.',
-      componentCount: 2,
-      category: 'Discovery',
-    },
-    {
-      path: '/persona-ui',
-      name: 'Persona UI',
-      description:
-        'Assistant persona picker for selecting AI helpers and working modes.',
-      componentCount: 1,
-      category: 'Discovery',
-    },
-    {
-      path: '/ag-grid-ui',
-      name: 'AG Grid UI',
-      description:
-        'Theme-aware enterprise data grid wrapper for dense application tables.',
-      componentCount: 1,
-      category: 'Data',
-    },
-    {
-      path: '/blogging-ui',
-      name: 'Blogging UI',
-      description:
-        'Blog and content management components for editorial experiences.',
-      componentCount: 7,
-      category: 'Content',
-    },
-    {
-      path: '/business-ui',
-      name: 'Business UI',
-      description:
-        'Business and enterprise UI components for B2B applications.',
-      componentCount: 1,
-      category: 'Commerce',
-    },
-    {
-      path: '/classified-ui',
-      name: 'Classifieds UI',
-      description: 'Classified ads and marketplace listing components.',
-      componentCount: 1,
-      category: 'Commerce',
-    },
-    {
-      path: '/community-ui',
-      name: 'Community UI',
-      description:
-        'Community building and engagement components for social platforms.',
-      componentCount: 1,
-      category: 'Social',
-    },
-    {
-      path: '/forum-ui',
-      name: 'Forum UI',
-      description:
-        'Forum and discussion board components for community conversations.',
-      componentCount: 2,
-      category: 'Social',
-    },
-    {
-      path: '/hai-ui',
-      name: 'HAI UI',
-      description:
-        'Human-AI Interaction components for intelligent assistant interfaces.',
-      componentCount: 3,
-      category: 'AI',
-    },
-    {
-      path: '/payments-ui',
-      name: 'Payments UI',
-      description: 'Payment processing and transaction UI components.',
-      componentCount: 3,
-      category: 'Commerce',
-    },
-    {
-      path: '/project-ui',
-      name: 'Project UI',
-      description: 'Project management and task tracking UI components.',
-      componentCount: 3,
-      category: 'Productivity',
-    },
-    {
-      path: '/docs',
-      name: 'Documentation',
-      description:
-        'Library organization, migration notes, and integration guides.',
-      componentCount: 0,
-      category: 'Info',
-    },
-  ];
+  readonly libraries = playgroundLibraries;
+  readonly recommendedPaths = recommendedPaths;
+  readonly taskPaths = taskPaths;
 
   get totalComponents(): number {
     return this.libraries.reduce(

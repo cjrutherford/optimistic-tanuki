@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/auth-ui/.storybook",
         "browserTarget": "auth-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/auth-ui",
         "configDir": "libs/auth-ui/.storybook",
         "browserTarget": "auth-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

@@ -23,12 +23,7 @@ import { PersonalitySelectorComponent } from './personality-selector.component';
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
-  imports: [
-    FormsModule,
-    CommonModule,
-    OverlayModule,
-    PersonalitySelectorComponent,
-  ],
+  imports: [FormsModule, CommonModule, OverlayModule],
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
@@ -177,7 +172,7 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
     });
 
     // Create portal for the personality selector component
-    const portal = new ComponentPortal(
+    const portal = new ComponentPortal<PersonalitySelectorComponent>(
       PersonalitySelectorComponent,
       this.viewContainerRef
     );

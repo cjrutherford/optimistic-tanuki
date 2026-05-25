@@ -17,6 +17,47 @@ describe('DocsIndexService', () => {
     generatedAt: '2026-05-14T00:00:00.000Z',
     items: [
       {
+        slug: 'docs/operators/overview',
+        title: 'Operator Handbook',
+        summary: 'Formal operational documentation hub.',
+        sourcePath: 'docs/operators/overview.md',
+        category: 'operators',
+        audience: 'operator',
+        section: 'operators',
+        tags: ['operations'],
+        kind: 'doc',
+        headings: [
+          { depth: 1, text: 'Operator Handbook', id: 'operator-handbook' },
+        ],
+        body: '# Operator Handbook\n\nOverview.',
+        order: 1,
+        docRole: 'landing',
+        landing: true,
+        featured: true,
+      },
+      {
+        slug: 'docs/operators/local-stack',
+        title: 'Local Stack Operations',
+        summary: 'Run the shared local environment.',
+        sourcePath: 'docs/operators/local-stack.md',
+        category: 'operators',
+        audience: 'operator',
+        section: 'operators',
+        parent: 'docs/operators/overview',
+        tags: ['docker'],
+        kind: 'doc',
+        headings: [
+          {
+            depth: 1,
+            text: 'Local Stack Operations',
+            id: 'local-stack-operations',
+          },
+        ],
+        body: '# Local Stack Operations\n\nCommands.',
+        order: 2,
+        docRole: 'guide',
+      },
+      {
         slug: 'docs/architecture/workspace-map',
         title: 'Workspace Map',
         summary: 'High-level repo topology and navigation.',
@@ -76,13 +117,44 @@ describe('DocsIndexService', () => {
 
     httpMock.expectOne('/generated/docs-manifest.json').flush(manifest);
 
-    await expect(docsPromise).resolves.toHaveLength(2);
+    await expect(docsPromise).resolves.toHaveLength(4);
     await expect(
       firstValueFrom(service.getDocBySlug('docs/architecture/workspace-map'))
     ).resolves.toEqual(expect.objectContaining({ title: 'Workspace Map' }));
     await expect(categoriesPromise).resolves.toEqual([
+      expect.objectContaining({ id: 'operators' }),
       expect.objectContaining({ id: 'getting-started' }),
       expect.objectContaining({ id: 'architecture' }),
     ]);
+  });
+
+  it('resolves docs slugs with or without the leading docs segment', async () => {
+    const workspaceMapPromise = firstValueFrom(
+      service.getDocBySlug('architecture/workspace-map')
+    );
+
+    httpMock.expectOne('/generated/docs-manifest.json').flush(manifest);
+
+    await expect(workspaceMapPromise).resolves.toEqual(
+      expect.objectContaining({ slug: 'docs/architecture/workspace-map' })
+    );
+  });
+
+  it('returns operator hub documents and section-local adjacency', async () => {
+    const operatorHubPromise = firstValueFrom(service.getOperatorHubDocs());
+    const adjacentPromise = firstValueFrom(
+      service.getAdjacentDocs('docs/operators/local-stack')
+    );
+
+    httpMock.expectOne('/generated/docs-manifest.json').flush(manifest);
+
+    await expect(operatorHubPromise).resolves.toEqual([
+      expect.objectContaining({ slug: 'docs/operators/overview' }),
+      expect.objectContaining({ slug: 'docs/operators/local-stack' }),
+    ]);
+    await expect(adjacentPromise).resolves.toEqual({
+      previous: expect.objectContaining({ slug: 'docs/operators/overview' }),
+      next: null,
+    });
   });
 });

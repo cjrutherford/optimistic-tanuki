@@ -8,7 +8,7 @@ order: 20
 
 # Bootstrap The Stack
 
-For the current local-stack workflow, use the canonical guide: `docs/devops/docker-compose.md`.
+Use this page for the first local bring-up. For the full operating guide, continue to `docs/operators/local-stack.md`.
 
 Typical entry points:
 
@@ -20,3 +20,10 @@ pnpm run watch:build
 ```
 
 `docker:dev` is the phased full-stack startup path. `docker:dev:bootstrap` adds the shared seed step after startup.
+
+After startup, verify the environment with:
+
+```bash
+pnpm run docker:dev:ps
+pnpm run docker:dev:logs
+```

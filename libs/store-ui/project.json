@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/store-ui/.storybook",
         "browserTarget": "store-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/store-ui",
         "configDir": "libs/store-ui/.storybook",
         "browserTarget": "store-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

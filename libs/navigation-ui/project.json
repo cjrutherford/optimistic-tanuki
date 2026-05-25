@@ -23,7 +23,7 @@
         "port": 4400,
         "configDir": "libs/navigation-ui/.storybook",
         "browserTarget": "navigation-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -38,7 +38,7 @@
         "outputDir": "dist/storybook/navigation-ui",
         "configDir": "libs/navigation-ui/.storybook",
         "browserTarget": "navigation-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

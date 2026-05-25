@@ -11,6 +11,7 @@ This directory contains the infrastructure and deployment docs for the active re
 - [Deployment Workspace Workflow](deployment-workspace-workflow.md) - Recommended generated-workspace workflow using `admin-env-wizard`
 - [Deployment Generation](deployment-generation.md) - General model and deployment workflow for generated Compose and Kubernetes output
 - [Docker Compose](docker-compose.md) - Local development with Docker Compose
+- [Manual Docker Stacks](manual-docker-stacks.md) - Repo-level pnpm Docker scripts and the Compose flows behind them
 - [ArgoCD](argocd.md) - GitOps deployment with the parameterized Argo application
 
 ## Quick Reference

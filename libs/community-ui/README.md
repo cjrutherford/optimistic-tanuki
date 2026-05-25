@@ -13,3 +13,7 @@
 pnpm exec nx build community-ui
 pnpm exec nx test community-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/community-ui`

@@ -13,3 +13,7 @@
 pnpm exec nx build message-ui
 pnpm exec nx test message-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/message-ui`

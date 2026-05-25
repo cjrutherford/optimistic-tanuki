@@ -6,6 +6,23 @@ export function normalizeDocSlug(value: string): string {
     .toLowerCase();
 }
 
+export function toCanonicalDocSlug(value: string): string {
+  const normalized = normalizeDocSlug(value);
+
+  if (!normalized) {
+    return normalized;
+  }
+
+  return normalized.startsWith('docs/') ? normalized : `docs/${normalized}`;
+}
+
+export function toDocRouteSegments(value: string): string[] {
+  const canonical = toCanonicalDocSlug(value);
+  const routeSlug = canonical.replace(/^docs\//, '');
+
+  return ['/docs', ...routeSlug.split('/').filter(Boolean)];
+}
+
 export function categoryTitle(category: string): string {
   return category
     .split(/[-/]/g)

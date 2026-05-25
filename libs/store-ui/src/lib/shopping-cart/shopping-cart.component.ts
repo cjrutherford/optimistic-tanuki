@@ -17,7 +17,7 @@ export interface CartItem {
 @Component({
   selector: 'store-shopping-cart',
   standalone: true,
-  imports: [CommonModule, ThemeHostBindingsDirective],
+  imports: [CommonModule],
   templateUrl: './shopping-cart.component.html',
   styleUrls: ['./shopping-cart.component.scss'],
   hostDirectives: [ThemeHostBindingsDirective],

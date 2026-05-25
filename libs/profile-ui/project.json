@@ -20,7 +20,7 @@
         "port": 4400,
         "configDir": "libs/profile-ui/.storybook",
         "browserTarget": "profile-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {
@@ -35,7 +35,7 @@
         "outputDir": "dist/storybook/profile-ui",
         "configDir": "libs/profile-ui/.storybook",
         "browserTarget": "profile-ui:build-storybook",
-        "compodoc": false
+        "compodoc": true
       },
       "configurations": {
         "ci": {

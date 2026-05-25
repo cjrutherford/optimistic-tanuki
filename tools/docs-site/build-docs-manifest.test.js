@@ -37,6 +37,29 @@ describe('buildDocsManifest', () => {
         'Bring the stack up quickly.',
       ].join('\n')
     );
+    await fs.mkdir(path.join(tempRoot, 'docs', 'operators'), {
+      recursive: true,
+    });
+    await fs.writeFile(
+      path.join(tempRoot, 'docs', 'operators', 'overview.md'),
+      [
+        '---',
+        'title: Operator Handbook',
+        'summary: Formal operational guide.',
+        'audience: operator',
+        'section: operators',
+        'docRole: landing',
+        'landing: true',
+        'featured: true',
+        'tags:',
+        '  - operations',
+        '---',
+        '',
+        '# Operator Handbook',
+        '',
+        'Use this for server administration.',
+      ].join('\n')
+    );
     await fs.writeFile(
       path.join(tempRoot, 'docs', 'guides', 'workflow-deck.md'),
       [
@@ -106,6 +129,16 @@ describe('buildDocsManifest', () => {
           title: 'Getting Started',
           category: 'onboarding',
           tags: ['setup', 'contributors'],
+        }),
+        expect.objectContaining({
+          slug: 'docs/operators/overview',
+          sourcePath: 'docs/operators/overview.md',
+          audience: 'operator',
+          section: 'operators',
+          docRole: 'landing',
+          landing: true,
+          featured: true,
+          tags: ['operations'],
         }),
         expect.objectContaining({
           slug: 'docs/guides/workflow-deck',

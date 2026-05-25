@@ -12,8 +12,8 @@
     @for(contact of contacts.slice(0,3); track contact.id; let i = $index) {
     <lib-profile-photo
       class="contact-avatar"
-      src="contact.avatarUrl"
-      alt="contact.name"
+      [src]="contact.avatarUrl || 'https://placehold.co/60x60'"
+      [alt]="contact.name"
       [ngStyle]="{
                       'z-index': contacts.length - i,
                       'margin-left': i > 0 ? '-20px' : '0',
@@ -34,12 +34,12 @@
     }
   </div>
   <div class="contact-popup" *ngIf="showPopup()">
-    <div class="contact-name">{{ contacts[0]?.name }}</div>
+    <div class="contact-name">{{ firstContact.name }}</div>
     <div class="contact-last-message">
-      {{ contacts[0]?.lastMessage || 'No messages yet' }}
+      {{ firstContact.lastMessage || 'No messages yet' }}
     </div>
     <div class="contact-last-message-time">
-      {{ contacts[0]?.lastMessageTime | date : 'shortTime' }}
+      {{ firstContact.lastMessageTime | date : 'shortTime' }}
     </div>
   </div>
 </div>

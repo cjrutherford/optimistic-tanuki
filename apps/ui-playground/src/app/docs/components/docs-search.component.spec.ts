@@ -44,4 +44,25 @@ describe('DocsSearchComponent', () => {
     expect(root.textContent).toContain('Getting Started');
     expect(root.textContent).not.toContain('Workspace Map');
   });
+
+  it('builds docs result links without duplicating the docs path segment', () => {
+    component.documents = [
+      {
+        slug: 'docs/architecture/workspace-map',
+        title: 'Workspace Map',
+        summary: 'Repo layout and navigation',
+        category: 'architecture',
+        headings: [{ depth: 1, text: 'Workspace Map', id: 'workspace-map' }],
+        tags: ['nx'],
+      },
+    ];
+    component.setQuery('workspace');
+    fixture.detectChanges();
+
+    const href = (fixture.nativeElement as HTMLElement)
+      .querySelector('.search-result')
+      ?.getAttribute('href');
+
+    expect(href).toBe('/docs/architecture/workspace-map');
+  });
 });

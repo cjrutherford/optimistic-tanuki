@@ -3,7 +3,7 @@ id: admin-home
 title: Admin Guide
 landing: true
 hero_eyebrow: Operate the platform
-hero_lead: Stand up environments, verify services, and keep the local stack healthy.
+hero_lead: Get the local platform running, then move into the formal operator handbook for day-two administration.
 quick_links:
   - label: Prepare your machine
     page: admin-prerequisites
@@ -11,6 +11,9 @@ quick_links:
   - label: Bootstrap the stack
     page: admin-bootstrap
     body: Build and start the development platform.
+  - label: Open the operator handbook
+    page: admin-operations
+    body: Use the formal operator docs for runbooks and recovery.
 featured:
   - title: Environment checklist
     page: admin-prerequisites
@@ -18,14 +21,23 @@ featured:
   - title: Bootstrap and seed
     page: admin-bootstrap
     body: Build images, start containers, and populate shared data.
-  - title: Operations playbook
+  - title: Operator handbook
     page: admin-operations
-    body: Check running services, logs, and common recovery steps.
+    body: Continue to the formal operator docs for ongoing administration.
 next_steps:
   - label: Review the operations playbook
     page: admin-operations
-    body: Use it for day-two support and troubleshooting.
+    body: Use it for day-two support, deployment workflows, and troubleshooting.
 ---
+
 # Admin Guide
 
-This guide is for operators who need a predictable local environment for the Optimistic Tanuki platform. It focuses on the shared development stack, initialization, and fast health checks.
+This guide is the onboarding path for operators who need a predictable local environment for the Optimistic Tanuki platform.
+
+Use it for:
+
+- prerequisites
+- first bootstrap
+- fast day-one verification
+
+After that, move to the canonical operator handbook in `docs/operators/`.

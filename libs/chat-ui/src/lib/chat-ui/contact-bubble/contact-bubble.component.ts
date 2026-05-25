@@ -1,6 +1,5 @@
 import { Component, Input, Output, EventEmitter, signal } from '@angular/core';
 
-import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { ChatContact } from '../chat-ui.component';
@@ -36,7 +35,7 @@ export interface Contact {
  */
 @Component({
   selector: 'lib-contact-bubble',
-  imports: [CommonModule, DatePipe, ButtonComponent, ProfilePhotoComponent],
+  imports: [CommonModule, DatePipe, ProfilePhotoComponent],
   templateUrl: './contact-bubble.component.html',
   styleUrl: './contact-bubble.component.scss',
 })
@@ -68,6 +67,10 @@ export class ContactBubbleComponent {
    * Emits when the contact bubble is clicked.
    */
   @Output() clicked = new EventEmitter<void>();
+
+  get firstContact(): ChatContact {
+    return this.contacts[0];
+  }
 
   onClick() {
     this.clicked.emit();

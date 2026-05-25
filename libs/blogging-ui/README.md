@@ -9,6 +9,16 @@
 
 Additional docs live under `libs/blogging-ui/docs/`.
 
+## Key Surfaces
+
+- blog compose, post, comment, author, hero, and tag-list components
+- editorial composition workflows and related styling
+
+## Documentation
+
+- generated API reference in `ui-playground`: `/docs/api/blogging-ui`
+- deep feature notes under `libs/blogging-ui/docs/`
+
 ## Nx Commands
 
 ```bash

@@ -13,3 +13,7 @@
 pnpm exec nx build profile-ui
 pnpm exec nx test profile-ui
 ```
+
+## API Reference
+
+- generated Compodoc: `/docs/api/profile-ui`

@@ -16,7 +16,7 @@ export interface DonationRequest {
 @Component({
   selector: 'store-donation',
   standalone: true,
-  imports: [CommonModule, FormsModule, ThemeHostBindingsDirective],
+  imports: [CommonModule, FormsModule],
   templateUrl: './donation.component.html',
   styleUrls: ['./donation.component.scss'],
   hostDirectives: [ThemeHostBindingsDirective],
