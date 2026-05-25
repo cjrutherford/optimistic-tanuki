@@ -54,8 +54,7 @@
       "executor": "@angular/build:dev-server",
       "dependsOn": ["docs-content", "api-docs-content"],
       "options": {
-        "poll": 2000,
-        "allowedHosts": ["nirvana.tail5a4a0.ts.net"]
+        "poll": 2000
       },
       "configurations": {
         "production": {

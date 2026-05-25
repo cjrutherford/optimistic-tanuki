@@ -33,13 +33,13 @@
     </div>
     }
   </div>
-  <div class="contact-popup" *ngIf="showPopup()">
-    <div class="contact-name">{{ firstContact.name }}</div>
+  <div class="contact-popup" *ngIf="showPopup() && firstContact as contact">
+    <div class="contact-name">{{ contact.name }}</div>
     <div class="contact-last-message">
-      {{ firstContact.lastMessage || 'No messages yet' }}
+      {{ contact.lastMessage || 'No messages yet' }}
     </div>
     <div class="contact-last-message-time">
-      {{ firstContact.lastMessageTime | date : 'shortTime' }}
+      {{ contact.lastMessageTime | date : 'shortTime' }}
     </div>
   </div>
 </div>

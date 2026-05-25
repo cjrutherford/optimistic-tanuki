@@ -68,8 +68,8 @@ export class ContactBubbleComponent {
    */
   @Output() clicked = new EventEmitter<void>();
 
-  get firstContact(): ChatContact {
-    return this.contacts[0];
+  get firstContact(): ChatContact | null {
+    return this.contacts[0] ?? null;
   }
 
   onClick() {
