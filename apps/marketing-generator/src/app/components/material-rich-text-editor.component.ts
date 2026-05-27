@@ -8,7 +8,6 @@ import {
   input,
   output,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { TiptapEditorDirective } from 'ngx-tiptap';
@@ -16,7 +15,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
 @Component({
   selector: 'app-material-rich-text-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, TiptapEditorDirective],
+  imports: [CommonModule, TiptapEditorDirective],
   template: `
     <div class="rich-editor-shell">
       <div class="toolbar">

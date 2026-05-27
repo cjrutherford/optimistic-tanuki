@@ -36,6 +36,12 @@ describe('MaterialTemplatePreviewComponent', () => {
           value:
             '<p>Usage blocks, invoice previews, and self-hosted Docker options stay visible.</p>',
         },
+        {
+          id: 'tb-3',
+          role: 'body',
+          label: 'Badge',
+          value: '<3 local-first previews',
+        },
       ],
       imageSlots: [],
     };
@@ -57,6 +63,12 @@ describe('MaterialTemplatePreviewComponent', () => {
     );
     expect(fixture.nativeElement.innerHTML).toContain(
       '<strong>metering</strong>'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      '<3 local-first previews'
+    );
+    expect(fixture.nativeElement.innerHTML).toContain(
+      '&lt;3 local-first previews'
     );
   });
 });

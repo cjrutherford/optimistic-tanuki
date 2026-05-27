@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
-import { CampaignAsset, MaterialSurface, MaterialTextBlock } from '../types';
+import { CampaignAsset, MaterialSurface } from '../types';
 
 @Component({
   selector: 'app-material-template-preview',
@@ -175,7 +175,9 @@ export class MaterialTemplatePreviewComponent {
 
   normalizeBlockValue(value: string): string {
     const trimmed = value.trim();
-    return trimmed.startsWith('<') ? trimmed : `<p>${trimmed}</p>`;
+    return this.looksLikeHtml(trimmed)
+      ? trimmed
+      : `<p>${this.escapeHtml(trimmed)}</p>`;
   }
 
   private fallbackFamily(): string {
@@ -189,5 +191,20 @@ export class MaterialTemplatePreviewComponent {
       case 'web-ad':
         return 'web-display-ad';
     }
+  }
+
+  private looksLikeHtml(value: string): boolean {
+    return /^<(?:(?:[A-Za-z][\w:-]*)|\/(?:[A-Za-z][\w:-]*)|!DOCTYPE|!--)/.test(
+      value
+    );
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
   }
 }

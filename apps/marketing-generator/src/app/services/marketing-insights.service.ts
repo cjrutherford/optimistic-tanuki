@@ -121,8 +121,7 @@ export class MarketingInsightsService {
       return [];
     }
 
-    const value = localStorage.getItem(this.eventsKey);
-    return value ? (JSON.parse(value) as MarketingEvent[]) : [];
+    return this.readStoredValue<MarketingEvent[]>(this.eventsKey, []);
   }
 
   private readFeedback(): ConceptFeedbackEntry[] {
@@ -130,8 +129,7 @@ export class MarketingInsightsService {
       return [];
     }
 
-    const value = localStorage.getItem(this.feedbackKey);
-    return value ? (JSON.parse(value) as ConceptFeedbackEntry[]) : [];
+    return this.readStoredValue<ConceptFeedbackEntry[]>(this.feedbackKey, []);
   }
 
   private countEvents(
@@ -149,8 +147,27 @@ export class MarketingInsightsService {
     localStorage.setItem(key, JSON.stringify(value));
   }
 
+  private readStoredValue<T>(key: string, fallback: T): T {
+    const value = localStorage.getItem(key);
+    if (!value) {
+      return fallback;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+
   private newId(prefix: string): string {
-    return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+    const uuid = globalThis.crypto?.randomUUID?.();
+    return uuid
+      ? `${prefix}-${uuid}`
+      : `${prefix}-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 10)}`;
   }
 
   private isBrowser(): boolean {

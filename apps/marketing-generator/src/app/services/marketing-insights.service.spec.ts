@@ -3,6 +3,7 @@ import { MarketingInsightsService } from './marketing-insights.service';
 
 describe('MarketingInsightsService', () => {
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [MarketingInsightsService],
     });
@@ -74,5 +75,17 @@ describe('MarketingInsightsService', () => {
         topReason: 'too-generic',
       })
     );
+  });
+
+  it('falls back when persisted insights payloads contain malformed json', () => {
+    localStorage.setItem('signal-foundry-insights-events', '{');
+    localStorage.setItem('signal-foundry-insights-feedback', '{');
+
+    const service = TestBed.inject(MarketingInsightsService);
+
+    expect(service.events()).toEqual([]);
+    expect(service.feedback()).toEqual([]);
+    expect(localStorage.getItem('signal-foundry-insights-events')).toBeNull();
+    expect(localStorage.getItem('signal-foundry-insights-feedback')).toBeNull();
   });
 });

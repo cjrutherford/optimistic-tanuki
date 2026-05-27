@@ -3,6 +3,7 @@ import { MarketingStateService } from './marketing-state.service';
 
 describe('MarketingStateService', () => {
   beforeEach(() => {
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [MarketingStateService],
     });
@@ -115,5 +116,76 @@ describe('MarketingStateService', () => {
     expect(service.currentWorkspace()?.decisionSummary).toBe(
       'Winner chosen: community angle.'
     );
+  });
+
+  it('falls back to the first stored workspace when the current workspace id is missing', () => {
+    localStorage.setItem(
+      'signal-foundry-workspaces',
+      JSON.stringify([
+        {
+          id: 'workspace-a',
+          name: 'Workspace A',
+          createdAt: '2026-05-27T00:00:00.000Z',
+          updatedAt: '2026-05-27T00:00:00.000Z',
+          request: {
+            offeringKind: 'preset-app',
+            selectedOfferingId: 'video-client',
+            customApp: {
+              name: '',
+              category: '',
+              summary: '',
+              features: '',
+              differentiators: '',
+              primaryGoal: '',
+            },
+            audienceId: 'community-operators',
+            campaignIntent: 'awareness',
+            channel: 'web',
+            secondaryChannels: [],
+            tone: 'editorial',
+            includeAiPolish: true,
+            deliverables: [
+              { type: 'flyer', formatId: 'flyer-letter', quantity: 1 },
+            ],
+            brand: {
+              businessName: '',
+              tagline: '',
+              primaryColor: '#f59e0b',
+              secondaryColor: '#111827',
+              accentColor: '#34d399',
+              visualStyle: '',
+              logoUrl: '',
+            },
+            visualDirection: '',
+            generateImages: true,
+          },
+          concepts: [],
+          selectedConceptId: '',
+          versions: [],
+        },
+      ])
+    );
+
+    const service = TestBed.inject(MarketingStateService);
+
+    expect(service.currentWorkspaceId()).toBe('workspace-a');
+    expect(
+      JSON.parse(
+        localStorage.getItem('signal-foundry-current-workspace') ?? '""'
+      )
+    ).toBe('workspace-a');
+    expect(service.request().audienceId).toBe('community-operators');
+  });
+
+  it('falls back when stored workspace or concept state contains malformed json', () => {
+    localStorage.setItem('signal-foundry-workspaces', '{');
+    localStorage.setItem('signal-foundry-concepts', '{');
+
+    const service = TestBed.inject(MarketingStateService);
+
+    expect(service.workspaces().length).toBe(1);
+    expect(service.concepts()).toEqual([]);
+    expect(localStorage.getItem('signal-foundry-workspaces')).not.toBe('{');
+    expect(localStorage.getItem('signal-foundry-concepts')).toBeNull();
   });
 });

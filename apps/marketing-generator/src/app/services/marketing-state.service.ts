@@ -69,6 +69,11 @@ export class MarketingStateService {
       this.currentWorkspaceId.set(workspace.id);
       this.persist(this.workspacesKey, this.workspaces());
       this.persist(this.currentWorkspaceKey, workspace.id);
+      return;
+    }
+
+    if (!this.currentWorkspace()) {
+      this.selectWorkspace(this.workspaces()[0]!.id);
     }
   }
 
@@ -285,8 +290,7 @@ export class MarketingStateService {
       return [];
     }
 
-    const value = localStorage.getItem(this.conceptsKey);
-    return value ? (JSON.parse(value) as CampaignConcept[]) : [];
+    return this.readStoredValue<CampaignConcept[]>(this.conceptsKey, []);
   }
 
   private readWorkspaces(): MarketingWorkspace[] {
@@ -294,14 +298,10 @@ export class MarketingStateService {
       return [];
     }
 
-    const value = localStorage.getItem(this.workspacesKey);
-    if (!value) {
-      return [];
-    }
-
-    return (JSON.parse(value) as MarketingWorkspace[]).map((workspace) =>
-      this.hydrateWorkspace(workspace)
-    );
+    return this.readStoredValue<MarketingWorkspace[]>(
+      this.workspacesKey,
+      []
+    ).map((workspace) => this.hydrateWorkspace(workspace));
   }
 
   private readCurrentWorkspaceId(): string {
@@ -309,7 +309,16 @@ export class MarketingStateService {
       return '';
     }
 
-    return localStorage.getItem(this.currentWorkspaceKey) || '';
+    const value = localStorage.getItem(this.currentWorkspaceKey);
+    if (!value) {
+      return '';
+    }
+
+    try {
+      return JSON.parse(value) as string;
+    } catch {
+      return value;
+    }
   }
 
   private syncCurrentWorkspace(
@@ -340,11 +349,11 @@ export class MarketingStateService {
   }
 
   private newWorkspaceId(): string {
-    return `workspace-${Math.random().toString(36).slice(2, 10)}`;
+    return this.newId('workspace');
   }
 
   private newVersionId(): string {
-    return `version-${Math.random().toString(36).slice(2, 10)}`;
+    return this.newId('version');
   }
 
   private buildWorkspace(
@@ -416,6 +425,29 @@ export class MarketingStateService {
     }
 
     localStorage.setItem(key, JSON.stringify(value));
+  }
+
+  private readStoredValue<T>(key: string, fallback: T): T {
+    const value = localStorage.getItem(key);
+    if (!value) {
+      return fallback;
+    }
+
+    try {
+      return JSON.parse(value) as T;
+    } catch {
+      localStorage.removeItem(key);
+      return fallback;
+    }
+  }
+
+  private newId(prefix: string): string {
+    const uuid = globalThis.crypto?.randomUUID?.();
+    return uuid
+      ? `${prefix}-${uuid}`
+      : `${prefix}-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 10)}`;
   }
 
   private isBrowser(): boolean {
