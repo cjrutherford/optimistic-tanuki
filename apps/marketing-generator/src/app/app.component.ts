@@ -13,12 +13,18 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
           <span class="brand-mark">SF</span>
           <span class="brand-copy">
             <strong>Signal Foundry</strong>
-            <small>Campaign concepts for products and services</small>
+            <small
+              >Campaign workbench for products, services, and custom apps</small
+            >
           </span>
         </a>
 
         <nav class="topnav">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+          <a
+            routerLink="/"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+          >
             Overview
           </a>
           <a routerLink="/create" routerLinkActive="active">Create</a>
@@ -48,7 +54,11 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
         padding: 1rem 1.5rem;
         border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.12));
         backdrop-filter: blur(18px);
-        background: color-mix(in srgb, var(--surface, #10151c) 78%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 78%,
+          transparent
+        );
       }
 
       .brand {
@@ -66,7 +76,10 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
         place-items: center;
         font-weight: 800;
         color: var(--background, #081018);
-        background: var(--primary-gradient, linear-gradient(135deg, #d97706, #2563eb));
+        background: var(
+          --primary-gradient,
+          linear-gradient(135deg, #d97706, #2563eb)
+        );
       }
 
       .brand-copy {

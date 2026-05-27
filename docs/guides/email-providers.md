@@ -1,6 +1,41 @@
+---
+title: Email Provider Setup Guide
+summary: Configure platform email delivery for local development, shared environments, and production using console, SMTP, or HTTP API providers.
+category: guides
+section: guides
+audience: developer
+featured: true
+order: 30
+tags:
+  - email
+  - smtp
+  - sendgrid
+  - mailgun
+  - platform setup
+---
+
 # Email Provider Setup Guide
 
 This guide covers how to configure and use the email plugin system in Optimistic Tanuki. The `@optimistic-tanuki/email` library provides a plug-in architecture that lets you swap between local SMTP servers, third-party email APIs, and a development console provider without changing application code.
+
+## Platform Setup Summary
+
+For this platform, email setup should be treated as environment configuration, not hardcoded application behavior.
+
+Recommended defaults:
+
+- local development: `ConsoleEmailProvider` or local SMTP capture through MailHog/Mailpit
+- shared development or preview environments: SMTP if you control the relay, otherwise an HTTP API provider
+- production: verified SMTP or verified HTTP API delivery with environment-backed secrets and a verified sender domain
+
+Core wiring in this repo lives in:
+
+- `libs/email/src/lib/email.module.ts`
+- `libs/email/src/lib/email.service.ts`
+- `libs/email/src/lib/email-plugin-registry.ts`
+- `libs/email/src/lib/providers/*`
+
+Application code should inject `EmailService` and remain unaware of the active provider implementation.
 
 ## Table of Contents
 
@@ -28,12 +63,12 @@ This guide covers how to configure and use the email plugin system in Optimistic
 
 The email system uses three main components:
 
-| Component | Purpose |
-|---|---|
-| **`EmailProvider`** | Interface that every provider plugin must implement (`sendEmail`, `verifyConnection`) |
-| **`EmailPluginRegistry`** | Manages registered providers and tracks the active provider |
-| **`EmailService`** | Injectable service that delegates calls to the active provider |
-| **`EmailModule`** | NestJS dynamic module with `forRoot()` and `forRootAsync()` configuration |
+| Component                 | Purpose                                                                               |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| **`EmailProvider`**       | Interface that every provider plugin must implement (`sendEmail`, `verifyConnection`) |
+| **`EmailPluginRegistry`** | Manages registered providers and tracks the active provider                           |
+| **`EmailService`**        | Injectable service that delegates calls to the active provider                        |
+| **`EmailModule`**         | NestJS dynamic module with `forRoot()` and `forRootAsync()` configuration             |
 
 ```
 Application
@@ -64,9 +99,9 @@ interface EmailProvider {
 interface EmailMessage {
   to: string | string[];
   subject: string;
-  text?: string;           // Plain text body
-  html?: string;           // HTML body
-  from?: string;           // Overrides provider default
+  text?: string; // Plain text body
+  html?: string; // HTML body
+  from?: string; // Overrides provider default
   cc?: string | string[];
   bcc?: string | string[];
   replyTo?: string;
@@ -77,6 +112,26 @@ interface EmailMessage {
 ---
 
 ## Quick Start
+
+### Recommended Platform Modes
+
+| Mode                              | Recommended Provider                          | Why                                                            |
+| --------------------------------- | --------------------------------------------- | -------------------------------------------------------------- |
+| Local-only development            | `ConsoleEmailProvider`                        | No credentials required and send attempts stay visible in logs |
+| Local visual inbox testing        | `SmtpEmailProvider` + MailHog/Mailpit         | Lets developers inspect rendered HTML and text output          |
+| Shared or production environments | `SmtpEmailProvider` or `HttpApiEmailProvider` | Supports real delivery through managed credentials             |
+
+### Minimal Local Development Setup
+
+If you only need flows to proceed without delivery, use the console provider:
+
+```typescript
+EmailModule.forRoot({
+  providers: [new ConsoleEmailProvider()],
+});
+```
+
+If you need to inspect real rendered messages locally, use SMTP against MailHog or Mailpit instead.
 
 Import the `EmailModule` in your NestJS module and inject `EmailService` where needed.
 
@@ -107,11 +162,7 @@ export class AppModule {}
 ```typescript
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {
-  EmailModule,
-  SmtpEmailProvider,
-  ConsoleEmailProvider,
-} from '@optimistic-tanuki/email';
+import { EmailModule, SmtpEmailProvider, ConsoleEmailProvider } from '@optimistic-tanuki/email';
 
 @Module({
   imports: [
@@ -131,9 +182,7 @@ import {
                   user: config.get<string>('SMTP_USER') || '',
                   pass: config.get<string>('SMTP_PASS') || '',
                 },
-                defaultFrom:
-                  config.get<string>('SMTP_FROM') ||
-                  'noreply@optimistic-tanuki.dev',
+                defaultFrom: config.get<string>('SMTP_FROM') || 'noreply@optimistic-tanuki.dev',
               }),
             ],
           };
@@ -146,6 +195,16 @@ import {
 })
 export class AppModule {}
 ```
+
+### Provider Selection Pattern For Platform Services
+
+For NestJS apps in this repo, the safest provider selection order is:
+
+1. explicit HTTP API configuration
+2. explicit SMTP configuration
+3. console fallback in local development
+
+That keeps local bootstrap easy while forcing non-local environments to declare their delivery path.
 
 ### Sending an Email
 
@@ -182,12 +241,12 @@ The `SmtpEmailProvider` uses [nodemailer](https://nodemailer.com/) to send email
 
 ```typescript
 interface SmtpConfig {
-  host: string;        // SMTP server hostname
-  port: number;        // SMTP server port (25, 465, 587)
-  secure?: boolean;    // true for port 465, false for STARTTLS on 587
+  host: string; // SMTP server hostname
+  port: number; // SMTP server port (25, 465, 587)
+  secure?: boolean; // true for port 465, false for STARTTLS on 587
   auth?: {
-    user: string;      // SMTP username
-    pass: string;      // SMTP password or app password
+    user: string; // SMTP username
+    pass: string; // SMTP password or app password
   };
   defaultFrom?: string; // Default "from" address
 }
@@ -209,7 +268,7 @@ new SmtpEmailProvider({
   host: 'localhost',
   port: 1025,
   defaultFrom: 'dev@localhost',
-})
+});
 ```
 
 **Docker Compose example** — add a MailHog service for local email testing:
@@ -219,9 +278,16 @@ services:
   mailhog:
     image: mailhog/mailhog
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI — view sent emails at http://localhost:8025
+      - '1025:1025' # SMTP
+      - '8025:8025' # Web UI — view sent emails at http://localhost:8025
 ```
+
+After startup:
+
+- SMTP endpoint: `localhost:1025`
+- inbox preview UI: `http://localhost:8025`
+
+This is the recommended local setup when you need to validate rendered HTML and copy.
 
 ### Gmail SMTP
 
@@ -240,13 +306,13 @@ SMTP_FROM=you@gmail.com
 new SmtpEmailProvider({
   host: 'smtp.gmail.com',
   port: 587,
-  secure: false,  // Uses STARTTLS
+  secure: false, // Uses STARTTLS
   auth: {
     user: 'you@gmail.com',
     pass: 'your-app-password',
   },
   defaultFrom: 'you@gmail.com',
-})
+});
 ```
 
 ### Outlook / Microsoft 365 SMTP
@@ -270,7 +336,7 @@ new SmtpEmailProvider({
     pass: 'your-password',
   },
   defaultFrom: 'you@outlook.com',
-})
+});
 ```
 
 ### Amazon SES SMTP
@@ -294,7 +360,7 @@ new SmtpEmailProvider({
     pass: process.env.SES_SMTP_PASS,
   },
   defaultFrom: 'verified-sender@yourdomain.com',
-})
+});
 ```
 
 > Replace `us-east-1` with your SES region. The sender address must be verified in SES.
@@ -309,11 +375,11 @@ The `HttpApiEmailProvider` sends email via HTTP POST to any REST API endpoint. I
 
 ```typescript
 interface HttpApiEmailConfig {
-  apiUrl: string;                      // API endpoint URL
-  apiKey: string;                      // API key (sent as Bearer token)
-  defaultFrom?: string;                // Default "from" address
-  providerName?: string;               // Provider identifier (default: 'http-api')
-  headers?: Record<string, string>;    // Additional HTTP headers
+  apiUrl: string; // API endpoint URL
+  apiKey: string; // API key (sent as Bearer token)
+  defaultFrom?: string; // Default "from" address
+  providerName?: string; // Provider identifier (default: 'http-api')
+  headers?: Record<string, string>; // Additional HTTP headers
 }
 ```
 
@@ -333,7 +399,7 @@ new HttpApiEmailProvider({
   apiUrl: 'https://api.sendgrid.com/v3/mail/send',
   apiKey: process.env.SENDGRID_API_KEY,
   defaultFrom: process.env.SENDGRID_FROM || 'noreply@yourdomain.com',
-})
+});
 ```
 
 ### Mailgun
@@ -353,7 +419,7 @@ new HttpApiEmailProvider({
   apiUrl: `https://api.mailgun.net/v3/${process.env.MAILGUN_DOMAIN}/messages`,
   apiKey: process.env.MAILGUN_API_KEY,
   defaultFrom: process.env.MAILGUN_FROM || 'noreply@yourdomain.com',
-})
+});
 ```
 
 ### Amazon SES API
@@ -373,7 +439,7 @@ new HttpApiEmailProvider({
   apiUrl: process.env.SES_API_URL,
   apiKey: process.env.SES_API_KEY,
   defaultFrom: process.env.SES_FROM || 'noreply@yourdomain.com',
-})
+});
 ```
 
 ### Custom API Endpoint
@@ -389,7 +455,7 @@ new HttpApiEmailProvider({
   headers: {
     'X-Custom-Header': 'custom-value',
   },
-})
+});
 ```
 
 The provider sends a JSON body with this structure:
@@ -420,7 +486,7 @@ import { EmailModule, ConsoleEmailProvider } from '@optimistic-tanuki/email';
 
 EmailModule.forRoot({
   providers: [new ConsoleEmailProvider()],
-})
+});
 ```
 
 Output example:
@@ -483,11 +549,7 @@ export class EmailAdminService {
 To add a new email provider, implement the `EmailProvider` interface:
 
 ```typescript
-import {
-  EmailProvider,
-  EmailMessage,
-  EmailSendResult,
-} from '@optimistic-tanuki/email';
+import { EmailProvider, EmailMessage, EmailSendResult } from '@optimistic-tanuki/email';
 
 export class MyCustomProvider implements EmailProvider {
   readonly name = 'my-custom-provider';
@@ -527,7 +589,7 @@ Then register it:
 ```typescript
 EmailModule.forRoot({
   providers: [new MyCustomProvider()],
-})
+});
 ```
 
 ---
@@ -536,22 +598,50 @@ EmailModule.forRoot({
 
 The authentication service uses these environment variables. Set them in your `.env` file or Docker Compose configuration:
 
-| Variable | Description | Default |
-|---|---|---|
-| `SMTP_HOST` | SMTP server hostname. If set, activates SMTP provider. | *(none — falls back to console)* |
-| `SMTP_PORT` | SMTP server port | `587` |
-| `SMTP_SECURE` | Use direct TLS (`true` for port 465) | `false` |
-| `SMTP_USER` | SMTP authentication username | `''` |
-| `SMTP_PASS` | SMTP authentication password | `''` |
-| `SMTP_FROM` | Default sender address | `noreply@optimistic-tanuki.dev` |
+| Variable      | Description                                            | Default                          |
+| ------------- | ------------------------------------------------------ | -------------------------------- |
+| `SMTP_HOST`   | SMTP server hostname. If set, activates SMTP provider. | _(none — falls back to console)_ |
+| `SMTP_PORT`   | SMTP server port                                       | `587`                            |
+| `SMTP_SECURE` | Use direct TLS (`true` for port 465)                   | `false`                          |
+| `SMTP_USER`   | SMTP authentication username                           | `''`                             |
+| `SMTP_PASS`   | SMTP authentication password                           | `''`                             |
+| `SMTP_FROM`   | Default sender address                                 | `noreply@optimistic-tanuki.dev`  |
 
 For HTTP API providers, define your own environment variables and reference them in `forRootAsync`:
 
-| Variable | Description | Example |
-|---|---|---|
-| `SENDGRID_API_KEY` | SendGrid API key | `SG.xxxxx` |
-| `MAILGUN_API_KEY` | Mailgun API key | `key-xxxxx` |
-| `MAILGUN_DOMAIN` | Mailgun sending domain | `mg.yourdomain.com` |
+| Variable           | Description            | Example             |
+| ------------------ | ---------------------- | ------------------- |
+| `SENDGRID_API_KEY` | SendGrid API key       | `SG.xxxxx`          |
+| `MAILGUN_API_KEY`  | Mailgun API key        | `key-xxxxx`         |
+| `MAILGUN_DOMAIN`   | Mailgun sending domain | `mg.yourdomain.com` |
+
+### Recommended Shared Convention
+
+If multiple services in the platform need outbound mail, standardize on a shared contract such as:
+
+```bash
+EMAIL_PROVIDER=smtp
+
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=noreply@example.com
+
+EMAIL_API_URL=
+EMAIL_API_KEY=
+EMAIL_API_PROVIDER=
+EMAIL_API_FROM=
+```
+
+Suggested meaning:
+
+- `EMAIL_PROVIDER=console` for console-only mode
+- `EMAIL_PROVIDER=smtp` for SMTP-backed mode
+- `EMAIL_PROVIDER=<provider-name>` for HTTP API-backed mode such as `sendgrid`
+
+The exact names can be adapted per app, but using one shared platform convention is strongly recommended.
 
 ---
 
@@ -581,6 +671,20 @@ Gmail requires an App Password when 2-Step Verification is enabled. Regular pass
 - For Mailgun, ensure you are using the correct domain-specific API key.
 
 ### Verifying the connection
+
+After configuration, verify setup in this order:
+
+1. confirm the provider is registered during application bootstrap
+2. call `verifyConnection()` where supported
+3. send a test email through `EmailService`
+4. confirm the send result returns `success: true`
+5. inspect MailHog/Mailpit, the receiving inbox, or the provider dashboard
+
+For local SMTP capture:
+
+- open `http://localhost:8025`
+- trigger a flow that sends email
+- confirm both text and HTML output render as expected
 
 Use `EmailService.verifyConnection()` at application startup to confirm the provider is reachable:
 

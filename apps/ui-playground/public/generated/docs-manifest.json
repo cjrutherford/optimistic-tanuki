@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-05-25T18:14:15.100Z",
+  "generatedAt": "2026-05-27T17:23:02.042Z",
   "items": [
     {
       "slug": "apps/authentication/readme",
@@ -56,7 +56,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.968Z"
+      "lastUpdated": "2026-05-26T13:14:44.260Z"
     },
     {
       "slug": "apps/client-interface/readme",
@@ -148,7 +148,74 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.968Z"
+      "lastUpdated": "2026-05-26T13:14:44.260Z"
+    },
+    {
+      "slug": "apps/marketing-generator/readme",
+      "title": "Marketing Generator",
+      "summary": "Signal Foundry is a campaign workbench for turning product context into strategy directions, coordinated channel drafts, material assets, and measurable refinement history.",
+      "sourcePath": "apps/marketing-generator/README.md",
+      "category": "apps",
+      "section": "applications",
+      "tags": ["marketing", "campaign", "angular", "workspace"],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Marketing Generator",
+          "id": "marketing-generator"
+        },
+        {
+          "depth": 2,
+          "text": "Current Product Surface",
+          "id": "current-product-surface"
+        },
+        {
+          "depth": 2,
+          "text": "Product Model",
+          "id": "product-model"
+        },
+        {
+          "depth": 2,
+          "text": "Main Workflows",
+          "id": "main-workflows"
+        },
+        {
+          "depth": 3,
+          "text": "Create a workbench",
+          "id": "create-a-workbench"
+        },
+        {
+          "depth": 3,
+          "text": "Decide on a direction",
+          "id": "decide-on-a-direction"
+        },
+        {
+          "depth": 3,
+          "text": "Refine and export",
+          "id": "refine-and-export"
+        },
+        {
+          "depth": 2,
+          "text": "Persistence and Insights",
+          "id": "persistence-and-insights"
+        },
+        {
+          "depth": 2,
+          "text": "Non-Goals In The Current Implementation",
+          "id": "non-goals-in-the-current-implementation"
+        },
+        {
+          "depth": 2,
+          "text": "Key Files",
+          "id": "key-files"
+        }
+      ],
+      "body": "\n# Marketing Generator\n\n`marketing-generator` is the Signal Foundry application. It turns a structured brief into a reusable campaign workbench for products, services, and custom apps.\n\n## Current Product Surface\n\nThe app currently supports:\n\n- a six-step brief for offer, audience, strategy, outputs, brand, and review\n- six strategy directions per generation run\n- coordinated multi-channel output bundles across web, email, and social\n- editable material assets for flyer, brochure, business card, and web ad formats\n- named workspaces with duplication, version snapshots, and restore\n- concept compare, shortlist, and winner selection workflow\n- export/download for markdown bundles, JSON bundles, manifests, and HTML assets\n- local-first telemetry for selections, exports, edits, regenerations, and workspace activity\n- concept feedback capture and per-block regeneration on channel and material copy\n- prompt preparation for image generation, without rendered-image fulfillment\n\n## Product Model\n\nSignal Foundry is a guided workbench, not a one-shot prompt toy. The app keeps three layers visible:\n\n1. the brief that defines the campaign request\n2. the concept gallery used to compare and choose a direction\n3. the editing workspace where channel drafts and material copy are refined, exported, and measured\n\n## Main Workflows\n\n### Create a workbench\n\nUsers complete the brief on `/create`, select one primary channel plus optional bundled supporting channels, choose material outputs, then generate a concept set.\n\n### Decide on a direction\n\nUsers review the generated concept gallery on `/results`, shortlist directions, compare two concepts side by side, and choose a winner. The winner state and decision summary persist in the active workspace.\n\n### Refine and export\n\nUsers can edit channel blocks and material copy directly, regenerate individual blocks, record concept feedback, and export:\n\n- markdown bundles\n- JSON bundles\n- manifest JSON\n- individual draft markdown\n- branded material HTML\n\n## Persistence and Insights\n\nThe app is local-first today.\n\n- workspaces, selected concepts, and version history are stored in browser storage\n- usage events and feedback are stored locally through `MarketingInsightsService`\n- the results page exposes usage signals for generation runs, selections, exports, and block regenerations\n\n## Non-Goals In The Current Implementation\n\nThe app does **not** currently provide:\n\n- rendered image generation\n- shared multi-user collaboration\n- backend analytics aggregation\n- downstream publishing or campaign delivery integrations\n\n## Key Files\n\n- `apps/marketing-generator/src/app/pages/landing-page.component.ts`\n- `apps/marketing-generator/src/app/pages/create-page.component.ts`\n- `apps/marketing-generator/src/app/pages/results-page.component.ts`\n- `apps/marketing-generator/src/app/services/marketing-generator.service.ts`\n- `apps/marketing-generator/src/app/services/marketing-state.service.ts`\n- `apps/marketing-generator/src/app/services/marketing-insights.service.ts`\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T17:55:04.448Z"
     },
     {
       "slug": "docs/accessibility-compliance",
@@ -4101,12 +4168,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Manual Docker Stacks\n\nThis page documents the Docker and Compose flows that are reachable through repo-level `pnpm` scripts but are easy to miss when you only read `package.json`.\n\n## Full Development Stack\n\nPrimary entrypoint:\n\n```bash\npnpm run docker:dev\n```\n\nThis expands to:\n\n1. `pnpm run build:docker:dev`\n2. `pnpm run docker:build:dev`\n3. `pnpm run docker:dev:up`\n\nOperational meaning:\n\n- Nx builds the development artifact set into `dist/`\n- batched Docker image builds run through `scripts/docker-build-batched.sh`\n- phased startup runs through `scripts/docker-start-phased.sh docker-compose.dev.yaml 5`\n\nUse it when:\n\n- you need the integrated local platform\n- cross-service validation matters more than fast iteration\n\n## Infra-Only Stack\n\nPrimary entrypoints:\n\n```bash\npnpm run docker:infra:up\npnpm run docker:infra:logs\npnpm run docker:infra:down\n```\n\nCompose surface:\n\n- `docker-compose.yaml`\n- `docker-compose.dev.yaml`\n\nServices started:\n\n- `postgres`\n- `redis`\n- `db-setup`\n\nUse it when:\n\n- one app runs locally with `pnpm exec nx serve <project>`\n- you only need shared infrastructure\n\n## Seeded Development Bootstrap\n\nPrimary entrypoint:\n\n```bash\npnpm run docker:dev:bootstrap\n```\n\nThis expands to:\n\n1. full development stack startup\n2. `pnpm run docker:dev:seed`\n\nThe seed flow is implemented in `scripts/dev-seed.sh`. It refreshes selected containers and runs the shared seed scripts for:\n\n- telos docs\n- permissions\n- store\n- social\n- classifieds\n- payments\n- business-site\n- videos\n- assets\n\nUse it when:\n\n- the stack is present but shared platform data is missing or stale\n\n## Batched Build Paths\n\nPrimary entrypoints:\n\n```bash\npnpm run docker:build\npnpm run docker:build:batched\npnpm run docker:build:batched:dev\npnpm run docker:build:batched:prod\npnpm run docker:build:batched:quick\npnpm run docker:build:slow\n```\n\nImplementation detail:\n\n- `scripts/docker-build-batched.sh` derives a bake file from Compose and builds services in batches\n- `docker:build:slow` is the explicit sequential fallback\n\nUse batched builds for normal work. Use `docker:build:slow` only when you need a transparent, one-service-at-a-time path for debugging build failures.\n\n## Forge Of Will Stack\n\nPrimary entrypoints:\n\n```bash\npnpm run fow:docker:build:dev\npnpm run fow:docker:dev\npnpm run fow:docker:down\n```\n\nCompose surface:\n\n- `fow.docker-compose.yaml`\n- `fow.docker-compose.dev.yaml`\n\nOperational meaning:\n\n- this is a narrower stack for the Forge of Will surface\n- after startup it seeds `telos-docs-service`\n\nUse it when:\n\n- you want a narrower workflow than the full platform stack\n- the Forge of Will-specific container path is enough\n\n## E2E Docker Stacks\n\nPrimary entrypoints:\n\n```bash\npnpm run e2e:docker:up\npnpm run e2e:docker:test\npnpm run e2e:docker:down\n```\n\nCompose surface:\n\n- `docker-compose.local-hub-e2e.yaml`\n\nThe repo also contains suite-specific E2E compose files under `apps/*-e2e/project.json`.\n\nUse these when:\n\n- you need suite-scoped browser validation backed by containers instead of the full dev stack\n\n## Source Files\n\n- `scripts/docker-build-batched.sh`\n- `scripts/docker-start-phased.sh`\n- `scripts/dev-seed.sh`\n- `docker-compose.yaml`\n- `docker-compose.dev.yaml`\n- `docker-compose.local-hub-e2e.yaml`\n- `fow.docker-compose.yaml`\n- `fow.docker-compose.dev.yaml`\n\n## Related Docs\n\n- [Docker Compose Development](./docker-compose.md)\n- [Operator Handbook](../operators/overview.md)\n- [Runbooks](../operators/runbooks.md)\n",
+      "body": "\n# Manual Docker Stacks\n\nThis page documents the Docker and Compose flows that are reachable through repo-level `pnpm` scripts but are easy to miss when you only read `package.json`.\n\n## Full Development Stack\n\nPrimary entrypoint:\n\n```bash\npnpm run docker:dev\n```\n\nThis expands to:\n\n1. `pnpm run build:docker:dev`\n2. `pnpm run docker:build:dev`\n3. `pnpm run docker:dev:up`\n\nOperational meaning:\n\n- Nx builds the development artifact set into `dist/`\n- batched Docker image builds run through `scripts/docker-build-batched.sh`\n- phased startup runs through `scripts/docker-start-phased.sh docker-compose.dev.yaml 5`\n\nUse it when:\n\n- you need the integrated local platform\n- cross-service validation matters more than fast iteration\n\n## Infra-Only Stack\n\nPrimary entrypoints:\n\n```bash\npnpm run docker:infra:up\npnpm run docker:infra:logs\npnpm run docker:infra:down\n```\n\nCompose surface:\n\n- `docker-compose.yaml`\n- `docker-compose.dev.yaml`\n\nServices started:\n\n- `postgres`\n- `redis`\n- `db-setup`\n\nUse it when:\n\n- one app runs locally with `pnpm exec nx serve <project>`\n- you only need shared infrastructure\n\n## Seeded Development Bootstrap\n\nPrimary entrypoint:\n\n```bash\npnpm run docker:dev:bootstrap\n```\n\nThis expands to:\n\n1. full development stack startup\n2. `pnpm run docker:dev:seed`\n\nThe seed flow is implemented in `scripts/dev-seed.sh`. It refreshes selected containers and runs the shared seed scripts for:\n\n- telos docs\n- permissions\n- store\n- social\n- classifieds\n- payments\n- business-site\n- videos\n- assets\n\nUse it when:\n\n- the stack is present but shared platform data is missing or stale\n\n## Batched Build Paths\n\nPrimary entrypoints:\n\n```bash\npnpm run docker:build\npnpm run docker:build:batched\npnpm run docker:build:batched:dev\npnpm run docker:build:batched:prod\npnpm run docker:build:batched:quick\npnpm run docker:build:slow\n```\n\nImplementation detail:\n\n- `scripts/docker-build-batched.sh` derives a bake file from Compose and builds services in batches\n- `docker:build:slow` is the explicit sequential fallback\n\nUse batched builds for normal work. Use `docker:build:slow` only when you need a transparent, one-service-at-a-time path for debugging build failures.\n\n## Forge Of Will Stack\n\nPrimary entrypoints:\n\n```bash\npnpm run fow:docker:build:dev\npnpm run fow:docker:dev\npnpm run fow:docker:down\n```\n\nCompose surface:\n\n- `fow.docker-compose.yaml`\n- `fow.docker-compose.dev.yaml`\n\nOperational meaning:\n\n- this is a narrower stack for the Forge of Will surface\n- after startup it seeds `telos-docs-service`\n\nUse it when:\n\n- you want a narrower workflow than the full platform stack\n- the Forge of Will-specific container path is enough\n\n## E2E Docker Stacks\n\nPrimary entrypoints:\n\n```bash\npnpm run e2e:docker:up\npnpm run e2e:docker:test\npnpm run e2e:docker:down\n```\n\nCompose surface:\n\n- `docker-compose.local-hub-e2e.yaml`\n\nThe repo also contains suite-specific E2E compose files under `apps/*-e2e/project.json`.\n\nUse these when:\n\n- you need suite-scoped browser validation backed by containers instead of the full dev stack\n\n## Source Files\n\n- `scripts/docker-build-batched.sh`\n- `scripts/docker-start-phased.sh`\n- `scripts/dev-seed.sh`\n- `docker-compose.yaml`\n- `docker-compose.dev.yaml`\n- `docker-compose.local-hub-e2e.yaml`\n- `fow.docker-compose.yaml`\n- `fow.docker-compose.dev.yaml`\n\n## Related Docs\n\n- [Docker Compose Development](./docker-compose.md)\n- [Operator Handbook](../operators/overview.md)\n- [Runbooks](../operators/runbooks.md)\n",
       "order": 18,
       "landing": false,
       "docRole": "reference",
       "featured": false,
-      "lastUpdated": "2026-05-25T14:35:18.205Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/devops/ports",
@@ -4153,6 +4220,42 @@
       "landing": false,
       "featured": false,
       "lastUpdated": "2026-05-02T01:55:10.312Z"
+    },
+    {
+      "slug": "docs/devops/public-package-mirroring",
+      "title": "Public Package Mirroring",
+      "summary": "Optimistic Tanuki public libraries are free npm packages intended for adoption independent of the hosted platform. Source development happens in the main monorepo. Public distribution happens through a dedicated mirror repository.",
+      "sourcePath": "docs/devops/public-package-mirroring.md",
+      "category": "devops",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Public Package Mirroring",
+          "id": "public-package-mirroring"
+        },
+        {
+          "depth": 2,
+          "text": "Mirror Workflow",
+          "id": "mirror-workflow"
+        },
+        {
+          "depth": 2,
+          "text": "Source Repo Responsibilities",
+          "id": "source-repo-responsibilities"
+        },
+        {
+          "depth": 2,
+          "text": "Mirror Repo Responsibilities",
+          "id": "mirror-repo-responsibilities"
+        }
+      ],
+      "body": "# Public Package Mirroring\n\nOptimistic Tanuki public libraries are free npm packages intended for adoption independent of the hosted platform. Source development happens in the main monorepo. Public distribution happens through a dedicated mirror repository.\n\n## Mirror Workflow\n\n1. Register the package in `tools/public-packages/public-packages.json`.\n2. Ensure package metadata and boundaries pass `pnpm run packages:check`.\n3. Validate package targets with `pnpm run packages:test` and `pnpm run packages:build`.\n4. Export the mirror tree with `pnpm run packages:sync`.\n5. Configure `PUBLIC_PACKAGES_MIRROR_REPO` so the source repo knows which mirror repository to sync.\n6. Configure `PUBLIC_PACKAGES_MIRROR_PUSH_TOKEN` so `.github/workflows/sync-public-packages.yml` can push updates.\n7. Let the mirror repository own versioning and npm publication.\n\n## Source Repo Responsibilities\n\n- maintain the publishable package allowlist in `tools/public-packages/public-packages.json`\n- validate boundaries with `scripts/validate-publishable-packages.mjs`\n- generate the mirror tree with `scripts/sync-public-packages.mjs`\n- run source-side validation in `.github/workflows/release-packages.yml`\n- sync the generated mirror repository tree in `.github/workflows/sync-public-packages.yml`\n\n## Mirror Repo Responsibilities\n\n- receive the generated package-only tree\n- own Changesets versioning and release metadata\n- own npm publication\n\n`package.json` in the source repo already enforces this boundary by failing `packages:version` and `packages:publish` with instructions that versioning and publication moved to the mirror repo.\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T15:01:18.106Z"
     },
     {
       "slug": "docs/devops/readme",
@@ -4248,7 +4351,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:35:18.417Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/enhancement-plan-quick-reference",
@@ -5195,7 +5298,7 @@
       "order": 20,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:05:57.668Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/getting-started-src/admins/landing",
@@ -5212,11 +5315,11 @@
           "id": "admin-guide"
         }
       ],
-      "body": "# Admin Guide\n\nThis guide is the onboarding path for operators who need a predictable local environment for the Optimistic Tanuki platform.\n\nUse it for:\n\n- prerequisites\n- first bootstrap\n- fast day-one verification\n\nAfter that, move to the canonical operator handbook in `docs/operators/`.\n",
+      "body": "\n# Admin Guide\n\nThis guide is the onboarding path for operators who need a predictable local environment for the Optimistic Tanuki platform.\n\nUse it for:\n\n- prerequisites\n- first bootstrap\n- fast day-one verification\n\nAfter that, move to the canonical operator handbook in `docs/operators/`.\n",
       "order": 999,
       "landing": true,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:05:57.452Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/getting-started-src/admins/operations",
@@ -5233,11 +5336,11 @@
           "id": "operations-playbook"
         }
       ],
-      "body": "# Operations Playbook\n\nUse the operator handbook in `docs/operators/` as the canonical server-administration surface.\n\nStart with:\n\n- `docs/operators/local-stack.md` for local Docker Compose administration\n- `docs/operators/deployment-environments.md` for generated deployment workspaces\n- `docs/operators/runbooks.md` for repeatable procedures\n- `docs/operators/troubleshooting.md` for recovery workflows\n\nQuick commands for the shared stack:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:down\npnpm run docker:dev:seed\n```\n\nUse these checks when you need to confirm containers are up, inspect logs, stop the stack cleanly, or rerun the shared seed data.\n",
+      "body": "\n# Operations Playbook\n\nUse the operator handbook in `docs/operators/` as the canonical server-administration surface.\n\nStart with:\n\n- `docs/operators/local-stack.md` for local Docker Compose administration\n- `docs/operators/deployment-environments.md` for generated deployment workspaces\n- `docs/operators/runbooks.md` for repeatable procedures\n- `docs/operators/troubleshooting.md` for recovery workflows\n\nQuick commands for the shared stack:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:down\npnpm run docker:dev:seed\n```\n\nUse these checks when you need to confirm containers are up, inspect logs, stop the stack cleanly, or rerun the shared seed data.\n",
       "order": 30,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:05:57.882Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/getting-started-src/admins/prerequisites",
@@ -5280,7 +5383,7 @@
       "order": 40,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:05:58.109Z"
+      "lastUpdated": "2026-05-26T13:14:44.273Z"
     },
     {
       "slug": "docs/getting-started-src/developers/debugging",
@@ -6464,16 +6567,23 @@
     {
       "slug": "docs/guides/email-providers",
       "title": "Email Provider Setup Guide",
-      "summary": "This guide covers how to configure and use the email plugin system in Optimistic Tanuki. The `@optimistic-tanuki/email` library provides a plug-in architecture that lets you swap between local SMTP servers, third-party email APIs, and a development console provider without changing application code.",
+      "summary": "Configure platform email delivery for local development, shared environments, and production using console, SMTP, or HTTP API providers.",
       "sourcePath": "docs/guides/email-providers.md",
       "category": "guides",
-      "tags": [],
+      "audience": "developer",
+      "section": "guides",
+      "tags": ["email", "smtp", "sendgrid", "mailgun", "platform setup"],
       "kind": "doc",
       "headings": [
         {
           "depth": 1,
           "text": "Email Provider Setup Guide",
           "id": "email-provider-setup-guide"
+        },
+        {
+          "depth": 2,
+          "text": "Platform Setup Summary",
+          "id": "platform-setup-summary"
         },
         {
           "depth": 2,
@@ -6502,6 +6612,16 @@
         },
         {
           "depth": 3,
+          "text": "Recommended Platform Modes",
+          "id": "recommended-platform-modes"
+        },
+        {
+          "depth": 3,
+          "text": "Minimal Local Development Setup",
+          "id": "minimal-local-development-setup"
+        },
+        {
+          "depth": 3,
           "text": "Static Configuration",
           "id": "static-configuration"
         },
@@ -6509,6 +6629,11 @@
           "depth": 3,
           "text": "Async Configuration (with ConfigService)",
           "id": "async-configuration-with-configservice"
+        },
+        {
+          "depth": 3,
+          "text": "Provider Selection Pattern For Platform Services",
+          "id": "provider-selection-pattern-for-platform-services"
         },
         {
           "depth": 3,
@@ -6606,6 +6731,11 @@
           "id": "environment-variable-reference"
         },
         {
+          "depth": 3,
+          "text": "Recommended Shared Convention",
+          "id": "recommended-shared-convention"
+        },
+        {
           "depth": 2,
           "text": "Troubleshooting",
           "id": "troubleshooting"
@@ -6636,11 +6766,11 @@
           "id": "verifying-the-connection"
         }
       ],
-      "body": "# Email Provider Setup Guide\n\nThis guide covers how to configure and use the email plugin system in Optimistic Tanuki. The `@optimistic-tanuki/email` library provides a plug-in architecture that lets you swap between local SMTP servers, third-party email APIs, and a development console provider without changing application code.\n\n## Table of Contents\n\n- [Architecture Overview](#architecture-overview)\n- [Quick Start](#quick-start)\n- [SMTP Provider](#smtp-provider)\n  - [Local SMTP Server](#local-smtp-server)\n  - [Gmail SMTP](#gmail-smtp)\n  - [Outlook / Microsoft 365 SMTP](#outlook--microsoft-365-smtp)\n  - [Amazon SES SMTP](#amazon-ses-smtp)\n- [HTTP API Provider](#http-api-provider)\n  - [SendGrid](#sendgrid)\n  - [Mailgun](#mailgun)\n  - [Amazon SES API](#amazon-ses-api)\n  - [Custom API Endpoint](#custom-api-endpoint)\n- [Console Provider](#console-provider)\n- [Multiple Providers](#multiple-providers)\n- [Creating a Custom Provider](#creating-a-custom-provider)\n- [Environment Variable Reference](#environment-variable-reference)\n- [Troubleshooting](#troubleshooting)\n\n---\n\n## Architecture Overview\n\nThe email system uses three main components:\n\n| Component | Purpose |\n|---|---|\n| **`EmailProvider`** | Interface that every provider plugin must implement (`sendEmail`, `verifyConnection`) |\n| **`EmailPluginRegistry`** | Manages registered providers and tracks the active provider |\n| **`EmailService`** | Injectable service that delegates calls to the active provider |\n| **`EmailModule`** | NestJS dynamic module with `forRoot()` and `forRootAsync()` configuration |\n\n```\nApplication\n  └── EmailService (inject this)\n        └── EmailPluginRegistry\n              ├── SmtpEmailProvider      (active)\n              ├── HttpApiEmailProvider\n              └── ConsoleEmailProvider\n```\n\nThe registry supports multiple providers at once. The first provider registered becomes the default, but you can switch the active provider at runtime.\n\n### The EmailProvider Interface\n\nEvery provider implements this contract:\n\n```typescript\ninterface EmailProvider {\n  readonly name: string;\n  sendEmail(message: EmailMessage): Promise<EmailSendResult>;\n  verifyConnection(): Promise<boolean>;\n}\n```\n\n### EmailMessage Structure\n\n```typescript\ninterface EmailMessage {\n  to: string | string[];\n  subject: string;\n  text?: string;           // Plain text body\n  html?: string;           // HTML body\n  from?: string;           // Overrides provider default\n  cc?: string | string[];\n  bcc?: string | string[];\n  replyTo?: string;\n  attachments?: EmailAttachment[];\n}\n```\n\n---\n\n## Quick Start\n\nImport the `EmailModule` in your NestJS module and inject `EmailService` where needed.\n\n### Static Configuration\n\n```typescript\nimport { Module } from '@nestjs/common';\nimport { EmailModule, SmtpEmailProvider } from '@optimistic-tanuki/email';\n\n@Module({\n  imports: [\n    EmailModule.forRoot({\n      providers: [\n        new SmtpEmailProvider({\n          host: 'localhost',\n          port: 1025,\n          defaultFrom: 'app@example.com',\n        }),\n      ],\n    }),\n  ],\n})\nexport class AppModule {}\n```\n\n### Async Configuration (with ConfigService)\n\n```typescript\nimport { Module } from '@nestjs/common';\nimport { ConfigModule, ConfigService } from '@nestjs/config';\nimport {\n  EmailModule,\n  SmtpEmailProvider,\n  ConsoleEmailProvider,\n} from '@optimistic-tanuki/email';\n\n@Module({\n  imports: [\n    ConfigModule.forRoot({ isGlobal: true }),\n    EmailModule.forRootAsync({\n      inject: [ConfigService],\n      useFactory: (config: ConfigService) => {\n        const smtpHost = config.get<string>('SMTP_HOST');\n        if (smtpHost) {\n          return {\n            providers: [\n              new SmtpEmailProvider({\n                host: smtpHost,\n                port: config.get<number>('SMTP_PORT') || 587,\n                secure: config.get<boolean>('SMTP_SECURE') || false,\n                auth: {\n                  user: config.get<string>('SMTP_USER') || '',\n                  pass: config.get<string>('SMTP_PASS') || '',\n                },\n                defaultFrom:\n                  config.get<string>('SMTP_FROM') ||\n                  'noreply@optimistic-tanuki.dev',\n              }),\n            ],\n          };\n        }\n        // Fall back to console logging in development\n        return { providers: [new ConsoleEmailProvider()] };\n      },\n    }),\n  ],\n})\nexport class AppModule {}\n```\n\n### Sending an Email\n\n```typescript\nimport { Injectable } from '@nestjs/common';\nimport { EmailService } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class NotificationService {\n  constructor(private readonly emailService: EmailService) {}\n\n  async sendWelcome(email: string, name: string) {\n    const result = await this.emailService.sendEmail({\n      to: email,\n      subject: 'Welcome!',\n      text: `Hello ${name}, welcome to Optimistic Tanuki!`,\n      html: `<h1>Welcome!</h1><p>Hello ${name}, welcome to Optimistic Tanuki!</p>`,\n    });\n\n    if (!result.success) {\n      console.error('Failed to send email:', result.error);\n    }\n  }\n}\n```\n\n---\n\n## SMTP Provider\n\nThe `SmtpEmailProvider` uses [nodemailer](https://nodemailer.com/) to send email through any SMTP-compatible server. It supports authentication, TLS, attachments, CC/BCC, and reply-to headers.\n\n### Configuration Options\n\n```typescript\ninterface SmtpConfig {\n  host: string;        // SMTP server hostname\n  port: number;        // SMTP server port (25, 465, 587)\n  secure?: boolean;    // true for port 465, false for STARTTLS on 587\n  auth?: {\n    user: string;      // SMTP username\n    pass: string;      // SMTP password or app password\n  };\n  defaultFrom?: string; // Default \"from\" address\n}\n```\n\n### Local SMTP Server\n\nFor development with a local SMTP server (e.g., [MailHog](https://github.com/mailhog/MailHog), [Mailpit](https://github.com/axllent/mailpit), or Postfix):\n\n```bash\n# Environment variables\nSMTP_HOST=localhost\nSMTP_PORT=1025\nSMTP_FROM=dev@localhost\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'localhost',\n  port: 1025,\n  defaultFrom: 'dev@localhost',\n})\n```\n\n**Docker Compose example** — add a MailHog service for local email testing:\n\n```yaml\nservices:\n  mailhog:\n    image: mailhog/mailhog\n    ports:\n      - \"1025:1025\"   # SMTP\n      - \"8025:8025\"   # Web UI — view sent emails at http://localhost:8025\n```\n\n### Gmail SMTP\n\n> **Note:** Gmail requires an [App Password](https://support.google.com/accounts/answer/185833) when 2-Step Verification is enabled.\n\n```bash\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=you@gmail.com\nSMTP_PASS=your-app-password\nSMTP_FROM=you@gmail.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'smtp.gmail.com',\n  port: 587,\n  secure: false,  // Uses STARTTLS\n  auth: {\n    user: 'you@gmail.com',\n    pass: 'your-app-password',\n  },\n  defaultFrom: 'you@gmail.com',\n})\n```\n\n### Outlook / Microsoft 365 SMTP\n\n```bash\nSMTP_HOST=smtp.office365.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=you@outlook.com\nSMTP_PASS=your-password\nSMTP_FROM=you@outlook.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'smtp.office365.com',\n  port: 587,\n  secure: false,\n  auth: {\n    user: 'you@outlook.com',\n    pass: 'your-password',\n  },\n  defaultFrom: 'you@outlook.com',\n})\n```\n\n### Amazon SES SMTP\n\n```bash\nSMTP_HOST=email-smtp.us-east-1.amazonaws.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=your-ses-smtp-user\nSMTP_PASS=your-ses-smtp-password\nSMTP_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'email-smtp.us-east-1.amazonaws.com',\n  port: 587,\n  secure: false,\n  auth: {\n    user: process.env.SES_SMTP_USER,\n    pass: process.env.SES_SMTP_PASS,\n  },\n  defaultFrom: 'verified-sender@yourdomain.com',\n})\n```\n\n> Replace `us-east-1` with your SES region. The sender address must be verified in SES.\n\n---\n\n## HTTP API Provider\n\nThe `HttpApiEmailProvider` sends email via HTTP POST to any REST API endpoint. It works with third-party services like SendGrid, Mailgun, and Amazon SES.\n\n### Configuration Options\n\n```typescript\ninterface HttpApiEmailConfig {\n  apiUrl: string;                      // API endpoint URL\n  apiKey: string;                      // API key (sent as Bearer token)\n  defaultFrom?: string;                // Default \"from\" address\n  providerName?: string;               // Provider identifier (default: 'http-api')\n  headers?: Record<string, string>;    // Additional HTTP headers\n}\n```\n\n### SendGrid\n\n1. Create a [SendGrid account](https://sendgrid.com/) and generate an API key under **Settings → API Keys**.\n2. Verify a sender identity under **Settings → Sender Authentication**.\n\n```bash\nSENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxx\nSENDGRID_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'sendgrid',\n  apiUrl: 'https://api.sendgrid.com/v3/mail/send',\n  apiKey: process.env.SENDGRID_API_KEY,\n  defaultFrom: process.env.SENDGRID_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Mailgun\n\n1. Create a [Mailgun account](https://www.mailgun.com/) and get your API key from **Settings → API Keys**.\n2. Add and verify your domain under **Sending → Domains**.\n\n```bash\nMAILGUN_API_KEY=key-xxxxxxxxxxxxxxxxxxxx\nMAILGUN_DOMAIN=mg.yourdomain.com\nMAILGUN_FROM=noreply@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'mailgun',\n  apiUrl: `https://api.mailgun.net/v3/${process.env.MAILGUN_DOMAIN}/messages`,\n  apiKey: process.env.MAILGUN_API_KEY,\n  defaultFrom: process.env.MAILGUN_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Amazon SES API\n\n1. Set up [Amazon SES](https://aws.amazon.com/ses/) in your AWS account.\n2. Verify sender identities and request production access if in the sandbox.\n\n```bash\nSES_API_URL=https://email.us-east-1.amazonaws.com\nSES_API_KEY=your-ses-api-key\nSES_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'ses',\n  apiUrl: process.env.SES_API_URL,\n  apiKey: process.env.SES_API_KEY,\n  defaultFrom: process.env.SES_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Custom API Endpoint\n\nThe `HttpApiEmailProvider` can work with any API that accepts a JSON POST body:\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'my-service',\n  apiUrl: 'https://api.my-email-service.com/v1/send',\n  apiKey: process.env.MY_EMAIL_API_KEY,\n  defaultFrom: 'noreply@yourdomain.com',\n  headers: {\n    'X-Custom-Header': 'custom-value',\n  },\n})\n```\n\nThe provider sends a JSON body with this structure:\n\n```json\n{\n  \"from\": \"noreply@yourdomain.com\",\n  \"to\": [\"recipient@example.com\"],\n  \"subject\": \"Hello\",\n  \"text\": \"Plain text body\",\n  \"html\": \"<p>HTML body</p>\",\n  \"cc\": [],\n  \"bcc\": [],\n  \"replyTo\": \"reply@example.com\"\n}\n```\n\nAuthentication is sent as a `Bearer` token in the `Authorization` header.\n\n---\n\n## Console Provider\n\nThe `ConsoleEmailProvider` logs emails to stdout instead of sending them. It is useful for local development and testing.\n\n```typescript\nimport { EmailModule, ConsoleEmailProvider } from '@optimistic-tanuki/email';\n\nEmailModule.forRoot({\n  providers: [new ConsoleEmailProvider()],\n})\n```\n\nOutput example:\n\n```\n[ConsoleEmailProvider] [Console Email] To: user@example.com | Subject: Welcome!\n[ConsoleEmailProvider] [Console Email] Body: Hello, welcome to Optimistic Tanuki!\n[ConsoleEmailProvider] [Console Email] HTML body length: 68\n```\n\nThe console provider is the **automatic fallback** when no `SMTP_HOST` environment variable is set in the authentication service.\n\n---\n\n## Multiple Providers\n\nYou can register multiple providers and switch between them. The first provider registered becomes the default.\n\n```typescript\nEmailModule.forRoot({\n  providers: [\n    new SmtpEmailProvider({ host: 'smtp.gmail.com', port: 587, ... }),\n    new HttpApiEmailProvider({ providerName: 'sendgrid', apiUrl: '...', apiKey: '...' }),\n    new ConsoleEmailProvider(),\n  ],\n  activeProvider: 'sendgrid',  // Override the default (first registered)\n})\n```\n\n### Switching Providers at Runtime\n\nInject `EmailPluginRegistry` to change the active provider dynamically:\n\n```typescript\nimport { Injectable } from '@nestjs/common';\nimport { EmailPluginRegistry } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class EmailAdminService {\n  constructor(private readonly registry: EmailPluginRegistry) {}\n\n  switchToSmtp() {\n    this.registry.setActiveProvider('smtp');\n  }\n\n  switchToSendGrid() {\n    this.registry.setActiveProvider('sendgrid');\n  }\n\n  listProviders(): string[] {\n    return this.registry.getRegisteredProviders();\n  }\n}\n```\n\n---\n\n## Creating a Custom Provider\n\nTo add a new email provider, implement the `EmailProvider` interface:\n\n```typescript\nimport {\n  EmailProvider,\n  EmailMessage,\n  EmailSendResult,\n} from '@optimistic-tanuki/email';\n\nexport class MyCustomProvider implements EmailProvider {\n  readonly name = 'my-custom-provider';\n\n  async sendEmail(message: EmailMessage): Promise<EmailSendResult> {\n    try {\n      // Your sending logic here\n      const messageId = await myEmailSdk.send({\n        to: message.to,\n        from: message.from || 'default@example.com',\n        subject: message.subject,\n        body: message.html || message.text,\n      });\n\n      return { success: true, messageId };\n    } catch (error) {\n      return {\n        success: false,\n        error: error instanceof Error ? error.message : String(error),\n      };\n    }\n  }\n\n  async verifyConnection(): Promise<boolean> {\n    try {\n      await myEmailSdk.ping();\n      return true;\n    } catch {\n      return false;\n    }\n  }\n}\n```\n\nThen register it:\n\n```typescript\nEmailModule.forRoot({\n  providers: [new MyCustomProvider()],\n})\n```\n\n---\n\n## Environment Variable Reference\n\nThe authentication service uses these environment variables. Set them in your `.env` file or Docker Compose configuration:\n\n| Variable | Description | Default |\n|---|---|---|\n| `SMTP_HOST` | SMTP server hostname. If set, activates SMTP provider. | *(none — falls back to console)* |\n| `SMTP_PORT` | SMTP server port | `587` |\n| `SMTP_SECURE` | Use direct TLS (`true` for port 465) | `false` |\n| `SMTP_USER` | SMTP authentication username | `''` |\n| `SMTP_PASS` | SMTP authentication password | `''` |\n| `SMTP_FROM` | Default sender address | `noreply@optimistic-tanuki.dev` |\n\nFor HTTP API providers, define your own environment variables and reference them in `forRootAsync`:\n\n| Variable | Description | Example |\n|---|---|---|\n| `SENDGRID_API_KEY` | SendGrid API key | `SG.xxxxx` |\n| `MAILGUN_API_KEY` | Mailgun API key | `key-xxxxx` |\n| `MAILGUN_DOMAIN` | Mailgun sending domain | `mg.yourdomain.com` |\n\n---\n\n## Troubleshooting\n\n### No emails are being sent\n\n1. Check that a provider is registered. If `SMTP_HOST` is not set and you haven't registered a provider manually, the console provider is used.\n2. Check the application logs for `[EmailService]` messages:\n   - `No email provider is active. Email not sent.` — no provider was registered.\n   - `SMTP send failed: ...` — check SMTP credentials and connectivity.\n\n### SMTP connection refused\n\n- Verify the SMTP host and port are correct and reachable from the application container.\n- For Docker environments, use the service name (e.g., `mailhog`) rather than `localhost`.\n- Check that port 587 or 465 is not blocked by a firewall.\n\n### Gmail \"Less secure apps\" error\n\nGmail requires an App Password when 2-Step Verification is enabled. Regular passwords will not work. See [Google's App Password guide](https://support.google.com/accounts/answer/185833).\n\n### HTTP API provider returns 401/403\n\n- Verify your API key is correct and has sufficient permissions.\n- For SendGrid, ensure the API key has \"Mail Send\" permissions.\n- For Mailgun, ensure you are using the correct domain-specific API key.\n\n### Verifying the connection\n\nUse `EmailService.verifyConnection()` at application startup to confirm the provider is reachable:\n\n```typescript\nimport { OnModuleInit } from '@nestjs/common';\nimport { EmailService } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class AppService implements OnModuleInit {\n  constructor(private readonly emailService: EmailService) {}\n\n  async onModuleInit() {\n    const connected = await this.emailService.verifyConnection();\n    if (!connected) {\n      console.warn('Email provider is not reachable — emails will fail.');\n    }\n  }\n}\n```\n",
-      "order": 999,
+      "body": "\n# Email Provider Setup Guide\n\nThis guide covers how to configure and use the email plugin system in Optimistic Tanuki. The `@optimistic-tanuki/email` library provides a plug-in architecture that lets you swap between local SMTP servers, third-party email APIs, and a development console provider without changing application code.\n\n## Platform Setup Summary\n\nFor this platform, email setup should be treated as environment configuration, not hardcoded application behavior.\n\nRecommended defaults:\n\n- local development: `ConsoleEmailProvider` or local SMTP capture through MailHog/Mailpit\n- shared development or preview environments: SMTP if you control the relay, otherwise an HTTP API provider\n- production: verified SMTP or verified HTTP API delivery with environment-backed secrets and a verified sender domain\n\nCore wiring in this repo lives in:\n\n- `libs/email/src/lib/email.module.ts`\n- `libs/email/src/lib/email.service.ts`\n- `libs/email/src/lib/email-plugin-registry.ts`\n- `libs/email/src/lib/providers/*`\n\nApplication code should inject `EmailService` and remain unaware of the active provider implementation.\n\n## Table of Contents\n\n- [Architecture Overview](#architecture-overview)\n- [Quick Start](#quick-start)\n- [SMTP Provider](#smtp-provider)\n  - [Local SMTP Server](#local-smtp-server)\n  - [Gmail SMTP](#gmail-smtp)\n  - [Outlook / Microsoft 365 SMTP](#outlook--microsoft-365-smtp)\n  - [Amazon SES SMTP](#amazon-ses-smtp)\n- [HTTP API Provider](#http-api-provider)\n  - [SendGrid](#sendgrid)\n  - [Mailgun](#mailgun)\n  - [Amazon SES API](#amazon-ses-api)\n  - [Custom API Endpoint](#custom-api-endpoint)\n- [Console Provider](#console-provider)\n- [Multiple Providers](#multiple-providers)\n- [Creating a Custom Provider](#creating-a-custom-provider)\n- [Environment Variable Reference](#environment-variable-reference)\n- [Troubleshooting](#troubleshooting)\n\n---\n\n## Architecture Overview\n\nThe email system uses three main components:\n\n| Component | Purpose |\n|---|---|\n| **`EmailProvider`** | Interface that every provider plugin must implement (`sendEmail`, `verifyConnection`) |\n| **`EmailPluginRegistry`** | Manages registered providers and tracks the active provider |\n| **`EmailService`** | Injectable service that delegates calls to the active provider |\n| **`EmailModule`** | NestJS dynamic module with `forRoot()` and `forRootAsync()` configuration |\n\n```\nApplication\n  └── EmailService (inject this)\n        └── EmailPluginRegistry\n              ├── SmtpEmailProvider      (active)\n              ├── HttpApiEmailProvider\n              └── ConsoleEmailProvider\n```\n\nThe registry supports multiple providers at once. The first provider registered becomes the default, but you can switch the active provider at runtime.\n\n### The EmailProvider Interface\n\nEvery provider implements this contract:\n\n```typescript\ninterface EmailProvider {\n  readonly name: string;\n  sendEmail(message: EmailMessage): Promise<EmailSendResult>;\n  verifyConnection(): Promise<boolean>;\n}\n```\n\n### EmailMessage Structure\n\n```typescript\ninterface EmailMessage {\n  to: string | string[];\n  subject: string;\n  text?: string;           // Plain text body\n  html?: string;           // HTML body\n  from?: string;           // Overrides provider default\n  cc?: string | string[];\n  bcc?: string | string[];\n  replyTo?: string;\n  attachments?: EmailAttachment[];\n}\n```\n\n---\n\n## Quick Start\n\n### Recommended Platform Modes\n\n| Mode | Recommended Provider | Why |\n|---|---|---|\n| Local-only development | `ConsoleEmailProvider` | No credentials required and send attempts stay visible in logs |\n| Local visual inbox testing | `SmtpEmailProvider` + MailHog/Mailpit | Lets developers inspect rendered HTML and text output |\n| Shared or production environments | `SmtpEmailProvider` or `HttpApiEmailProvider` | Supports real delivery through managed credentials |\n\n### Minimal Local Development Setup\n\nIf you only need flows to proceed without delivery, use the console provider:\n\n```typescript\nEmailModule.forRoot({\n  providers: [new ConsoleEmailProvider()],\n})\n```\n\nIf you need to inspect real rendered messages locally, use SMTP against MailHog or Mailpit instead.\n\nImport the `EmailModule` in your NestJS module and inject `EmailService` where needed.\n\n### Static Configuration\n\n```typescript\nimport { Module } from '@nestjs/common';\nimport { EmailModule, SmtpEmailProvider } from '@optimistic-tanuki/email';\n\n@Module({\n  imports: [\n    EmailModule.forRoot({\n      providers: [\n        new SmtpEmailProvider({\n          host: 'localhost',\n          port: 1025,\n          defaultFrom: 'app@example.com',\n        }),\n      ],\n    }),\n  ],\n})\nexport class AppModule {}\n```\n\n### Async Configuration (with ConfigService)\n\n```typescript\nimport { Module } from '@nestjs/common';\nimport { ConfigModule, ConfigService } from '@nestjs/config';\nimport {\n  EmailModule,\n  SmtpEmailProvider,\n  ConsoleEmailProvider,\n} from '@optimistic-tanuki/email';\n\n@Module({\n  imports: [\n    ConfigModule.forRoot({ isGlobal: true }),\n    EmailModule.forRootAsync({\n      inject: [ConfigService],\n      useFactory: (config: ConfigService) => {\n        const smtpHost = config.get<string>('SMTP_HOST');\n        if (smtpHost) {\n          return {\n            providers: [\n              new SmtpEmailProvider({\n                host: smtpHost,\n                port: config.get<number>('SMTP_PORT') || 587,\n                secure: config.get<boolean>('SMTP_SECURE') || false,\n                auth: {\n                  user: config.get<string>('SMTP_USER') || '',\n                  pass: config.get<string>('SMTP_PASS') || '',\n                },\n                defaultFrom:\n                  config.get<string>('SMTP_FROM') ||\n                  'noreply@optimistic-tanuki.dev',\n              }),\n            ],\n          };\n        }\n        // Fall back to console logging in development\n        return { providers: [new ConsoleEmailProvider()] };\n      },\n    }),\n  ],\n})\nexport class AppModule {}\n```\n\n### Provider Selection Pattern For Platform Services\n\nFor NestJS apps in this repo, the safest provider selection order is:\n\n1. explicit HTTP API configuration\n2. explicit SMTP configuration\n3. console fallback in local development\n\nThat keeps local bootstrap easy while forcing non-local environments to declare their delivery path.\n\n### Sending an Email\n\n```typescript\nimport { Injectable } from '@nestjs/common';\nimport { EmailService } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class NotificationService {\n  constructor(private readonly emailService: EmailService) {}\n\n  async sendWelcome(email: string, name: string) {\n    const result = await this.emailService.sendEmail({\n      to: email,\n      subject: 'Welcome!',\n      text: `Hello ${name}, welcome to Optimistic Tanuki!`,\n      html: `<h1>Welcome!</h1><p>Hello ${name}, welcome to Optimistic Tanuki!</p>`,\n    });\n\n    if (!result.success) {\n      console.error('Failed to send email:', result.error);\n    }\n  }\n}\n```\n\n---\n\n## SMTP Provider\n\nThe `SmtpEmailProvider` uses [nodemailer](https://nodemailer.com/) to send email through any SMTP-compatible server. It supports authentication, TLS, attachments, CC/BCC, and reply-to headers.\n\n### Configuration Options\n\n```typescript\ninterface SmtpConfig {\n  host: string;        // SMTP server hostname\n  port: number;        // SMTP server port (25, 465, 587)\n  secure?: boolean;    // true for port 465, false for STARTTLS on 587\n  auth?: {\n    user: string;      // SMTP username\n    pass: string;      // SMTP password or app password\n  };\n  defaultFrom?: string; // Default \"from\" address\n}\n```\n\n### Local SMTP Server\n\nFor development with a local SMTP server (e.g., [MailHog](https://github.com/mailhog/MailHog), [Mailpit](https://github.com/axllent/mailpit), or Postfix):\n\n```bash\n# Environment variables\nSMTP_HOST=localhost\nSMTP_PORT=1025\nSMTP_FROM=dev@localhost\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'localhost',\n  port: 1025,\n  defaultFrom: 'dev@localhost',\n})\n```\n\n**Docker Compose example** — add a MailHog service for local email testing:\n\n```yaml\nservices:\n  mailhog:\n    image: mailhog/mailhog\n    ports:\n      - \"1025:1025\"   # SMTP\n      - \"8025:8025\"   # Web UI — view sent emails at http://localhost:8025\n```\n\nAfter startup:\n\n- SMTP endpoint: `localhost:1025`\n- inbox preview UI: `http://localhost:8025`\n\nThis is the recommended local setup when you need to validate rendered HTML and copy.\n\n### Gmail SMTP\n\n> **Note:** Gmail requires an [App Password](https://support.google.com/accounts/answer/185833) when 2-Step Verification is enabled.\n\n```bash\nSMTP_HOST=smtp.gmail.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=you@gmail.com\nSMTP_PASS=your-app-password\nSMTP_FROM=you@gmail.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'smtp.gmail.com',\n  port: 587,\n  secure: false,  // Uses STARTTLS\n  auth: {\n    user: 'you@gmail.com',\n    pass: 'your-app-password',\n  },\n  defaultFrom: 'you@gmail.com',\n})\n```\n\n### Outlook / Microsoft 365 SMTP\n\n```bash\nSMTP_HOST=smtp.office365.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=you@outlook.com\nSMTP_PASS=your-password\nSMTP_FROM=you@outlook.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'smtp.office365.com',\n  port: 587,\n  secure: false,\n  auth: {\n    user: 'you@outlook.com',\n    pass: 'your-password',\n  },\n  defaultFrom: 'you@outlook.com',\n})\n```\n\n### Amazon SES SMTP\n\n```bash\nSMTP_HOST=email-smtp.us-east-1.amazonaws.com\nSMTP_PORT=587\nSMTP_SECURE=false\nSMTP_USER=your-ses-smtp-user\nSMTP_PASS=your-ses-smtp-password\nSMTP_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew SmtpEmailProvider({\n  host: 'email-smtp.us-east-1.amazonaws.com',\n  port: 587,\n  secure: false,\n  auth: {\n    user: process.env.SES_SMTP_USER,\n    pass: process.env.SES_SMTP_PASS,\n  },\n  defaultFrom: 'verified-sender@yourdomain.com',\n})\n```\n\n> Replace `us-east-1` with your SES region. The sender address must be verified in SES.\n\n---\n\n## HTTP API Provider\n\nThe `HttpApiEmailProvider` sends email via HTTP POST to any REST API endpoint. It works with third-party services like SendGrid, Mailgun, and Amazon SES.\n\n### Configuration Options\n\n```typescript\ninterface HttpApiEmailConfig {\n  apiUrl: string;                      // API endpoint URL\n  apiKey: string;                      // API key (sent as Bearer token)\n  defaultFrom?: string;                // Default \"from\" address\n  providerName?: string;               // Provider identifier (default: 'http-api')\n  headers?: Record<string, string>;    // Additional HTTP headers\n}\n```\n\n### SendGrid\n\n1. Create a [SendGrid account](https://sendgrid.com/) and generate an API key under **Settings → API Keys**.\n2. Verify a sender identity under **Settings → Sender Authentication**.\n\n```bash\nSENDGRID_API_KEY=SG.xxxxxxxxxxxxxxxxxxxx\nSENDGRID_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'sendgrid',\n  apiUrl: 'https://api.sendgrid.com/v3/mail/send',\n  apiKey: process.env.SENDGRID_API_KEY,\n  defaultFrom: process.env.SENDGRID_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Mailgun\n\n1. Create a [Mailgun account](https://www.mailgun.com/) and get your API key from **Settings → API Keys**.\n2. Add and verify your domain under **Sending → Domains**.\n\n```bash\nMAILGUN_API_KEY=key-xxxxxxxxxxxxxxxxxxxx\nMAILGUN_DOMAIN=mg.yourdomain.com\nMAILGUN_FROM=noreply@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'mailgun',\n  apiUrl: `https://api.mailgun.net/v3/${process.env.MAILGUN_DOMAIN}/messages`,\n  apiKey: process.env.MAILGUN_API_KEY,\n  defaultFrom: process.env.MAILGUN_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Amazon SES API\n\n1. Set up [Amazon SES](https://aws.amazon.com/ses/) in your AWS account.\n2. Verify sender identities and request production access if in the sandbox.\n\n```bash\nSES_API_URL=https://email.us-east-1.amazonaws.com\nSES_API_KEY=your-ses-api-key\nSES_FROM=verified-sender@yourdomain.com\n```\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'ses',\n  apiUrl: process.env.SES_API_URL,\n  apiKey: process.env.SES_API_KEY,\n  defaultFrom: process.env.SES_FROM || 'noreply@yourdomain.com',\n})\n```\n\n### Custom API Endpoint\n\nThe `HttpApiEmailProvider` can work with any API that accepts a JSON POST body:\n\n```typescript\nnew HttpApiEmailProvider({\n  providerName: 'my-service',\n  apiUrl: 'https://api.my-email-service.com/v1/send',\n  apiKey: process.env.MY_EMAIL_API_KEY,\n  defaultFrom: 'noreply@yourdomain.com',\n  headers: {\n    'X-Custom-Header': 'custom-value',\n  },\n})\n```\n\nThe provider sends a JSON body with this structure:\n\n```json\n{\n  \"from\": \"noreply@yourdomain.com\",\n  \"to\": [\"recipient@example.com\"],\n  \"subject\": \"Hello\",\n  \"text\": \"Plain text body\",\n  \"html\": \"<p>HTML body</p>\",\n  \"cc\": [],\n  \"bcc\": [],\n  \"replyTo\": \"reply@example.com\"\n}\n```\n\nAuthentication is sent as a `Bearer` token in the `Authorization` header.\n\n---\n\n## Console Provider\n\nThe `ConsoleEmailProvider` logs emails to stdout instead of sending them. It is useful for local development and testing.\n\n```typescript\nimport { EmailModule, ConsoleEmailProvider } from '@optimistic-tanuki/email';\n\nEmailModule.forRoot({\n  providers: [new ConsoleEmailProvider()],\n})\n```\n\nOutput example:\n\n```\n[ConsoleEmailProvider] [Console Email] To: user@example.com | Subject: Welcome!\n[ConsoleEmailProvider] [Console Email] Body: Hello, welcome to Optimistic Tanuki!\n[ConsoleEmailProvider] [Console Email] HTML body length: 68\n```\n\nThe console provider is the **automatic fallback** when no `SMTP_HOST` environment variable is set in the authentication service.\n\n---\n\n## Multiple Providers\n\nYou can register multiple providers and switch between them. The first provider registered becomes the default.\n\n```typescript\nEmailModule.forRoot({\n  providers: [\n    new SmtpEmailProvider({ host: 'smtp.gmail.com', port: 587, ... }),\n    new HttpApiEmailProvider({ providerName: 'sendgrid', apiUrl: '...', apiKey: '...' }),\n    new ConsoleEmailProvider(),\n  ],\n  activeProvider: 'sendgrid',  // Override the default (first registered)\n})\n```\n\n### Switching Providers at Runtime\n\nInject `EmailPluginRegistry` to change the active provider dynamically:\n\n```typescript\nimport { Injectable } from '@nestjs/common';\nimport { EmailPluginRegistry } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class EmailAdminService {\n  constructor(private readonly registry: EmailPluginRegistry) {}\n\n  switchToSmtp() {\n    this.registry.setActiveProvider('smtp');\n  }\n\n  switchToSendGrid() {\n    this.registry.setActiveProvider('sendgrid');\n  }\n\n  listProviders(): string[] {\n    return this.registry.getRegisteredProviders();\n  }\n}\n```\n\n---\n\n## Creating a Custom Provider\n\nTo add a new email provider, implement the `EmailProvider` interface:\n\n```typescript\nimport {\n  EmailProvider,\n  EmailMessage,\n  EmailSendResult,\n} from '@optimistic-tanuki/email';\n\nexport class MyCustomProvider implements EmailProvider {\n  readonly name = 'my-custom-provider';\n\n  async sendEmail(message: EmailMessage): Promise<EmailSendResult> {\n    try {\n      // Your sending logic here\n      const messageId = await myEmailSdk.send({\n        to: message.to,\n        from: message.from || 'default@example.com',\n        subject: message.subject,\n        body: message.html || message.text,\n      });\n\n      return { success: true, messageId };\n    } catch (error) {\n      return {\n        success: false,\n        error: error instanceof Error ? error.message : String(error),\n      };\n    }\n  }\n\n  async verifyConnection(): Promise<boolean> {\n    try {\n      await myEmailSdk.ping();\n      return true;\n    } catch {\n      return false;\n    }\n  }\n}\n```\n\nThen register it:\n\n```typescript\nEmailModule.forRoot({\n  providers: [new MyCustomProvider()],\n})\n```\n\n---\n\n## Environment Variable Reference\n\nThe authentication service uses these environment variables. Set them in your `.env` file or Docker Compose configuration:\n\n| Variable | Description | Default |\n|---|---|---|\n| `SMTP_HOST` | SMTP server hostname. If set, activates SMTP provider. | *(none — falls back to console)* |\n| `SMTP_PORT` | SMTP server port | `587` |\n| `SMTP_SECURE` | Use direct TLS (`true` for port 465) | `false` |\n| `SMTP_USER` | SMTP authentication username | `''` |\n| `SMTP_PASS` | SMTP authentication password | `''` |\n| `SMTP_FROM` | Default sender address | `noreply@optimistic-tanuki.dev` |\n\nFor HTTP API providers, define your own environment variables and reference them in `forRootAsync`:\n\n| Variable | Description | Example |\n|---|---|---|\n| `SENDGRID_API_KEY` | SendGrid API key | `SG.xxxxx` |\n| `MAILGUN_API_KEY` | Mailgun API key | `key-xxxxx` |\n| `MAILGUN_DOMAIN` | Mailgun sending domain | `mg.yourdomain.com` |\n\n### Recommended Shared Convention\n\nIf multiple services in the platform need outbound mail, standardize on a shared contract such as:\n\n```bash\nEMAIL_PROVIDER=smtp\n\nSMTP_HOST=localhost\nSMTP_PORT=1025\nSMTP_SECURE=false\nSMTP_USER=\nSMTP_PASS=\nSMTP_FROM=noreply@example.com\n\nEMAIL_API_URL=\nEMAIL_API_KEY=\nEMAIL_API_PROVIDER=\nEMAIL_API_FROM=\n```\n\nSuggested meaning:\n\n- `EMAIL_PROVIDER=console` for console-only mode\n- `EMAIL_PROVIDER=smtp` for SMTP-backed mode\n- `EMAIL_PROVIDER=<provider-name>` for HTTP API-backed mode such as `sendgrid`\n\nThe exact names can be adapted per app, but using one shared platform convention is strongly recommended.\n\n---\n\n## Troubleshooting\n\n### No emails are being sent\n\n1. Check that a provider is registered. If `SMTP_HOST` is not set and you haven't registered a provider manually, the console provider is used.\n2. Check the application logs for `[EmailService]` messages:\n   - `No email provider is active. Email not sent.` — no provider was registered.\n   - `SMTP send failed: ...` — check SMTP credentials and connectivity.\n\n### SMTP connection refused\n\n- Verify the SMTP host and port are correct and reachable from the application container.\n- For Docker environments, use the service name (e.g., `mailhog`) rather than `localhost`.\n- Check that port 587 or 465 is not blocked by a firewall.\n\n### Gmail \"Less secure apps\" error\n\nGmail requires an App Password when 2-Step Verification is enabled. Regular passwords will not work. See [Google's App Password guide](https://support.google.com/accounts/answer/185833).\n\n### HTTP API provider returns 401/403\n\n- Verify your API key is correct and has sufficient permissions.\n- For SendGrid, ensure the API key has \"Mail Send\" permissions.\n- For Mailgun, ensure you are using the correct domain-specific API key.\n\n### Verifying the connection\n\nAfter configuration, verify setup in this order:\n\n1. confirm the provider is registered during application bootstrap\n2. call `verifyConnection()` where supported\n3. send a test email through `EmailService`\n4. confirm the send result returns `success: true`\n5. inspect MailHog/Mailpit, the receiving inbox, or the provider dashboard\n\nFor local SMTP capture:\n\n- open `http://localhost:8025`\n- trigger a flow that sends email\n- confirm both text and HTML output render as expected\n\nUse `EmailService.verifyConnection()` at application startup to confirm the provider is reachable:\n\n```typescript\nimport { OnModuleInit } from '@nestjs/common';\nimport { EmailService } from '@optimistic-tanuki/email';\n\n@Injectable()\nexport class AppService implements OnModuleInit {\n  constructor(private readonly emailService: EmailService) {}\n\n  async onModuleInit() {\n    const connected = await this.emailService.verifyConnection();\n    if (!connected) {\n      console.warn('Email provider is not reachable — emails will fail.');\n    }\n  }\n}\n```\n",
+      "order": 30,
       "landing": false,
-      "featured": false,
-      "lastUpdated": "2026-05-02T15:18:01.417Z"
+      "featured": true,
+      "lastUpdated": "2026-05-27T17:22:47.521Z"
     },
     {
       "slug": "docs/guides/local-hub",
@@ -8007,7 +8137,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.274Z"
     },
     {
       "slug": "docs/libs/app-registry-backend/dependency-diagram",
@@ -8028,7 +8158,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/app-registry-backend/export-map",
@@ -8049,7 +8179,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/app-registry-backend/usage",
@@ -8070,7 +8200,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/auth-domain/architecture",
@@ -8101,7 +8231,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/auth-domain/auth-decision-flow",
@@ -8122,7 +8252,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/auth-domain/dependency-diagram",
@@ -8143,7 +8273,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/auth-domain/usage",
@@ -8164,7 +8294,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/billing-data-access/architecture",
@@ -8195,7 +8325,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.275Z"
     },
     {
       "slug": "docs/libs/billing-data-access/dependency-diagram",
@@ -8216,7 +8346,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-data-access/entity-relationship",
@@ -8237,7 +8367,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-data-access/usage",
@@ -8258,7 +8388,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-data-access/write-path",
@@ -8279,7 +8409,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.294Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-domain/architecture",
@@ -8310,7 +8440,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-domain/dependency-diagram",
@@ -8331,7 +8461,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-domain/invoice-preview-flow",
@@ -8352,7 +8482,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/billing-domain/usage",
@@ -8373,7 +8503,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.293Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/business-data-access/api-surface",
@@ -8394,7 +8524,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.276Z"
     },
     {
       "slug": "docs/libs/business-data-access/architecture",
@@ -8435,7 +8565,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-data-access/auth-flow",
@@ -8456,7 +8586,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-data-access/config-store-flow",
@@ -8477,7 +8607,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-data-access/dependency-diagram",
@@ -8498,7 +8628,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-data-access/usage",
@@ -8544,7 +8674,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/architecture",
@@ -8575,7 +8705,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/dependency-diagram",
@@ -8596,7 +8726,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.655Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/export-map",
@@ -8617,7 +8747,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.655Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/route-map",
@@ -8638,7 +8768,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.655Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/site-editor-flow",
@@ -8659,7 +8789,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.655Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-portal-ui/usage",
@@ -8680,7 +8810,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.655Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-public-ui/architecture",
@@ -8711,7 +8841,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.277Z"
     },
     {
       "slug": "docs/libs/business-public-ui/booking-flow",
@@ -8732,7 +8862,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/business-public-ui/dependency-diagram",
@@ -8753,7 +8883,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/business-public-ui/export-map",
@@ -8774,7 +8904,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/business-public-ui/usage",
@@ -8795,7 +8925,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.654Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-data-access/architecture",
@@ -8826,7 +8956,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-data-access/data-flow",
@@ -8847,7 +8977,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-data-access/dependency-diagram",
@@ -8868,7 +8998,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-data-access/scope-persistence",
@@ -8889,7 +9019,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-data-access/usage",
@@ -8910,7 +9040,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-imports/architecture",
@@ -8941,7 +9071,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-imports/dependency-diagram",
@@ -8962,7 +9092,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-imports/import-pipeline",
@@ -8983,7 +9113,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-imports/provider-architecture",
@@ -9004,7 +9134,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/fin-commander-imports/usage",
@@ -9025,7 +9155,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/hai-ui/architecture",
@@ -9061,7 +9191,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.972Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/hai-ui/component-relationship",
@@ -9082,7 +9212,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.972Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/hai-ui/dependency-diagram",
@@ -9103,7 +9233,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.972Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/hai-ui/export-map",
@@ -9124,7 +9254,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.972Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/hai-ui/usage",
@@ -9165,7 +9295,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.972Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/leads-data-access/architecture",
@@ -9196,7 +9326,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.648Z"
+      "lastUpdated": "2026-05-26T13:14:44.278Z"
     },
     {
       "slug": "docs/libs/leads-data-access/dependency-diagram",
@@ -9217,7 +9347,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.648Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-data-access/request-flow",
@@ -9238,7 +9368,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-data-access/usage",
@@ -9259,7 +9389,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.648Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-flags/architecture",
@@ -9290,7 +9420,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-flags/dependency-diagram",
@@ -9311,7 +9441,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-flags/flagging-flow",
@@ -9332,7 +9462,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-flags/usage",
@@ -9353,7 +9483,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-onboarding/architecture",
@@ -9384,7 +9514,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.279Z"
     },
     {
       "slug": "docs/libs/leads-feature-onboarding/dependency-diagram",
@@ -9405,7 +9535,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.650Z"
+      "lastUpdated": "2026-05-26T13:14:44.280Z"
     },
     {
       "slug": "docs/libs/leads-feature-onboarding/onboarding-flow",
@@ -9426,7 +9556,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.650Z"
+      "lastUpdated": "2026-05-26T13:14:44.280Z"
     },
     {
       "slug": "docs/libs/leads-feature-onboarding/topic-generation-flow",
@@ -9447,7 +9577,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.650Z"
+      "lastUpdated": "2026-05-26T13:14:44.280Z"
     },
     {
       "slug": "docs/libs/leads-feature-onboarding/usage",
@@ -9468,7 +9598,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.649Z"
+      "lastUpdated": "2026-05-26T13:14:44.280Z"
     },
     {
       "slug": "docs/libs/leads-feature-topics/architecture",
@@ -9499,7 +9629,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.650Z"
+      "lastUpdated": "2026-05-26T13:14:44.280Z"
     },
     {
       "slug": "docs/libs/leads-feature-topics/dependency-diagram",
@@ -9520,7 +9650,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/leads-feature-topics/discovery-lifecycle",
@@ -9541,7 +9671,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/leads-feature-topics/topic-flow",
@@ -9562,7 +9692,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/leads-feature-topics/usage",
@@ -9583,7 +9713,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.650Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/payments-domain/architecture",
@@ -9614,7 +9744,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/payments-domain/dependency-diagram",
@@ -9635,7 +9765,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/payments-domain/provider-flow",
@@ -9656,7 +9786,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/payments-domain/usage",
@@ -9677,7 +9807,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/permissions-domain/architecture",
@@ -9708,7 +9838,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/permissions-domain/dependency-diagram",
@@ -9729,7 +9859,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/permissions-domain/policy-flow",
@@ -9750,7 +9880,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/libs/permissions-domain/usage",
@@ -9771,7 +9901,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:01:22.295Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/local-hub-commerce",
@@ -9860,6 +9990,166 @@
       "lastUpdated": "2026-05-02T01:36:35.229Z"
     },
     {
+      "slug": "docs/marketing/library-offerings",
+      "title": "Library Offerings",
+      "summary": "Optimistic Tanuki library surfaces are intended to be provided free through npm where they are approved for publication. - free npm packages - source development in the main monorepo",
+      "sourcePath": "docs/marketing/library-offerings.md",
+      "category": "marketing",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Library Offerings",
+          "id": "library-offerings"
+        },
+        {
+          "depth": 2,
+          "text": "Distribution Posture",
+          "id": "distribution-posture"
+        },
+        {
+          "depth": 2,
+          "text": "Current Examples",
+          "id": "current-examples"
+        },
+        {
+          "depth": 3,
+          "text": "Billing SDK",
+          "id": "billing-sdk"
+        }
+      ],
+      "body": "# Library Offerings\n\nOptimistic Tanuki library surfaces are intended to be provided free through npm where they are approved for publication.\n\n## Distribution Posture\n\n- free npm packages\n- source development in the main monorepo\n- public release publication from the dedicated mirror repository\n\n## Current Examples\n\n### Billing SDK\n\n- package: `@optimistic-tanuki/billing-sdk`\n- role: typed client helpers and usage workflow primitives for billing integrations\n- pricing posture: free npm package\n- release posture: mirrored out of the monorepo for public distribution\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T15:01:18.107Z"
+    },
+    {
+      "slug": "docs/marketing/pricing-models",
+      "title": "Pricing Models",
+      "summary": "This project currently documents pricing posture for hosted service surfaces without implementing commercial enforcement. - metered usage: pay for measured events, requests, or units consumed",
+      "sourcePath": "docs/marketing/pricing-models.md",
+      "category": "marketing",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Pricing Models",
+          "id": "pricing-models"
+        },
+        {
+          "depth": 2,
+          "text": "Hosted Service Pricing Shapes",
+          "id": "hosted-service-pricing-shapes"
+        },
+        {
+          "depth": 2,
+          "text": "Self-Hosted Positioning",
+          "id": "self-hosted-positioning"
+        },
+        {
+          "depth": 2,
+          "text": "Current Usage",
+          "id": "current-usage"
+        }
+      ],
+      "body": "# Pricing Models\n\nThis project currently documents pricing posture for hosted service surfaces without implementing commercial enforcement.\n\n## Hosted Service Pricing Shapes\n\n- metered usage: pay for measured events, requests, or units consumed\n- block usage subscription: recurring plan that grants a fixed quota block each billing period\n- unlimited subscription: flat recurring price for bounded fair-use hosted access\n\n## Self-Hosted Positioning\n\nHosted plans can be offered for managed operations while self-hosted Docker containers remain available for teams that want to run the service themselves.\n\n## Current Usage\n\n- `billing-service`: metered hosted posture with a visible self-hosted Docker option\n- future hosted services can adopt the same vocabulary when they are framed as managed product surfaces\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T15:01:18.106Z"
+    },
+    {
+      "slug": "docs/marketing/readme",
+      "title": "Marketing Documentation",
+      "summary": "Marketing-facing docs for Signal Foundry offerings, pricing posture, and the current campaign workbench implementation.",
+      "sourcePath": "docs/marketing/README.md",
+      "category": "marketing",
+      "section": "marketing",
+      "tags": ["marketing", "offerings", "pricing", "signal foundry"],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Marketing Documentation",
+          "id": "marketing-documentation"
+        },
+        {
+          "depth": 2,
+          "text": "Start Here",
+          "id": "start-here"
+        },
+        {
+          "depth": 2,
+          "text": "What This Covers",
+          "id": "what-this-covers"
+        },
+        {
+          "depth": 2,
+          "text": "What This Does Not Cover",
+          "id": "what-this-does-not-cover"
+        }
+      ],
+      "body": "\n# Marketing Documentation\n\nThis section documents the marketing surfaces that currently feed Signal Foundry and related positioning work.\n\n## Start Here\n\n- [Marketing Generator](../../apps/marketing-generator/README.md) for the current product surface and workflow\n- [Service Offerings](./service-offerings.md) for service-led positioning inputs\n- [Library Offerings](./library-offerings.md) for publishable package positioning inputs\n- [Pricing Models](./pricing-models.md) for current pricing posture references\n\n## What This Covers\n\n- the current campaign workbench application shape\n- service and library offerings used as generation inputs\n- pricing-model framing used by the app and adjacent marketing docs\n\n## What This Does Not Cover\n\n- campaign performance integrations\n- image rendering pipelines\n- external analytics infrastructure\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T17:55:11.728Z"
+    },
+    {
+      "slug": "docs/marketing/service-offerings",
+      "title": "Service Offerings",
+      "summary": "Billing service is offered as a productized backend surface for teams that need usage metering, usage-block accounting, and invoice-preview orchestration without building the billing core from scratch.",
+      "sourcePath": "docs/marketing/service-offerings.md",
+      "category": "marketing",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Service Offerings",
+          "id": "service-offerings"
+        },
+        {
+          "depth": 2,
+          "text": "Hosted Product Surfaces",
+          "id": "hosted-product-surfaces"
+        },
+        {
+          "depth": 2,
+          "text": "Delivery Posture",
+          "id": "delivery-posture"
+        },
+        {
+          "depth": 2,
+          "text": "Pricing Model Vocabulary",
+          "id": "pricing-model-vocabulary"
+        },
+        {
+          "depth": 2,
+          "text": "Current Productized Service",
+          "id": "current-productized-service"
+        },
+        {
+          "depth": 3,
+          "text": "Billing Service",
+          "id": "billing-service"
+        },
+        {
+          "depth": 2,
+          "text": "Scope Boundary",
+          "id": "scope-boundary"
+        }
+      ],
+      "body": "# Service Offerings\n\n## Hosted Product Surfaces\n\nBilling service is offered as a productized backend surface for teams that need usage metering, usage-block accounting, and invoice-preview orchestration without building the billing core from scratch.\n\n## Delivery Posture\n\n- hosted managed service: Optimistic Tanuki operates the billing backend for teams that want managed infrastructure\n- self-hosted Docker: teams can also run the same service surface themselves when deployment control matters\n- product language: describe the service as a managed billing capability, not only as an internal Nest microservice\n\n## Pricing Model Vocabulary\n\n- metered usage: pay for measured events, requests, or units consumed\n- block usage subscription: recurring plan that grants a fixed usage block each billing period\n- unlimited subscription: flat recurring price for bounded fair-use hosted access\n\n## Current Productized Service\n\n### Billing Service\n\n- role: hosted usage metering, usage blocks, and invoice-preview backend surface\n- default hosted posture: managed service for product teams and platform teams\n- self-hosted posture: Docker deployment remains available for teams that need their own operational boundary\n- current positioning: adopt hosted billing infrastructure now and preserve a self-hosted path later\n\n## Scope Boundary\n\nThis documentation defines packaging and pricing posture only. It does not implement checkout, plan enforcement, quota accounting UX, invoice payment flow, or subscription state machines.\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-05-26T15:01:18.105Z"
+    },
+    {
       "slug": "docs/operators/deployment-environments",
       "title": "Deployment Environments",
       "summary": "Manage generated deployment workspaces, validation, and apply flow for staging or production-style environments.",
@@ -9937,12 +10227,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Deployment Environments\n\n## When To Use\n\nUse this page when you are operating a generated deployment workspace under `dist/admin-env/<deployment>/`.\n\n## Prerequisites\n\n- access to the repo root and generated deployment workspace\n- `kubectl` and `argocd` access for the target environment\n- `tools/admin-env-wizard` build dependencies available locally\n\n## Primary Tooling\n\nThe preferred operator interface is `tools/admin-env-wizard`.\n\nOpen an existing deployment workspace:\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env tui -deployment ../../dist/admin-env/<deployment>/deployment.yaml\n```\n\nCreate a new deployment workspace:\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env generate \\\n  -name <deployment> \\\n  -targets compose,k8s \\\n  -profile small-server \\\n  -env-file .env/<deployment>.yaml \\\n  -argocd-app <argocd-app-name>\n```\n\n## Commands\n\n### Standard Workflow\n\n1. Open or generate the deployment workspace.\n2. Review `Deployment`, `Profile`, `Services`, `Images`, `Kubernetes`, and `Secrets`.\n3. Inspect generated artifacts under `dist/admin-env/<deployment>/`.\n4. Validate inventory and Compose/Kubernetes parity.\n5. Apply the workspace.\n\n### Required Validation\n\nRun validations from the repo root:\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nExpected result:\n\n- inventory validation exits successfully\n- parity validation exits successfully\n\nDo not treat the workspace as ready to apply until both validations pass.\n\n### Apply Paths\n\nGenerated helper:\n\n```bash\n./dist/admin-env/<deployment>/deploy.sh\n```\n\nRepo-level entry points:\n\n```bash\nDEPLOYMENT_NAME=<deployment> ./scripts/deploy-staging.sh\nDEPLOYMENT_NAME=<deployment> ./scripts/deploy-production.sh\n```\n\n### ArgoCD Path\n\nWorkspace-backed Argo application:\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\n```\n\nUse the `Kubernetes` document in `admin-env-wizard` to manage:\n\n- Argo app name\n- namespace\n- repo URL\n- target revision\n- generated k8s path\n\n## Failure Signals\n\n- validation fails for deployment inventory or Compose/Kubernetes parity\n- generated artifacts do not reflect the intended service or image set\n- the ArgoCD application does not converge after apply\n- required secrets or runtime config are missing from the target environment\n\n## Recovery Steps\n\n- reopen the workspace in `admin-env-wizard`\n- inspect the `Services`, `Images`, `Kubernetes`, and `Secrets` documents\n- regenerate the workspace before applying if the generated surfaces are stale\n- re-run validation before retrying `deploy.sh` or ArgoCD sync\n\n## Files To Inspect\n\n- `dist/admin-env/<deployment>/deployment.yaml`\n- `dist/admin-env/<deployment>/argocd/application.yaml`\n- `dist/admin-env/<deployment>/compose/docker-compose.yaml`\n- `dist/admin-env/<deployment>/gateway/composition.yaml`\n- `dist/admin-env/<deployment>/k8s/kustomization.yaml`\n\n## Related Docs\n\n- [Runbooks](./runbooks.md)\n- [Troubleshooting](./troubleshooting.md)\n- [Deployment Workspace Workflow](../devops/deployment-workspace-workflow.md)\n- [Deployment Generation](../devops/deployment-generation.md)\n- [ArgoCD](../devops/argocd.md)\n",
+      "body": "\n# Deployment Environments\n\n## When To Use\n\nUse this page when you are operating a generated deployment workspace under `dist/admin-env/<deployment>/`.\n\n## Prerequisites\n\n- access to the repo root and generated deployment workspace\n- `kubectl` and `argocd` access for the target environment\n- `tools/admin-env-wizard` build dependencies available locally\n\n## Primary Tooling\n\nThe preferred operator interface is `tools/admin-env-wizard`.\n\nOpen an existing deployment workspace:\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env tui -deployment ../../dist/admin-env/<deployment>/deployment.yaml\n```\n\nCreate a new deployment workspace:\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env generate \\\n  -name <deployment> \\\n  -targets compose,k8s \\\n  -profile small-server \\\n  -env-file .env/<deployment>.yaml \\\n  -argocd-app <argocd-app-name>\n```\n\n## Commands\n\n### Standard Workflow\n\n1. Open or generate the deployment workspace.\n2. Review `Deployment`, `Profile`, `Services`, `Images`, `Kubernetes`, and `Secrets`.\n3. Inspect generated artifacts under `dist/admin-env/<deployment>/`.\n4. Validate inventory and Compose/Kubernetes parity.\n5. Apply the workspace.\n\n### Required Validation\n\nRun validations from the repo root:\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nExpected result:\n\n- inventory validation exits successfully\n- parity validation exits successfully\n\nDo not treat the workspace as ready to apply until both validations pass.\n\n### Apply Paths\n\nGenerated helper:\n\n```bash\n./dist/admin-env/<deployment>/deploy.sh\n```\n\nRepo-level entry points:\n\n```bash\nDEPLOYMENT_NAME=<deployment> ./scripts/deploy-staging.sh\nDEPLOYMENT_NAME=<deployment> ./scripts/deploy-production.sh\n```\n\n### ArgoCD Path\n\nWorkspace-backed Argo application:\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\n```\n\nUse the `Kubernetes` document in `admin-env-wizard` to manage:\n\n- Argo app name\n- namespace\n- repo URL\n- target revision\n- generated k8s path\n\n## Failure Signals\n\n- validation fails for deployment inventory or Compose/Kubernetes parity\n- generated artifacts do not reflect the intended service or image set\n- the ArgoCD application does not converge after apply\n- required secrets or runtime config are missing from the target environment\n\n## Recovery Steps\n\n- reopen the workspace in `admin-env-wizard`\n- inspect the `Services`, `Images`, `Kubernetes`, and `Secrets` documents\n- regenerate the workspace before applying if the generated surfaces are stale\n- re-run validation before retrying `deploy.sh` or ArgoCD sync\n\n## Files To Inspect\n\n- `dist/admin-env/<deployment>/deployment.yaml`\n- `dist/admin-env/<deployment>/argocd/application.yaml`\n- `dist/admin-env/<deployment>/compose/docker-compose.yaml`\n- `dist/admin-env/<deployment>/gateway/composition.yaml`\n- `dist/admin-env/<deployment>/k8s/kustomization.yaml`\n\n## Related Docs\n\n- [Runbooks](./runbooks.md)\n- [Troubleshooting](./troubleshooting.md)\n- [Deployment Workspace Workflow](../devops/deployment-workspace-workflow.md)\n- [Deployment Generation](../devops/deployment-generation.md)\n- [ArgoCD](../devops/argocd.md)\n",
       "order": 3,
       "landing": false,
       "docRole": "guide",
       "featured": true,
-      "lastUpdated": "2026-05-25T15:00:08.983Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/operators/local-stack",
@@ -10037,12 +10327,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Local Stack Operations\n\n## When To Use\n\nUse this page when you are administering the shared local platform running through Docker Compose.\n\n## Prerequisites\n\n- Docker Engine or Docker Desktop with Compose support\n- Node.js and `pnpm`\n- workspace dependencies installed with `pnpm install`\n\n## Commands\n\n### Full Stack Startup\n\nUse when you need the integrated environment:\n\n```bash\npnpm run docker:dev\npnpm run watch:build\n```\n\nExpected result:\n\n- compiled artifacts land in `dist/`\n- dev images are rebuilt\n- the phased development stack starts\n\n### First-Time Bootstrap\n\nUse when you need the shared seed step after startup:\n\n```bash\npnpm run docker:dev:bootstrap\n```\n\nExpected result:\n\n- the stack starts\n- shared seed data is applied to the dev environment\n\n### Infra-Only Inner Loop\n\nUse when one app runs locally and only shared services stay containerized:\n\n```bash\npnpm run docker:infra:up\n```\n\nExpected result:\n\n- Postgres, Redis, and the `db-setup` job are available\n\n## Expected Result\n\n- the chosen stack path starts without crash loops\n- `dist/` contains the application artifacts required by the selected workflow\n- shared infrastructure services stay reachable long enough for bootstrap, seed, and app startup\n\n## Health Checks\n\nRun these in order:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\nls dist/apps\n```\n\nHealthy signals:\n\n- expected containers show as running\n- service logs show startup rather than restart loops\n- the relevant app exists under `dist/apps`\n\n## Failure Signals\n\n- containers are running but the app does not load\n- source changes do not appear in the stack\n- rebuild latency is too high for active work\n- seed commands fail or leave the stack partially initialized\n\n## Recovery Steps\n\n### Tail Stack Logs\n\n```bash\npnpm run docker:dev:logs\n```\n\nUse when:\n\n- the stack starts but a frontend or service does not respond\n- a seed or migration step appears incomplete\n\n### Re-Run The Shared Seed Step\n\n```bash\npnpm run docker:dev:seed\n```\n\nUse when:\n\n- the environment is up\n- shared roles, permissions, or seeded data are missing\n\n### Stop The Stack Cleanly\n\n```bash\npnpm run docker:dev:down\n```\n\nUse when:\n\n- you need to free local resources\n- you are preparing for a clean restart\n\n### Reset Broad Image Or Volume Drift\n\n```bash\npnpm run docker:dev:reset\n```\n\nUse only when:\n\n- image drift, stale volumes, or broad shared-library drift make targeted recovery unreliable\n\n## Related Docs\n\n- [Troubleshooting](./troubleshooting.md)\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md)\n- [Docker Compose Development](../devops/docker-compose.md)\n",
+      "body": "\n# Local Stack Operations\n\n## When To Use\n\nUse this page when you are administering the shared local platform running through Docker Compose.\n\n## Prerequisites\n\n- Docker Engine or Docker Desktop with Compose support\n- Node.js and `pnpm`\n- workspace dependencies installed with `pnpm install`\n\n## Commands\n\n### Full Stack Startup\n\nUse when you need the integrated environment:\n\n```bash\npnpm run docker:dev\npnpm run watch:build\n```\n\nExpected result:\n\n- compiled artifacts land in `dist/`\n- dev images are rebuilt\n- the phased development stack starts\n\n### First-Time Bootstrap\n\nUse when you need the shared seed step after startup:\n\n```bash\npnpm run docker:dev:bootstrap\n```\n\nExpected result:\n\n- the stack starts\n- shared seed data is applied to the dev environment\n\n### Infra-Only Inner Loop\n\nUse when one app runs locally and only shared services stay containerized:\n\n```bash\npnpm run docker:infra:up\n```\n\nExpected result:\n\n- Postgres, Redis, and the `db-setup` job are available\n\n## Expected Result\n\n- the chosen stack path starts without crash loops\n- `dist/` contains the application artifacts required by the selected workflow\n- shared infrastructure services stay reachable long enough for bootstrap, seed, and app startup\n\n## Health Checks\n\nRun these in order:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\nls dist/apps\n```\n\nHealthy signals:\n\n- expected containers show as running\n- service logs show startup rather than restart loops\n- the relevant app exists under `dist/apps`\n\n## Failure Signals\n\n- containers are running but the app does not load\n- source changes do not appear in the stack\n- rebuild latency is too high for active work\n- seed commands fail or leave the stack partially initialized\n\n## Recovery Steps\n\n### Tail Stack Logs\n\n```bash\npnpm run docker:dev:logs\n```\n\nUse when:\n\n- the stack starts but a frontend or service does not respond\n- a seed or migration step appears incomplete\n\n### Re-Run The Shared Seed Step\n\n```bash\npnpm run docker:dev:seed\n```\n\nUse when:\n\n- the environment is up\n- shared roles, permissions, or seeded data are missing\n\n### Stop The Stack Cleanly\n\n```bash\npnpm run docker:dev:down\n```\n\nUse when:\n\n- you need to free local resources\n- you are preparing for a clean restart\n\n### Reset Broad Image Or Volume Drift\n\n```bash\npnpm run docker:dev:reset\n```\n\nUse only when:\n\n- image drift, stale volumes, or broad shared-library drift make targeted recovery unreliable\n\n## Related Docs\n\n- [Troubleshooting](./troubleshooting.md)\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md)\n- [Docker Compose Development](../devops/docker-compose.md)\n",
       "order": 2,
       "landing": false,
       "docRole": "guide",
       "featured": true,
-      "lastUpdated": "2026-05-25T14:59:54.569Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/operators/overview",
@@ -10076,12 +10366,12 @@
           "id": "operating-model"
         }
       ],
-      "body": "# Operator Handbook\n\nUse this handbook when you need to run, inspect, recover, or deploy the Optimistic Tanuki platform.\n\n## Audience\n\nThis section is for operators working in either of these environments:\n\n- the shared local stack built with Docker Compose\n- generated deployment workspaces under `dist/admin-env/<deployment>/`\n\n## Start Here\n\n- [Local Stack Operations](./local-stack.md) for bootstrap, health checks, logs, and local recovery\n- [Deployment Environments](./deployment-environments.md) for generated workspaces, validation, and apply flow\n- [Runbooks](./runbooks.md) for common operator procedures\n- [Troubleshooting](./troubleshooting.md) for failure-mode recovery\n- [Operator Reference](./reference.md) for high-frequency commands and file locations\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md) for the pnpm-driven Compose entrypoints behind the local workflows\n\n## Operating Model\n\nOperator documentation in this repository follows one rule: link to the source of truth instead of restating partial workflows.\n\n- local-stack workflow source of truth: [Docker Compose Development](../devops/docker-compose.md)\n- deployment workspace source of truth: [Deployment Workspace Workflow](../devops/deployment-workspace-workflow.md)\n- deployment generation mechanics: [Deployment Generation](../devops/deployment-generation.md)\n- GitOps and cluster application flow: [ArgoCD](../devops/argocd.md)\n\nUse the handbook pages as the fastest path through those docs, with commands, expected outcomes, and recovery guidance organized for operator work.\n",
+      "body": "\n# Operator Handbook\n\nUse this handbook when you need to run, inspect, recover, or deploy the Optimistic Tanuki platform.\n\n## Audience\n\nThis section is for operators working in either of these environments:\n\n- the shared local stack built with Docker Compose\n- generated deployment workspaces under `dist/admin-env/<deployment>/`\n\n## Start Here\n\n- [Local Stack Operations](./local-stack.md) for bootstrap, health checks, logs, and local recovery\n- [Deployment Environments](./deployment-environments.md) for generated workspaces, validation, and apply flow\n- [Runbooks](./runbooks.md) for common operator procedures\n- [Troubleshooting](./troubleshooting.md) for failure-mode recovery\n- [Operator Reference](./reference.md) for high-frequency commands and file locations\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md) for the pnpm-driven Compose entrypoints behind the local workflows\n\n## Operating Model\n\nOperator documentation in this repository follows one rule: link to the source of truth instead of restating partial workflows.\n\n- local-stack workflow source of truth: [Docker Compose Development](../devops/docker-compose.md)\n- deployment workspace source of truth: [Deployment Workspace Workflow](../devops/deployment-workspace-workflow.md)\n- deployment generation mechanics: [Deployment Generation](../devops/deployment-generation.md)\n- GitOps and cluster application flow: [ArgoCD](../devops/argocd.md)\n\nUse the handbook pages as the fastest path through those docs, with commands, expected outcomes, and recovery guidance organized for operator work.\n",
       "order": 1,
       "landing": true,
       "docRole": "landing",
       "featured": true,
-      "lastUpdated": "2026-05-25T14:35:18.637Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/operators/reference",
@@ -10131,12 +10421,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Operator Reference\n\n## When To Use\n\nUse this page when you need a high-frequency command, file path, or source-of-truth link without reading the longer guide pages.\n\n## Local Stack Commands\n\n```bash\npnpm run docker:dev\npnpm run docker:dev:bootstrap\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:seed\npnpm run docker:dev:down\npnpm run docker:dev:reset\npnpm run docker:infra:up\n```\n\n## Deployment Workspace Commands\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env tui -deployment ../../dist/admin-env/<deployment>/deployment.yaml\nGOCACHE=/tmp/go-build go run ./cmd/admin-env generate -name <deployment> -targets compose,k8s\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n./dist/admin-env/<deployment>/deploy.sh\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\n```\n\n## High-Value Paths\n\n- local stack workflow: `docs/devops/docker-compose.md`\n- deployment workflow: `docs/devops/deployment-workspace-workflow.md`\n- deployment generation mechanics: `docs/devops/deployment-generation.md`\n- ArgoCD workflow: `docs/devops/argocd.md`\n- generated deployment workspaces: `dist/admin-env/<deployment>/`\n- deployment tooling: `tools/admin-env-wizard/`\n\n## Default Operator Rule\n\nPrefer the generated deployment workspace and the repo scripts that understand it.\n\nCompatibility-era root manifests still exist, but they are not the primary operator surface for new deployment work.\n\n## Related Docs\n\n- [Operator Handbook](./overview.md)\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md)\n",
+      "body": "\n# Operator Reference\n\n## When To Use\n\nUse this page when you need a high-frequency command, file path, or source-of-truth link without reading the longer guide pages.\n\n## Local Stack Commands\n\n```bash\npnpm run docker:dev\npnpm run docker:dev:bootstrap\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:seed\npnpm run docker:dev:down\npnpm run docker:dev:reset\npnpm run docker:infra:up\n```\n\n## Deployment Workspace Commands\n\n```bash\ncd tools/admin-env-wizard\nGOCACHE=/tmp/go-build go run ./cmd/admin-env tui -deployment ../../dist/admin-env/<deployment>/deployment.yaml\nGOCACHE=/tmp/go-build go run ./cmd/admin-env generate -name <deployment> -targets compose,k8s\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n./dist/admin-env/<deployment>/deploy.sh\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\n```\n\n## High-Value Paths\n\n- local stack workflow: `docs/devops/docker-compose.md`\n- deployment workflow: `docs/devops/deployment-workspace-workflow.md`\n- deployment generation mechanics: `docs/devops/deployment-generation.md`\n- ArgoCD workflow: `docs/devops/argocd.md`\n- generated deployment workspaces: `dist/admin-env/<deployment>/`\n- deployment tooling: `tools/admin-env-wizard/`\n\n## Default Operator Rule\n\nPrefer the generated deployment workspace and the repo scripts that understand it.\n\nCompatibility-era root manifests still exist, but they are not the primary operator surface for new deployment work.\n\n## Related Docs\n\n- [Operator Handbook](./overview.md)\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Manual Docker Stacks](../devops/manual-docker-stacks.md)\n",
       "order": 6,
       "landing": false,
       "docRole": "reference",
       "featured": false,
-      "lastUpdated": "2026-05-25T15:00:24.325Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/operators/runbooks",
@@ -10196,12 +10486,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Runbooks\n\n## When To Use\n\nUse this page when you want the shortest repeatable procedure for a common operator task.\n\n## Prerequisites\n\n- repo dependencies installed with `pnpm install`\n- Docker available for local-stack procedures\n- generated deployment workspace present for deployment procedures\n\n## Bootstrap The Local Stack\n\nUse when a contributor needs the shared environment from scratch.\n\n```bash\npnpm install\npnpm run docker:dev:bootstrap\npnpm run docker:dev:ps\n```\n\nExpected result:\n\n- dependencies install successfully\n- the phased dev stack starts\n- seeded shared data is available\n\n## Verify Local Stack Health\n\nUse when the stack is already running and you need a quick health pass.\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\n```\n\nExpected result:\n\n- required services show as running\n- logs show successful startup rather than crash loops\n\n## Validate A Generated Deployment Workspace\n\nUse before apply, promotion, or troubleshooting a generated environment.\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nExpected result:\n\n- deployment inventory is aligned with workflows and overlays\n- Compose and Kubernetes parity checks pass\n\n## Apply A Generated Deployment Workspace\n\nUse after validation passes.\n\n```bash\n./dist/admin-env/<deployment>/deploy.sh\n```\n\nExpected result:\n\n- generated deployment artifacts are applied for the selected targets\n\n## Refresh ArgoCD Application State\n\nUse when the generated workspace changed and the cluster application needs to track the new state.\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\nargocd app sync <app-name>\nargocd app wait <app-name>\n```\n\nExpected result:\n\n- ArgoCD points at the intended workspace path\n- sync completes without unresolved drift\n\n## Related Docs\n\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Troubleshooting](./troubleshooting.md)\n",
+      "body": "\n# Runbooks\n\n## When To Use\n\nUse this page when you want the shortest repeatable procedure for a common operator task.\n\n## Prerequisites\n\n- repo dependencies installed with `pnpm install`\n- Docker available for local-stack procedures\n- generated deployment workspace present for deployment procedures\n\n## Bootstrap The Local Stack\n\nUse when a contributor needs the shared environment from scratch.\n\n```bash\npnpm install\npnpm run docker:dev:bootstrap\npnpm run docker:dev:ps\n```\n\nExpected result:\n\n- dependencies install successfully\n- the phased dev stack starts\n- seeded shared data is available\n\n## Verify Local Stack Health\n\nUse when the stack is already running and you need a quick health pass.\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\n```\n\nExpected result:\n\n- required services show as running\n- logs show successful startup rather than crash loops\n\n## Validate A Generated Deployment Workspace\n\nUse before apply, promotion, or troubleshooting a generated environment.\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nExpected result:\n\n- deployment inventory is aligned with workflows and overlays\n- Compose and Kubernetes parity checks pass\n\n## Apply A Generated Deployment Workspace\n\nUse after validation passes.\n\n```bash\n./dist/admin-env/<deployment>/deploy.sh\n```\n\nExpected result:\n\n- generated deployment artifacts are applied for the selected targets\n\n## Refresh ArgoCD Application State\n\nUse when the generated workspace changed and the cluster application needs to track the new state.\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\nargocd app sync <app-name>\nargocd app wait <app-name>\n```\n\nExpected result:\n\n- ArgoCD points at the intended workspace path\n- sync completes without unresolved drift\n\n## Related Docs\n\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Troubleshooting](./troubleshooting.md)\n",
       "order": 4,
       "landing": false,
       "docRole": "runbook",
       "featured": false,
-      "lastUpdated": "2026-05-25T15:00:31.688Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/operators/troubleshooting",
@@ -10286,12 +10576,12 @@
           "id": "related-docs"
         }
       ],
-      "body": "# Troubleshooting\n\n## When To Use\n\nUse this page when the operator workflow did not produce the expected local-stack or deployment-environment result.\n\n## Failure Signals\n\n- the local stack starts but a target app never becomes reachable\n- source changes stop propagating into running containers\n- seed data is missing after startup\n- deployment validation fails\n- ArgoCD remains out of sync after apply\n\n## Recovery Steps\n\n## Local Stack Failures\n\n### Stack starts but the app does not load\n\nCommands:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\nls dist/apps\n```\n\nRecovery:\n\n- rerun `pnpm run docker:dev` if required `dist/` output is missing\n- use `pnpm run watch:build:scope -- --projects=<project>` when only one app needs active rebuilds\n\n### Source changes do not appear in containers\n\nCommands:\n\n```bash\npnpm run watch:build\n```\n\nRecovery:\n\n- confirm the relevant project rebuilds into `dist/`\n- if only one app is changing, switch to `watch:build:scope`\n- if a service is easier to run locally, use `pnpm exec nx serve <project>`\n\n### Seed data is missing or partial\n\nCommands:\n\n```bash\npnpm run docker:dev:seed\n```\n\nRecovery:\n\n- if the stack itself is suspect, rerun `pnpm run docker:dev:bootstrap`\n\n### Broad environment drift\n\nCommands:\n\n```bash\npnpm run docker:dev:reset\n```\n\nUse only when:\n\n- stale images, volumes, or shared-library drift make narrower recovery ineffective\n\n## Deployment Environment Failures\n\n### Generated workspace does not validate\n\nCommands:\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nRecovery:\n\n- reopen the workspace in `admin-env-wizard`\n- review service selection, images, and generated target surfaces\n- regenerate the workspace before rerunning validation\n\n### ArgoCD application is out of date\n\nCommands:\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\nargocd app sync <app-name>\nargocd app wait <app-name>\n```\n\nRecovery:\n\n- confirm the generated application points at `dist/admin-env/<deployment>/k8s`\n- confirm the selected revision and namespace match the intended environment\n\n### Required runtime config is missing\n\nRecovery:\n\n- review the `Secrets` document in `admin-env-wizard`\n- confirm the structured env backend has all required keys\n- regenerate or materialize again after the missing keys resolve\n\n## Related Docs\n\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Runbooks](./runbooks.md)\n",
+      "body": "\n# Troubleshooting\n\n## When To Use\n\nUse this page when the operator workflow did not produce the expected local-stack or deployment-environment result.\n\n## Failure Signals\n\n- the local stack starts but a target app never becomes reachable\n- source changes stop propagating into running containers\n- seed data is missing after startup\n- deployment validation fails\n- ArgoCD remains out of sync after apply\n\n## Recovery Steps\n\n## Local Stack Failures\n\n### Stack starts but the app does not load\n\nCommands:\n\n```bash\npnpm run docker:dev:ps\npnpm run docker:dev:logs\nls dist/apps\n```\n\nRecovery:\n\n- rerun `pnpm run docker:dev` if required `dist/` output is missing\n- use `pnpm run watch:build:scope -- --projects=<project>` when only one app needs active rebuilds\n\n### Source changes do not appear in containers\n\nCommands:\n\n```bash\npnpm run watch:build\n```\n\nRecovery:\n\n- confirm the relevant project rebuilds into `dist/`\n- if only one app is changing, switch to `watch:build:scope`\n- if a service is easier to run locally, use `pnpm exec nx serve <project>`\n\n### Seed data is missing or partial\n\nCommands:\n\n```bash\npnpm run docker:dev:seed\n```\n\nRecovery:\n\n- if the stack itself is suspect, rerun `pnpm run docker:dev:bootstrap`\n\n### Broad environment drift\n\nCommands:\n\n```bash\npnpm run docker:dev:reset\n```\n\nUse only when:\n\n- stale images, volumes, or shared-library drift make narrower recovery ineffective\n\n## Deployment Environment Failures\n\n### Generated workspace does not validate\n\nCommands:\n\n```bash\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> node scripts/validate-deployment-inventory.mjs\nDEPLOYMENT_WORKSPACE_DIR=dist/admin-env/<deployment> bash scripts/validate-compose-k8s-parity.sh\n```\n\nRecovery:\n\n- reopen the workspace in `admin-env-wizard`\n- review service selection, images, and generated target surfaces\n- regenerate the workspace before rerunning validation\n\n### ArgoCD application is out of date\n\nCommands:\n\n```bash\nkubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml\nargocd app sync <app-name>\nargocd app wait <app-name>\n```\n\nRecovery:\n\n- confirm the generated application points at `dist/admin-env/<deployment>/k8s`\n- confirm the selected revision and namespace match the intended environment\n\n### Required runtime config is missing\n\nRecovery:\n\n- review the `Secrets` document in `admin-env-wizard`\n- confirm the structured env backend has all required keys\n- regenerate or materialize again after the missing keys resolve\n\n## Related Docs\n\n- [Local Stack Operations](./local-stack.md)\n- [Deployment Environments](./deployment-environments.md)\n- [Runbooks](./runbooks.md)\n",
       "order": 5,
       "landing": false,
       "docRole": "runbook",
       "featured": true,
-      "lastUpdated": "2026-05-25T15:00:18.022Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/organization",
@@ -10887,6 +11177,11 @@
         },
         {
           "depth": 3,
+          "text": "Marketing",
+          "id": "marketing"
+        },
+        {
+          "depth": 3,
           "text": "Testing",
           "id": "testing"
         },
@@ -10936,11 +11231,11 @@
           "id": "quick-links"
         }
       ],
-      "body": "# Optimistic Tanuki Documentation\n\nWelcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today.\n\n## Start Here\n\nUse the shortest path that matches what you are doing:\n\n- new contributor: [Getting Started](./getting-started/README.md)\n- understanding repo layout: [Workspace Map](./architecture/workspace-map.md)\n- finding an app, library, or tool: [Workspace Catalog](./reference/workspace-catalog.md)\n- local development workflow: [Docker Compose](./devops/docker-compose.md)\n- deployment generation and per-client outputs: [Deployment Generation](./devops/deployment-generation.md)\n- staging or production deployment flow: [DevOps README](./devops/README.md)\n- operator runbooks and server administration: [Operator Handbook](./operators/overview.md)\n\n## Current State\n\nThe current branch has a few operational surfaces that matter more than the older summary docs:\n\n- local development is driven by `pnpm run docker:dev` and the dev Compose overrides\n- the Kubernetes deployment contract is generated from the Go catalog in `tools/admin-env-wizard`\n- GitHub Actions validate inventory consistency before image promotion\n- staging and production image tags are carried in Kustomize overlay `images:` blocks\n- ArgoCD applies a parameterized application manifest from `k8s/argo-app/application.yaml`\n- there is now a second Go tool, `tools/stack-client`, for authenticated gateway access from a terminal UI\n\n## Documentation Structure\n\n### Getting Started\n\n- [Getting Started](./getting-started/README.md) - First-run setup and contributor workflow\n- [MVP Overview](./getting-started/mvp-overview.md) - Minimum viable product plan and roadmap\n\n### DevOps and Infrastructure\n\n- [DevOps README](./devops/README.md) - DevOps documentation index\n- [Operator Handbook](./operators/overview.md) - Formal operator docs for local and deployed environments\n- [Architecture Overview](./devops/architecture.md) - Infrastructure architecture\n- [Kubernetes Deployment](./devops/k8s.md) - Kustomize overlays, base resources, and deployment scripts\n- [Service Ports Reference](./devops/ports.md) - Port mappings for all services\n- [Gateway Configuration](./devops/gateway.md) - Gateway service configuration\n- [Deployment Generation](./devops/deployment-generation.md) - General reference and process guide for generated deployment states\n- [Docker Compose](./devops/docker-compose.md) - Local development and the dev stack workflow\n- [ArgoCD](./devops/argocd.md) - GitOps deployment with the parameterized Argo application\n\n### Development\n\n- [Debugging Guide](./development/debugging.md) - Docker-based development with debugging and hot-reload\n- [API Configuration](./development/api-configuration.md) - Setting up API base URLs and environment configuration\n- [Admin Environment Wizard](../tools/admin-env-wizard/README.md) - Go CLI and TUI for environment generation\n- [Stack Client](../tools/stack-client/README.md) - Go TUI client for authenticated gateway access\n\n### Architecture\n\n- [Architecture Overview](./architecture/README.md) - High-level system architecture and design\n- [Workspace Map](./architecture/workspace-map.md) - Repo layout, ownership boundaries, and navigation guide\n- [Permissions System](./architecture/permissions.md) - RBAC implementation and usage\n- [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions\n- [Theme System](./architecture/theme-system.md) - Theme system architecture and reference\n- [Theme Implementation](./architecture/theme-implementation.md) - Theme implementation details\n- [CI/CD Pipeline](./architecture/cicd-pipeline.md) - Current GitHub Actions deployment flow\n- [WebSocket Implementation](./architecture/websocket-implementation.md) - Real-time WebSocket server implementation\n- [WebSocket Client](./architecture/websocket-client.md) - WebSocket client usage and integration\n- [Security Audit](./architecture/security-audit.md) - Security audit findings and recommendations\n\n### Guides\n\nStep-by-step guides for specific tasks:\n\n- [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers\n- [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login\n- [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment\n- [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component\n- [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system\n- [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage\n- [MCP Validation Guide](./guides/mcp-validation.md) - Validating MCP implementations\n- [Agents Guide](./guides/agents.md) - Working with AI agents in the platform\n\n### Testing\n\n- [E2E Testing Guide](./testing/e2e-testing.md) - End-to-end testing with Playwright\n- [Test Portability Guide](./testing/test-portability.md) - Running tests in different environments\n- [Blog Features Testing](./testing/blog-features.md) - Testing blog-specific features\n- [Blog Editor E2E Testing](./testing/blog-editor-e2e.md) - E2E tests for blog editor\n- [Quick Reference](./testing/quick-reference.md) - Quick reference for common testing tasks\n- [Test Coverage](./testing/coverage.md) - Code coverage information and goals\n- [Screenshot Capture Guide](./testing/screenshot-capture.md) - Capturing screenshots in tests\n\n### API Documentation\n\n- [Applications API Reference](./api/README.md) - Consolidated API documentation for applications and services\n\n### Reference\n\n- [Workspace Catalog](./reference/workspace-catalog.md) - Full inventory of apps, libraries, tools, and deployment surfaces\n- [README Template](./reference/readme-template.md) - Standard structure for app, library, and e2e project READMEs\n\n## Application-Specific Documentation\n\n### Services\n\n- [AI Orchestrator](../apps/ai-orchestrator/README.md)\n- [Assets](../apps/assets/README.md)\n  - [Assets Architecture](./services/assets/architecture.md)\n  - [Assets Operations](./services/assets/operations.md)\n- [Authentication](../apps/authentication/README.md)\n  - [Authentication Architecture](./services/authentication/architecture.md)\n  - [Authentication Operations](./services/authentication/operations.md)\n- [Billing](../apps/billing/README.md)\n  - [Billing Architecture](./services/billing/architecture.md)\n  - [Billing Operations](./services/billing/operations.md)\n- [Blogging](../apps/blogging/README.md)\n- [Chat Collector](../apps/chat-collector/README.md)\n- [Gateway](../apps/gateway/README.md)\n  - [Gateway Architecture](./services/gateway/architecture.md)\n  - [Gateway Operations](./services/gateway/operations.md)\n- [Permissions](../apps/permissions/README.md)\n- [Profile](../apps/profile/README.md)\n- [Project Planning](../apps/project-planning/README.md)\n- [Prompt Proxy](../apps/prompt-proxy/README.md)\n- [Social](../apps/social/README.md)\n- [App Configurator](../apps/app-configurator/README.md)\n  - [App Configurator Architecture](./services/app-configurator/architecture.md)\n  - [App Configurator Operations](./services/app-configurator/operations.md)\n- [System Configurator API](../apps/system-configurator-api/README.md)\n  - [System Configurator API Architecture](./services/system-configurator-api/architecture.md)\n  - [System Configurator API Operations](./services/system-configurator-api/operations.md)\n- [Telos Docs Service](../apps/telos-docs-service/README.md)\n  - [Telos Docs Service Architecture](./services/telos-docs-service/architecture.md)\n  - [Telos Docs Service Operations](./services/telos-docs-service/operations.md)\n\n### Frontend Applications\n\n- [Client Interface](../apps/client-interface/README.md)\n- [Forge of Will](../apps/forgeofwill/README.md)\n- [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)\n\n## Library Documentation\n\nShared libraries used across applications:\n\n### UI Libraries\n\n- [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration\n- [Auth UI](../libs/auth-ui/README.md) - Authentication UI components\n- [Business Portal UI](../libs/business-portal-ui/README.md) - Owner and client portal pages for business applications\n- [Business Public UI](../libs/business-public-ui/README.md) - Public landing and booking flows for business applications\n- [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components\n  - [Component Injection](../libs/blogging-ui/COMPONENT_INJECTION.md)\n- [Chat UI](../libs/chat-ui/README.md) - Chat UI components\n- [Common UI](../libs/common-ui/README.md) - Common UI components\n- [Fin Commander Data Access](../libs/fin-commander-data-access/README.md) - Scoped plan state and overview helpers for Fin Commander\n- [Fin Commander Imports](../libs/fin-commander-imports/README.md) - Import workbench and provider registry for Fin Commander\n- [Form UI](../libs/form-ui/README.md) - Form components\n- [Message UI](../libs/message-ui/README.md) - Message UI components\n- [Navigation UI](../libs/navigation-ui/README.md) - Navigation components\n- [Persona UI](../libs/persona-ui/README.md) - Persona/avatar components\n- [Profile UI](../libs/profile-ui/README.md) - Profile UI components\n- [Project UI](../libs/project-ui/README.md) - Project management UI\n- [HAI UI](../libs/hai-ui/README.md) - HAI identity and cross-app discovery components\n- [Social UI](../libs/social-ui/README.md) - Social feature UI\n- [Store UI](../libs/store-ui/README.md) - Store/shopping UI\n- [Theme UI](../libs/theme-ui/README.md) - Theme management UI\n  - [Theme System](../libs/theme-ui/THEME_SYSTEM.md)\n  - [Host Binding Migration](../libs/theme-ui/HOST_BINDING_MIGRATION.md)\n\n### Core Libraries\n\n- [App Registry Backend](../libs/app-registry-backend/README.md) - App registry and navigation contracts with default seed data\n- [Auth Domain](../libs/auth/domain/README.md) - Password, MFA, and token-issuance domain logic\n- [Business Data Access](../libs/business-data-access/README.md) - Business-site API, auth, and config state helpers\n- [Billing Data Access](../libs/billing/data-access/README.md) - Billing persistence entities for accounts, usage events, and grants\n- [Billing Domain](../libs/billing/domain/README.md) - Billing scope validation and invoice preview logic\n- [Constants](../libs/constants/README.md) - Shared constants and tokens\n- [Database](../libs/database/README.md) - Database connection and TypeORM setup\n- [Email](./guides/email-providers.md) - Email service with plugin architecture\n- [Encryption](../libs/encryption/README.md) - Cryptographic operations\n- [Leads Data Access](../libs/leads/data-access/README.md) - Base CRUD and stats client for lead records\n- [Leads Feature Flags](../libs/leads/feature-flags/README.md) - Lead flagging and review client\n- [Leads Feature Onboarding](../libs/leads/feature-onboarding/README.md) - Multi-step onboarding and topic-suggestion client\n- [Leads Feature Topics](../libs/leads/feature-topics/README.md) - Topic management and discovery lifecycle client\n- [Logger](../libs/logger/README.md) - Logging service\n- [Models](../libs/models/README.md) - Shared data models\n- [Payments Domain](../libs/payments/domain/README.md) - Payment provider abstractions and Lemon Squeezy adapter logic\n- [Permissions Domain](../libs/permissions/domain/README.md) - App-scope policy registry and authorization model definitions\n- [UI Models](../libs/ui-models/README.md) - UI-specific data models\n- [Storage](../libs/storage/README.md) - Storage utilities\n- [Permission Lib](../libs/permission-lib/README.md) - Permission utilities\n- [Theme Lib](../libs/theme-lib/README.md) - Theme utilities\n- [Compose Lib](../libs/compose-lib/README.md) - Composition utilities\n- [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation\n## Quick Links\n\n- [Main README](../README.md) - Project overview and quick start\n- [Build and Push Workflow](../.github/workflows/build-push.yml) - Deployment contract validation and image promotion\n- [Deploy Workflow](../.github/workflows/deploy.yml) - Staging and production ArgoCD deployment flow\n- [Deployment Inventory Validator](../scripts/validate-deployment-inventory.mjs) - Inventory consistency checks\n- [Examples](../examples/README.md) - Code examples and reference implementations\n",
+      "body": "# Optimistic Tanuki Documentation\n\nWelcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today.\n\n## Start Here\n\nUse the shortest path that matches what you are doing:\n\n- new contributor: [Getting Started](./getting-started/README.md)\n- understanding repo layout: [Workspace Map](./architecture/workspace-map.md)\n- finding an app, library, or tool: [Workspace Catalog](./reference/workspace-catalog.md)\n- local development workflow: [Docker Compose](./devops/docker-compose.md)\n- deployment generation and per-client outputs: [Deployment Generation](./devops/deployment-generation.md)\n- staging or production deployment flow: [DevOps README](./devops/README.md)\n- operator runbooks and server administration: [Operator Handbook](./operators/overview.md)\n\n## Current State\n\nThe current branch has a few operational surfaces that matter more than the older summary docs:\n\n- local development is driven by `pnpm run docker:dev` and the dev Compose overrides\n- the Kubernetes deployment contract is generated from the Go catalog in `tools/admin-env-wizard`\n- GitHub Actions validate inventory consistency before image promotion\n- staging and production image tags are carried in Kustomize overlay `images:` blocks\n- ArgoCD applies a parameterized application manifest from `k8s/argo-app/application.yaml`\n- there is now a second Go tool, `tools/stack-client`, for authenticated gateway access from a terminal UI\n\n## Documentation Structure\n\n### Getting Started\n\n- [Getting Started](./getting-started/README.md) - First-run setup and contributor workflow\n- [MVP Overview](./getting-started/mvp-overview.md) - Minimum viable product plan and roadmap\n\n### DevOps and Infrastructure\n\n- [DevOps README](./devops/README.md) - DevOps documentation index\n- [Operator Handbook](./operators/overview.md) - Formal operator docs for local and deployed environments\n- [Architecture Overview](./devops/architecture.md) - Infrastructure architecture\n- [Kubernetes Deployment](./devops/k8s.md) - Kustomize overlays, base resources, and deployment scripts\n- [Service Ports Reference](./devops/ports.md) - Port mappings for all services\n- [Gateway Configuration](./devops/gateway.md) - Gateway service configuration\n- [Deployment Generation](./devops/deployment-generation.md) - General reference and process guide for generated deployment states\n- [Docker Compose](./devops/docker-compose.md) - Local development and the dev stack workflow\n- [ArgoCD](./devops/argocd.md) - GitOps deployment with the parameterized Argo application\n\n### Development\n\n- [Debugging Guide](./development/debugging.md) - Docker-based development with debugging and hot-reload\n- [API Configuration](./development/api-configuration.md) - Setting up API base URLs and environment configuration\n- [Admin Environment Wizard](../tools/admin-env-wizard/README.md) - Go CLI and TUI for environment generation\n- [Stack Client](../tools/stack-client/README.md) - Go TUI client for authenticated gateway access\n\n### Architecture\n\n- [Architecture Overview](./architecture/README.md) - High-level system architecture and design\n- [Workspace Map](./architecture/workspace-map.md) - Repo layout, ownership boundaries, and navigation guide\n- [Permissions System](./architecture/permissions.md) - RBAC implementation and usage\n- [Permissions Cache](./architecture/permissions-cache.md) - Caching configuration for permissions\n- [Theme System](./architecture/theme-system.md) - Theme system architecture and reference\n- [Theme Implementation](./architecture/theme-implementation.md) - Theme implementation details\n- [CI/CD Pipeline](./architecture/cicd-pipeline.md) - Current GitHub Actions deployment flow\n- [WebSocket Implementation](./architecture/websocket-implementation.md) - Real-time WebSocket server implementation\n- [WebSocket Client](./architecture/websocket-client.md) - WebSocket client usage and integration\n- [Security Audit](./architecture/security-audit.md) - Security audit findings and recommendations\n\n### Guides\n\nStep-by-step guides for specific tasks:\n\n- [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers\n- [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login\n- [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment\n- [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component\n- [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system\n- [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage\n- [MCP Validation Guide](./guides/mcp-validation.md) - Validating MCP implementations\n- [Agents Guide](./guides/agents.md) - Working with AI agents in the platform\n\n### Marketing\n\n- [Marketing README](./marketing/README.md) - Index for Signal Foundry marketing docs and positioning inputs\n- [Service Offerings](./marketing/service-offerings.md) - Service-led marketing input reference\n- [Library Offerings](./marketing/library-offerings.md) - Library and package marketing input reference\n- [Pricing Models](./marketing/pricing-models.md) - Pricing posture reference for marketing surfaces\n\n### Testing\n\n- [E2E Testing Guide](./testing/e2e-testing.md) - End-to-end testing with Playwright\n- [Test Portability Guide](./testing/test-portability.md) - Running tests in different environments\n- [Blog Features Testing](./testing/blog-features.md) - Testing blog-specific features\n- [Blog Editor E2E Testing](./testing/blog-editor-e2e.md) - E2E tests for blog editor\n- [Quick Reference](./testing/quick-reference.md) - Quick reference for common testing tasks\n- [Test Coverage](./testing/coverage.md) - Code coverage information and goals\n- [Screenshot Capture Guide](./testing/screenshot-capture.md) - Capturing screenshots in tests\n\n### API Documentation\n\n- [Applications API Reference](./api/README.md) - Consolidated API documentation for applications and services\n\n### Reference\n\n- [Workspace Catalog](./reference/workspace-catalog.md) - Full inventory of apps, libraries, tools, and deployment surfaces\n- [README Template](./reference/readme-template.md) - Standard structure for app, library, and e2e project READMEs\n\n## Application-Specific Documentation\n\n### Services\n\n- [AI Orchestrator](../apps/ai-orchestrator/README.md)\n- [Assets](../apps/assets/README.md)\n  - [Assets Architecture](./services/assets/architecture.md)\n  - [Assets Operations](./services/assets/operations.md)\n- [Authentication](../apps/authentication/README.md)\n  - [Authentication Architecture](./services/authentication/architecture.md)\n  - [Authentication Operations](./services/authentication/operations.md)\n- [Billing](../apps/billing/README.md)\n  - [Billing Architecture](./services/billing/architecture.md)\n  - [Billing Operations](./services/billing/operations.md)\n- [Blogging](../apps/blogging/README.md)\n- [Chat Collector](../apps/chat-collector/README.md)\n- [Gateway](../apps/gateway/README.md)\n  - [Gateway Architecture](./services/gateway/architecture.md)\n  - [Gateway Operations](./services/gateway/operations.md)\n- [Permissions](../apps/permissions/README.md)\n- [Profile](../apps/profile/README.md)\n- [Project Planning](../apps/project-planning/README.md)\n- [Prompt Proxy](../apps/prompt-proxy/README.md)\n- [Social](../apps/social/README.md)\n- [App Configurator](../apps/app-configurator/README.md)\n  - [App Configurator Architecture](./services/app-configurator/architecture.md)\n  - [App Configurator Operations](./services/app-configurator/operations.md)\n- [System Configurator API](../apps/system-configurator-api/README.md)\n  - [System Configurator API Architecture](./services/system-configurator-api/architecture.md)\n  - [System Configurator API Operations](./services/system-configurator-api/operations.md)\n- [Telos Docs Service](../apps/telos-docs-service/README.md)\n  - [Telos Docs Service Architecture](./services/telos-docs-service/architecture.md)\n  - [Telos Docs Service Operations](./services/telos-docs-service/operations.md)\n\n### Frontend Applications\n\n- [Client Interface](../apps/client-interface/README.md)\n- [Forge of Will](../apps/forgeofwill/README.md)\n- [Marketing Generator](../apps/marketing-generator/README.md)\n- [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)\n\n## Library Documentation\n\nShared libraries used across applications:\n\n### UI Libraries\n\n- [AG Grid UI](../libs/ag-grid-ui/README.md) - AG Grid integration\n- [Auth UI](../libs/auth-ui/README.md) - Authentication UI components\n- [Business Portal UI](../libs/business-portal-ui/README.md) - Owner and client portal pages for business applications\n- [Business Public UI](../libs/business-public-ui/README.md) - Public landing and booking flows for business applications\n- [Blogging UI](../libs/blogging-ui/README.md) - Blog UI components\n  - [Component Injection](../libs/blogging-ui/COMPONENT_INJECTION.md)\n- [Chat UI](../libs/chat-ui/README.md) - Chat UI components\n- [Common UI](../libs/common-ui/README.md) - Common UI components\n- [Fin Commander Data Access](../libs/fin-commander-data-access/README.md) - Scoped plan state and overview helpers for Fin Commander\n- [Fin Commander Imports](../libs/fin-commander-imports/README.md) - Import workbench and provider registry for Fin Commander\n- [Form UI](../libs/form-ui/README.md) - Form components\n- [Message UI](../libs/message-ui/README.md) - Message UI components\n- [Navigation UI](../libs/navigation-ui/README.md) - Navigation components\n- [Persona UI](../libs/persona-ui/README.md) - Persona/avatar components\n- [Profile UI](../libs/profile-ui/README.md) - Profile UI components\n- [Project UI](../libs/project-ui/README.md) - Project management UI\n- [HAI UI](../libs/hai-ui/README.md) - HAI identity and cross-app discovery components\n- [Social UI](../libs/social-ui/README.md) - Social feature UI\n- [Store UI](../libs/store-ui/README.md) - Store/shopping UI\n- [Theme UI](../libs/theme-ui/README.md) - Theme management UI\n  - [Theme System](../libs/theme-ui/THEME_SYSTEM.md)\n  - [Host Binding Migration](../libs/theme-ui/HOST_BINDING_MIGRATION.md)\n\n### Core Libraries\n\n- [App Registry Backend](../libs/app-registry-backend/README.md) - App registry and navigation contracts with default seed data\n- [Auth Domain](../libs/auth/domain/README.md) - Password, MFA, and token-issuance domain logic\n- [Business Data Access](../libs/business-data-access/README.md) - Business-site API, auth, and config state helpers\n- [Billing Data Access](../libs/billing/data-access/README.md) - Billing persistence entities for accounts, usage events, and grants\n- [Billing Domain](../libs/billing/domain/README.md) - Billing scope validation and invoice preview logic\n- [Constants](../libs/constants/README.md) - Shared constants and tokens\n- [Database](../libs/database/README.md) - Database connection and TypeORM setup\n- [Email](./guides/email-providers.md) - Email service with plugin architecture\n- [Encryption](../libs/encryption/README.md) - Cryptographic operations\n- [Leads Data Access](../libs/leads/data-access/README.md) - Base CRUD and stats client for lead records\n- [Leads Feature Flags](../libs/leads/feature-flags/README.md) - Lead flagging and review client\n- [Leads Feature Onboarding](../libs/leads/feature-onboarding/README.md) - Multi-step onboarding and topic-suggestion client\n- [Leads Feature Topics](../libs/leads/feature-topics/README.md) - Topic management and discovery lifecycle client\n- [Logger](../libs/logger/README.md) - Logging service\n- [Models](../libs/models/README.md) - Shared data models\n- [Payments Domain](../libs/payments/domain/README.md) - Payment provider abstractions and Lemon Squeezy adapter logic\n- [Permissions Domain](../libs/permissions/domain/README.md) - App-scope policy registry and authorization model definitions\n- [UI Models](../libs/ui-models/README.md) - UI-specific data models\n- [Storage](../libs/storage/README.md) - Storage utilities\n- [Permission Lib](../libs/permission-lib/README.md) - Permission utilities\n- [Theme Lib](../libs/theme-lib/README.md) - Theme utilities\n- [Compose Lib](../libs/compose-lib/README.md) - Composition utilities\n- [Prompt Generation](../libs/prompt-generation/README.md) - AI prompt generation\n\n## Quick Links\n\n- [Main README](../README.md) - Project overview and quick start\n- [Build and Push Workflow](../.github/workflows/build-push.yml) - Deployment contract validation and image promotion\n- [Deploy Workflow](../.github/workflows/deploy.yml) - Staging and production ArgoCD deployment flow\n- [Deployment Inventory Validator](../scripts/validate-deployment-inventory.mjs) - Inventory consistency checks\n- [Examples](../examples/README.md) - Code examples and reference implementations\n",
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T18:10:07.653Z"
+      "lastUpdated": "2026-05-26T17:55:22.356Z"
     },
     {
       "slug": "docs/refactoring-complete",
@@ -11127,7 +11422,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T14:35:18.847Z"
+      "lastUpdated": "2026-05-26T13:14:44.281Z"
     },
     {
       "slug": "docs/reference/workspace-catalog",
@@ -11190,6 +11485,11 @@
         },
         {
           "depth": 2,
+          "text": "Public Package Release Surface",
+          "id": "public-package-release-surface"
+        },
+        {
+          "depth": 2,
           "text": "Deployment Surfaces",
           "id": "deployment-surfaces"
         },
@@ -11214,11 +11514,11 @@
           "id": "what-to-read-next"
         }
       ],
-      "body": "# Workspace Catalog\n\nThis is the repo-wide inventory for apps, libraries, tools, and deployment surfaces.\n\nUse it when you need a complete map instead of browsing directories by hand.\n\n## Apps\n\n### Backend Services\n\n| Project | Role |\n| --- | --- |\n| `ai-orchestrator` | AI orchestration and tool-driven backend workflows |\n| `assets` | uploaded file and asset management |\n| `authentication` | identity, login, tokens, and session flows |\n| `blogging` | posts, publishing, comments, and related content flows |\n| `chat-collector` | chat persistence and retrieval |\n| `finance` | financial account, transaction, budget, and inventory flows |\n| `gateway` | shared HTTP, SSE, and WebSocket entrypoint |\n| `permissions` | RBAC and permission assignment |\n| `profile` | user profiles, timelines, and related profile data |\n| `project-planning` | projects, tasks, journals, timers, analytics, and risk |\n| `prompt-proxy` | prompt-oriented AI request surface |\n| `social` | feeds, social interactions, and realtime social flows |\n| `telos-docs-service` | documentation- and persona-oriented service data |\n| `videos` | video platform backend and media-related workflows |\n\n### Frontend Applications\n\n| Project | Role |\n| --- | --- |\n| `christopherrutherford-net` | personal site frontend |\n| `client-interface` | main multi-surface frontend application |\n| `digital-homestead` | frontend application for the digital homestead experience |\n| `forgeofwill` | project-planning frontend |\n| `video-client` | video platform frontend |\n\n### E2E Projects\n\n| Project | Role |\n| --- | --- |\n| `ai-orchestrator-e2e` | AI orchestrator end-to-end coverage |\n| `fin-commander-e2e` | Fin Commander end-to-end coverage |\n| `local-hub-e2e` | Local Hub browser end-to-end coverage |\n| `store-client-e2e` | store client end-to-end coverage |\n| `video-client-e2e` | video client end-to-end coverage |\n\n## Libraries\n\n### UI Libraries\n\n| Project | Role |\n| --- | --- |\n| `ag-grid-ui` | theme-aware AG Grid integration |\n| `auth-ui` | authentication UI components |\n| `blogging-ui` | blog and publishing UI |\n| `business-ui` | business-oriented shared UI |\n| `chat-ui` | chat components and related UI utilities |\n| `common-ui` | core Angular UI primitives and styles |\n| `community-ui` | community-oriented shared UI |\n| `finance-ui` | financial management UI |\n| `form-ui` | reusable form components |\n| `forum-ui` | forum-oriented UI |\n| `message-ui` | messaging UI |\n| `navigation-ui` | app bars, sidebars, and navigation surfaces |\n| `notification-ui` | notification lists and bell-style UI |\n| `persona-ui` | persona-selection UI |\n| `profile-ui` | profile-oriented UI |\n| `project-ui` | project-management UI |\n| `search-ui` | search and exploration UI |\n| `social-ui` | social feature UI and support code |\n| `store-ui` | commerce and donation UI |\n| `theme-ui` | theme-related Angular UI |\n| `video-ui` | reusable video playback and listing UI |\n\n### Domain, Models, And Contracts\n\n| Project | Role |\n| --- | --- |\n| `app-catalog-contracts` | app and package catalog contract types |\n| `app-config-models` | shared application configuration models |\n| `constants` | shared constants and tokens |\n| `models` | shared domain models |\n| `theme-models` | theme-related models |\n| `ui-models` | UI-facing shared models |\n\n### Platform And Infrastructure Libraries\n\n| Project | Role |\n| --- | --- |\n| `app-registry` | cross-app registry and navigation helpers |\n| `billing-sdk` | billing-service client helpers |\n| `compose-lib` | composition utilities and related services |\n| `database` | shared backend persistence helpers |\n| `encryption` | cryptographic helpers |\n| `logger` | shared logging infrastructure |\n| `permission-lib` | shared permission logic |\n| `prompt-generation` | prompt-building helpers |\n| `storage` | storage abstractions and helpers |\n| `theme-lib` | runtime theme services and utilities |\n| `theme-styles` | shared SCSS mixins and theme styles |\n\n## Tools\n\n| Project | Role |\n| --- | --- |\n| `tools/admin-env-wizard` | deployment generation, workspace configs, and deployment inventory export |\n| `tools/stack-client` | authenticated terminal client for gateway-backed workflows |\n\n## Deployment Surfaces\n\n### Local Development\n\n| Surface | Role |\n| --- | --- |\n| `docker-compose.yaml` + `docker-compose.dev.yaml` | local integrated development stack |\n| `pnpm exec nx serve <project>` | project-level local runtime |\n| `pnpm run watch:build:scope -- --projects=<project>` | targeted dist-driven watch flow |\n\n### Generated Deployments\n\n| Surface | Role |\n| --- | --- |\n| `tools/admin-env-wizard` output | per-client Compose and K8s deployment trees |\n| `gateway/composition.yaml` | generated gateway service/controller contract |\n| `deploy.sh` | generated deployment helper entrypoint |\n\n### Repo-Level GitOps Deployment\n\n| Surface | Role |\n| --- | --- |\n| `k8s/base/` | shared base manifests |\n| `k8s/overlays/staging/` | staging environment overlay |\n| `k8s/overlays/production/` | production environment overlay |\n| `k8s/argo-app/application.yaml` | parameterized ArgoCD application |\n| `.github/workflows/build-push.yml` | image build, inventory validation, and promotion |\n| `.github/workflows/deploy.yml` | deployment workflow entrypoint |\n\n## What To Read Next\n\nRead these by task:\n\n- new contributor: [Getting Started](../getting-started/README.md)\n- workspace navigation: [Workspace Map](../architecture/workspace-map.md)\n- deployment generation: [Deployment Generation](../devops/deployment-generation.md)\n- gateway composition: [Gateway Configuration](../devops/gateway.md)\n- local stack work: [Docker Compose](../devops/docker-compose.md)\n",
+      "body": "# Workspace Catalog\n\nThis is the repo-wide inventory for apps, libraries, tools, and deployment surfaces.\n\nUse it when you need a complete map instead of browsing directories by hand.\n\n## Apps\n\nThe workspace contains customer-facing app products, backend service products, and public package surfaces. Some service capabilities are intended to be offered as hosted products while some library surfaces are intended to be published free through npm via the mirror-repo workflow.\n\n### Backend Services\n\n| Project | Role |\n| --- | --- |\n| `ai-orchestrator` | AI orchestration and tool-driven backend workflows |\n| `assets` | uploaded file and asset management |\n| `authentication` | identity, login, tokens, and session flows |\n| `billing` | hosted or self-hosted usage metering, usage blocks, and invoice-preview orchestration product surface |\n| `blogging` | posts, publishing, comments, and related content flows |\n| `chat-collector` | chat persistence and retrieval |\n| `finance` | financial account, transaction, budget, and inventory flows |\n| `gateway` | shared HTTP, SSE, and WebSocket entrypoint |\n| `permissions` | RBAC and permission assignment |\n| `profile` | user profiles, timelines, and related profile data |\n| `project-planning` | projects, tasks, journals, timers, analytics, and risk |\n| `prompt-proxy` | prompt-oriented AI request surface |\n| `social` | feeds, social interactions, and realtime social flows |\n| `telos-docs-service` | documentation- and persona-oriented service data |\n| `videos` | video platform backend and media-related workflows |\n\n### Frontend Applications\n\n| Project | Role |\n| --- | --- |\n| `christopherrutherford-net` | personal site frontend |\n| `client-interface` | main multi-surface frontend application |\n| `digital-homestead` | frontend application for the digital homestead experience |\n| `forgeofwill` | project-planning frontend |\n| `marketing-generator` | Signal Foundry campaign workbench for briefs, concepts, exports, workspaces, and refinement telemetry |\n| `video-client` | video platform frontend |\n\n### E2E Projects\n\n| Project | Role |\n| --- | --- |\n| `ai-orchestrator-e2e` | AI orchestrator end-to-end coverage |\n| `fin-commander-e2e` | Fin Commander end-to-end coverage |\n| `local-hub-e2e` | Local Hub browser end-to-end coverage |\n| `store-client-e2e` | store client end-to-end coverage |\n| `video-client-e2e` | video client end-to-end coverage |\n\n## Libraries\n\n### UI Libraries\n\n| Project | Role |\n| --- | --- |\n| `ag-grid-ui` | theme-aware AG Grid integration |\n| `auth-ui` | authentication UI components |\n| `blogging-ui` | blog and publishing UI |\n| `business-ui` | business-oriented shared UI |\n| `chat-ui` | chat components and related UI utilities |\n| `common-ui` | core Angular UI primitives and styles |\n| `community-ui` | community-oriented shared UI |\n| `finance-ui` | financial management UI |\n| `form-ui` | reusable form components |\n| `forum-ui` | forum-oriented UI |\n| `message-ui` | messaging UI |\n| `navigation-ui` | app bars, sidebars, and navigation surfaces |\n| `notification-ui` | notification lists and bell-style UI |\n| `persona-ui` | persona-selection UI |\n| `profile-ui` | profile-oriented UI |\n| `project-ui` | project-management UI |\n| `search-ui` | search and exploration UI |\n| `social-ui` | social feature UI and support code |\n| `store-ui` | commerce and donation UI |\n| `theme-ui` | theme-related Angular UI |\n| `video-ui` | reusable video playback and listing UI |\n\n### Domain, Models, And Contracts\n\n| Project | Role |\n| --- | --- |\n| `app-catalog-contracts` | app and package catalog contract types |\n| `app-config-models` | shared application configuration models |\n| `constants` | shared constants and tokens |\n| `models` | shared domain models |\n| `theme-models` | theme-related models |\n| `ui-models` | UI-facing shared models |\n\n### Platform And Infrastructure Libraries\n\n| Project | Role |\n| --- | --- |\n| `app-registry` | cross-app registry and navigation helpers |\n| `billing-sdk` | free npm package surface for billing-service client helpers |\n| `compose-lib` | composition utilities and related services |\n| `database` | shared backend persistence helpers |\n| `encryption` | cryptographic helpers |\n| `logger` | shared logging infrastructure |\n| `permission-lib` | shared permission logic |\n| `prompt-generation` | prompt-building helpers |\n| `storage` | storage abstractions and helpers |\n| `theme-lib` | runtime theme services and utilities |\n| `theme-styles` | shared SCSS mixins and theme styles |\n\n## Tools\n\n| Project | Role |\n| --- | --- |\n| `tools/admin-env-wizard` | deployment generation, workspace configs, and deployment inventory export |\n| `tools/stack-client` | authenticated terminal client for gateway-backed workflows |\n\n## Public Package Release Surface\n\n| Surface | Role |\n| --- | --- |\n| `tools/public-packages/public-packages.json` | allowlist of publishable public package surfaces |\n| `tools/public-packages/mirror-root/README.md` | documents that mirror repo versioning and npm publishing are authoritative |\n| `.github/workflows/sync-public-packages.yml` | syncs approved package surfaces into the mirror release flow |\n| `.github/workflows/release-packages.yml` | validates public package boundaries in the source repo |\n\n## Deployment Surfaces\n\n### Local Development\n\n| Surface | Role |\n| --- | --- |\n| `docker-compose.yaml` + `docker-compose.dev.yaml` | local integrated development stack |\n| `pnpm exec nx serve <project>` | project-level local runtime |\n| `pnpm run watch:build:scope -- --projects=<project>` | targeted dist-driven watch flow |\n\n### Generated Deployments\n\n| Surface | Role |\n| --- | --- |\n| `tools/admin-env-wizard` output | per-client Compose and K8s deployment trees |\n| `gateway/composition.yaml` | generated gateway service/controller contract |\n| `deploy.sh` | generated deployment helper entrypoint |\n\n### Repo-Level GitOps Deployment\n\n| Surface | Role |\n| --- | --- |\n| `k8s/base/` | shared base manifests |\n| `k8s/overlays/staging/` | staging environment overlay |\n| `k8s/overlays/production/` | production environment overlay |\n| `k8s/argo-app/application.yaml` | parameterized ArgoCD application |\n| `.github/workflows/build-push.yml` | image build, inventory validation, and promotion |\n| `.github/workflows/deploy.yml` | deployment workflow entrypoint |\n\n## What To Read Next\n\nRead these by task:\n\n- new contributor: [Getting Started](../getting-started/README.md)\n- workspace navigation: [Workspace Map](../architecture/workspace-map.md)\n- deployment generation: [Deployment Generation](../devops/deployment-generation.md)\n- gateway composition: [Gateway Configuration](../devops/gateway.md)\n- local stack work: [Docker Compose](../devops/docker-compose.md)\n",
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-10T15:54:46.917Z"
+      "lastUpdated": "2026-05-26T17:55:26.593Z"
     },
     {
       "slug": "docs/services/app-configurator/architecture",
@@ -11254,7 +11554,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/app-configurator/config-document-flow",
@@ -11275,7 +11575,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/app-configurator/dependency-diagram",
@@ -11296,7 +11596,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/app-configurator/message-catalog",
@@ -11317,7 +11617,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/app-configurator/operations",
@@ -11358,7 +11658,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/app-configurator/startup-flow",
@@ -11379,7 +11679,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/assets/architecture",
@@ -11420,7 +11720,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.262Z"
+      "lastUpdated": "2026-05-26T13:14:44.282Z"
     },
     {
       "slug": "docs/services/assets/asset-lifecycle",
@@ -11441,7 +11741,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/assets/dependency-diagram",
@@ -11462,7 +11762,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/assets/migration-procedure",
@@ -11483,7 +11783,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/assets/operations",
@@ -11549,7 +11849,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.262Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/assets/storage-strategy",
@@ -11570,7 +11870,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/architecture",
@@ -11616,7 +11916,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/auth-flow",
@@ -11637,7 +11937,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/data-model-flow",
@@ -11658,7 +11958,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/dependency-diagram",
@@ -11679,7 +11979,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/migration-procedure",
@@ -11700,7 +12000,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/authentication/operations",
@@ -11766,7 +12066,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/billing/architecture",
@@ -11802,7 +12102,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/billing/data-flow",
@@ -11823,7 +12123,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/billing/dependency-diagram",
@@ -11844,7 +12144,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/billing/message-catalog",
@@ -11865,7 +12165,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/billing/operations",
@@ -11906,7 +12206,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.651Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/gateway/architecture",
@@ -11947,7 +12247,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.970Z"
+      "lastUpdated": "2026-05-26T13:14:44.283Z"
     },
     {
       "slug": "docs/services/gateway/composition-diagram",
@@ -11968,7 +12268,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/gateway/dependency-diagram",
@@ -11989,7 +12289,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.970Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/gateway/operations",
@@ -12050,7 +12350,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.970Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/gateway/realtime-flow",
@@ -12071,7 +12371,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.971Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/gateway/request-flow",
@@ -12092,7 +12392,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:32:35.970Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/architecture",
@@ -12128,7 +12428,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/catalog-sync-flow",
@@ -12149,7 +12449,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/dependency-diagram",
@@ -12170,7 +12470,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/message-catalog",
@@ -12191,7 +12491,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/operations",
@@ -12232,7 +12532,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.652Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/system-configurator-api/startup-flow",
@@ -12253,7 +12553,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:51:57.653Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/architecture",
@@ -12294,7 +12594,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/data-flow",
@@ -12315,7 +12615,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/dependency-diagram",
@@ -12336,7 +12636,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/domain-layout",
@@ -12357,7 +12657,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/operations",
@@ -12413,7 +12713,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.263Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/services/telos-docs-service/seeding-procedure",
@@ -12434,7 +12734,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-25T17:38:05.264Z"
+      "lastUpdated": "2026-05-26T13:14:44.284Z"
     },
     {
       "slug": "docs/social-component-backend",
@@ -14950,7 +15250,7 @@
     {
       "slug": "readme",
       "title": "Optimistic Tanuki",
-      "summary": "Optimistic Tanuki is an Nx monorepo for a multi-app platform built around NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.",
+      "summary": "Optimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.",
       "sourcePath": "README.md",
       "category": "README.md",
       "tags": [],
@@ -15027,11 +15327,11 @@
           "id": "repository-layout"
         }
       ],
-      "body": "# Optimistic Tanuki\n\nOptimistic Tanuki is an Nx monorepo for a multi-app platform built around NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.\n\n## Start Here\n\nUse the entrypoint that matches the job:\n\n- first-time setup: [docs/getting-started/README.md](./docs/getting-started/README.md)\n- workspace navigation: [docs/architecture/workspace-map.md](./docs/architecture/workspace-map.md)\n- full project inventory: [docs/reference/workspace-catalog.md](./docs/reference/workspace-catalog.md)\n- deployment generation: [docs/devops/deployment-generation.md](./docs/devops/deployment-generation.md)\n- generated deployment tooling: [tools/admin-env-wizard/README.md](./tools/admin-env-wizard/README.md)\n\nThe repo currently has three operational layers:\n\n- local development through Docker Compose and Nx\n- deployment inventory and environment generation through Go tooling in `tools/`\n- Kubernetes delivery through Kustomize overlays, ArgoCD, and GitHub Actions\n\n## Getting Started\n\nStart with [docs/getting-started/README.md](./docs/getting-started/README.md) if you need first-time setup. For most contributors, the shortest path is:\n\n```bash\ngit clone https://github.com/cjrutherford/optimistic-tanuki.git\ncd optimistic-tanuki\npnpm install\npnpm run docker:dev\n```\n\nPrimary local endpoints:\n\n- Main app: `http://localhost:8080`\n- Leads app: `http://localhost:4201`\n- Gateway: `http://localhost:3000`\n\nPrerequisites:\n\n- Node.js 20+\n- pnpm\n- Docker and Docker Compose\n- Go 1.24+ if you want to run the Go tools in `tools/`\n\n## Local Development\n\nUse [docs/devops/docker-compose.md](./docs/devops/docker-compose.md) as the canonical local-workflow guide.\n\nThe repo supports three local development modes:\n\n- full Compose dev stack for cross-service validation\n- hybrid inner loop for fast single-app iteration\n- plain production-like Compose for image startup checks\n\nThe Docker dev stack is intentionally expensive: `pnpm run docker:dev` does a full Nx build, Docker image builds, and phased startup before the stack is usable.\n\nThe dist-driven container loop is:\n\n```text\nsrc/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart\n```\n\nRecommended turnaround strategy:\n\n1. Use the hybrid inner loop while actively changing one app.\n2. Use `pnpm run watch:build:scope -- --projects=<project>` for the active app.\n3. Use the full Compose dev stack only when validating cross-service integration.\n4. Use `pnpm run docker:dev:reset` only when image or volume drift makes targeted iteration unreliable.\n\n```bash\n# Full Compose dev stack\npnpm run docker:dev\npnpm run watch:build\n\n# Hybrid inner loop\npnpm run docker:infra:up\npnpm exec nx serve authentication\npnpm run watch:build:scope -- --projects=gateway\n\n# Inspect or stop the Docker dev stack\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:down\n```\n\n## Deployment Model\n\nThe current deployment path is GitOps-oriented and catalog-driven.\n\n1. The canonical deployable app inventory is exported from the Go configurator in [tools/admin-env-wizard](./tools/admin-env-wizard/README.md).\n2. GitHub Actions validates that inventory against the image build matrix, Kustomize base resources, and overlay image lists.\n3. Image promotion updates Kustomize overlay `images:` entries instead of rewriting every manifest.\n4. ArgoCD applies [k8s/argo-app/application.yaml](./k8s/argo-app/application.yaml) against the selected overlay under `k8s/overlays/`.\n\nKey files:\n\n- [build-push.yml](./.github/workflows/build-push.yml)\n- [deploy.yml](./.github/workflows/deploy.yml)\n- [k8s/base/kustomization.yaml](./k8s/base/kustomization.yaml)\n- [k8s/overlays/staging/kustomization.yaml](./k8s/overlays/staging/kustomization.yaml)\n- [k8s/overlays/production/kustomization.yaml](./k8s/overlays/production/kustomization.yaml)\n- [validate-deployment-inventory.mjs](./scripts/validate-deployment-inventory.mjs)\n- [validate-compose-k8s-parity.sh](./scripts/validate-compose-k8s-parity.sh)\n- [update-k8s-overlay-images.mjs](./scripts/update-k8s-overlay-images.mjs)\n\n## Go Tooling\n\nTwo Go tools now document and drive part of the platform surface:\n\n- [tools/admin-env-wizard](./tools/admin-env-wizard/README.md)\n  - `admin-env generate` for non-interactive environment generation\n  - `admin-env tui` for the Bubble Tea configurator\n  - `cmd/deployment-inventory` for exporting the canonical deployment inventory used by CI and scripts\n- [tools/stack-client](./tools/stack-client/README.md)\n  - `stack-client tui` for an authenticated terminal client to the stack through the gateway\n\n## Testing\n\nCommon commands:\n\n```bash\n# Unit tests\npnpm exec nx test <project>\n\n# E2E tests\npnpm exec nx e2e <project>-e2e\n\n# Repo-wide validation examples\npnpm exec nx run-many --target=build --all\npnpm exec nx run-many --target=test --all\n```\n\nBefore running Playwright suites for the first time:\n\n```bash\npnpm exec playwright install\n```\n\nSee [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [docs/testing/e2e-testing.md](./docs/testing/e2e-testing.md) for the deeper test workflow.\n\n## Repository Layout\n\n- `apps/`: NestJS services and frontend applications\n- `libs/`: shared libraries\n- `k8s/`: base manifests, overlays, and the ArgoCD application\n- `scripts/`: deployment, validation, seeding, and operational scripts\n- `tools/`: Go utilities and other developer tooling\n- `docs/`: curated project documentation\n\nUse [docs/README.md](./docs/README.md) as the documentation index.\n",
+      "body": "# Optimistic Tanuki\n\nOptimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.\n\nThe repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.\n\n- Optimistic Tanuki (`client-interface`): the main community-owned social networking app for defined groups\n- Towne Square (`local-hub`): local-first coordination, classifieds, and civic participation\n- Forge of Will (`forgeofwill`): focused project execution with context, notes, and risk tracking\n- Fin Commander (`fin-commander`): guided financial workflows for ledgers, plans, and scenarios\n\nThe product surface is broader than the main apps:\n\n- hosted services such as `billing` can be offered as managed infrastructure with self-hosted Docker options where documented\n- public libraries such as `@optimistic-tanuki/billing-sdk` are intended to be distributed free through npm\n- public npm packages are published from the mirror-repo workflow, not directly from this monorepo\n\nThe codebase itself combines NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.\n\n## Start Here\n\nUse the entrypoint that matches the job:\n\n- first-time setup: [docs/getting-started/README.md](./docs/getting-started/README.md)\n- workspace navigation: [docs/architecture/workspace-map.md](./docs/architecture/workspace-map.md)\n- full project inventory: [docs/reference/workspace-catalog.md](./docs/reference/workspace-catalog.md)\n- deployment generation: [docs/devops/deployment-generation.md](./docs/devops/deployment-generation.md)\n- generated deployment tooling: [tools/admin-env-wizard/README.md](./tools/admin-env-wizard/README.md)\n\nThe repo currently has three operational layers:\n\n- local development through Docker Compose and Nx\n- deployment inventory and environment generation through Go tooling in `tools/`\n- Kubernetes delivery through Kustomize overlays, ArgoCD, and GitHub Actions\n\n## Getting Started\n\nStart with [docs/getting-started/README.md](./docs/getting-started/README.md) if you need first-time setup. For most contributors, the shortest path is:\n\n```bash\ngit clone https://github.com/cjrutherford/optimistic-tanuki.git\ncd optimistic-tanuki\npnpm install\npnpm run docker:dev\n```\n\nPrimary local endpoints:\n\n- Main app: `http://localhost:8080`\n- Leads app: `http://localhost:4201`\n- Gateway: `http://localhost:3000`\n\nPrerequisites:\n\n- Node.js 20+\n- pnpm\n- Docker and Docker Compose\n- Go 1.24+ if you want to run the Go tools in `tools/`\n\n## Local Development\n\nUse [docs/devops/docker-compose.md](./docs/devops/docker-compose.md) as the canonical local-workflow guide.\n\nThe repo supports three local development modes:\n\n- full Compose dev stack for cross-service validation\n- hybrid inner loop for fast single-app iteration\n- plain production-like Compose for image startup checks\n\nThe Docker dev stack is intentionally expensive: `pnpm run docker:dev` does a full Nx build, Docker image builds, and phased startup before the stack is usable.\n\nThe dist-driven container loop is:\n\n```text\nsrc/ -> nx build --watch -> dist/ -> bind mount -> nodemon restart\n```\n\nRecommended turnaround strategy:\n\n1. Use the hybrid inner loop while actively changing one app.\n2. Use `pnpm run watch:build:scope -- --projects=<project>` for the active app.\n3. Use the full Compose dev stack only when validating cross-service integration.\n4. Use `pnpm run docker:dev:reset` only when image or volume drift makes targeted iteration unreliable.\n\n```bash\n# Full Compose dev stack\npnpm run docker:dev\npnpm run watch:build\n\n# Hybrid inner loop\npnpm run docker:infra:up\npnpm exec nx serve authentication\npnpm run watch:build:scope -- --projects=gateway\n\n# Inspect or stop the Docker dev stack\npnpm run docker:dev:ps\npnpm run docker:dev:logs\npnpm run docker:dev:down\n```\n\n## Deployment Model\n\nThe current deployment path is GitOps-oriented and catalog-driven.\n\n1. The canonical deployable app inventory is exported from the Go configurator in [tools/admin-env-wizard](./tools/admin-env-wizard/README.md).\n2. GitHub Actions validates that inventory against the image build matrix, Kustomize base resources, and overlay image lists.\n3. Image promotion updates Kustomize overlay `images:` entries instead of rewriting every manifest.\n4. ArgoCD applies [k8s/argo-app/application.yaml](./k8s/argo-app/application.yaml) against the selected overlay under `k8s/overlays/`.\n\nKey files:\n\n- [build-push.yml](./.github/workflows/build-push.yml)\n- [deploy.yml](./.github/workflows/deploy.yml)\n- [k8s/base/kustomization.yaml](./k8s/base/kustomization.yaml)\n- [k8s/overlays/staging/kustomization.yaml](./k8s/overlays/staging/kustomization.yaml)\n- [k8s/overlays/production/kustomization.yaml](./k8s/overlays/production/kustomization.yaml)\n- [validate-deployment-inventory.mjs](./scripts/validate-deployment-inventory.mjs)\n- [validate-compose-k8s-parity.sh](./scripts/validate-compose-k8s-parity.sh)\n- [update-k8s-overlay-images.mjs](./scripts/update-k8s-overlay-images.mjs)\n\n## Go Tooling\n\nTwo Go tools now document and drive part of the platform surface:\n\n- [tools/admin-env-wizard](./tools/admin-env-wizard/README.md)\n  - `admin-env generate` for non-interactive environment generation\n  - `admin-env tui` for the Bubble Tea configurator\n  - `cmd/deployment-inventory` for exporting the canonical deployment inventory used by CI and scripts\n- [tools/stack-client](./tools/stack-client/README.md)\n  - `stack-client tui` for an authenticated terminal client to the stack through the gateway\n\n## Testing\n\nCommon commands:\n\n```bash\n# Unit tests\npnpm exec nx test <project>\n\n# E2E tests\npnpm exec nx e2e <project>-e2e\n\n# Repo-wide validation examples\npnpm exec nx run-many --target=build --all\npnpm exec nx run-many --target=test --all\n```\n\nBefore running Playwright suites for the first time:\n\n```bash\npnpm exec playwright install\n```\n\nSee [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [docs/testing/e2e-testing.md](./docs/testing/e2e-testing.md) for the deeper test workflow.\n\n## Repository Layout\n\n- `apps/`: NestJS services and frontend applications\n- `libs/`: shared libraries\n- `k8s/`: base manifests, overlays, and the ArgoCD application\n- `scripts/`: deployment, validation, seeding, and operational scripts\n- `tools/`: Go utilities and other developer tooling\n- `docs/`: curated project documentation\n\nUse [docs/README.md](./docs/README.md) as the documentation index.\n",
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-10T15:54:46.915Z"
+      "lastUpdated": "2026-05-26T15:10:10.632Z"
     },
     {
       "slug": "tools/admin-env-wizard/readme",

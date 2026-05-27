@@ -1,93 +1,91 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { CreatePageComponent } from './create-page.component';
-import { MarketingEnrichmentApiService } from '../services/marketing-enrichment-api.service';
 import { MarketingStateService } from '../services/marketing-state.service';
+import { MarketingGeneratorService } from '../services/marketing-generator.service';
+import { MarketingEnrichmentApiService } from '../services/marketing-enrichment-api.service';
 
 describe('CreatePageComponent', () => {
-  it('shows the custom app brief form when custom app mode is active', async () => {
+  it('shows positioning snapshot content for the selected preset offering', async () => {
     await TestBed.configureTestingModule({
       imports: [CreatePageComponent],
       providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: {},
-        },
+        provideRouter([]),
+        MarketingStateService,
+        MarketingGeneratorService,
         {
           provide: MarketingEnrichmentApiService,
-          useValue: {
-            enrichConcepts: jest.fn(),
-          },
+          useValue: { enrichConcepts: jest.fn() },
         },
-        MarketingStateService,
       ],
     }).compileComponents();
 
     const fixture = TestBed.createComponent(CreatePageComponent);
-    const component = fixture.componentInstance;
-
-    component.selectCustomApp();
     fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Custom app brief');
+    expect(fixture.nativeElement.textContent).toContain('Positioning snapshot');
+    expect(fixture.nativeElement.textContent).toContain('Objectives');
+    expect(fixture.nativeElement.textContent).toContain('Proof points');
   });
 
-  it('blocks moving forward when the custom app brief is incomplete', async () => {
-    await TestBed.configureTestingModule({
-      imports: [CreatePageComponent],
-      providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: {},
-        },
-        {
-          provide: MarketingEnrichmentApiService,
-          useValue: {
-            enrichConcepts: jest.fn(),
+  it('shows delivery and pricing details for service and package offerings', async () => {
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [CreatePageComponent],
+        providers: [
+          provideRouter([]),
+          MarketingStateService,
+          MarketingGeneratorService,
+          {
+            provide: MarketingEnrichmentApiService,
+            useValue: { enrichConcepts: jest.fn() },
           },
-        },
-        MarketingStateService,
-      ],
-    }).compileComponents();
+        ],
+      })
+      .compileComponents();
+
+    const state = TestBed.inject(MarketingStateService);
+    state.setRequest({
+      ...state.request(),
+      selectedOfferingId: 'billing-service',
+      audienceId: 'technical-buyers',
+    });
 
     const fixture = TestBed.createComponent(CreatePageComponent);
-    const component = fixture.componentInstance;
-
-    component.selectCustomApp();
     fixture.detectChanges();
 
-    const nextButton = Array.from(
-      fixture.nativeElement.querySelectorAll('button')
-    ).find((button: HTMLButtonElement) => button.textContent?.includes('Next'));
-
-    expect(nextButton?.hasAttribute('disabled')).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Complete the custom app brief');
+    expect(fixture.nativeElement.textContent).toContain('Delivery model');
+    expect(fixture.nativeElement.textContent).toContain('Pricing model');
+    expect(fixture.nativeElement.textContent).toContain('Self-hosted');
   });
 
-  it('exposes output and brand configuration steps in the studio flow', async () => {
-    await TestBed.configureTestingModule({
-      imports: [CreatePageComponent],
-      providers: [
-        {
-          provide: ActivatedRoute,
-          useValue: {},
-        },
-        {
-          provide: MarketingEnrichmentApiService,
-          useValue: {
-            enrichConcepts: jest.fn(),
+  it('shows bundled channel output selections in the brief summary', async () => {
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [CreatePageComponent],
+        providers: [
+          provideRouter([]),
+          MarketingStateService,
+          MarketingGeneratorService,
+          {
+            provide: MarketingEnrichmentApiService,
+            useValue: { enrichConcepts: jest.fn() },
           },
-        },
-        MarketingStateService,
-      ],
-    }).compileComponents();
+        ],
+      })
+      .compileComponents();
+
+    const state = TestBed.inject(MarketingStateService);
+    state.setRequest({
+      ...state.request(),
+      channel: 'web',
+      secondaryChannels: ['email', 'social'],
+    });
 
     const fixture = TestBed.createComponent(CreatePageComponent);
     fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.textContent).toContain('Outputs');
-    expect(compiled.textContent).toContain('Brand');
+    expect(fixture.nativeElement.textContent).toContain('Bundled channels');
+    expect(fixture.nativeElement.textContent).toContain('Web, Email, Social');
   });
 });

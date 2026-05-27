@@ -18,4 +18,11 @@ describe('LandingComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('brands the landing page as Optimistic Tanuki, the main community app', () => {
+    expect(fixture.nativeElement.textContent).toContain('Optimistic Tanuki');
+    expect(fixture.nativeElement.textContent).toContain(
+      'main app for community-owned networks'
+    );
+  });
 });

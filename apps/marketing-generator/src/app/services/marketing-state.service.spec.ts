@@ -61,4 +61,59 @@ describe('MarketingStateService', () => {
     expect(service.request().brand.primaryColor).toBe('#1d4ed8');
     expect(service.request().audienceId).toBe('creators');
   });
+
+  it('creates, renames, and duplicates persisted workspaces', () => {
+    const service = TestBed.inject(MarketingStateService);
+
+    service.createWorkspace('Launch Sprint');
+    service.renameCurrentWorkspace('Launch Sprint v2');
+    service.duplicateCurrentWorkspace();
+
+    expect(service.workspaces().length).toBeGreaterThanOrEqual(2);
+    expect(service.currentWorkspace()?.name).toBe('Launch Sprint v2');
+    expect(
+      service.workspaces().some((workspace) => workspace.name.includes('Copy'))
+    ).toBe(true);
+  });
+
+  it('switches active workspace and restores the request snapshot', () => {
+    const service = TestBed.inject(MarketingStateService);
+
+    service.createWorkspace('Workspace A');
+    service.patchRequest({ audienceId: 'community-operators' });
+    const workspaceAId = service.currentWorkspace()!.id;
+
+    service.createWorkspace('Workspace B');
+    service.patchRequest({ audienceId: 'technical-buyers' });
+    const workspaceBId = service.currentWorkspace()!.id;
+
+    service.selectWorkspace(workspaceAId);
+    expect(service.request().audienceId).toBe('community-operators');
+
+    service.selectWorkspace(workspaceBId);
+    expect(service.request().audienceId).toBe('technical-buyers');
+  });
+
+  it('saves and restores workspace versions with decision summaries', () => {
+    const service = TestBed.inject(MarketingStateService);
+
+    service.createWorkspace('Decision Flow');
+    service.patchRequest({ audienceId: 'community-operators' });
+    service.setDecisionSummary('Winner chosen: community angle.');
+    service.saveWorkspaceVersion('Community winner');
+
+    service.patchRequest({ audienceId: 'technical-buyers' });
+    const savedVersion = service
+      .currentWorkspace()!
+      .versions.find((version) => version.name === 'Community winner');
+
+    expect(savedVersion).toBeTruthy();
+
+    service.restoreWorkspaceVersion(savedVersion!.id);
+
+    expect(service.request().audienceId).toBe('community-operators');
+    expect(service.currentWorkspace()?.decisionSummary).toBe(
+      'Winner chosen: community angle.'
+    );
+  });
 });
