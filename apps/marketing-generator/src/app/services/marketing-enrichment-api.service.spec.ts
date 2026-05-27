@@ -1,5 +1,8 @@
 import { of, throwError } from 'rxjs';
-import { MarketingEnrichmentApiService } from './marketing-enrichment-api.service';
+import {
+  MarketingEnrichmentApiService,
+  MarketingEnrichmentResult,
+} from './marketing-enrichment-api.service';
 import { CampaignConcept, GenerationRequest } from '../types';
 
 describe('MarketingEnrichmentApiService', () => {
@@ -17,6 +20,7 @@ describe('MarketingEnrichmentApiService', () => {
     audienceId: 'creators',
     campaignIntent: 'awareness',
     channel: 'web',
+    secondaryChannels: [],
     tone: 'editorial',
     includeAiPolish: true,
     deliverables: [{ type: 'flyer', formatId: 'flyer-letter', quantity: 1 }],
@@ -80,17 +84,28 @@ describe('MarketingEnrichmentApiService', () => {
 
   it('returns enriched concepts from the endpoint', async () => {
     const httpClient = {
-      post: jest.fn().mockReturnValue(of({ concepts: [{ ...concepts[0], headline: 'Enriched' }] })),
+      post: jest.fn().mockReturnValue(
+        of({
+          concepts: [{ ...concepts[0], headline: 'Enriched' }],
+          enrichmentApplied: true,
+        })
+      ),
     } as any;
 
     const service = new MarketingEnrichmentApiService(httpClient);
     const result = await service.enrichConcepts(request, concepts);
 
-    expect(httpClient.post).toHaveBeenCalledWith('/api/marketing-generator/enrich', {
-      request,
-      concepts,
+    expect(httpClient.post).toHaveBeenCalledWith(
+      '/api/marketing-generator/enrich',
+      {
+        request,
+        concepts,
+      }
+    );
+    expect(result).toEqual<MarketingEnrichmentResult>({
+      concepts: [{ ...concepts[0], headline: 'Enriched' }],
+      enrichmentApplied: true,
     });
-    expect(result[0].headline).toBe('Enriched');
   });
 
   it('falls back to original concepts when the endpoint fails', async () => {
@@ -101,6 +116,9 @@ describe('MarketingEnrichmentApiService', () => {
     const service = new MarketingEnrichmentApiService(httpClient);
     const result = await service.enrichConcepts(request, concepts);
 
-    expect(result).toEqual(concepts);
+    expect(result).toEqual<MarketingEnrichmentResult>({
+      concepts,
+      enrichmentApplied: false,
+    });
   });
 });

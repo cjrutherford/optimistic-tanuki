@@ -1,6 +1,21 @@
 # Optimistic Tanuki
 
-Optimistic Tanuki is an Nx monorepo for a multi-app platform built around NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
+Optimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
+
+The repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.
+
+- Optimistic Tanuki (`client-interface`): the main community-owned social networking app for defined groups
+- Towne Square (`local-hub`): local-first coordination, classifieds, and civic participation
+- Forge of Will (`forgeofwill`): focused project execution with context, notes, and risk tracking
+- Fin Commander (`fin-commander`): guided financial workflows for ledgers, plans, and scenarios
+
+The product surface is broader than the main apps:
+
+- hosted services such as `billing` can be offered as managed infrastructure with self-hosted Docker options where documented
+- public libraries such as `@optimistic-tanuki/billing-sdk` are intended to be distributed free through npm
+- public npm packages are published from the mirror-repo workflow, not directly from this monorepo
+
+The codebase itself combines NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
 
 ## Start Here
 

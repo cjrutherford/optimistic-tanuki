@@ -1,4 +1,8 @@
-import { MarketingMaterialType, MaterialSurfaceType } from '../types';
+import {
+  MarketingMaterialType,
+  MaterialSurfaceType,
+  MaterialTemplateFamily,
+} from '../types';
 
 export interface MaterialFormatPreset {
   id: string;
@@ -9,6 +13,7 @@ export interface MaterialFormatPreset {
   unit: 'px';
   dpi?: number;
   surfaces: MaterialSurfaceType[];
+  templateFamily: MaterialTemplateFamily;
   layoutVariants: string[];
 }
 
@@ -26,7 +31,8 @@ export const MATERIAL_FORMAT_PRESETS: Record<
       unit: 'px',
       dpi: 150,
       surfaces: ['front'],
-      layoutVariants: ['hero-focus', 'offer-grid'],
+      templateFamily: 'print-flyer',
+      layoutVariants: ['issue-led', 'community-bulletin', 'offer-dominant'],
     },
   ],
   brochure: [
@@ -39,7 +45,8 @@ export const MATERIAL_FORMAT_PRESETS: Record<
       unit: 'px',
       dpi: 150,
       surfaces: ['front', 'inside-left', 'inside-right', 'back'],
-      layoutVariants: ['story-panels', 'feature-walkthrough'],
+      templateFamily: 'print-brochure',
+      layoutVariants: ['story-sequence', 'feature-panels', 'operator-brief'],
     },
   ],
   'business-card': [
@@ -52,7 +59,8 @@ export const MATERIAL_FORMAT_PRESETS: Record<
       unit: 'px',
       dpi: 300,
       surfaces: ['front', 'back'],
-      layoutVariants: ['minimal-mark', 'contact-first'],
+      templateFamily: 'print-business-card',
+      layoutVariants: ['contact-first', 'brand-mark', 'appointment-card'],
     },
   ],
   'web-ad': [
@@ -64,7 +72,8 @@ export const MATERIAL_FORMAT_PRESETS: Record<
       height: 1080,
       unit: 'px',
       surfaces: ['single'],
-      layoutVariants: ['bold-cta', 'product-spotlight'],
+      templateFamily: 'web-display-ad',
+      layoutVariants: ['display-cta', 'proof-stack'],
     },
     {
       id: 'web-ad-leaderboard',
@@ -74,7 +83,8 @@ export const MATERIAL_FORMAT_PRESETS: Record<
       height: 180,
       unit: 'px',
       surfaces: ['single'],
-      layoutVariants: ['headline-strip', 'proof-bar'],
+      templateFamily: 'web-display-ad',
+      layoutVariants: ['headline-strip', 'announcement-strip'],
     },
   ],
 };

@@ -77,6 +77,13 @@ Step-by-step guides for specific tasks:
 - [MCP Validation Guide](./guides/mcp-validation.md) - Validating MCP implementations
 - [Agents Guide](./guides/agents.md) - Working with AI agents in the platform
 
+### Marketing
+
+- [Marketing README](./marketing/README.md) - Index for Signal Foundry marketing docs and positioning inputs
+- [Service Offerings](./marketing/service-offerings.md) - Service-led marketing input reference
+- [Library Offerings](./marketing/library-offerings.md) - Library and package marketing input reference
+- [Pricing Models](./marketing/pricing-models.md) - Pricing posture reference for marketing surfaces
+
 ### Testing
 
 - [E2E Testing Guide](./testing/e2e-testing.md) - End-to-end testing with Playwright
@@ -134,6 +141,7 @@ Step-by-step guides for specific tasks:
 
 - [Client Interface](../apps/client-interface/README.md)
 - [Forge of Will](../apps/forgeofwill/README.md)
+- [Marketing Generator](../apps/marketing-generator/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
 ## Library Documentation

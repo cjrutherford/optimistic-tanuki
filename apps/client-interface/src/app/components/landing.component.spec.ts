@@ -18,4 +18,9 @@ describe('LandingComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('brands the landing page as Optimistic Tanuki while keeping the original community message', () => {
+    expect(fixture.nativeElement.textContent).toContain('Optimistic Tanuki');
+    expect(fixture.nativeElement.textContent).toContain('Where Communities');
+  });
 });

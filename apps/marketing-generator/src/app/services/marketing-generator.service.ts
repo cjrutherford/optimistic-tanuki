@@ -13,17 +13,21 @@ import {
   CampaignAsset,
   CampaignConcept,
   CampaignIntent,
+  ChannelType,
   ChannelOutput,
   ChannelOutputBlock,
   ChannelOutputType,
+  DeliveryModel,
   GenerationRequest,
   MaterialDeliverableRequest,
   MaterialImageSlot,
   MaterialSurface,
   MaterialSurfaceType,
+  MaterialTemplateFamily,
   MaterialTextBlock,
   MarketingMaterialType,
   OfferingPreset,
+  PricingModel,
 } from '../types';
 
 interface ConceptAngle {
@@ -31,6 +35,17 @@ interface ConceptAngle {
   label: string;
   hook: string;
   sectionType: string;
+}
+
+interface OfferingNarrative {
+  positioning: string;
+  valueProposition: string;
+  objectives: string[];
+  proofPoints: string[];
+  adArchetypes: string[];
+  deliveryModel?: DeliveryModel;
+  pricingModel?: PricingModel;
+  selfHostedNote?: string;
 }
 
 const CONCEPT_ANGLES: ConceptAngle[] = [
@@ -89,40 +104,102 @@ export class MarketingGeneratorService {
     }
 
     const concepts = CONCEPT_ANGLES.map((angle, index) => {
+      const narrative = this.resolveOfferingNarrative(offering, request);
       const intentPrefix = this.intentPrefix(request.campaignIntent);
       const channelLabel = CHANNEL_LABELS[request.channel];
       const audienceLabel = audience.label;
-      const headline = `${offering.name} for ${audienceLabel.toLowerCase()} who need ${intentPrefix}`;
-      const subheadline = `${offering.category} built to ${offering.summary.toLowerCase()} ${angle.hook.toLowerCase()}`;
+      const archetype = this.selectAdArchetype(narrative, index);
+      const headline = `${
+        offering.name
+      } for ${audienceLabel.toLowerCase()} who need ${intentPrefix}`;
+      const subheadline = `${
+        offering.category
+      } built to ${offering.summary.toLowerCase()} ${angle.hook.toLowerCase()} Anchored in ${archetype}.`;
       const cta = this.ctaFor(request.channel, request.campaignIntent);
 
       return {
         id: `${offering.id}-${angle.id}-${index}`,
         angle: angle.label,
         generationMode: 'template' as const,
+        workflowStatus: 'candidate' as const,
+        rubric: this.buildRubric(index, angle, narrative),
         headline,
         subheadline,
         cta,
         channelLabel,
         audienceLabel,
         sectionType: angle.sectionType,
+        positioning: narrative.positioning,
+        valueProposition: narrative.valueProposition,
+        objectives: narrative.objectives,
+        proofPoints: narrative.proofPoints,
+        deliveryModel: narrative.deliveryModel,
+        pricingModel: narrative.pricingModel,
+        selfHostedNote: narrative.selfHostedNote,
         sections: [
           {
             title: 'Positioning',
-            body: `${offering.name} helps ${audience.profile.toLowerCase()} by focusing on ${offering.differentiators[0].toLowerCase()}.`,
+            body: narrative.positioning,
+          },
+          {
+            title: 'Objective alignment',
+            body: `${
+              angle.label
+            } supports ${narrative.objectives[0].toLowerCase()} while keeping the message concrete for ${audience.label.toLowerCase()}.`,
+          },
+          {
+            title: 'Ad archetype',
+            body: `${archetype} gives this direction a recognizable campaign frame for ${audience.label.toLowerCase()}.`,
+          },
+          {
+            title: 'Proof points',
+            body: narrative.proofPoints.slice(0, 2).join(' '),
           },
           {
             title: 'Why it lands',
-            body: `${CAMPAIGN_INTENT_LABELS[request.campaignIntent]} concepts for ${request.channel} should center ${offering.features[0].toLowerCase()} and ${offering.features[1]?.toLowerCase() || offering.features[0].toLowerCase()}.`,
+            body: `${
+              CAMPAIGN_INTENT_LABELS[request.campaignIntent]
+            } concepts for ${
+              request.channel
+            } should center ${offering.features[0].toLowerCase()} and ${
+              offering.features[1]?.toLowerCase() ||
+              offering.features[0].toLowerCase()
+            }.`,
           },
           {
             title: 'Audience trigger',
             body: `${audience.desiredOutcome} while keeping the promise concrete: ${angle.hook}`,
           },
+          ...(narrative.deliveryModel
+            ? [
+                {
+                  title: 'Delivery model',
+                  body: this.describeDeliveryModel(narrative.deliveryModel),
+                },
+              ]
+            : []),
+          ...(narrative.pricingModel
+            ? [
+                {
+                  title: 'Pricing model',
+                  body: this.describePricingModel(narrative.pricingModel),
+                },
+              ]
+            : []),
+          ...(narrative.selfHostedNote
+            ? [
+                {
+                  title: 'Self-hosted',
+                  body: narrative.selfHostedNote,
+                },
+              ]
+            : []),
         ],
         channelOutputs: this.buildChannelOutputs(
           request,
           offering,
+          narrative,
+          archetype,
           audience,
           headline,
           subheadline,
@@ -132,6 +209,8 @@ export class MarketingGeneratorService {
         materialOutputs: this.buildAssets(
           request,
           offering,
+          narrative,
+          archetype,
           audienceLabel,
           headline,
           subheadline,
@@ -141,53 +220,79 @@ export class MarketingGeneratorService {
       };
     });
 
-    if (!request.includeAiPolish) {
-      return concepts;
-    }
+    return concepts;
+  }
 
-    return concepts.map((concept, index) =>
-      index % 2 === 0
-        ? {
-            ...concept,
-            generationMode: 'hybrid',
-            subheadline: `${concept.subheadline} Tuned with a sharper ${request.tone} tone and channel-specific pacing.`,
-            channelOutputs: concept.channelOutputs.map((output) =>
-              output.isPrimary
-                ? {
-                    ...output,
-                    summary: `${output.summary} Tuned for a sharper ${request.tone} channel pace.`,
-                    blocks: output.blocks.map((block) =>
-                      block.role === 'supporting' || block.role === 'caption'
-                        ? {
-                            ...block,
-                            value: `${block.value} Tuned for a sharper ${request.tone} delivery.`,
-                          }
-                        : block
-                    ),
-                  }
-                : output
-            ),
-            materialOutputs: concept.materialOutputs.map((asset) =>
-              asset.isPrimary
-                ? {
-                    ...asset,
-                    surfaces: asset.surfaces.map((surface) => ({
-                      ...surface,
-                      textBlocks: surface.textBlocks.map((block) =>
-                        block.role === 'body'
-                          ? {
-                              ...block,
-                              value: `${block.value} Tuned for a sharper ${request.tone} delivery.`,
-                            }
-                          : block
-                      ),
-                    })),
-                  }
-                : asset
-            ),
-          }
-        : concept
-    );
+  async regenerateChannelBlock(
+    request: GenerationRequest,
+    concept: CampaignConcept,
+    output: ChannelOutput,
+    block: ChannelOutputBlock
+  ): Promise<string> {
+    const contextLead =
+      block.role === 'subject'
+        ? `${concept.headline} for ${concept.audienceLabel}`
+        : block.role === 'cta'
+        ? this.ctaFor(request.channel, request.campaignIntent)
+        : `${concept.headline} ${concept.subheadline}`.trim();
+    const proofLead =
+      concept.proofPoints?.[0] || concept.sections[0]?.body || '';
+
+    switch (block.role) {
+      case 'hero':
+      case 'hook':
+        return `${
+          concept.headline
+        } with ${concept.angle.toLowerCase()} clarity for ${concept.audienceLabel.toLowerCase()}.`;
+      case 'subject':
+        return `${this.resolveOffering(request).name}: ${concept.angle} for ${
+          concept.audienceLabel
+        }`;
+      case 'preview':
+        return `${
+          concept.angle
+        } for ${concept.audienceLabel.toLowerCase()}. ${proofLead}`.trim();
+      case 'proof':
+        return `${proofLead} ${concept.valueProposition || ''}`.trim();
+      case 'cta':
+        return this.ctaFor(request.channel, request.campaignIntent);
+      case 'caption':
+        return `${contextLead} ${
+          concept.valueProposition || ''
+        } ${proofLead}`.trim();
+      default:
+        return `${contextLead} ${concept.valueProposition || ''}`.trim();
+    }
+  }
+
+  async regenerateMaterialTextBlock(
+    request: GenerationRequest,
+    concept: CampaignConcept,
+    asset: CampaignAsset,
+    surface: MaterialSurface,
+    block: MaterialTextBlock
+  ): Promise<string> {
+    const brandName =
+      request.brand.businessName || this.resolveOffering(request).name;
+    const proofLead =
+      concept.proofPoints?.[0] || concept.sections[0]?.body || '';
+
+    switch (block.role) {
+      case 'headline':
+        return `${brandName}: ${concept.angle} for ${concept.audienceLabel}`;
+      case 'subheadline':
+        return `${
+          concept.subheadline
+        } Built for ${asset.label.toLowerCase()} ${surface.label.toLowerCase()}.`;
+      case 'body':
+        return `${proofLead} ${concept.valueProposition || ''}`.trim();
+      case 'cta':
+        return this.ctaFor(request.channel, request.campaignIntent);
+      case 'contact':
+        return `${brandName} | ${concept.audienceLabel} | ${
+          concept.objectives?.[0] || concept.angle
+        }`;
+    }
   }
 
   private resolveOffering(request: GenerationRequest): OfferingPreset {
@@ -196,7 +301,8 @@ export class MarketingGeneratorService {
         id: 'custom-app',
         kind: 'preset-app',
         name: request.customApp.name.trim() || 'Custom app',
-        category: request.customApp.category.trim() || 'Custom software product',
+        category:
+          request.customApp.category.trim() || 'Custom software product',
         summary:
           request.customApp.summary.trim() ||
           'a configurable product concept for a defined audience.',
@@ -209,6 +315,27 @@ export class MarketingGeneratorService {
           'workflow clarity, structured messaging, fast concept iteration'
         ),
         audienceHint: request.customApp.primaryGoal.trim() || 'Earn response',
+        positioning:
+          'A custom software product shaped for a specific audience and a clear operating goal.',
+        valueProposition:
+          request.customApp.primaryGoal.trim() ||
+          'Turn a custom product brief into a campaign system with concrete outputs.',
+        objectives: [
+          'Clarify the custom product promise quickly',
+          'Show why the offer is relevant to the chosen audience',
+          'Create campaign-ready material from the brief',
+        ],
+        proofPoints: this.splitOrFallback(
+          request.customApp.features,
+          'workflow clarity, structured messaging, fast concept iteration'
+        ),
+        adArchetypes: [
+          'custom product launch',
+          'offer clarification',
+          'audience-fit campaign',
+        ],
+        deliveryModel: 'hosted',
+        pricingModel: 'subscription-unlimited',
       };
     }
 
@@ -221,6 +348,76 @@ export class MarketingGeneratorService {
     }
 
     return offering;
+  }
+
+  private resolveOfferingNarrative(
+    offering: OfferingPreset,
+    request: GenerationRequest
+  ): OfferingNarrative {
+    return {
+      positioning:
+        offering.positioning ||
+        `${
+          offering.name
+        } is positioned around ${offering.differentiators[0].toLowerCase()}.`,
+      valueProposition:
+        offering.valueProposition ||
+        `${offering.name} helps teams act on ${offering.summary.toLowerCase()}`,
+      objectives: offering.objectives?.length
+        ? offering.objectives
+        : [
+            `Increase clarity around ${offering.name}`,
+            `Turn interest into action for ${request.channel}`,
+          ],
+      proofPoints: offering.proofPoints?.length
+        ? offering.proofPoints
+        : [
+            `${offering.features[0]} keeps the offer concrete`,
+            `${offering.differentiators[0]} differentiates the product`,
+          ],
+      adArchetypes: offering.adArchetypes?.length
+        ? offering.adArchetypes
+        : ['operator clarity', 'offer proof'],
+      deliveryModel: offering.deliveryModel,
+      pricingModel: offering.pricingModel,
+      selfHostedNote: offering.selfHostedNote,
+    };
+  }
+
+  private describeDeliveryModel(deliveryModel: DeliveryModel): string {
+    switch (deliveryModel) {
+      case 'hosted':
+        return 'Hosted';
+      case 'self-hosted':
+        return 'Self-hosted';
+      case 'hybrid':
+        return 'Hybrid hosted and self-hosted';
+      case 'npm-package':
+        return 'npm package';
+    }
+  }
+
+  private describePricingModel(pricingModel: PricingModel): string {
+    switch (pricingModel) {
+      case 'metered':
+        return 'Metered usage';
+      case 'block-usage':
+        return 'Block usage';
+      case 'subscription-unlimited':
+        return 'Subscription unlimited';
+      case 'free':
+        return 'Free';
+    }
+  }
+
+  private selectAdArchetype(
+    narrative: OfferingNarrative,
+    index: number
+  ): string {
+    return (
+      narrative.adArchetypes[index % narrative.adArchetypes.length] ||
+      'offer proof'
+    );
   }
 
   private splitOrFallback(value: string, fallback: string): string[] {
@@ -249,69 +446,94 @@ export class MarketingGeneratorService {
     return intent === 'conversion'
       ? 'Book a planning call'
       : intent === 'launch'
-        ? 'See the campaign build'
-        : 'Explore the offer';
+      ? 'See the campaign build'
+      : 'Explore the offer';
   }
 
   private buildChannelOutputs(
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audience: (typeof AUDIENCE_PERSONAS)[number],
     headline: string,
     subheadline: string,
     cta: string,
     angle: ConceptAngle
   ): ChannelOutput[] {
-    switch (request.channel) {
+    const channels = [
+      request.channel,
+      ...request.secondaryChannels.filter(
+        (channel) => channel !== request.channel
+      ),
+    ];
+
+    return channels.map((channel, index) =>
+      this.createChannelOutput(
+        this.outputTypeForChannel(channel),
+        request,
+        offering,
+        narrative,
+        archetype,
+        audience,
+        headline,
+        subheadline,
+        cta,
+        angle,
+        index === 0
+      )
+    );
+  }
+
+  private outputTypeForChannel(channel: ChannelType): ChannelOutputType {
+    switch (channel) {
       case 'web':
-        return [
-          this.createChannelOutput(
-            'landing-page',
-            request,
-            offering,
-            audience,
-            headline,
-            subheadline,
-            cta,
-            angle,
-            true
-          ),
-        ];
+        return 'landing-page';
       case 'email':
-        return [
-          this.createChannelOutput(
-            'email-sequence',
-            request,
-            offering,
-            audience,
-            headline,
-            subheadline,
-            cta,
-            angle,
-            true
-          ),
-        ];
+        return 'email-sequence';
       case 'social':
-        return [
-          this.createChannelOutput(
-            'social-campaign',
-            request,
-            offering,
-            audience,
-            headline,
-            subheadline,
-            cta,
-            angle,
-            true
-          ),
-        ];
+        return 'social-campaign';
     }
+  }
+
+  private buildRubric(
+    index: number,
+    angle: ConceptAngle,
+    narrative: OfferingNarrative
+  ): {
+    clarity: number;
+    differentiation: number;
+    specificity: number;
+    actionability: number;
+  } {
+    const base = 7 + (index % 2);
+
+    return {
+      clarity: Math.min(
+        10,
+        base + (angle.id === 'operator' || angle.id === 'proof' ? 1 : 0)
+      ),
+      differentiation: Math.min(
+        10,
+        base + (narrative.adArchetypes.length > 2 ? 1 : 0)
+      ),
+      specificity: Math.min(
+        10,
+        base + (narrative.proofPoints.length > 1 ? 1 : 0)
+      ),
+      actionability: Math.min(
+        10,
+        base + (angle.id === 'outcome' || angle.id === 'contrast' ? 1 : 0)
+      ),
+    };
   }
 
   private createChannelOutput(
     type: ChannelOutputType,
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audience: (typeof AUDIENCE_PERSONAS)[number],
     headline: string,
     subheadline: string,
@@ -324,26 +546,28 @@ export class MarketingGeneratorService {
       type === 'landing-page'
         ? 'Landing page draft'
         : type === 'email-sequence'
-          ? 'Email sequence draft'
-          : 'Social campaign draft';
+        ? 'Email sequence draft'
+        : 'Social campaign draft';
     const summary =
       type === 'landing-page'
         ? `A web-first story arc for ${audience.label.toLowerCase()} anchored in ${angle.label.toLowerCase()}.`
         : type === 'email-sequence'
-          ? `A short nurture sequence that translates ${angle.label.toLowerCase()} into inbox-ready copy.`
-          : `A social-first campaign set that turns ${angle.label.toLowerCase()} into fast-hook messaging.`;
+        ? `A short nurture sequence that translates ${angle.label.toLowerCase()} into inbox-ready copy.`
+        : `A social-first campaign set that turns ${angle.label.toLowerCase()} into fast-hook messaging.`;
 
     return {
       id,
       type,
       label,
-      summary,
+      summary: `${summary} ${narrative.valueProposition} Archetype: ${archetype}.`,
       isPrimary,
       blocks: this.buildChannelBlocks(
         id,
         type,
         request,
         offering,
+        narrative,
+        archetype,
         audience,
         headline,
         subheadline,
@@ -358,6 +582,8 @@ export class MarketingGeneratorService {
     type: ChannelOutputType,
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audience: (typeof AUDIENCE_PERSONAS)[number],
     headline: string,
     subheadline: string,
@@ -376,13 +602,17 @@ export class MarketingGeneratorService {
           id: `${outputId}-supporting`,
           role: 'supporting',
           label: 'Hero support',
-          value: `${subheadline} Built for ${audience.desiredOutcome.toLowerCase()}`,
+          value: `${subheadline} ${
+            narrative.valueProposition
+          } Built for ${audience.desiredOutcome.toLowerCase()} through the ${archetype} frame.`,
         },
         {
           id: `${outputId}-proof`,
           role: 'proof',
           label: 'Proof strip',
-          value: `${offering.features[0]}, ${offering.features[1] || offering.features[0]}, and ${offering.differentiators[0]} in one concise page flow.`,
+          value: `${narrative.proofPoints[0]} ${
+            narrative.proofPoints[1] || ''
+          }`.trim(),
         },
         {
           id: `${outputId}-cta`,
@@ -405,13 +635,13 @@ export class MarketingGeneratorService {
           id: `${outputId}-preview`,
           role: 'preview',
           label: 'Preview line',
-          value: `${angle.hook} ${offering.differentiators[0]} keeps the promise concrete.`,
+          value: `${angle.hook} ${narrative.proofPoints[0]} Archetype: ${archetype}.`,
         },
         {
           id: `${outputId}-supporting`,
           role: 'supporting',
           label: 'Email body',
-          value: `${headline}. ${offering.name} gives ${audience.profile.toLowerCase()} a clearer path through ${offering.features[0].toLowerCase()} and ${offering.features[1]?.toLowerCase() || offering.features[0].toLowerCase()}.`,
+          value: `${headline}. ${narrative.valueProposition} ${narrative.proofPoints[0]} ${archetype}.`,
         },
         {
           id: `${outputId}-cta`,
@@ -433,13 +663,15 @@ export class MarketingGeneratorService {
         id: `${outputId}-caption`,
         role: 'caption',
         label: 'Primary caption',
-        value: `${subheadline} ${angle.hook} ${offering.name} keeps the offer concrete for ${audience.label.toLowerCase()}.`,
+        value: `${subheadline} ${angle.hook} ${narrative.valueProposition} ${archetype}.`,
       },
       {
         id: `${outputId}-proof`,
         role: 'proof',
         label: 'Proof line',
-        value: `${offering.features[0]} + ${offering.differentiators[0]} for ${audience.desiredOutcome.toLowerCase()}.`,
+        value: `${
+          narrative.proofPoints[0]
+        } for ${audience.desiredOutcome.toLowerCase()}.`,
       },
       {
         id: `${outputId}-cta`,
@@ -453,6 +685,8 @@ export class MarketingGeneratorService {
   private buildAssets(
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audienceLabel: string,
     headline: string,
     subheadline: string,
@@ -471,6 +705,8 @@ export class MarketingGeneratorService {
         index,
         request,
         offering,
+        narrative,
+        archetype,
         audienceLabel,
         headline,
         subheadline,
@@ -485,6 +721,8 @@ export class MarketingGeneratorService {
     index: number,
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audienceLabel: string,
     headline: string,
     subheadline: string,
@@ -509,6 +747,8 @@ export class MarketingGeneratorService {
         dpi: preset.dpi,
       },
       layoutVariant,
+      templateFamily: preset.templateFamily,
+      templateName: layoutVariant,
       surfaces: preset.surfaces.map((surfaceType, surfaceIndex) =>
         this.buildSurface(
           deliverable.type,
@@ -517,6 +757,8 @@ export class MarketingGeneratorService {
           surfaceIndex,
           request,
           offering,
+          narrative,
+          archetype,
           audienceLabel,
           headline,
           subheadline,
@@ -538,6 +780,8 @@ export class MarketingGeneratorService {
     surfaceIndex: number,
     request: GenerationRequest,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audienceLabel: string,
     headline: string,
     subheadline: string,
@@ -555,6 +799,8 @@ export class MarketingGeneratorService {
         surfaceType,
         surfaceId,
         offering,
+        narrative,
+        archetype,
         audienceLabel,
         headline,
         subheadline,
@@ -580,13 +826,17 @@ export class MarketingGeneratorService {
     surfaceType: MaterialSurfaceType,
     surfaceId: string,
     offering: OfferingPreset,
+    narrative: OfferingNarrative,
+    archetype: string,
     audienceLabel: string,
     headline: string,
     subheadline: string,
     cta: string,
     angle: string
   ): MaterialTextBlock[] {
-    const rolePrefix = `${this.typeLabel(type)} ${this.surfaceLabel(surfaceType)}`;
+    const rolePrefix = `${this.typeLabel(type)} ${this.surfaceLabel(
+      surfaceType
+    )}`;
 
     return [
       {
@@ -595,7 +845,7 @@ export class MarketingGeneratorService {
         label: `${rolePrefix} headline`,
         value:
           surfaceType === 'front' || surfaceType === 'single'
-            ? headline
+            ? `${headline} ${archetype}`.trim()
             : `${offering.name}: ${angle} for ${audienceLabel}`,
       },
       {
@@ -603,15 +853,15 @@ export class MarketingGeneratorService {
         role: 'subheadline',
         label: `${rolePrefix} subheadline`,
         value:
-          surfaceType === 'back'
-            ? `${offering.name} keeps the promise concrete for ${audienceLabel.toLowerCase()}.`
-            : subheadline,
+          surfaceType === 'back' ? narrative.valueProposition : subheadline,
       },
       {
         id: `${surfaceId}-body`,
         role: 'body',
         label: `${rolePrefix} body`,
-        value: `${offering.name} helps ${audienceLabel.toLowerCase()} focus on ${offering.features[0].toLowerCase()} through ${angle.toLowerCase()}.`,
+        value: `${`${narrative.proofPoints[0]} ${
+          narrative.proofPoints[1] || ''
+        }`.trim()} ${archetype}`.trim(),
       },
       {
         id: `${surfaceId}-cta`,
@@ -623,7 +873,7 @@ export class MarketingGeneratorService {
         id: `${surfaceId}-contact`,
         role: 'contact',
         label: `${rolePrefix} contact line`,
-        value: `${offering.name} | ${audienceLabel} | ${offering.audienceHint}`,
+        value: `${offering.name} | ${audienceLabel} | ${narrative.objectives[0]}`,
       },
     ];
   }
@@ -647,12 +897,22 @@ export class MarketingGeneratorService {
 
     return {
       id: `${surfaceId}-image`,
-      prompt: `${this.typeLabel(type)} ${this.surfaceLabel(surfaceType).toLowerCase()} concept for ${offering.name}, ${angle.toLowerCase()}, audience ${audienceLabel.toLowerCase()}, style ${style || 'clean modern marketing'}, colors ${request.brand.primaryColor} and ${request.brand.accentColor}`,
-      alt: `${offering.name} ${this.surfaceLabel(surfaceType).toLowerCase()} preview`,
+      prompt: `${this.typeLabel(type)} ${this.surfaceLabel(
+        surfaceType
+      ).toLowerCase()} concept for ${
+        offering.name
+      }, ${angle.toLowerCase()}, audience ${audienceLabel.toLowerCase()}, style ${
+        style || 'clean modern marketing'
+      }, colors ${request.brand.primaryColor} and ${request.brand.accentColor}`,
+      alt: `${offering.name} ${this.surfaceLabel(
+        surfaceType
+      ).toLowerCase()} preview`,
       imageUrl: null,
-      status: request.generateImages ? 'idle' : 'failed',
+      status: request.generateImages ? 'prompt-ready' : 'prompt-disabled',
       imageBase64: null,
-      errorMessage: request.generateImages ? null : 'Image generation disabled.',
+      errorMessage: request.generateImages
+        ? null
+        : 'Image prompt preparation disabled.',
     };
   }
 

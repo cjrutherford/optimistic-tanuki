@@ -4,6 +4,7 @@
     "apps/authentication/README.md",
     "apps/client-interface/README.md",
     "apps/gateway/README.md",
+    "apps/marketing-generator/README.md",
     "tools/admin-env-wizard/README.md",
     "tools/stack-client/README.md"
   ],

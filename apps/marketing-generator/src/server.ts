@@ -42,7 +42,12 @@ app.post('/api/marketing-generator/enrich', async (req, res) => {
   }
 
   const concepts = await enrichmentServer.enrich(body.request, body.concepts);
-  res.json({ concepts });
+  res.json({
+    concepts,
+    enrichmentApplied: concepts.some(
+      (concept) => concept.generationMode === 'hybrid'
+    ),
+  });
 });
 
 app.use(
