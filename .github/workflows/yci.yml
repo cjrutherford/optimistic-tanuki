@@ -10,6 +10,9 @@ permissions:
   actions: read
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   main:
     runs-on: ubuntu-24.04

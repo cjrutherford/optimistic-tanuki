@@ -28,6 +28,7 @@ permissions:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: cjrutherford
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   validate-deployment-contract:
