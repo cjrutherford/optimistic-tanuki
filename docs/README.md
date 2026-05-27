@@ -32,10 +32,15 @@ The current branch has a few operational surfaces that matter more than the olde
 - [Getting Started](./getting-started/README.md) - First-run setup and contributor workflow
 - [MVP Overview](./getting-started/mvp-overview.md) - Minimum viable product plan and roadmap
 
+> **Note:** The `docs/getting-started-src/` directory contains audience-segmented landing pages
+> (developers, admins, end-users) with YAML front-matter consumed by the docs-site UI playground
+> (`apps/ui-playground`). For human-readable onboarding, use `docs/getting-started/` above.
+
 ### DevOps and Infrastructure
 
 - [DevOps README](./devops/README.md) - DevOps documentation index
 - [Operator Handbook](./operators/overview.md) - Formal operator docs for local and deployed environments
+- [Infrastructure Setup](./operators/infrastructure-setup.md) - Full CI/CD pipeline setup with MicroK8s, Terraform, ArgoCD, and Tailscale
 - [Architecture Overview](./devops/architecture.md) - Infrastructure architecture
 - [Kubernetes Deployment](./devops/k8s.md) - Kustomize overlays, base resources, and deployment scripts
 - [Service Ports Reference](./devops/ports.md) - Port mappings for all services
@@ -63,6 +68,7 @@ The current branch has a few operational surfaces that matter more than the olde
 - [WebSocket Implementation](./architecture/websocket-implementation.md) - Real-time WebSocket server implementation
 - [WebSocket Client](./architecture/websocket-client.md) - WebSocket client usage and integration
 - [Security Audit](./architecture/security-audit.md) - Security audit findings and recommendations
+- [Accessibility Compliance](./accessibility-compliance.md) - WCAG 2.1 AA compliance report for color palettes
 
 ### Guides
 
@@ -71,8 +77,11 @@ Step-by-step guides for specific tasks:
 - [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers
 - [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login
 - [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment
+- [Local Hub Commerce](./guides/local-hub-commerce.md) - Donations, business pages, and sponsorships in the Local Hub
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
 - [Theme Migration Guide](./guides/theme-migration.md) - Migrating to the new theme system
+- [Component Integration Guide](./guides/component-integration.md) - Integrating time tracking, tagging, and analytics components
+- [Time Tracking and Analytics](./guides/time-tracking-analytics.md) - Time tracking, analytics, and task tagging feature reference
 - [MCP Tools Guide](./guides/mcp-tools.md) - Model Context Protocol tools usage
 - [MCP Validation Guide](./guides/mcp-validation.md) - Validating MCP implementations
 - [Agents Guide](./guides/agents.md) - Working with AI agents in the platform
@@ -94,14 +103,48 @@ Step-by-step guides for specific tasks:
 - [Test Coverage](./testing/coverage.md) - Code coverage information and goals
 - [Screenshot Capture Guide](./testing/screenshot-capture.md) - Capturing screenshots in tests
 
+### Features
+
+User-facing feature documentation for the client-interface application:
+
+- [Accessibility](./features/accessibility.md) - Accessibility features and guidelines
+- [Authentication](./features/authentication.md) - Login, registration, and MFA features
+- [Communities](./features/communities.md) - Community creation and management
+- [Feed](./features/feed.md) - Social feed and content discovery
+- [Messaging](./features/messaging.md) - Direct messaging features
+- [Notifications](./features/notifications.md) - Notification system
+- [Privacy](./features/privacy.md) - Privacy controls and user safety
+- [Profile](./features/profile.md) - User profile management
+- [Search](./features/search.md) - Search and discovery
+
 ### API Documentation
 
 - [Applications API Reference](./api/README.md) - Consolidated API documentation for applications and services
+
+### Payments
+
+- [Payments Seeding](./payments/seeding.md) - Seeding payment providers and initial data
 
 ### Reference
 
 - [Workspace Catalog](./reference/workspace-catalog.md) - Full inventory of apps, libraries, tools, and deployment surfaces
 - [README Template](./reference/readme-template.md) - Standard structure for app, library, and e2e project READMEs
+
+### Plans
+
+Feature and design plans, including in-progress work:
+
+- [Lead Discovery Hardening](./plans/2026-03-30-lead-discovery-hardening.md)
+- [Leads Edit Workflow Fix](./plans/2026-03-30-leads-edit-workflow-fix.md)
+- [Leads Onboarding Discovery Enhancement](./plans/2026-03-30-leads-onboarding-discovery-enhancement.md)
+- [Video Transcoder Worker](./plans/2026-04-18-video-transcoder-worker.md)
+- [Metered Usage API Billing](./plans/2026-04-21-metered-usage-api-billing.md)
+- [Marketing Briefs](./plans/2026-04-25-marketing-briefs.md)
+- [Fin Commander Usability](./plans/fin-commander-usability.md)
+- [Part Sourcing and BTO Fulfillment](./plans/part-sourcing-bto-fulfillment.md)
+- [Local Hub Plans](./plans/local-hub/README.md)
+
+For the full list see the [`docs/plans/`](./plans/) directory.
 
 ## Application-Specific Documentation
 
@@ -122,11 +165,14 @@ Step-by-step guides for specific tasks:
 - [Gateway](../apps/gateway/README.md)
   - [Gateway Architecture](./services/gateway/architecture.md)
   - [Gateway Operations](./services/gateway/operations.md)
+  - [App Registry and Navigation](./services/gateway/app-registry-navigation.md)
 - [Permissions](../apps/permissions/README.md)
 - [Profile](../apps/profile/README.md)
 - [Project Planning](../apps/project-planning/README.md)
 - [Prompt Proxy](../apps/prompt-proxy/README.md)
 - [Social](../apps/social/README.md)
+  - [Social Component Backend](./services/social/component-backend.md)
+  - [Component Injection Refactoring](./services/social/component-injection-refactoring.md)
 - [App Configurator](../apps/app-configurator/README.md)
   - [App Configurator Architecture](./services/app-configurator/architecture.md)
   - [App Configurator Operations](./services/app-configurator/operations.md)
@@ -140,6 +186,7 @@ Step-by-step guides for specific tasks:
 ### Frontend Applications
 
 - [Client Interface](../apps/client-interface/README.md)
+  - [Client Interface Overview](./client-interface.md)
 - [Forge of Will](../apps/forgeofwill/README.md)
 - [Marketing Generator](../apps/marketing-generator/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)

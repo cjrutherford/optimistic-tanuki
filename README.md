@@ -1,5 +1,8 @@
 # Optimistic Tanuki
 
+[![CI](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml)
+[![Build](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml)
+
 Optimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
 
 The repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.
@@ -161,5 +164,6 @@ See [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [do
 - `scripts/`: deployment, validation, seeding, and operational scripts
 - `tools/`: Go utilities and other developer tooling
 - `docs/`: curated project documentation
+- `examples/`: code examples and reference implementations
 
 Use [docs/README.md](./docs/README.md) as the documentation index.

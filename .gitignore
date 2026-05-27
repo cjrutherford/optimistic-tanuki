@@ -5,6 +5,17 @@ dist
 tmp
 out-tsc
 
+# TypeScript incremental build cache
+tsconfig.tsbuildinfo
+
+# Temporary debug/one-off scripts at root
+tmp-*.mjs
+tmp-*.js
+
+# Generated Ollama screener output
+ollama-screener-results*.json
+ollama-screener-results*.html
+
 # dependencies
 node_modules
 

@@ -167,19 +167,19 @@ The `full-stack-e2e` project exercises cross-application user journeys (for exam
 For a clean run that resets containers and volumes, then runs the Playwright suite against the running stack, use the helper script from the workspace root:
 
 ```bash
-chmod +x ./run-full-stack-e2e.sh   # one-time setup
+chmod +x ./scripts/run-full-stack-e2e.sh   # one-time setup
 
 # Run the full project matrix
-./run-full-stack-e2e.sh
+./scripts/run-full-stack-e2e.sh
 
 # Or focus on a specific Playwright project
-./run-full-stack-e2e.sh -- --project=client-interface-fullstack
-./run-full-stack-e2e.sh -- --project=digital-homestead-fullstack
-./run-full-stack-e2e.sh -- --project=forgeofwill-fullstack
-./run-full-stack-e2e.sh -- --project=owner-console-fullstack
+./scripts/run-full-stack-e2e.sh -- --project=client-interface-fullstack
+./scripts/run-full-stack-e2e.sh -- --project=digital-homestead-fullstack
+./scripts/run-full-stack-e2e.sh -- --project=forgeofwill-fullstack
+./scripts/run-full-stack-e2e.sh -- --project=owner-console-fullstack
 
 # Forward options to Playwright (e.g. headed mode)
-./run-full-stack-e2e.sh -- --project=client-interface-fullstack -- --headed
+./scripts/run-full-stack-e2e.sh -- --project=client-interface-fullstack -- --headed
 ```
 
 Internally, this script:

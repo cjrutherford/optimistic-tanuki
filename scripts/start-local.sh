@@ -1,8 +1,11 @@
 #!/bin/bash
-# filepath: /home/cjrutherford/workspace/optimistic-tanuki/start-local.sh
+# Legacy script for starting services directly via Nx without Docker Compose.
+# For modern local development, prefer: pnpm run docker:dev
+# See docs/devops/docker-compose.md for the canonical local workflow.
 
 set -e
-LOGDIR="/home/cjrutherford/workspace/OTlogs"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LOGDIR="${OT_LOGDIR:-$SCRIPT_DIR/../tmp/OTlogs}"
 # Store PIDs
 declare -A SERVICE_PIDS
 
