@@ -28,7 +28,8 @@ concurrency:
 env:
   CI: true
   NODE_VERSION: '24'
-  PUBLIC_PACKAGES_MIRROR_OUTPUT: ${{ runner.temp }}/public-packages-mirror
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  PUBLIC_PACKAGES_MIRROR_OUTPUT: /tmp/public-packages-mirror
   PUBLIC_PACKAGES_MIRROR_REPO: ${{ vars.PUBLIC_PACKAGES_MIRROR_REPO }}
 
 jobs:

@@ -22,12 +22,15 @@ permissions:
   contents: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-24.04
     environment: staging
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')) && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
     timeout-minutes: 30
 
     steps:
@@ -82,7 +85,7 @@ jobs:
     name: Promote and Deploy Production
     runs-on: ubuntu-24.04
     environment: production
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
     timeout-minutes: 40
 
     steps:

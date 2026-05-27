@@ -109,7 +109,7 @@ run_db_setup_docker() {
     export POSTGRES_USER=postgres
     export POSTGRES_PASSWORD=postgres
     
-    bash ./create-dbs.sh
+    bash "$SCRIPT_DIR/create-dbs.sh"
 }
 
 run_migrations_docker() {
@@ -221,7 +221,7 @@ main() {
                 export POSTGRES_HOST=127.0.0.1
                 export POSTGRES_USER=postgres
                 export POSTGRES_PASSWORD=postgres
-                bash ./create-dbs.sh
+                bash "$SCRIPT_DIR/create-dbs.sh"
             fi
 
             if [ "$RUN_MIGRATIONS" = "true" ]; then

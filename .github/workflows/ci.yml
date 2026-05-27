@@ -15,6 +15,9 @@ permissions:
   contents: read
   checks: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # Quick validation job - runs first
   validate:

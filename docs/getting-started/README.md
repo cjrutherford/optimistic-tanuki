@@ -17,9 +17,10 @@ After setup:
 
 Optimistic Tanuki is a monorepo containing microservices and frontend applications for:
 
-- **Digital Homestead**: Personal content management and social features
-- **Forge of Will**: Project management and planning tool
-- **Personal Website**: Portfolio and blog platform
+- **Optimistic Tanuki** (`client-interface`): community-owned social networking app for defined groups
+- **Towne Square** (`local-hub`): local-first coordination, classifieds, and civic participation
+- **Forge of Will** (`forgeofwill`): focused project execution with context, notes, and risk tracking
+- **Fin Commander** (`fin-commander`): guided financial workflows for ledgers, plans, and scenarios
 
 The repo also contains:
 
@@ -170,7 +171,7 @@ To manually set up the database:
 
 ```bash
 # Create databases
-./create-dbs.sh
+./scripts/create-dbs.sh
 
 # Run migrations
 ./setup-and-migrate.sh
@@ -181,7 +182,7 @@ To manually set up the database:
 To seed permissions and other initial data:
 
 ```bash
-./seed-permissions.sh
+./scripts/seed-permissions.sh
 ```
 
 ### 3. Create a User Account

@@ -486,7 +486,7 @@ See: [CI/CD Pipeline](../architecture/cicd-pipeline.md), [E2E Testing](../testin
 pnpm install
 
 # Start all services (standard stack)
-./start-local.sh
+pnpm run docker:dev
 
 # Or with Docker
 docker-compose up -d
@@ -643,7 +643,7 @@ Each service is independent with clear boundaries:
 pnpm install
 
 # Start all services
-./start-local.sh
+pnpm run docker:dev
 
 # Start with Docker
 docker-compose up -d
