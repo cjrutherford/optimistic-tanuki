@@ -62,7 +62,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: /bin/sh -c "command -v pg_isready && sh ./setup-and-migrate.sh"
+    command: /bin/sh -c "command -v pg_isready && sh ./scripts/setup-and-migrate.sh"
     restart: 'no'
   redis:
     image: redis:latest

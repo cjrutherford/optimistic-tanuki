@@ -52,7 +52,7 @@
     "fow:docker:down": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml down --remove-orphans",
     "pre:docker:up": "pnpm run build",
     "docker:dev:watch": "pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev",
-    "db:setup": "sh ./setup-and-migrate.sh",
+    "db:setup": "sh ./scripts/setup-and-migrate.sh",
     "dev:ssr": "ng run christopherrutherford-net:serve-ssr",
     "serve:ssr": "node dist/apps/christopherrutherford-net/server/main.js",
     "build:ssr": "ng build && ng run christopherrutherford-net:server",

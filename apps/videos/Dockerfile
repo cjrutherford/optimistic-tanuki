@@ -16,6 +16,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
+RUN pnpm add -w nodemon
 COPY --from=builder /usr/src/app/dist/apps/videos/ ./
 RUN rm -rf node_modules/.cache || true
 RUN chown -R node:node .

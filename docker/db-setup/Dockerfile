@@ -6,4 +6,4 @@ WORKDIR /workspace
 
 RUN corepack enable
 
-CMD ["sh", "./setup-and-migrate.sh"]
+CMD ["sh", "./scripts/setup-and-migrate.sh"]

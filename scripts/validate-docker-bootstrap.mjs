@@ -194,8 +194,20 @@ for (const service of phasedStartupServices) {
 const composeYaml = readFileSync(new URL('docker-compose.yaml', root), 'utf8');
 assert.match(
   composeYaml,
-  /command:\s+\/bin\/sh -c "command -v pg_isready && sh \.\/setup-and-migrate\.sh"/,
-  'db-setup must invoke setup-and-migrate.sh directly to avoid pnpm non-TTY module purge prompts'
+  /command:\s+\/bin\/sh -c "command -v pg_isready && sh \.\/scripts\/setup-and-migrate\.sh"/,
+  'db-setup must invoke scripts/setup-and-migrate.sh directly to avoid pnpm non-TTY module purge prompts'
+);
+
+assert.equal(
+  packageJson.scripts['db:setup'],
+  'sh ./scripts/setup-and-migrate.sh',
+  'db:setup must invoke scripts/setup-and-migrate.sh from the scripts directory'
+);
+
+assert.equal(
+  existsSync(new URL('scripts/setup-and-migrate.sh', root)),
+  true,
+  'scripts/setup-and-migrate.sh must exist'
 );
 const dockerfileReferences = [
   ...composeYaml.matchAll(/^\s+dockerfile:\s+(.+)$/gm),
@@ -539,6 +551,7 @@ const ignoredPackageManagerScanDirs = new Set([
   'tmp',
 ]);
 const ignoredPackageManagerScanFiles = new Set([
+  'apps/ui-playground/public/generated/compodoc',
   'ollama-screener-results-graphs.html',
   'libs/app-catalog-contracts/README.md',
   'libs/billing/contracts/README.md',
@@ -601,6 +614,9 @@ function collectFiles(dirUrl, relativeDir = '') {
     }
 
     const file = join(relativeDir, entry.name);
+    if (file.startsWith('apps/ui-playground/public/generated/compodoc/')) {
+      continue;
+    }
     const extension = entry.name.includes('.')
       ? entry.name.slice(entry.name.lastIndexOf('.'))
       : '';

@@ -9,6 +9,6 @@ apt-get install -y postgresql-client
 pnpm install --frozen-lockfile --silent
 
 # Run the repo's setup-and-migrate script
-sh ./setup-and-migrate.sh
+sh ./scripts/setup-and-migrate.sh
 
 echo "e2e DB setup complete"

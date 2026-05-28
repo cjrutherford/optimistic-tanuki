@@ -203,7 +203,7 @@ run_seed_with_media_volume_from_image() {
   docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "ASSETS_HOST=assets" -w "$workdir" "$service" "$@"
 }
 
-run_seed_with_media_volume_from_image videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
+run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"
 

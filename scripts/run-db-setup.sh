@@ -58,7 +58,7 @@ run_db_setup_in_pod() {
 run_migrations_in_pod() {
     local app_name=$1
     echo "Skipping in-pod migrations - apps don't have TypeScript source for migrations"
-    echo "Migrations should be run from host using setup-and-migrate.sh or a migration job"
+    echo "Migrations should be run from host using scripts/setup-and-migrate.sh or a migration job"
     return 0
 }
 
@@ -229,7 +229,7 @@ main() {
                 export POSTGRES_USER=postgres
                 export POSTGRES_PASSWORD=postgres
                 export NODE_ENV=development
-                bash ./setup-and-migrate.sh
+                bash ./scripts/setup-and-migrate.sh
             fi
             ;;
         *)
