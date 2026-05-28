@@ -815,7 +815,19 @@ services:
       - /mnt/valhalla/media:/media:ro
     environment:
       - VIDEO_SEED_SOURCE_DIR=/media/Tv
-    command: ['dumb-init', 'node', 'dist/apps/videos/main.js']
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app/dist/apps/videos',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'dist/apps/videos/main.js',
+      ]
 
   video-transcoder-worker:
     container_name: ot_video_transcoder_worker

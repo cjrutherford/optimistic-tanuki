@@ -9,7 +9,8 @@ export POSTGRES_PORT=5432
 export NODE_ENV=development
 export ADDITIONAL_DBS=${ADDITIONAL_DBS:-ot_authentication,ot_profile,ot_social,ot_assets,ot_project_planning,ot_chat_collector,ot_telos_docs_service,ot_blogging,ot_permissions,ot_store,ot_app_configurator,ot_forum,ot_finance,ot_wellness,ot_classifieds,classifieds_db,ot_payments,ot_lead_tracker,ot_system_configurator,ot_videos}
 
-ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 resolve_app_name() {
     db_name="$1"
@@ -32,7 +33,7 @@ if [ ! -d "$ROOT_DIR/node_modules" ]; then
 fi
 
 # Run database creation script
-(cd "$ROOT_DIR" && sh ./create-dbs.sh)
+(cd "$ROOT_DIR" && sh ./scripts/create-dbs.sh)
 
 # Run TypeORM migrations for each service
 # Loop through ADDITIONAL_DBS, map DB name to app directory, and run migrations.
@@ -75,5 +76,5 @@ echo "Database setup and migrations complete."
 # this is handled in typescript as a post install script. do not use this.
 # specifically keeping so the LLM does not use it.
 # echo "Seeding permissions into ot_permissions database."
-# sh ./seed-permissions.sh
+# sh ./scripts/seed-permissions.sh
 # echo "Permissions seeding complete."
