@@ -32,7 +32,7 @@ export class AppService {
     @Inject(STORAGE_ADAPTERS)
     private readonly storageAdapter: StorageAdapter,
     private readonly fileValidationService: FileValidationService,
-    private readonly virusScanService: VirusScanService,
+    private readonly virusScanService: VirusScanService
   ) {}
 
   async createAsset(data: CreateAssetDto): Promise<AssetEntity> {
@@ -45,7 +45,7 @@ export class AppService {
         data.name,
         data.profileId,
         data.type,
-        data.content?.length || 0,
+        data.content?.length || 0
       );
 
       if (data.content || data.sourcePath) {
@@ -66,13 +66,13 @@ export class AppService {
         }
 
         this.l.log(
-          `File validated and scanned: ${data.name} (${prepared.scanResult.scanner})`,
+          `File validated and scanned: ${data.name} (${prepared.scanResult.scanner})`
         );
       }
 
       const persistedName = this.buildPersistedFilename(
         data.name,
-        data.fileExtension,
+        data.fileExtension
       );
       const entityAsset: Partial<AssetEntity> = {
         name: persistedName,
@@ -116,7 +116,7 @@ export class AppService {
       data.name,
       mimeType,
       contentBuffer.length,
-      data.type,
+      data.type
     );
 
     if (!validation.isValid) {
@@ -130,7 +130,7 @@ export class AppService {
 
     const scanResult = await this.virusScanService.scanFile(
       contentBuffer,
-      data.name,
+      data.name
     );
 
     return {

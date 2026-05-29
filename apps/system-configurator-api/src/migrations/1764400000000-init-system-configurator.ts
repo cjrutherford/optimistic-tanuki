@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitSystemConfigurator1764400000000
-  implements MigrationInterface
-{
+export class InitSystemConfigurator1764400000000 implements MigrationInterface {
   name = 'InitSystemConfigurator1764400000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -108,7 +106,9 @@ export class InitSystemConfigurator1764400000000
     await queryRunner.query('DROP TABLE IF EXISTS sc_saved_configurations');
     await queryRunner.query('DROP TABLE IF EXISTS sc_hardware_orders');
     await queryRunner.query('DROP TABLE IF EXISTS sc_hardware_parts');
-    await queryRunner.query('DROP INDEX IF EXISTS idx_sc_case_option_slug_title');
+    await queryRunner.query(
+      'DROP INDEX IF EXISTS idx_sc_case_option_slug_title'
+    );
     await queryRunner.query('DROP TABLE IF EXISTS sc_case_options');
     await queryRunner.query('DROP TABLE IF EXISTS sc_chassis');
   }

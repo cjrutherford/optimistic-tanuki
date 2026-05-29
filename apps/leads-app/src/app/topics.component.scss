@@ -152,11 +152,19 @@
   gap: 1rem;
   padding: 1.25rem 1.4rem;
   margin-bottom: 1.5rem;
-  border: 1px solid color-mix(in srgb, var(--app-primary) 24%, var(--app-border) 76%);
+  border: 1px solid
+    color-mix(in srgb, var(--app-primary) 24%, var(--app-border) 76%);
   border-radius: var(--radius-lg);
-  background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--app-primary) 16%, transparent 84%), transparent 50%),
-    linear-gradient(135deg, color-mix(in srgb, var(--app-surface) 86%, var(--app-background) 14%), var(--app-surface));
+  background: radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--app-primary) 16%, transparent 84%),
+      transparent 50%
+    ),
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--app-surface) 86%, var(--app-background) 14%),
+      var(--app-surface)
+    );
 }
 
 .topics-guidance-copy {
@@ -203,7 +211,8 @@
 
   &.selected {
     border-color: var(--app-primary);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-primary) 35%, transparent);
+    box-shadow: 0 0 0 1px
+      color-mix(in srgb, var(--app-primary) 35%, transparent);
   }
 }
 
@@ -263,7 +272,11 @@
 }
 
 .btn-danger {
-  border-color: color-mix(in srgb, var(--app-danger) 45%, var(--app-border) 55%);
+  border-color: color-mix(
+    in srgb,
+    var(--app-danger) 45%,
+    var(--app-border) 55%
+  );
   color: var(--app-danger);
 }
 
@@ -286,7 +299,11 @@
     gap: 0.35rem;
     padding: 0.35rem 0.7rem;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--app-primary) 14%, var(--app-surface) 86%);
+    background: color-mix(
+      in srgb,
+      var(--app-primary) 14%,
+      var(--app-surface) 86%
+    );
     color: var(--app-foreground);
     font-size: 0.85rem;
   }
@@ -347,7 +364,8 @@
 
 .add-topic-card {
   background: var(--app-surface);
-  border: 1px solid color-mix(in srgb, var(--app-primary) 32%, var(--app-border) 68%);
+  border: 1px solid
+    color-mix(in srgb, var(--app-primary) 32%, var(--app-border) 68%);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   max-height: min(90vh, 100%);
@@ -466,7 +484,8 @@
   display: grid;
   gap: 0.25rem;
   padding: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--app-primary) 22%, var(--app-border) 78%);
+  border: 1px solid
+    color-mix(in srgb, var(--app-primary) 22%, var(--app-border) 78%);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--app-surface) 94%, white 6%);
   box-shadow: var(--shadow-lg);
@@ -485,7 +504,11 @@
   cursor: pointer;
 
   &:hover {
-    background: color-mix(in srgb, var(--app-primary) 10%, var(--app-surface) 90%);
+    background: color-mix(
+      in srgb,
+      var(--app-primary) 10%,
+      var(--app-surface) 90%
+    );
   }
 }
 
@@ -504,7 +527,8 @@
   padding: 0.75rem 0.875rem;
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--app-primary) 8%, var(--app-surface));
-  border: 1px solid color-mix(in srgb, var(--app-primary) 18%, var(--app-border));
+  border: 1px solid
+    color-mix(in srgb, var(--app-primary) 18%, var(--app-border));
 }
 
 .form-section-label {
@@ -800,22 +824,46 @@
 
   &[data-severity='warning'] {
     .discovery-summary {
-      border-color: color-mix(in srgb, var(--app-warning) 50%, var(--app-border) 50%);
-      background: color-mix(in srgb, var(--app-warning) 10%, var(--app-surface) 90%);
+      border-color: color-mix(
+        in srgb,
+        var(--app-warning) 50%,
+        var(--app-border) 50%
+      );
+      background: color-mix(
+        in srgb,
+        var(--app-warning) 10%,
+        var(--app-surface) 90%
+      );
     }
   }
 
   &[data-severity='error'] {
     .discovery-summary {
-      border-color: color-mix(in srgb, var(--app-danger) 50%, var(--app-border) 50%);
-      background: color-mix(in srgb, var(--app-danger) 10%, var(--app-surface) 90%);
+      border-color: color-mix(
+        in srgb,
+        var(--app-danger) 50%,
+        var(--app-border) 50%
+      );
+      background: color-mix(
+        in srgb,
+        var(--app-danger) 10%,
+        var(--app-surface) 90%
+      );
     }
   }
 
   &[data-severity='success'] {
     .discovery-summary {
-      border-color: color-mix(in srgb, var(--app-success) 50%, var(--app-border) 50%);
-      background: color-mix(in srgb, var(--app-success) 10%, var(--app-surface) 90%);
+      border-color: color-mix(
+        in srgb,
+        var(--app-success) 50%,
+        var(--app-border) 50%
+      );
+      background: color-mix(
+        in srgb,
+        var(--app-success) 10%,
+        var(--app-surface) 90%
+      );
     }
   }
 }
@@ -921,11 +969,19 @@
   border-radius: var(--radius-md);
 
   &[data-status='warning'] {
-    border-color: color-mix(in srgb, var(--app-warning) 40%, var(--app-border) 60%);
+    border-color: color-mix(
+      in srgb,
+      var(--app-warning) 40%,
+      var(--app-border) 60%
+    );
   }
 
   &[data-status='error'] {
-    border-color: color-mix(in srgb, var(--app-danger) 40%, var(--app-border) 60%);
+    border-color: color-mix(
+      in srgb,
+      var(--app-danger) 40%,
+      var(--app-border) 60%
+    );
   }
 }
 
@@ -984,14 +1040,26 @@
   padding: 0.625rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--app-border);
-  background: color-mix(in srgb, var(--app-background) 40%, var(--app-surface) 60%);
+  background: color-mix(
+    in srgb,
+    var(--app-background) 40%,
+    var(--app-surface) 60%
+  );
 
   &[data-severity='warning'] {
-    border-color: color-mix(in srgb, var(--app-warning) 40%, var(--app-border) 60%);
+    border-color: color-mix(
+      in srgb,
+      var(--app-warning) 40%,
+      var(--app-border) 60%
+    );
   }
 
   &[data-severity='error'] {
-    border-color: color-mix(in srgb, var(--app-danger) 40%, var(--app-border) 60%);
+    border-color: color-mix(
+      in srgb,
+      var(--app-danger) 40%,
+      var(--app-border) 60%
+    );
   }
 }
 

@@ -140,11 +140,12 @@ describe('ProfileService', () => {
         copyPermissionsFromGlobalProfile: false,
       };
 
-      const savedProfile = { id: 'new-profile-id', userId: 'user-123' } as Profile;
+      const savedProfile = {
+        id: 'new-profile-id',
+        userId: 'user-123',
+      } as Profile;
 
-      jest
-        .spyOn(repository, 'findOne')
-        .mockResolvedValueOnce(null);
+      jest.spyOn(repository, 'findOne').mockResolvedValueOnce(null);
       jest.spyOn(repository, 'save').mockResolvedValue(savedProfile);
 
       await service.create(createProfileDto);

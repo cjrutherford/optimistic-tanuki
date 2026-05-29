@@ -12,7 +12,8 @@ import {
   OnDestroy,
   Input,
   SimpleChange,
-  SimpleChanges, OnChanges,
+  SimpleChanges,
+  OnChanges,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {

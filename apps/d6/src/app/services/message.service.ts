@@ -35,9 +35,7 @@ export class MessageService {
   }
 
   removeMessage(id: number): void {
-    this._messages.update((messages) =>
-      messages.filter((m) => m.id !== id)
-    );
+    this._messages.update((messages) => messages.filter((m) => m.id !== id));
   }
 
   clearMessages(): void {

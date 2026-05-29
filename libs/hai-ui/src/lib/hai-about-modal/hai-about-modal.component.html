@@ -36,12 +36,12 @@
         <p class="panel-label">About This App</p>
         <p>{{ config.appDescription }}</p>
         @if (config.appUrl) {
-        <a class="primary-link" [href]="config.appUrl">Open {{ config.appName }}</a>
+        <a class="primary-link" [href]="config.appUrl"
+          >Open {{ config.appName }}</a
+        >
         }
       </div>
-      }
-
-      @if (activeTab === 'hai') {
+      } @if (activeTab === 'hai') {
       <div class="copy-stack">
         <p class="panel-label">About HAI</p>
         <p>
@@ -55,9 +55,7 @@
           instead of lock-in.
         </p>
       </div>
-      }
-
-      @if (activeTab === 'directory') {
+      } @if (activeTab === 'directory') {
       <div class="directory-grid">
         @for (app of appLinks$ | async; track app.appId) {
         <a

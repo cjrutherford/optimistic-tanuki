@@ -43,7 +43,7 @@ describe('VideoService processing lifecycle', () => {
         sourceAssetId: 'source-asset',
         processingStatus: VideoProcessingStatus.PENDING,
         communityId: 'community-1',
-      }),
+      })
     );
     expect(result.processingStatus).toBe(VideoProcessingStatus.PENDING);
   });
@@ -71,7 +71,7 @@ describe('VideoService processing lifecycle', () => {
         playbackAssetId: 'playback-asset',
         hlsManifestAssetId: 'manifest-asset',
         processingStatus: VideoProcessingStatus.READY,
-      }),
+      })
     );
   });
 
@@ -89,7 +89,7 @@ describe('VideoService processing lifecycle', () => {
       expect.objectContaining({
         processingStatus: VideoProcessingStatus.FAILED,
         processingError: 'transcoder crashed',
-      }),
+      })
     );
   });
 });

@@ -51,7 +51,7 @@ export class LeadsService {
     return this.leadsApi.createLead(dto).pipe(
       tap((newLead) => {
         this.localLeads = [newLead, ...this.localLeads];
-      }),
+      })
     );
   }
 
@@ -59,9 +59,9 @@ export class LeadsService {
     return this.leadsApi.updateLead(id, dto).pipe(
       tap((updatedLead) => {
         this.localLeads = this.localLeads.map((lead) =>
-          lead.id === id ? updatedLead : lead,
+          lead.id === id ? updatedLead : lead
         );
-      }),
+      })
     );
   }
 
@@ -69,7 +69,7 @@ export class LeadsService {
     return this.leadsApi.deleteLead(id).pipe(
       tap(() => {
         this.localLeads = this.localLeads.filter((l) => l.id !== id);
-      }),
+      })
     );
   }
 
@@ -119,14 +119,14 @@ export class LeadsService {
                 isFlagged: true,
                 flags: [flag, ...(lead.flags || [])],
               }
-            : lead,
+            : lead
         );
-      }),
+      })
     );
   }
 
   analyzeOnboarding(
-    profile: UserOnboardingProfile,
+    profile: UserOnboardingProfile
   ): Observable<{ topics: GeneratedTopicSuggestion[] }> {
     return this.onboarding.analyzeOnboarding(profile);
   }
@@ -144,14 +144,14 @@ export class LeadsService {
   }
 
   advanceDiscInterview(
-    request: DiscInterviewRequest,
+    request: DiscInterviewRequest
   ): Observable<DiscInterviewResponse> {
     return this.onboarding.advanceDiscInterview(request);
   }
 
   confirmOnboarding(
     profile: UserOnboardingProfile,
-    topics: GeneratedTopicSuggestion[],
+    topics: GeneratedTopicSuggestion[]
   ): Observable<{ topics: Topic[] }> {
     return this.onboarding.confirmOnboarding(profile, topics);
   }

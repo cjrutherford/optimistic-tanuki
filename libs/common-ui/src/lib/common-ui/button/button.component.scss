@@ -22,13 +22,10 @@ button {
   transition: var(
     --personality-transition,
     transform var(--animation-duration-fast) var(--animation-easing),
-      box-shadow var(--animation-duration-fast) var(--animation-easing),
-      background var(--animation-duration-fast) var(--animation-easing)
+    box-shadow var(--animation-duration-fast) var(--animation-easing),
+    background var(--animation-duration-fast) var(--animation-easing)
   );
-  border-radius: var(
-    --personality-button-radius,
-    var(--border-radius-md, 4px)
-  );
+  border-radius: var(--personality-button-radius, var(--border-radius-md, 4px));
 
   &:disabled {
     opacity: 0.5;

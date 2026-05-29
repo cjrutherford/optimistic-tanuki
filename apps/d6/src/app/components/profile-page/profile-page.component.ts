@@ -1,10 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {
-  CardComponent,
-  ButtonComponent,
-} from '@optimistic-tanuki/common-ui';
+import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
   TextInputComponent,
   TextAreaComponent,
@@ -12,10 +9,10 @@ import {
 import { ProfileService } from '../../services/profile.service';
 import { MessageService } from '../../services/message.service';
 import { AuthStateService } from '../../services/auth-state.service';
-import { 
-  ProfileDto, 
-  CreateProfileDto, 
-  UpdateProfileDto 
+import {
+  ProfileDto,
+  CreateProfileDto,
+  UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
 
 @Component({
@@ -36,8 +33,8 @@ import {
       <otui-card class="profile-card">
         <div class="profile-header">
           <div class="photo-section">
-            <img 
-              [src]="profilePhotoUrl()" 
+            <img
+              [src]="profilePhotoUrl()"
               [alt]="displayName()"
               class="profile-avatar"
             />
@@ -108,131 +105,133 @@ import {
       </otui-card>
     </div>
   `,
-  styles: [`
-    :host {
-      display: block;
-    }
-
-    .profile-container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: var(--spacing-lg, 24px);
-    }
-
-    .page-title {
-      font-size: 2rem;
-      font-weight: 600;
-      margin-bottom: var(--spacing-lg, 24px);
-      color: var(--foreground, #212121);
-    }
-
-    .profile-card {
-      margin-bottom: var(--spacing-lg, 24px);
-    }
-
-    .profile-header {
-      display: flex;
-      gap: var(--spacing-xl, 32px);
-      align-items: flex-start;
-    }
-
-    @media (max-width: 600px) {
-      .profile-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
+  styles: [
+    `
+      :host {
+        display: block;
       }
-    }
 
-    .photo-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--spacing-sm, 8px);
-    }
+      .profile-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: var(--spacing-lg, 24px);
+      }
 
-    .profile-avatar {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 4px solid var(--border, #e5e7eb);
-    }
-
-    .change-photo-btn {
-      background: none;
-      border: none;
-      color: var(--primary, #4f46e5);
-      cursor: pointer;
-      font-size: 0.875rem;
-      text-decoration: underline;
-    }
-
-    .profile-info {
-      flex: 1;
-    }
-
-    .display-name {
-      font-size: 1.5rem;
-      font-weight: 600;
-      margin: 0 0 var(--spacing-sm, 8px) 0;
-      color: var(--foreground, #1f2937);
-    }
-
-    .bio-text {
-      color: var(--muted, #6b7280);
-      line-height: 1.6;
-      margin-bottom: var(--spacing-md, 16px);
-    }
-
-    .edit-actions {
-      display: flex;
-      gap: var(--spacing-md, 16px);
-      margin-top: var(--spacing-md, 16px);
-    }
-
-    .stats-card {
-      h2 {
-        font-size: 1.25rem;
+      .page-title {
+        font-size: 2rem;
         font-weight: 600;
         margin-bottom: var(--spacing-lg, 24px);
+        color: var(--foreground, #212121);
+      }
+
+      .profile-card {
+        margin-bottom: var(--spacing-lg, 24px);
+      }
+
+      .profile-header {
+        display: flex;
+        gap: var(--spacing-xl, 32px);
+        align-items: flex-start;
+      }
+
+      @media (max-width: 600px) {
+        .profile-header {
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+      }
+
+      .photo-section {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-sm, 8px);
+      }
+
+      .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 4px solid var(--border, #e5e7eb);
+      }
+
+      .change-photo-btn {
+        background: none;
+        border: none;
+        color: var(--primary, #4f46e5);
+        cursor: pointer;
+        font-size: 0.875rem;
+        text-decoration: underline;
+      }
+
+      .profile-info {
+        flex: 1;
+      }
+
+      .display-name {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 var(--spacing-sm, 8px) 0;
         color: var(--foreground, #1f2937);
       }
-    }
 
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: var(--spacing-lg, 24px);
-    }
-
-    @media (max-width: 600px) {
-      .stats-grid {
-        grid-template-columns: 1fr;
+      .bio-text {
+        color: var(--muted, #6b7280);
+        line-height: 1.6;
+        margin-bottom: var(--spacing-md, 16px);
       }
-    }
 
-    .stat-item {
-      text-align: center;
-      padding: var(--spacing-md, 16px);
-      background: var(--surface-alt, #f9fafb);
-      border-radius: var(--border-radius-md, 8px);
-    }
+      .edit-actions {
+        display: flex;
+        gap: var(--spacing-md, 16px);
+        margin-top: var(--spacing-md, 16px);
+      }
 
-    .stat-value {
-      display: block;
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--primary, #4f46e5);
-    }
+      .stats-card {
+        h2 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          margin-bottom: var(--spacing-lg, 24px);
+          color: var(--foreground, #1f2937);
+        }
+      }
 
-    .stat-label {
-      display: block;
-      font-size: 0.875rem;
-      color: var(--muted, #6b7280);
-      margin-top: var(--spacing-xs, 4px);
-    }
-  `],
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-lg, 24px);
+      }
+
+      @media (max-width: 600px) {
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .stat-item {
+        text-align: center;
+        padding: var(--spacing-md, 16px);
+        background: var(--surface-alt, #f9fafb);
+        border-radius: var(--border-radius-md, 8px);
+      }
+
+      .stat-value {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--primary, #4f46e5);
+      }
+
+      .stat-label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--muted, #6b7280);
+        margin-top: var(--spacing-xs, 4px);
+      }
+    `,
+  ],
 })
 export class ProfilePageComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
@@ -324,7 +323,7 @@ export class ProfilePageComponent implements OnInit {
 
   private async loadProfile(): Promise<void> {
     const profile = this.profileService.getCurrentUserProfile();
-    
+
     if (profile) {
       this.updateSignalsFromProfile(profile);
     } else {

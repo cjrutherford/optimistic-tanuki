@@ -38,14 +38,16 @@ export class FinCommanderImportRegistryService {
     {
       id: 'csv',
       name: 'CSV Intake',
-      description: 'Paste exported transaction rows from a bank or card statement.',
+      description:
+        'Paste exported transaction rows from a bank or card statement.',
       inputLabel: 'CSV rows',
       placeholder: 'date,description,amount,type,category',
     },
     {
       id: 'demo-bank',
       name: 'Demo Bank Feed',
-      description: 'Load a mock bank feed to validate the preview-and-commit workflow.',
+      description:
+        'Load a mock bank feed to validate the preview-and-commit workflow.',
       inputLabel: 'Optional note',
       placeholder: 'No raw input required for the demo bank feed.',
       inputOptional: true,

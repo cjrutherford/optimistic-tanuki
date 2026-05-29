@@ -23,7 +23,7 @@ describe('LemonSqueezyAdapter', () => {
           business_page_id: 'page-1',
           tier: 'pro',
         },
-      }),
+      })
     ).resolves.toEqual({
       provider: 'lemon-squeezy',
       checkoutUrl:
@@ -39,7 +39,7 @@ describe('LemonSqueezyAdapter', () => {
         customData: {
           donation_id: 'donation-1',
         },
-      }),
+      })
     ).resolves.toMatchObject({
       checkoutUrl:
         'https://store.lemonsqueezy.com/checkout/buy/hub-store?checkout[custom][donation_id]=donation-1&checkout[custom][app_scope]=local-hub',
@@ -59,7 +59,7 @@ describe('LemonSqueezyAdapter', () => {
             },
           },
         },
-      }),
+      })
     ).resolves.toEqual({
       provider: 'lemon-squeezy',
       eventType: 'subscription_created',

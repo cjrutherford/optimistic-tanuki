@@ -20,12 +20,10 @@ import { FinanceAccountType } from '@optimistic-tanuki/finance-ui';
           (change)="onSelect($event)"
         >
           @for (tenant of tenantContext.availableTenants(); track tenant.id) {
-            <option [value]="tenant.id">
-              {{ tenant.name }}
-              @if (tenant.type) {
-                ({{ accountTypeLabel(tenant.type) }})
-              }
-            </option>
+          <option [value]="tenant.id">
+            {{ tenant.name }}
+            @if (tenant.type) { ({{ accountTypeLabel(tenant.type) }}) }
+          </option>
           }
         </select>
         <button
@@ -39,23 +37,23 @@ import { FinanceAccountType } from '@optimistic-tanuki/finance-ui';
       </div>
 
       @if (createOpen()) {
-        <form class="tenant-create" (ngSubmit)="createTenant()">
-          <input
-            [(ngModel)]="draftName"
-            name="draftName"
-            type="text"
-            placeholder="North Household"
-            required
-          />
-          <select [(ngModel)]="draftType" name="draftType">
-            @for (type of accountTypes; track type.value) {
-              <option [value]="type.value">{{ type.label }}</option>
-            }
-          </select>
-          <button type="submit" class="tenant-submit" [disabled]="creating()">
-            {{ creating() ? 'Creating…' : 'Create account' }}
-          </button>
-        </form>
+      <form class="tenant-create" (ngSubmit)="createTenant()">
+        <input
+          [(ngModel)]="draftName"
+          name="draftName"
+          type="text"
+          placeholder="North Household"
+          required
+        />
+        <select [(ngModel)]="draftType" name="draftType">
+          @for (type of accountTypes; track type.value) {
+          <option [value]="type.value">{{ type.label }}</option>
+          }
+        </select>
+        <button type="submit" class="tenant-submit" [disabled]="creating()">
+          {{ creating() ? 'Creating…' : 'Create account' }}
+        </button>
+      </form>
       }
     </div>
   `,

@@ -64,7 +64,9 @@ describe('AppController', () => {
 
     it('should throw RpcException if appService.removeAsset fails', async () => {
       const handle: AssetHandle = { id: '1' } as any;
-      (appService.removeAsset as jest.Mock).mockRejectedValue(new Error('Remove failed'));
+      (appService.removeAsset as jest.Mock).mockRejectedValue(
+        new Error('Remove failed')
+      );
 
       await expect(appController.removeAsset(handle)).rejects.toThrow();
     });
@@ -84,7 +86,9 @@ describe('AppController', () => {
 
     it('should throw RpcException if appService.retrieveAsset fails', async () => {
       const handle: AssetHandle = { id: '1' } as any;
-      (appService.retrieveAsset as jest.Mock).mockRejectedValue(new Error('Retrieve failed'));
+      (appService.retrieveAsset as jest.Mock).mockRejectedValue(
+        new Error('Retrieve failed')
+      );
 
       await expect(appController.retrieveAsset(handle)).rejects.toThrow();
     });
@@ -104,7 +108,9 @@ describe('AppController', () => {
 
     it('should throw RpcException if appService.readAsset fails', async () => {
       const handle: AssetHandle = { id: '1' } as any;
-      (appService.readAsset as jest.Mock).mockRejectedValue(new Error('Read failed'));
+      (appService.readAsset as jest.Mock).mockRejectedValue(
+        new Error('Read failed')
+      );
 
       await expect(appController.readAsset(handle)).rejects.toThrow();
     });
@@ -112,7 +118,10 @@ describe('AppController', () => {
 
   describe('listAssets', () => {
     it('should call appService.listAssets with the correct data', async () => {
-      const query = { profileId: '11111111-1111-1111-1111-111111111111', type: 'image' } as any;
+      const query = {
+        profileId: '11111111-1111-1111-1111-111111111111',
+        type: 'image',
+      } as any;
       const result = [{ id: '1', name: 'test', type: 'image' }];
       (appService.listAssets as jest.Mock).mockResolvedValue(result);
 
@@ -123,8 +132,12 @@ describe('AppController', () => {
     });
 
     it('should throw RpcException if appService.listAssets fails', async () => {
-      const query = { profileId: '11111111-1111-1111-1111-111111111111' } as any;
-      (appService.listAssets as jest.Mock).mockRejectedValue(new Error('List failed'));
+      const query = {
+        profileId: '11111111-1111-1111-1111-111111111111',
+      } as any;
+      (appService.listAssets as jest.Mock).mockRejectedValue(
+        new Error('List failed')
+      );
 
       await expect(appController.listAssets(query)).rejects.toThrow();
     });

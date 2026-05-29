@@ -13,12 +13,14 @@ This document describes the comprehensive improvements made to the AI Orchestrat
 The `PromptTemplateService` centralizes all prompt generation to ensure consistency and prevent confusion with user input.
 
 **Features**:
+
 - **System Prompt Template**: Includes full persona TELOS information (goals, skills, limitations, core objective)
 - **Agent Prompt Template**: For multi-step reasoning with LangGraph
 - **Workflow Detection Template**: For classifying user prompts
 - **Formatting Helpers**: Format persona and user profile data for prompts
 
 **Usage**:
+
 ```typescript
 // In LangChainService
 const promptTemplate = this.promptTemplate.createSystemPromptTemplate();
@@ -48,6 +50,7 @@ Defines structured event types for streaming to the chat interface:
 - `FINAL_RESPONSE`: Final response with optional tool call summary
 
 **Usage**:
+
 ```typescript
 // Emit thinking token event
 await onStreamEvent({
@@ -94,6 +97,7 @@ return { response: filtered };
 ```
 
 **Detected Patterns**:
+
 - `<think>...</think>`
 - `[THINKING]...[/THINKING]`
 - `**Thinking:**...`
@@ -123,11 +127,14 @@ This ensures the LLM understands and leverages the persona's full capabilities a
 Comprehensive benchmark script to test AI orchestration capabilities:
 
 **Test Categories**:
+
 1. **Workflow Control Detection**
+
    - Tests classification of prompts as conversational, tool_calling, or hybrid
    - Validates workflow detection accuracy
 
 2. **Conversational Responses**
+
    - Tests natural language responses
    - Uses real persona configurations
    - Validates response quality and length
@@ -138,6 +145,7 @@ Comprehensive benchmark script to test AI orchestration capabilities:
    - Tests with real tool scenarios
 
 **Usage**:
+
 ```bash
 # Run with all available models
 node apps/ai-orchestrator/src/benchmark.ts
@@ -153,6 +161,7 @@ OLLAMA_HOST=192.168.1.100 OLLAMA_PORT=11434 node apps/ai-orchestrator/src/benchm
 ```
 
 **Output**:
+
 ```json
 {
   "timestamp": "2026-01-14T22:46:05.991Z",
@@ -174,12 +183,14 @@ OLLAMA_HOST=192.168.1.100 OLLAMA_PORT=11434 node apps/ai-orchestrator/src/benchm
 **File**: `apps/ai-orchestrator/src/app/langchain.service.ts`
 
 **Changes**:
+
 - Uses `PromptTemplateService` instead of inline prompts
 - Emits streaming events for thinking tokens, tool calls, and errors
 - Properly extracts and filters thinking tokens
 - Includes full persona TELOS in system messages
 
 **New Signature**:
+
 ```typescript
 async executeConversation(
   persona: PersonaTelosDto,
@@ -193,6 +204,7 @@ async executeConversation(
 ```
 
 **Event Flow**:
+
 1. Thinking tokens extracted and emitted as events
 2. Tool calls emit TOOL_START events before execution
 3. Tool calls emit TOOL_END events after completion (or ERROR on failure)
@@ -212,47 +224,32 @@ Update your code to handle the new streaming events:
 
 ```typescript
 // Before
-const result = await this.langChainService.executeConversation(
-  persona,
-  profile,
-  history,
-  message,
-  summary,
-  convId
-);
+const result = await this.langChainService.executeConversation(persona, profile, history, message, summary, convId);
 
 // After - with event handling
-const result = await this.langChainService.executeConversation(
-  persona,
-  profile,
-  history,
-  message,
-  summary,
-  convId,
-  async (event: StreamingEvent) => {
-    switch (event.type) {
-      case StreamingEventType.THINKING:
-        // Display thinking process to user
-        console.log('[AI Thinking]:', event.content.text);
-        break;
-      
-      case StreamingEventType.TOOL_START:
-        // Show tool being called
-        console.log('[Tool Called]:', event.content.tool);
-        break;
-      
-      case StreamingEventType.TOOL_END:
-        // Show tool result
-        console.log('[Tool Result]:', event.content.output);
-        break;
-      
-      case StreamingEventType.ERROR:
-        // Show error
-        console.error('[Error]:', event.content.message);
-        break;
-    }
+const result = await this.langChainService.executeConversation(persona, profile, history, message, summary, convId, async (event: StreamingEvent) => {
+  switch (event.type) {
+    case StreamingEventType.THINKING:
+      // Display thinking process to user
+      console.log('[AI Thinking]:', event.content.text);
+      break;
+
+    case StreamingEventType.TOOL_START:
+      // Show tool being called
+      console.log('[Tool Called]:', event.content.tool);
+      break;
+
+    case StreamingEventType.TOOL_END:
+      // Show tool result
+      console.log('[Tool Result]:', event.content.output);
+      break;
+
+    case StreamingEventType.ERROR:
+      // Show error
+      console.error('[Error]:', event.content.message);
+      break;
   }
-);
+});
 ```
 
 ### For Frontend/Chat Interface
@@ -267,27 +264,27 @@ socket.on('ai-event', (event: StreamingEvent) => {
       // Show thinking indicator with faded text
       ui.showThinking(event.content.text);
       break;
-    
+
     case 'tool_start':
       // Show "Calling tool: create_project..."
       ui.showToolIndicator(event.content.tool, 'start');
       break;
-    
+
     case 'tool_end':
       // Update tool indicator to "complete"
       ui.showToolIndicator(event.content.tool, 'complete');
       break;
-    
+
     case 'error':
       // Show error message
       ui.showError(event.content.message);
       break;
-    
+
     case 'chunk':
       // Append to streaming message
       ui.appendToMessage(event.content);
       break;
-    
+
     case 'final_response':
       // Finalize message display
       ui.finalizeMessage(event.content.text);

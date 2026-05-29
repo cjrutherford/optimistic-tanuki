@@ -145,10 +145,7 @@ export function generateTriadicHarmony(hue: number): number[] {
  * Generate analogous harmony (adjacent colors)
  * Best for: Minimal, Soft, Elegant personalities
  */
-export function generateAnalogousHarmony(
-  hue: number,
-  spread = 30
-): number[] {
+export function generateAnalogousHarmony(hue: number, spread = 30): number[] {
   return [(hue - spread + 360) % 360, hue, (hue + spread) % 360];
 }
 
@@ -490,9 +487,9 @@ export function generateThemeResponsiveColors(
       mode === 'light'
         ? params.neutralSaturation
         : Math.min(
-          100,
-          params.neutralSaturation + params.darkModeSaturationBoost
-        ),
+            100,
+            params.neutralSaturation + params.darkModeSaturationBoost
+          ),
     l: baseLuminosity,
   };
   const background = rgbToHex(hslToRgb(backgroundHsl));

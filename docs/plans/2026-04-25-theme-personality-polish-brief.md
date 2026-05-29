@@ -1,6 +1,7 @@
 # Theme Personality Polish Brief
 
 ## Summary
+
 This brief captures the intended theme-personality direction for the landing
 surfaces in `forgeofwill`, `digital-homestead`, and
 `christopherrutherford-net`. The goal is not a full reskin. The goal is to
@@ -9,6 +10,7 @@ treatment, and motion so each app reads as intentional instead of merely
 themed.
 
 ## Forge of Will
+
 - Product signal: high-energy project execution, ambitious planning, forged
   momentum.
 - Existing strength: already has a distinctive cinematic landing page and
@@ -25,6 +27,7 @@ themed.
   “this is where focused work becomes shippable progress.”
 
 ## Digital Homestead
+
 - Product signal: digital independence, ownership, practical self-hosting, and
   neighborhood-scale community.
 - Current gap: the app has strong content, but the landing experience feels
@@ -42,6 +45,7 @@ themed.
   “own the tools, own the relationship, grow with peers.”
 
 ## ChristopherRutherford.net
+
 - Product signal: senior engineering judgment, self-hosted platforms,
   independent delivery, and community-oriented technical leadership.
 - Current gap: the page structure is solid, but the hero and section wrappers
@@ -59,6 +63,7 @@ themed.
   systems.”
 
 ## Implementation Notes
+
 - Prefer shared personality variables over hardcoded colors, shadows, radii,
   and transition timings.
 - Use `motion-ui` only where it supports a page-level mood already established

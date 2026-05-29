@@ -1,23 +1,23 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class AlignDiscoverySources1774825000000 implements MigrationInterface {
-    name = 'AlignDiscoverySources1774825000000';
+  name = 'AlignDiscoverySources1774825000000';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        const newLeadSources = [
-            'remoteok',
-            'himalayas',
-            'weworkremotely',
-            'justremote',
-            'jobicy',
-            'clutch',
-            'crunchbase',
-            'indeed',
-            'google-maps',
-        ];
+  public async up(queryRunner: QueryRunner): Promise<void> {
+    const newLeadSources = [
+      'remoteok',
+      'himalayas',
+      'weworkremotely',
+      'justremote',
+      'jobicy',
+      'clutch',
+      'crunchbase',
+      'indeed',
+      'google-maps',
+    ];
 
-        for (const source of newLeadSources) {
-            await queryRunner.query(`
+    for (const source of newLeadSources) {
+      await queryRunner.query(`
                 DO $$
                 BEGIN
                     IF NOT EXISTS (
@@ -32,12 +32,16 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
                 END
                 $$;
             `);
-        }
+    }
 
-        await queryRunner.query(`ALTER TABLE "lead_topics" ADD "googleMapsCities" text array`);
-        await queryRunner.query(`ALTER TABLE "lead_topics" ADD "googleMapsTypes" text array`);
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" ADD "googleMapsCities" text array`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" ADD "googleMapsTypes" text array`
+    );
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             UPDATE "lead_topics"
             SET "googleMapsCities" = CASE
                 WHEN "locality" IS NULL OR btrim("locality") = '' THEN NULL
@@ -45,7 +49,7 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
             END
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             UPDATE "lead_topics"
             SET "sources" = CASE
                 WHEN COALESCE(array_length(
@@ -65,15 +69,19 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
             END
         `);
 
-        await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "searchRadiusMiles"`);
-        await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "locality"`);
-    }
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" DROP COLUMN "searchRadiusMiles"`
+    );
+    await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "locality"`);
+  }
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "lead_topics" ADD "locality" text`);
-        await queryRunner.query(`ALTER TABLE "lead_topics" ADD "searchRadiusMiles" integer`);
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`ALTER TABLE "lead_topics" ADD "locality" text`);
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" ADD "searchRadiusMiles" integer`
+    );
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             UPDATE "lead_topics"
             SET "locality" = CASE
                 WHEN "googleMapsCities" IS NULL OR array_length("googleMapsCities", 1) = 0 THEN NULL
@@ -82,7 +90,7 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
             "searchRadiusMiles" = NULL
         `);
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             UPDATE "lead_topics"
             SET "sources" = CASE
                 WHEN COALESCE("googleMapsCities", '{}'::text[]) <> '{}'::text[]
@@ -91,17 +99,23 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
             END
         `);
 
-        await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "googleMapsTypes"`);
-        await queryRunner.query(`ALTER TABLE "lead_topics" DROP COLUMN "googleMapsCities"`);
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" DROP COLUMN "googleMapsTypes"`
+    );
+    await queryRunner.query(
+      `ALTER TABLE "lead_topics" DROP COLUMN "googleMapsCities"`
+    );
 
-        await queryRunner.query(`
+    await queryRunner.query(`
             UPDATE "leads"
             SET "source" = 'other'
             WHERE "source"::text IN ('remoteok', 'himalayas', 'weworkremotely', 'justremote', 'jobicy', 'clutch', 'crunchbase', 'indeed', 'google-maps')
         `);
 
-        await queryRunner.query(`ALTER TYPE "public"."leads_source_enum" RENAME TO "leads_source_enum_old"`);
-        await queryRunner.query(`
+    await queryRunner.query(
+      `ALTER TYPE "public"."leads_source_enum" RENAME TO "leads_source_enum_old"`
+    );
+    await queryRunner.query(`
             CREATE TYPE "public"."leads_source_enum" AS ENUM(
                 'upwork',
                 'linkedin',
@@ -111,11 +125,11 @@ export class AlignDiscoverySources1774825000000 implements MigrationInterface {
                 'other'
             )
         `);
-        await queryRunner.query(`
+    await queryRunner.query(`
             ALTER TABLE "leads"
             ALTER COLUMN "source" TYPE "public"."leads_source_enum"
             USING ("source"::text::"public"."leads_source_enum")
         `);
-        await queryRunner.query(`DROP TYPE "public"."leads_source_enum_old"`);
-    }
+    await queryRunner.query(`DROP TYPE "public"."leads_source_enum_old"`);
+  }
 }

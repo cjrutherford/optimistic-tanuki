@@ -1315,7 +1315,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '4px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
+        focusStyle:
+          '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
       },
     },
   }),
@@ -1363,7 +1364,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '8px',
         borderWidth: '3px',
-        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
+        focusStyle:
+          '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
       },
     },
   }),
@@ -1411,7 +1413,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '12px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent)',
+        focusStyle:
+          '0 0 0 3px color-mix(in srgb, var(--primary) 14%, transparent)',
       },
     },
   }),
@@ -1459,7 +1462,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '4px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)',
+        focusStyle:
+          '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)',
       },
     },
   }),
@@ -1507,7 +1511,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '16px',
         borderWidth: '2px',
-        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
+        focusStyle:
+          '0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent)',
       },
     },
   }),
@@ -1555,7 +1560,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 16%, transparent)',
+        focusStyle:
+          '0 0 0 2px color-mix(in srgb, var(--primary) 16%, transparent)',
       },
     },
   }),
@@ -1603,7 +1609,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent)',
+        focusStyle:
+          '0 0 0 2px color-mix(in srgb, var(--primary) 10%, transparent)',
       },
     },
   }),
@@ -1651,7 +1658,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '3px',
-        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)',
+        focusStyle:
+          '0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent)',
       },
     },
   }),
@@ -1699,7 +1707,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '18px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
+        focusStyle:
+          '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
       },
     },
   }),
@@ -1747,7 +1756,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '10px',
         borderWidth: '2px',
-        focusStyle: '0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent)',
+        focusStyle:
+          '0 0 0 4px color-mix(in srgb, var(--primary) 28%, transparent)',
       },
     },
   }),
@@ -1795,7 +1805,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '4px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent)',
+        focusStyle:
+          '0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent)',
       },
     },
   }),
@@ -1815,9 +1826,9 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'medium',
       fontStyle: 'normal',
-      familyValue: "system-ui, -apple-system, sans-serif",
-      headingFamilyValue: "system-ui, -apple-system, sans-serif",
-      bodyFamilyValue: "system-ui, -apple-system, sans-serif",
+      familyValue: 'system-ui, -apple-system, sans-serif',
+      headingFamilyValue: 'system-ui, -apple-system, sans-serif',
+      bodyFamilyValue: 'system-ui, -apple-system, sans-serif',
       weightValue: '500',
     },
     animation: {
@@ -1843,7 +1854,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       input: {
         borderRadius: '0px',
         borderWidth: '1px',
-        focusStyle: '0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent)',
+        focusStyle:
+          '0 0 0 2px color-mix(in srgb, var(--primary) 12%, transparent)',
       },
     },
   }),

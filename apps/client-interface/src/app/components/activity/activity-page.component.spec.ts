@@ -3,7 +3,11 @@ import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { ActivityPageComponent } from './activity-page.component';
-import { ActivityService, ActivityItem, SavedItem } from '../../activity.service';
+import {
+  ActivityService,
+  ActivityItem,
+  SavedItem,
+} from '../../activity.service';
 import { ProfileService } from '../../profile.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
 
@@ -115,14 +119,20 @@ describe('ActivityPageComponent', () => {
       fixture.detectChanges(); // triggers ngOnInit
 
       expect(mockProfileService.getCurrentUserProfile).toHaveBeenCalled();
-      expect(mockActivityService.getUserActivity).toHaveBeenCalledWith('profile-1');
-      expect(mockActivityService.getSavedItems).toHaveBeenCalledWith('profile-1');
+      expect(mockActivityService.getUserActivity).toHaveBeenCalledWith(
+        'profile-1'
+      );
+      expect(mockActivityService.getSavedItems).toHaveBeenCalledWith(
+        'profile-1'
+      );
       expect(component.activities()).toEqual(mockActivities);
       expect(component.savedItems()).toEqual(mockSavedItems);
     });
 
     it('should not load data if no current profile', () => {
-      mockProfileService.getCurrentUserProfile = jest.fn().mockReturnValue(null);
+      mockProfileService.getCurrentUserProfile = jest
+        .fn()
+        .mockReturnValue(null);
 
       fixture.detectChanges();
 
@@ -131,9 +141,9 @@ describe('ActivityPageComponent', () => {
     });
 
     it('should handle error when loading activities', () => {
-      mockActivityService.getUserActivity = jest.fn().mockReturnValue(
-        throwError(() => new Error('Failed to load'))
-      );
+      mockActivityService.getUserActivity = jest
+        .fn()
+        .mockReturnValue(throwError(() => new Error('Failed to load')));
 
       fixture.detectChanges();
 
@@ -183,14 +193,20 @@ describe('ActivityPageComponent', () => {
       const activity = mockActivities[0]; // post activity
       component.navigateTo(activity);
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/feed/post', 'post-1']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([
+        '/feed/post',
+        'post-1',
+      ]);
     });
 
     it('should navigate to profile when activity is profile type', () => {
       const activity = mockActivities[2]; // follow activity
       component.navigateTo(activity);
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/profile', 'profile-2']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([
+        '/profile',
+        'profile-2',
+      ]);
     });
 
     it('should not navigate for activities without resource type', () => {
@@ -217,7 +233,10 @@ describe('ActivityPageComponent', () => {
       const item = mockSavedItems[0]; // post item
       component.navigateToSaved(item);
 
-      expect(mockRouter.navigate).toHaveBeenCalledWith(['/feed/post', 'post-1']);
+      expect(mockRouter.navigate).toHaveBeenCalledWith([
+        '/feed/post',
+        'post-1',
+      ]);
     });
 
     it('should not navigate for non-post saved items', () => {
@@ -241,8 +260,11 @@ describe('ActivityPageComponent', () => {
       component.unsaveItem(item, event);
 
       expect(event.stopPropagation).toHaveBeenCalled();
-      expect(mockActivityService.unsaveItem).toHaveBeenCalledWith('profile-1', 'post-1');
-      
+      expect(mockActivityService.unsaveItem).toHaveBeenCalledWith(
+        'profile-1',
+        'post-1'
+      );
+
       // Wait for async update
       setTimeout(() => {
         expect(component.savedItems().length).toBe(1);
@@ -261,7 +283,9 @@ describe('ActivityPageComponent', () => {
     });
 
     it('should not unsave if no current profile', () => {
-      mockProfileService.getCurrentUserProfile = jest.fn().mockReturnValue(null);
+      mockProfileService.getCurrentUserProfile = jest
+        .fn()
+        .mockReturnValue(null);
       const item = mockSavedItems[0];
       const event = new Event('click');
 
@@ -271,9 +295,9 @@ describe('ActivityPageComponent', () => {
     });
 
     it('should handle error when unsaving', () => {
-      mockActivityService.unsaveItem = jest.fn().mockReturnValue(
-        throwError(() => new Error('Failed to unsave'))
-      );
+      mockActivityService.unsaveItem = jest
+        .fn()
+        .mockReturnValue(throwError(() => new Error('Failed to unsave')));
 
       const item = mockSavedItems[0];
       const event = new Event('click');

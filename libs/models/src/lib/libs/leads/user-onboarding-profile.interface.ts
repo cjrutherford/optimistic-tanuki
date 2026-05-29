@@ -106,7 +106,10 @@ export interface UserOnboardingProfile {
   resumeRoleSummaries?: ResumeRoleSummary[];
   prefillEvidenceByField?: OnboardingSuggestionEvidence;
   prefillSourceByField?: Partial<
-    Record<keyof OnboardingProfileSuggestions, 'mad-lib' | 'resume' | 'mad-lib+resume'>
+    Record<
+      keyof OnboardingProfileSuggestions,
+      'mad-lib' | 'resume' | 'mad-lib+resume'
+    >
   >;
   // Section B: Target Customer
   idealCustomer: string;

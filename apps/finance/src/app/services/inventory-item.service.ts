@@ -27,12 +27,17 @@ export class InventoryItemService {
     });
   }
 
-  async create(createInventoryItemDto: CreateInventoryItemDto): Promise<InventoryItem> {
-    const totalValue = createInventoryItemDto.quantity * createInventoryItemDto.unitValue;
+  async create(
+    createInventoryItemDto: CreateInventoryItemDto
+  ): Promise<InventoryItem> {
+    const totalValue =
+      createInventoryItemDto.quantity * createInventoryItemDto.unitValue;
     const inventoryItem = this.inventoryItemRepo.create({
       ...createInventoryItemDto,
       name: this.sanitizeContent(createInventoryItemDto.name),
-      description: createInventoryItemDto.description ? this.sanitizeContent(createInventoryItemDto.description) : undefined,
+      description: createInventoryItemDto.description
+        ? this.sanitizeContent(createInventoryItemDto.description)
+        : undefined,
       totalValue,
     });
     return await this.inventoryItemRepo.save(inventoryItem);
@@ -66,13 +71,15 @@ export class InventoryItemService {
     if (!inventoryItem) {
       throw new NotFoundException(`Inventory item with ID ${id} not found`);
     }
-    
+
     const updatedData: Partial<InventoryItem> = {};
     if (updateInventoryItemDto.name) {
       updatedData.name = this.sanitizeContent(updateInventoryItemDto.name);
     }
     if (updateInventoryItemDto.description !== undefined) {
-      updatedData.description = updateInventoryItemDto.description ? this.sanitizeContent(updateInventoryItemDto.description) : null;
+      updatedData.description = updateInventoryItemDto.description
+        ? this.sanitizeContent(updateInventoryItemDto.description)
+        : null;
     }
     if (updateInventoryItemDto.quantity !== undefined) {
       updatedData.quantity = updateInventoryItemDto.quantity;
@@ -81,7 +88,9 @@ export class InventoryItemService {
       updatedData.unitValue = updateInventoryItemDto.unitValue;
     }
     if (updateInventoryItemDto.category) {
-      updatedData.category = this.sanitizeContent(updateInventoryItemDto.category);
+      updatedData.category = this.sanitizeContent(
+        updateInventoryItemDto.category
+      );
     }
     if (updateInventoryItemDto.isActive !== undefined) {
       updatedData.isActive = updateInventoryItemDto.isActive;
@@ -89,7 +98,7 @@ export class InventoryItemService {
     if (updateInventoryItemDto.workspace) {
       updatedData.workspace = updateInventoryItemDto.workspace;
     }
-    
+
     // Recalculate total value
     const quantity = updatedData.quantity ?? inventoryItem.quantity;
     const unitValue = updatedData.unitValue ?? inventoryItem.unitValue;

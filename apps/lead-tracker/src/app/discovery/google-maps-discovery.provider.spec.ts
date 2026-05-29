@@ -87,7 +87,9 @@ describe('GoogleMapsDiscoveryProvider', () => {
 
     expect(result.candidates).toHaveLength(1);
     expect(result.candidates[0].matchedKeywords).toContain('dental office');
-    expect(result.candidates[0].lead.notes).toContain('dental office in Savannah, GA');
+    expect(result.candidates[0].lead.notes).toContain(
+      'dental office in Savannah, GA'
+    );
     expect(global.fetch).toHaveBeenNthCalledWith(
       2,
       expect.stringContaining('radius=40234'),
@@ -123,18 +125,21 @@ describe('GoogleMapsDiscoveryProvider', () => {
       status: 200,
       headers: {
         get: (name: string) =>
-          name.toLowerCase() === 'content-type' ? 'application/json; charset=utf-8' : null,
+          name.toLowerCase() === 'content-type'
+            ? 'application/json; charset=utf-8'
+            : null,
       },
-      text: async () => JSON.stringify({
-        results: [
-          {
-            place_id: 'place-2',
-            name: 'Bright Smile Dental Wordpress Experts',
-            formatted_address: '123 Main St, Savannah, GA',
-            business_status: 'OPERATIONAL',
-          },
-        ],
-      }),
+      text: async () =>
+        JSON.stringify({
+          results: [
+            {
+              place_id: 'place-2',
+              name: 'Bright Smile Dental Wordpress Experts',
+              formatted_address: '123 Main St, Savannah, GA',
+              business_status: 'OPERATIONAL',
+            },
+          ],
+        }),
     }) as typeof fetch;
 
     const provider = new GoogleMapsDiscoveryProvider({

@@ -13,7 +13,7 @@ describe('billing-sdk payload builders', () => {
         meterId: 'api-calls',
         eventKey: 'evt-1',
         quantity: 3,
-      }),
+      })
     ).toEqual({
       tenantId: 'tenant-1',
       appScope: 'local-hub',
@@ -40,7 +40,7 @@ describe('billing-sdk payload builders', () => {
           eventKey: 'evt-2',
           quantity: 2,
         },
-      ]),
+      ])
     ).toEqual({
       events: [
         {
@@ -78,7 +78,7 @@ describe('billing-sdk payload builders', () => {
         },
         periodStart: new Date('2026-04-01T00:00:00.000Z'),
         periodEnd: new Date('2026-05-01T00:00:00.000Z'),
-      }),
+      })
     ).toMatchObject({
       tenantId: 'tenant-1',
       appScope: 'local-hub',

@@ -2,9 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import {
-  BusinessAuthService,
-} from '@optimistic-tanuki/business-data-access';
+import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
@@ -46,14 +44,10 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
           </label>
 
           @if (errorMsg()) {
-            <p class="error">{{ errorMsg() }}</p>
+          <p class="error">{{ errorMsg() }}</p>
           }
 
-          <button
-            type="submit"
-            class="otui-btn primary"
-            [disabled]="loading()"
-          >
+          <button type="submit" class="otui-btn primary" [disabled]="loading()">
             @if (loading()) { Signing in… } @else { Sign In }
           </button>
         </form>
@@ -123,7 +117,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
 
       input {
         padding: 0.65rem 0.9rem;
-        border: var(--personality-border-width, 1px) solid var(--border, #e2e8f0);
+        border: var(--personality-border-width, 1px) solid
+          var(--border, #e2e8f0);
         border-radius: var(--personality-border-radius, 0.5rem);
         background: var(--surface, #fff);
         color: var(--foreground, #0f172a);
@@ -136,7 +131,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       input:focus {
         outline: none;
         border-color: var(--primary, #1f7a63);
-        box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary, #1f7a63) 18%, transparent);
+        box-shadow: 0 0 0 3px
+          color-mix(in srgb, var(--primary, #1f7a63) 18%, transparent);
       }
 
       .error {
@@ -145,7 +141,11 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         margin: 0;
         padding: 0.6rem 0.9rem;
         border-radius: 0.4rem;
-        background: color-mix(in srgb, var(--destructive, #dc2626) 8%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--destructive, #dc2626) 8%,
+          transparent
+        );
       }
 
       .otui-btn {
@@ -196,7 +196,9 @@ export class BusinessLoginPageComponent {
       error: (err) => {
         this.loading.set(false);
         this.errorMsg.set(
-          err?.error?.message || err?.message || 'Login failed. Please try again.'
+          err?.error?.message ||
+            err?.message ||
+            'Login failed. Please try again.'
         );
       },
     });

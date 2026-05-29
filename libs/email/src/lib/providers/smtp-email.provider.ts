@@ -1,10 +1,6 @@
 import { Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import {
-  EmailProvider,
-  EmailMessage,
-  EmailSendResult,
-} from '../interfaces';
+import { EmailProvider, EmailMessage, EmailSendResult } from '../interfaces';
 
 export interface SmtpConfig {
   host: string;

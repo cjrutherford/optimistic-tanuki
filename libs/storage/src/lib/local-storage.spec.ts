@@ -71,10 +71,10 @@ describe('LocalStorageAdapter', () => {
 
     expect(fs.copyFile).toHaveBeenCalledWith(
       '/tmp/imports/episode.mp4',
-      path.join(basePath, 'assets', mockUuid, 'episode.mp4'),
+      path.join(basePath, 'assets', mockUuid, 'episode.mp4')
     );
     expect(asset.storagePath).toBe(
-      path.join('assets', mockUuid, 'episode.mp4'),
+      path.join('assets', mockUuid, 'episode.mp4')
     );
   });
 });

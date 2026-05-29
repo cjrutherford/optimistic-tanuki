@@ -335,7 +335,7 @@ describe('BlogComposeComponent', () => {
   });
 
   it('should register default components', async () => {
-    // Just verify the service was configured - don't call detectChanges 
+    // Just verify the service was configured - don't call detectChanges
     // to avoid form control issues in tests
     expect(componentInjectionServiceSpy).toBeDefined();
     // The actual registration happens in ngAfterViewInit
@@ -375,11 +375,15 @@ describe('BlogComposeComponent', () => {
         data: {},
         componentDef: { id: 'test', name: 'Test' },
       };
-      componentInjectionServiceSpy.getActiveComponents.mockReturnValue([mockInstance]);
-      
+      componentInjectionServiceSpy.getActiveComponents.mockReturnValue([
+        mockInstance,
+      ]);
+
       const active = component.getActiveComponents();
       expect(active.length).toBe(1);
-      expect(componentInjectionServiceSpy.getActiveComponents).toHaveBeenCalled();
+      expect(
+        componentInjectionServiceSpy.getActiveComponents
+      ).toHaveBeenCalled();
     });
   });
 });

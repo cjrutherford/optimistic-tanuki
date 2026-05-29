@@ -23,7 +23,9 @@ describe('TrainerConfigController', () => {
 
     const controller = new TrainerConfigController(service);
 
-    await expect(controller.getConfig({ configKey: 'default' })).resolves.toEqual({
+    await expect(
+      controller.getConfig({ configKey: 'default' })
+    ).resolves.toEqual({
       configId: 'cfg-1',
       config: {
         leadContext: {

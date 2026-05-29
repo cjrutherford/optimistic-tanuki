@@ -13,7 +13,7 @@ async function bootstrap() {
         host: process.env['BILLING_HOST'] || '0.0.0.0',
         port,
       },
-    },
+    }
   );
 
   await app.listen();

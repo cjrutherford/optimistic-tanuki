@@ -185,7 +185,8 @@ Do not add or remove concept ids, channel output ids, block ids, material output
       typeof response === 'object' &&
       response !== null &&
       'message' in response &&
-      typeof (response as { message?: { content?: unknown } }).message?.content === 'string'
+      typeof (response as { message?: { content?: unknown } }).message
+        ?.content === 'string'
         ? (response as { message: { content: string } }).message.content
         : '';
 
@@ -215,7 +216,9 @@ Do not add or remove concept ids, channel output ids, block ids, material output
     concepts: CampaignConcept[],
     payload: EnrichmentPayload
   ): CampaignConcept[] {
-    const enrichedById = new Map((payload.concepts || []).map((concept) => [concept.id, concept]));
+    const enrichedById = new Map(
+      (payload.concepts || []).map((concept) => [concept.id, concept])
+    );
 
     return concepts.map((concept) => {
       const enriched = enrichedById.get(concept.id);
@@ -224,7 +227,8 @@ Do not add or remove concept ids, channel output ids, block ids, material output
       }
 
       const sections =
-        enriched.sections && enriched.sections.length === concept.sections.length
+        enriched.sections &&
+        enriched.sections.length === concept.sections.length
           ? concept.sections.map((section, index) => ({
               title: enriched.sections?.[index]?.title || section.title,
               body: enriched.sections?.[index]?.body || section.body,
@@ -275,7 +279,8 @@ Do not add or remove concept ids, channel output ids, block ids, material output
             ? {
                 ...asset,
                 label: enrichedAsset.label || asset.label,
-                layoutVariant: enrichedAsset.layoutVariant || asset.layoutVariant,
+                layoutVariant:
+                  enrichedAsset.layoutVariant || asset.layoutVariant,
                 surfaces: asset.surfaces.map((surface) => {
                   const enrichedSurface = (enrichedAsset.surfaces || []).find(
                     (candidate) => candidate.id === surface.id
@@ -286,10 +291,16 @@ Do not add or remove concept ids, channel output ids, block ids, material output
                   }
 
                   const textBlocksById = new Map(
-                    (enrichedSurface.textBlocks || []).map((block) => [block.id, block])
+                    (enrichedSurface.textBlocks || []).map((block) => [
+                      block.id,
+                      block,
+                    ])
                   );
                   const imageSlotsById = new Map(
-                    (enrichedSurface.imageSlots || []).map((slot) => [slot.id, slot])
+                    (enrichedSurface.imageSlots || []).map((slot) => [
+                      slot.id,
+                      slot,
+                    ])
                   );
 
                   return {

@@ -24,7 +24,7 @@ export class TypeOrmUsageEventRepository implements UsageEventRepository {
   async findByEventKey(
     tenantId: string,
     appScope: string,
-    eventKey: string,
+    eventKey: string
   ): Promise<UsageEvent | undefined> {
     const event = await this.events.findOne({
       where: { tenantId, appScope, eventKey },
@@ -54,7 +54,7 @@ export class TypeOrmUsageEventRepository implements UsageEventRepository {
           {
             periodStart: input.periodStart,
             periodEnd: input.periodEnd,
-          },
+          }
         ),
       },
     });

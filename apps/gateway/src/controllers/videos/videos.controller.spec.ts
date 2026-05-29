@@ -37,12 +37,12 @@ describe('VideosController', () => {
 
   it('sends a defined payload for recommended videos when limit is omitted', async () => {
     await expect(controller.findRecommendedVideos(undefined)).resolves.toEqual(
-      [],
+      []
     );
 
     expect(videosService.send).toHaveBeenCalledWith(
       { cmd: VideoCommands.FIND_RECOMMENDED_VIDEOS },
-      {},
+      {}
     );
   });
 
@@ -51,18 +51,18 @@ describe('VideosController', () => {
 
     expect(videosService.send).toHaveBeenCalledWith(
       { cmd: VideoCommands.FIND_TRENDING_VIDEOS },
-      {},
+      {}
     );
   });
 
   it('forwards provided recommended limit values', async () => {
     await expect(controller.findRecommendedVideos(10 as any)).resolves.toEqual(
-      [],
+      []
     );
 
     expect(videosService.send).toHaveBeenCalledWith(
       { cmd: VideoCommands.FIND_RECOMMENDED_VIDEOS },
-      10,
+      10
     );
   });
 
@@ -71,7 +71,7 @@ describe('VideosController', () => {
 
     expect(videosService.send).toHaveBeenCalledWith(
       { cmd: VideoCommands.FIND_TRENDING_VIDEOS },
-      10,
+      10
     );
   });
 
@@ -83,7 +83,7 @@ describe('VideosController', () => {
         durationSeconds: 90,
         resolution: '1280x720',
         encoding: 'h264+aac',
-      } as any),
+      } as any)
     ).resolves.toEqual([]);
 
     expect(videosService.send).toHaveBeenCalledWith(
@@ -98,7 +98,7 @@ describe('VideosController', () => {
           encoding: 'h264+aac',
           processingStatus: VideoProcessingStatus.READY,
         },
-      },
+      }
     );
   });
 });

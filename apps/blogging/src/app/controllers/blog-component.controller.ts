@@ -12,9 +12,7 @@ import {
 @Controller('blog-component')
 export class BlogComponentController {
   private readonly logger = new Logger('BlogComponentController');
-  constructor(
-    private readonly blogComponentService: BlogComponentService
-  ) {
+  constructor(private readonly blogComponentService: BlogComponentService) {
     this.logger.log('BlogComponentController initialized');
   }
 
@@ -22,7 +20,9 @@ export class BlogComponentController {
   async createBlogComponent(
     @Payload() createComponentDto: CreateBlogComponentDto
   ): Promise<BlogComponentDto> {
-    this.logger.log(`CREATE component postId=${createComponentDto.blogPostId} instanceId=${createComponentDto.instanceId}`);
+    this.logger.log(
+      `CREATE component postId=${createComponentDto.blogPostId} instanceId=${createComponentDto.instanceId}`
+    );
     try {
       const res = await this.blogComponentService.create(createComponentDto);
       this.logger.log(`CREATED component id=${res.id}`);
@@ -92,14 +92,18 @@ export class BlogComponentController {
   }
 
   @MessagePattern({ cmd: BlogComponentCommands.DELETE_BY_POST })
-  async deleteComponentsByPost(@Payload('postId') postId: string): Promise<void> {
+  async deleteComponentsByPost(
+    @Payload('postId') postId: string
+  ): Promise<void> {
     this.logger.log(`DELETE_BY_POST postId=${postId}`);
     try {
       const res = await this.blogComponentService.removeByPostId(postId);
       this.logger.log(`DELETED_BY_POST postId=${postId}`);
       return res;
     } catch (e) {
-      this.logger.error(`DELETE_BY_POST failed postId=${postId}: ${e?.message || e}`);
+      this.logger.error(
+        `DELETE_BY_POST failed postId=${postId}: ${e?.message || e}`
+      );
       throw e;
     }
   }

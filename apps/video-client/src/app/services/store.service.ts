@@ -146,12 +146,19 @@ export class StoreService {
   }
 
   // Appointment operations
-  createAppointment(appointment: CreateAppointmentRequest): Observable<Appointment> {
-    return this.http.post<Appointment>(`${this.API_URL}/appointments`, appointment);
+  createAppointment(
+    appointment: CreateAppointmentRequest
+  ): Observable<Appointment> {
+    return this.http.post<Appointment>(
+      `${this.API_URL}/appointments`,
+      appointment
+    );
   }
 
   getUserAppointments(userId: string): Observable<Appointment[]> {
-    return this.http.get<Appointment[]>(`${this.API_URL}/appointments/user/${userId}`);
+    return this.http.get<Appointment[]>(
+      `${this.API_URL}/appointments/user/${userId}`
+    );
   }
 
   getAppointment(id: string): Observable<Appointment> {
@@ -159,6 +166,9 @@ export class StoreService {
   }
 
   cancelAppointment(id: string): Observable<Appointment> {
-    return this.http.put<Appointment>(`${this.API_URL}/appointments/${id}/cancel`, {});
+    return this.http.put<Appointment>(
+      `${this.API_URL}/appointments/${id}/cancel`,
+      {}
+    );
   }
 }

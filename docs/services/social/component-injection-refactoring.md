@@ -13,6 +13,7 @@ This document describes the comprehensive refactoring of the component injection
 **Key Discovery**: The AngularComponentNode extension (already in compose-lib) was the perfect solution. It provides full Angular component rendering via custom NodeViews.
 
 **Final Implementation**:
+
 - ✅ **AngularComponentNode**: Core extension providing Angular rendering
 - ✅ **BlogComposeComponentNode**: Extends AngularComponentNode for blog
 - ✅ **SocialComposeComponentNode**: Extends AngularComponentNode for social
@@ -23,6 +24,7 @@ This document describes the comprehensive refactoring of the component injection
 - ✅ **Viewer Reconstruction**: Dynamic component creation in both viewers
 
 **What We Removed** (Phase 6 Cleanup):
+
 - ❌ ComponentInjection extension - experimental, not needed
 - ❌ Dual extension system - simplified to AngularComponentNode only
 - ❌ Unused handler methods and tracking arrays
@@ -32,6 +34,7 @@ This document describes the comprehensive refactoring of the component injection
 ## Original Problem Statement
 
 The current implementation is too complex with scattered responsibilities:
+
 - Component injection service in blogging-ui (should be centralized)
 - Component-specific logic mixed with editor logic
 - No clear separation between editor extension and data persistence
@@ -106,39 +109,39 @@ Created `ComponentInjection` extension in `libs/compose-lib`:
 #### Key Features
 
 1. **Simple Data Model**
+
 ```typescript
 interface InjectedComponentData {
-  instanceId: string;       // Unique identifier
-  componentType: string;    // Component type name
-  componentData: Record;    // Component properties
-  position?: number;        // Optional position
+  instanceId: string; // Unique identifier
+  componentType: string; // Component type name
+  componentData: Record; // Component properties
+  position?: number; // Optional position
 }
 ```
 
 2. **Clean Commands API**
+
 - `insertComponent()` - Add component to editor
 - `updateComponent()` - Update component data
 - `removeComponent()` - Remove component
 - `getInjectedComponents()` - Extract all components
 
 3. **Event System**
+
 - `onComponentsChanged` - Fires when components change
 - `onComponentClick` - Fires when component clicked
 - `onComponentEdit` - Fires when edit requested
 
 4. **Simple HTML Structure**
+
 ```html
-<div data-injected-component
-     data-instance-id="btn-123"
-     data-component-type="button"
-     data-component-data='{"text":"Click Me"}'>
-  <div class="component-placeholder">
-    Component: button (btn-123)
-  </div>
+<div data-injected-component data-instance-id="btn-123" data-component-type="button" data-component-data='{"text":"Click Me"}'>
+  <div class="component-placeholder">Component: button (btn-123)</div>
 </div>
 ```
 
 #### Files Created
+
 - `libs/compose-lib/src/lib/extensions/component-injection.extension.ts`
 - Exported in `libs/compose-lib/src/index.ts`
 
@@ -149,6 +152,7 @@ interface InjectedComponentData {
 **Status**: COMPLETE (Already existed)
 
 Backend infrastructure for blog components:
+
 - ✅ `BlogComponent` entity with JSONB data storage
 - ✅ `BlogComponentService` with full CRUD operations
 - ✅ `BlogComponentController` with RPC endpoints
@@ -156,12 +160,14 @@ Backend infrastructure for blog components:
 - ✅ Commands in @optimistic-tanuki/constants
 
 **Files**:
+
 - `apps/blogging/src/app/entities/blog-component.entity.ts`
 - `apps/blogging/src/app/services/blog-component.service.ts`
 - `apps/blogging/src/app/controllers/blog-component.controller.ts`
 - `libs/models/src/lib/libs/blog/blog-component.ts`
 
 **Available Commands**:
+
 - `BlogComponentCommands.CREATE`
 - `BlogComponentCommands.FIND_BY_POST`
 - `BlogComponentCommands.UPDATE`
@@ -174,6 +180,7 @@ Backend infrastructure for blog components:
 **Status**: DTOs & Commands COMPLETE, Entity/Service/Controller TODO
 
 Created DTOs and commands:
+
 - ✅ `SocialComponentDto` DTOs in @optimistic-tanuki/models
 - ✅ `SocialComponentDto` DTOs in @optimistic-tanuki/ui-models
 - ✅ `SocialComponentCommands` in @optimistic-tanuki/constants
@@ -183,11 +190,13 @@ Created DTOs and commands:
 - ⏳ Migration for social_components table (TODO)
 
 **Files Created**:
+
 - `libs/models/src/lib/libs/social/social-component.ts`
 - `libs/ui-models/src/lib/ui-models/social-component.ts`
 - `libs/constants/src/lib/libs/social.ts` (updated)
 
 **Commands Defined**:
+
 - `SocialComponentCommands.CREATE`
 - `SocialComponentCommands.UPDATE`
 - `SocialComponentCommands.DELETE`
@@ -201,6 +210,7 @@ Created DTOs and commands:
 **Status**: TODO
 
 Tasks:
+
 - [ ] Replace ComponentInjectionService with new extension
 - [ ] Remove complex component-specific imports
 - [ ] Add `@Output() componentsChanged` to emit component data
@@ -214,6 +224,7 @@ Tasks:
 **Status**: TODO
 
 Tasks:
+
 - [ ] Load components from API on post load
 - [ ] Match instanceIds in DOM to loaded component data
 - [ ] Dynamically create components to replace placeholders
@@ -225,6 +236,7 @@ Tasks:
 **Status**: TODO
 
 Tasks:
+
 - [ ] Create `SocialComponent` entity (TypeORM)
 - [ ] Create migration for social_components table
 - [ ] Create `SocialComponentService` with CRUD operations
@@ -237,6 +249,7 @@ Tasks:
 **Status**: TODO
 
 Tasks:
+
 - [ ] Add ComponentInjection extension
 - [ ] Add `@Output() componentsChanged` event
 - [ ] Update save logic to save components
@@ -247,6 +260,7 @@ Tasks:
 **Status**: TODO
 
 Tasks:
+
 - [ ] Create or update social-viewer component
 - [ ] Load components from API
 - [ ] Reconstruct components from data
@@ -301,21 +315,25 @@ Display complete post with interactive components
 ## Benefits
 
 ### Centralized
+
 - One extension in compose-lib
 - Reusable across multiple UIs
 - Consistent behavior
 
 ### Separated
+
 - Clear boundaries between editor, persistence, viewing
 - Extension doesn't know about database
 - Service doesn't know about editor
 
 ### Testable
+
 - Each piece independently testable
 - Mock-friendly interfaces
 - Clear data contracts
 
 ### Maintainable
+
 - Simpler code, easier to understand
 - FIRST principles reduce complexity
 - Focused responsibilities
@@ -325,6 +343,7 @@ Display complete post with interactive components
 ### For Existing Posts
 
 Posts created with old system:
+
 - Have components embedded in HTML with data attributes
 - Can be left as-is (backward compatible)
 - OR run migration script to extract and save to database
@@ -333,6 +352,7 @@ Posts created with old system:
 ### For New Posts
 
 All new posts will:
+
 - Use ComponentInjection extension
 - Save components to separate table
 - Maintain clean HTML in posts table
@@ -341,16 +361,19 @@ All new posts will:
 ## Testing Strategy
 
 ### Unit Tests
+
 - ComponentInjection extension commands
 - Service CRUD operations
 - DTO validation
 
 ### Integration Tests
+
 - Full save flow (editor → database)
 - Full load flow (database → viewer)
 - Component reconstruction
 
 ### E2E Tests
+
 - Create post with components
 - Edit post components
 - View post with components
@@ -373,7 +396,7 @@ ALL COMPLETE ✅:
 
 - ✅ Centralized extension approach (AngularComponentNode)
 - ✅ Blog component backend infrastructure
-- ✅ Social component backend infrastructure  
+- ✅ Social component backend infrastructure
 - ✅ Social component DTOs and commands
 - ✅ Blog compose component extraction
 - ✅ Blog page component persistence
@@ -389,32 +412,38 @@ ALL COMPLETE ✅:
 ## Phase Completion Summary
 
 ### Phase 1: Extension Development ✅
+
 - Created ComponentInjection extension (later found unnecessary)
 - Discovered AngularComponentNode was the solution
 
 ### Phase 2: Backend Infrastructure ✅
+
 - BlogComponent entity, service, controller, migration
 - SocialComponent entity, service, controller, migration
 - Full CRUD operations via RPC
 
 ### Phase 3: Blog Integration ✅
+
 - Blog-compose: Component extraction via getInjectedComponentsNew()
 - Blog-page: Component persistence to database
 - Blog-viewer: Component loading and reconstruction
 - ComponentPersistenceService with RPC
 
 ### Phase 4: Social Integration ✅
+
 - Social-compose: Component extraction via getInjectedComponentsNew()
 - Feed component: Component persistence to database
 - PostData interface updated for backward compatibility
 
 ### Phase 5: Social Viewer ✅
+
 - SocialComponentPersistenceService created
 - PostComponent: Component loading and reconstruction
 - ViewChild refs, lifecycle hooks, COMPONENT_MAP
 - Full end-to-end working
 
 ### Phase 6: Cleanup ✅
+
 - Removed unused ComponentInjection extension from blog-compose
 - Removed experimental handler methods
 - Simplified to AngularComponentNode approach only
@@ -425,6 +454,7 @@ ALL COMPLETE ✅:
 ## Final Metrics
 
 **Code Statistics**:
+
 - Backend entities: 2 (BlogComponent, SocialComponent)
 - Persistence services: 2 (ComponentPersistenceService, SocialComponentPersistenceService)
 - Backend services: 2 (BlogComponentService, SocialComponentService)
@@ -434,6 +464,7 @@ ALL COMPLETE ✅:
 - Lines removed (cleanup): ~45
 
 **Architecture**:
+
 - AngularComponentNode: Core rendering extension
 - Document traversal: Component extraction
 - RPC via gateway: Database operations
@@ -441,6 +472,7 @@ ALL COMPLETE ✅:
 - COMPONENT_MAP: Type-to-class mapping
 
 **End-to-End Flows Working**:
+
 - ✅ Blog: Create → Save → View (with interactive components)
 - ✅ Social: Create → Save → View (with interactive components)
 
@@ -459,18 +491,21 @@ ALL COMPLETE ✅:
 ## Maintenance Notes
 
 **To Add New Component Type**:
+
 1. Create component in common-ui
 2. Add to COMPONENT_MAP in viewers
 3. Register in compose component (if custom properties needed)
 4. Done! (3 steps)
 
 **To Debug Component Issues**:
+
 1. Check console logs for extraction/loading
 2. Verify database has component records
 3. Check instanceId matches between DOM and DB
 4. Verify component in COMPONENT_MAP
 
 **Key Files**:
+
 - `libs/compose-lib/src/lib/extensions/angular-component-node.extension.ts` - Rendering
 - `libs/blogging-ui/src/lib/blog-compose/blog-compose.component.ts` - Blog editor
 - `libs/social-ui/src/lib/social-ui/compose/compose.component.ts` - Social editor

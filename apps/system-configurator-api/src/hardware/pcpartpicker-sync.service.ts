@@ -73,8 +73,7 @@ export class PcPartPickerSyncService {
 
   private extractProducts(html: string): ParsedPart[] {
     const products = new Map<string, ParsedPart>();
-    const productRegex =
-      /href="(\/product\/[^"]+)"[^>]*>([^<]{4,200})<\/a>/g;
+    const productRegex = /href="(\/product\/[^"]+)"[^>]*>([^<]{4,200})<\/a>/g;
     let match: RegExpExecArray | null;
 
     while ((match = productRegex.exec(html)) !== null) {

@@ -123,7 +123,8 @@ export class ProfileUiPageComponent {
       headline: 'Inline profile editing workflow',
       importName: 'ProfileEditorComponent',
       selector: 'lib-profile-editor',
-      summary: 'Modal editing surface for profile identity, media, and bio fields.',
+      summary:
+        'Modal editing surface for profile identity, media, and bio fields.',
       props: [],
     },
   ];

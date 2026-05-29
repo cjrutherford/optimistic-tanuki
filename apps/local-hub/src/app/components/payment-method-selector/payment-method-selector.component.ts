@@ -135,8 +135,8 @@ export interface PaymentRequest {
           <div class="seller-info">
             <p class="instruction">
               Please send
-              <strong>\${{ request?.amount | number : '1.2-2' }}</strong> to
-              the seller using {{ getMethodName(selectedMethod()!) }}.
+              <strong>\${{ request?.amount | number : '1.2-2' }}</strong> to the
+              seller using {{ getMethodName(selectedMethod()!) }}.
             </p>
 
             <div class="proof-upload">

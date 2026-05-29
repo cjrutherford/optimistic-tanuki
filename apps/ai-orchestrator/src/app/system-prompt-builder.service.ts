@@ -59,7 +59,7 @@ export class SystemPromptBuilder {
     private readonly telosDocsService: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileService: ClientProxy
-  ) { }
+  ) {}
 
   /**
    * Build complete TELOS-driven system prompt
@@ -85,7 +85,9 @@ export class SystemPromptBuilder {
       try {
         profileTelos = await this.fetchProfileTelos(context.profileId);
       } catch (error) {
-        this.logger.warn(`Profile TELOS not found for ${context.profileId}, continuing without it`);
+        this.logger.warn(
+          `Profile TELOS not found for ${context.profileId}, continuing without it`
+        );
       }
     }
 
@@ -93,7 +95,9 @@ export class SystemPromptBuilder {
       try {
         projectTelos = await this.fetchProjectTelos(context.projectId);
       } catch (error) {
-        this.logger.warn(`Project TELOS not found for ${context.projectId}, continuing without it`);
+        this.logger.warn(
+          `Project TELOS not found for ${context.projectId}, continuing without it`
+        );
       }
     }
 
@@ -114,7 +118,7 @@ export class SystemPromptBuilder {
 
   /**
    * Create TELOS-first system prompt template
-   * 
+   *
    * The persona's TELOS is presented as IDENTITY, not just capabilities
    */
   private createTelosDrivenTemplate(
@@ -380,9 +384,7 @@ These examples show how you embody your TELOS while helping users:
 - "I understand you need database changes, but that's beyond my limitations. However, I can help you [alternative approach that aligns with your capabilities]"`);
     }
 
-    return ChatPromptTemplate.fromMessages([
-      ['system', sections.join('\n\n')],
-    ]);
+    return ChatPromptTemplate.fromMessages([['system', sections.join('\n\n')]]);
   }
 
   /**
@@ -399,10 +401,16 @@ These examples show how you embody your TELOS while helping users:
       // Persona TELOS
       personaName: context.persona.name,
       personaDescription: context.persona.description,
-      personaGoals: this.formatList(context.persona.goals) || 'Assist users effectively',
-      personaSkills: this.formatList(context.persona.skills) || 'General assistance capabilities',
-      personaLimitations: this.formatList(context.persona.limitations) || 'Standard AI assistant limitations',
-      personaCoreObjective: context.persona.coreObjective || 'Provide helpful, accurate assistance',
+      personaGoals:
+        this.formatList(context.persona.goals) || 'Assist users effectively',
+      personaSkills:
+        this.formatList(context.persona.skills) ||
+        'General assistance capabilities',
+      personaLimitations:
+        this.formatList(context.persona.limitations) ||
+        'Standard AI assistant limitations',
+      personaCoreObjective:
+        context.persona.coreObjective || 'Provide helpful, accurate assistance',
 
       // User context
       userId: context.profile.id,
@@ -414,22 +422,43 @@ These examples show how you embody your TELOS while helping users:
 
     // Add Profile TELOS if available
     if (context.profileTelos) {
-      variables.userCoreObjective = context.profileTelos.coreObjective || 'Achieve personal and professional goals';
-      variables.userGoals = this.formatList(context.profileTelos.goals) || 'No specific goals defined';
-      variables.userSkills = this.formatList(context.profileTelos.skills) || 'Developing skills';
-      variables.userInterests = this.formatList(context.profileTelos.interests) || 'Various interests';
-      variables.userObjectives = this.formatList(context.profileTelos.objectives) || 'Working toward objectives';
-      variables.userStrengths = this.formatList(context.profileTelos.strengths) || 'Building on strengths';
+      variables.userCoreObjective =
+        context.profileTelos.coreObjective ||
+        'Achieve personal and professional goals';
+      variables.userGoals =
+        this.formatList(context.profileTelos.goals) ||
+        'No specific goals defined';
+      variables.userSkills =
+        this.formatList(context.profileTelos.skills) || 'Developing skills';
+      variables.userInterests =
+        this.formatList(context.profileTelos.interests) || 'Various interests';
+      variables.userObjectives =
+        this.formatList(context.profileTelos.objectives) ||
+        'Working toward objectives';
+      variables.userStrengths =
+        this.formatList(context.profileTelos.strengths) ||
+        'Building on strengths';
     }
 
     // Add Project TELOS if available
     if (context.projectTelos) {
-      variables.projectSummary = context.projectTelos.overallProjectSummary || `Project: ${context.projectTelos.name}`;
-      variables.projectCoreObjective = context.projectTelos.coreObjective || 'Complete project successfully';
-      variables.projectGoals = this.formatList(context.projectTelos.goals) || 'Achieve project milestones';
-      variables.projectSkills = this.formatList(context.projectTelos.skills) || 'Required skills for project';
-      variables.projectInterests = this.formatList(context.projectTelos.interests) || 'Project focus areas';
-      variables.projectObjectives = this.formatList(context.projectTelos.objectives) || 'Project objectives';
+      variables.projectSummary =
+        context.projectTelos.overallProjectSummary ||
+        `Project: ${context.projectTelos.name}`;
+      variables.projectCoreObjective =
+        context.projectTelos.coreObjective || 'Complete project successfully';
+      variables.projectGoals =
+        this.formatList(context.projectTelos.goals) ||
+        'Achieve project milestones';
+      variables.projectSkills =
+        this.formatList(context.projectTelos.skills) ||
+        'Required skills for project';
+      variables.projectInterests =
+        this.formatList(context.projectTelos.interests) ||
+        'Project focus areas';
+      variables.projectObjectives =
+        this.formatList(context.projectTelos.objectives) ||
+        'Project objectives';
     }
 
     return variables;

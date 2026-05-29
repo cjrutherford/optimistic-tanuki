@@ -59,7 +59,9 @@ describe('ConfigurationsController', () => {
   });
 
   it('getConfigurationByDomain should call service', async () => {
-    const result = await controller.getConfigurationByDomain({ domain: 'test' });
+    const result = await controller.getConfigurationByDomain({
+      domain: 'test',
+    });
     expect(service.getConfigurationByDomain).toHaveBeenCalledWith('test');
     expect(result).toEqual(mockConfig);
   });

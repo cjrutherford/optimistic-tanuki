@@ -7,6 +7,7 @@ This guide explains how to configure and use different AI models in the AI Orche
 The AI Orchestrator supports three types of models configured in `/apps/ai-orchestrator/src/assets/config.yaml`:
 
 ### 1. Workflow Control Model
+
 A lightweight model optimized for quickly detecting whether a user prompt requires tool calling or conversational response.
 
 ```yaml
@@ -23,6 +24,7 @@ models:
 **Default**: qwen2.5:3b
 
 ### 2. Tool Calling Model
+
 A model optimized for function calling and executing actions through the MCP protocol.
 
 ```yaml
@@ -39,6 +41,7 @@ models:
 **Default**: bjoernb/deepseek-r1-8b
 
 ### 3. Conversational Model
+
 A model optimized for natural conversational responses.
 
 ```yaml
@@ -59,16 +62,18 @@ models:
 The AI Orchestrator uses the following strategy to select models:
 
 1. **Initial Classification**: The workflow control model analyzes the user prompt to determine:
+
    - **Conversational**: Simple Q&A or chitchat (no tools needed)
    - **Tool Calling**: Requires executing actions (create, update, list data)
    - **Hybrid**: Requires both tool execution AND conversational explanation
 
 2. **Model Routing**: Based on classification:
+
    - Conversational prompts → Use conversational model
    - Tool calling prompts → Use tool calling model
    - Hybrid prompts → Use tool calling model + conversational model
 
-3. **Response Processing**: 
+3. **Response Processing**:
    - Filter out thinking tokens (`<think>...</think>`, `[THINKING]...[/THINKING]`)
    - Maintain workflow continuity
    - Return clean, user-friendly responses
@@ -78,6 +83,7 @@ The AI Orchestrator uses the following strategy to select models:
 The service automatically filters thinking process tokens to prevent interrupting user workflow:
 
 **Filtered patterns**:
+
 - `<think>...</think>`
 - `[THINKING]...[/THINKING]`
 - `**Thinking:**` markers
@@ -99,7 +105,7 @@ The service is app-aware through the existing `ai-enabled-apps` configuration:
 
 ```yaml
 ai-enabled-apps:
-  forgeofwill: "The Forge of Will is a personal project management platform..."
+  forgeofwill: 'The Forge of Will is a personal project management platform...'
 ```
 
 This allows contextual responses specific to each application.
@@ -134,6 +140,7 @@ The model configuration system includes comprehensive tests:
 - `workflow-control.service.spec.ts`: Tests workflow detection and token filtering
 
 Run tests with:
+
 ```bash
 pnpm exec nx test ai-orchestrator --testPathPattern="model-initializer"
 pnpm exec nx test ai-orchestrator --testPathPattern="workflow-control"
@@ -168,6 +175,7 @@ pnpm exec nx test ai-orchestrator --testPathPattern="workflow-control"
 ## Future Enhancements
 
 Potential improvements:
+
 - Per-app model preferences
 - Dynamic model switching based on complexity
 - Model performance monitoring
@@ -227,18 +235,21 @@ interface WorkflowDecision {
 ## Examples
 
 ### Example 1: Simple Greeting
+
 **Input**: "Hello, how are you?"
 **Classification**: Conversational
 **Model Used**: Conversational model
 **Output**: Natural greeting response
 
 ### Example 2: Create Action
+
 **Input**: "Create a project called Website Redesign"
 **Classification**: Tool Calling
 **Model Used**: Tool calling model
 **Output**: Tool call JSON → Success response
 
 ### Example 3: Hybrid Request
+
 **Input**: "Show me my tasks and explain which are most urgent"
 **Classification**: Hybrid
 **Model Used**: Tool calling model → Conversational model
@@ -247,6 +258,7 @@ interface WorkflowDecision {
 ## Summary
 
 The AI Orchestrator's model configuration system provides:
+
 - ✅ Flexible model selection for different use cases
 - ✅ Automatic workflow detection and routing
 - ✅ Intelligent thinking token filtering

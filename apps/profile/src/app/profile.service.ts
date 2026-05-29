@@ -34,7 +34,7 @@ export class ProfileService {
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
     private readonly logger: Logger
-  ) { }
+  ) {}
 
   async findAll(query?: FindManyOptions<Profile>): Promise<Profile[]> {
     return await this.profileRepository.find(query || {});
@@ -76,7 +76,8 @@ export class ProfileService {
     );
     if (existingProfile) {
       this.logger.warn(
-        `Profile already exists for user ${profile.userId} in scope ${profile.appScope || 'global'
+        `Profile already exists for user ${profile.userId} in scope ${
+          profile.appScope || 'global'
         }, returning existing profile`
       );
       return existingProfile;

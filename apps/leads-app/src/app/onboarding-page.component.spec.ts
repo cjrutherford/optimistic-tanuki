@@ -80,7 +80,9 @@ describe('OnboardingPageComponent', () => {
     const fixture = TestBed.createComponent(OnboardingPageComponent);
     const component = fixture.componentInstance;
     const router = TestBed.inject(Router);
-    const navigateSpy = jest.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
+    const navigateSpy = jest
+      .spyOn(router, 'navigateByUrl')
+      .mockResolvedValue(true);
     const profile = {
       serviceOffer: 'React modernization consulting',
       yearsExperience: '10+',
@@ -175,7 +177,9 @@ describe('OnboardingPageComponent', () => {
       },
     ]);
 
-    expect(component.confirmError).toBe('Unable to create your topics right now.');
+    expect(component.confirmError).toBe(
+      'Unable to create your topics right now.'
+    );
     expect(component.confirmingTopics).toBe(false);
   });
 

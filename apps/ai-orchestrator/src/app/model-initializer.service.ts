@@ -15,7 +15,7 @@ export class ModelInitializerService implements OnModuleInit {
   private readonly logger = new Logger(ModelInitializerService.name);
   private ollamaBaseUrl: string;
   private modelConfigs: ModelConfigs | null = null;
-  
+
   // Configuration constants
   private readonly MODEL_PULL_TIMEOUT_MS = 300000; // 5 minutes
   private readonly MODEL_CHECK_TIMEOUT_MS = 10000; // 10 seconds
@@ -37,7 +37,7 @@ export class ModelInitializerService implements OnModuleInit {
     this.logger.log('Initializing AI models (background)...');
     // Don't await this, let it run in background to avoid blocking app startup
     // especially if Ollama is unreachable or slow
-    this.initializeModels().catch(err => {
+    this.initializeModels().catch((err) => {
       this.logger.error('Failed to initialize models in background', err);
     });
   }
@@ -47,7 +47,9 @@ export class ModelInitializerService implements OnModuleInit {
    */
   async initializeModels(): Promise<void> {
     if (!this.modelConfigs) {
-      this.logger.warn('No model configurations found, skipping initialization');
+      this.logger.warn(
+        'No model configurations found, skipping initialization'
+      );
       return;
     }
 
@@ -70,10 +72,7 @@ export class ModelInitializerService implements OnModuleInit {
   /**
    * Pull a specific model from Ollama
    */
-  private async pullModel(
-    modelName: string,
-    modelType: string
-  ): Promise<void> {
+  private async pullModel(modelName: string, modelType: string): Promise<void> {
     try {
       this.logger.log(`Pulling model: ${modelName} for ${modelType}...`);
 

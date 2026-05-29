@@ -90,7 +90,8 @@ export class AgGridUiPageComponent {
       headline: 'Dense data table surface',
       importName: 'AgGridUiComponent',
       selector: 'otui-ag-grid',
-      summary: 'Theme-aware AG Grid wrapper with sensible defaults for product dashboards.',
+      summary:
+        'Theme-aware AG Grid wrapper with sensible defaults for product dashboards.',
       props: [],
     },
   ];

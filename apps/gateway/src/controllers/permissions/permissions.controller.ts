@@ -41,7 +41,7 @@ export class PermissionsController {
     private readonly l: Logger,
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly client: ClientProxy
-  ) { }
+  ) {}
 
   // App Scope endpoints
   @RequirePermissions('appscopes.create')
@@ -297,7 +297,10 @@ export class PermissionsController {
   }
 
   @UseGuards(AuthGuard)
-  @ApiOperation({ summary: 'Search Permissions based on name. Returns all valid for the logged in user based on "startsWith"' })
+  @ApiOperation({
+    summary:
+      'Search Permissions based on name. Returns all valid for the logged in user based on "startsWith"',
+  })
   @Get('permission-search')
   async searchPermissions(
     @Query('startsWith') startsWith: string,

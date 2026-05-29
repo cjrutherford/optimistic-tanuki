@@ -26,7 +26,8 @@ const mockChassis: Chassis = {
   type: 'XS',
   useCase: 'cloud',
   name: 'HAI XS Cloud Node',
-  description: 'Raspberry Pi 5 cloud edge node with compact enclosure and low-power deployment profile.',
+  description:
+    'Raspberry Pi 5 cloud edge node with compact enclosure and low-power deployment profile.',
   basePrice: 16,
   specifications: {
     formFactor: 'Raspberry Pi 5 enclosure',
@@ -161,7 +162,9 @@ describe('System configurator page smoke tests', () => {
     hardwareService = {
       getChassis: jest.fn().mockReturnValue(of([mockChassis])),
       getChassisById: jest.fn().mockReturnValue(of(mockChassis)),
-      getCompatibleComponents: jest.fn().mockReturnValue(of(compatibleComponents)),
+      getCompatibleComponents: jest
+        .fn()
+        .mockReturnValue(of(compatibleComponents)),
       calculatePrice: jest.fn().mockReturnValue(of(mockPrice)),
       createOrder: jest.fn().mockReturnValue(
         of({
@@ -223,7 +226,10 @@ describe('System configurator page smoke tests', () => {
     configuratorState = new MockConfiguratorStateService();
   });
 
-  async function createComponent<T>(component: T, orderId = 'order-1'): Promise<ComponentFixture<T>> {
+  async function createComponent<T>(
+    component: T,
+    orderId = 'order-1'
+  ): Promise<ComponentFixture<T>> {
     await TestBed.configureTestingModule({
       imports: [component as never],
       providers: [
@@ -234,7 +240,9 @@ describe('System configurator page smoke tests', () => {
         {
           provide: ProfileService,
           useValue: {
-            getEffectiveProfile: jest.fn().mockReturnValue({ profileName: 'HAI Primary' }),
+            getEffectiveProfile: jest
+              .fn()
+              .mockReturnValue({ profileName: 'HAI Primary' }),
           },
         },
         {
@@ -280,7 +288,9 @@ describe('System configurator page smoke tests', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('HAI Preflight');
-    expect(fixture.nativeElement.textContent).toContain('Estimated order total');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Estimated order total'
+    );
   });
 
   it('renders the checkout page with shared form and payment components', async () => {
@@ -288,7 +298,9 @@ describe('System configurator page smoke tests', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('HAI Order Intake');
-    expect(fixture.nativeElement.textContent).toContain('Shipping and payment coordination');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Shipping and payment coordination'
+    );
   });
 
   it('submits checkout with the selected payment method', async () => {
@@ -367,7 +379,9 @@ describe('System configurator page smoke tests', () => {
     const fixture = TestBed.createComponent(ProfileGateComponent);
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.textContent).toContain('Finish your integrator profile');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Finish your integrator profile'
+    );
     expect(fixture.nativeElement.textContent).toContain('Create a HAI profile');
   });
 

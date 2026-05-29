@@ -48,7 +48,7 @@ describe('Prompt Engineering Utilities', () => {
       const systemPrompt = 'You are a helpful assistant';
       const summary = 'Previous summary';
       const maxIter = 5;
-      
+
       const result = buildConversationPreamble(
         systemPrompt,
         mockProfile,

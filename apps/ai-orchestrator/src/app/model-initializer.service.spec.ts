@@ -139,7 +139,10 @@ describe('ModelInitializerService', () => {
       jest.spyOn(httpService, 'get').mockReturnValue(
         of({
           data: {
-            models: [{ name: 'qwen2.5:3b' }, { name: 'bjoernb/deepseek-r1-8b' }],
+            models: [
+              { name: 'qwen2.5:3b' },
+              { name: 'bjoernb/deepseek-r1-8b' },
+            ],
           },
           status: 200,
         } as any)

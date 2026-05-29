@@ -44,13 +44,17 @@ describe('AvailabilityManagementComponent', () => {
   });
 
   it('blocks availability creation when the auth token has no user id', () => {
-    authService.getToken.mockReturnValue(createToken({ profileId: 'profile-1' }));
+    authService.getToken.mockReturnValue(
+      createToken({ profileId: 'profile-1' })
+    );
     const fixture = TestBed.createComponent(AvailabilityManagementComponent);
     const component = fixture.componentInstance;
 
     component.openCreateModal();
 
     expect(component.showCreateModal).toBe(false);
-    expect(component.error).toBe('Unable to determine operator identity for availability creation.');
+    expect(component.error).toBe(
+      'Unable to determine operator identity for availability creation.'
+    );
   });
 });

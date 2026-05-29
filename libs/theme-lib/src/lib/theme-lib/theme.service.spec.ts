@@ -185,9 +185,7 @@ describe('ThemeService', () => {
     expect(rootStyle.getPropertyValue('--personality-font-family')).toContain(
       'sans-serif'
     );
-    expect(rootStyle.getPropertyValue('--personality-font-weight')).toBe(
-      '400'
-    );
+    expect(rootStyle.getPropertyValue('--personality-font-weight')).toBe('400');
     expect(rootStyle.getPropertyValue('--personality-transition')).toContain(
       '0.2s'
     );

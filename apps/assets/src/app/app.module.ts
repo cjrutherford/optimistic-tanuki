@@ -28,11 +28,19 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         const localStoragePath =
           configService.get<string>('storagePath') || './storage';
 
-        logger.log(`Configuring storage strategy: ${storageStrategy}${storageStrategy === 'network' ? ' (S3)' : ` at path: ${localStoragePath}`}`);
+        logger.log(
+          `Configuring storage strategy: ${storageStrategy}${
+            storageStrategy === 'network'
+              ? ' (S3)'
+              : ` at path: ${localStoragePath}`
+          }`
+        );
 
         if (storageStrategy === 'network') {
           const s3Config = configService.get<any>('s3');
-          logger.log(`S3 endpoint: ${s3Config?.endpoint || 'http://localhost:9000'}`);
+          logger.log(
+            `S3 endpoint: ${s3Config?.endpoint || 'http://localhost:9000'}`
+          );
           logger.log(`S3 bucket: ${s3Config?.bucket || 'assets'}`);
           return {
             enabledAdapters: ['network'],
@@ -67,4 +75,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -10,9 +10,7 @@ export class AddResources1768597448000 implements MigrationInterface {
     );
 
     // Add resourceId column to appointments table
-    await queryRunner.query(
-      `ALTER TABLE "appointments" ADD "resourceId" uuid`
-    );
+    await queryRunner.query(`ALTER TABLE "appointments" ADD "resourceId" uuid`);
 
     // Add foreign key constraint for resourceId in appointments
     await queryRunner.query(

@@ -5,7 +5,7 @@ describe('MfaService', () => {
     const service = new MfaService({ check: jest.fn() } as any);
 
     expect(() => service.assertLoginToken('secret-value')).toThrow(
-      'MFA token is required for this user.',
+      'MFA token is required for this user.'
     );
   });
 
@@ -15,7 +15,7 @@ describe('MfaService', () => {
     } as any);
 
     expect(() => service.assertLoginToken('secret-value', '123456')).toThrow(
-      'Invalid MFA token',
+      'Invalid MFA token'
     );
   });
 

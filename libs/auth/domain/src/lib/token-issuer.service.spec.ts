@@ -25,7 +25,7 @@ describe('TokenIssuerService', () => {
       {
         secret: 'test-secret',
         expiresIn: '1h',
-      },
+      }
     );
   });
 
@@ -42,12 +42,12 @@ describe('TokenIssuerService', () => {
         lastName: 'Lovelace',
         email: 'ada@example.com',
       },
-      'profile-1',
+      'profile-1'
     );
 
     expect(signer.sign).toHaveBeenCalledWith(
       expect.objectContaining({ profileId: 'profile-1' }),
-      expect.any(Object),
+      expect.any(Object)
     );
   });
 });

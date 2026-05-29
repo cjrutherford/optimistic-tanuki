@@ -27,7 +27,16 @@ import {
   HeroSectionComponent,
   ContentSectionComponent,
 } from '@optimistic-tanuki/common-ui';
-import { CalloutBoxComponent, CodeSnippetComponent, ImageGalleryComponent, InjectedComponentInstance, ComponentPersistenceService, HeroComponent, FeaturedPostsComponent, NewsletterSignupComponent } from '@optimistic-tanuki/blogging-ui';
+import {
+  CalloutBoxComponent,
+  CodeSnippetComponent,
+  ImageGalleryComponent,
+  InjectedComponentInstance,
+  ComponentPersistenceService,
+  HeroComponent,
+  FeaturedPostsComponent,
+  NewsletterSignupComponent,
+} from '@optimistic-tanuki/blogging-ui';
 import { BlogService } from '../../blog.service';
 import { BlogComponentDto } from '@optimistic-tanuki/ui-models';
 
@@ -52,7 +61,7 @@ const COMPONENT_MAP: Record<string, any> = {
   'common-hero-section': HeroSectionComponent,
   'common-content-section': ContentSectionComponent,
   // Blogging UI components
-  'hero': HeroComponent,
+  hero: HeroComponent,
   'featured-posts': FeaturedPostsComponent,
   'newsletter-signup': NewsletterSignupComponent,
 };
@@ -86,7 +95,11 @@ const COMPONENT_MAP: Record<string, any> = {
           }}</span>
         </div>
       </header>
-      <div #contentContainer class="blog-content" [innerHTML]="sanitizedContent"></div>
+      <div
+        #contentContainer
+        class="blog-content"
+        [innerHTML]="sanitizedContent"
+      ></div>
     </article>
   `,
   styles: [
@@ -245,7 +258,9 @@ const COMPONENT_MAP: Record<string, any> = {
     `,
   ],
 })
-export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
+export class BlogViewerComponent
+  implements OnInit, OnChanges, AfterViewInit, OnDestroy
+{
   @Input() title = '';
   @Input() content = '';
   @Input() authorId = '';
@@ -302,11 +317,13 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
     }
 
     try {
-      const components = await this.componentPersistence.getComponentsForPost(this.postId).toPromise();
+      const components = await this.componentPersistence
+        .getComponentsForPost(this.postId)
+        .toPromise();
       this.storedComponents = components || [];
       console.log('Loaded stored components:', this.storedComponents);
       this.loading.set(false);
-      
+
       // Reconstruct components after data is loaded
       setTimeout(() => this.reconstructComponents(), 0);
     } catch (error) {
@@ -320,7 +337,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 
   ngOnDestroy() {
     // Clean up component references
-    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs.forEach((ref) => ref.destroy());
     this.componentRefs = [];
   }
 
@@ -334,7 +351,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
         'data-component-id',
         'data-instance-id',
         'data-component-data',
-        'data-component-def'
+        'data-component-def',
       ],
     });
   }
@@ -345,12 +362,19 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
     }
 
     // Clean up existing component refs
-    this.componentRefs.forEach(ref => ref.destroy());
+    this.componentRefs.forEach((ref) => ref.destroy());
     this.componentRefs = [];
 
     // Find all component nodes in the content
-    const componentNodes = this.contentElement.nativeElement.querySelectorAll('[data-angular-component]');
-    console.log('[BlogViewer] reconstructComponents: nodes=', componentNodes.length, 'stored=', this.storedComponents.length);
+    const componentNodes = this.contentElement.nativeElement.querySelectorAll(
+      '[data-angular-component]'
+    );
+    console.log(
+      '[BlogViewer] reconstructComponents: nodes=',
+      componentNodes.length,
+      'stored=',
+      this.storedComponents.length
+    );
 
     // Fallback: if no nodes in HTML but we have stored components, render them at the end
     if (componentNodes.length === 0 && this.storedComponents.length > 0) {
@@ -377,15 +401,19 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
         }
 
         // Find stored data for this component
-        const storedComponent = this.storedComponents.find(c => c.instanceId === instanceId);
+        const storedComponent = this.storedComponents.find(
+          (c) => c.instanceId === instanceId
+        );
         if (storedComponent) {
           // Use stored component data
-          this.createComponentFromStoredData(node as HTMLElement, storedComponent);
+          this.createComponentFromStoredData(
+            node as HTMLElement,
+            storedComponent
+          );
         } else {
           // Fallback to HTML attributes if no stored data found
           this.createComponentFromAttributes(node as HTMLElement);
         }
-
       } catch (error) {
         console.error('Error reconstructing component:', error, node);
       }
@@ -395,28 +423,33 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
   /**
    * Create component using stored database data
    */
-  private createComponentFromStoredData(node: HTMLElement, storedComponent: BlogComponentDto): void {
+  private createComponentFromStoredData(
+    node: HTMLElement,
+    storedComponent: BlogComponentDto
+  ): void {
     const ComponentClass = COMPONENT_MAP[storedComponent.componentType];
     if (!ComponentClass) {
-      console.warn(`Component not found in map: ${storedComponent.componentType}`);
+      console.warn(
+        `Component not found in map: ${storedComponent.componentType}`
+      );
       this.showComponentPlaceholder(node, storedComponent.componentType);
       return;
     }
 
     // Create component with stored data
     const componentRef = this.contentContainer!.createComponent(ComponentClass);
-    
+
     // Apply stored component data
     const instance = componentRef.instance as any;
-    Object.keys(storedComponent.componentData).forEach(key => {
+    Object.keys(storedComponent.componentData).forEach((key) => {
       if (instance[key] !== undefined) {
         instance[key] = storedComponent.componentData[key];
       }
     });
-    
+
     componentRef.changeDetectorRef.detectChanges();
     this.componentRefs.push(componentRef);
-    
+
     // Replace entire placeholder node with the component host element for correct positioning
     node.replaceWith(componentRef.location.nativeElement);
   }
@@ -451,7 +484,7 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
 
     // Set component inputs from data
     const instance = componentRef.instance as any;
-    Object.keys(componentData).forEach(key => {
+    Object.keys(componentData).forEach((key) => {
       if (instance[key] !== undefined) {
         instance[key] = componentData[key];
       }
@@ -470,7 +503,10 @@ export class BlogViewerComponent implements OnInit, OnChanges, AfterViewInit, On
   /**
    * Show placeholder for unavailable components
    */
-  private showComponentPlaceholder(node: HTMLElement, componentName: string): void {
+  private showComponentPlaceholder(
+    node: HTMLElement,
+    componentName: string
+  ): void {
     node.innerHTML = `<div class="component-placeholder" style="padding: 1rem; border: 1px dashed #ccc; border-radius: 4px; text-align: center; color: #666;">
       <strong>${componentName}</strong>
       <p style="margin: 0.5rem 0 0; font-size: 0.9rem;">Component not available in viewer</p>

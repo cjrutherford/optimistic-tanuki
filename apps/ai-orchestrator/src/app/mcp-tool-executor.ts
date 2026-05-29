@@ -112,10 +112,10 @@ export class MCPToolExecutor {
         error instanceof MCPError
           ? error
           : new MCPError(
-            MCPErrorCode.TOOL_EXECUTION_FAILED,
-            `Tool execution failed: ${error.message}`,
-            { originalError: error.message, stack: error.stack }
-          ),
+              MCPErrorCode.TOOL_EXECUTION_FAILED,
+              `Tool execution failed: ${error.message}`,
+              { originalError: error.message, stack: error.stack }
+            ),
         executionTime
       );
     }
@@ -312,7 +312,7 @@ export class MCPToolExecutor {
             if (Array.isArray(parsed)) projects = parsed;
             else if (parsed.projects && Array.isArray(parsed.projects))
               projects = parsed.projects;
-          } catch { }
+          } catch {}
         }
 
         if (projects.length > 0) {

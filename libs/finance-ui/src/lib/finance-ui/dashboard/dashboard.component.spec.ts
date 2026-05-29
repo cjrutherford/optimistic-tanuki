@@ -11,7 +11,8 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideRouter([]),
+      providers: [
+        provideRouter([]),
         {
           provide: FinanceService,
           useValue: {
@@ -70,11 +71,16 @@ describe('DashboardComponent', () => {
   });
 
   it('uses shared theme variables instead of hardcoded finance branding tokens', () => {
-    const sourceText = readFileSync(join(__dirname, 'dashboard.component.ts'), 'utf8');
+    const sourceText = readFileSync(
+      join(__dirname, 'dashboard.component.ts'),
+      'utf8'
+    );
 
     expect(sourceText).toContain('var(--font-heading');
     expect(sourceText).toContain('var(--surface');
-    expect(sourceText).not.toContain("font-family: Georgia, 'Times New Roman', serif");
+    expect(sourceText).not.toContain(
+      "font-family: Georgia, 'Times New Roman', serif"
+    );
     expect(sourceText).not.toContain('background: #22492d;');
     expect(sourceText).not.toContain('color: #55715a;');
   });

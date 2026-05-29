@@ -18,18 +18,18 @@ const database = {
 
 const financeController = readFileSync(
   'apps/gateway/src/controllers/finance/finance.controller.ts',
-  'utf8',
+  'utf8'
 );
 const finCommanderProfile = readFileSync(
   'apps/fin-commander/src/app/profile.service.ts',
-  'utf8',
+  'utf8'
 );
 
 const expectedFinancePermissions = [
   ...new Set(
     [...financeController.matchAll(/RequirePermissions\('([^']+)'\)/g)].map(
-      ([, permission]) => permission,
-    ),
+      ([, permission]) => permission
+    )
   ),
 ].sort();
 
@@ -54,7 +54,10 @@ async function validateBrowser() {
       waitUntil: 'domcontentloaded',
       timeout: 30_000,
     });
-    assert(appResponse?.ok(), `fin-commander did not load: ${appResponse?.status()}`);
+    assert(
+      appResponse?.ok(),
+      `fin-commander did not load: ${appResponse?.status()}`
+    );
     await page.locator('body').waitFor({ state: 'visible', timeout: 10_000 });
 
     const gatewayResponse = await page.goto(`${gatewayUrl}/api-docs`, {
@@ -63,7 +66,7 @@ async function validateBrowser() {
     });
     assert(
       gatewayResponse?.ok(),
-      `gateway API docs did not load: ${gatewayResponse?.status()}`,
+      `gateway API docs did not load: ${gatewayResponse?.status()}`
     );
   } finally {
     await browser.close();
@@ -74,7 +77,7 @@ async function validatePermissionsDatabase() {
   assert.match(
     finCommanderProfile,
     /readonly\s+appScope\s*=\s*'finance'/,
-    'fin-commander must use the finance app scope',
+    'fin-commander must use the finance app scope'
   );
 
   const client = new Client(database);
@@ -82,7 +85,7 @@ async function validatePermissionsDatabase() {
   try {
     const scope = await client.query(
       'select id, name from app_scope where name = $1 and active = true',
-      ['finance'],
+      ['finance']
     );
     assert.equal(scope.rowCount, 1, 'active finance app scope must be seeded');
 
@@ -94,12 +97,12 @@ async function validatePermissionsDatabase() {
         where s.name = $1 and r.name = any($2)
         order by r.name
       `,
-      ['finance', expectedRoles],
+      ['finance', expectedRoles]
     );
     assert.deepEqual(
       roles.rows.map((row) => row.name),
       expectedRoles,
-      'finance roles must be seeded under the finance app scope',
+      'finance roles must be seeded under the finance app scope'
     );
 
     const permissions = await client.query(
@@ -110,12 +113,12 @@ async function validatePermissionsDatabase() {
         where s.name = $1 and p.name = any($2)
         order by p.name
       `,
-      ['finance', expectedFinancePermissions],
+      ['finance', expectedFinancePermissions]
     );
     assert.deepEqual(
       permissions.rows.map((row) => row.name),
       expectedFinancePermissions,
-      'seeded finance permissions must match finance gateway guards',
+      'seeded finance permissions must match finance gateway guards'
     );
 
     const adminMappings = await client.query(
@@ -128,12 +131,12 @@ async function validatePermissionsDatabase() {
         where s.name = $1 and r.name = $2 and p.name = any($3)
         order by p.name
       `,
-      ['finance', 'finance_admin', expectedFinancePermissions],
+      ['finance', 'finance_admin', expectedFinancePermissions]
     );
     assert.deepEqual(
       adminMappings.rows.map((row) => row.name),
       expectedFinancePermissions,
-      'finance_admin must map to every finance gateway permission',
+      'finance_admin must map to every finance gateway permission'
     );
 
     const managerMappings = await client.query(
@@ -146,12 +149,12 @@ async function validatePermissionsDatabase() {
         where s.name = $1 and r.name = $2 and p.name = any($3)
         order by p.name
       `,
-      ['finance', 'finance_manager', expectedManagerPermissions],
+      ['finance', 'finance_manager', expectedManagerPermissions]
     );
     assert.deepEqual(
       managerMappings.rows.map((row) => row.name),
       expectedManagerPermissions.toSorted(),
-      'finance_manager must map setup, bank, and summary permissions',
+      'finance_manager must map setup, bank, and summary permissions'
     );
   } finally {
     await client.end();
@@ -162,5 +165,5 @@ await validateBrowser();
 await validatePermissionsDatabase();
 
 console.log(
-  `Validated ${expectedFinancePermissions.length} finance permissions, ${expectedRoles.length} finance roles, fin-commander app scope, and browser access.`,
+  `Validated ${expectedFinancePermissions.length} finance permissions, ${expectedRoles.length} finance roles, fin-commander app scope, and browser access.`
 );

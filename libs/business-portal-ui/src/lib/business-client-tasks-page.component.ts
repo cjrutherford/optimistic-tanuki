@@ -20,22 +20,27 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         <h2>Assigned routines</h2>
         <div class="list">
           @for (routine of routines(); track routine.id) {
-            <div class="routine">
-              <div class="routine-head">
-                <strong>{{ routine.title }}</strong>
-                @if (routine.status === 'completed') {
-                  <span class="status-pill">Completed</span>
-                }
-              </div>
-              <p>{{ routine.summary }}</p>
-              @if (allowClientCompletion() && routine.status !== 'completed') {
-                <otui-button variant="outlined" (action)="completeRoutine(routine.id)">
-                  Mark complete
-                </otui-button>
+          <div class="routine">
+            <div class="routine-head">
+              <strong>{{ routine.title }}</strong>
+              @if (routine.status === 'completed') {
+              <span class="status-pill">Completed</span>
               }
             </div>
+            <p>{{ routine.summary }}</p>
+            @if (allowClientCompletion() && routine.status !== 'completed') {
+            <otui-button
+              variant="outlined"
+              (action)="completeRoutine(routine.id)"
+            >
+              Mark complete
+            </otui-button>
+            }
+          </div>
           } @empty {
-            <p class="empty">Assigned routines will appear here once your coach publishes them.</p>
+          <p class="empty">
+            Assigned routines will appear here once your coach publishes them.
+          </p>
           }
         </div>
       </otui-card>
@@ -47,19 +52,27 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
             Routine
             <select [(ngModel)]="assignmentId" name="assignmentId">
               @for (routine of routines(); track routine.id) {
-                <option [value]="routine.id">{{ routine.title }}</option>
+              <option [value]="routine.id">{{ routine.title }}</option>
               }
             </select>
           </label>
           <label>
             Energy
-            <input [(ngModel)]="energy" name="energy" type="number" min="1" max="10" />
+            <input
+              [(ngModel)]="energy"
+              name="energy"
+              type="number"
+              min="1"
+              max="10"
+            />
           </label>
           <label>
             Notes
             <textarea [(ngModel)]="notes" name="notes"></textarea>
           </label>
-          <otui-button type="submit" variant="primary">Save check-in</otui-button>
+          <otui-button type="submit" variant="primary"
+            >Save check-in</otui-button
+          >
         </form>
       </otui-card>
     </section>
@@ -107,7 +120,11 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         font-size: 0.78rem;
         font-weight: 700;
         color: var(--primary, #1f7a63);
-        background: color-mix(in srgb, var(--primary, #1f7a63) 10%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--primary, #1f7a63) 10%,
+          transparent
+        );
       }
     `,
   ],
@@ -116,7 +133,9 @@ export class BusinessClientTasksPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly clientId = computed(() => this.auth.clientUser()?.userId ?? '');
+  private readonly clientId = computed(
+    () => this.auth.clientUser()?.userId ?? ''
+  );
   readonly allowClientCompletion = computed(
     () => this.siteConfig.site().features.clientTasks.allowClientCompletion
   );

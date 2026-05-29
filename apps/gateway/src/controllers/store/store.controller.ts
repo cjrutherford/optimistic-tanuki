@@ -210,9 +210,7 @@ export class StoreController {
   // Appointment endpoints
   @UseGuards(AuthGuard)
   @Post('appointments')
-  async createAppointment(
-    @Body() createAppointmentDto: CreateAppointmentDto
-  ) {
+  async createAppointment(@Body() createAppointmentDto: CreateAppointmentDto) {
     return await firstValueFrom(
       this.storeService.send(
         AppointmentCommands.CREATE_APPOINTMENT,
@@ -386,7 +384,10 @@ export class StoreController {
   @Post('resources')
   async createResource(@Body() createResourceDto: CreateResourceDto) {
     return await firstValueFrom(
-      this.storeService.send(ResourceCommands.CREATE_RESOURCE, createResourceDto)
+      this.storeService.send(
+        ResourceCommands.CREATE_RESOURCE,
+        createResourceDto
+      )
     );
   }
 

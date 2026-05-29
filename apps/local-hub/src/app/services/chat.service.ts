@@ -31,7 +31,9 @@ export interface ChatMessage {
 export class ChatService {
   private readonly http = inject(HttpClient);
   private readonly apiBaseUrl = inject(API_BASE_URL);
-  private get baseUrl() { return `${this.apiBaseUrl}/chat`; }
+  private get baseUrl() {
+    return `${this.apiBaseUrl}/chat`;
+  }
 
   /**
    * Get or create a 1-to-1 direct conversation between the two participants.

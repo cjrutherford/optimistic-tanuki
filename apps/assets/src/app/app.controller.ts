@@ -1,4 +1,8 @@
-import { AssetHandle, AssetListQuery, CreateAssetDto } from '@optimistic-tanuki/models';
+import {
+  AssetHandle,
+  AssetListQuery,
+  CreateAssetDto,
+} from '@optimistic-tanuki/models';
 import { Controller, Get } from '@nestjs/common';
 
 import { AppService } from './app.service';

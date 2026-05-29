@@ -102,7 +102,7 @@ import loadDatabase from './loadDatabase';
           {
             sign: (payload, options) => jwtService.sign(payload, options),
           },
-          config.get('auth')?.jwt_secret || 'default_jwt_secret',
+          config.get('auth')?.jwt_secret || 'default_jwt_secret'
         ),
       inject: [JwtService, ConfigService],
     },

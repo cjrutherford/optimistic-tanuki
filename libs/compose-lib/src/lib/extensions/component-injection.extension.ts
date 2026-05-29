@@ -1,6 +1,6 @@
 /**
  * ComponentInjectionExtension - Simplified TipTap extension for injecting components
- * 
+ *
  * FIRST Principles:
  * - Fast: Minimal overhead, simple data structure
  * - Independent: Self-contained, no external service dependencies
@@ -111,7 +111,10 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
           }
         },
         renderHTML: (attributes) => {
-          if (!attributes['data'] || Object.keys(attributes['data']).length === 0) {
+          if (
+            !attributes['data'] ||
+            Object.keys(attributes['data']).length === 0
+          ) {
             return {};
           }
           return { 'data-component-data': JSON.stringify(attributes['data']) };
@@ -138,7 +141,8 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
       [
         'div',
         { class: 'component-placeholder' },
-        `Component: ${node.attrs['componentType'] || 'Unknown'} (${node.attrs['instanceId'] || 'no-id'
+        `Component: ${node.attrs['componentType'] || 'Unknown'} (${
+          node.attrs['instanceId'] || 'no-id'
         })`,
       ],
     ];
@@ -148,66 +152,65 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
     return {
       insertComponent:
         (options) =>
-          ({ commands }) => {
-            return commands.insertContent({
-              type: this.name,
-              attrs: {
-                instanceId: options.instanceId,
-                componentType: options.componentType,
-                data: options.data,
-              },
-            });
-          },
+        ({ commands }) => {
+          return commands.insertContent({
+            type: this.name,
+            attrs: {
+              instanceId: options.instanceId,
+              componentType: options.componentType,
+              data: options.data,
+            },
+          });
+        },
 
       updateComponent:
         (options) =>
-          ({ tr, state, dispatch }) => {
-            const { doc } = state;
-            let updated = false;
+        ({ tr, state, dispatch }) => {
+          const { doc } = state;
+          let updated = false;
 
-            doc.descendants((node: any, pos: number) => {
-              if (
-                node.type.name === this.name &&
-                node.attrs['instanceId'] === options.instanceId
-              ) {
-                tr.setNodeMarkup(pos, undefined, {
-                  ...node.attrs,
-                  data: { ...node.attrs['data'], ...options.data },
-                });
-                updated = true;
-              }
-            });
-
-            if (updated && dispatch) {
-              dispatch(tr);
+          doc.descendants((node: any, pos: number) => {
+            if (
+              node.type.name === this.name &&
+              node.attrs['instanceId'] === options.instanceId
+            ) {
+              tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                data: { ...node.attrs['data'], ...options.data },
+              });
+              updated = true;
             }
+          });
 
-            return updated;
-          },
+          if (updated && dispatch) {
+            dispatch(tr);
+          }
+
+          return updated;
+        },
 
       removeComponent:
         (instanceId) =>
-          ({ tr, state, dispatch }) => {
-            const { doc } = state;
-            let removed = false;
+        ({ tr, state, dispatch }) => {
+          const { doc } = state;
+          let removed = false;
 
-            doc.descendants((node: any, pos: number) => {
-              if (
-                node.type.name === this.name &&
-                node.attrs['instanceId'] === instanceId
-              ) {
-                tr.delete(pos, pos + node.nodeSize);
-                removed = true;
-              }
-            });
-
-            if (removed && dispatch) {
-              dispatch(tr);
+          doc.descendants((node: any, pos: number) => {
+            if (
+              node.type.name === this.name &&
+              node.attrs['instanceId'] === instanceId
+            ) {
+              tr.delete(pos, pos + node.nodeSize);
+              removed = true;
             }
+          });
 
-            return removed;
-          },
+          if (removed && dispatch) {
+            dispatch(tr);
+          }
 
+          return removed;
+        },
     };
   },
 
@@ -245,7 +248,7 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
                   !oldComp ||
                   comp.instanceId !== oldComp.instanceId ||
                   JSON.stringify(comp.componentData) !==
-                  JSON.stringify(oldComp.componentData)
+                    JSON.stringify(oldComp.componentData)
                 );
               });
 
@@ -267,7 +270,8 @@ export const ComponentInjection = Node.create<ComponentInjectionOptions>({
               const componentNode = target.closest('[data-injected-component]');
 
               if (componentNode) {
-                const instanceId = componentNode.getAttribute('data-instance-id');
+                const instanceId =
+                  componentNode.getAttribute('data-instance-id');
                 if (instanceId && options.onComponentClick) {
                   options.onComponentClick(instanceId);
                   return true;

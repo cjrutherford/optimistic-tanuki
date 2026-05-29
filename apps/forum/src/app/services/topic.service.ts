@@ -2,10 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Topic } from '../../entities/topic.entity';
 import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
-import {
-  CreateTopicDto,
-  UpdateTopicDto,
-} from '@optimistic-tanuki/models';
+import { CreateTopicDto, UpdateTopicDto } from '@optimistic-tanuki/models';
 import DOMPurify from 'isomorphic-dompurify';
 
 @Injectable()
@@ -67,13 +64,15 @@ export class TopicService {
     if (!topic) {
       throw new Error(`Topic with ID ${id} not found`);
     }
-    
+
     const updatedData: Partial<Topic> = {};
     if (updateTopicDto.title) {
       updatedData.title = this.sanitizeContent(updateTopicDto.title);
     }
     if (updateTopicDto.description) {
-      updatedData.description = this.sanitizeContent(updateTopicDto.description);
+      updatedData.description = this.sanitizeContent(
+        updateTopicDto.description
+      );
     }
     if (updateTopicDto.visibility !== undefined) {
       updatedData.visibility = updateTopicDto.visibility;

@@ -2,7 +2,11 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { PageAnalysis, SearchResult, SearchResultType } from './discovery.types';
+import {
+  PageAnalysis,
+  SearchResult,
+  SearchResultType,
+} from './discovery.types';
 
 type SearchConfig = {
   enabled: boolean;
@@ -45,7 +49,10 @@ export class SearchAcquisitionService {
       return 'Search acquisition is using Google HTML parsing, which is best-effort and may return no usable results.';
     }
 
-    if (config.provider === 'google-cse' && (!config.googleApiKey || !config.googleCx)) {
+    if (
+      config.provider === 'google-cse' &&
+      (!config.googleApiKey || !config.googleCx)
+    ) {
       return 'Google CSE search is selected but API credentials are incomplete.';
     }
 
@@ -58,8 +65,15 @@ export class SearchAcquisitionService {
       return [];
     }
 
-    if (config.provider === 'google-cse' && config.googleApiKey && config.googleCx) {
-      return this.searchGoogleCse(query, maxResults || config.maxResultsPerQuery);
+    if (
+      config.provider === 'google-cse' &&
+      config.googleApiKey &&
+      config.googleCx
+    ) {
+      return this.searchGoogleCse(
+        query,
+        maxResults || config.maxResultsPerQuery
+      );
     }
 
     const results = await this.searchGoogleHtml(
@@ -76,7 +90,10 @@ export class SearchAcquisitionService {
     );
   }
 
-  async searchNews(query: string, maxResults?: number): Promise<SearchResult[]> {
+  async searchNews(
+    query: string,
+    maxResults?: number
+  ): Promise<SearchResult[]> {
     const config = this.getConfig();
     if (!config.enabled) {
       return [];
@@ -84,7 +101,9 @@ export class SearchAcquisitionService {
 
     const locale = config.locale || 'en-US';
     const [language, region = 'US'] = locale.split('-');
-    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=${language}-${region}&gl=${region}&ceid=${region}:${language}`;
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(
+      query
+    )}&hl=${language}-${region}&gl=${region}&ceid=${region}:${language}`;
 
     try {
       const response = await firstValueFrom(
@@ -95,10 +114,11 @@ export class SearchAcquisitionService {
         })
       );
 
-      return this.parseRssItems(this.readTextBody(response.data), query, 'news').slice(
-        0,
-        maxResults || config.maxResultsPerQuery
-      );
+      return this.parseRssItems(
+        this.readTextBody(response.data),
+        query,
+        'news'
+      ).slice(0, maxResults || config.maxResultsPerQuery);
     } catch (error) {
       this.logger.warn(`News search failed for query "${query}"`);
       return [];
@@ -139,18 +159,25 @@ export class SearchAcquisitionService {
   }
 
   private getConfig(): SearchConfig {
-    return this.configService.get<SearchConfig>('leadDiscovery.search', { infer: true }) || {
-      enabled: true,
-      provider: 'google-html',
-      requestTimeoutMs: 5000,
-      userAgent: 'OptimisticTanukiLeadDiscovery/1.0',
-      maxResultsPerQuery: 8,
-      maxQueriesPerProvider: 6,
-      locale: 'en-US',
-    };
+    return (
+      this.configService.get<SearchConfig>('leadDiscovery.search', {
+        infer: true,
+      }) || {
+        enabled: true,
+        provider: 'google-html',
+        requestTimeoutMs: 5000,
+        userAgent: 'OptimisticTanukiLeadDiscovery/1.0',
+        maxResultsPerQuery: 8,
+        maxQueriesPerProvider: 6,
+        locale: 'en-US',
+      }
+    );
   }
 
-  private async searchGoogleCse(query: string, maxResults: number): Promise<SearchResult[]> {
+  private async searchGoogleCse(
+    query: string,
+    maxResults: number
+  ): Promise<SearchResult[]> {
     const config = this.getConfig();
 
     try {
@@ -168,7 +195,9 @@ export class SearchAcquisitionService {
         })
       );
 
-      const items = Array.isArray(response.data?.items) ? response.data.items : [];
+      const items = Array.isArray(response.data?.items)
+        ? response.data.items
+        : [];
       return items.map((item: any, index: number) => ({
         title: item.title || item.link,
         url: item.link,
@@ -183,7 +212,10 @@ export class SearchAcquisitionService {
     }
   }
 
-  private async searchGoogleHtml(query: string, maxResults: number): Promise<SearchResult[]> {
+  private async searchGoogleHtml(
+    query: string,
+    maxResults: number
+  ): Promise<SearchResult[]> {
     const config = this.getConfig();
 
     try {
@@ -200,7 +232,10 @@ export class SearchAcquisitionService {
         })
       );
 
-      return this.parseGoogleHtmlResults(this.readTextBody(response.data), query).slice(0, maxResults);
+      return this.parseGoogleHtmlResults(
+        this.readTextBody(response.data),
+        query
+      ).slice(0, maxResults);
     } catch (error) {
       this.logger.warn(`Google HTML search failed for query "${query}"`);
       return [];
@@ -314,23 +349,33 @@ export class SearchAcquisitionService {
     }
   }
 
-  private parseRssItems(xml: string, query: string, resultType: SearchResultType): SearchResult[] {
-    return Array.from(xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)).map((match, index) => {
-      const item = match[0];
-      return {
-        title: this.extractTagValue(item, 'title'),
-        url: this.extractTagValue(item, 'link'),
-        snippet: this.extractTagValue(item, 'description'),
-        query,
-        resultType,
-        rank: index + 1,
-      };
-    });
+  private parseRssItems(
+    xml: string,
+    query: string,
+    resultType: SearchResultType
+  ): SearchResult[] {
+    return Array.from(xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)).map(
+      (match, index) => {
+        const item = match[0];
+        return {
+          title: this.extractTagValue(item, 'title'),
+          url: this.extractTagValue(item, 'link'),
+          snippet: this.extractTagValue(item, 'description'),
+          query,
+          resultType,
+          rank: index + 1,
+        };
+      }
+    );
   }
 
   private extractTagValue(content: string, tag: string): string {
-    const match = content.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i'));
-    return this.stripTags(this.decodeHtml(this.stripCdata(match?.[1] || ''))).trim();
+    const match = content.match(
+      new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i')
+    );
+    return this.stripTags(
+      this.decodeHtml(this.stripCdata(match?.[1] || ''))
+    ).trim();
   }
 
   private extractHtmlTitle(html: string): string {
@@ -339,7 +384,9 @@ export class SearchAcquisitionService {
   }
 
   private extractMetaDescription(html: string): string {
-    const metaMatch = html.match(/<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i);
+    const metaMatch = html.match(
+      /<meta[^>]+(?:name|property)=["'](?:description|og:description)["'][^>]+content=["']([\s\S]*?)["'][^>]*>/i
+    );
     return this.stripTags(this.decodeHtml(metaMatch?.[1] || '')).trim();
   }
 
@@ -380,7 +427,8 @@ export class SearchAcquisitionService {
   private getHeaders(config: SearchConfig): Record<string, string> {
     return {
       'user-agent': config.userAgent,
-      accept: 'application/json, application/rss+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8',
+      accept:
+        'application/json, application/rss+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8',
     };
   }
 }

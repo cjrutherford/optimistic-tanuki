@@ -189,10 +189,13 @@ export class ProfileService {
 
     if (newProfile.profilePic || newProfile.coverPic) {
       await firstValueFrom(
-        this.http.put<ProfileDto>(`${this.apiBaseUrl}/profile/${newProfile.id}`, {
-          profilePic: newProfile.profilePic,
-          coverPic: newProfile.coverPic,
-        })
+        this.http.put<ProfileDto>(
+          `${this.apiBaseUrl}/profile/${newProfile.id}`,
+          {
+            profilePic: newProfile.profilePic,
+            coverPic: newProfile.coverPic,
+          }
+        )
       );
     }
 

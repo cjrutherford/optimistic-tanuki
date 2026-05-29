@@ -17,7 +17,10 @@
         "outputPath": "dist/libs/billing-sdk",
         "main": "libs/billing-sdk/src/index.ts",
         "tsConfig": "libs/billing-sdk/tsconfig.lib.json",
-        "assets": ["libs/billing-sdk/package.json", "libs/billing-sdk/README.md"]
+        "assets": [
+          "libs/billing-sdk/package.json",
+          "libs/billing-sdk/README.md"
+        ]
       }
     },
     "test": {

@@ -145,13 +145,11 @@ describe('AppService', () => {
             validateToolCall: jest
               .fn()
               .mockReturnValue({ isValid: true, errors: [], suggestions: [] }),
-            analyzeToolCallError: jest
-              .fn()
-              .mockReturnValue({
-                success: false,
-                retryable: true,
-                suggestedFix: 'Try again',
-              }),
+            analyzeToolCallError: jest.fn().mockReturnValue({
+              success: false,
+              retryable: true,
+              suggestedFix: 'Try again',
+            }),
             generateToolHelpMessage: jest
               .fn()
               .mockReturnValue('Tool help message'),
@@ -160,12 +158,10 @@ describe('AppService', () => {
         {
           provide: EnhancedMCPToolExecutor,
           useValue: {
-            executeToolWithRetry: jest
-              .fn()
-              .mockResolvedValue({
-                success: true,
-                result: { message: 'success' },
-              }),
+            executeToolWithRetry: jest.fn().mockResolvedValue({
+              success: true,
+              result: { message: 'success' },
+            }),
             executeToolWithGuidance: jest
               .fn()
               .mockResolvedValue({ result: { message: 'success' } }),
