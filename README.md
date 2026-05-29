@@ -1,9 +1,11 @@
-# Optimistic Tanuki
+# Optimistic Tanuki Portfolio
 
 [![CI](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml)
 [![Build](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml)
 
-Optimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
+Optimistic Tanuki is a multi-product portfolio for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
+
+Core products: Optimistic Tanuki, Towne Square, Forge of Will, and Fin Commander.
 
 The repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.
 

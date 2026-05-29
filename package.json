@@ -1,6 +1,7 @@
 {
   "name": "@optimistic-tanuki/source",
   "version": "0.0.0",
+  "description": "Operator-facing product portfolio monorepo for Optimistic Tanuki, Towne Square, Forge of Will, and Fin Commander.",
   "packageManager": "pnpm@11.0.9",
   "license": "AGPL-3.0-only",
   "scripts": {
