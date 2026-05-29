@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "packageManager": "pnpm@11.0.9",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "build": "NX_DAEMON=false pnpm exec nx run-many --target=build --all --outputStyle=static",
     "test": "NX_DAEMON=false pnpm exec nx run-many --target=test --all --outputStyle=static",
