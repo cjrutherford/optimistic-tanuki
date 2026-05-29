@@ -9,6 +9,11 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import {
+  applyGatewaySecurityHeaders,
+  enforceTrustedBrowserOrigins,
+  parseConfiguredOrigins,
+} from './bootstrap/security';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -47,9 +52,37 @@ async function bootstrap() {
   SwaggerModule.setup('api-docs', app, document);
 
   const port = process.env.PORT || 3000;
+  const configuredOrigins = parseConfiguredOrigins();
+
+  app.disable('x-powered-by');
+  app.use(applyGatewaySecurityHeaders);
+  app.use(enforceTrustedBrowserOrigins);
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      const isConfigured = configuredOrigins.includes(normalizedOrigin);
+      const isLoopback =
+        /^(https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?)$/.test(
+          normalizedOrigin
+        );
+
+      if (
+        isConfigured ||
+        (process.env['NODE_ENV'] !== 'production' && isLoopback)
+      ) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error('Origin not allowed by CORS policy'));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Authorization,Content-Type,X-Requested-With',
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

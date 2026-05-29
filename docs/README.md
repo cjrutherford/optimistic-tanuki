@@ -25,6 +25,12 @@ The current branch has a few operational surfaces that matter more than the olde
 - ArgoCD applies a parameterized application manifest from `k8s/argo-app/application.yaml`
 - there is now a second Go tool, `tools/stack-client`, for authenticated gateway access from a terminal UI
 
+## Root Guides
+
+- [Product Overview](../PRODUCT.md)
+- [Contributing](../CONTRIBUTING.md)
+- [Governance](../GOVERNANCE.md)
+
 ## Documentation Structure
 
 ### Getting Started
@@ -196,6 +202,7 @@ For the full list see the [`docs/plans/`](./plans/) directory.
   - [Client Interface Overview](./client-interface.md)
 - [Forge of Will](../apps/forgeofwill/README.md)
 - [Marketing Generator](../apps/marketing-generator/README.md)
+- [Developer Portal](../apps/developer-portal/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
 ## Library Documentation

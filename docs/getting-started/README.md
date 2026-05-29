@@ -353,6 +353,6 @@ Now that you have the application running:
 
 - **Documentation**: Check the [Documentation Index](../README.md)
 - **Issues**: Report bugs on [GitHub Issues](https://github.com/cjrutherford/optimistic-tanuki/issues)
-- **Contributing**: See the [Contributing Guide](../../README.md#-contributing)
+- **Contributing**: See the [Contributing Guide](../../CONTRIBUTING.md)
 
 Use `docs/devops/docker-compose.md` as the source of truth for the current local-stack workflow.

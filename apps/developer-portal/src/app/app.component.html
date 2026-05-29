@@ -1,0 +1,74 @@
+<div class="portal-shell">
+  <header class="hero">
+    <p class="eyebrow">Optimistic Tanuki developer portal</p>
+    <h1>API docs, SDK onboarding, and usage visibility in one place.</h1>
+    <p class="lede">
+      This MVP gives external developers a single home for the current gateway
+      surface, billing SDK getting-started flow, and the usage dashboard shape
+      planned in the metered usage roadmap.
+    </p>
+
+    <div class="hero-actions">
+      <a class="primary" href="/api-docs">Open API docs</a>
+      <a
+        class="secondary"
+        href="https://www.npmjs.com/package/@optimistic-tanuki/billing-sdk"
+      >
+        View billing SDK
+      </a>
+      <a class="secondary" href="#usage-dashboard"> Explore dashboard scope </a>
+    </div>
+  </header>
+
+  <section class="metric-grid" aria-label="portal summary metrics">
+    @for (metric of metrics; track metric.label) {
+    <article class="metric-card">
+      <p>{{ metric.label }}</p>
+      <strong>{{ metric.value }}</strong>
+      <span>{{ metric.note }}</span>
+    </article>
+    }
+  </section>
+
+  <section class="content-grid">
+    @for (section of sections; track section.title) {
+    <article class="content-card">
+      <p class="eyebrow">{{ section.eyebrow }}</p>
+      <h2>{{ section.title }}</h2>
+      <p>{{ section.summary }}</p>
+      <ul>
+        @for (bullet of section.bullets; track bullet) {
+        <li>{{ bullet }}</li>
+        }
+      </ul>
+    </article>
+    }
+  </section>
+
+  <section class="split-panel">
+    <article class="content-card" id="usage-dashboard">
+      <p class="eyebrow">Getting started</p>
+      <h2>First integration checklist</h2>
+      <ol>
+        @for (step of integrationSteps; track step) {
+        <li>{{ step }}</li>
+        }
+      </ol>
+    </article>
+
+    <article class="content-card highlight">
+      <p class="eyebrow">Proof of platform</p>
+      <h2>Signal Foundry is the case study.</h2>
+      <p>
+        Signal Foundry is the cleanest proof that the platform is not
+        theoretical: we built a full marketing campaign workbench on the same
+        stack we are offering to developers and operators.
+      </p>
+      <ul>
+        @for (proof of proofPoints; track proof) {
+        <li>{{ proof }}</li>
+        }
+      </ul>
+    </article>
+  </section>
+</div>

@@ -1,0 +1,163 @@
+:host {
+  color: #e2e8f0;
+  display: block;
+}
+
+.portal-shell {
+  min-height: 100vh;
+  padding: 4rem 1.5rem 5rem;
+  background: radial-gradient(
+      circle at top,
+      rgba(56, 189, 248, 0.18),
+      transparent 30%
+    ),
+    linear-gradient(180deg, #020617 0%, #0f172a 55%, #111827 100%);
+}
+
+.hero,
+.metric-grid,
+.content-grid,
+.split-panel {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.hero {
+  display: grid;
+  gap: 1.25rem;
+  margin-bottom: 2.5rem;
+}
+
+.eyebrow {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.78rem;
+  color: #38bdf8;
+}
+
+h1,
+h2,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+h1 {
+  max-width: 14ch;
+  font-size: clamp(2.7rem, 6vw, 5rem);
+  line-height: 0.95;
+}
+
+.lede {
+  max-width: 68ch;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #cbd5e1;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.hero-actions a {
+  border-radius: 999px;
+  padding: 0.85rem 1.25rem;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.primary {
+  background: linear-gradient(135deg, #22d3ee, #3b82f6);
+  color: #020617;
+}
+
+.secondary {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.metric-grid,
+.content-grid,
+.split-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.metric-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.content-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  margin-bottom: 1rem;
+}
+
+.split-panel {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.metric-card,
+.content-card {
+  padding: 1.35rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.3);
+}
+
+.metric-card {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.metric-card p,
+.content-card > p:not(.eyebrow) {
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.metric-card strong {
+  font-size: 1.65rem;
+}
+
+.metric-card span {
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.content-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.content-card ul,
+.content-card ol {
+  padding-left: 1.15rem;
+  color: #cbd5e1;
+  line-height: 1.7;
+}
+
+.highlight {
+  background: linear-gradient(
+    180deg,
+    rgba(14, 165, 233, 0.18),
+    rgba(15, 23, 42, 0.88)
+  );
+}
+
+@media (max-width: 720px) {
+  .portal-shell {
+    padding-top: 3rem;
+  }
+
+  h1 {
+    max-width: 100%;
+  }
+}

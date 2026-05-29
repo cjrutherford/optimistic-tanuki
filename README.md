@@ -1,26 +1,16 @@
-# Optimistic Tanuki Portfolio
+# Optimistic Tanuki Contributor Guide
 
 [![CI](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml)
 [![Build](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml)
 
-Optimistic Tanuki is a multi-product portfolio for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
+Start here if you are contributing to the repository. For the product-facing overview, audience, and product matrix, read [PRODUCT.md](./PRODUCT.md).
 
-Core products: Optimistic Tanuki, Towne Square, Forge of Will, and Fin Commander.
+Useful root documents:
 
-The repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.
-
-- Optimistic Tanuki (`client-interface`): the main community-owned social networking app for defined groups
-- Towne Square (`local-hub`): local-first coordination, classifieds, and civic participation
-- Forge of Will (`forgeofwill`): focused project execution with context, notes, and risk tracking
-- Fin Commander (`fin-commander`): guided financial workflows for ledgers, plans, and scenarios
-
-The product surface is broader than the main apps:
-
-- hosted services such as `billing` can be offered as managed infrastructure with self-hosted Docker options where documented
-- public libraries such as `@optimistic-tanuki/billing-sdk` are intended to be distributed free through npm
-- public npm packages are published from the mirror-repo workflow, not directly from this monorepo
-
-The codebase itself combines NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
+- [PRODUCT.md](./PRODUCT.md)
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [GOVERNANCE.md](./GOVERNANCE.md)
+- [docs/README.md](./docs/README.md)
 
 ## Start Here
 
@@ -54,6 +44,7 @@ Primary local endpoints:
 - Main app: `http://localhost:8080`
 - Leads app: `http://localhost:4201`
 - Gateway: `http://localhost:3000`
+- Developer portal: `http://localhost:4215`
 
 Prerequisites:
 

@@ -51,7 +51,8 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
-.cursor/rules/nx-rules.mdc
+.antigravitycli/
+.cursor/
 .github/instructions/nx.instructions.md
 
 .angular
@@ -76,6 +77,7 @@ playwright-report/
 .nx/polygraph
 .gemini/
 .github/skills/
+.codex/
 .opencode/
 /FEATURES_BREAKDOWN.md
 .agents/
