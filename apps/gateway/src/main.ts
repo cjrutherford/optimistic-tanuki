@@ -54,7 +54,7 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   const configuredOrigins = parseConfiguredOrigins();
 
-  app.disable('x-powered-by');
+  app.getHttpAdapter().getInstance().disable('x-powered-by');
   app.use(applyGatewaySecurityHeaders);
   app.use(enforceTrustedBrowserOrigins);
   app.enableCors({
