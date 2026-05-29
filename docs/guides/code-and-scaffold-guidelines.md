@@ -15,7 +15,7 @@ Guidelines for LLMs (and developers) working on the Optimistic Tanuki repository
 - **Database:** PostgreSQL
 - **Testing:** Jest (unit), Playwright (E2E)
 - **CI/CD:** GitHub Actions
-- **License:** MIT
+- **License:** AGPL-3.0 for applications by default; MIT for publishable npm packages
 
 ---
 
