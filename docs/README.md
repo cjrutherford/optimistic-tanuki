@@ -89,6 +89,13 @@ Step-by-step guides for specific tasks:
 ### Marketing
 
 - [Marketing README](./marketing/README.md) - Index for Signal Foundry marketing docs and positioning inputs
+- [Towne Square](./marketing/towne-square.md) - One-pager for the local-first community platform
+- [Forge of Will](./marketing/forge-of-will.md) - One-pager for the focused project execution product
+- [Fin Commander](./marketing/fin-commander.md) - One-pager for the guided financial workflow product
+- [Signal Foundry](./marketing/signal-foundry.md) - One-pager for the campaign workbench product
+- [Platform Product Matrix](./marketing/platform-product-matrix.md) - Product comparison across audience, packaging, and deployment posture
+- [npm Developer Packages](./marketing/npm-developer-packages.md) - Developer landing page for the public package surface
+- [Admin Environment Wizard Demo Script](./marketing/admin-env-demo-script.md) - Ops/platform walkthrough from generated deployment to Swagger UI
 - [Service Offerings](./marketing/service-offerings.md) - Service-led marketing input reference
 - [Library Offerings](./marketing/library-offerings.md) - Library and package marketing input reference
 - [Pricing Models](./marketing/pricing-models.md) - Pricing posture reference for marketing surfaces
