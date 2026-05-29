@@ -3,92 +3,83 @@ package tui
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/catalog"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/configurator"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/domain"
 )
 
-type step int
+type Section string
 
 const (
-	stepBasics step = iota
-	stepTargets
-	stepComposeMode
-	stepInfra
-	stepServices
-	stepGateway
-	stepSecrets
-	stepSecretEditor
-	stepPrefixes
-	stepPrefixEditor
-	stepApps
-	stepAppEditor
-	stepJump
-	stepReview
-	stepResult
+	SectionDeployment  Section = "Deployment"
+	SectionProfile     Section = "Profile"
+	SectionDatabases   Section = "Databases"
+	SectionServices    Section = "Services"
+	SectionImages      Section = "Images"
+	SectionCompose     Section = "Compose"
+	SectionKubernetes  Section = "Kubernetes"
+	SectionSecrets     Section = "Secrets"
+	SectionApply       Section = "Apply"
+	SectionDiagnostics Section = "Diagnostics"
 )
 
 type generateFunc func() (configurator.GenerateResult, error)
 type saveFunc func(*configurator.DeploymentConfig) error
 type saveSecretsFunc func(map[string]string) error
 
-type generateDoneMsg struct {
-	result configurator.GenerateResult
-	err    error
+type menuItem struct {
+	Label    string
+	Action   string
+	Section  Section
+	Disabled bool
 }
 
-type saveDoneMsg struct {
-	err error
-}
-
-type option struct {
-	label    string
-	selected bool
+type menu struct {
+	Label string
+	Items []menuItem
 }
 
 type Model struct {
-	step               step
-	returnStep         step
-	env                *domain.EnvironmentDefinition
-	doc                *configurator.DeploymentConfig
-	secrets            map[string]string
-	deploymentPath     string
-	inputs             []textinput.Model
-	gatewayInputs      []textinput.Model
-	prefixInputs       []textinput.Model
-	appInputs          []textinput.Model
-	secretInput        textinput.Model
-	targets            []option
-	infra              []option
-	services           []option
-	secretKeys         []string
-	cursor             int
-	fieldCursor        int
-	listOffset         int
-	appIndex           int
-	prefixIndex        int
-	prefixPickerOpen   bool
-	prefixPickerCursor int
-	selectedSecret     string
-	generate           generateFunc
-	save               saveFunc
-	saveSecrets        saveSecretsFunc
-	result             configurator.GenerateResult
-	err                error
-	saveMessage        string
-	loading            bool
-	saving             bool
-	width              int
-	height             int
-	sidebarWidth       int
+	doc            *configurator.DeploymentConfig
+	env            *domain.EnvironmentDefinition
+	secrets        map[string]string
+	deploymentPath string
+	generate       generateFunc
+	save           saveFunc
+	saveSecrets    saveSecretsFunc
+	catalog        *catalog.Catalog
+	sections       []Section
+	activeSection  Section
+	menus          []menu
+	activeMenu     int
+	menuOpen       bool
+	activeMenuItem int
+	activeService  int
+	activeSlot     int
+	activeSecret   int
+	result         configurator.GenerateResult
+	err            error
+	saveMessage    string
+	diagnostics    []configurator.ValidationIssue
+	help           map[Section]string
+
+	application *tview.Application
+	root        *tview.Flex
+	menuBar     *tview.TextView
+	navigation  *tview.List
+	content     *tview.TextView
+	helpView    *tview.TextView
+	footer      *tview.TextView
+	pages       *tview.Pages
 }
 
-func NewModel(env *domain.EnvironmentDefinition, generate generateFunc) Model {
+func NewModel(env *domain.EnvironmentDefinition, generate generateFunc) *Model {
 	doc := configurator.DeploymentConfigFromEnvironment(env)
 	return NewDocumentModel(doc, "", nil, nil, generate, nil)
 }
@@ -100,1306 +91,1018 @@ func NewDocumentModel(
 	saveSecrets saveSecretsFunc,
 	generate generateFunc,
 	secrets map[string]string,
-) Model {
+) *Model {
 	if doc == nil {
 		doc = configurator.DeploymentConfigFromEnvironment(configurator.DefaultEnvironment())
 	}
 	if secrets == nil {
 		secrets = map[string]string{}
 	}
-
-	env := doc.ToEnvironmentDefinition()
-	env.Normalize()
-
-	model := Model{
-		step:           stepBasics,
-		env:            env,
+	cat := catalog.DefaultCatalog()
+	configurator.EnsureDeploymentDatabaseState(doc, cat)
+	model := &Model{
 		doc:            doc,
-		secrets:        secrets,
+		secrets:        cloneMap(secrets),
 		deploymentPath: deploymentPath,
-		sidebarWidth:   28,
-		targets: []option{
-			{label: string(domain.TargetCompose), selected: true},
-			{label: string(domain.TargetK8s), selected: true},
+		generate:       generate,
+		save:           save,
+		saveSecrets:    saveSecrets,
+		catalog:        cat,
+		sections: []Section{
+			SectionDeployment,
+			SectionProfile,
+			SectionDatabases,
+			SectionServices,
+			SectionImages,
+			SectionCompose,
+			SectionKubernetes,
+			SectionSecrets,
+			SectionApply,
+			SectionDiagnostics,
 		},
-		infra: optionsFromInfra(
-			[]domain.InfraKind{domain.InfraPostgres, domain.InfraRedis, domain.InfraSeaweedFS},
-			env.IncludeInfra,
-		),
-		services: optionsFromServices(
-			[]string{
-				"gateway", "authentication", "profile", "social", "app-configurator", "system-configurator-api",
-				"chat-collector", "assets", "ai-orchestration", "prompt-proxy", "telos-docs-service", "blogging",
-				"permissions", "project-planning", "forum", "wellness", "classifieds", "payments", "store",
-				"lead-tracker", "finance", "client-interface", "forgeofwill", "digital-homestead", "hai",
-				"christopherrutherford-net", "owner-console", "fin-commander", "marketing-generator", "store-client", "configurable-client",
-				"system-configurator", "d6", "local-hub", "leads-app", "video-client",
-			},
-			env.Services,
-		),
-		generate:    generate,
-		save:        save,
-		saveSecrets: saveSecrets,
+		activeSection: SectionDeployment,
+		help:          defaultHelpRegistry(),
 	}
-
-	model.syncOptionsFromDoc()
-	model.inputs = model.newBasicsInputs()
-	model.gatewayInputs = model.newGatewayInputs()
-	model.appInputs = model.newAppInputs()
-	model.secretKeys = model.buildSecretKeys()
-	model.secretInput = textinput.New()
-	model.secretInput.Prompt = "Value: "
-	model.inputs[0].Focus()
-
+	model.menus = model.defaultMenus()
+	model.syncEnv()
+	model.refreshDiagnostics()
 	return model
 }
 
-func (m Model) Init() tea.Cmd { return textinput.Blink }
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.width = msg.Width
-		m.height = msg.Height
-		return m, nil
-	case generateDoneMsg:
-		m.loading = false
-		m.result = msg.result
-		m.err = msg.err
-		if msg.err == nil {
-			m.step = stepResult
-		}
-		return m, nil
-	case saveDoneMsg:
-		m.saving = false
-		if msg.err != nil {
-			m.saveMessage = "Save failed: " + msg.err.Error()
-		} else {
-			m.saveMessage = "Deployment files saved."
-		}
-		return m, nil
-	case tea.MouseMsg:
-		return m.updateMouse(msg)
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "ctrl+j":
-			if m.step != stepJump {
-				m.returnStep = m.step
-				m.cursor = 0
-				m.step = stepJump
-				return m, nil
-			}
-		case "ctrl+n":
-			return m.goRelativeStep(1), nil
-		case "ctrl+p":
-			return m.goRelativeStep(-1), nil
-		}
-
-		switch m.step {
-		case stepBasics:
-			return m.updateTextInputs(msg, &m.inputs, stepTargets, m.syncBasics)
-		case stepTargets:
-			return m.updateOptions(msg, &m.targets, stepComposeMode)
-		case stepComposeMode:
-			return m.updateComposeMode(msg)
-		case stepInfra:
-			return m.updateOptions(msg, &m.infra, stepServices)
-		case stepServices:
-			return m.updateOptions(msg, &m.services, stepGateway)
-		case stepGateway:
-			return m.updateTextInputs(msg, &m.gatewayInputs, stepSecrets, m.syncGateway)
-		case stepSecrets:
-			return m.updateSecrets(msg)
-		case stepSecretEditor:
-			return m.updateSecretEditor(msg)
-		case stepPrefixes:
-			return m.updatePrefixes(msg)
-		case stepPrefixEditor:
-			return m.updatePrefixEditor(msg)
-		case stepApps:
-			return m.updateApps(msg)
-		case stepAppEditor:
-			return m.updateAppEditor(msg)
-		case stepJump:
-			return m.updateJump(msg)
-		case stepReview:
-			return m.updateReview(msg)
-		case stepResult:
-			if msg.String() == "r" {
-				m.step = stepBasics
-			}
-		}
-	}
-	return m, nil
+func (m *Model) Run() error {
+	m.buildApplication()
+	m.updateViews()
+	return m.application.SetRoot(m.pages, true).EnableMouse(true).Run()
 }
 
-func (m Model) View() string {
-	content := m.renderContent()
-	return m.renderShell(content)
+func (m *Model) View() string {
+	parts := []string{
+		m.renderMenuBar(),
+		"Sections: " + strings.Join(m.sectionLabels(), " | "),
+		"",
+		m.renderContent(),
+		"",
+		"Help",
+		m.CurrentHelp(),
+	}
+	return strings.Join(parts, "\n")
 }
 
-func (m Model) renderContent() string {
-	title := lipgloss.NewStyle().Bold(true).Render("Admin Env Wizard")
-	header := title + "\n" + m.renderBreadcrumbs()
-	switch m.step {
-	case stepBasics:
-		lines := []string{header, "", "Deployment Basics", ""}
-		for _, input := range m.inputs {
-			lines = append(lines, input.View())
-		}
-		lines = append(lines, "", "Tab navigates, Enter continues, Ctrl+J opens jump menu")
-		return strings.Join(lines, "\n")
-	case stepTargets:
-		return header + "\n\nSelect targets\n\n" + renderOptions(m.targets, m.cursor) + "\n\nSpace toggles, Enter continues"
-	case stepComposeMode:
-		mode := m.doc.Environment.ComposeMode
-		if mode == "" {
-			mode = string(domain.ComposeModeImage)
-		}
-		return fmt.Sprintf("%s\n\nCompose Mode\n\nCurrent: %s\n\nPress b for build, i for image, Enter continues", header, mode)
-	case stepInfra:
-		return header + "\n\nSelect infra\n\n" + renderOptions(m.infra, m.cursor) + "\n\nSpace toggles, Enter continues"
-	case stepServices:
-		return header + "\n\nSelect services\n\n" + renderOptions(m.services, m.cursor) + "\n\nSpace toggles, a selects all, n clears all, Enter continues"
-	case stepGateway:
-		lines := []string{header, "", "Gateway URLs", ""}
-		for _, input := range m.gatewayInputs {
-			lines = append(lines, input.View())
-		}
-		lines = append(lines, "", "Tab navigates, Enter continues")
-		return strings.Join(lines, "\n")
-	case stepSecrets:
-		return header + "\n\nSecrets Mapping\n\n" + m.renderSecretsTable() + "\n\nEnter continues, e edits selected secret, Ctrl+S saves files, Ctrl+N/P steps, Ctrl+J jumps"
-	case stepSecretEditor:
-		return header + "\n\nEdit Secret\n\nKey: " + m.selectedSecret + "\n\n" + m.secretInput.View() + "\n\nCtrl+S saves value, Esc returns"
-	case stepPrefixes:
-		return header + "\n\nURL Prefixes\n\n" + m.renderPrefixesTable() + "\n\nEnter edits, a adds prefix, d deletes prefix, right opens apps, Ctrl+S saves files"
-	case stepPrefixEditor:
-		lines := []string{header, "", fmt.Sprintf("Edit Prefix %d", m.prefixIndex+1), ""}
-		for _, input := range m.prefixInputs {
-			lines = append(lines, input.View())
-		}
-		lines = append(lines, "", "Tab navigates, Ctrl+S saves prefix, Esc returns")
-		return strings.Join(lines, "\n")
-	case stepApps:
-		return header + "\n\nRegistry Apps\n\n" + m.renderAppsTable() + "\n\nu manages URL prefixes, a adds client app, d deletes app, Enter edits, Ctrl+S saves files"
-	case stepAppEditor:
-		lines := []string{header, "", fmt.Sprintf("Edit App %d", m.appIndex+1), ""}
-		for _, input := range m.appInputs {
-			lines = append(lines, input.View())
-		}
-		oauthEnabled := "no"
-		if m.currentApp().OAuth != nil && m.currentApp().OAuth.Enabled {
-			oauthEnabled = "yes"
-		}
-		lines = append(lines, "", "OAuth enabled: "+oauthEnabled)
-		if m.isPrefixSelectionField() {
-			lines = append(lines, "", "URL Prefix Picker", m.renderPrefixSelectionTable())
-		}
-		lines = append(lines, m.renderResolvedAppPreview())
-		lines = append(lines, "Tab navigates, Enter opens prefix picker, Up/Down choose, Ctrl+R resets to derived URLs and focuses subdomain, Ctrl+S saves app, Ctrl+O toggles OAuth, Esc returns")
-		return strings.Join(lines, "\n")
-	case stepJump:
-		return header + "\n\nJump To Section\n\n" + m.renderJumpTable() + "\n\nUp/Down selects, Enter jumps, Esc returns"
-	case stepReview:
-		status := ""
-		if m.saveMessage != "" {
-			status = "\n\n" + m.saveMessage
-		}
-		return header + "\n\nReview\n\n" + m.reviewSummary() + status + "\n\nPress g to generate, Ctrl+S to save files, Ctrl+J to jump"
-	case stepResult:
-		if m.err != nil {
-			return header + "\n\nGeneration failed:\n" + m.err.Error()
-		}
-		return fmt.Sprintf(
-			"%s\n\nGenerated output in %s\nCompose: %s\nK8s: %s\nRegistry: %s\nRuntime env: %s\n\nPress q to quit",
-			header,
-			m.result.OutputDir,
-			m.result.ComposePath,
-			m.result.K8sPath,
-			m.result.RegistryPath,
-			m.result.RuntimeEnvPath,
-		)
-	default:
-		return header
-	}
+func (m *Model) ActiveSection() Section {
+	return m.activeSection
 }
 
-func (m Model) renderShell(content string) string {
-	sidebarStyle := lipgloss.NewStyle().
-		Width(m.sidebarWidth).
-		Padding(1, 1).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("63"))
-	contentWidth := max(44, m.width-m.sidebarWidth-5)
-	contentStyle := lipgloss.NewStyle().
-		Width(contentWidth).
-		Padding(1, 2).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("240"))
-	footerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("245")).
-		Padding(0, 1)
-
-	sidebar := sidebarStyle.Render(m.renderSidebar())
-	body := contentStyle.Render(content)
-	footer := footerStyle.Render("Mouse: click sections or table rows, wheel scroll lists. Keys: Ctrl+J jump, Ctrl+N/P next/prev, Ctrl+S save.")
-	return lipgloss.JoinVertical(lipgloss.Left, lipgloss.JoinHorizontal(lipgloss.Top, sidebar, body), footer)
+func (m *Model) CurrentHelp() string {
+	return m.help[m.activeSection]
 }
 
-func (m Model) renderSidebar() string {
-	lines := []string{"Deployment", fallbackString(m.doc.Environment.Name, "(unnamed)"), ""}
-	for _, item := range m.navigableSteps() {
-		prefix := "  "
-		if item == m.step {
-			prefix = "> "
-		}
-		lines = append(lines, prefix+stepLabel(item))
+func (m *Model) Menus() []string {
+	labels := make([]string, 0, len(m.menus))
+	for _, item := range m.menus {
+		labels = append(labels, item.Label)
 	}
-	lines = append(lines, "", "Status")
-	if m.saving {
-		lines = append(lines, "saving...")
-	} else if m.loading {
-		lines = append(lines, "generating...")
-	} else if m.saveMessage != "" {
-		lines = append(lines, m.saveMessage)
-	} else {
-		lines = append(lines, "ready")
-	}
-	return strings.Join(lines, "\n")
+	return labels
 }
 
-func (m Model) updateTextInputs(
-	msg tea.KeyMsg,
-	inputs *[]textinput.Model,
-	next step,
-	onAdvance func(*Model),
-) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyEnter:
-		if onAdvance != nil {
-			onAdvance(&m)
-		}
-		m.cursor = 0
-		m.listOffset = 0
-		m.fieldCursor = 0
-		m.step = next
-		if next == stepSecrets {
-			m.secretKeys = m.buildSecretKeys()
-		}
-		return m, nil
-	case tea.KeyTab, tea.KeyShiftTab, tea.KeyUp, tea.KeyDown:
-		if msg.Type == tea.KeyUp || msg.Type == tea.KeyShiftTab {
-			m.fieldCursor = (m.fieldCursor + len(*inputs) - 1) % len(*inputs)
-		} else {
-			m.fieldCursor = (m.fieldCursor + 1) % len(*inputs)
-		}
-		for i := range *inputs {
-			if i == m.fieldCursor {
-				(*inputs)[i].Focus()
-			} else {
-				(*inputs)[i].Blur()
-			}
-		}
-		return m, nil
+func (m *Model) MenuItems(index int) []string {
+	if index < 0 || index >= len(m.menus) {
+		return nil
 	}
-
-	cmds := make([]tea.Cmd, len(*inputs))
-	for i := range *inputs {
-		(*inputs)[i], cmds[i] = (*inputs)[i].Update(msg)
+	labels := make([]string, 0, len(m.menus[index].Items))
+	for _, item := range m.menus[index].Items {
+		labels = append(labels, item.Label)
 	}
-	return m, tea.Batch(cmds...)
+	return labels
 }
 
-func (m Model) updateOptions(msg tea.KeyMsg, opts *[]option, next step) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "up":
-		m.cursor = (m.cursor + len(*opts) - 1) % len(*opts)
-	case "down":
-		m.cursor = (m.cursor + 1) % len(*opts)
-	case " ":
-		(*opts)[m.cursor].selected = !(*opts)[m.cursor].selected
-	case "a":
-		if m.step == stepServices {
-			for i := range *opts {
-				(*opts)[i].selected = true
-			}
-		}
-	case "n":
-		if m.step == stepServices {
-			for i := range *opts {
-				(*opts)[i].selected = false
-			}
-		}
-	case "enter":
-		m.syncEnv()
-		m.cursor = 0
-		m.listOffset = 0
-		m.step = next
-		if next == stepGateway {
-			m.gatewayInputs = m.newGatewayInputs()
-			m.gatewayInputs[0].Focus()
-			m.fieldCursor = 0
+func (m *Model) ActivateSection(section Section) {
+	for _, candidate := range m.sections {
+		if candidate == section {
+			m.activeSection = section
+			break
 		}
 	}
-	return m, nil
+	m.updateViews()
 }
 
-func (m Model) updateComposeMode(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "b":
-		m.doc.Environment.ComposeMode = string(domain.ComposeModeBuild)
-	case "i":
-		m.doc.Environment.ComposeMode = string(domain.ComposeModeImage)
-	case "enter":
-		m.env.ComposeMode = domain.ComposeMode(m.doc.Environment.ComposeMode)
-		m.listOffset = 0
-		m.step = stepInfra
+func (m *Model) OpenMenu(index int) {
+	if len(m.menus) == 0 {
+		return
 	}
-	return m, nil
+	m.activeMenu = (index + len(m.menus)) % len(m.menus)
+	m.menuOpen = true
+	m.activeMenuItem = 0
+	m.updateViews()
 }
 
-func (m Model) updateSecrets(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "up":
-		if len(m.secretKeys) > 0 {
-			m.cursor = (m.cursor + len(m.secretKeys) - 1) % len(m.secretKeys)
-			m.ensureCursorVisible(len(m.secretKeys))
-		}
-	case "down":
-		if len(m.secretKeys) > 0 {
-			m.cursor = (m.cursor + 1) % len(m.secretKeys)
-			m.ensureCursorVisible(len(m.secretKeys))
-		}
-	case "enter":
-		m.cursor = 0
-		m.listOffset = 0
-		m.step = stepPrefixes
-	case "e":
-		if len(m.secretKeys) == 0 {
-			m.step = stepPrefixes
-			return m, nil
-		}
-		m.selectedSecret = m.secretKeys[m.cursor]
-		m.secretInput = textinput.New()
-		m.secretInput.Prompt = "Value: "
-		m.secretInput.SetValue(m.secrets[m.selectedSecret])
-		m.secretInput.Focus()
-		m.step = stepSecretEditor
-	case "ctrl+s":
-		return m.saveAll()
-	case "b":
-		m.step = stepGateway
+func (m *Model) CloseMenu() {
+	m.menuOpen = false
+	m.activeMenuItem = 0
+	m.updateViews()
+}
+
+func (m *Model) MoveMenu(delta int) {
+	if len(m.menus) == 0 {
+		return
 	}
-	return m, nil
+	m.activeMenu = (m.activeMenu + delta + len(m.menus)) % len(m.menus)
+	m.activeMenuItem = 0
+	m.updateViews()
 }
 
-func (m Model) updateSecretEditor(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyEsc:
-		m.step = stepSecrets
-		return m, nil
-	case tea.KeyCtrlS:
-		m.secrets[m.selectedSecret] = m.secretInput.Value()
-		m.secretKeys = m.buildSecretKeys()
-		m.step = stepSecrets
-		return m, nil
+func (m *Model) MoveMenuItem(delta int) {
+	if !m.menuOpen || len(m.menus) == 0 || len(m.menus[m.activeMenu].Items) == 0 {
+		return
 	}
-
-	var cmd tea.Cmd
-	m.secretInput, cmd = m.secretInput.Update(msg)
-	return m, cmd
+	items := m.menus[m.activeMenu].Items
+	m.activeMenuItem = (m.activeMenuItem + delta + len(items)) % len(items)
+	m.updateViews()
 }
 
-func (m Model) updatePrefixes(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "up":
-		if len(m.doc.URLPrefixes) > 0 {
-			m.cursor = (m.cursor + len(m.doc.URLPrefixes) - 1) % len(m.doc.URLPrefixes)
-			m.ensureCursorVisible(len(m.doc.URLPrefixes))
+func (m *Model) SelectActiveMenuItem() {
+	if !m.menuOpen || len(m.menus) == 0 || len(m.menus[m.activeMenu].Items) == 0 {
+		m.OpenMenu(m.activeMenu)
+		return
+	}
+	m.dispatchMenuItem(m.menus[m.activeMenu].Items[m.activeMenuItem])
+	m.updateViews()
+}
+
+func (m *Model) SaveAll() error {
+	m.syncEnv()
+	if m.save != nil {
+		if err := m.save(m.doc); err != nil {
+			m.err = err
+			m.saveMessage = "Save failed: " + err.Error()
+			m.updateViews()
+			return err
 		}
-	case "down":
-		if len(m.doc.URLPrefixes) > 0 {
-			m.cursor = (m.cursor + 1) % len(m.doc.URLPrefixes)
-			m.ensureCursorVisible(len(m.doc.URLPrefixes))
+	}
+	if m.saveSecrets != nil {
+		if err := m.saveSecrets(cloneMap(m.secrets)); err != nil {
+			m.err = err
+			m.saveMessage = "Secrets save failed: " + err.Error()
+			m.updateViews()
+			return err
 		}
-	case "a", "ctrl+a":
-		m.doc.URLPrefixes = append(m.doc.URLPrefixes, configurator.DeploymentURLPrefix{
-			ID:     fmt.Sprintf("prefix-%d", len(m.doc.URLPrefixes)+1),
-			Label:  fmt.Sprintf("Prefix %d", len(m.doc.URLPrefixes)+1),
-			Prefix: "https://",
+	}
+	m.saveMessage = "Deployment files saved."
+	m.err = nil
+	m.refreshDiagnostics()
+	m.updateViews()
+	return nil
+}
+
+func (m *Model) Generate() error {
+	m.syncEnv()
+	if m.generate == nil {
+		m.err = fmt.Errorf("generate action unavailable")
+		m.updateViews()
+		return m.err
+	}
+	result, err := m.generate()
+	m.result = result
+	m.err = err
+	if err == nil {
+		m.saveMessage = fmt.Sprintf("Generated %s", result.OutputDir)
+	}
+	m.refreshDiagnostics()
+	m.updateViews()
+	return err
+}
+
+func (m *Model) AddDatabaseSlot(slot configurator.DeploymentDatabaseSlot) {
+	m.doc.Databases = append(m.doc.Databases, slot)
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.syncEnv()
+	if len(m.doc.Databases) > 0 {
+		m.activeSlot = len(m.doc.Databases) - 1
+	}
+	m.refreshDiagnostics()
+	m.updateViews()
+}
+
+func (m *Model) DeleteActiveDatabaseSlot() bool {
+	if len(m.doc.Databases) == 0 || m.activeSlot >= len(m.doc.Databases) {
+		return false
+	}
+	removedID := m.doc.Databases[m.activeSlot].ID
+	m.doc.Databases = append(m.doc.Databases[:m.activeSlot], m.doc.Databases[m.activeSlot+1:]...)
+	for i := range m.doc.Services {
+		if m.doc.Services[i].Database != nil && m.doc.Services[i].Database.SlotID == removedID {
+			m.doc.Services[i].Database.SlotID = ""
+		}
+	}
+	if m.activeSlot > 0 {
+		m.activeSlot--
+	}
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.syncEnv()
+	m.refreshDiagnostics()
+	m.updateViews()
+	return true
+}
+
+func (m *Model) UpdateDatabaseSlot(index int, slot configurator.DeploymentDatabaseSlot) {
+	if index < 0 || index >= len(m.doc.Databases) {
+		return
+	}
+	m.doc.Databases[index] = slot
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.syncEnv()
+	m.refreshDiagnostics()
+	m.updateViews()
+}
+
+func (m *Model) ToggleServiceEnabled(serviceID string) {
+	for i := range m.doc.Services {
+		if m.doc.Services[i].ServiceID == serviceID {
+			m.doc.Services[i].Enabled = !m.doc.Services[i].Enabled
+			break
+		}
+	}
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.syncEnv()
+	m.refreshDiagnostics()
+	m.updateViews()
+}
+
+func (m *Model) UpdateService(service configurator.DeploymentService) {
+	for i := range m.doc.Services {
+		if m.doc.Services[i].ServiceID == service.ServiceID {
+			m.doc.Services[i] = service
+			break
+		}
+	}
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.syncEnv()
+	m.refreshDiagnostics()
+	m.updateViews()
+}
+
+func (m *Model) activeServiceConfig() *configurator.DeploymentService {
+	if len(m.doc.Services) == 0 {
+		return nil
+	}
+	if m.activeService >= len(m.doc.Services) {
+		m.activeService = len(m.doc.Services) - 1
+	}
+	if m.activeService < 0 {
+		m.activeService = 0
+	}
+	return &m.doc.Services[m.activeService]
+}
+
+func (m *Model) activeDatabaseSlot() *configurator.DeploymentDatabaseSlot {
+	if len(m.doc.Databases) == 0 {
+		return nil
+	}
+	if m.activeSlot >= len(m.doc.Databases) {
+		m.activeSlot = len(m.doc.Databases) - 1
+	}
+	if m.activeSlot < 0 {
+		m.activeSlot = 0
+	}
+	return &m.doc.Databases[m.activeSlot]
+}
+
+func (m *Model) buildApplication() {
+	if m.application != nil {
+		return
+	}
+	m.application = tview.NewApplication()
+	m.pages = tview.NewPages()
+	m.menuBar = tview.NewTextView().SetDynamicColors(true)
+	m.navigation = tview.NewList().ShowSecondaryText(false)
+	m.content = tview.NewTextView().SetDynamicColors(true).SetWrap(true)
+	m.helpView = tview.NewTextView().SetDynamicColors(true).SetWrap(true)
+	m.footer = tview.NewTextView().SetDynamicColors(true)
+
+	for _, section := range m.sections {
+		sectionCopy := section
+		m.navigation.AddItem(string(section), "", 0, func() {
+			m.ActivateSection(sectionCopy)
 		})
-		m.cursor = len(m.doc.URLPrefixes) - 1
-		m.ensureCursorVisible(len(m.doc.URLPrefixes))
-	case "d", "ctrl+d":
-		if len(m.doc.URLPrefixes) > 0 {
-			m.doc.URLPrefixes = append(m.doc.URLPrefixes[:m.cursor], m.doc.URLPrefixes[m.cursor+1:]...)
-			if m.cursor >= len(m.doc.URLPrefixes) && m.cursor > 0 {
-				m.cursor--
-			}
-			m.ensureCursorVisible(len(m.doc.URLPrefixes))
-		}
-	case "ctrl+s":
-		return m.saveAll()
-	case "right", "l":
-		m.cursor = 0
-		m.listOffset = 0
-		m.step = stepApps
-	case "enter":
-		if len(m.doc.URLPrefixes) == 0 {
-			m.doc.URLPrefixes = append(m.doc.URLPrefixes, configurator.DeploymentURLPrefix{
-				ID:     "prefix-1",
-				Label:  "Prefix 1",
-				Prefix: "https://",
-			})
-			m.cursor = 0
-		}
-		m.prefixIndex = m.cursor
-		m.prefixInputs = m.newPrefixInputs()
-		m.prefixInputs[0].Focus()
-		m.fieldCursor = 0
-		m.step = stepPrefixEditor
-	case "b":
-		m.step = stepSecrets
 	}
-	return m, nil
+	m.navigation.SetChangedFunc(func(index int, mainText, _ string, _ rune) {
+		if index >= 0 && index < len(m.sections) {
+			m.activeSection = m.sections[index]
+			m.updateViews()
+		}
+	})
+
+	helpFrame := tview.NewFrame(m.helpView).SetBorders(1, 1, 1, 1, 0, 0).AddText("Contextual Help", true, tview.AlignLeft, tcell.ColorGreen)
+	navFrame := tview.NewFrame(m.navigation).SetBorders(1, 1, 1, 1, 0, 0).AddText("Sections", true, tview.AlignLeft, tcell.ColorGreen)
+	contentFrame := tview.NewFrame(m.content).SetBorders(1, 1, 1, 1, 0, 0).AddText("Document", true, tview.AlignLeft, tcell.ColorGreen)
+
+	body := tview.NewFlex().
+		AddItem(navFrame, 26, 1, true).
+		AddItem(contentFrame, 0, 3, false).
+		AddItem(helpFrame, 34, 1, false)
+
+	m.root = tview.NewFlex().SetDirection(tview.FlexRow).
+		AddItem(m.menuBar, 1, 0, false).
+		AddItem(body, 0, 1, true).
+		AddItem(m.footer, 2, 0, false)
+	m.pages.AddPage("main", m.root, true, true)
+	m.application.SetInputCapture(m.handleKey)
 }
 
-func (m Model) updatePrefixEditor(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyEsc:
-		m.step = stepPrefixes
-		return m, nil
-	case tea.KeyCtrlS:
-		m.syncCurrentPrefix()
-		m.step = stepPrefixes
-		return m, nil
-	case tea.KeyTab, tea.KeyShiftTab, tea.KeyUp, tea.KeyDown:
-		if msg.Type == tea.KeyUp || msg.Type == tea.KeyShiftTab {
-			m.fieldCursor = (m.fieldCursor + len(m.prefixInputs) - 1) % len(m.prefixInputs)
+func (m *Model) handleKey(event *tcell.EventKey) *tcell.EventKey {
+	if event.Key() == tcell.KeyCtrlC || event.Rune() == 'q' {
+		m.application.Stop()
+		return nil
+	}
+	if m.menuOpen {
+		switch event.Key() {
+		case tcell.KeyLeft:
+			m.MoveMenu(-1)
+			return nil
+		case tcell.KeyRight:
+			m.MoveMenu(1)
+			return nil
+		case tcell.KeyUp:
+			m.MoveMenuItem(-1)
+			return nil
+		case tcell.KeyDown:
+			m.MoveMenuItem(1)
+			return nil
+		case tcell.KeyEnter:
+			m.SelectActiveMenuItem()
+			return nil
+		case tcell.KeyEsc:
+			m.CloseMenu()
+			return nil
+		}
+	}
+
+	switch event.Key() {
+	case tcell.KeyLeft:
+		m.MoveMenu(-1)
+		return nil
+	case tcell.KeyRight:
+		m.MoveMenu(1)
+		return nil
+	case tcell.KeyDown, tcell.KeyEnter:
+		m.OpenMenu(m.activeMenu)
+		return nil
+	}
+
+	switch event.Rune() {
+	case 'e':
+		m.openEditorForSection()
+		return nil
+	case 'a':
+		if m.activeSection == SectionDatabases {
+			m.openDatabaseEditor(-1)
+			return nil
+		}
+	case 'd':
+		if m.activeSection == SectionDatabases {
+			m.showConfirmDeleteSlot()
+			return nil
+		}
+	case 's':
+		_ = m.SaveAll()
+		return nil
+	case 'g':
+		_ = m.Generate()
+		return nil
+	case 'r':
+		m.refreshDiagnostics()
+		m.updateViews()
+		return nil
+	case ' ':
+		if m.activeSection == SectionServices {
+			if service := m.activeServiceConfig(); service != nil {
+				m.ToggleServiceEnabled(service.ServiceID)
+			}
+			return nil
+		}
+	case 'j':
+		m.advanceActiveRow(1)
+		return nil
+	case 'k':
+		m.advanceActiveRow(-1)
+		return nil
+	}
+	return event
+}
+
+func (m *Model) openEditorForSection() {
+	switch m.activeSection {
+	case SectionDeployment:
+		m.openDeploymentEditor()
+	case SectionDatabases:
+		m.openDatabaseEditor(m.activeSlot)
+	case SectionServices, SectionImages:
+		m.openServiceEditor()
+	case SectionSecrets:
+		m.openSecretEditor()
+	}
+}
+
+func (m *Model) openDeploymentEditor() {
+	form := tview.NewForm()
+	name := m.doc.Environment.Name
+	namespace := m.doc.Environment.Namespace
+	provider := m.doc.Environment.Provider
+	composeMode := m.doc.Environment.ComposeMode
+	targets := strings.Join(m.doc.Environment.Targets, ",")
+	form.AddInputField("Name", name, 32, nil, func(text string) { name = text })
+	form.AddInputField("Namespace", namespace, 32, nil, func(text string) { namespace = text })
+	form.AddInputField("Targets", targets, 32, nil, func(text string) { targets = text })
+	form.AddDropDown("Provider", []string{"akamai", "vultr", "oci"}, indexOf([]string{"akamai", "vultr", "oci"}, provider), func(option string, _ int) { provider = option })
+	form.AddDropDown("Compose", []string{"build", "image"}, indexOf([]string{"build", "image"}, composeMode), func(option string, _ int) { composeMode = option })
+	form.AddButton("Save", func() {
+		m.doc.Environment.Name = strings.TrimSpace(name)
+		m.doc.Environment.Namespace = strings.TrimSpace(namespace)
+		m.doc.Environment.Provider = provider
+		m.doc.Environment.ComposeMode = composeMode
+		m.doc.Environment.Targets = splitCSV(targets)
+		m.syncEnv()
+		m.refreshDiagnostics()
+		m.closeModal()
+	})
+	form.AddButton("Cancel", m.closeModal)
+	m.showFormModal("Edit Deployment", form)
+}
+
+func (m *Model) openDatabaseEditor(index int) {
+	current := configurator.DeploymentDatabaseSlot{ID: "postgres-primary", Infra: "postgres", ProvisionMode: "managed", Host: "db", Port: 5432, DatabaseName: m.doc.Environment.Name, Username: "postgres", PasswordKey: "POSTGRES_PASSWORD", Create: true, Migrate: true}
+	if index >= 0 && index < len(m.doc.Databases) {
+		current = m.doc.Databases[index]
+	}
+	form := tview.NewForm()
+	id := current.ID
+	infra := current.Infra
+	provisionMode := current.ProvisionMode
+	host := current.Host
+	port := strconv.Itoa(current.Port)
+	databaseName := current.DatabaseName
+	username := current.Username
+	passwordKey := current.PasswordKey
+	create := current.Create
+	migrate := current.Migrate
+	seed := current.Seed
+	form.AddInputField("ID", id, 32, nil, func(text string) { id = text })
+	form.AddDropDown("Infra", []string{"postgres", "redis", "seaweedfs"}, indexOf([]string{"postgres", "redis", "seaweedfs"}, infra), func(option string, _ int) { infra = option })
+	form.AddDropDown("Provision", []string{"managed", "external"}, indexOf([]string{"managed", "external"}, provisionMode), func(option string, _ int) { provisionMode = option })
+	form.AddInputField("Host", host, 32, nil, func(text string) { host = text })
+	form.AddInputField("Port", port, 8, nil, func(text string) { port = text })
+	form.AddInputField("Database", databaseName, 32, nil, func(text string) { databaseName = text })
+	form.AddInputField("Username", username, 32, nil, func(text string) { username = text })
+	form.AddInputField("Password Key", passwordKey, 32, nil, func(text string) { passwordKey = text })
+	form.AddCheckbox("Create", create, func(checked bool) { create = checked })
+	form.AddCheckbox("Migrate", migrate, func(checked bool) { migrate = checked })
+	form.AddCheckbox("Seed", seed, func(checked bool) { seed = checked })
+	form.AddButton("Save", func() {
+		parsedPort, _ := strconv.Atoi(strings.TrimSpace(port))
+		slot := configurator.DeploymentDatabaseSlot{ID: strings.TrimSpace(id), Infra: infra, ProvisionMode: provisionMode, Host: strings.TrimSpace(host), Port: parsedPort, DatabaseName: strings.TrimSpace(databaseName), Username: strings.TrimSpace(username), PasswordKey: strings.TrimSpace(passwordKey), Create: create, Migrate: migrate, Seed: seed}
+		if index >= 0 && index < len(m.doc.Databases) {
+			m.UpdateDatabaseSlot(index, slot)
 		} else {
-			m.fieldCursor = (m.fieldCursor + 1) % len(m.prefixInputs)
+			m.AddDatabaseSlot(slot)
 		}
-		for i := range m.prefixInputs {
-			if i == m.fieldCursor {
-				m.prefixInputs[i].Focus()
-			} else {
-				m.prefixInputs[i].Blur()
-			}
-		}
-		return m, nil
-	}
-
-	cmds := make([]tea.Cmd, len(m.prefixInputs))
-	for i := range m.prefixInputs {
-		m.prefixInputs[i], cmds[i] = m.prefixInputs[i].Update(msg)
-	}
-	return m, tea.Batch(cmds...)
+		m.closeModal()
+	})
+	form.AddButton("Cancel", m.closeModal)
+	m.showFormModal("Edit Database Slot", form)
 }
 
-func (m Model) updateApps(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "up":
-		if len(m.doc.Apps) > 0 {
-			m.cursor = (m.cursor + len(m.doc.Apps) - 1) % len(m.doc.Apps)
-			m.ensureCursorVisible(len(m.doc.Apps))
-		}
-	case "down":
-		if len(m.doc.Apps) > 0 {
-			m.cursor = (m.cursor + 1) % len(m.doc.Apps)
-			m.ensureCursorVisible(len(m.doc.Apps))
-		}
-	case "a", "ctrl+a":
-		m.addRegistryApp()
-	case "d", "ctrl+d":
-		if len(m.doc.Apps) > 0 {
-			m.doc.Apps = append(m.doc.Apps[:m.cursor], m.doc.Apps[m.cursor+1:]...)
-			if m.cursor >= len(m.doc.Apps) && m.cursor > 0 {
-				m.cursor--
-			}
-			m.ensureCursorVisible(len(m.doc.Apps))
-		}
-	case "ctrl+s":
-		return m.saveAll()
-	case "u":
-		m.cursor = 0
-		m.listOffset = 0
-		m.step = stepPrefixes
-	case "g":
-		m.cursor = 0
-		m.listOffset = 0
-		m.step = stepReview
-	case "enter":
-		if len(m.doc.Apps) > 0 {
-			m.appIndex = m.cursor
-			m.appInputs = m.newAppInputs()
-			m.appInputs[0].Focus()
-			m.fieldCursor = 0
-			m.step = stepAppEditor
-		}
-	case "b":
-		m.step = stepPrefixes
+func (m *Model) openServiceEditor() {
+	service := m.activeServiceConfig()
+	if service == nil {
+		return
 	}
-	return m, nil
+	form := tview.NewForm()
+	enabled := service.Enabled
+	replicas := strconv.Itoa(service.Replicas)
+	imageTag := service.ImageTag
+	slotOptions := []string{""}
+	selectedSlot := 0
+	for i, slot := range m.doc.Databases {
+		slotOptions = append(slotOptions, slot.ID)
+		if service.Database != nil && service.Database.SlotID == slot.ID {
+			selectedSlot = i + 1
+		}
+	}
+	databaseName := ""
+	username := ""
+	passwordKey := ""
+	if service.Database != nil {
+		databaseName = service.Database.DatabaseName
+		username = service.Database.Username
+		passwordKey = service.Database.PasswordKey
+	}
+	selectedSlotValue := ""
+	if selectedSlot < len(slotOptions) {
+		selectedSlotValue = slotOptions[selectedSlot]
+	}
+	form.AddTextView("Service", service.ServiceID, 32, 1, false, false)
+	form.AddCheckbox("Enabled", enabled, func(checked bool) { enabled = checked })
+	form.AddInputField("Replicas", replicas, 8, nil, func(text string) { replicas = text })
+	form.AddInputField("Image Tag", imageTag, 24, nil, func(text string) { imageTag = text })
+	form.AddDropDown("Database Slot", slotOptions, selectedSlot, func(option string, _ int) { selectedSlotValue = option })
+	form.AddInputField("Database Name", databaseName, 32, nil, func(text string) { databaseName = text })
+	form.AddInputField("Database User", username, 32, nil, func(text string) { username = text })
+	form.AddInputField("Password Key", passwordKey, 32, nil, func(text string) { passwordKey = text })
+	form.AddButton("Save", func() {
+		parsedReplicas, _ := strconv.Atoi(strings.TrimSpace(replicas))
+		updated := *service
+		updated.Enabled = enabled
+		updated.Replicas = parsedReplicas
+		updated.ImageTag = strings.TrimSpace(imageTag)
+		updated.Database = &configurator.DeploymentServiceDatabase{SlotID: strings.TrimSpace(selectedSlotValue), DatabaseName: strings.TrimSpace(databaseName), Username: strings.TrimSpace(username), PasswordKey: strings.TrimSpace(passwordKey)}
+		m.UpdateService(updated)
+		m.closeModal()
+	})
+	form.AddButton("Cancel", m.closeModal)
+	m.showFormModal("Edit Service", form)
 }
 
-func (m Model) updateAppEditor(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.Type {
-	case tea.KeyEsc:
-		if m.prefixPickerOpen {
-			m.prefixPickerOpen = false
-			return m, nil
-		}
-		m.step = stepApps
-		return m, nil
-	case tea.KeyCtrlS:
-		m.prefixPickerOpen = false
-		m.syncCurrentApp()
-		m.step = stepApps
-		return m, nil
-	case tea.KeyCtrlO:
-		app := m.currentApp()
-		if app.OAuth == nil {
-			app.OAuth = &configurator.DeploymentAppOAuth{Enabled: true}
-		} else {
-			app.OAuth.Enabled = !app.OAuth.Enabled
-		}
-		return m, nil
-	case tea.KeyCtrlR:
-		m.resetCurrentAppToDerivedURLs()
-		return m, nil
-	case tea.KeyRunes:
-		if len(msg.Runes) == 1 {
-			switch msg.Runes[0] {
-			case '[':
-				m.cycleCurrentPrefixField(-1)
-				return m, nil
-			case ']':
-				m.cycleCurrentPrefixField(1)
-				return m, nil
-			}
-		}
-	case tea.KeyEnter:
-		if m.isPrefixSelectionField() {
-			if m.prefixPickerOpen {
-				m.applyPrefixPickerSelection()
-			} else {
-				m.openPrefixPicker()
-			}
-			return m, nil
-		}
-	case tea.KeyUp, tea.KeyDown:
-		if m.prefixPickerOpen {
-			delta := 1
-			if msg.Type == tea.KeyUp {
-				delta = -1
-			}
-			m.movePrefixPicker(delta)
-			return m, nil
-		}
-		fallthrough
-	case tea.KeyTab, tea.KeyShiftTab:
-		m.prefixPickerOpen = false
-		if msg.Type == tea.KeyUp || msg.Type == tea.KeyShiftTab {
-			m.fieldCursor = (m.fieldCursor + len(m.appInputs) - 1) % len(m.appInputs)
-		} else {
-			m.fieldCursor = (m.fieldCursor + 1) % len(m.appInputs)
-		}
-		for i := range m.appInputs {
-			if i == m.fieldCursor {
-				m.appInputs[i].Focus()
-			} else {
-				m.appInputs[i].Blur()
-			}
-		}
-		return m, nil
+func (m *Model) openSecretEditor() {
+	keys := sortedSecretKeys(m.secrets)
+	if len(keys) == 0 {
+		keys = []string{"JWT_SECRET"}
 	}
-
-	if m.prefixPickerOpen && m.isPrefixSelectionField() {
-		return m, nil
+	if m.activeSecret >= len(keys) {
+		m.activeSecret = 0
 	}
-	if m.isPrefixSelectionField() {
-		return m, nil
-	}
-	cmds := make([]tea.Cmd, len(m.appInputs))
-	for i := range m.appInputs {
-		m.appInputs[i], cmds[i] = m.appInputs[i].Update(msg)
-	}
-	return m, tea.Batch(cmds...)
+	key := keys[m.activeSecret]
+	value := m.secrets[key]
+	form := tview.NewForm()
+	form.AddInputField("Key", key, 32, nil, func(text string) { key = text })
+	form.AddInputField("Value", value, 48, nil, func(text string) { value = text })
+	form.AddButton("Save", func() {
+		trimmedKey := strings.TrimSpace(key)
+		if trimmedKey != "" {
+			m.secrets[trimmedKey] = value
+		}
+		m.refreshDiagnostics()
+		m.closeModal()
+		m.updateViews()
+	})
+	form.AddButton("Cancel", m.closeModal)
+	m.showFormModal("Edit Secret", form)
 }
 
-func (m Model) updateJump(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	steps := m.navigableSteps()
-	switch msg.Type {
-	case tea.KeyEsc:
-		m.step = m.returnStep
-		m.listOffset = 0
-		return m, nil
-	case tea.KeyEnter:
-		return m.navigateToStep(steps[m.cursor]), nil
+func (m *Model) showConfirmDeleteSlot() {
+	slot := m.activeDatabaseSlot()
+	if slot == nil {
+		return
 	}
-
-	switch msg.String() {
-	case "up":
-		m.cursor = (m.cursor + len(steps) - 1) % len(steps)
-		m.ensureCursorVisible(len(steps))
-	case "down":
-		m.cursor = (m.cursor + 1) % len(steps)
-		m.ensureCursorVisible(len(steps))
-	}
-	return m, nil
+	modal := tview.NewModal().
+		SetText(fmt.Sprintf("Delete database slot %s?", slot.ID)).
+		AddButtons([]string{"Delete", "Cancel"}).
+		SetDoneFunc(func(_ int, label string) {
+			m.closeModal()
+			if label == "Delete" {
+				m.DeleteActiveDatabaseSlot()
+			}
+		})
+	m.pages.AddPage("modal", center(60, 10, modal), true, true)
 }
 
-func (m Model) updateReview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "g":
-		if !m.loading && m.generate != nil {
-			m.loading = true
-			m.syncBasics(&m)
-			m.syncGateway(&m)
-			return m, func() tea.Msg {
-				result, err := m.generate()
-				return generateDoneMsg{result: result, err: err}
-			}
-		}
-	case "ctrl+s":
-		return m.saveAll()
-	case "b":
-		m.step = stepApps
-	}
-	return m, nil
+func (m *Model) showFormModal(title string, form *tview.Form) {
+	form.SetBorder(true).SetTitle(" " + title + " ")
+	m.pages.AddPage("modal", center(80, 24, form), true, true)
+	m.application.SetFocus(form)
 }
 
-func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	if msg.Action != tea.MouseActionPress {
-		return m, nil
-	}
-	if tea.MouseEvent(msg).IsWheel() {
-		switch m.step {
-		case stepTargets, stepInfra, stepServices, stepSecrets, stepPrefixes, stepApps, stepJump, stepAppEditor:
-			if msg.Button == tea.MouseButtonWheelUp {
-				return m.handleListMove(-1), nil
-			}
-			if msg.Button == tea.MouseButtonWheelDown {
-				return m.handleListMove(1), nil
-			}
-		}
-	}
-	if msg.Button == tea.MouseButtonLeft && msg.X < m.sidebarWidth+4 {
-		if target, ok := m.sidebarStepAt(msg.Y); ok {
-			return m.navigateToStep(target), nil
-		}
-	}
-	if msg.Button != tea.MouseButtonLeft || msg.X < m.sidebarWidth+4 {
-		return m, nil
-	}
-	switch m.step {
-	case stepSecrets:
-		if row, ok := m.contentRowAt(msg.Y, len(m.secretKeys)); ok {
-			m.cursor = row
-			if len(m.secretKeys) > 0 {
-				m.selectedSecret = m.secretKeys[m.cursor]
-				m.secretInput = textinput.New()
-				m.secretInput.Prompt = "Value: "
-				m.secretInput.SetValue(m.secrets[m.selectedSecret])
-				m.secretInput.Focus()
-				m.step = stepSecretEditor
-			}
-		}
-	case stepPrefixes:
-		if row, ok := m.contentRowAt(msg.Y, len(m.doc.URLPrefixes)); ok {
-			m.cursor = row
-			if len(m.doc.URLPrefixes) > 0 {
-				m.prefixIndex = m.cursor
-				m.prefixInputs = m.newPrefixInputs()
-				m.prefixInputs[0].Focus()
-				m.fieldCursor = 0
-				m.step = stepPrefixEditor
-			}
-		}
-	case stepApps:
-		if row, ok := m.contentRowAt(msg.Y, len(m.doc.Apps)); ok {
-			m.cursor = row
-			if len(m.doc.Apps) > 0 {
-				m.appIndex = m.cursor
-				m.appInputs = m.newAppInputs()
-				m.appInputs[0].Focus()
-				m.fieldCursor = 0
-				m.step = stepAppEditor
-			}
-		}
-	case stepJump:
-		if row, ok := m.contentRowAt(msg.Y, len(m.navigableSteps())); ok {
-			m.cursor = row
-			steps := m.navigableSteps()
-			m = m.navigateToStep(steps[m.cursor])
-		}
-	case stepAppEditor:
-		if !m.isPrefixSelectionField() {
-			return m, nil
-		}
-		if row, ok := m.appEditorPrefixRowAt(msg.Y); ok {
-			ids := m.prefixSelectionIDs()
-			if row >= 0 && row < len(ids) {
-				m.prefixPickerOpen = true
-				m.prefixPickerCursor = row
-				m.applyPrefixPickerSelection()
-			}
-		}
-	}
-	return m, nil
+func (m *Model) closeModal() {
+	m.pages.RemovePage("modal")
+	m.application.SetFocus(m.navigation)
+	m.updateViews()
 }
 
-func (m *Model) syncBasics(_ *Model) {
-	m.doc.Environment.Name = m.inputs[0].Value()
-	m.doc.Environment.Namespace = m.inputs[1].Value()
-	m.doc.Environment.ImageOwner = m.inputs[2].Value()
-	m.doc.Environment.DefaultTag = m.inputs[3].Value()
-	m.env.Name = m.doc.Environment.Name
-	m.env.Namespace = m.doc.Environment.Namespace
-	m.env.ImageOwner = m.doc.Environment.ImageOwner
-	m.env.DefaultTag = m.doc.Environment.DefaultTag
-}
-
-func (m *Model) syncGateway(_ *Model) {
-	m.doc.Gateway.PublicURL = m.gatewayInputs[0].Value()
-	m.doc.Gateway.PublicWSURL = m.gatewayInputs[1].Value()
-	m.doc.Gateway.InternalURL = m.gatewayInputs[2].Value()
-	m.doc.Gateway.InternalWSURL = m.gatewayInputs[3].Value()
+func (m *Model) dispatchMenuItem(item menuItem) {
+	if item.Disabled {
+		return
+	}
+	switch item.Action {
+	case "section":
+		m.ActivateSection(item.Section)
+	case "save":
+		_ = m.SaveAll()
+	case "generate":
+		_ = m.Generate()
+	case "edit":
+		m.openEditorForSection()
+	case "add-slot":
+		m.openDatabaseEditor(-1)
+	case "delete-slot":
+		m.showConfirmDeleteSlot()
+	case "refresh":
+		m.refreshDiagnostics()
+	case "quit":
+		if m.application != nil {
+			m.application.Stop()
+		}
+	}
+	m.menuOpen = false
 }
 
 func (m *Model) syncEnv() {
-	m.doc.Environment.Targets = nil
-	m.env.Targets = nil
-	for _, opt := range m.targets {
-		if opt.selected {
-			m.doc.Environment.Targets = append(m.doc.Environment.Targets, opt.label)
-			m.env.Targets = append(m.env.Targets, domain.Target(opt.label))
+	configurator.EnsureDeploymentDatabaseState(m.doc, m.catalog)
+	m.env = m.doc.ToEnvironmentDefinition()
+	m.env.Normalize()
+}
+
+func (m *Model) refreshDiagnostics() {
+	m.syncEnv()
+	m.diagnostics = configurator.ValidateDeploymentArtifacts(m.doc, m.secrets, m.catalog)
+}
+
+func (m *Model) updateViews() {
+	if m.menuBar == nil {
+		return
+	}
+	m.menuBar.SetText(m.renderMenuBar())
+	for i, section := range m.sections {
+		if section == m.activeSection {
+			m.navigation.SetCurrentItem(i)
+			break
 		}
 	}
+	m.content.SetText(m.renderContent())
+	m.helpView.SetText(m.CurrentHelp())
+	m.footer.SetText(m.renderFooter())
+}
 
-	m.doc.Environment.Infra = nil
-	m.env.IncludeInfra = nil
-	for _, opt := range m.infra {
-		if opt.selected {
-			m.doc.Environment.Infra = append(m.doc.Environment.Infra, opt.label)
-			m.env.IncludeInfra = append(m.env.IncludeInfra, domain.InfraKind(opt.label))
-		}
-	}
-
-	m.doc.Environment.Services = nil
-	m.env.Services = nil
-	selectedClients := map[string]struct{}{}
-	for _, opt := range m.services {
-		if opt.selected {
-			m.doc.Environment.Services = append(m.doc.Environment.Services, opt.label)
-			m.env.Services = append(m.env.Services, domain.ServiceSelection{ServiceID: opt.label, Enabled: true})
-			if preset, ok := catalog.DefaultCatalog().Get(opt.label); ok && preset.Category == catalog.CategoryClient {
-				selectedClients[opt.label] = struct{}{}
+func (m *Model) renderMenuBar() string {
+	parts := make([]string, 0, len(m.menus))
+	for i, menu := range m.menus {
+		label := menu.Label
+		if i == m.activeMenu {
+			if m.menuOpen {
+				label = fmt.Sprintf("[black:green] %s [-:-:-]", label)
+			} else {
+				label = fmt.Sprintf("[green::b] %s [-:-:-]", label)
 			}
 		}
+		parts = append(parts, label)
 	}
-
-	filteredApps := make([]configurator.DeploymentApp, 0, len(m.doc.Apps))
-	for _, app := range m.doc.Apps {
-		if _, keep := selectedClients[app.AppID]; keep {
-			filteredApps = append(filteredApps, app)
-		}
-	}
-	m.doc.Apps = filteredApps
-	for clientID := range selectedClients {
-		if !m.hasApp(clientID) {
-			m.doc.Apps = append(m.doc.Apps, defaultApp(clientID))
-		}
-	}
-}
-
-func (m *Model) syncStepState(step step) {
-	switch step {
-	case stepBasics:
-		m.syncBasics(m)
-	case stepTargets, stepInfra, stepServices:
-		m.syncEnv()
-	case stepGateway:
-		m.syncGateway(m)
-	case stepPrefixEditor:
-		m.syncCurrentPrefix()
-	case stepAppEditor:
-		m.syncCurrentApp()
-	case stepSecretEditor:
-		m.secrets[m.selectedSecret] = m.secretInput.Value()
-		m.secretKeys = m.buildSecretKeys()
-	}
-}
-
-func (m *Model) syncPendingState() {
-	stepToSync := m.step
-	if m.step == stepJump {
-		stepToSync = m.returnStep
-	}
-	m.syncStepState(stepToSync)
-}
-
-func (m Model) reviewSummary() string {
-	rows := [][]string{
-		{"Name", m.doc.Environment.Name},
-		{"Namespace", m.doc.Environment.Namespace},
-		{"Image Owner", m.doc.Environment.ImageOwner},
-		{"Default Tag", m.doc.Environment.DefaultTag},
-		{"Targets", strings.Join(m.doc.Environment.Targets, ", ")},
-		{"Compose Mode", m.doc.Environment.ComposeMode},
-		{"Infra", strings.Join(m.doc.Environment.Infra, ", ")},
-		{"Services", fmt.Sprintf("%d selected", len(m.doc.Environment.Services))},
-		{"Gateway", m.doc.Gateway.PublicURL},
-		{"Secrets", fmt.Sprintf("%d mapped", len(m.secretKeys))},
-		{"URL Prefixes", fmt.Sprintf("%d", len(m.doc.URLPrefixes))},
-		{"Registry Apps", fmt.Sprintf("%d", len(m.doc.Apps))},
-		{"Document", fallbackString(m.deploymentPath, "(unsaved document)")},
-	}
-	return renderTable([]string{"Field", "Value"}, rows)
-}
-
-func (m Model) renderSecretsTable() string {
-	start, end := m.visibleRange(len(m.secretKeys))
-	rows := make([][]string, 0, max(1, end-start))
-	for index := start; index < end; index++ {
-		key := m.secretKeys[index]
-		value := m.secrets[key]
-		status := "set"
-		masked := maskSecretValue(value)
-		if strings.TrimSpace(value) == "" {
-			status = "blank"
-			masked = "(blank)"
-		}
-		prefix := " "
-		if index == m.cursor {
-			prefix = ">"
-		}
-		rows = append(rows, []string{prefix, key, status, masked})
-	}
-	if len(rows) == 0 {
-		rows = append(rows, []string{" ", "(none)", "", ""})
-	}
-	return renderTable([]string{"", "Secret Key", "Status", "Value"}, rows) + "\n" + m.renderTableWindowStatus(len(m.secretKeys))
-}
-
-func (m Model) renderPrefixesTable() string {
-	start, end := m.visibleRange(len(m.doc.URLPrefixes))
-	rows := make([][]string, 0, max(1, end-start))
-	for index := start; index < end; index++ {
-		prefixValue := m.doc.URLPrefixes[index]
-		prefix := " "
-		if index == m.cursor {
-			prefix = ">"
-		}
-		rows = append(rows, []string{prefix, prefixValue.ID, fallbackString(prefixValue.Label, prefixValue.ID), prefixValue.Prefix})
-	}
-	if len(rows) == 0 {
-		rows = append(rows, []string{" ", "(none)", "", ""})
-	}
-	return renderTable([]string{"", "ID", "Label", "Prefix"}, rows) + "\n" + m.renderTableWindowStatus(len(m.doc.URLPrefixes))
-}
-
-func (m Model) renderAppsTable() string {
-	start, end := m.visibleRange(len(m.doc.Apps))
-	rows := make([][]string, 0, max(1, end-start))
-	for index := start; index < end; index++ {
-		app := m.doc.Apps[index]
-		prefix := " "
-		if index == m.cursor {
-			prefix = ">"
-		}
-		oauthEnabled := "no"
-		if app.OAuth != nil && app.OAuth.Enabled {
-			oauthEnabled = "yes"
-		}
-		rows = append(rows, []string{
-			prefix,
-			app.AppID,
-			app.Domain,
-			resolvedAppURL(m.doc, app, true),
-			app.AppType,
-			oauthEnabled,
-		})
-	}
-	if len(rows) == 0 {
-		rows = append(rows, []string{" ", "(none)", "", "", "", ""})
-	}
-	return renderTable([]string{"", "App ID", "Domain", "UI Base URL", "Type", "OAuth"}, rows) + "\n" + m.renderTableWindowStatus(len(m.doc.Apps))
-}
-
-func (m Model) renderPrefixSelectionTable() string {
-	rows := make([][]string, 0, len(m.doc.URLPrefixes)+1)
-	selectedID := ""
-	if m.isPrefixSelectionField() {
-		selectedID = m.appInputs[m.fieldCursor].Value()
-	}
-	rows = append(rows, []string{m.prefixPickerMarker(0, selectedID == ""), "(none)", "Use explicit full URL"})
-	for index, prefix := range m.doc.URLPrefixes {
-		rows = append(rows, []string{
-			m.prefixPickerMarker(index+1, selectedID == prefix.ID),
-			prefix.ID,
-			prefix.Prefix,
-		})
-	}
-	return renderTable([]string{"", "Prefix ID", "Prefix"}, rows)
-}
-
-func (m Model) renderResolvedAppPreview() string {
-	app := *m.currentApp()
-	app.Domain = m.appInputs[2].Value()
-	app.Subdomain = m.appInputs[3].Value()
-	app.UIBaseURL = m.appInputs[4].Value()
-	app.UIBaseURLPrefixID = m.appInputs[5].Value()
-	app.APIBaseURL = m.appInputs[6].Value()
-
-	rows := [][]string{
-		{"Host", appHost(app.Domain, app.Subdomain)},
-		{"Resolved UI", resolvedAppURL(m.doc, app, true)},
-		{"Resolved API", resolvedAppURL(m.doc, app, false)},
-	}
-	return renderTable([]string{"Field", "Value"}, rows)
-}
-
-func (m Model) renderJumpTable() string {
-	steps := m.navigableSteps()
-	start, end := m.visibleRange(len(steps))
-	rows := make([][]string, 0, max(1, end-start))
-	for index := start; index < end; index++ {
-		item := steps[index]
-		prefix := " "
-		if index == m.cursor {
-			prefix = ">"
-		}
-		rows = append(rows, []string{prefix, fmt.Sprintf("%d", index+1), stepLabel(item)})
-	}
-	return renderTable([]string{"", "#", "Section"}, rows) + "\n" + m.renderTableWindowStatus(len(steps))
-}
-
-func renderTable(headers []string, rows [][]string) string {
-	widths := make([]int, len(headers))
-	for i, header := range headers {
-		widths[i] = len(header)
-	}
-	for _, row := range rows {
-		for i := range headers {
-			if i < len(row) && len(row[i]) > widths[i] {
-				widths[i] = len(row[i])
+	if m.menuOpen && len(m.menus[m.activeMenu].Items) > 0 {
+		items := make([]string, 0, len(m.menus[m.activeMenu].Items))
+		for i, item := range m.menus[m.activeMenu].Items {
+			label := item.Label
+			if i == m.activeMenuItem {
+				label = fmt.Sprintf("[black:yellow] %s [-:-:-]", label)
 			}
+			items = append(items, label)
 		}
+		return strings.Join(parts, "   ") + "\n" + strings.Join(items, "  ")
 	}
-	var builder strings.Builder
-	writeRow := func(row []string) {
-		for i := range headers {
-			value := ""
-			if i < len(row) {
-				value = row[i]
-			}
-			builder.WriteString(padRight(value, widths[i]))
-			if i < len(headers)-1 {
-				builder.WriteString("  ")
-			}
-		}
-		builder.WriteString("\n")
-	}
-	writeRow(headers)
-	separators := make([]string, len(headers))
-	for i, width := range widths {
-		separators[i] = strings.Repeat("-", width)
-	}
-	writeRow(separators)
-	for _, row := range rows {
-		writeRow(row)
-	}
-	return strings.TrimRight(builder.String(), "\n")
+	return strings.Join(parts, "   ")
 }
 
-func renderOptions(opts []option, cursor int) string {
-	lines := make([]string, 0, len(opts))
-	for i, opt := range opts {
-		prefix := "  "
-		if i == cursor {
-			prefix = "> "
-		}
-		check := "[ ]"
-		if opt.selected {
-			check = "[x]"
-		}
-		lines = append(lines, prefix+check+" "+opt.label)
+func (m *Model) renderContent() string {
+	switch m.activeSection {
+	case SectionDeployment:
+		return m.renderDeploymentDocument()
+	case SectionProfile:
+		return m.renderProfileDocument()
+	case SectionDatabases:
+		return m.renderDatabasesDocument()
+	case SectionServices:
+		return m.renderServicesDocument()
+	case SectionImages:
+		return m.renderImagesDocument()
+	case SectionCompose:
+		return m.renderComposeDocument()
+	case SectionKubernetes:
+		return m.renderKubernetesDocument()
+	case SectionSecrets:
+		return m.renderSecretsDocument()
+	case SectionApply:
+		return m.renderApplyDocument()
+	case SectionDiagnostics:
+		return m.renderDiagnosticsDocument()
+	default:
+		return ""
+	}
+}
+
+func (m *Model) renderDeploymentDocument() string {
+	workspacePath := fmt.Sprintf("dist/admin-env/%s", m.doc.Environment.Name)
+	lines := []string{
+		"[::b]Deployment[::-]",
+		fmt.Sprintf("Name: %s", fallbackString(m.doc.Environment.Name, "(unnamed)")),
+		fmt.Sprintf("Namespace: %s", fallbackString(m.doc.Environment.Namespace, "optimistic-tanuki")),
+		fmt.Sprintf("Provider: %s", fallbackString(m.doc.Environment.Provider, "vultr")),
+		fmt.Sprintf("Targets: %s", strings.Join(m.doc.Environment.Targets, ", ")),
+		fmt.Sprintf("Compose mode: %s", fallbackString(m.doc.Environment.ComposeMode, "image")),
+		fmt.Sprintf("Workspace: %s", workspacePath),
+		fmt.Sprintf("Deployment file: %s", fallbackString(m.deploymentPath, workspacePath+"/deployment.yaml")),
 	}
 	return strings.Join(lines, "\n")
 }
 
-func optionsFromInfra(all []domain.InfraKind, enabled []domain.InfraKind) []option {
-	selected := map[domain.InfraKind]bool{}
-	for _, item := range enabled {
-		selected[item] = true
+func (m *Model) renderProfileDocument() string {
+	enabledServices := 0
+	for _, service := range m.doc.Services {
+		if service.Enabled {
+			enabledServices++
+		}
 	}
-	out := make([]option, 0, len(all))
-	for _, item := range all {
-		out = append(out, option{label: string(item), selected: selected[item]})
+	profileLabel := "balanced"
+	if enabledServices <= 3 {
+		profileLabel = "minimal"
+	} else if enabledServices >= 12 {
+		profileLabel = "full"
+	} else {
+		profileLabel = "small-server"
+	}
+	lines := []string{
+		"[::b]Profile[::-]",
+		fmt.Sprintf("Effective profile: %s", profileLabel),
+		fmt.Sprintf("Enabled services: %d", enabledServices),
+		fmt.Sprintf("Database slots: %d", len(m.doc.Databases)),
+		fmt.Sprintf("Cold-start posture: %s", coldStartSummary(profileLabel)),
+		fmt.Sprintf("Compose consequence: %s", composeSummary(m.doc.Environment.ComposeMode)),
+		"This profile is descriptive today and reflects service density plus provider tuning.",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderDatabasesDocument() string {
+	report := configurator.BuildDatabaseReadiness(m.doc, m.catalog, m.secrets)
+	lines := []string{"[::b]Databases[::-]"}
+	if len(report.Slots) == 0 {
+		lines = append(lines, "No database slots configured.")
+		return strings.Join(lines, "\n")
+	}
+	for index, slot := range report.Slots {
+		marker := "  "
+		if index == m.activeSlot {
+			marker = "> "
+		}
+		lines = append(lines,
+			fmt.Sprintf("%s%s (%s) host=%s port=%d ready=%t", marker, slot.Slot.ID, slot.Slot.Infra, slot.Slot.Host, slot.Slot.Port, slot.Ready),
+			fmt.Sprintf("   attached: %s", joinOrDefault(slot.AttachedServices, "none")),
+			fmt.Sprintf("   db-setup: create=%t migrate=%t seed=%t", slot.Slot.Create, slot.Slot.Migrate, slot.Slot.Seed),
+		)
+		for _, warning := range slot.Warnings {
+			lines = append(lines, "   warning: "+warning)
+		}
+	}
+	if len(report.DBSetupSummaries) > 0 {
+		lines = append(lines, "", "Future db-setup intent:")
+		for _, summary := range report.DBSetupSummaries {
+			lines = append(lines, "- "+summary)
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderServicesDocument() string {
+	report := configurator.BuildDatabaseReadiness(m.doc, m.catalog, m.secrets)
+	bindingByService := map[string][]configurator.ResolvedServiceDatabaseBinding{}
+	for _, binding := range report.ServiceBindings {
+		bindingByService[binding.ServiceID] = append(bindingByService[binding.ServiceID], binding)
+	}
+	lines := []string{"[::b]Services[::-]"}
+	for index, service := range m.doc.Services {
+		marker := "  "
+		if index == m.activeService {
+			marker = "> "
+		}
+		preset, _ := m.catalog.Get(service.ServiceID)
+		effectiveTag := fallbackString(service.ImageTag, m.doc.Environment.DefaultTag)
+		lines = append(lines, fmt.Sprintf("%s%s enabled=%t replicas=%d imageTag=%s", marker, service.ServiceID, service.Enabled, service.Replicas, effectiveTag))
+		if len(preset.Dependencies) > 0 {
+			requires := make([]string, 0, len(preset.Dependencies))
+			for _, dep := range preset.Dependencies {
+				requires = append(requires, dep.ServiceID)
+			}
+			lines = append(lines, "   required infra/services: "+strings.Join(requires, ", "))
+		}
+		for _, binding := range bindingByService[service.ServiceID] {
+			mode := "override"
+			if binding.Inherited {
+				mode = "inherit"
+			}
+			lines = append(lines, fmt.Sprintf("   database %s via %s slot=%s db=%s user=%s", mode, binding.Infra, binding.SlotID, binding.DatabaseName, binding.Username))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderImagesDocument() string {
+	lines := []string{"[::b]Images[::-]", fmt.Sprintf("Default tag: %s", fallbackString(m.doc.Environment.DefaultTag, "latest"))}
+	for _, service := range m.doc.Services {
+		lines = append(lines, fmt.Sprintf("- %s => %s", service.ServiceID, fallbackString(service.ImageTag, "inherits default tag")))
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderComposeDocument() string {
+	enabled := contains(m.doc.Environment.Targets, "compose")
+	lines := []string{
+		"[::b]Compose[::-]",
+		fmt.Sprintf("Enabled: %t", enabled),
+		fmt.Sprintf("Mode: %s", fallbackString(m.doc.Environment.ComposeMode, "image")),
+		fmt.Sprintf("Workspace file: dist/admin-env/%s/compose/docker-compose.yaml", m.doc.Environment.Name),
+		fmt.Sprintf("Disabled services: %d", countDisabledServices(m.doc.Services)),
+		"Generation uses resolved database-slot bindings for service env output.",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderKubernetesDocument() string {
+	enabled := contains(m.doc.Environment.Targets, "k8s")
+	lines := []string{
+		"[::b]Kubernetes[::-]",
+		fmt.Sprintf("Enabled: %t", enabled),
+		fmt.Sprintf("Namespace: %s", fallbackString(m.doc.Environment.Namespace, "optimistic-tanuki")),
+		fmt.Sprintf("Workspace path: dist/admin-env/%s/k8s", m.doc.Environment.Name),
+		"Generated manifests consume the same slot-resolution model as Compose.",
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderSecretsDocument() string {
+	keys := sortedSecretKeys(m.secrets)
+	lines := []string{"[::b]Secrets[::-]", fmt.Sprintf("Configured keys: %d", len(keys))}
+	for i, key := range keys {
+		marker := "  "
+		if i == m.activeSecret {
+			marker = "> "
+		}
+		lines = append(lines, fmt.Sprintf("%s%s", marker, key))
+	}
+	if len(keys) == 0 {
+		lines = append(lines, "No secrets stored yet. Press e to create one.")
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderApplyDocument() string {
+	lines := []string{
+		"[::b]Apply[::-]",
+		"- Save persists deployment.yaml and secrets when paths are configured.",
+		"- Generate materializes compose, k8s, runtime env, registry, validation, and db-setup files.",
+		"- Refresh reruns diagnostics against the current in-memory document.",
+	}
+	if m.result.OutputDir != "" {
+		lines = append(lines, "", fmt.Sprintf("Last generation: %s", m.result.OutputDir))
+		if m.result.DatabaseSetupPath != "" {
+			lines = append(lines, fmt.Sprintf("db-setup plan: %s/%s", m.result.OutputDir, m.result.DatabaseSetupPath))
+		}
+	}
+	if m.saveMessage != "" {
+		lines = append(lines, "", m.saveMessage)
+	}
+	if m.err != nil {
+		lines = append(lines, "", "Last error: "+m.err.Error())
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderDiagnosticsDocument() string {
+	lines := []string{"[::b]Diagnostics[::-]"}
+	if len(m.diagnostics) == 0 {
+		lines = append(lines, "No validation issues found.")
+		return strings.Join(lines, "\n")
+	}
+	groups := groupedDiagnostics(m.diagnostics)
+	keys := make([]string, 0, len(groups))
+	for key := range groups {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		lines = append(lines, "", key)
+		for _, issue := range groups[key] {
+			lines = append(lines, fmt.Sprintf("- [%s] %s", issue.Severity, issue.Message))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+func (m *Model) renderFooter() string {
+	return "[green]Keys[::-] Left/Right menus  Enter opens/selects  e edit  a add slot  d delete slot  j/k move row  space toggle service  s save  g generate  r refresh  q quit"
+}
+
+func (m *Model) sectionLabels() []string {
+	labels := make([]string, 0, len(m.sections))
+	for _, section := range m.sections {
+		labels = append(labels, string(section))
+	}
+	return labels
+}
+
+func (m *Model) defaultMenus() []menu {
+	navigationItems := make([]menuItem, 0, len(m.sections))
+	for _, section := range m.sections {
+		navigationItems = append(navigationItems, menuItem{Label: string(section), Action: "section", Section: section})
+	}
+	return []menu{
+		{Label: "File", Items: []menuItem{{Label: "Save", Action: "save"}, {Label: "Generate", Action: "generate"}, {Label: "Quit", Action: "quit"}}},
+		{Label: "Navigate", Items: navigationItems},
+		{Label: "Edit", Items: []menuItem{{Label: "Edit current document", Action: "edit"}, {Label: "Add database slot", Action: "add-slot"}, {Label: "Delete active slot", Action: "delete-slot"}}},
+		{Label: "Diagnostics", Items: []menuItem{{Label: "Refresh diagnostics", Action: "refresh"}, {Label: string(SectionDiagnostics), Action: "section", Section: SectionDiagnostics}}},
+	}
+}
+
+func (m *Model) advanceActiveRow(delta int) {
+	switch m.activeSection {
+	case SectionDatabases:
+		if len(m.doc.Databases) > 0 {
+			m.activeSlot = (m.activeSlot + delta + len(m.doc.Databases)) % len(m.doc.Databases)
+		}
+	case SectionServices, SectionImages:
+		if len(m.doc.Services) > 0 {
+			m.activeService = (m.activeService + delta + len(m.doc.Services)) % len(m.doc.Services)
+		}
+	case SectionSecrets:
+		keys := sortedSecretKeys(m.secrets)
+		if len(keys) > 0 {
+			m.activeSecret = (m.activeSecret + delta + len(keys)) % len(keys)
+		}
+	}
+	m.updateViews()
+}
+
+func defaultHelpRegistry() map[Section]string {
+	return map[Section]string{
+		SectionDeployment:  "Deployment controls workspace identity, namespace, provider, and target surfaces. Edit here before regenerating the workspace so every derived file lands under the expected dist/admin-env deployment path.",
+		SectionProfile:     "Profile summarizes startup weight and workspace intent. Use it to understand whether the current deployment behaves more like a minimal, small-server, or full footprint before you widen service scope.",
+		SectionDatabases:   "Databases define deployment-level slots. Prefer services to inherit one shared managed slot per infra kind and only switch a service to another slot when it truly diverges. Lifecycle flags describe future db-setup intent for create, migrate, and seed work.",
+		SectionServices:    "Services show the effective deployment view. Inherit a database slot when the service can share deployment intent; override only when the service needs a different slot, database name, or password key. The document also surfaces image and replica consequences.",
+		SectionImages:      "Images show workspace-wide image intent. Leave service tags empty to inherit the deployment default tag and set an override only when one service must move independently.",
+		SectionCompose:     "Compose explains the generated docker-compose output, startup mode, and how many services stay enabled. Database-slot resolution is already folded into the generated runtime env and compose service environment.",
+		SectionKubernetes:  "Kubernetes summarizes namespace and generated workspace output. The same resolved slot model is used for manifest env wiring so Compose and k8s stay aligned.",
+		SectionSecrets:     "Secrets list the current key/value backend used by validation and generation. Keep password keys aligned with database slots and service overrides so regeneration can materialize the correct runtime env.",
+		SectionApply:       "Apply describes the operator actions. Save persists the document, Generate rewrites the workspace artifacts, and Refresh reruns validation without mutating files.",
+		SectionDiagnostics: "Diagnostics groups warnings by category so you can decide whether to regenerate, refresh, or fix deployment intent first. Database warnings usually mean a missing slot, secret key, or mismatched override.",
+	}
+}
+
+func groupedDiagnostics(issues []configurator.ValidationIssue) map[string][]configurator.ValidationIssue {
+	groups := map[string][]configurator.ValidationIssue{}
+	for _, issue := range issues {
+		group := "general"
+		switch {
+		case strings.Contains(issue.Message, "database") || strings.Contains(issue.Message, "POSTGRES") || strings.Contains(issue.Message, "REDIS"):
+			group = "database"
+		case strings.Contains(issue.Message, "gateway"):
+			group = "gateway"
+		case strings.Contains(issue.Message, "oauth"):
+			group = "oauth"
+		case strings.Contains(issue.Message, "app "):
+			group = "apps"
+		}
+		groups[group] = append(groups[group], issue)
+	}
+	return groups
+}
+
+func center(width, height int, primitive tview.Primitive) tview.Primitive {
+	return tview.NewFlex().
+		AddItem(nil, 0, 1, false).
+		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
+			AddItem(nil, 0, 1, false).
+			AddItem(primitive, height, 1, true).
+			AddItem(nil, 0, 1, false), width, 1, true).
+		AddItem(nil, 0, 1, false)
+}
+
+func splitCSV(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed != "" {
+			out = append(out, trimmed)
+		}
 	}
 	return out
 }
 
-func optionsFromServices(all []string, enabled []domain.ServiceSelection) []option {
-	selected := map[string]bool{}
-	for _, item := range enabled {
-		selected[item.ServiceID] = item.Enabled
+func cloneMap(values map[string]string) map[string]string {
+	result := make(map[string]string, len(values))
+	for key, value := range values {
+		result[key] = value
 	}
-	out := make([]option, 0, len(all))
-	for _, item := range all {
-		out = append(out, option{label: item, selected: selected[item]})
-	}
-	return out
+	return result
 }
 
-func (m *Model) syncOptionsFromDoc() {
-	targetSelected := map[string]bool{}
-	for _, target := range m.doc.Environment.Targets {
-		targetSelected[target] = true
+func sortedSecretKeys(values map[string]string) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
 	}
-	for i := range m.targets {
-		m.targets[i].selected = targetSelected[m.targets[i].label]
-	}
-
-	infraSelected := map[string]bool{}
-	for _, infra := range m.doc.Environment.Infra {
-		infraSelected[infra] = true
-	}
-	for i := range m.infra {
-		m.infra[i].selected = infraSelected[m.infra[i].label]
-	}
-
-	serviceSelected := map[string]bool{}
-	for _, service := range m.doc.Environment.Services {
-		serviceSelected[service] = true
-	}
-	for i := range m.services {
-		m.services[i].selected = serviceSelected[m.services[i].label]
-	}
+	sort.Strings(keys)
+	return keys
 }
 
-func (m Model) newBasicsInputs() []textinput.Model {
-	values := []string{
-		m.doc.Environment.Name,
-		m.doc.Environment.Namespace,
-		m.doc.Environment.ImageOwner,
-		m.doc.Environment.DefaultTag,
+func joinOrDefault(values []string, fallback string) string {
+	if len(values) == 0 {
+		return fallback
 	}
-	prompts := []string{"Name: ", "Namespace: ", "Image Owner: ", "Default Tag: "}
-	inputs := make([]textinput.Model, len(prompts))
-	for i := range inputs {
-		inputs[i] = textinput.New()
-		inputs[i].Prompt = prompts[i]
-		inputs[i].SetValue(values[i])
-	}
-	return inputs
-}
-
-func (m Model) newGatewayInputs() []textinput.Model {
-	values := []string{
-		m.doc.Gateway.PublicURL,
-		m.doc.Gateway.PublicWSURL,
-		m.doc.Gateway.InternalURL,
-		m.doc.Gateway.InternalWSURL,
-	}
-	prompts := []string{"Public URL: ", "Public WS URL: ", "Internal URL: ", "Internal WS URL: "}
-	inputs := make([]textinput.Model, len(prompts))
-	for i := range inputs {
-		inputs[i] = textinput.New()
-		inputs[i].Prompt = prompts[i]
-		inputs[i].SetValue(values[i])
-	}
-	return inputs
-}
-
-func (m Model) newPrefixInputs() []textinput.Model {
-	prefix := m.currentPrefix()
-	values := []string{
-		prefix.ID,
-		prefix.Label,
-		prefix.Prefix,
-	}
-	prompts := []string{"Prefix ID: ", "Label: ", "Prefix: "}
-	inputs := make([]textinput.Model, len(prompts))
-	for i := range inputs {
-		inputs[i] = textinput.New()
-		inputs[i].Prompt = prompts[i]
-		inputs[i].SetValue(values[i])
-	}
-	return inputs
-}
-
-func (m Model) newAppInputs() []textinput.Model {
-	app := m.currentAppValue()
-	values := []string{
-		app.AppID,
-		app.Name,
-		app.Domain,
-		app.Subdomain,
-		app.UIBaseURL,
-		app.UIBaseURLPrefixID,
-		app.APIBaseURL,
-		app.AppType,
-		app.Visibility,
-	}
-	prompts := []string{
-		"App ID: ",
-		"Name: ",
-		"Domain: ",
-		"Subdomain: ",
-		"UI Full URL: ",
-		"UI Base Domain: ",
-		"API Full URL: ",
-		"App Type: ",
-		"Visibility: ",
-	}
-	inputs := make([]textinput.Model, len(prompts))
-	for i := range inputs {
-		inputs[i] = textinput.New()
-		inputs[i].Prompt = prompts[i]
-		inputs[i].SetValue(values[i])
-	}
-	return inputs
-}
-
-func (m *Model) currentPrefix() *configurator.DeploymentURLPrefix {
-	if len(m.doc.URLPrefixes) == 0 {
-		m.doc.URLPrefixes = append(m.doc.URLPrefixes, configurator.DeploymentURLPrefix{
-			ID:     "https-root",
-			Label:  "HTTPS Root",
-			Prefix: "https://",
-		})
-	}
-	if m.prefixIndex >= len(m.doc.URLPrefixes) {
-		m.prefixIndex = len(m.doc.URLPrefixes) - 1
-	}
-	if m.prefixIndex < 0 {
-		m.prefixIndex = 0
-	}
-	return &m.doc.URLPrefixes[m.prefixIndex]
-}
-
-func (m *Model) currentApp() *configurator.DeploymentApp {
-	if len(m.doc.Apps) == 0 {
-		m.doc.Apps = append(m.doc.Apps, m.currentAppValue())
-	}
-	if m.appIndex >= len(m.doc.Apps) {
-		m.appIndex = len(m.doc.Apps) - 1
-	}
-	if m.appIndex < 0 {
-		m.appIndex = 0
-	}
-	return &m.doc.Apps[m.appIndex]
-}
-
-func (m Model) currentAppValue() configurator.DeploymentApp {
-	if len(m.doc.Apps) > 0 {
-		index := m.appIndex
-		if index >= len(m.doc.Apps) {
-			index = len(m.doc.Apps) - 1
-		}
-		if index < 0 {
-			index = 0
-		}
-		return m.doc.Apps[index]
-	}
-	selectedClients := m.selectedClientServices()
-	if len(selectedClients) > 0 {
-		return defaultApp(selectedClients[0])
-	}
-	return defaultApp("client-interface")
-}
-
-func (m *Model) syncCurrentPrefix() {
-	prefix := m.currentPrefix()
-	prefix.ID = m.prefixInputs[0].Value()
-	prefix.Label = m.prefixInputs[1].Value()
-	prefix.Prefix = m.prefixInputs[2].Value()
-}
-
-func (m *Model) syncCurrentApp() {
-	app := m.currentApp()
-	app.AppID = m.appInputs[0].Value()
-	app.Name = m.appInputs[1].Value()
-	app.Domain = m.appInputs[2].Value()
-	app.Subdomain = m.appInputs[3].Value()
-	app.UIBaseURL = m.appInputs[4].Value()
-	app.UIBaseURLPrefixID = m.appInputs[5].Value()
-	app.APIBaseURL = m.appInputs[6].Value()
-	app.AppType = m.appInputs[7].Value()
-	app.Visibility = m.appInputs[8].Value()
-}
-
-func (m *Model) resetCurrentAppToDerivedURLs() {
-	if len(m.doc.URLPrefixes) > 0 {
-		currentPrefix := strings.TrimSpace(m.appInputs[5].Value())
-		if currentPrefix == "" {
-			m.appInputs[5].SetValue(strings.TrimSpace(m.doc.URLPrefixes[0].ID))
-		}
-	}
-	m.appInputs[4].SetValue("")
-	m.appInputs[6].SetValue("")
-	m.prefixPickerOpen = false
-	m.fieldCursor = 3
-	for i := range m.appInputs {
-		if i == m.fieldCursor {
-			m.appInputs[i].Focus()
-		} else {
-			m.appInputs[i].Blur()
-		}
-	}
-}
-
-func (m *Model) addRegistryApp() {
-	selectedClients := m.selectedClientServices()
-	for _, clientID := range selectedClients {
-		if !m.hasApp(clientID) {
-			m.doc.Apps = append(m.doc.Apps, defaultApp(clientID))
-			m.cursor = len(m.doc.Apps) - 1
-			return
-		}
-	}
-	m.doc.Apps = append(m.doc.Apps, defaultApp(fmt.Sprintf("client-%d", len(m.doc.Apps)+1)))
-	m.cursor = len(m.doc.Apps) - 1
-}
-
-func (m Model) selectedClientServices() []string {
-	cat := catalog.DefaultCatalog()
-	clients := make([]string, 0)
-	for _, serviceID := range m.doc.Environment.Services {
-		preset, ok := cat.Get(serviceID)
-		if ok && preset.Category == catalog.CategoryClient {
-			clients = append(clients, serviceID)
-		}
-	}
-	return clients
-}
-
-func (m Model) hasApp(appID string) bool {
-	for _, app := range m.doc.Apps {
-		if app.AppID == appID {
-			return true
-		}
-	}
-	return false
-}
-
-func defaultApp(appID string) configurator.DeploymentApp {
-	name := appID
-	domainName := appID + ".example.com"
-	return configurator.DeploymentApp{
-		AppID:      appID,
-		Name:       name,
-		Domain:     domainName,
-		UIBaseURL:  "https://" + domainName,
-		APIBaseURL: "https://gateway.example.com/api",
-		AppType:    "client",
-		Visibility: "public",
-	}
+	return strings.Join(values, ", ")
 }
 
 func fallbackString(value, fallback string) string {
@@ -1409,381 +1112,48 @@ func fallbackString(value, fallback string) string {
 	return value
 }
 
-func padRight(value string, width int) string {
-	if len(value) >= width {
-		return value
-	}
-	return value + strings.Repeat(" ", width-len(value))
-}
-
-func maskSecretValue(value string) string {
-	if strings.TrimSpace(value) == "" {
-		return ""
-	}
-	if len(value) <= 4 {
-		return strings.Repeat("*", len(value))
-	}
-	return strings.Repeat("*", len(value)-4) + value[len(value)-4:]
-}
-
-func (m Model) buildSecretKeys() []string {
-	keys := []string{"PRODUCTION_IMAGE_TAG", "JWT_SECRET", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", "REDIS_PASSWORD"}
-	for _, provider := range []string{"google", "github", "microsoft", "facebook"} {
-		if config, ok := m.doc.OAuth.Providers[provider]; ok {
-			if strings.TrimSpace(config.ClientIDKey) != "" {
-				keys = append(keys, config.ClientIDKey)
-			}
-			if strings.TrimSpace(config.ClientSecretKey) != "" {
-				keys = append(keys, config.ClientSecretKey)
-			}
+func countDisabledServices(services []configurator.DeploymentService) int {
+	count := 0
+	for _, service := range services {
+		if !service.Enabled {
+			count++
 		}
 	}
-	unique := map[string]struct{}{}
-	out := make([]string, 0, len(keys))
-	for _, key := range keys {
-		if _, seen := unique[key]; seen || strings.TrimSpace(key) == "" {
-			continue
-		}
-		unique[key] = struct{}{}
-		out = append(out, key)
-	}
-	sort.Strings(out)
-	return out
+	return count
 }
 
-func (m Model) renderBreadcrumbs() string {
-	parts := make([]string, 0, len(m.navigableSteps()))
-	for _, item := range m.navigableSteps() {
-		label := stepLabel(item)
-		if item == m.step {
-			label = "[" + label + "]"
-		}
-		parts = append(parts, label)
+func composeSummary(mode string) string {
+	if mode == "build" {
+		return "builds images from source when generating local workspaces"
 	}
-	return strings.Join(parts, " > ")
+	return "pulls published images by tag during deploy"
 }
 
-func stepLabel(s step) string {
-	switch s {
-	case stepBasics:
-		return "Basics"
-	case stepTargets:
-		return "Targets"
-	case stepComposeMode:
-		return "Compose"
-	case stepInfra:
-		return "Infra"
-	case stepServices:
-		return "Services"
-	case stepGateway:
-		return "Gateway"
-	case stepSecrets:
-		return "Secrets"
-	case stepPrefixes:
-		return "URL Prefixes"
-	case stepApps:
-		return "Registry"
-	case stepReview:
-		return "Review"
-	case stepResult:
-		return "Result"
+func coldStartSummary(profile string) string {
+	switch profile {
+	case "minimal":
+		return "low startup cost with the smallest enabled set"
+	case "full":
+		return "highest startup cost with most services enabled"
 	default:
-		return "Editor"
+		return "moderate startup cost tuned for shared deployments"
 	}
 }
 
-func (m Model) navigableSteps() []step {
-	return []step{stepBasics, stepTargets, stepComposeMode, stepInfra, stepServices, stepGateway, stepSecrets, stepPrefixes, stepApps, stepReview}
-}
-
-func (m Model) goRelativeStep(delta int) Model {
-	m.syncPendingState()
-	steps := m.navigableSteps()
-	index := 0
-	for i, item := range steps {
-		if item == m.step {
-			index = i
-			break
+func contains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
 		}
 	}
-	index = (index + delta + len(steps)) % len(steps)
-	m.step = steps[index]
-	m.cursor = 0
-	m.listOffset = 0
-	m.fieldCursor = 0
-	return m
+	return false
 }
 
-func (m Model) navigateToStep(target step) Model {
-	m.syncPendingState()
-	m.step = target
-	m.cursor = 0
-	m.listOffset = 0
-	m.fieldCursor = 0
-	return m
-}
-
-func (m Model) saveAll() (tea.Model, tea.Cmd) {
-	m.syncPendingState()
-	m.secretKeys = m.buildSecretKeys()
-	m.saving = true
-	return m, func() tea.Msg {
-		if m.save != nil {
-			if err := m.save(m.doc); err != nil {
-				return saveDoneMsg{err: err}
-			}
-		}
-		if m.saveSecrets != nil {
-			if err := m.saveSecrets(m.secrets); err != nil {
-				return saveDoneMsg{err: err}
-			}
-		}
-		if m.save == nil && m.saveSecrets == nil {
-			return saveDoneMsg{err: fmt.Errorf("no save targets configured")}
-		}
-		return saveDoneMsg{}
-	}
-}
-
-func (m Model) handleListMove(delta int) Model {
-	limit := 0
-	switch m.step {
-	case stepTargets:
-		limit = len(m.targets)
-	case stepInfra:
-		limit = len(m.infra)
-	case stepServices:
-		limit = len(m.services)
-	case stepSecrets:
-		limit = len(m.secretKeys)
-	case stepPrefixes:
-		limit = len(m.doc.URLPrefixes)
-	case stepApps:
-		limit = len(m.doc.Apps)
-	case stepJump:
-		limit = len(m.navigableSteps())
-	case stepAppEditor:
-		if m.isPrefixSelectionField() {
-			limit = len(m.prefixSelectionIDs())
+func indexOf(values []string, target string) int {
+	for i, value := range values {
+		if value == target {
+			return i
 		}
 	}
-	if limit == 0 {
-		return m
-	}
-	if m.step == stepAppEditor && m.isPrefixSelectionField() {
-		m.prefixPickerOpen = true
-		m.prefixPickerCursor = (m.prefixPickerCursor + delta + limit) % limit
-		return m
-	}
-	m.cursor = (m.cursor + delta + limit) % limit
-	m.ensureCursorVisible(limit)
-	return m
-}
-
-func (m Model) sidebarStepAt(y int) (step, bool) {
-	line := y - 4
-	steps := m.navigableSteps()
-	if line >= 0 && line < len(steps) {
-		return steps[line], true
-	}
-	return stepBasics, false
-}
-
-func (m *Model) cycleCurrentPrefixField(delta int) {
-	if !m.isPrefixSelectionField() {
-		return
-	}
-	ids := m.prefixSelectionIDs()
-	if len(ids) == 0 {
-		return
-	}
-	current := m.appInputs[m.fieldCursor].Value()
-	index := 0
-	for i, id := range ids {
-		if id == current {
-			index = i
-			break
-		}
-	}
-	index = (index + delta + len(ids)) % len(ids)
-	m.appInputs[m.fieldCursor].SetValue(ids[index])
-}
-
-func (m *Model) openPrefixPicker() {
-	ids := m.prefixSelectionIDs()
-	current := m.appInputs[m.fieldCursor].Value()
-	m.prefixPickerCursor = 0
-	for i, id := range ids {
-		if id == current {
-			m.prefixPickerCursor = i
-			break
-		}
-	}
-	m.prefixPickerOpen = true
-}
-
-func (m *Model) movePrefixPicker(delta int) {
-	ids := m.prefixSelectionIDs()
-	if len(ids) == 0 {
-		return
-	}
-	m.prefixPickerCursor = (m.prefixPickerCursor + delta + len(ids)) % len(ids)
-}
-
-func (m *Model) applyPrefixPickerSelection() {
-	ids := m.prefixSelectionIDs()
-	if len(ids) == 0 {
-		m.prefixPickerOpen = false
-		return
-	}
-	if m.prefixPickerCursor < 0 {
-		m.prefixPickerCursor = 0
-	}
-	if m.prefixPickerCursor >= len(ids) {
-		m.prefixPickerCursor = len(ids) - 1
-	}
-	m.appInputs[m.fieldCursor].SetValue(ids[m.prefixPickerCursor])
-	m.prefixPickerOpen = false
-}
-
-func (m Model) prefixSelectionIDs() []string {
-	ids := make([]string, 0, len(m.doc.URLPrefixes)+1)
-	ids = append(ids, "")
-	for _, prefix := range m.doc.URLPrefixes {
-		ids = append(ids, prefix.ID)
-	}
-	return ids
-}
-
-func (m Model) isPrefixSelectionField() bool {
-	return m.fieldCursor == 5
-}
-
-func (m Model) prefixPickerMarker(index int, selected bool) string {
-	marker := " "
-	if selected {
-		marker = "*"
-	}
-	if m.prefixPickerOpen && index == m.prefixPickerCursor {
-		if selected {
-			return ">"
-		}
-		return ">"
-	}
-	return marker
-}
-
-func (m *Model) ensureCursorVisible(total int) {
-	if total <= 0 {
-		m.listOffset = 0
-		return
-	}
-	visible := m.listPageSize()
-	if visible <= 0 {
-		visible = total
-	}
-	if m.cursor < m.listOffset {
-		m.listOffset = m.cursor
-	}
-	if m.cursor >= m.listOffset+visible {
-		m.listOffset = m.cursor - visible + 1
-	}
-	maxOffset := max(0, total-visible)
-	if m.listOffset > maxOffset {
-		m.listOffset = maxOffset
-	}
-}
-
-func (m Model) visibleRange(total int) (int, int) {
-	if total <= 0 {
-		return 0, 0
-	}
-	visible := m.listPageSize()
-	if visible <= 0 || visible >= total {
-		return 0, total
-	}
-	offset := m.listOffset
-	maxOffset := max(0, total-visible)
-	if offset > maxOffset {
-		offset = maxOffset
-	}
-	end := offset + visible
-	if end > total {
-		end = total
-	}
-	return offset, end
-}
-
-func (m Model) listPageSize() int {
-	if m.height <= 0 {
-		return 10
-	}
-	size := m.height - 14
-	if m.step == stepAppEditor {
-		size = 8
-	}
-	if size < 4 {
-		size = 4
-	}
-	return size
-}
-
-func (m Model) renderTableWindowStatus(total int) string {
-	if total == 0 {
-		return "Rows 0-0 of 0"
-	}
-	start, end := m.visibleRange(total)
-	return fmt.Sprintf("Rows %d-%d of %d", start+1, end, total)
-}
-
-func (m Model) contentRowAt(y int, total int) (int, bool) {
-	if total == 0 {
-		return 0, false
-	}
-	rowStartY := 8
-	index := m.listOffset + (y - rowStartY)
-	if index < 0 || index >= total {
-		return 0, false
-	}
-	_, end := m.visibleRange(total)
-	if index >= end {
-		return 0, false
-	}
-	return index, true
-}
-
-func (m Model) appEditorPrefixRowAt(y int) (int, bool) {
-	rowStartY := 20
-	index := y - rowStartY
-	total := len(m.prefixSelectionIDs())
-	if index < 0 || index >= total {
-		return 0, false
-	}
-	return index, true
-}
-
-func resolvedAppURL(doc *configurator.DeploymentConfig, app configurator.DeploymentApp, ui bool) string {
-	if ui {
-		return configurator.ResolveDeploymentAppUIBaseURL(doc, app)
-	}
-	return configurator.ResolveDeploymentAppAPIBaseURL(doc, app)
-}
-
-func appHost(domain, subdomain string) string {
-	base := strings.TrimSpace(domain)
-	sub := strings.TrimSpace(subdomain)
-	if sub == "" {
-		return base
-	}
-	if base == "" {
-		return sub
-	}
-	return sub + "." + base
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
+	return 0
 }

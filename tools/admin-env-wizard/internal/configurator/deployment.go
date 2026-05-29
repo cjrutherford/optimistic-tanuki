@@ -19,12 +19,14 @@ import (
 )
 
 type DeploymentConfig struct {
-	Version     string                `yaml:"version"`
-	Environment DeploymentEnvironment `yaml:"environment"`
-	Gateway     DeploymentGateway     `yaml:"gateway"`
-	URLPrefixes []DeploymentURLPrefix `yaml:"urlPrefixes,omitempty"`
-	Apps        []DeploymentApp       `yaml:"apps"`
-	OAuth       DeploymentOAuth       `yaml:"oauth"`
+	Version     string                   `yaml:"version"`
+	Environment DeploymentEnvironment    `yaml:"environment"`
+	Databases   []DeploymentDatabaseSlot `yaml:"databases,omitempty"`
+	Services    []DeploymentService      `yaml:"services,omitempty"`
+	Gateway     DeploymentGateway        `yaml:"gateway"`
+	URLPrefixes []DeploymentURLPrefix    `yaml:"urlPrefixes,omitempty"`
+	Apps        []DeploymentApp          `yaml:"apps"`
+	OAuth       DeploymentOAuth          `yaml:"oauth"`
 }
 
 type DeploymentEnvironment struct {
@@ -112,6 +114,8 @@ func LoadDeploymentConfig(deploymentPath, secretsPath string) (*DeploymentConfig
 		secrets = loadedSecrets
 	}
 
+	EnsureDeploymentDatabaseState(&doc, catalog.DefaultCatalog())
+
 	return &doc, secrets, nil
 }
 
@@ -119,6 +123,8 @@ func SaveDeploymentConfig(path string, doc *DeploymentConfig) error {
 	if doc == nil {
 		return fmt.Errorf("deployment document required")
 	}
+
+	EnsureDeploymentDatabaseState(doc, catalog.DefaultCatalog())
 
 	data, err := yaml.Marshal(doc)
 	if err != nil {
@@ -226,12 +232,24 @@ func (d *DeploymentConfig) ToEnvironmentDefinition() *domain.EnvironmentDefiniti
 		env.IncludeInfra = append(env.IncludeInfra, domain.InfraKind(infra))
 	}
 	env.Capabilities = append([]string(nil), d.Environment.Capabilities...)
+	EnsureDeploymentDatabaseState(d, catalog.DefaultCatalog())
+	env.DatabaseSlots = nil
+	for _, slot := range d.Databases {
+		env.DatabaseSlots = append(env.DatabaseSlots, deploymentSlotToDomain(slot))
+	}
 	env.Services = nil
-	for _, service := range d.Environment.Services {
-		env.Services = append(env.Services, domain.ServiceSelection{
-			ServiceID: service,
-			Enabled:   true,
-		})
+	for _, service := range d.Services {
+		selection := deploymentServiceToDomain(service)
+		if selection.DatabaseBinding != nil {
+			for _, slot := range env.DatabaseSlots {
+				if slot.ID == selection.DatabaseBinding.SlotID {
+					selection.DatabaseBinding.Infra = slot.Infra
+					selection.DatabaseBinding.Shared = false
+					break
+				}
+			}
+		}
+		env.Services = append(env.Services, selection)
 	}
 	return env
 }
@@ -255,11 +273,13 @@ func DeploymentConfigFromEnvironment(env *domain.EnvironmentDefinition) *Deploym
 	services := make([]string, 0, len(env.Services))
 	apps := make([]DeploymentApp, 0)
 	cat := catalog.DefaultCatalog()
+	serviceDetails := make([]DeploymentService, 0, len(env.Services))
 	for _, service := range env.Services {
 		if !service.Enabled {
 			continue
 		}
 		services = append(services, service.ServiceID)
+		serviceDetails = append(serviceDetails, domainServiceToDeployment(service))
 		preset, ok := cat.Get(service.ServiceID)
 		if !ok || preset.Category != catalog.CategoryClient {
 			continue
@@ -290,6 +310,14 @@ func DeploymentConfigFromEnvironment(env *domain.EnvironmentDefinition) *Deploym
 			Capabilities: append([]string(nil), env.Capabilities...),
 			Services:     services,
 		},
+		Databases: func() []DeploymentDatabaseSlot {
+			out := make([]DeploymentDatabaseSlot, 0, len(env.DatabaseSlots))
+			for _, slot := range env.DatabaseSlots {
+				out = append(out, domainSlotToDeployment(slot))
+			}
+			return out
+		}(),
+		Services: serviceDetails,
 		Gateway: DeploymentGateway{
 			PublicURL:     "https://gateway.example.com",
 			PublicWSURL:   "wss://gateway.example.com",
@@ -298,6 +326,8 @@ func DeploymentConfigFromEnvironment(env *domain.EnvironmentDefinition) *Deploym
 		},
 		Apps: apps,
 	}
+
+	EnsureDeploymentDatabaseState(doc, cat)
 
 	for _, app := range apps {
 		if app.AppID == "client-interface" {
@@ -440,8 +470,14 @@ func ValidateDeploymentArtifacts(doc *DeploymentConfig, secrets map[string]strin
 	}
 
 	if _, ok := serviceSet["postgres"]; ok || containsInfra(doc.Environment.Infra, "postgres") || len(doc.Environment.Services) > 0 {
-		if strings.TrimSpace(secrets["POSTGRES_PASSWORD"]) == "" {
-			issues = append(issues, ValidationIssue{Severity: "error", Message: "POSTGRES_PASSWORD is required"})
+		report := BuildDatabaseReadiness(doc, cat, secrets)
+		for _, warning := range report.Warnings {
+			issues = append(issues, ValidationIssue{Severity: "error", Message: warning})
+		}
+		for _, slot := range report.Slots {
+			for _, warning := range slot.Warnings {
+				issues = append(issues, ValidationIssue{Severity: "error", Message: fmt.Sprintf("database slot %s: %s", slot.Slot.ID, warning)})
+			}
 		}
 	}
 
@@ -487,6 +523,12 @@ func GenerateDeploymentArtifacts(doc *DeploymentConfig, secrets map[string]strin
 		return GenerateResult{}, fmt.Errorf("write runtime env: %w", err)
 	}
 	result.RuntimeEnvPath = filepath.Join("config", "runtime.env")
+
+	dbSetupPlan := renderDBSetupPlan(doc, cat, secrets)
+	if err := writer.WriteDBSetupPlan([]byte(dbSetupPlan)); err != nil {
+		return GenerateResult{}, fmt.Errorf("write db-setup plan: %w", err)
+	}
+	result.DatabaseSetupPath = filepath.Join("config", "db-setup.generated.yaml")
 
 	validationReport := renderValidationReport(issues)
 	if err := writer.WriteValidationReport([]byte(validationReport)); err != nil {
@@ -548,6 +590,7 @@ func generateRegistryJSON(doc *DeploymentConfig) ([]byte, error) {
 }
 
 func renderRuntimeEnv(doc *DeploymentConfig, secrets map[string]string, cat *catalog.Catalog) string {
+	report := BuildDatabaseReadiness(doc, cat, secrets)
 	values := map[string]string{
 		"NODE_ENV":               "production",
 		"GATEWAY_URL":            doc.Gateway.InternalURL,
@@ -580,15 +623,39 @@ func renderRuntimeEnv(doc *DeploymentConfig, secrets map[string]string, cat *cat
 	if values["POSTGRES_DB"] == "" {
 		values["POSTGRES_DB"] = "postgres"
 	}
-	values["POSTGRES_HOST"] = "db"
-	values["POSTGRES_PORT"] = "5432"
-	values["REDIS_HOST"] = "redis"
-	values["REDIS_PORT"] = "6379"
+	for _, slot := range report.Slots {
+		switch slot.Slot.Infra {
+		case domain.InfraPostgres:
+			values["POSTGRES_HOST"] = slot.Slot.Host
+			values["POSTGRES_PORT"] = fmt.Sprintf("%d", slot.Slot.Port)
+			if values["POSTGRES_DB"] == "" {
+				values["POSTGRES_DB"] = slot.Slot.DatabaseName
+			}
+			if values["POSTGRES_USER"] == "" {
+				values["POSTGRES_USER"] = slot.Slot.Username
+			}
+		case domain.InfraRedis:
+			values["REDIS_HOST"] = slot.Slot.Host
+			values["REDIS_PORT"] = fmt.Sprintf("%d", slot.Slot.Port)
+		}
+	}
 
 	for _, serviceID := range doc.Environment.Services {
 		if preset, ok := cat.Get(serviceID); ok && preset.Compose.ExternalPort > 0 {
 			values[portEnvKey(serviceID)] = fmt.Sprintf("%d", preset.Compose.ExternalPort)
 		}
+	}
+	for _, binding := range report.ServiceBindings {
+		prefix := strings.ToUpper(strings.ReplaceAll(binding.ServiceID, "-", "_"))
+		values[prefix+"_DB_SLOT"] = binding.SlotID
+		values[prefix+"_DB_HOST"] = binding.Host
+		if binding.Port > 0 {
+			values[prefix+"_DB_PORT"] = fmt.Sprintf("%d", binding.Port)
+		}
+		values[prefix+"_DB_NAME"] = binding.DatabaseName
+		values[prefix+"_DB_USER"] = binding.Username
+		values[prefix+"_DB_PASSWORD_KEY"] = binding.PasswordKey
+		values[prefix+"_DB_PROVISION_MODE"] = string(binding.ProvisionMode)
 	}
 	if _, ok := containsService(doc.Environment.Services, "gateway"); ok {
 		values["GATEWAY_CHAT_SOCKET_PORT"] = "3300"
@@ -633,6 +700,43 @@ func renderRuntimeEnv(doc *DeploymentConfig, secrets map[string]string, cat *cat
 		builder.WriteString("=")
 		builder.WriteString(values[key])
 		builder.WriteString("\n")
+	}
+	return builder.String()
+}
+
+func renderDBSetupPlan(doc *DeploymentConfig, cat *catalog.Catalog, secrets map[string]string) string {
+	report := BuildDatabaseReadiness(doc, cat, secrets)
+	var builder strings.Builder
+	builder.WriteString("version: v1alpha1\n")
+	builder.WriteString("slots:\n")
+	for _, slot := range report.Slots {
+		builder.WriteString(fmt.Sprintf("  - id: %s\n", slot.Slot.ID))
+		builder.WriteString(fmt.Sprintf("    infra: %s\n", slot.Slot.Infra))
+		builder.WriteString(fmt.Sprintf("    provisionMode: %s\n", slot.Slot.ProvisionMode))
+		builder.WriteString(fmt.Sprintf("    host: %s\n", slot.Slot.Host))
+		builder.WriteString(fmt.Sprintf("    port: %d\n", slot.Slot.Port))
+		builder.WriteString(fmt.Sprintf("    databaseName: %s\n", slot.Slot.DatabaseName))
+		builder.WriteString(fmt.Sprintf("    username: %s\n", slot.Slot.Username))
+		builder.WriteString(fmt.Sprintf("    passwordKey: %s\n", slot.Slot.PasswordKey))
+		builder.WriteString(fmt.Sprintf("    create: %t\n", slot.Slot.Create))
+		builder.WriteString(fmt.Sprintf("    migrate: %t\n", slot.Slot.Migrate))
+		builder.WriteString(fmt.Sprintf("    seed: %t\n", slot.Slot.Seed))
+		if len(slot.AttachedServices) > 0 {
+			builder.WriteString("    attachedServices:\n")
+			for _, serviceID := range slot.AttachedServices {
+				builder.WriteString(fmt.Sprintf("      - %s\n", serviceID))
+			}
+		}
+	}
+	builder.WriteString("serviceBindings:\n")
+	for _, binding := range report.ServiceBindings {
+		builder.WriteString(fmt.Sprintf("  - serviceId: %s\n", binding.ServiceID))
+		builder.WriteString(fmt.Sprintf("    infra: %s\n", binding.Infra))
+		builder.WriteString(fmt.Sprintf("    slotId: %s\n", binding.SlotID))
+		builder.WriteString(fmt.Sprintf("    databaseName: %s\n", binding.DatabaseName))
+		builder.WriteString(fmt.Sprintf("    username: %s\n", binding.Username))
+		builder.WriteString(fmt.Sprintf("    passwordKey: %s\n", binding.PasswordKey))
+		builder.WriteString(fmt.Sprintf("    inherited: %t\n", binding.Inherited))
 	}
 	return builder.String()
 }

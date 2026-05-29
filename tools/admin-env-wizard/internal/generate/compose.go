@@ -91,6 +91,7 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 		for k, v := range preset.Compose.EnvDefaults {
 			service.Environment[k] = v
 		}
+		service.Environment = applyServiceDatabaseEnv(service.Environment, env, &sel)
 
 		if env.ComposeMode == domain.ComposeModeBuild {
 			service.Build = &ComposeBuild{
@@ -98,7 +99,11 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 				Dockerfile: preset.Compose.Dockerfile,
 			}
 		} else {
-			service.Image = fmt.Sprintf("%s:%s", preset.Image.Name, env.DefaultTag)
+			tag := env.DefaultTag
+			if sel.ImageTag != "" {
+				tag = sel.ImageTag
+			}
+			service.Image = fmt.Sprintf("%s:%s", preset.Image.Name, tag)
 		}
 
 		if preset.Compose.ExternalPort > 0 {
@@ -177,8 +182,8 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 	providerFragment, err := yaml.Marshal(map[string]any{
 		"provider": env.Provider,
 		"x-optimistic-tanuki-provider-profile": map[string]any{
-			"name":          profile.Name,
-			"storageClass":  profile.StorageClassName,
+			"name":         profile.Name,
+			"storageClass": profile.StorageClassName,
 		},
 		"services": composeProviderServicesFragment(env, profile, cat),
 	})
@@ -195,9 +200,9 @@ func GenerateComposeFiles(env *domain.EnvironmentDefinition, cat *catalog.Catalo
 	}
 
 	return map[string][]byte{
-		"docker-compose.yaml":                       yamlData,
-		"fragments/docker-compose.base.yaml":       baseFragment,
-		"fragments/docker-compose.provider.yaml":   providerFragment,
+		"docker-compose.yaml":                        yamlData,
+		"fragments/docker-compose.base.yaml":         baseFragment,
+		"fragments/docker-compose.provider.yaml":     providerFragment,
 		"fragments/docker-compose.capabilities.yaml": capabilityFragment,
 	}, nil
 }
@@ -294,6 +299,16 @@ func buildInfraService(preset catalog.Preset, env *domain.EnvironmentDefinition)
 
 	for k, v := range preset.Compose.EnvDefaults {
 		service.Environment[k] = v
+	}
+	if slot := findDatabaseSlot(env, string(domain.InfraKind(preset.ID))+"-primary"); slot != nil {
+		switch slot.Infra {
+		case domain.InfraPostgres:
+			service.Environment["POSTGRES_USER"] = slot.Username
+			service.Environment["POSTGRES_PASSWORD"] = slot.PasswordKey
+			service.Environment["POSTGRES_DB"] = slot.DatabaseName
+		case domain.InfraRedis:
+			service.Environment["REDIS_PASSWORD"] = slot.PasswordKey
+		}
 	}
 
 	if preset.Compose.ExternalPort > 0 {
