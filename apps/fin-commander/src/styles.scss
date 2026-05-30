@@ -1,6 +1,15 @@
 html {
   scroll-behavior: smooth;
-  color-scheme: light;
+  /**
+   * Announce support for both schemes so native form chrome (scrollbars,
+   * date pickers, select dropdowns) tracks whichever surface they render
+   * on. The default ThemeService palette for fin-commander's
+   * `professional` personality is light, so light remains the effective
+   * default; the explicit `body.dark` rule below promotes dark chrome
+   * when ThemeService.setTheme('dark') (or a future personality override)
+   * adds the `dark` class to body.
+   */
+  color-scheme: light dark;
 }
 
 body {

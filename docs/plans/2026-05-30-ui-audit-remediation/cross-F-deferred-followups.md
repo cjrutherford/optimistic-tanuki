@@ -127,28 +127,33 @@ typed shape that maps tenant brand colors → ThemeService palette tokens
 
 ### F4 — `fin-commander` `color-scheme: light` review
 
+**Status:** ✅ Done
+
 **Goal:** `apps/fin-commander/src/styles.scss:3` hard-codes
 `color-scheme: light` on `html`. Now that `--background`/`--foreground` are
 ThemeService-driven, that hint may conflict with a dark-personality theme
 (form controls render with native light chrome on a dark page).
 
-**Files:**
+**Resolution:** Switched `html { color-scheme: light }` →
+`html { color-scheme: light dark }` with an inline comment explaining
+the rationale: the `professional` personality default keeps fin-commander
+light, but announcing dual support lets the existing `body.dark` rule
+(which already declares `color-scheme: dark`) cascade correctly when
+`ThemeService.setTheme('dark')` is wired up to add a `dark` class — or
+when a future personality override flips body chrome — without native
+form controls regressing to light against a dark surface. The orphaned
+`body.dark` rule is retained intentionally as the forward-looking hook.
 
-- `apps/fin-commander/src/styles.scss`.
-- Possibly `body.dark` rule (already present at line 32–34) needs to be
-  the source of truth via `color-scheme: dark` instead of a class
-  toggle.
+**Note for future work:** `ThemeService.setTheme()` does not currently
+toggle a `body.dark` class (it writes palette tokens only). When that
+gap is closed at the library level, the `body.dark` rule activates
+automatically with no further fin-commander change.
 
-**Action options:**
+**Files:** `apps/fin-commander/src/styles.scss`.
 
-1. Remove the `color-scheme: light` on `html` and let ThemeService drive
-   a `color-scheme` declaration based on personality contrast metadata.
-2. Keep `light` but document explicitly why (e.g., the Shark personality
-   is always light by design).
-
-**Verification:** Toggle personalities via the personality picker (or
-Storybook); native form controls render with the matching scheme; no
-contrast warnings in the ThemeService console.
+**Verified:** `pnpm exec nx run-many -t test,lint,build
+--projects=fin-commander` (73 tests pass); `pnpm run ui:heuristics:ci`
+still 0.
 
 ---
 
