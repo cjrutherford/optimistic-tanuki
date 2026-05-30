@@ -635,6 +635,12 @@ export class ThemeService {
     variables['--foreground'] = colors.foreground;
     variables['--surface'] = colors.surface;
     variables['--muted'] = colors.muted;
+    // Alias `--muted-foreground` to `--muted` so the documented semantic token
+    // resolves at runtime. Many apps (fin-commander, video-client, owner-console,
+    // client-interface, forum-ui) reference `--muted-foreground`; without this
+    // alias the property is undefined and `color: var(--muted-foreground)`
+    // falls back to `currentColor`, defeating the muted visual hierarchy.
+    variables['--muted-foreground'] = colors.muted;
     variables['--border'] = colors.border;
 
     // Primary colors
