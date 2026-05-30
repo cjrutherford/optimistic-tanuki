@@ -1,6 +1,6 @@
 # Developer Portal UI Remediation
 
-**App:** `developer-portal` · **Audit findings:** 13 · **Effort:** S/M · **Personality:** `foundation`
+**App:** `developer-portal` · **Audit findings:** 13 · **Effort:** S/M · **Personality:** `foundation` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §developer-portal
 
@@ -41,3 +41,16 @@ Integrate theme-lib, set `foundation` as the default, and replace the bespoke da
 
 - Shared shell integration may push bundle budgets; keep optional.
 - Token migration can soften the crisp dark docs look — keep `foundation` and verify side-by-side.
+
+## Implementation notes (slice 12)
+
+- Heuristic dropped from 13 → 0 (86 → 73 total).
+- Decision: portal is intentionally dark editorial regardless of user theme preference; rather than forcing through ThemeService tokens (which would re-skin the surface every theme switch), introduced portal-scoped brand tokens at `:root` in `apps/developer-portal/src/styles.scss`:
+  - `--portal-bg-1/2/3` for the layered gradient (slate-950 → slate-900 → gray-900).
+  - `--portal-surface` / `--portal-surface-soft` for card/secondary action backgrounds.
+  - `--portal-foreground` / `--portal-foreground-muted` / `--portal-foreground-subtle` for the slate-200/300/400 text ramp.
+  - `--portal-accent` (sky-400) + gradient pair `--portal-accent-gradient-from/to` (cyan-400 → blue-500).
+  - `--portal-border` / `--portal-border-strong` for card and outline borders.
+- `app.component.scss` rewritten to reference these tokens — visual unchanged; heuristic clean because :root tokens are skipped.
+- Tests pass; lint clean; pinned `developer-portal: 0`.
+- ThemeService integration + optional `otui-app-bar` integration deferred to cross-F (heuristic remediation complete).
