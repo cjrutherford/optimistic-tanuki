@@ -12,20 +12,20 @@ body {
   font-family: var(--font-body, 'Bricolage Grotesque', sans-serif);
   background: radial-gradient(
       circle at top left,
-      color-mix(in srgb, var(--primary, #d97706) 18%, transparent),
+      color-mix(in srgb, var(--primary) 18%, transparent),
       transparent 28%
     ),
     radial-gradient(
       circle at top right,
-      color-mix(in srgb, var(--secondary, #2563eb) 14%, transparent),
+      color-mix(in srgb, var(--secondary) 14%, transparent),
       transparent 24%
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--background, #0b1220) 94%, black),
-      color-mix(in srgb, var(--surface, #10151c) 92%, black)
+      color-mix(in srgb, var(--background) 94%, black),
+      color-mix(in srgb, var(--surface) 92%, black)
     );
-  color: var(--foreground, #f7f1e6);
+  color: var(--foreground);
 }
 
 button,

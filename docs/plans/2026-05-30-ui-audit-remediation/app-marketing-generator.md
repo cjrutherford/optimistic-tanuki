@@ -1,6 +1,6 @@
 # Marketing Generator UI Remediation
 
-**App:** `marketing-generator` · **Audit findings:** 5 · **Effort:** S/M · **Personality:** `control-center`
+**App:** `marketing-generator` · **Audit findings:** 5 · **Effort:** S/M · **Personality:** `control-center` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §marketing-generator
 
