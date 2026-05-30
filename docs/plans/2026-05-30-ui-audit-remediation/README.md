@@ -21,13 +21,14 @@ Lint script: `tools/scripts/check-client-ui-heuristics.mjs` (`pnpm run ui:heuris
 
 ### Cross-cutting (do first when possible)
 
-| ID  | File                                                                           | Title                                                                          |
-| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| A   | [cross-A-shared-primitives.md](cross-A-shared-primitives.md)                   | Promote shared page-header / metric-tile / empty-state primitives              |
-| B   | [cross-B-badge-component.md](cross-B-badge-component.md)                       | Themed badge/chip/pill component + semantic variants                           |
-| C   | [cross-C-personality-defaults.md](cross-C-personality-defaults.md)             | Apply personality default matrix across all 18 apps                            |
-| D   | [cross-D-heuristic-lint-ci.md](cross-D-heuristic-lint-ci.md)                   | Enforce `ui:heuristics:ci` in CI on a per-app allowlist                        |
-| E   | [cross-E-primitive-stories-and-docs.md](cross-E-primitive-stories-and-docs.md) | Storybook stories + README migration examples for the new common-ui primitives |
+| ID  | File                                                                           | Title                                                                                                                    |
+| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| A   | [cross-A-shared-primitives.md](cross-A-shared-primitives.md)                   | Promote shared page-header / metric-tile / empty-state primitives                                                        |
+| B   | [cross-B-badge-component.md](cross-B-badge-component.md)                       | Themed badge/chip/pill component + semantic variants                                                                     |
+| C   | [cross-C-personality-defaults.md](cross-C-personality-defaults.md)             | Apply personality default matrix across all 18 apps                                                                      |
+| D   | [cross-D-heuristic-lint-ci.md](cross-D-heuristic-lint-ci.md)                   | Enforce `ui:heuristics:ci` in CI on a per-app allowlist                                                                  |
+| E   | [cross-E-primitive-stories-and-docs.md](cross-E-primitive-stories-and-docs.md) | Storybook stories + README migration examples for the new common-ui primitives                                           |
+| F   | [cross-F-deferred-followups.md](cross-F-deferred-followups.md)                 | Heterogeneous follow-ups deferred from the per-app slices (bootstrap specs, residual overrides, layout extraction, etc.) |
 
 ### Per-app (parallelizable)
 
