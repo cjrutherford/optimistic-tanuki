@@ -9,8 +9,8 @@
   .error {
     padding: 1rem;
     margin-bottom: 1rem;
-    background-color: #fee;
-    color: #c00;
+    background-color: color-mix(in oklab, var(--danger) 12%, transparent);
+    color: var(--danger);
     border-radius: 4px;
   }
 
@@ -29,7 +29,10 @@
       h3 {
         margin: 0 0 1rem;
         font-size: 1rem;
-        color: #6c757d;
+        color: var(
+          --muted-foreground,
+          color-mix(in oklab, var(--foreground) 60%, transparent)
+        );
         font-weight: 600;
       }
 
@@ -37,13 +40,16 @@
         margin: 0;
         font-size: 2rem;
         font-weight: 700;
-        color: #007bff;
+        color: var(--info, var(--primary));
       }
 
       .stat-label {
         margin: 0.5rem 0 0;
         font-size: 0.875rem;
-        color: #6c757d;
+        color: var(
+          --muted-foreground,
+          color-mix(in oklab, var(--foreground) 60%, transparent)
+        );
       }
     }
   }
@@ -58,7 +64,10 @@
     .loading {
       text-align: center;
       padding: 2rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
     }
 
     table {
@@ -68,22 +77,22 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
       thead {
-        background-color: #f8f9fa;
+        background-color: var(--surface, var(--background));
 
         th {
           padding: 1rem;
           text-align: left;
           font-weight: 600;
-          border-bottom: 2px solid #dee2e6;
+          border-bottom: 2px solid var(--border);
         }
       }
 
       tbody {
         tr {
-          border-bottom: 1px solid #dee2e6;
+          border-bottom: 1px solid var(--border);
 
           &:hover {
-            background-color: #f8f9fa;
+            background-color: var(--surface, var(--background));
           }
 
           td {
@@ -100,29 +109,41 @@
         text-transform: capitalize;
 
         &.status-active {
-          background-color: #d4edda;
-          color: #155724;
+          background-color: color-mix(
+            in oklab,
+            var(--success) 15%,
+            transparent
+          );
+          color: var(--on-success, var(--success-foreground));
         }
 
         &.status-cancelled,
         &.status-failed {
-          background-color: #f8d7da;
-          color: #721c24;
+          background-color: color-mix(in oklab, var(--danger) 15%, transparent);
+          color: var(--on-danger, var(--danger-foreground));
         }
 
         &.status-expired {
-          background-color: #e2e3e5;
-          color: #383d41;
+          background-color: var(--surface, var(--muted));
+          color: var(--foreground);
         }
 
         &.status-pending {
-          background-color: #fff3cd;
-          color: #856404;
+          background-color: color-mix(
+            in oklab,
+            var(--warning) 15%,
+            transparent
+          );
+          color: var(--on-warning, var(--warning-foreground));
         }
 
         &.status-completed {
-          background-color: #d4edda;
-          color: #155724;
+          background-color: color-mix(
+            in oklab,
+            var(--success) 15%,
+            transparent
+          );
+          color: var(--on-success, var(--success-foreground));
         }
       }
     }
@@ -140,11 +161,11 @@
       }
 
       &.btn-cancel {
-        background-color: #dc3545;
+        background-color: var(--danger);
         color: white;
 
         &:hover:not(:disabled) {
-          background-color: #c82333;
+          background-color: color-mix(in oklab, var(--danger) 85%, black);
         }
       }
     }
@@ -152,7 +173,10 @@
     .empty-state {
       text-align: center;
       padding: 3rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
       background-color: white;
       border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);

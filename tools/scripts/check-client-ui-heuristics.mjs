@@ -66,20 +66,31 @@ function selectorForOffset(content, offset) {
     return '';
   }
 
-  const selectorStart = Math.max(
-    before.lastIndexOf('}', lastOpen - 1),
-    before.lastIndexOf('\n\n', lastOpen - 1)
-  );
-  return before
-    .slice(selectorStart + 1, lastOpen)
-    .trim()
-    .replace(/\s+/g, ' ');
+  // Selector starts after the previous statement boundary: '}' or ';'.
+  // Using only '}' (the prior behavior) mis-attributes the selector when
+  // the file has leading comments or @import statements above :root.
+  const lastSemi = before.lastIndexOf(';', lastOpen - 1);
+  const boundary = Math.max(lastClose, lastSemi);
+  const selectorStart = boundary + 1;
+
+  // Strip comments before trimming so they don't leak into selector text.
+  const rawSelector = content
+    .slice(selectorStart, lastOpen)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/\/\/[^\n]*/g, ' ');
+
+  return rawSelector.trim().replace(/\s+/g, ' ');
 }
 
 function insideRootBlock(content, offset) {
   return selectorForOffset(content, offset)
     .split(',')
-    .some((selector) => selector.trim() === ':root');
+    .some((selector) => {
+      const trimmed = selector.trim();
+      // :root or [data-theme*=...] blocks are theming declarations,
+      // not consumers. Hex literals there set tokens, which is allowed.
+      return trimmed === ':root' || /^\[data-theme[*~|^$]?=/.test(trimmed);
+    });
 }
 
 function isTokenFile(filePath) {
@@ -175,18 +186,31 @@ function countsByApp(items) {
 const perApp = countsByApp(findings);
 
 // --write-allowlist: snapshot current per-app counts and exit 0.
+// Preserves explicit 0-budget entries from the existing file so that
+// "pinned to 0" apps don't silently disappear when they have no findings.
 if (writeAllowlistPath) {
-  const sortedApps = Object.keys(perApp).sort();
+  const fullPath = join(root, writeAllowlistPath);
+  let existingApps = {};
+  try {
+    existingApps = JSON.parse(readFileSync(fullPath, 'utf8'))?.apps ?? {};
+  } catch {
+    // First run; no existing file.
+  }
   const snapshot = {
     generated: new Date().toISOString().slice(0, 10),
     apps: {},
   };
-  for (const app of sortedApps) snapshot.apps[app] = perApp[app];
-  const fullPath = join(root, writeAllowlistPath);
+  const allApps = new Set([
+    ...Object.keys(existingApps),
+    ...Object.keys(perApp),
+  ]);
+  for (const app of [...allApps].sort()) {
+    snapshot.apps[app] = perApp[app] ?? 0;
+  }
   mkdirSync(dirname(fullPath), { recursive: true });
   writeFileSync(fullPath, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
   console.log(
-    `Wrote allowlist snapshot for ${sortedApps.length} app(s) to ${writeAllowlistPath}.`
+    `Wrote allowlist snapshot for ${allApps.size} app(s) to ${writeAllowlistPath}.`
   );
   process.exit(0);
 }

@@ -16,22 +16,25 @@
   .summary-card {
     padding: 1rem;
     border-radius: 8px;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
+    background: var(--surface, var(--background));
+    border: 1px solid var(--border);
     display: grid;
     gap: 0.35rem;
   }
 
   .summary-label {
     font-size: 0.9rem;
-    color: #6c757d;
+    color: var(
+      --muted-foreground,
+      color-mix(in oklab, var(--foreground) 60%, transparent)
+    );
   }
 
   .error {
     padding: 1rem;
     margin-bottom: 1rem;
-    background-color: #fee;
-    color: #c00;
+    background-color: color-mix(in oklab, var(--danger) 12%, transparent);
+    color: var(--danger);
     border-radius: 4px;
   }
 
@@ -59,21 +62,28 @@
     }
 
     &.btn-primary {
-      background-color: #007bff;
+      background-color: var(--info, var(--primary));
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: #0056b3;
+        background-color: color-mix(in oklab, var(--primary) 90%, black);
       }
     }
 
     &.btn-secondary {
-      background-color: #6c757d;
+      background-color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
       color: white;
 
       &:hover:not(:disabled),
       &.is-active {
-        background-color: #545b62;
+        background-color: color-mix(
+          in oklab,
+          var(--foreground) 70%,
+          transparent
+        );
       }
     }
 
@@ -83,27 +93,27 @@
     }
 
     &.btn-edit {
-      background-color: #28a745;
+      background-color: var(--success);
       color: white;
 
       &:hover:not(:disabled) {
-        background-color: #218838;
+        background-color: color-mix(in oklab, var(--success) 85%, black);
       }
     }
 
     &.btn-delete {
-      background-color: #dc3545;
+      background-color: var(--danger);
       color: white;
       margin-left: 0.5rem;
 
       &:hover:not(:disabled) {
-        background-color: #c82333;
+        background-color: color-mix(in oklab, var(--danger) 85%, black);
       }
     }
   }
 
   .resource-form {
-    background-color: #f8f9fa;
+    background-color: var(--surface, var(--background));
     padding: 1.5rem;
     border-radius: 8px;
     margin-bottom: 2rem;
@@ -127,7 +137,7 @@
       select {
         width: 100%;
         padding: 0.5rem;
-        border: 1px solid #ced4da;
+        border: 1px solid var(--border);
         border-radius: 4px;
         font-size: 1rem;
       }
@@ -146,7 +156,7 @@
     .form-actions {
       margin-top: 1.5rem;
       padding-top: 1rem;
-      border-top: 1px solid #dee2e6;
+      border-top: 1px solid var(--border);
     }
   }
 
@@ -154,7 +164,10 @@
     .loading {
       text-align: center;
       padding: 2rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
     }
 
     table {
@@ -164,21 +177,21 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
       thead {
-        background-color: #f8f9fa;
+        background-color: var(--surface, var(--background));
 
         th {
           padding: 1rem;
           text-align: left;
           font-weight: 600;
-          border-bottom: 2px solid #dee2e6;
+          border-bottom: 2px solid var(--border);
         }
       }
 
       tbody tr {
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid var(--border);
 
         &:hover {
-          background-color: #f8f9fa;
+          background-color: var(--surface, var(--background));
         }
 
         td {
@@ -198,20 +211,23 @@
       font-weight: 500;
 
       &.active {
-        background-color: #d4edda;
-        color: #155724;
+        background-color: color-mix(in oklab, var(--success) 15%, transparent);
+        color: var(--on-success, var(--success-foreground));
       }
 
       &.inactive {
-        background-color: #f8d7da;
-        color: #721c24;
+        background-color: color-mix(in oklab, var(--danger) 15%, transparent);
+        color: var(--on-danger, var(--danger-foreground));
       }
     }
 
     .empty-state {
       text-align: center;
       padding: 3rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
     }
   }
 }

@@ -6,8 +6,8 @@
   }
 
   .error-message {
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: color-mix(in oklab, var(--danger) 15%, transparent);
+    color: var(--on-danger, var(--danger-foreground));
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 20px;
@@ -27,7 +27,7 @@
       select {
         padding: 8px;
         border-radius: 4px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--border);
       }
     }
 
@@ -35,12 +35,12 @@
       padding: 8px 16px;
       border-radius: 4px;
       border: none;
-      background-color: #007bff;
+      background-color: var(--info, var(--primary));
       color: white;
       cursor: pointer;
 
       &:disabled {
-        background-color: #ccc;
+        background-color: var(--border);
         cursor: not-allowed;
       }
     }
@@ -49,7 +49,7 @@
   .loading {
     text-align: center;
     padding: 40px;
-    color: #666;
+    color: color-mix(in oklab, var(--foreground) 70%, transparent);
   }
 
   .appointments-grid {
@@ -60,22 +60,22 @@
       border-collapse: collapse;
 
       thead {
-        background-color: #f8f9fa;
+        background-color: var(--surface, var(--background));
 
         th {
           padding: 12px;
           text-align: left;
-          border-bottom: 2px solid #dee2e6;
+          border-bottom: 2px solid var(--border);
           font-weight: 600;
         }
       }
 
       tbody {
         tr {
-          border-bottom: 1px solid #dee2e6;
+          border-bottom: 1px solid var(--border);
 
           &:hover {
-            background-color: #f8f9fa;
+            background-color: var(--surface, var(--background));
           }
 
           td {
@@ -90,28 +90,31 @@
               font-size: 14px;
 
               &.btn-approve {
-                background-color: #28a745;
+                background-color: var(--success);
                 color: white;
               }
 
               &.btn-deny {
-                background-color: #dc3545;
+                background-color: var(--danger);
                 color: white;
               }
 
               &.btn-complete {
-                background-color: #17a2b8;
+                background-color: var(--info);
                 color: white;
               }
 
               &.btn-cancel {
-                background-color: #6c757d;
+                background-color: var(
+                  --muted-foreground,
+                  color-mix(in oklab, var(--foreground) 60%, transparent)
+                );
                 color: white;
               }
 
               &.btn-invoice {
-                background-color: #ffc107;
-                color: #212529;
+                background-color: var(--warning);
+                color: var(--foreground);
               }
             }
           }
@@ -121,27 +124,30 @@
   }
 
   .status-pending {
-    color: #ffc107;
+    color: var(--warning);
     font-weight: 600;
   }
 
   .status-approved {
-    color: #28a745;
+    color: var(--success);
     font-weight: 600;
   }
 
   .status-denied {
-    color: #dc3545;
+    color: var(--danger);
     font-weight: 600;
   }
 
   .status-cancelled {
-    color: #6c757d;
+    color: var(
+      --muted-foreground,
+      color-mix(in oklab, var(--foreground) 60%, transparent)
+    );
     font-weight: 600;
   }
 
   .status-completed {
-    color: #17a2b8;
+    color: var(--info);
     font-weight: 600;
   }
 
@@ -184,7 +190,7 @@
         textarea {
           width: 100%;
           padding: 8px;
-          border: 1px solid #ccc;
+          border: 1px solid var(--border);
           border-radius: 4px;
           font-size: 14px;
         }
@@ -208,17 +214,20 @@
           font-size: 16px;
 
           &.btn-primary {
-            background-color: #007bff;
+            background-color: var(--info, var(--primary));
             color: white;
           }
 
           &.btn-secondary {
-            background-color: #6c757d;
+            background-color: var(
+              --muted-foreground,
+              color-mix(in oklab, var(--foreground) 60%, transparent)
+            );
             color: white;
           }
 
           &.btn-danger {
-            background-color: #dc3545;
+            background-color: var(--danger);
             color: white;
           }
         }

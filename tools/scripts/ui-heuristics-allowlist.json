@@ -11,13 +11,14 @@
     "digital-homestead": 7,
     "fin-commander": 8,
     "forgeofwill": 104,
+    "hai": 0,
     "leads-app": 38,
-    "local-hub": 69,
+    "local-hub": 37,
     "marketing-generator": 5,
-    "owner-console": 253,
-    "store-client": 78,
+    "owner-console": 0,
+    "store-client": 68,
     "system-configurator": 9,
     "ui-playground": 17,
-    "video-client": 16
+    "video-client": 7
   }
 }
