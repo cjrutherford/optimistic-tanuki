@@ -1,6 +1,6 @@
 # Configurable Client UI Remediation
 
-**App:** `configurable-client` · **Audit findings:** 3 · **Effort:** M · **Personality:** `foundation`
+**App:** `configurable-client` · **Audit findings:** 3 · **Effort:** M · **Personality:** `foundation` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §configurable-client
 
