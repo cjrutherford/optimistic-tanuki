@@ -1,0 +1,23 @@
+{
+  "generated": "2026-05-30",
+  "apps": {
+    "business-configurator": 9,
+    "business-site": 6,
+    "christopherrutherford-net": 2,
+    "client-interface": 24,
+    "configurable-client": 3,
+    "d6": 18,
+    "developer-portal": 13,
+    "digital-homestead": 7,
+    "fin-commander": 8,
+    "forgeofwill": 104,
+    "leads-app": 38,
+    "local-hub": 69,
+    "marketing-generator": 5,
+    "owner-console": 253,
+    "store-client": 78,
+    "system-configurator": 9,
+    "ui-playground": 17,
+    "video-client": 16
+  }
+}
