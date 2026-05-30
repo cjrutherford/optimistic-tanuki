@@ -46,6 +46,9 @@ router-outlet {
   --primary-light: #34495e;
   --primary-dark: #1c2833;
   --gradient: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+  --gradient-hover: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+  --error: #d32f2f;
+  --input-border: #e1e8ed;
   --shadow: rgba(0, 0, 0, 0.3);
   --shadow-heavy: rgba(0, 0, 0, 0.5);
   --shadow-light: rgba(0, 0, 0, 0.1);
@@ -176,7 +179,7 @@ img {
 .cta-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 20px var(--shadow-heavy);
-  background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+  background: var(--gradient-hover);
 }
 
 .cta-button:active {

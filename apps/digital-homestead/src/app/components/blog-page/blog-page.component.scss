@@ -118,7 +118,7 @@
   font-size: var(--font-size-xs, 0.65rem);
   font-weight: 600;
   text-transform: uppercase;
-  color: white;
+  color: var(--on-warning, var(--background));
   background: var(--warning);
   padding: var(--spacing-xs, 0.15rem) 0.4rem;
   border-radius: var(--border-radius-md, 4px);

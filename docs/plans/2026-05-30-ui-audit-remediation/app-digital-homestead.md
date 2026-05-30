@@ -1,6 +1,6 @@
 # Digital Homestead UI Remediation
 
-**App:** `digital-homestead` · **Audit findings:** 7 · **Effort:** L · **Personality:** `soft-touch`
+**App:** `digital-homestead` · **Audit findings:** 7 · **Effort:** L · **Personality:** `soft-touch` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §digital-homestead
 
