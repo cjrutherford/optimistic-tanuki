@@ -680,6 +680,16 @@ export class ThemeService {
     variables['--info'] = colors.info;
     variables['--info-foreground'] = getSuggestedTextColor(colors.info).color;
 
+    // --on-* aliases for the canonical design-system naming. These mirror the
+    // existing *-foreground outputs so consumers can use either convention.
+    variables['--on-primary'] = variables['--primary-foreground'];
+    variables['--on-secondary'] = variables['--secondary-foreground'];
+    variables['--on-tertiary'] = variables['--tertiary-foreground'];
+    variables['--on-success'] = variables['--success-foreground'];
+    variables['--on-warning'] = variables['--warning-foreground'];
+    variables['--on-danger'] = variables['--danger-foreground'];
+    variables['--on-info'] = variables['--info-foreground'];
+
     // Gradients - canonical source is GradientFactory
     Object.assign(
       variables,

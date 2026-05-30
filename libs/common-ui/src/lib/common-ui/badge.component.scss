@@ -6,9 +6,10 @@
   border-radius: 100px;
   white-space: nowrap;
   line-height: 1;
+  border: 1px solid transparent;
 
-  // Sizes
-  &--sm {
+  // ---- Size ----
+  &[data-size='sm'] {
     font-size: 0.75rem;
     padding: 4px 10px;
 
@@ -18,12 +19,12 @@
     }
   }
 
-  &--md {
+  &[data-size='md'] {
     font-size: 0.85rem;
     padding: 8px 16px;
   }
 
-  &--lg {
+  &[data-size='lg'] {
     font-size: 0.95rem;
     padding: 12px 22px;
 
@@ -33,29 +34,54 @@
     }
   }
 
-  // Variants
-  &--success {
-    background: var(--badge-success-bg, var(--success, #4caf50));
-    color: var(--on-success, white);
+  // ---- Tone -> CSS-variable mapping ----
+  // Each tone resolves a `--badge-bg-source` and `--badge-fg-source`
+  // pair, which the shape rules consume below.
+  &[data-tone='neutral'] {
+    --badge-bg-source: var(--surface-variant, var(--muted));
+    --badge-fg-source: var(--foreground);
+  }
+  &[data-tone='info'] {
+    --badge-bg-source: var(--info);
+    --badge-fg-source: var(--on-info, var(--info-foreground));
+  }
+  &[data-tone='success'] {
+    --badge-bg-source: var(--success);
+    --badge-fg-source: var(--on-success, var(--success-foreground));
+  }
+  &[data-tone='warning'] {
+    --badge-bg-source: var(--warning);
+    --badge-fg-source: var(--on-warning, var(--warning-foreground));
+  }
+  &[data-tone='danger'] {
+    --badge-bg-source: var(--danger);
+    --badge-fg-source: var(--on-danger, var(--danger-foreground));
+  }
+  &[data-tone='brand'] {
+    --badge-bg-source: var(--primary);
+    --badge-fg-source: var(--on-primary, var(--primary-foreground));
   }
 
-  &--primary {
-    background: var(--badge-primary-bg, var(--primary, #6e8efb));
-    color: var(--on-primary, white);
+  // ---- Shape ----
+  &[data-shape='solid'] {
+    background: var(--badge-bg-source);
+    color: var(--badge-fg-source);
   }
 
-  &--warning {
-    background: var(--badge-warning-bg, var(--warning, #ff9800));
-    color: var(--on-warning, white);
+  &[data-shape='soft'] {
+    background: color-mix(in oklab, var(--badge-bg-source) 18%, transparent);
+    color: var(--badge-bg-source);
   }
 
-  &--error {
-    background: var(--badge-error-bg, var(--danger, #f44336));
-    color: var(--on-error, white);
+  &[data-shape='outline'] {
+    background: transparent;
+    color: var(--badge-bg-source);
+    border-color: var(--badge-bg-source);
   }
 
-  &--neutral {
-    background: var(--surface-variant, var(--muted));
+  // Neutral tone should keep the foreground readable even in `soft`/`outline`
+  &[data-tone='neutral'][data-shape='soft'],
+  &[data-tone='neutral'][data-shape='outline'] {
     color: var(--foreground);
   }
 
