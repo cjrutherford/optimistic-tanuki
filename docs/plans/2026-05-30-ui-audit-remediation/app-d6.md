@@ -1,6 +1,6 @@
 # D6 UI Remediation
 
-**App:** `d6` · **Audit findings:** 18 · **Effort:** M · **Personality:** `soft-touch`
+**App:** `d6` · **Audit findings:** 18 · **Effort:** M · **Personality:** `soft-touch` · **Status:** ✅ Done (heuristic) / Daily-practice extraction deferred to cross-F
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §d6
 
@@ -42,3 +42,14 @@ Tokenize the title bar and toast colors, harden dark mode, and consolidate dupli
 ## Risks
 
 - Daily practice flows differ subtly between four and six; refactor incrementally and snapshot test each.
+
+## Implementation notes (slice 11)
+
+- Heuristic dropped from 18 → 0 (104 → 86 total).
+- All 18 findings were `var(--token, #hex)` fallback patterns in `apps/d6/src/styles.scss`. Stripped fallbacks for body bg/fg, focus outline, scrollbar surface/muted/foreground, card surface, btn-primary/btn-secondary background+color, form label/input border/bg/fg/accent.
+- `.btn-primary { color: white }` → `var(--on-primary, white)`.
+- `.btn-primary:hover` legacy `--primary-dark` chain → `var(--primary-hover, var(--primary))`.
+- `.btn-secondary` background `--surface-alt, #e5e7eb` → `var(--surface-alt, var(--surface-variant, var(--muted)))` to walk the chain to existing tokens.
+- `.form-input:focus` shadow `rgba(79, 70, 229, 0.1)` → `color-mix(in oklab, var(--accent) 18%, transparent)` for theme-aware focus glow.
+- Tests pass; lint clean; pinned `d6: 0`.
+- Daily-four/daily-six layout extraction deferred to cross-F (heuristic tokenization complete).
