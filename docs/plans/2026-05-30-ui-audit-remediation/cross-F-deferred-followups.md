@@ -1,4 +1,4 @@
-# Cross-Cutting F: Deferred Per-App Follow-Ups
+# Cross-Cutting F: Deferred Per-App Follow-Ups ✅ Done
 
 **Goal:** Capture the heterogeneous follow-up items that were deliberately
 deferred during the per-app slices (5–22) so they don't get lost. Each
@@ -180,34 +180,77 @@ regresses; spec passes through `prettier --write` reformatting.
 
 ### F6 — `local-hub` floating notification + chat responsive stacking
 
-**Goal:** The floating notification toast and the chat widget overlap at
-narrow viewports (audit observation, not a heuristic finding). Stack them
-or use a priority queue.
+**Status:** ⛔ Cancelled (premise incorrect)
 
-**Files:**
+**Original goal:** The floating notification toast and the chat widget
+overlap at narrow viewports (audit observation, not a heuristic finding).
+Stack them or use a priority queue.
+
+**Why cancelled:** Audit of `apps/local-hub/src` found neither a floating
+notification component nor a chat widget. The only `position: fixed`
+elements are full-screen modal overlays in `offer-list`,
+`make-offer-modal`, and `seller-dashboard`, plus a single
+`.motion-background` decorative layer — none of which stack against each
+other or share viewport edges. The original audit note appears to have
+referenced features that were either renamed, removed, or planned but
+never landed.
+
+**If this becomes desirable again:** file as a fresh plan after a
+re-audit confirms the components actually exist; current local-hub UX
+ships modals via centered-overlay pattern (no stacking conflict).
+
+**Files (suspected — none found):**
 
 - `apps/local-hub/src/app/components/floating-notification/...`
-- `apps/local-hub/src/app/components/chat-widget/...` (locate via grep).
+- `apps/local-hub/src/app/components/chat-widget/...`
 
-**Verification:** Manual: resize to 360px / 768px and confirm no overlap;
-add a Playwright visual test for both breakpoints.
+**Verification:** `grep -rln "position: fixed" apps/local-hub/src` →
+only modal overlays + motion background (no floating toasts/chat).
 
 ---
 
 ### F7 — `d6` daily-four / daily-six layout extraction
 
-**Goal:** `d6` defines two near-identical grid layouts (`daily-four` and
+**Status:** ✅ Done
+
+**Goal:** `d6` defines two near-identical layouts (`daily-four` and
 `daily-six`) inline in component SCSS. Extract to a shared mixin or
 container component.
 
+**Resolution:** Audit showed the two components' inline `styles` blocks
+were byte-identical 118 lines (verified via `diff`). The duplication is
+in the **shell** (container, page title, stepper card, modal overlay +
+content, entries list) — not in the stepper question definitions, which
+legitimately differ. Extracted the shared CSS string into
+`apps/d6/src/app/components/shared/daily-stepper.styles.ts` exporting
+`DAILY_STEPPER_SHARED_STYLES`; both components now import it and pass
+it directly to `styles: [DAILY_STEPPER_SHARED_STYLES]`. The shared file
+ships with a `daily-stepper.styles.spec.ts` that guards against drift
+by asserting the canonical selectors (`:host`, `.container`,
+`.modal-overlay`, etc.) and ThemeService token references
+(`var(--foreground)`, `var(--surface)`, `var(--border)`, `var(--muted)`,
+`var(--spacing-*)`) remain present.
+
+**Why not a wrapper component:** A `<daily-shell>` wrapper was
+considered but rejected — it would require both `daily-four` and
+`daily-six` to restructure their templates around content projection
+and would have touched the AI-orchestration glue inside
+`onStepUpdate`/`analyzeStepResponse`. The TS-constant extraction nets
+the same DRY win (118 lines → 1 import) with zero template / behavior
+risk and a guarding spec.
+
 **Files:**
 
-- `apps/d6/src/app/components/daily-four/*`
-- `apps/d6/src/app/components/daily-six/*`
-- New: `apps/d6/src/app/shared/daily-grid.mixin.scss` (or component).
+- `apps/d6/src/app/components/shared/daily-stepper.styles.ts` (new).
+- `apps/d6/src/app/components/shared/daily-stepper.styles.spec.ts`
+  (new — drift guard).
+- `apps/d6/src/app/components/daily-four/daily-four.component.ts` (118
+  inline style lines → 1 constant import).
+- `apps/d6/src/app/components/daily-six/daily-six.component.ts` (same
+  cleanup).
 
-**Verification:** Visual diff via Storybook stories for 4-cell and 6-cell
-arrangements; `pnpm exec nx test d6` passes.
+**Verified:** `pnpm exec nx run-many -t test,lint,build --projects=d6`
+(5 tests pass, lint clean); `pnpm run ui:heuristics:ci` still 0.
 
 ---
 
