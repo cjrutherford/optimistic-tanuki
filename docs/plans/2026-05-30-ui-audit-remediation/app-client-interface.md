@@ -1,6 +1,6 @@
 # Client Interface UI Remediation
 
-**App:** `client-interface` · **Audit findings:** 24 · **Effort:** M · **Personality:** `soft-touch`
+**App:** `client-interface` · **Audit findings:** 24 · **Effort:** M · **Personality:** `soft-touch` · **Status:** ✅ Done (heuristic) / Floating-control responsive work deferred to cross-F
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §client-interface
 
@@ -44,3 +44,15 @@ Set an intentional default personality, eliminate fixed white/fallback colors, a
 ## Risks
 
 - A global personality change ripples through shared components; pair with cross-C and capture screenshots for landing + feed + profile.
+
+## Implementation notes (slice 10)
+
+- Heuristic dropped from 24 → 0 (128 → 104 total).
+- `styles.scss`: stripped hex fallbacks in `var(--background, #ffffff)`, `var(--foreground, #212121)`, `var(--accent, #3f51b5)`, `var(--primary, #3f51b5)`, scrollbar `var(--surface/--muted/--foreground, …)` patterns.
+- `app.component.scss`: `var(--accent, #4a90d9)` and `var(--background, #fff)` → bare token refs.
+- `landing.component.scss`: `--landing-step-icon-foreground: #ffffff/#000000` → `white`/`black` named keywords (CSS custom property values).
+- `login.component.scss` / `register.component.scss`: `.auth-story { color: #1d2430 }` → `var(--foreground)`; `.eyebrow { color: #a44f12 }` → `var(--secondary)` (soft-touch warm rust).
+- `profile.component.scss`: stripped all `var(--token, #hex)` fallbacks (surface/border/foreground/muted-foreground); replaced `var(--dropdown-hover-bg, rgba(0,0,0,0.05))` with `var(--hover-bg, color-mix(in oklab, var(--foreground) 5%, transparent))`.
+- `user/user.component.scss`: `#00000066` → `color-mix(in oklab, var(--foreground) 40%, transparent)` for theme-aware overlay.
+- 21/21 test suites pass; lint clean. Pinned `client-interface: 0`.
+- Floating notification/chat responsive stacking deferred to cross-F (heuristic tokenization complete).

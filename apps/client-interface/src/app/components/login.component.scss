@@ -26,7 +26,7 @@
 .auth-story {
   display: grid;
   gap: 1rem;
-  color: #1d2430;
+  color: var(--foreground);
 }
 
 .eyebrow {
@@ -35,7 +35,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #a44f12;
+  color: var(--secondary);
 }
 
 h1 {

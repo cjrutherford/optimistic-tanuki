@@ -8,10 +8,16 @@ staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
 # Prefer a directly-installed pnpm because some local Node + corepack
 # combinations crash with ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING when invoked
 # as `corepack pnpm`. Fall back to corepack only if no standalone pnpm exists.
+#
+# Scope formatting to the staged set so an unrelated working-tree change
+# cannot block commits via a Prettier crash on a file the developer did
+# not touch in this commit. Comma-separated for --files=.
+staged_csv="$(printf '%s' "$staged_files" | paste -sd, -)"
+
 if command -v pnpm >/dev/null 2>&1; then
-  pnpm exec nx format:write
+  pnpm exec nx format:write --files="$staged_csv"
 else
-  corepack pnpm exec nx format:write
+  corepack pnpm exec nx format:write --files="$staged_csv"
 fi
 
 printf '%s\n' "$staged_files" | while IFS= read -r file; do

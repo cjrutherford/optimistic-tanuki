@@ -140,8 +140,8 @@ mat-list-item {
     position: absolute;
     top: 100%;
     left: 0;
-    background: var(--surface, #fff);
-    border: 1px solid var(--border, #ccc);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 100;
@@ -160,10 +160,13 @@ mat-list-item {
     background: none;
     border: none;
     cursor: pointer;
-    color: var(--foreground, #333);
+    color: var(--foreground);
 
     &:hover {
-      background: var(--dropdown-hover-bg, rgba(0, 0, 0, 0.05));
+      background: var(
+        --hover-bg,
+        color-mix(in oklab, var(--foreground) 5%, transparent)
+      );
     }
   }
 }
@@ -195,12 +198,12 @@ mat-list-item {
 
   .post-content {
     margin-bottom: 8px;
-    color: var(--foreground, #333);
+    color: var(--foreground);
   }
 
   .post-date {
     font-size: 0.875rem;
-    color: var(--muted-foreground, #666);
+    color: var(--muted-foreground);
   }
 }
 
@@ -230,11 +233,11 @@ mat-list-item {
 
   .community-members {
     font-size: 0.875rem;
-    color: var(--muted-foreground, #666);
+    color: var(--muted-foreground);
   }
 }
 
 .no-content {
-  color: var(--muted-foreground, #666);
+  color: var(--muted-foreground);
   font-style: italic;
 }
