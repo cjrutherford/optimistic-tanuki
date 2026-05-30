@@ -5,7 +5,14 @@ staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
 
 [ -z "$staged_files" ] && exit 0
 
-corepack pnpm exec nx format:write
+# Prefer a directly-installed pnpm because some local Node + corepack
+# combinations crash with ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING when invoked
+# as `corepack pnpm`. Fall back to corepack only if no standalone pnpm exists.
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm exec nx format:write
+else
+  corepack pnpm exec nx format:write
+fi
 
 printf '%s\n' "$staged_files" | while IFS= read -r file; do
   [ -e "$file" ] && git add -- "$file"
