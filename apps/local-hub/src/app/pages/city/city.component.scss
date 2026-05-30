@@ -825,11 +825,11 @@ app-donation-progress {
 }
 
 .btn-donate {
-  background: #10b981;
-  color: white;
+  background: var(--success);
+  color: var(--on-success, white);
 
   &:hover:not(:disabled) {
-    background: #059669;
+    opacity: 0.9;
   }
 }
 

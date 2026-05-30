@@ -281,7 +281,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   background: var(--primary);
-  color: white;
+  color: var(--on-primary, white);
   padding: 6px 12px;
   border-radius: 6px;
 }

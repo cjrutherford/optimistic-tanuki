@@ -62,7 +62,7 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   background: rgba(255, 255, 255, 0.2);
-  color: white;
+  color: var(--on-primary, white);
   padding: 5px 12px;
   border-radius: 20px;
   backdrop-filter: blur(4px);
@@ -98,7 +98,7 @@
 }
 
 .error-banner {
-  background: var(--surface, var(--error-bg, #ffebee));
+  background: var(--error-bg);
   color: var(--error);
   border: 1px solid var(--error);
   border-radius: 8px;
@@ -113,8 +113,8 @@
 
 .auth-prompt {
   margin-top: 24px;
-  background: var(--surface, var(--info-bg, #e3f2fd));
-  border: 1px solid var(--border, var(--info-border, #90caf9));
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: 8px;
   padding: 14px 16px;
   font-size: 0.9rem;

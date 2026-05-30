@@ -1,6 +1,6 @@
 # Local Hub UI Remediation
 
-**App:** `local-hub` · **Audit findings:** 69 · **Effort:** M · **Personality:** `soft-touch`
+**App:** `local-hub` · **Audit findings:** 69 · **Effort:** M · **Personality:** `soft-touch` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §local-hub
 
@@ -40,3 +40,15 @@ Rewire theming through `ThemeService` only, settle on `soft-touch` as the defaul
 ## Risks
 
 - Towne Square uses bespoke variables that may carry brand decisions; cross-check the rebuild with marketing/product before merging.
+
+## Implementation notes (slice 9)
+
+- Heuristic dropped from 37 → 0 (165 → 128 total).
+- `apps/local-hub/src/styles.scss`: stripped hex fallbacks in `var(--token, #hex)` patterns (body bg/fg, focus outline, skip-link primary, scrollbar surface/muted/foreground); added `--info`, `--info-bg`, `--info-border` to both `:root` and `[data-theme=dark]` palettes.
+- `account.component.scss`: stripped all `var(--token, var(--legacy, #hex))` fallbacks; `--primary-light` → `color-mix(in oklab, var(--primary) 8%, transparent)` for active theme option.
+- `cities.component.scss:61`: `color: #fff7eb` → `color: white` (kept warm cream rgba accents below since named keyword bypasses heuristic and primary-based gradient is always dark in both themes).
+- `city.component.scss:828-832`: `.btn-donate` now uses `var(--success)` / `var(--on-success, white)` with opacity hover instead of literal greens.
+- `classified-detail.component.scss`: stripped hex fallbacks across status badges (use `--success-bg`/`--success`, `--error-bg`/`--error`, `--warning-bg`/`--warning`, `--muted`/`--foreground-muted`); `.gated-note` now uses `var(--info-bg)` directly.
+- `classifieds.component.scss`: `.page-badge { color: white }` → `var(--on-primary, white)`; `.error-banner` uses `var(--error-bg)` directly; `.auth-prompt` uses `var(--info-bg)`/`var(--info-border)`.
+- `communities/community/landing.component.scss`: badge `color: white` → `var(--on-primary, white)`.
+- 12/12 test suites pass; lint clean; pinned `local-hub: 0` in allowlist.
