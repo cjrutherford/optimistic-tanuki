@@ -21,12 +21,13 @@ Lint script: `tools/scripts/check-client-ui-heuristics.mjs` (`pnpm run ui:heuris
 
 ### Cross-cutting (do first when possible)
 
-| ID  | File                                                               | Title                                                             |
-| --- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| A   | [cross-A-shared-primitives.md](cross-A-shared-primitives.md)       | Promote shared page-header / metric-tile / empty-state primitives |
-| B   | [cross-B-badge-component.md](cross-B-badge-component.md)           | Themed badge/chip/pill component + semantic variants              |
-| C   | [cross-C-personality-defaults.md](cross-C-personality-defaults.md) | Apply personality default matrix across all 18 apps               |
-| D   | [cross-D-heuristic-lint-ci.md](cross-D-heuristic-lint-ci.md)       | Enforce `ui:heuristics:ci` in CI on a per-app allowlist           |
+| ID  | File                                                                           | Title                                                                          |
+| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| A   | [cross-A-shared-primitives.md](cross-A-shared-primitives.md)                   | Promote shared page-header / metric-tile / empty-state primitives              |
+| B   | [cross-B-badge-component.md](cross-B-badge-component.md)                       | Themed badge/chip/pill component + semantic variants                           |
+| C   | [cross-C-personality-defaults.md](cross-C-personality-defaults.md)             | Apply personality default matrix across all 18 apps                            |
+| D   | [cross-D-heuristic-lint-ci.md](cross-D-heuristic-lint-ci.md)                   | Enforce `ui:heuristics:ci` in CI on a per-app allowlist                        |
+| E   | [cross-E-primitive-stories-and-docs.md](cross-E-primitive-stories-and-docs.md) | Storybook stories + README migration examples for the new common-ui primitives |
 
 ### Per-app (parallelizable)
 
@@ -52,9 +53,13 @@ Ordered by lint-finding volume (highest first). Effort estimates come from the a
 | configurable-client       |        3 | M      | [app-configurable-client.md](app-configurable-client.md)             |
 | christopherrutherford-net |        2 | M      | [app-christopherrutherford-net.md](app-christopherrutherford-net.md) |
 | hai                       |        0 | S      | [app-hai.md](app-hai.md)                                             |
+| ui-playground             |       17 | S      | [app-ui-playground.md](app-ui-playground.md)                         |
 
-`apps/ui-playground` (17 findings) is intentionally excluded; it is a showcase
-sandbox where literal hex colors are allowed.
+`apps/ui-playground` was originally excluded as a showcase sandbox, but slice
+22 brought it under the same `:root` brand-token discipline as the configurator
+apps: literal hex colors now live in `apps/ui-playground/src/styles.scss`
+`:root` as `--pg-card-*` brand tokens that describe text colors readable on
+the dark editorial panels the element-card components render.
 
 ## Conventions used in every plan
 

@@ -18,6 +18,21 @@
     sans-serif;
   --font-heading: 'IBM Plex Sans', 'Avenir Next Condensed', sans-serif;
   --font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+
+  /* Element-card dark-panel palette (cards render dark editorial chrome on
+     the light page background, so these tokens are intentionally not
+     theme-responsive — they describe text colors that read well on
+     rgba(18,27,42,…) panels). */
+  --pg-card-text-strong: #eff7ff;
+  --pg-card-text-soft: #d9ebff;
+  --pg-card-text-muted: #aac6e6;
+  --pg-card-text-label: #d2e7ff;
+  --pg-card-text-label-alt: #c9dfff;
+  --pg-card-text-table-head: #dbeaff;
+  --pg-card-input-text: #e4f0ff;
+  --pg-card-accent-mint: #90f0de;
+  --pg-toggle-thumb-on: #ffffff;
+
   color-scheme: light;
 }
 
