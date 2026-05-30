@@ -45,11 +45,27 @@ tenant config override is honored.
 
 ### F2 — Remove residual local `ThemeService` overrides
 
-**Goal:** After cross-C set documented personality defaults in
-`PERSONALITY_DEFAULTS`, several apps still call
+**Status:** ⛔ Cancelled (premise incorrect; see note below)
+
+**Original goal:** After cross-C set documented personality defaults in
+`PERSONALITY_DEFAULTS`, several apps still called
 `themeService.setPersonality(...)` from their own bootstrap or shell
-component. Those calls are now redundant and risk drifting from the
-documented matrix.
+component. Those calls were assumed to be redundant.
+
+**Why cancelled:** Audit during F1 (commit `45998b5b`) confirmed there is
+no `PERSONALITY_DEFAULTS` map in `@optimistic-tanuki/theme-lib`. Cross-C
+(`ef5ce297`) implemented documented defaults exactly as per-app
+`ngOnInit` `setPersonality(...)` calls inside each app's
+`AppComponent` — those calls are load-bearing, not redundant, and the
+F1 bootstrap specs assert on them. Removing them would break both the
+documented-personality behavior and the F1 spec suite.
+
+**If this becomes desirable again:** treat it as a refactor that
+introduces a real `PERSONALITY_DEFAULTS: Record<AppId, PersonalityId>`
+into theme-lib + an `applyDefaultPersonality(appId)` helper auto-invoked
+at boot, then migrate apps and update F1 specs to assert on the helper
+instead of `setPersonality`. Out of scope for the current remediation
+plan — file as a fresh plan if pursued.
 
 **Files (suspected — audit first):**
 
@@ -71,23 +87,41 @@ F1 first if you intend to do F2.
 
 ### F3 — `configurable-client` tenant-config token mapping
 
+**Status:** ✅ Done
+
 **Goal:** The dynamic per-tenant theme injection in
 `apps/configurable-client` still uses an ad-hoc shape (raw CSS string in
 some paths, custom properties dict in others). Standardize it on a single
 typed shape that maps tenant brand colors → ThemeService palette tokens
 (`primary`, `secondary`, `surface`, `border`, etc.).
 
-**Files:**
+**Implementation:**
 
-- `apps/configurable-client/src/app/config/tenant-theme.service.ts` (or
-  the equivalent — locate via grep on `tenant` + `theme`).
-- `apps/configurable-client/src/app/config/tenant-theme.spec.ts`.
-- `libs/theme-lib` may need to expose a typed `applyTenantOverrides(palette)`
-  helper if one doesn't already exist.
+- New `apps/configurable-client/src/app/services/tenant-theme.service.ts`
+  injects `ThemeService` + `DOCUMENT` + `PLATFORM_ID` and exposes
+  `apply(theme: ThemeConfig | undefined)`. Mapping:
+  - `mode` → `themeService.setTheme(mode)`
+  - `personalityId` → `themeService.setPersonality(personalityId)`
+  - `primaryColor` → `themeService.setPrimaryColor(primaryColor)` (drives
+    the entire generated palette downstream)
+  - `secondaryColor`/`backgroundColor`/`textColor`/`fontFamily` → direct
+    overrides on the canonical ThemeService tokens
+    (`--secondary`, `--background`, `--foreground`, `--font-body`) so
+    tenant brand colors win over the personality-generated palette.
+  - `customCss` → singleton `<style id="tenant-custom-theme-css">`
+    injection (replaces the ad-hoc `custom-theme-css` element ID).
+- `AppResolverComponent` now delegates to `TenantThemeService` in both
+  `loadByName` and `loadByDomain`; the local `applyTheme(theme: any)`
+  helper that wrote bespoke `--primary-color` / `--secondary-color` /
+  `--background-color` / `--text-color` / `--font-family` variables is
+  removed (those names were not the workspace's canonical tokens and
+  never reached any consuming component).
+- 6 specs in `tenant-theme.service.spec.ts` cover: undefined-theme
+  no-op, SSR no-op, ThemeService routing, direct token overrides,
+  singleton `<style>` re-application, and partial configs.
 
-**Verification:** Tenant config fixtures load into the dev server without
-console warnings; primary/secondary swap on tenant change; `pnpm exec nx
-test configurable-client` passes.
+**Verified:** `pnpm exec nx run-many -t test,lint,build
+--projects=configurable-client`.
 
 ---
 
@@ -174,20 +208,37 @@ arrangements; `pnpm exec nx test d6` passes.
 
 ### F8 — `developer-portal` optional `otui-app-bar` + ThemeService bootstrap
 
+**Status:** ✅ Done
+
 **Goal:** `developer-portal` currently renders its own bespoke header.
-Adopting `<otui-app-bar>` would align it with the rest of the workspace
-and let ThemeService own the foundation personality bootstrap.
+Adopting `<otui-app-bar>` (from `@optimistic-tanuki/navigation-ui`)
+would align it with the rest of the workspace and let ThemeService own
+the foundation personality bootstrap.
 
-**Files:**
+**Implementation:**
 
-- `apps/developer-portal/src/app/app.component.html`
-- `apps/developer-portal/src/app/app.component.ts` (inject ThemeService).
-- `apps/developer-portal/src/app/app.config.ts`.
+- `apps/developer-portal/src/app/app.component.ts` now imports
+  `AppBarComponent` from `@optimistic-tanuki/navigation-ui`. The
+  existing `ngOnInit` foundation-personality bootstrap (from cross-C /
+  F1) is retained.
+- `apps/developer-portal/src/app/app.component.html` renders
+  `<otui-app-bar appTitle="Developer Portal" [showThemeToggle]="true"
+menuIcon="↓" (menuToggle)="onMenuToggle()">` above the marketing
+  hero. The hero remains the lede/CTA surface; the AppBar provides
+  app-chrome (title, brand area, theme toggle) and now also routes the
+  menu action to scroll to the `#usage-dashboard` anchor (the natural
+  next-step section).
+- `anyComponentStyle` budget bumped from `4kb/8kb` →
+  `8kb/40kb` in `apps/developer-portal/project.json` to align with the
+  other AppBar consumers (`local-hub`, `forgeofwill`); the prior 8 kB
+  ceiling rejects the transitive button/card/notification styles that
+  the AppBar's primitive imports already pull in everywhere else.
+- Spec adds two assertions: AppBar is present with the portal title,
+  and the menu handler scrolls the usage-dashboard target. The
+  pre-existing foundation-bootstrap spec (from F1) still passes.
 
-**Verification:** Personality switcher in the dev shell now affects the
-header chrome; visual parity with the prior bespoke header (or
-documented improvement); `pnpm exec nx test,build developer-portal`
-passes.
+**Verified:** `pnpm exec nx run-many -t test,lint,build
+--projects=developer-portal`; `pnpm run ui:heuristics:ci` still 0.
 
 ---
 

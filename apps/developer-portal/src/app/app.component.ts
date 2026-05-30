@@ -1,5 +1,6 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { AppBarComponent } from '@optimistic-tanuki/navigation-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 type PortalSection = {
@@ -17,6 +18,7 @@ type MetricCard = {
 
 @Component({
   selector: 'app-root',
+  imports: [AppBarComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
@@ -34,6 +36,19 @@ export class AppComponent implements OnInit {
         void this.themeService.setPersonality('foundation');
       }
     }
+  }
+
+  /**
+   * AppBar menu emits when the user taps the menu icon. The developer portal
+   * has no sidebar, so the menu action scrolls to the usage dashboard anchor
+   * (the natural next-step section after the hero).
+   */
+  protected onMenuToggle(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    document.getElementById('usage-dashboard')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   }
 
   protected readonly metrics: MetricCard[] = [

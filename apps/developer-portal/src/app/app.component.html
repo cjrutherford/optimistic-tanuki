@@ -1,4 +1,12 @@
 <div class="portal-shell">
+  <otui-app-bar
+    appTitle="Developer Portal"
+    [showThemeToggle]="true"
+    [useTile]="false"
+    menuIcon="↓"
+    (menuToggle)="onMenuToggle()"
+  ></otui-app-bar>
+
   <header class="hero">
     <p class="eyebrow">Optimistic Tanuki developer portal</p>
     <h1>API docs, SDK onboarding, and usage visibility in one place.</h1>

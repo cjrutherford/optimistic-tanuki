@@ -3,6 +3,7 @@ import { isPlatformBrowser } from '@angular/common';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute } from '@angular/router';
 import { ConfigurationService } from '../services/configuration.service';
+import { TenantThemeService } from '../services/tenant-theme.service';
 
 /**
  * AppResolverComponent handles multi-tenant app configuration loading
@@ -111,6 +112,7 @@ export class AppResolverComponent implements OnInit {
 
   constructor(
     private configService: ConfigurationService,
+    private tenantTheme: TenantThemeService,
     private route: ActivatedRoute,
     @Inject(PLATFORM_ID) private platformId: object
   ) {}
@@ -118,6 +120,10 @@ export class AppResolverComponent implements OnInit {
   ngOnInit(): void {
     // Only load configuration in browser, not during SSR
     if (isPlatformBrowser(this.platformId)) {
+      // Apply documented foundation defaults synchronously-ish so the
+      // shell is themed before HTTP returns. The tenant-config apply()
+      // call inside loadByName/loadByDomain will overlay tenant values.
+      void this.tenantTheme.applyDefaults();
       this.loadConfiguration();
     } else {
       // During SSR, just show loading state
@@ -180,8 +186,9 @@ export class AppResolverComponent implements OnInit {
       next: (config) => {
         console.log('[AppResolver] Configuration loaded successfully:', config);
         this.configService.setConfiguration(config);
-        this.applyTheme(config.theme);
-        this.loading = false;
+        void this.tenantTheme.apply(config.theme).finally(() => {
+          this.loading = false;
+        });
       },
       error: (err) => {
         console.error(
@@ -205,8 +212,9 @@ export class AppResolverComponent implements OnInit {
           config
         );
         this.configService.setConfiguration(config);
-        this.applyTheme(config.theme);
-        this.loading = false;
+        void this.tenantTheme.apply(config.theme).finally(() => {
+          this.loading = false;
+        });
       },
       error: (err) => {
         console.error(
@@ -235,38 +243,5 @@ export class AppResolverComponent implements OnInit {
         });
       },
     });
-  }
-
-  private applyTheme(theme: any): void {
-    if (!theme) return;
-
-    const root = document.documentElement;
-
-    if (theme.primaryColor) {
-      root.style.setProperty('--primary-color', theme.primaryColor);
-    }
-    if (theme.secondaryColor) {
-      root.style.setProperty('--secondary-color', theme.secondaryColor);
-    }
-    if (theme.backgroundColor) {
-      root.style.setProperty('--background-color', theme.backgroundColor);
-    }
-    if (theme.textColor) {
-      root.style.setProperty('--text-color', theme.textColor);
-    }
-    if (theme.fontFamily) {
-      root.style.setProperty('--font-family', theme.fontFamily);
-    }
-
-    // Apply custom CSS if provided
-    if (theme.customCss) {
-      let styleElement = document.getElementById('custom-theme-css');
-      if (!styleElement) {
-        styleElement = document.createElement('style');
-        styleElement.id = 'custom-theme-css';
-        document.head.appendChild(styleElement);
-      }
-      styleElement.textContent = theme.customCss;
-    }
   }
 }
