@@ -25,6 +25,50 @@
   --app-info-foreground: var(--info-foreground, #172554);
   --app-overlay: var(--background-overlay, rgba(15, 23, 42, 0.6));
 
+  /* Pipeline status palette (solid bars / gradient endpoints) */
+  --pipeline-new: #3b82f6;
+  --pipeline-contacted: #f59e0b;
+  --pipeline-qualified: #8b5cf6;
+  --pipeline-proposal: #ec4899;
+  --pipeline-negotiation: #f97316;
+  --pipeline-won: #22c55e;
+  --pipeline-lost: #ef4444;
+
+  /* Soft status badge palette (bg + fg pairs) */
+  --status-new-bg: #dbeafe;
+  --status-new-fg: #1e40af;
+  --status-contacted-bg: #fef3c7;
+  --status-contacted-fg: #92400e;
+  --status-qualified-bg: #ede9fe;
+  --status-qualified-fg: #5b21b6;
+  --status-proposal-bg: #fce7f3;
+  --status-proposal-fg: #9d174d;
+  --status-negotiation-bg: #ffedd5;
+  --status-negotiation-fg: #9a3412;
+  --status-won-bg: #dcfce7;
+  --status-won-fg: #166534;
+  --status-lost-bg: #fee2e2;
+  --status-lost-fg: #991b1b;
+
+  /* Stat tile gradient endpoints */
+  --stat-auto-start: #6366f1;
+  --stat-auto-end: #8b5cf6;
+  --stat-manual-start: #10b981;
+  --stat-manual-end: #34d399;
+  --stat-value-start: #f59e0b;
+  --stat-value-end: #fbbf24;
+  --stat-followup-start: #ef4444;
+  --stat-followup-end: #f87171;
+  --stat-rate-start: #3b82f6;
+  --stat-rate-end: #60a5fa;
+
+  /* External brand colors (kept literal; not theme-controlled) */
+  --brand-upwork: #14a800;
+  --brand-linkedin: #0077b5;
+  --brand-referral: #8b5cf6;
+  --brand-cold: #64748b;
+  --brand-local: #10b981;
+
   --font-heading: var(--font-heading, 'Space Grotesk', system-ui, sans-serif);
   --font-body: var(--font-body, 'IBM Plex Sans', system-ui, sans-serif);
   --font-mono: var(--font-mono, 'JetBrains Mono', monospace);

@@ -456,19 +456,39 @@
   }
 
   &.auto {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: linear-gradient(
+      135deg,
+      var(--stat-auto-start),
+      var(--stat-auto-end)
+    );
   }
   &.manual {
-    background: linear-gradient(135deg, #10b981, #34d399);
+    background: linear-gradient(
+      135deg,
+      var(--stat-manual-start),
+      var(--stat-manual-end)
+    );
   }
   &.value {
-    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    background: linear-gradient(
+      135deg,
+      var(--stat-value-start),
+      var(--stat-value-end)
+    );
   }
   &.followup {
-    background: linear-gradient(135deg, #ef4444, #f87171);
+    background: linear-gradient(
+      135deg,
+      var(--stat-followup-start),
+      var(--stat-followup-end)
+    );
   }
   &.rate {
-    background: linear-gradient(135deg, #3b82f6, #60a5fa);
+    background: linear-gradient(
+      135deg,
+      var(--stat-rate-start),
+      var(--stat-rate-end)
+    );
   }
 }
 
@@ -500,7 +520,11 @@
   top: 0.75rem;
   right: 0.75rem;
   padding: 0.25rem 0.5rem;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(
+    135deg,
+    var(--stat-auto-start),
+    var(--stat-auto-end)
+  );
   color: var(--app-primary-foreground);
   font-size: 0.625rem;
   font-weight: 700;
@@ -569,25 +593,25 @@
   transition: width 0.6s ease-out;
 
   &[data-status='new'] {
-    background: #3b82f6;
+    background: var(--pipeline-new);
   }
   &[data-status='contacted'] {
-    background: #f59e0b;
+    background: var(--pipeline-contacted);
   }
   &[data-status='qualified'] {
-    background: #8b5cf6;
+    background: var(--pipeline-qualified);
   }
   &[data-status='proposal'] {
-    background: #ec4899;
+    background: var(--pipeline-proposal);
   }
   &[data-status='negotiation'] {
-    background: #f97316;
+    background: var(--pipeline-negotiation);
   }
   &[data-status='won'] {
-    background: #22c55e;
+    background: var(--pipeline-won);
   }
   &[data-status='lost'] {
-    background: #ef4444;
+    background: var(--pipeline-lost);
   }
 }
 

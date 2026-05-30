@@ -1,6 +1,6 @@
 # Leads App UI Remediation
 
-**App:** `leads-app` · **Audit findings:** 38 · **Effort:** M · **Personality:** `control-center`
+**App:** `leads-app` · **Audit findings:** 38 → **0** · **Effort:** M · **Personality:** `control-center` · **Status:** ✅ Done (slice 8)
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §leads-app
 
@@ -42,3 +42,15 @@ Eliminate the remaining hardcoded status/category/auth colors while preserving t
 ## Risks
 
 - Status colors encode meaning; require product sign-off on the mapping before code review.
+
+## Implementation notes (slice 8, 2026-05-30)
+
+- Added three semantic palettes to `apps/leads-app/src/styles.scss` `:root`:
+  - `--pipeline-{new,contacted,qualified,proposal,negotiation,won,lost}` for solid pipeline bars.
+  - `--status-{new,contacted,qualified,proposal,negotiation,won,lost}-{bg,fg}` for soft status badges.
+  - `--stat-{auto,manual,value,followup,rate}-{start,end}` for stat-tile gradient endpoints.
+  - External brand colors as `--brand-{upwork,linkedin,referral,cold,local}` (kept literal; not theme-controlled).
+- Tokenized `dashboard.component.scss` (stat-icon gradients, stat-badge, pipeline bars) and `leads.component.scss` (source-badge + status-badge soft palettes).
+- Fixed pre-existing `theme-sweep.spec.ts` failure: collapsed multi-line `--app-surface-muted` declaration to a single line to match the spec's `toContain` assertion.
+- Deferred (cross-F): formal status→tone mapping doc, auth card tokenization (no findings remained), responsive onboarding/interview grids, otui-badge migration.
+- Verified: `pnpm exec nx lint leads-app` clean, `pnpm exec nx test leads-app` 12/12 suites pass (theme-sweep now passes), `pnpm run ui:heuristics:ci` passes with `leads-app: 0` pinned.
