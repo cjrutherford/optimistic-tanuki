@@ -1,6 +1,6 @@
 # Store Client UI Remediation
 
-**App:** `store-client` · **Audit findings:** 78 · **Effort:** M/L · **Personality:** `playful`
+**App:** `store-client` · **Audit findings:** 68 → **0** · **Effort:** M/L · **Personality:** `playful` · **Status:** ✅ Done (slice 7)
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §store-client
 
@@ -47,3 +47,12 @@ Bring the storefront — especially the bookings page — onto the `playful` per
 
 - Bookings has hidden state-driven styles; a visual regression suite is strongly recommended before merge.
 - Legacy aliases may have third-party tenant-customization callers; keep the alias for one release minimum.
+
+## Implementation notes (slice 7, 2026-05-30)
+
+- Expanded `apps/store-client/src/styles.scss` `:root` with the full Playful palette plus text scale (`--text-strong/-secondary/-muted/-disabled`), surface/border scale, neutral button palette (`--neutral`, `--neutral-hover`), status palette, and soft-alert tokens (`--success/-danger/-warning/-info-soft-bg/-fg/-border`, `--neutral-soft-*`, `--info-tint-*`). Added `[data-theme='dark']` overrides for surfaces and text scale.
+- Tokenized 4 component SCSS files (`app.component`, `bookings.component`, `catalog.component`, `donations.component`) via length-sorted hex→token map; stripped inline `var(--token, #hex)` fallbacks.
+- Bookings status pills now consume `--success/danger/warning/info/neutral-soft-bg|-fg` rather than raw Bootstrap hexes.
+- Button palette: `.btn-primary` → `var(--accent)`/`var(--accent-hover)`; `.btn-secondary` → `var(--neutral)`/`var(--neutral-hover)`; `.btn-danger` → `var(--danger)`/`var(--danger-hover)`.
+- Deferred (cross-F): legacy alias deprecation pass (kept aliases for one release), Playwright dark-mode smoke for `/bookings`, otui-badge migration for status pills (waits on cross-B integration).
+- Verified: `pnpm exec nx lint store-client` clean, `pnpm exec nx test store-client` 3/3 suites pass, `pnpm run ui:heuristics:ci` passes with `store-client: 0` pinned.
