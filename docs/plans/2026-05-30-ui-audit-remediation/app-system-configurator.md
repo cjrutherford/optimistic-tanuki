@@ -1,6 +1,6 @@
 # System Configurator UI Remediation
 
-**App:** `system-configurator` · **Audit findings:** 9 · **Effort:** L · **Personality:** `control-center`
+**App:** `system-configurator` · **Audit findings:** 9 · **Effort:** L · **Personality:** `control-center` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §system-configurator
 

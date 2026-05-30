@@ -22,8 +22,12 @@
       rgba(56, 189, 248, 0.14),
       transparent 28%
     ),
-    linear-gradient(180deg, #071015 0%, #0d161c 100%);
-  color: #ebfffb;
+    linear-gradient(
+      180deg,
+      var(--config-shell-bg-1) 0%,
+      var(--config-shell-bg-2) 100%
+    );
+  color: var(--config-shell-foreground);
   position: relative;
   z-index: 1;
 }
@@ -58,8 +62,12 @@
   display: grid;
   place-items: center;
   border-radius: 1rem;
-  background: linear-gradient(135deg, #2dd4bf, #0f172a);
-  color: #031011;
+  background: linear-gradient(
+    135deg,
+    var(--config-brand-gradient-from),
+    var(--config-brand-gradient-to)
+  );
+  color: var(--config-brand-foreground);
   font-weight: 800;
   letter-spacing: 0.08em;
 }

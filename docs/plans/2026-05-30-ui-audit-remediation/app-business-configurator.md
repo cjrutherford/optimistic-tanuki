@@ -1,6 +1,6 @@
 # Business Configurator UI Remediation
 
-**App:** `business-configurator` · **Audit findings:** 9 · **Effort:** S/M · **Personality:** `professional`
+**App:** `business-configurator` · **Audit findings:** 9 · **Effort:** S/M · **Personality:** `professional` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §business-configurator
 

@@ -1,7 +1,7 @@
 {
   "generated": "2026-05-30",
   "apps": {
-    "business-configurator": 9,
+    "business-configurator": 0,
     "business-site": 6,
     "christopherrutherford-net": 2,
     "client-interface": 0,
@@ -17,7 +17,7 @@
     "marketing-generator": 5,
     "owner-console": 0,
     "store-client": 0,
-    "system-configurator": 9,
+    "system-configurator": 0,
     "ui-playground": 17,
     "video-client": 7
   }
