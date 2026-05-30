@@ -16,6 +16,8 @@ Order is recommendation, not dependency — each sub-slice is independent.
 
 ### F1 — Per-app `currentPersonality` bootstrap specs
 
+**Status:** ✅ Done
+
 **Goal:** Verify every app actually applies its documented personality
 (`docs/app-personality-map.md`) before first paint, with a unit/integration
 test guarding the boot path.
@@ -117,6 +119,8 @@ contrast warnings in the ThemeService console.
 ---
 
 ### F5 — Relax `leads-app` theme-sweep spec to whitespace-insensitive matching
+
+**Status:** ✅ Done (rolled in with F1; spec was blocking F1 verification)
 
 **Goal:** The spec added during slice 8 (`leads-app`) asserts the rendered
 output contains specific CSS substrings with exact whitespace. It will

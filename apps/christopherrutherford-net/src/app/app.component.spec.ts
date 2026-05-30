@@ -12,8 +12,11 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { RouterTestingModule } from '@angular/router/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { PLATFORM_ID } from '@angular/core';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { ContactService } from './contact.service';
 import { of } from 'rxjs';
+
+const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -68,5 +71,21 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
     expect(compiled.querySelector('otui-topographic-drift')).toBeTruthy();
     expect(compiled.querySelector('.app-content')).toBeTruthy();
+  });
+
+  it('bootstraps the elegant personality on first load', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation((key) =>
+        key === PERSONALITY_STORAGE_KEY ? null : null
+      );
+    const themeService = TestBed.inject(ThemeService);
+    const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
+
+    fixture.detectChanges();
+
+    expect(setPersonalitySpy).toHaveBeenCalledWith('elegant');
+    getItemSpy.mockRestore();
+    setPersonalitySpy.mockRestore();
   });
 });

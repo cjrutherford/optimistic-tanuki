@@ -136,6 +136,15 @@ describe('AppComponent', () => {
     expect(compiled.textContent).toContain('Register');
   });
 
+  it('bootstraps the control-center personality on first load', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(themeServiceStub.setPersonality).toHaveBeenCalledWith(
+      'control-center'
+    );
+  });
+
   it('renders the parallax grid warp motion background shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();

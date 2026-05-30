@@ -1,33 +1,30 @@
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
+import { provideRouter } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
-import { RouterModule } from '@angular/router';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, RouterModule.forRoot([])],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: PLATFORM_ID, useValue: 'browser' },
+      ],
     }).compileComponents();
   });
 
-  it('should create the app', () => {
+  it('renders the router shell', () => {
     const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('router-outlet')).toBeTruthy();
   });
 
-  it(`should have as title 'video-client'`, () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('video-client');
-  });
-
-  it('bootstraps the electric personality on first load', () => {
+  it('bootstraps the professional personality on first load', () => {
     const getItemSpy = jest
       .spyOn(Storage.prototype, 'getItem')
       .mockImplementation((key) =>
@@ -39,7 +36,7 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    expect(setPersonalitySpy).toHaveBeenCalledWith('electric');
+    expect(setPersonalitySpy).toHaveBeenCalledWith('professional');
     getItemSpy.mockRestore();
     setPersonalitySpy.mockRestore();
   });

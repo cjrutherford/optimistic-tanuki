@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
 import { AuthStateService } from './state/auth-state.service';
 import { NavigationService } from '@optimistic-tanuki/app-registry';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import { of } from 'rxjs';
+
+const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
 
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
@@ -56,5 +59,22 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
     expect(compiled.querySelector('otui-signal-mesh')).toBeTruthy();
     expect(compiled.querySelector('.app-shell')).toBeTruthy();
+  });
+
+  it('bootstraps the control-center personality on first load', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation((key) =>
+        key === PERSONALITY_STORAGE_KEY ? null : null
+      );
+    const themeService = TestBed.inject(ThemeService);
+    const setPersonalitySpy = jest.spyOn(themeService, 'setPersonality');
+
+    const localFixture = TestBed.createComponent(AppComponent);
+    localFixture.detectChanges();
+
+    expect(setPersonalitySpy).toHaveBeenCalledWith('control-center');
+    getItemSpy.mockRestore();
+    setPersonalitySpy.mockRestore();
   });
 });
