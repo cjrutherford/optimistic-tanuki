@@ -5,7 +5,7 @@
   --foreground-color: var(--foreground);
   --primary-color: var(--primary);
   --text-color: var(--foreground);
-  --surface-color: color-mix(in srgb, var(--background, #ffffff) 92%, white);
+  --surface-color: color-mix(in srgb, var(--background) 92%, white);
 }
 
 *,
@@ -23,15 +23,15 @@ body {
   margin: 0;
   background: radial-gradient(
       circle at top left,
-      color-mix(in srgb, var(--primary, #1f7a63) 9%, transparent),
+      color-mix(in srgb, var(--primary) 9%, transparent),
       transparent 30%
     ),
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--background, #ffffff) 98%, white),
-      color-mix(in srgb, var(--background, #ffffff) 92%, #eef2f7)
+      color-mix(in srgb, var(--background) 98%, white),
+      color-mix(in srgb, var(--background) 92%, var(--surface))
     );
-  color: var(--foreground, #0f172a);
+  color: var(--foreground);
   font-family: var(
     --personality-font-family,
     var(--font-body, 'Source Sans Pro', system-ui, sans-serif)
@@ -50,5 +50,5 @@ a {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--primary, #1f7a63) 24%, white);
+  background: color-mix(in srgb, var(--primary) 24%, var(--background));
 }

@@ -1,6 +1,6 @@
 # Business Site UI Remediation
 
-**App:** `business-site` · **Audit findings:** 6 · **Effort:** S · **Personality:** `professional`
+**App:** `business-site` · **Audit findings:** 6 · **Effort:** S · **Personality:** `professional` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §business-site
 
