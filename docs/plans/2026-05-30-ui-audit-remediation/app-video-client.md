@@ -1,6 +1,6 @@
 # Video Client UI Remediation
 
-**App:** `video-client` · **Audit findings:** 16 · **Effort:** M · **Personality:** `electric`
+**App:** `video-client` · **Audit findings:** 16 · **Effort:** M · **Personality:** `electric` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §video-client
 

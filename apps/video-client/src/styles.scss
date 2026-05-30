@@ -9,6 +9,9 @@
   --success: var(--success, #22c55e);
   --danger: var(--danger, #ef4444);
   --warning: var(--warning, #f59e0b);
+  --error: var(--error, #dc3545);
+  --error-surface: var(--error-surface, #f8d7da);
+  --error-border: var(--error-border, #f5c6cb);
 
   /* RGB triplets for rgba() usage */
   --background-rgb: 10, 10, 15;
@@ -38,8 +41,8 @@
 html,
 body {
   height: 100%;
-  background: var(--background, #0a0a0f);
-  color: var(--foreground, #e8e8ec);
+  background: var(--background);
+  color: var(--foreground);
   font-family: var(--font-body, 'system-ui');
   scroll-behavior: smooth;
 }
