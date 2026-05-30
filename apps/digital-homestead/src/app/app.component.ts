@@ -68,7 +68,7 @@ export class AppComponent implements OnInit {
       if (!hasStoredPersonalityTheme) {
         // Set default palette for digital-homestead
         this.themeService.setTheme('dark');
-        this.themeService.setPersonality('classic');
+        this.themeService.setPersonality('soft-touch');
         this.themeService.setPrimaryColor('#3f51b5');
       } else {
         // Apply stored theme mode

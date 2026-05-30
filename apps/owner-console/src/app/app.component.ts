@@ -1,7 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
-import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 @Component({
   imports: [RouterModule, SignalMeshComponent],
@@ -25,10 +26,23 @@ import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
   `,
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly themeService = inject(ThemeService);
 
   protected title = 'owner-console';
+
+  ngOnInit(): void {
+    // Apply documented default personality (control-center) only on first load.
+    if (this.isBrowser) {
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
+        void this.themeService.setPersonality('control-center');
+      }
+    }
+  }
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);

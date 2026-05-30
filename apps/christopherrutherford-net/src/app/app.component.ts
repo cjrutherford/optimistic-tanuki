@@ -43,7 +43,7 @@ export class AppComponent implements OnInit {
       if (!hasStoredPersonalityTheme) {
         // Set default palette for christopherrutherford-net
         this.themeService.setTheme('dark');
-        this.themeService.setPersonality('foundation');
+        this.themeService.setPersonality('elegant');
         this.themeService.setPrimaryColor('#006064');
       } else {
         // Apply stored theme mode

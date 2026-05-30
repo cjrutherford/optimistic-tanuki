@@ -86,6 +86,16 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Apply documented default personality (soft-touch) only on first load.
+    if (this.isBrowser) {
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
+        void this.themeService.setPersonality('soft-touch');
+      }
+    }
+
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),

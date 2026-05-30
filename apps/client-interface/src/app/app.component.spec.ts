@@ -75,6 +75,7 @@ describe('AppComponent', () => {
             getAccentColor: jest.fn().mockReturnValue('#4fd1c5'),
             getCurrentPersonality: jest.fn().mockReturnValue(personality),
             setTheme: jest.fn(),
+            setPersonality: jest.fn(),
             setPrimaryColor: jest.fn(),
           },
         },

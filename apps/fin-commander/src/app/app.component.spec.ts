@@ -86,7 +86,7 @@ describe('AppComponent', () => {
 
     fixture.detectChanges();
 
-    expect(themeService.setPersonality).toHaveBeenCalledWith('classic');
+    expect(themeService.setPersonality).toHaveBeenCalledWith('professional');
     expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#0d5f73');
   });
 });

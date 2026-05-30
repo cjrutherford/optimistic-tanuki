@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
 type PortalSection = {
   eyebrow: string;
@@ -18,7 +20,22 @@ type MetricCard = {
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly themeService = inject(ThemeService);
+
+  ngOnInit(): void {
+    // Apply documented default personality (foundation) only on first load.
+    if (isPlatformBrowser(this.platformId)) {
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
+        void this.themeService.setPersonality('foundation');
+      }
+    }
+  }
+
   protected readonly metrics: MetricCard[] = [
     {
       label: 'API docs',
