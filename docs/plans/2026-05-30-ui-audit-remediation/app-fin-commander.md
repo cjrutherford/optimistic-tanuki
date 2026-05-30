@@ -1,6 +1,6 @@
 # Fin Commander UI Remediation
 
-**App:** `fin-commander` · **Audit findings:** 8 · **Effort:** M · **Personality:** `professional`
+**App:** `fin-commander` · **Audit findings:** 8 · **Effort:** M · **Personality:** `professional` · **Status:** ✅ Done
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §fin-commander
 

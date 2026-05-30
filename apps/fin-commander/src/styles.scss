@@ -75,7 +75,7 @@ textarea {
   outline: none;
 
   &::placeholder {
-    color: var(--muted, #64748b);
+    color: var(--muted-foreground);
     opacity: 0.7;
   }
 
