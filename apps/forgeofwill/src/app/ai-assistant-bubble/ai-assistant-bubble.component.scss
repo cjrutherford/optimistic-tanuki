@@ -7,8 +7,8 @@
   border-radius: 50%;
   background: linear-gradient(
     135deg,
-    var(--accent, #667eea) 0%,
-    var(--complement, #764ba2) 100%
+    var(--accent) 0%,
+    var(--complement, var(--secondary)) 100%
   );
   border: none;
   cursor: pointer;
@@ -40,8 +40,11 @@
     min-width: 20px;
     height: 20px;
     border-radius: 10px;
-    background-color: #ef4444;
-    color: white;
+    background-color: var(--danger);
+    color: var(
+      --on-danger,
+      var(--danger-foreground, var(--primary-foreground))
+    );
     font-size: 11px;
     font-weight: 700;
     display: flex;

@@ -66,14 +66,22 @@ function selectorForOffset(content, offset) {
     return '';
   }
 
+  // Strip block/line comments from the pre-selector slice so that punctuation
+  // (like ';' or '{') inside comments cannot mis-locate the selector boundary.
+  const beforeOpen = content
+    .slice(0, lastOpen)
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => ' '.repeat(m.length))
+    .replace(/\/\/[^\n]*/g, (m) => ' '.repeat(m.length));
+
   // Selector starts after the previous statement boundary: '}' or ';'.
   // Using only '}' (the prior behavior) mis-attributes the selector when
   // the file has leading comments or @import statements above :root.
-  const lastSemi = before.lastIndexOf(';', lastOpen - 1);
-  const boundary = Math.max(lastClose, lastSemi);
+  const lastSemi = beforeOpen.lastIndexOf(';');
+  const lastCloseClean = beforeOpen.lastIndexOf('}');
+  const boundary = Math.max(lastCloseClean, lastSemi);
   const selectorStart = boundary + 1;
 
-  // Strip comments before trimming so they don't leak into selector text.
+  // Strip comments from the final selector text as well.
   const rawSelector = content
     .slice(selectorStart, lastOpen)
     .replace(/\/\*[\s\S]*?\*\//g, ' ')

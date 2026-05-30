@@ -2,7 +2,7 @@
   width: 100%;
   min-height: 100vh;
   padding: 2rem;
-  background: var(--background, #ffffff);
+  background: var(--background);
 
   .settings-header {
     max-width: 1200px;
@@ -10,13 +10,13 @@
 
     h1 {
       font-size: 2rem;
-      color: var(--foreground, #212121);
+      color: var(--foreground);
       margin-bottom: 0.5rem;
     }
 
     p {
       font-size: 1rem;
-      color: var(--foreground-secondary, #666666);
+      color: var(--muted-foreground, var(--muted));
     }
   }
 
@@ -26,13 +26,13 @@
 
     h2 {
       font-size: 1.5rem;
-      color: var(--foreground, #212121);
+      color: var(--foreground);
       margin-bottom: 0.5rem;
     }
 
     .section-description {
       font-size: 0.95rem;
-      color: var(--muted, #666666);
+      color: var(--muted);
       margin-bottom: 1.5rem;
       max-width: 800px;
     }
@@ -44,7 +44,7 @@
 
     .hint {
       font-size: 0.85rem;
-      color: var(--muted, #666666);
+      color: var(--muted);
       margin-top: 0.5rem;
       text-align: center;
     }

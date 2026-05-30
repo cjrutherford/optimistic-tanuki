@@ -1,6 +1,6 @@
 # Forge of Will UI Remediation
 
-**App:** `forgeofwill` · **Audit findings:** 104 · **Effort:** M · **Personality:** `bold`
+**App:** `forgeofwill` · **Audit findings:** 104 → **0** · **Effort:** M · **Personality:** `bold` · **Status:** ✅ Done (slice 6)
 
 **Source:** `docs/audits/client-app-ui-audit-2026-05-30.md` §forgeofwill
 
@@ -47,3 +47,12 @@ Decide the personality-customization contract, then migrate landing and workspac
 
 - Tokenizing the landing risks softening the brand. Capture before/after hero screenshots.
 - Personality switcher removal may surprise users; gate behind release notes.
+
+## Implementation notes (slice 6, 2026-05-30)
+
+- Added `:root` token block to `apps/forgeofwill/src/styles.scss` with semantic palette (Bold) and a forge-specific brand palette (`--forge-ember`, `--forge-flame`, `--forge-amber`, `--forge-copper`, `--forge-bronze`, `--forge-cyan`, `--forge-cyan-deep`, `--forge-ice`, `--forge-night*`, `--forge-mist`, `--forge-fog`). Added `[data-theme='dark']` overrides.
+- Stripped inline `var(--token, #hex)` fallbacks across landing/settings/ai-assistant-bubble; tokens now resolve from `:root` (or ThemeService at runtime).
+- `ai-assistant-bubble .badge` now uses `var(--danger)` background and `var(--on-danger, ...)` foreground.
+- Deferred to trailing cross-slice: `transition: all` audit, responsive density review at 4 widths, product decision on personality switcher visibility, project-detail tables crowding.
+- Fixed latent bug in `tools/scripts/check-client-ui-heuristics.mjs`: `;` inside SCSS comments preceding `:root` mis-attributed the selector; selector boundary search now ignores commented punctuation.
+- Verified: `pnpm exec nx lint forgeofwill` clean, `pnpm exec nx test forgeofwill` 21/21 suites pass, `pnpm run ui:heuristics:ci` passes with `forgeofwill: 0` pinned.
