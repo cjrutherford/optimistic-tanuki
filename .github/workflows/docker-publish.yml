@@ -143,6 +143,7 @@ jobs:
           images: cjrutherford/optimistic_tanuki_${{ matrix.app }}
           tags: |
             type=ref,event=branch
+            type=sha,prefix=sha-,format=long
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=prod,enable=${{ github.ref == 'refs/heads/main' }}
 

@@ -40,7 +40,7 @@ Start with [docs/getting-started/README.md](./docs/getting-started/README.md) if
 git clone https://github.com/cjrutherford/optimistic-tanuki.git
 cd optimistic-tanuki
 pnpm install
-pnpm run docker:dev
+pnpm run docker:dev(:bootstrap)
 ```
 
 Primary local endpoints:
