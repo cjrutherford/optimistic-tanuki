@@ -142,6 +142,10 @@ jobs:
             type: client
           - app: marketing-generator
             type: client
+          - app: business-configurator
+            type: client
+          - app: developer-portal
+            type: client
           - app: ui-playground
             type: client
           - app: business-site
