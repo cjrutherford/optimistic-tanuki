@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui-playground
+  namespace: optimistic-tanuki
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ui-playground
+  template:
+    metadata:
+      labels:
+        app: ui-playground
+    spec:
+      containers:
+        - name: ui-playground
+          image: cjrutherford/optimistic_tanuki_ui-playground:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 4000
+          env:
+            - name: NODE_ENV
+              value: 'production'
+            - name: PORT
+              value: '4000'
+            - name: GATEWAY_URL
+              value: 'http://gateway:3000'
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '50m'
+            limits:
+              memory: '256Mi'
+              cpu: '250m'
+          livenessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 4000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui-playground
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: ui-playground
+  ports:
+    - port: 4310
+      targetPort: 4000
+  type: LoadBalancer

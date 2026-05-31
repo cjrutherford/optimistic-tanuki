@@ -9,13 +9,19 @@ import {
   LocalCommunity,
 } from '../../services/community.service';
 import { MapComponent } from '../../components/map/map.component';
-import { CardComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, IconComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../services/auth-state.service';
 
 @Component({
   selector: 'app-cities',
   standalone: true,
-  imports: [CommonModule, FormsModule, MapComponent, CardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MapComponent,
+    CardComponent,
+    IconComponent,
+  ],
   templateUrl: './cities.component.html',
   styleUrls: ['./cities.component.scss'],
 })

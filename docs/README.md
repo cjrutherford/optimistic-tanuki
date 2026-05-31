@@ -1,12 +1,14 @@
 # Optimistic Tanuki Documentation
 
-Welcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today.
+Welcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today: a product portfolio, a composable platform, and a contributor workspace in one Nx monorepo.
 
 ## Start Here
 
 Use the shortest path that matches what you are doing:
 
 - new contributor: [Getting Started](./getting-started/README.md)
+- product or platform evaluator: [Product Overview](../PRODUCT.md)
+- marketing and pitch materials: [Marketing README](./marketing/README.md)
 - understanding repo layout: [Workspace Map](./architecture/workspace-map.md)
 - finding an app, library, or tool: [Workspace Catalog](./reference/workspace-catalog.md)
 - local development workflow: [Docker Compose](./devops/docker-compose.md)
@@ -27,7 +29,7 @@ The current branch has a few operational surfaces that matter more than the olde
 
 ## Root Guides
 
-- [Product Overview](../PRODUCT.md)
+- [Product Overview](../PRODUCT.md) - product portfolio, platform proof, visual story, and adoption paths
 - [Contributing](../CONTRIBUTING.md)
 - [Governance](../GOVERNANCE.md)
 
@@ -94,7 +96,8 @@ Step-by-step guides for specific tasks:
 
 ### Marketing
 
-- [Marketing README](./marketing/README.md) - Index for Signal Foundry marketing docs and positioning inputs
+- [Marketing README](./marketing/README.md) - Index for product, platform, and developer-facing marketing docs
+- [Repo Story](./marketing/repo-story.md) - Narrative pitch for the portfolio, service layer, deployment story, and package path
 - [Towne Square](./marketing/towne-square.md) - One-pager for the local-first community platform
 - [Forge of Will](./marketing/forge-of-will.md) - One-pager for the focused project execution product
 - [Fin Commander](./marketing/fin-commander.md) - One-pager for the guided financial workflow product

@@ -6,10 +6,11 @@ import {
   OnInit,
   OnDestroy,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Meta, Title } from '@angular/platform-browser';
+import { PLATFORM_ID } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -29,7 +30,9 @@ import {
   CardComponent,
   ModalComponent,
   BadgeComponent,
+  IconComponent,
 } from '@optimistic-tanuki/common-ui';
+import { PostComponent, PostDto } from '@optimistic-tanuki/social-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
 import {
   API_BASE_URL,
@@ -63,6 +66,8 @@ interface CommunityTreeNode {
     CardComponent,
     ModalComponent,
     BadgeComponent,
+    IconComponent,
+    PostComponent,
     ClassifiedListComponent,
     ClassifiedFormComponent,
     SelectComponent,
@@ -71,6 +76,8 @@ interface CommunityTreeNode {
   styleUrls: ['./city.component.scss'],
 })
 export class CityComponent implements OnInit, OnDestroy {
+  private static readonly fallbackProfileAvatar = 'assets/ts.png';
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private communityService = inject(CommunityService);
@@ -79,6 +86,7 @@ export class CityComponent implements OnInit, OnDestroy {
   private paymentService = inject(PaymentService);
   private meta = inject(Meta);
   private title = inject(Title);
+  private platformId = inject(PLATFORM_ID);
   private destroy$ = new Subject<void>();
   private classifiedService = inject(ClassifiedService);
   private http = inject(HttpClient);
@@ -95,6 +103,7 @@ export class CityComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
   isAuthenticated = signal(false);
+  userLocation = signal<{ lat: number; lng: number } | null>(null);
   memberCommunityIds = signal<Set<string>>(new Set());
   expandingInProgress = signal<string | null>(null);
 
@@ -115,6 +124,33 @@ export class CityComponent implements OnInit, OnDestroy {
     const rootId = this.getRootLocalityId();
     return this.isAuthenticated() && !!rootId && this.isMember(rootId);
   });
+
+  discussionPosts = computed(() =>
+    this.posts().map(
+      (post): PostDto => ({
+        id: post.id,
+        title: post.title,
+        content: post.content,
+        userId: post.authorName,
+        profileId: post.authorName,
+        communityId: post.communityId,
+        createdAt: new Date(post.createdAt),
+      })
+    )
+  );
+
+  postProfiles = computed(() =>
+    this.posts().reduce<
+      Record<string, { id: string; name: string; avatar: string }>
+    >((profiles, post) => {
+      profiles[post.authorName] = {
+        id: post.authorName,
+        name: post.authorName,
+        avatar: post.authorAvatar || CityComponent.fallbackProfileAvatar,
+      };
+      return profiles;
+    }, {})
+  );
 
   newCommunityName = '';
   newCommunityDescription = '';
@@ -145,6 +181,7 @@ export class CityComponent implements OnInit, OnDestroy {
       });
 
     const slug = this.route.snapshot.paramMap.get('slug') ?? '';
+    this.loadUserLocation();
     await this.loadCity(slug);
   }
 
@@ -697,6 +734,33 @@ export class CityComponent implements OnInit, OnDestroy {
     return communities.find(
       (community) =>
         !community.parentId && community.localityType !== 'neighborhood'
+    );
+  }
+
+  private loadUserLocation(): void {
+    if (
+      !isPlatformBrowser(this.platformId) ||
+      typeof navigator === 'undefined' ||
+      !navigator.geolocation
+    ) {
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.userLocation.set({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        this.userLocation.set(null);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 5000,
+        maximumAge: 300000,
+      }
     );
   }
 }

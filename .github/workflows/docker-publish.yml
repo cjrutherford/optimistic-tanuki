@@ -66,6 +66,8 @@ jobs:
             type: client
           - app: marketing-generator
             type: client
+          - app: ui-playground
+            type: client
           - app: owner-console
             type: client
           - app: payments

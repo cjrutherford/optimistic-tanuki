@@ -138,7 +138,8 @@ import { AuthStateService } from '../../services/auth-state.service';
   styles: [
     `
       .donation-widget {
-        background: var(--surface);
+        background: var(--background-elevated, var(--surface));
+        color: var(--foreground);
         border: 1px solid var(--border);
         border-radius: 16px;
         padding: 24px;
@@ -189,7 +190,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 
       .progress-bar-container {
         height: 12px;
-        background: var(--muted);
+        background: color-mix(in srgb, var(--border) 60%, var(--background));
         border-radius: 6px;
         overflow: hidden;
       }
@@ -238,7 +239,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         padding: 10px;
         border: 2px solid var(--border);
         border-radius: 8px;
-        background: var(--surface);
+        background: var(--background-elevated, var(--surface));
         font-size: 1rem;
         font-weight: 600;
         color: var(--foreground);
@@ -277,7 +278,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 
       .currency {
         padding: 10px 12px;
-        background: var(--surface-variant);
+        background: color-mix(in srgb, var(--surface) 82%, var(--background));
         color: var(--foreground-muted);
         font-weight: 600;
       }
@@ -288,7 +289,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         border: none;
         font-size: 1rem;
         outline: none;
-        background: var(--surface);
+        background: var(--background-elevated, var(--surface));
         color: var(--foreground);
       }
 
@@ -391,7 +392,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         background: linear-gradient(
           90deg,
           var(--muted) 25%,
-          var(--surface-variant) 50%,
+          color-mix(in srgb, var(--surface) 82%, var(--background)) 50%,
           var(--muted) 75%
         );
         background-size: 200% 100%;
@@ -405,7 +406,7 @@ import { AuthStateService } from '../../services/auth-state.service';
         background: linear-gradient(
           90deg,
           var(--muted) 25%,
-          var(--surface-variant) 50%,
+          color-mix(in srgb, var(--surface) 82%, var(--background)) 50%,
           var(--muted) 75%
         );
         background-size: 200% 100%;

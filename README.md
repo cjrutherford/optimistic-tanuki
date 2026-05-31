@@ -3,19 +3,23 @@
 [![CI](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml)
 [![Build](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml)
 
-Start here if you are contributing to the repository. For the product-facing overview, audience, and product matrix, read [PRODUCT.md](./PRODUCT.md).
+Optimistic Tanuki is a multi-product web-app portfolio and composable platform: named Angular applications, NestJS services, shared libraries, Go deployment tooling, Docker Compose workflows, and Kubernetes GitOps delivery in one Nx monorepo.
+
+Start with [PRODUCT.md](./PRODUCT.md) for the external product story and portfolio map. Use this README when you are contributing to the repository.
 
 Useful root documents:
 
-- [PRODUCT.md](./PRODUCT.md)
-- [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [GOVERNANCE.md](./GOVERNANCE.md)
-- [docs/README.md](./docs/README.md)
+- [PRODUCT.md](./PRODUCT.md) - product portfolio, positioning, visual story, and adoption paths
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - contribution workflow
+- [GOVERNANCE.md](./GOVERNANCE.md) - project governance
+- [docs/README.md](./docs/README.md) - documentation index
 
 ## Start Here
 
 Use the entrypoint that matches the job:
 
+- product and marketing story: [PRODUCT.md](./PRODUCT.md)
+- marketing documentation: [docs/marketing/README.md](./docs/marketing/README.md)
 - first-time setup: [docs/getting-started/README.md](./docs/getting-started/README.md)
 - workspace navigation: [docs/architecture/workspace-map.md](./docs/architecture/workspace-map.md)
 - full project inventory: [docs/reference/workspace-catalog.md](./docs/reference/workspace-catalog.md)
@@ -42,9 +46,9 @@ pnpm run docker:dev
 Primary local endpoints:
 
 - Main app: `http://localhost:8080`
-- Leads app: `http://localhost:4201`
+- Leads app: `http://localhost:8095`
 - Gateway: `http://localhost:3000`
-- Developer portal: `http://localhost:4215`
+- Developer portal: `http://localhost:8097`
 
 Prerequisites:
 

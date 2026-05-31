@@ -37,6 +37,7 @@ resources:
   - clients/owner-console.yaml
   - clients/fin-commander.yaml
   - clients/marketing-generator.yaml
+  - clients/ui-playground.yaml
   - clients/store-client.yaml
   - clients/configurable-client.yaml
   - clients/system-configurator.yaml

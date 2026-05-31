@@ -2,6 +2,8 @@ FROM node:24-alpine AS builder
 
 WORKDIR /usr/src/app
 
+ARG BUILD_CONFIGURATION=production
+
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
@@ -11,7 +13,7 @@ COPY libs ./libs
 COPY apps/business-configurator ./apps/business-configurator
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
-RUN pnpm exec nx build business-configurator --configuration=production
+RUN pnpm exec nx build business-configurator --configuration=${BUILD_CONFIGURATION}
 
 FROM node:24-alpine
 

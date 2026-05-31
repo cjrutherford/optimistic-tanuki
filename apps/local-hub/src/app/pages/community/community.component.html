@@ -36,16 +36,7 @@
 
     <div class="hero-content">
       <button class="back-link" (click)="navigateToCities()">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <otui-icon name="arrow-back" [size]="20"></otui-icon>
         All Cities
       </button>
 
@@ -53,17 +44,7 @@
         <div class="hero-badges">
           <span class="locality-badge">{{ community()!.localityType }}</span>
           <button class="city-link" (click)="navigateToCity()">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-              <circle cx="12" cy="10" r="3" />
-            </svg>
+            <otui-icon name="location" [size]="14"></otui-icon>
             {{ community()!.city }}, {{ community()!.adminArea }},
             {{ community()!.countryCode }}
           </button>
@@ -74,19 +55,7 @@
 
         @if (isLocality && communityManager()) {
         <div class="manager-badge" title="Elected Community Manager">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-            />
-          </svg>
+          <otui-icon name="star" [size]="16"></otui-icon>
           <span
             >Manager: <strong>{{ communityManager()!.name }}</strong></span
           >
@@ -98,37 +67,14 @@
           (click)="openElectionModal()"
           aria-label="View active election"
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            aria-hidden="true"
-          >
-            <rect x="3" y="3" width="18" height="18" rx="2" />
-            <path d="M9 9h6M9 12h6M9 15h4" />
-          </svg>
+          <otui-icon name="calendar" [size]="16"></otui-icon>
           Election in Progress — Vote Now
         </button>
         }
 
         <div class="community-stats">
           <div class="stat-item">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
+            <otui-icon name="users" [size]="20"></otui-icon>
             <span class="stat-value">{{
               community()!.memberCount | number
             }}</span>
@@ -226,18 +172,7 @@
                 </div>
                 } @else {
                 <div class="highlight-icon">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <path
-                      d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-                    />
-                  </svg>
+                  <otui-icon name="location" [size]="20"></otui-icon>
                 </div>
                 }
                 <span class="highlight-text">{{ highlight.headline }}</span>

@@ -93,4 +93,19 @@ describe('map utils', () => {
     expect(isRenderableCoordinate({ lat: 0, lng: 0 })).toBe(false);
     expect(isRenderableCoordinate({ lat: 32.0809, lng: -81.0912 })).toBe(true);
   });
+
+  describe('isRenderableCoordinate', () => {
+    it('rejects coordinates outside the OpenStreetMap tileable range', () => {
+      expect(isRenderableCoordinate({ lat: 85.2, lng: -81.0912 })).toBe(false);
+      expect(isRenderableCoordinate({ lat: -85.2, lng: -81.0912 })).toBe(false);
+      expect(isRenderableCoordinate({ lat: 32.0809, lng: 181 })).toBe(false);
+      expect(isRenderableCoordinate({ lat: 32.0809, lng: -181 })).toBe(false);
+    });
+
+    it('accepts coordinates inside the OpenStreetMap tileable range', () => {
+      expect(isRenderableCoordinate({ lat: 32.0809, lng: -81.0912 })).toBe(
+        true
+      );
+    });
+  });
 });

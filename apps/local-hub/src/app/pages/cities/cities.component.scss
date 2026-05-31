@@ -13,8 +13,8 @@
     linear-gradient(
       180deg,
       var(--background) 0%,
-      color-mix(in srgb, var(--background) 92%, white) 48%,
-      color-mix(in srgb, var(--background) 96%, var(--surface, white)) 100%
+      color-mix(in srgb, var(--background) 92%, var(--surface)) 48%,
+      color-mix(in srgb, var(--background) 96%, var(--surface)) 100%
     );
   color: var(--foreground);
 }
@@ -148,13 +148,20 @@
   border-radius: 28px;
   border: 1px solid
     var(--border, color-mix(in srgb, var(--foreground) 10%, transparent));
-  background: color-mix(in srgb, var(--surface, white) 92%, transparent);
+  background: var(--background-elevated, var(--surface));
+  color: var(--foreground);
   box-shadow: var(--shadow-lg, 0 24px 48px rgba(0, 0, 0, 0.08));
   backdrop-filter: blur(12px);
 }
 
 .map-rail-card {
   overflow: hidden;
+}
+
+.map-rail-card,
+.workspace-column,
+.panel-body {
+  background-color: transparent;
 }
 
 .map-header,
@@ -231,8 +238,15 @@
   width: 1.95rem;
   height: 1.95rem;
   border-radius: 16px;
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary);
   font-size: 1rem;
+}
+
+.title-icon otui-icon,
+.brand-icon otui-icon,
+.toggle-indicator otui-icon {
+  color: inherit;
 }
 
 .section-subtitle {
@@ -262,6 +276,12 @@
   display: grid;
   gap: 1.25rem;
   padding-top: 0;
+  border-top: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  background: linear-gradient(
+    180deg,
+    var(--background-elevated, var(--surface)),
+    var(--surface)
+  );
 }
 
 .search-field {
@@ -283,11 +303,13 @@
   border: 1px solid
     var(--border, color-mix(in srgb, var(--foreground) 12%, transparent));
   border-radius: 18px;
-  background: var(--surface-elevated, var(--surface));
+  background: color-mix(in srgb, var(--background) 80%, var(--surface) 20%);
   padding: 0.95rem 1rem;
   font: inherit;
   color: var(--foreground);
   box-sizing: border-box;
+  box-shadow: inset 0 1px 0
+    color-mix(in srgb, var(--foreground) 6%, transparent);
 }
 
 .search-field input::placeholder {
@@ -326,13 +348,15 @@
 }
 
 .filter-chip {
-  background: color-mix(in srgb, var(--primary) 10%, transparent);
-  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--border));
+  background: color-mix(in srgb, var(--primary) 9%, var(--surface));
+  color: color-mix(in srgb, var(--primary) 86%, var(--foreground));
 }
 
 .filter-chip.soft {
-  background: color-mix(in srgb, var(--secondary) 10%, transparent);
-  color: var(--secondary);
+  border-color: color-mix(in srgb, var(--secondary) 24%, var(--border));
+  background: color-mix(in srgb, var(--secondary) 9%, var(--surface));
+  color: color-mix(in srgb, var(--secondary) 82%, var(--foreground));
 }
 
 .filter-chip:hover,
@@ -344,7 +368,14 @@
 
 .filter-chip.active {
   background: var(--primary);
+  border-color: var(--primary);
   color: var(--on-primary, white);
+}
+
+.filter-chip.soft.active {
+  background: var(--secondary);
+  border-color: var(--secondary);
+  color: var(--on-secondary, var(--on-primary, white));
 }
 
 .filter-summary {
@@ -357,15 +388,21 @@
 }
 
 .clear-filters {
+  border: 1px solid color-mix(in srgb, var(--secondary) 25%, var(--border));
   background: color-mix(in srgb, var(--secondary) 12%, var(--surface));
-  color: var(--secondary);
+  color: color-mix(in srgb, var(--secondary) 84%, var(--foreground));
 }
 
 .panel-section.accent {
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--secondary) 7%, var(--surface)) 0%,
-    color-mix(in srgb, var(--surface) 94%, transparent) 100%
+    color-mix(
+        in srgb,
+        var(--secondary) 7%,
+        var(--background-elevated, var(--surface))
+      )
+      0%,
+    var(--background-elevated, var(--surface)) 100%
   );
 }
 
@@ -392,7 +429,7 @@
 .community-card {
   overflow: hidden;
   border-radius: 24px;
-  background: color-mix(in srgb, var(--surface, white) 96%, transparent);
+  background: var(--surface);
   border: 1px solid
     var(--border, color-mix(in srgb, var(--foreground) 10%, transparent));
   cursor: pointer;
@@ -472,7 +509,7 @@
   bottom: 1rem;
   background: color-mix(
     in srgb,
-    var(--surface-elevated, var(--surface)) 92%,
+    var(--background-elevated, var(--surface)) 92%,
     transparent
   );
   color: var(--primary);
@@ -558,11 +595,7 @@
 .empty-state {
   padding: 1.4rem;
   border-radius: 22px;
-  background: color-mix(
-    in srgb,
-    var(--surface-variant, var(--surface)) 88%,
-    transparent
-  );
+  background: color-mix(in srgb, var(--surface) 88%, var(--background));
   color: var(--foreground-muted);
 }
 

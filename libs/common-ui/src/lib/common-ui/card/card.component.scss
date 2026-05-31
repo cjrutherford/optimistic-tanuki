@@ -12,7 +12,7 @@
   border: var(--personality-border-width, var(--border-width, 1px))
     var(--personality-border-style, solid) var(--border);
   border-radius: var(--personality-card-radius, var(--border-radius-lg, 8px));
-  background-color: var(--surface, var(--background));
+  background: var(--background-elevated, var(--surface, var(--background)));
   color: var(--foreground);
   font-family: var(--personality-font-family, var(--font-body, system-ui));
   overflow: hidden;
@@ -87,7 +87,8 @@
   margin: 0;
   padding: var(--personality-card-padding, 24px);
   position: relative;
-  background: var(--background, #ffffff);
+  background: inherit;
+  color: inherit;
   border-radius: var(--personality-border-radius, var(--border-radius-sm, 4px));
 
   // Card label/tag
@@ -171,9 +172,12 @@
 
 // Glass variant
 .card.glass {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(
+    --glass-bg,
+    color-mix(in srgb, var(--surface) 86%, transparent)
+  );
   backdrop-filter: none;
-  border-color: var(--primary);
+  border-color: var(--glass-border, var(--primary));
 
   &::before {
     background: linear-gradient(90deg, var(--primary), var(--secondary));
@@ -320,8 +324,11 @@ body.personality-control-center .card {
 
 // Glass card variant
 .card.glass-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(
+    --glass-bg,
+    color-mix(in srgb, var(--surface) 72%, transparent)
+  );
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border, var(--border));
 }

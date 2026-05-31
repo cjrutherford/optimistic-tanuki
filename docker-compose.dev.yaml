@@ -95,6 +95,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
+      - '8081:4000'
       - '9241:9241'
     command:
       [
@@ -125,6 +126,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
+      - '8082:4000'
       - '9242:9242'
     command:
       [
@@ -155,6 +157,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules
     ports:
+      - '8088:4000'
       - '9245:9245'
     command:
       [
@@ -186,6 +189,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules
     ports:
+      - '8089:4000'
       - '9246:9246'
     command:
       [
@@ -236,6 +240,21 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
 
+  ui-playground:
+    container_name: ot_ui_playground
+    build:
+      context: .
+      dockerfile: ./apps/ui-playground/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./dist/apps/ui-playground/browser:/usr/share/nginx/html:ro
+    ports:
+      - '4310:4000'
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   business-site:
     container_name: ot_business_site
     build:
@@ -281,6 +300,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
     ports:
+      - '8083:4000'
       - '9243:9243'
     command:
       [
@@ -309,6 +329,7 @@ services:
       - ./dist/apps:/app/dist/apps
       - /usr/src/app/node_modules
     ports:
+      - '${LEADS_APP_PORT:-8095}:4000'
       - '9244:9244'
     command:
       [
@@ -349,12 +370,83 @@ services:
         '--exec',
         "sh -c 'while [ ! -f /app/dist/apps/system-configurator/server/server.mjs ]; do sleep 1; done; exec node /app/dist/apps/system-configurator/server/server.mjs'",
       ]
+    ports:
+      - '8091:4000'
     environment:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
     depends_on:
       - gateway
       - system-configurator-api
+
+  business-configurator:
+    container_name: ot_business_configurator
+    build:
+      context: .
+      dockerfile: ./apps/business-configurator/Dockerfile
+      args:
+        - BUILD_CONFIGURATION=development
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/business-configurator:/app/apps/business-configurator
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '${BUSINESS_CONFIGURATOR_PORT:-8096}:4000'
+      - '9251:9251'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/business-configurator/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/business-configurator/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9251 /app/dist/apps/business-configurator/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
+  developer-portal:
+    container_name: ot_developer_portal
+    build:
+      context: .
+      dockerfile: ./apps/developer-portal/Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/developer-portal:/app/apps/developer-portal
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '${DEVELOPER_PORTAL_PORT:-8097}:4000'
+      - '9252:9252'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/developer-portal/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/developer-portal/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9252 /app/dist/apps/developer-portal/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
 
   system-configurator-api:
     container_name: ot_system_configurator_api

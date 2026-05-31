@@ -211,6 +211,21 @@ services:
     depends_on:
       - gateway
 
+  ui-playground:
+    container_name: ot_ui_playground
+    build:
+      context: .
+      dockerfile: ./apps/ui-playground/Dockerfile
+    image: cjrutherford/optimistic_tanuki_ui-playground:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${UI_PLAYGROUND_PORT:-4310}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
   business-site:
     container_name: ot_business_site
     build:
@@ -254,10 +269,40 @@ services:
       context: .
       dockerfile: ./apps/leads-app/Dockerfile
     ports:
-      - '${LEADS_APP_PORT:-4201}:4000'
+      - '${LEADS_APP_PORT:-8095}:4000'
     image: cjrutherford/optimistic_tanuki_leads-app:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
       <<: *gateway_client_env
+
+  business-configurator:
+    container_name: ot_business_configurator
+    build:
+      context: .
+      dockerfile: ./apps/business-configurator/Dockerfile
+    image: cjrutherford/optimistic_tanuki_business-configurator:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${BUSINESS_CONFIGURATOR_PORT:-8096}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
+  developer-portal:
+    container_name: ot_developer_portal
+    build:
+      context: .
+      dockerfile: ./apps/developer-portal/Dockerfile
+    image: cjrutherford/optimistic_tanuki_developer-portal:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${DEVELOPER_PORTAL_PORT:-8097}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
 
   system-configurator:
     container_name: ot_system_configurator

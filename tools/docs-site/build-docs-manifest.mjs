@@ -98,6 +98,26 @@ async function pathExists(filePath) {
   }
 }
 
+async function readPreviousManifest(outputPath) {
+  try {
+    return JSON.parse(await fs.readFile(outputPath, 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+function comparableManifestItem(item) {
+  const { lastUpdated, ...rest } = item;
+  return rest;
+}
+
+function itemContentMatches(left, right) {
+  return (
+    JSON.stringify(comparableManifestItem(left)) ===
+    JSON.stringify(comparableManifestItem(right))
+  );
+}
+
 async function collectRecursiveMarkdownPaths(workspaceRoot, rootDir) {
   const absoluteRoot = path.join(workspaceRoot, rootDir);
   if (!(await pathExists(absoluteRoot))) {
@@ -193,6 +213,10 @@ export async function buildDocsManifest({
   const root = workspaceRoot ?? process.cwd();
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
   const markdownPaths = await collectMarkdownPaths(root, config);
+  const previousManifest = await readPreviousManifest(outputPath);
+  const previousItemsBySourcePath = new Map(
+    (previousManifest?.items ?? []).map((item) => [item.sourcePath, item])
+  );
 
   const items = [];
 
@@ -212,7 +236,7 @@ export async function buildDocsManifest({
         ? sourcePath.split('/')[1]?.replace(/\.md$/i, '') || 'reference'
         : sourcePath.split('/')[0] || 'reference');
 
-    items.push({
+    const item = {
       slug,
       title,
       summary,
@@ -239,7 +263,13 @@ export async function buildDocsManifest({
         ? data.relatedPackages.filter((value) => typeof value === 'string')
         : undefined,
       lastUpdated: stats.mtime.toISOString(),
-    });
+    };
+    const previousItem = previousItemsBySourcePath.get(sourcePath);
+    if (previousItem && itemContentMatches(item, previousItem)) {
+      item.lastUpdated = previousItem.lastUpdated;
+    }
+
+    items.push(item);
   }
 
   const manifest = {

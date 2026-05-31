@@ -33,7 +33,7 @@ The repo also contains:
 Before you begin, ensure you have the following installed:
 
 - **[Docker](https://docs.docker.com/get-docker/)** - For running services in containers
-- **[Node.js](https://nodejs.org/)** v18 or higher - JavaScript runtime
+- **[Node.js](https://nodejs.org/)** v20 or higher - JavaScript runtime
 - **[pnpm](https://pnpm.io/installation)** - Fast, disk-efficient package manager
 
 ## Installation
@@ -97,7 +97,7 @@ pnpm run docker:dev:seed
 **Primary Entry Points**
 
 - Main App: http://localhost:8080
-- Leads App: http://localhost:4201
+- Leads App: http://localhost:8095
 - Forge of Will: http://localhost:8081
 - Owner Console: http://localhost:8084
 - API Gateway: http://localhost:3000
