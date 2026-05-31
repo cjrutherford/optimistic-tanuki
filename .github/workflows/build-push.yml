@@ -189,7 +189,7 @@ jobs:
           images: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}
           tags: |
             type=ref,event=branch
-            type=sha,prefix=sha-,format=long
+            type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref != 'refs/heads/main' }}
 
@@ -248,8 +248,9 @@ jobs:
 
       - name: Update staging overlay images with SHA tag
         run: |
+          IMAGE_TAG="sha-${GITHUB_SHA::7}"
           DEPLOYMENT_INVENTORY_FILE=/tmp/deployment-inventory.json \
-          node scripts/update-k8s-overlay-images.mjs k8s/overlays/staging/kustomization.yaml sha-${{ github.sha }}
+          node scripts/update-k8s-overlay-images.mjs k8s/overlays/staging/kustomization.yaml "$IMAGE_TAG"
 
       - name: Commit and push changes
         run: |
@@ -257,7 +258,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "ci: update staging image tags to sha-${{ github.sha }}"
+            git commit -m "ci: update staging image tags to sha-${GITHUB_SHA::7}"
             git push origin ${{ github.ref_name }}
           fi
 
