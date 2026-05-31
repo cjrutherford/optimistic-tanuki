@@ -73,7 +73,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.currentUrl$ = this.router.events.pipe(
       filter((event): event is NavigationEnd => event instanceof NavigationEnd),
       map((event: NavigationEnd) => event.urlAfterRedirects),
-      startWith(this.router.url),
+      startWith(this.router.url)
     );
 
     this.authSub = this.authState.isAuthenticated$.subscribe({
@@ -93,10 +93,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Initialize theme - only in browser to avoid SSR issues
     if (isPlatformBrowser(this.platformId)) {
-      const currentPalette = this.themeService.getCurrentPalette();
-      if (!currentPalette) {
-        // Set default palette for video-client
-        this.themeService.setPalette('Sunset Vibes');
+      const hasStoredPersonalityTheme = !!localStorage.getItem(
+        'optimistic-tanuki-personality-theme'
+      );
+      if (!hasStoredPersonalityTheme) {
+        // Apply documented default personality (electric) for video-client.
+        void this.themeService.setPersonality('electric');
       }
       // Apply stored or default theme mode
       this.themeService.setTheme(this.themeService.getTheme());
@@ -110,7 +112,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.foreground = theme.foreground;
         this.accent = theme.accent;
         this.backgroundGradient = theme.accentGradients['light'];
-      },
+      }
     );
   }
 

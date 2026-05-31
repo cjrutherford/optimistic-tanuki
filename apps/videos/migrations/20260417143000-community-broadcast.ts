@@ -12,25 +12,25 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
     }
 
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communityId" character varying`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communityId" character varying`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communitySlug" character varying`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "communitySlug" character varying`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "joinPolicy" character varying NOT NULL DEFAULT 'public'`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "joinPolicy" character varying NOT NULL DEFAULT 'public'`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "appScope" character varying NOT NULL DEFAULT 'video-client'`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "appScope" character varying NOT NULL DEFAULT 'video-client'`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "memberCount" integer NOT NULL DEFAULT '0'`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "memberCount" integer NOT NULL DEFAULT '0'`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "isPublic" boolean NOT NULL DEFAULT true`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "isPublic" boolean NOT NULL DEFAULT true`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "timezone" character varying(100)`,
+      `ALTER TABLE "channel" ADD COLUMN IF NOT EXISTS "timezone" character varying(100)`
     );
     await queryRunner.query(
       `WITH normalized AS (
@@ -54,10 +54,10 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
         "memberCount" = 1,
         "timezone" = 'UTC'
       FROM normalized
-      WHERE c."id" = normalized."id"`,
+      WHERE c."id" = normalized."id"`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" ALTER COLUMN "communityId" SET NOT NULL`,
+      `ALTER TABLE "channel" ALTER COLUMN "communityId" SET NOT NULL`
     );
     await queryRunner.query(`
       DO $$
@@ -81,10 +81,10 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
     `);
 
     await queryRunner.query(
-      `ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "communityId" character varying`,
+      `ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "communityId" character varying`
     );
     await queryRunner.query(
-      `UPDATE "video" v SET "communityId" = c."communityId" FROM "channel" c WHERE c."id" = v."channelId" AND v."communityId" IS NULL`,
+      `UPDATE "video" v SET "communityId" = c."communityId" FROM "channel" c WHERE c."id" = v."channelId" AND v."communityId" IS NULL`
     );
 
     await queryRunner.query(`
@@ -169,17 +169,17 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "channel_feed" DROP CONSTRAINT "FK_channel_feed_channel"`,
+      `ALTER TABLE "channel_feed" DROP CONSTRAINT "FK_channel_feed_channel"`
     );
     await queryRunner.query(`DROP TABLE "live_session"`);
     await queryRunner.query(`DROP TABLE "program_block"`);
     await queryRunner.query(`DROP TABLE "channel_feed"`);
     await queryRunner.query(`ALTER TABLE "video" DROP COLUMN "communityId"`);
     await queryRunner.query(
-      `ALTER TABLE "channel" DROP CONSTRAINT "UQ_channel_communitySlug"`,
+      `ALTER TABLE "channel" DROP CONSTRAINT "UQ_channel_communitySlug"`
     );
     await queryRunner.query(
-      `ALTER TABLE "channel" DROP CONSTRAINT "UQ_channel_communityId"`,
+      `ALTER TABLE "channel" DROP CONSTRAINT "UQ_channel_communityId"`
     );
     await queryRunner.query(`ALTER TABLE "channel" DROP COLUMN "timezone"`);
     await queryRunner.query(`ALTER TABLE "channel" DROP COLUMN "isPublic"`);
@@ -187,7 +187,7 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE "channel" DROP COLUMN "appScope"`);
     await queryRunner.query(`ALTER TABLE "channel" DROP COLUMN "joinPolicy"`);
     await queryRunner.query(
-      `ALTER TABLE "channel" DROP COLUMN "communitySlug"`,
+      `ALTER TABLE "channel" DROP COLUMN "communitySlug"`
     );
     await queryRunner.query(`ALTER TABLE "channel" DROP COLUMN "communityId"`);
   }

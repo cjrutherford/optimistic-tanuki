@@ -4,7 +4,11 @@ import {
   provideZoneChangeDetection,
 } from '@angular/core';
 import { provideRouter, withInMemoryScrolling } from '@angular/router';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { businessHttpInterceptor } from '@optimistic-tanuki/business-data-access';

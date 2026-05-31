@@ -46,13 +46,22 @@ export class AppointmentsController {
 
   @MessagePattern({ cmd: 'approveAppointment' })
   approve(
-    @Payload() data: { id: string; approveAppointmentDto: ApproveAppointmentDto }
+    @Payload()
+    data: {
+      id: string;
+      approveAppointmentDto: ApproveAppointmentDto;
+    }
   ) {
-    return this.appointmentsService.approve(data.id, data.approveAppointmentDto);
+    return this.appointmentsService.approve(
+      data.id,
+      data.approveAppointmentDto
+    );
   }
 
   @MessagePattern({ cmd: 'denyAppointment' })
-  deny(@Payload() data: { id: string; denyAppointmentDto: DenyAppointmentDto }) {
+  deny(
+    @Payload() data: { id: string; denyAppointmentDto: DenyAppointmentDto }
+  ) {
     return this.appointmentsService.deny(data.id, data.denyAppointmentDto);
   }
 

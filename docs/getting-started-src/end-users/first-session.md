@@ -5,6 +5,7 @@ slug: first-session
 summary: Register, sign in, and identify the main parts of the product you can access.
 order: 10
 ---
+
 # Your First Session
 
 After the environment is available to you:

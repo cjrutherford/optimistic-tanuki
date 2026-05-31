@@ -13,11 +13,7 @@ export class CommunityImageTimezone1774000000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(
-      `ALTER TABLE "community" DROP COLUMN "timezone"`
-    );
-    await queryRunner.query(
-      `ALTER TABLE "community" DROP COLUMN "imageUrl"`
-    );
+    await queryRunner.query(`ALTER TABLE "community" DROP COLUMN "timezone"`);
+    await queryRunner.query(`ALTER TABLE "community" DROP COLUMN "imageUrl"`);
   }
 }

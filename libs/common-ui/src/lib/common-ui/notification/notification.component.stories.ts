@@ -18,7 +18,8 @@ const meta: Meta<NotificationComponent> = {
     }),
   ],
   parameters: {
-    componentSubtitle: 'Accessible notification/toast system with ARIA live regions',
+    componentSubtitle:
+      'Accessible notification/toast system with ARIA live regions',
     docs: {
       description: {
         component: `
@@ -52,7 +53,14 @@ Use 'position' instead with more specific values:
     },
     position: {
       control: 'select',
-      options: ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'],
+      options: [
+        'top-right',
+        'top-left',
+        'bottom-right',
+        'bottom-left',
+        'top-center',
+        'bottom-center',
+      ],
       description: 'Toast position',
     },
     animation: {
@@ -207,7 +215,11 @@ export const WithActions: Story = {
       type: 'info',
       actions: [
         { label: 'View', callback: () => console.log('View clicked') },
-        { label: 'Dismiss', callback: () => console.log('Dismiss clicked'), variant: 'secondary' },
+        {
+          label: 'Dismiss',
+          callback: () => console.log('Dismiss clicked'),
+          variant: 'secondary',
+        },
       ],
     },
     type: 'info',
@@ -259,7 +271,8 @@ export const AutoDismiss: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'This notification will auto-dismiss after 5 seconds with a progress bar.',
+        story:
+          'This notification will auto-dismiss after 5 seconds with a progress bar.',
       },
     },
   },
@@ -352,7 +365,8 @@ export const NotificationBell: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'The notification bell shows unread count and opens a dropdown menu with all notifications.',
+        story:
+          'The notification bell shows unread count and opens a dropdown menu with all notifications.',
       },
     },
   },
@@ -423,7 +437,8 @@ export const Accessibility: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Showcases accessibility features built into the notification component.',
+        story:
+          'Showcases accessibility features built into the notification component.',
       },
     },
   },

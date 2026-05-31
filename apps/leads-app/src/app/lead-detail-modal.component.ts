@@ -51,7 +51,10 @@ import { Lead, LeadContactPoint } from './leads.types';
 
           <section class="detail-section">
             <h3>Contacts</h3>
-            <div class="contact-list" *ngIf="displayContacts.length; else noContacts">
+            <div
+              class="contact-list"
+              *ngIf="displayContacts.length; else noContacts"
+            >
               <a
                 *ngFor="let contact of displayContacts"
                 class="contact-chip"
@@ -91,7 +94,10 @@ import { Lead, LeadContactPoint } from './leads.types';
           <section class="detail-section" *ngIf="lead.searchKeywords?.length">
             <h3>Keywords</h3>
             <div class="keyword-list">
-              <span *ngFor="let keyword of lead.searchKeywords" class="keyword-chip">
+              <span
+                *ngFor="let keyword of lead.searchKeywords"
+                class="keyword-chip"
+              >
                 {{ keyword }}
               </span>
             </div>
@@ -99,164 +105,176 @@ import { Lead, LeadContactPoint } from './leads.types';
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" type="button" (click)="closed.emit()">
+          <button
+            class="btn btn-secondary"
+            type="button"
+            (click)="closed.emit()"
+          >
             Close
           </button>
-          <button class="btn btn-primary" type="button" (click)="editRequested.emit()">
+          <button
+            class="btn btn-primary"
+            type="button"
+            (click)="editRequested.emit()"
+          >
             Edit lead
           </button>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: var(--app-overlay);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      z-index: 1000;
-    }
+  styles: [
+    `
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--app-overlay);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1.5rem;
+        z-index: 1000;
+      }
 
-    .modal-content {
-      width: min(760px, 100%);
-      max-height: 90vh;
-      overflow: auto;
-      border-radius: var(--radius-lg);
-      background: var(--app-surface);
-      border: 1px solid var(--app-border);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-    }
+      .modal-content {
+        width: min(760px, 100%);
+        max-height: 90vh;
+        overflow: auto;
+        border-radius: var(--radius-lg);
+        background: var(--app-surface);
+        border: 1px solid var(--app-border);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+      }
 
-    .modal-header,
-    .modal-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      padding: 1.25rem 1.5rem;
-      border-bottom: 1px solid var(--app-border);
-    }
+      .modal-header,
+      .modal-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--app-border);
+      }
 
-    .modal-footer {
-      border-bottom: none;
-      border-top: 1px solid var(--app-border);
-      justify-content: flex-end;
-    }
+      .modal-footer {
+        border-bottom: none;
+        border-top: 1px solid var(--app-border);
+        justify-content: flex-end;
+      }
 
-    .modal-body {
-      padding: 1.5rem;
-      display: grid;
-      gap: 1.25rem;
-    }
+      .modal-body {
+        padding: 1.5rem;
+        display: grid;
+        gap: 1.25rem;
+      }
 
-    .eyebrow {
-      margin: 0 0 0.35rem;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--app-foreground-muted);
-    }
+      .eyebrow {
+        margin: 0 0 0.35rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--app-foreground-muted);
+      }
 
-    h2, h3, p {
-      margin: 0;
-    }
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
 
-    .lead-meta,
-    .empty-state {
-      color: var(--app-foreground-muted);
-    }
+      .lead-meta,
+      .empty-state {
+        color: var(--app-foreground-muted);
+      }
 
-    .detail-section,
-    .detail-card {
-      display: grid;
-      gap: 0.5rem;
-      padding: 1rem;
-      border: 1px solid var(--app-border);
-      border-radius: var(--radius-md);
-      background: var(--app-background);
-    }
+      .detail-section,
+      .detail-card {
+        display: grid;
+        gap: 0.5rem;
+        padding: 1rem;
+        border: 1px solid var(--app-border);
+        border-radius: var(--radius-md);
+        background: var(--app-background);
+      }
 
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 1rem;
-    }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+      }
 
-    .detail-link {
-      color: var(--app-primary);
-      word-break: break-word;
-    }
+      .detail-link {
+        color: var(--app-primary);
+        word-break: break-word;
+      }
 
-    .contact-list,
-    .keyword-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
+      .contact-list,
+      .keyword-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
 
-    .contact-chip,
-    .keyword-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.625rem 0.875rem;
-      border-radius: 999px;
-      border: 1px solid var(--app-border);
-      background: var(--app-surface);
-      color: var(--app-foreground);
-      text-decoration: none;
-    }
+      .contact-chip,
+      .keyword-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.625rem 0.875rem;
+        border-radius: 999px;
+        border: 1px solid var(--app-border);
+        background: var(--app-surface);
+        color: var(--app-foreground);
+        text-decoration: none;
+      }
 
-    .contact-kind {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--app-foreground-muted);
-    }
+      .contact-kind {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--app-foreground-muted);
+      }
 
-    .notes {
-      white-space: pre-wrap;
-      line-height: 1.5;
-    }
+      .notes {
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
 
-    .close-btn,
-    .btn {
-      cursor: pointer;
-    }
+      .close-btn,
+      .btn {
+        cursor: pointer;
+      }
 
-    .close-btn {
-      width: 36px;
-      height: 36px;
-      border: none;
-      border-radius: 999px;
-      background: var(--app-surface-muted);
-      color: var(--app-foreground);
-      font-size: 1.5rem;
-      line-height: 1;
-    }
+      .close-btn {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 999px;
+        background: var(--app-surface-muted);
+        color: var(--app-foreground);
+        font-size: 1.5rem;
+        line-height: 1;
+      }
 
-    .btn {
-      border: 1px solid var(--app-border);
-      border-radius: var(--radius-md);
-      padding: 0.625rem 1rem;
-      font-weight: 600;
-    }
+      .btn {
+        border: 1px solid var(--app-border);
+        border-radius: var(--radius-md);
+        padding: 0.625rem 1rem;
+        font-weight: 600;
+      }
 
-    .btn-primary {
-      background: var(--app-primary);
-      color: var(--app-primary-foreground);
-      border-color: var(--app-primary);
-    }
+      .btn-primary {
+        background: var(--app-primary);
+        color: var(--app-primary-foreground);
+        border-color: var(--app-primary);
+      }
 
-    .btn-secondary {
-      background: var(--app-surface);
-      color: var(--app-foreground);
-    }
-  `],
+      .btn-secondary {
+        background: var(--app-surface);
+        color: var(--app-foreground);
+      }
+    `,
+  ],
 })
 export class LeadDetailModalComponent {
   @Input() lead: Lead | null = null;

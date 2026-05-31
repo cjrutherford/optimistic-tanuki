@@ -473,8 +473,8 @@ export class ThemeService {
       personality.tokens.spacingScale === 'compact'
         ? 'ease-out'
         : personality.tokens.spacingScale === 'spacious'
-          ? 'ease-in'
-          : 'ease-in-out';
+        ? 'ease-in'
+        : 'ease-in-out';
 
     const primaryShades = generatePerceptualShades(
       colors.primary,
@@ -530,11 +530,11 @@ export class ThemeService {
     // Apply contrast adjustments to foreground
     const adjustedForeground = personality.contrast.autoAdjust
       ? ensureContrast(
-        themeColors.foreground,
-        themeColors.background,
-        personality.contrast.minimumRatio,
-        'auto'
-      )
+          themeColors.foreground,
+          themeColors.background,
+          personality.contrast.minimumRatio,
+          'auto'
+        )
       : themeColors.foreground;
 
     // Generate shadow color
@@ -635,6 +635,12 @@ export class ThemeService {
     variables['--foreground'] = colors.foreground;
     variables['--surface'] = colors.surface;
     variables['--muted'] = colors.muted;
+    // Alias `--muted-foreground` to `--muted` so the documented semantic token
+    // resolves at runtime. Many apps (fin-commander, video-client, owner-console,
+    // client-interface, forum-ui) reference `--muted-foreground`; without this
+    // alias the property is undefined and `color: var(--muted-foreground)`
+    // falls back to `currentColor`, defeating the muted visual hierarchy.
+    variables['--muted-foreground'] = colors.muted;
     variables['--border'] = colors.border;
 
     // Primary colors
@@ -679,6 +685,16 @@ export class ThemeService {
     ).color;
     variables['--info'] = colors.info;
     variables['--info-foreground'] = getSuggestedTextColor(colors.info).color;
+
+    // --on-* aliases for the canonical design-system naming. These mirror the
+    // existing *-foreground outputs so consumers can use either convention.
+    variables['--on-primary'] = variables['--primary-foreground'];
+    variables['--on-secondary'] = variables['--secondary-foreground'];
+    variables['--on-tertiary'] = variables['--tertiary-foreground'];
+    variables['--on-success'] = variables['--success-foreground'];
+    variables['--on-warning'] = variables['--warning-foreground'];
+    variables['--on-danger'] = variables['--danger-foreground'];
+    variables['--on-info'] = variables['--info-foreground'];
 
     // Gradients - canonical source is GradientFactory
     Object.assign(
@@ -828,12 +844,15 @@ export class ThemeService {
     return {
       none: 'none',
       sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${4 * multiplier
-        }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${6 * multiplier
-        }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${10 * multiplier
-        }px -5px ${shadowColor}`,
+      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
+        4 * multiplier
+      }px -1px ${shadowColor}`,
+      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
+        6 * multiplier
+      }px -2px ${shadowColor}`,
+      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
+        10 * multiplier
+      }px -5px ${shadowColor}`,
     };
   }
 
@@ -976,10 +995,11 @@ export class ThemeService {
     tertiary: string;
     surface: string;
   } {
-    const personalityGradients = this.gradientFactory.getPersonalityGradientsFromColors(
-      personalityId,
-      colors
-    );
+    const personalityGradients =
+      this.gradientFactory.getPersonalityGradientsFromColors(
+        personalityId,
+        colors
+      );
 
     return {
       primary: personalityGradients.primary,
@@ -1117,7 +1137,9 @@ export class ThemeService {
       const migration = migratePaletteToPersonality(palette, this._theme);
       if (migration.success) {
         this.personalityConfig = migration.config;
-        const personality = getPersonalityById(migration.suggestedPersonalityId);
+        const personality = getPersonalityById(
+          migration.suggestedPersonalityId
+        );
         if (personality) {
           this.currentPersonality = personality;
           this.selectedPalette = palette;

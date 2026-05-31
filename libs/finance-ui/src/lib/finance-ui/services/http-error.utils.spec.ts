@@ -15,9 +15,9 @@ describe('isAbortLikeHttpError', () => {
   });
 
   it('returns true for DOM abort errors', () => {
-    expect(isAbortLikeHttpError(new DOMException('Aborted', 'AbortError'))).toBe(
-      true
-    );
+    expect(
+      isAbortLikeHttpError(new DOMException('Aborted', 'AbortError'))
+    ).toBe(true);
   });
 
   it('returns true for abort-like plain objects', () => {

@@ -2,11 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  CASE_OPTION_SEED,
-  CHASSIS_SEED,
-  PART_SEED,
-} from './catalog.seed';
+import { CASE_OPTION_SEED, CHASSIS_SEED, PART_SEED } from './catalog.seed';
 import { CaseOptionEntity } from './entities/case-option.entity';
 import { ChassisEntity } from './entities/chassis.entity';
 import { HardwarePartEntity } from './entities/hardware-part.entity';
@@ -57,7 +53,8 @@ export class CatalogBootstrapService implements OnModuleInit {
           priceMax: option.priceMax ?? null,
           features: option.features,
           isRecommended: option.isRecommended ?? false,
-          sourceType: option.optionType === 'printable' ? 'curated' : 'research',
+          sourceType:
+            option.optionType === 'printable' ? 'curated' : 'research',
         },
         ['chassisSlug', 'title']
       );

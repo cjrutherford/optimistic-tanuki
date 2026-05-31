@@ -35,6 +35,7 @@ The workspace contains customer-facing app products, backend service products, a
 | `christopherrutherford-net` | personal site frontend                                                                                |
 | `client-interface`          | main multi-surface frontend application                                                               |
 | `digital-homestead`         | frontend application for the digital homestead experience                                             |
+| `developer-portal`          | developer-facing home for API docs, SDK onboarding, and metered usage framing                         |
 | `forgeofwill`               | project-planning frontend                                                                             |
 | `marketing-generator`       | Signal Foundry campaign workbench for briefs, concepts, exports, workspaces, and refinement telemetry |
 | `video-client`              | video platform frontend                                                                               |

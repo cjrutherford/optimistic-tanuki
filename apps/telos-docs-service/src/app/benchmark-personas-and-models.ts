@@ -68,10 +68,11 @@ async function getModelDetails(modelName: string) {
 
 function getGpuInfo(): GpuInfo {
   try {
-    const result = spawnSync('nvidia-smi', [
-      '--query-gpu=name,memory.total',
-      '--format=csv,noheader,nounits',
-    ], { encoding: 'utf8' });
+    const result = spawnSync(
+      'nvidia-smi',
+      ['--query-gpu=name,memory.total', '--format=csv,noheader,nounits'],
+      { encoding: 'utf8' }
+    );
     if (result.status === 0 && result.stdout) {
       const line = result.stdout.trim().split('\n')[0];
       const [name, memory] = line.split(',').map((s) => s.trim());
@@ -84,7 +85,10 @@ function getGpuInfo(): GpuInfo {
   }
 }
 
-function estimateGpuViability(details: any, gpu: GpuInfo): 'likely' | 'unlikely' | 'unknown' {
+function estimateGpuViability(
+  details: any,
+  gpu: GpuInfo
+): 'likely' | 'unlikely' | 'unknown' {
   if (!gpu.available) return 'unknown';
   // Heuristic: if reported parameter size or file size fits under ~80% VRAM, assume likely
   const sizeBytes = details?.size || details?.model_info?.parameter_size_bytes;
@@ -95,7 +99,9 @@ function estimateGpuViability(details: any, gpu: GpuInfo): 'likely' | 'unlikely'
   return 'unknown';
 }
 
-async function postChatStreaming(prompt: any): Promise<{ content: string; metrics: StreamMetrics; meta?: any }> {
+async function postChatStreaming(
+  prompt: any
+): Promise<{ content: string; metrics: StreamMetrics; meta?: any }> {
   const metrics: StreamMetrics = { requestStartAt: Date.now() };
   const res = await axios.post('http://192.168.50.148:11434/api/chat', prompt, {
     responseType: 'stream',
@@ -129,7 +135,9 @@ async function postChatStreaming(prompt: any): Promise<{ content: string; metric
     });
     stream.on('end', () => {
       metrics.completedAt = Date.now();
-      metrics.timeToFirstTokenMs = metrics.firstTokenAt ? (metrics.firstTokenAt - metrics.requestStartAt) : undefined;
+      metrics.timeToFirstTokenMs = metrics.firstTokenAt
+        ? metrics.firstTokenAt - metrics.requestStartAt
+        : undefined;
       metrics.timeToCompletionMs = metrics.completedAt - metrics.requestStartAt;
       resolve({ content, metrics, meta });
     });
@@ -167,7 +175,12 @@ async function generateBenchmarkResults(
     const details = await getModelDetails(model.name);
     const gpuViability = estimateGpuViability(details, gpuInfo);
 
-    const prompt = await setupBenchmarkPrompt(persona, model.name, true, gpuInfo.available);
+    const prompt = await setupBenchmarkPrompt(
+      persona,
+      model.name,
+      true,
+      gpuInfo.available
+    );
     const { content, metrics, meta } = await postChatStreaming(prompt);
 
     console.log(
@@ -177,8 +190,12 @@ async function generateBenchmarkResults(
 
     results.push({
       persona: persona.name,
-      personaSystemPrompt: prompt.messages?.find((m: any) => m.role === 'system')?.content ?? prompt.messages[0]?.content,
-      userPrompt: prompt.messages?.find((m: any) => m.role === 'user')?.content ?? prompt.messages[1]?.content,
+      personaSystemPrompt:
+        prompt.messages?.find((m: any) => m.role === 'system')?.content ??
+        prompt.messages[0]?.content,
+      userPrompt:
+        prompt.messages?.find((m: any) => m.role === 'user')?.content ??
+        prompt.messages[1]?.content,
       model: model.name,
       timeToFirstTokenMs: metrics.timeToFirstTokenMs,
       timeToCompletionMs: metrics.timeToCompletionMs,
@@ -210,7 +227,8 @@ async function evaluateResponses(
         continue;
       }
 
-      const { personaSystemPrompt, userPrompt, timeToCompletionMs, response } = r;
+      const { personaSystemPrompt, userPrompt, timeToCompletionMs, response } =
+        r;
       const ratingPrompt = {
         model: evaluationModel.name,
         stream: false,
@@ -256,12 +274,16 @@ async function evaluateResponses(
       };
       if (scores && typeof scores === 'object') {
         evaluationEntry.scores = scores;
-        const values = Object.values(scores).filter((v) => typeof v === 'number') as number[];
+        const values = Object.values(scores).filter(
+          (v) => typeof v === 'number'
+        ) as number[];
         if (values.length) {
-          evaluationEntry.averageScore = values.reduce((a, b) => a + b, 0) / values.length;
+          evaluationEntry.averageScore =
+            values.reduce((a, b) => a + b, 0) / values.length;
         }
       } else {
-        evaluationEntry.content = result.data.message?.content || result.data.content;
+        evaluationEntry.content =
+          result.data.message?.content || result.data.content;
       }
       r.evaluations.push(evaluationEntry);
     }

@@ -45,7 +45,7 @@ import {
     `
       .sponsorship-skeleton {
         height: 60px;
-        background: var(--surface-variant);
+        background: color-mix(in srgb, var(--surface) 82%, var(--background));
         border-radius: 8px;
         animation: pulse 1.5s infinite;
       }
@@ -67,7 +67,11 @@ import {
       }
 
       .sponsorship-banner.banner {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--primary) 88%, var(--background)) 0%,
+          color-mix(in srgb, var(--secondary) 76%, var(--background)) 100%
+        );
         padding: 1rem;
       }
 
@@ -81,7 +85,16 @@ import {
       }
 
       .sponsorship-banner.featured {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(
+          135deg,
+          color-mix(
+              in srgb,
+              var(--accent, var(--primary)) 78%,
+              var(--background)
+            )
+            0%,
+          color-mix(in srgb, var(--secondary) 72%, var(--background)) 100%
+        );
         padding: 1rem;
       }
 

@@ -1,4 +1,9 @@
-import { Meta, StoryObj, applicationConfig, moduleMetadata } from '@storybook/angular';
+import {
+  Meta,
+  StoryObj,
+  applicationConfig,
+  moduleMetadata,
+} from '@storybook/angular';
 import { ForumShellComponent } from './forum-shell.component';
 import { ForumService } from '../services/forum.service';
 import { AuthStateService } from '../services/auth-state.service';
@@ -37,8 +42,8 @@ const mockThreads = [
     visibility: 'public',
     isPinned: true,
     isLocked: false,
-    viewCount: 10
-  }
+    viewCount: 10,
+  },
 ];
 
 const mockForumService = {

@@ -5,7 +5,9 @@ import { TrainerRoutinesService } from './trainer-routines.service';
 
 @Controller()
 export class TrainerRoutinesController {
-  constructor(private readonly trainerRoutinesService: TrainerRoutinesService) {}
+  constructor(
+    private readonly trainerRoutinesService: TrainerRoutinesService
+  ) {}
 
   @MessagePattern('trainer.owner.routines.assign')
   assignRoutine(@Payload() payload: Record<string, unknown>) {

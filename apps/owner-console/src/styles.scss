@@ -6,7 +6,8 @@
 
 /* Theme-driven CSS variables (these are set by ThemeService) */
 :root {
-  /* Theme will inject these via CSS custom properties */
+  /* Fallback literals so the shell renders before ThemeService initializes.
+     ThemeService overrides these at runtime via setProperty. */
   /* Core colors */
   --background: #ffffff;
   --foreground: #1a1a1a;
@@ -67,8 +68,8 @@
 /* AG Grid action button styles */
 .ag-grid-action-button {
   padding: 4px 12px;
-  background: var(--accent, #3f51b5);
-  color: white;
+  background: var(--accent, var(--primary));
+  color: var(--on-primary, var(--primary-foreground));
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -77,13 +78,19 @@
 }
 
 .ag-grid-action-button:hover {
-  background: var(--accent-darken-10, #303f9f);
+  background: var(
+    --accent-darken-10,
+    color-mix(in oklab, var(--primary) 85%, black)
+  );
 }
 
 .ag-grid-delete-button {
-  background: var(--danger, #f44336);
+  background: var(--danger);
 }
 
 .ag-grid-delete-button:hover {
-  background: var(--danger-darken-10, #d32f2f);
+  background: var(
+    --danger-darken-10,
+    color-mix(in oklab, var(--danger) 85%, black)
+  );
 }

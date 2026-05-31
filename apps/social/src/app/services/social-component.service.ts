@@ -27,11 +27,13 @@ export class SocialComponentService {
     console.log('SocialComponentService initialized');
   }
 
-  async create(createComponentDto: CreateSocialComponentDto): Promise<SocialComponentDto> {
+  async create(
+    createComponentDto: CreateSocialComponentDto
+  ): Promise<SocialComponentDto> {
     try {
       // Validate that the post exists
       const postExists = await this.postRepository.findOne({
-        where: { id: createComponentDto.postId }
+        where: { id: createComponentDto.postId },
       });
 
       if (!postExists) {
@@ -42,25 +44,33 @@ export class SocialComponentService {
       const existingComponent = await this.socialComponentRepository.findOne({
         where: {
           postId: createComponentDto.postId,
-          instanceId: createComponentDto.instanceId
-        }
+          instanceId: createComponentDto.instanceId,
+        },
       });
 
       if (existingComponent) {
-        throw new BadRequestException('Component instance ID already exists for this post');
+        throw new BadRequestException(
+          'Component instance ID already exists for this post'
+        );
       }
 
-      const component = this.socialComponentRepository.create(createComponentDto);
-      const savedComponent = await this.socialComponentRepository.save(component);
+      const component =
+        this.socialComponentRepository.create(createComponentDto);
+      const savedComponent = await this.socialComponentRepository.save(
+        component
+      );
       return this.mapToDto(savedComponent);
     } catch (error) {
       console.error('Error creating social component:', error);
-      if (error instanceof NotFoundException || error instanceof BadRequestException) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       throw new RpcException({
         message: 'Failed to create social component',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
@@ -69,14 +79,14 @@ export class SocialComponentService {
     try {
       const components = await this.socialComponentRepository.find({
         where: { postId },
-        order: { position: 'ASC', createdAt: 'ASC' }
+        order: { position: 'ASC', createdAt: 'ASC' },
       });
-      return components.map(component => this.mapToDto(component));
+      return components.map((component) => this.mapToDto(component));
     } catch (error) {
       console.error('Error finding social components:', error);
       throw new RpcException({
         message: 'Failed to fetch social components',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
@@ -84,7 +94,7 @@ export class SocialComponentService {
   async findOne(id: string): Promise<SocialComponentDto> {
     try {
       const component = await this.socialComponentRepository.findOne({
-        where: { id }
+        where: { id },
       });
 
       if (!component) {
@@ -99,15 +109,18 @@ export class SocialComponentService {
       }
       throw new RpcException({
         message: 'Failed to fetch social component',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
 
-  async update(id: string, updateComponentDto: UpdateSocialComponentDto): Promise<SocialComponentDto> {
+  async update(
+    id: string,
+    updateComponentDto: UpdateSocialComponentDto
+  ): Promise<SocialComponentDto> {
     try {
       const component = await this.socialComponentRepository.findOne({
-        where: { id }
+        where: { id },
       });
 
       if (!component) {
@@ -116,8 +129,10 @@ export class SocialComponentService {
 
       // Merge the update data
       Object.assign(component, updateComponentDto);
-      
-      const savedComponent = await this.socialComponentRepository.save(component);
+
+      const savedComponent = await this.socialComponentRepository.save(
+        component
+      );
       return this.mapToDto(savedComponent);
     } catch (error) {
       console.error('Error updating social component:', error);
@@ -126,7 +141,7 @@ export class SocialComponentService {
       }
       throw new RpcException({
         message: 'Failed to update social component',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
@@ -134,7 +149,7 @@ export class SocialComponentService {
   async remove(id: string): Promise<void> {
     try {
       const component = await this.socialComponentRepository.findOne({
-        where: { id }
+        where: { id },
       });
 
       if (!component) {
@@ -149,7 +164,7 @@ export class SocialComponentService {
       }
       throw new RpcException({
         message: 'Failed to remove social component',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
@@ -161,31 +176,34 @@ export class SocialComponentService {
       console.error('Error removing social components for post:', error);
       throw new RpcException({
         message: 'Failed to remove social components for post',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }
 
-  async findByQuery(query: SocialComponentQueryDto): Promise<SocialComponentDto[]> {
+  async findByQuery(
+    query: SocialComponentQueryDto
+  ): Promise<SocialComponentDto[]> {
     try {
       const whereConditions: any = {};
 
       if (query.id) whereConditions.id = query.id;
       if (query.postId) whereConditions.postId = query.postId;
       if (query.instanceId) whereConditions.instanceId = query.instanceId;
-      if (query.componentType) whereConditions.componentType = query.componentType;
+      if (query.componentType)
+        whereConditions.componentType = query.componentType;
 
       const components = await this.socialComponentRepository.find({
         where: whereConditions,
-        order: { position: 'ASC', createdAt: 'ASC' }
+        order: { position: 'ASC', createdAt: 'ASC' },
       });
 
-      return components.map(component => this.mapToDto(component));
+      return components.map((component) => this.mapToDto(component));
     } catch (error) {
       console.error('Error finding social components by query:', error);
       throw new RpcException({
         message: 'Failed to fetch social components',
-        details: error?.message || 'Unknown error'
+        details: error?.message || 'Unknown error',
       });
     }
   }

@@ -1,4 +1,9 @@
-<span class="badge" [class]="'badge--' + variant + ' badge--' + size">
+<span
+  class="badge"
+  [attr.data-tone]="tone"
+  [attr.data-shape]="shape"
+  [attr.data-size]="size"
+>
   @if (icon === 'check') {
   <svg
     class="badge__icon"

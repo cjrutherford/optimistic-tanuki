@@ -105,11 +105,11 @@ describe('AgGridUiComponent', () => {
   it('should have grid API available after onGridReady', () => {
     const mockParams = {
       api: {
-        sizeColumnsToFit: () => { },
-        hideOverlay: () => { },
+        sizeColumnsToFit: () => {},
+        hideOverlay: () => {},
         getDisplayedRowCount: () => 0,
-        setGridOption: () => { },
-        refreshCells: () => { },
+        setGridOption: () => {},
+        refreshCells: () => {},
       },
     } as any;
 

@@ -9,8 +9,8 @@
   .error {
     padding: 1rem;
     margin-bottom: 1rem;
-    background-color: #fee;
-    color: #c00;
+    background-color: color-mix(in oklab, var(--danger) 12%, transparent);
+    color: var(--danger);
     border-radius: 4px;
   }
 
@@ -26,7 +26,7 @@
 
     select {
       padding: 0.5rem;
-      border: 1px solid #ced4da;
+      border: 1px solid var(--border);
       border-radius: 4px;
       font-size: 1rem;
     }
@@ -36,7 +36,10 @@
     .loading {
       text-align: center;
       padding: 2rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
     }
 
     table {
@@ -46,22 +49,22 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
       thead {
-        background-color: #f8f9fa;
+        background-color: var(--surface, var(--background));
 
         th {
           padding: 1rem;
           text-align: left;
           font-weight: 600;
-          border-bottom: 2px solid #dee2e6;
+          border-bottom: 2px solid var(--border);
         }
       }
 
       tbody {
         tr {
-          border-bottom: 1px solid #dee2e6;
+          border-bottom: 1px solid var(--border);
 
           &:hover {
-            background-color: #f8f9fa;
+            background-color: var(--surface, var(--background));
           }
 
           td {
@@ -82,23 +85,35 @@
         text-transform: capitalize;
 
         &.status-pending {
-          background-color: #fff3cd;
-          color: #856404;
+          background-color: color-mix(
+            in oklab,
+            var(--warning) 15%,
+            transparent
+          );
+          color: var(--on-warning, var(--warning-foreground));
         }
 
         &.status-processing {
-          background-color: #cfe2ff;
-          color: #084298;
+          background-color: color-mix(
+            in oklab,
+            var(--info, var(--primary)) 15%,
+            transparent
+          );
+          color: var(--on-info, var(--info-foreground));
         }
 
         &.status-completed {
-          background-color: #d4edda;
-          color: #155724;
+          background-color: color-mix(
+            in oklab,
+            var(--success) 15%,
+            transparent
+          );
+          color: var(--on-success, var(--success-foreground));
         }
 
         &.status-cancelled {
-          background-color: #f8d7da;
-          color: #721c24;
+          background-color: color-mix(in oklab, var(--danger) 15%, transparent);
+          color: var(--on-danger, var(--danger-foreground));
         }
       }
     }
@@ -111,19 +126,19 @@
       font-size: 0.875rem;
 
       &.btn-view {
-        background-color: #007bff;
+        background-color: var(--info, var(--primary));
         color: white;
         margin-right: 0.5rem;
 
         &:hover {
-          background-color: #0056b3;
+          background-color: color-mix(in oklab, var(--primary) 90%, black);
         }
       }
     }
 
     .status-select {
       padding: 0.25rem 0.5rem;
-      border: 1px solid #ced4da;
+      border: 1px solid var(--border);
       border-radius: 4px;
       font-size: 0.875rem;
     }
@@ -131,7 +146,10 @@
     .empty-state {
       text-align: center;
       padding: 3rem;
-      color: #6c757d;
+      color: var(
+        --muted-foreground,
+        color-mix(in oklab, var(--foreground) 60%, transparent)
+      );
     }
   }
 
@@ -162,7 +180,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 1.5rem;
-      border-bottom: 1px solid #dee2e6;
+      border-bottom: 1px solid var(--border);
 
       h3 {
         margin: 0;
@@ -173,14 +191,17 @@
         border: none;
         font-size: 2rem;
         cursor: pointer;
-        color: #6c757d;
+        color: var(
+          --muted-foreground,
+          color-mix(in oklab, var(--foreground) 60%, transparent)
+        );
         padding: 0;
         width: 2rem;
         height: 2rem;
         line-height: 1;
 
         &:hover {
-          color: #000;
+          color: var(--foreground);
         }
       }
     }
@@ -192,10 +213,10 @@
         display: flex;
         justify-content: space-between;
         padding: 0.75rem 0;
-        border-bottom: 1px solid #f0f0f0;
+        border-bottom: 1px solid var(--surface, var(--background));
 
         strong {
-          color: #495057;
+          color: var(--foreground);
         }
       }
 
@@ -210,19 +231,19 @@
         margin-top: 1rem;
 
         thead {
-          background-color: #f8f9fa;
+          background-color: var(--surface, var(--background));
 
           th {
             padding: 0.75rem;
             text-align: left;
             font-weight: 600;
-            border-bottom: 2px solid #dee2e6;
+            border-bottom: 2px solid var(--border);
           }
         }
 
         tbody {
           tr {
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 1px solid var(--border);
 
             td {
               padding: 0.75rem;
@@ -231,12 +252,12 @@
         }
 
         tfoot {
-          background-color: #f8f9fa;
+          background-color: var(--surface, var(--background));
           font-weight: 600;
 
           td {
             padding: 0.75rem;
-            border-top: 2px solid #dee2e6;
+            border-top: 2px solid var(--border);
           }
         }
       }

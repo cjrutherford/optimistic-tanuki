@@ -964,6 +964,40 @@ func (c *Catalog) initClients() {
 			},
 		},
 		{
+			ID:       "ui-playground",
+			Name:     "UI Playground",
+			Category: CategoryClient,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/ui-playground/Dockerfile",
+				ContainerPort: 4000,
+				ExternalPort:  4310,
+				DependsOn:     []string{"gateway"},
+				EnvDefaults: map[string]string{
+					"NODE_ENV":    "production",
+					"PORT":        "4000",
+					"GATEWAY_URL": "http://gateway:3000",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     2,
+				InternalPort: 4000,
+				ServiceType:  "ClusterIP",
+				Resources: ResourceLimits{
+					Requests: MemoryCPU{Memory: "64Mi", CPU: "50m"},
+					Limits:   MemoryCPU{Memory: "256Mi", CPU: "250m"},
+				},
+				Probes: ProbesConfig{
+					Liveness:  ProbeConfig{Port: 4000, Initial: 30, Period: 10},
+					Readiness: ProbeConfig{Port: 4000, Initial: 10, Period: 5},
+				},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_ui-playground", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true, ServicePoint: true},
+			},
+		},
+		{
 			ID:       "store-client",
 			Name:     "Store Client",
 			Category: CategoryClient,

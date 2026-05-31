@@ -120,7 +120,8 @@ export class ChatUiPageComponent {
       headline: 'Embedded conversation surface',
       importName: 'ChatWindowComponent',
       selector: 'lib-chat-window',
-      summary: 'Expanded messaging window with participant context and threaded messages.',
+      summary:
+        'Expanded messaging window with participant context and threaded messages.',
       props: [],
     },
   ];

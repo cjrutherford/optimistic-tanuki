@@ -10,7 +10,7 @@ import { Component, Input } from '@angular/core';
 @Component({
   selector: 'ng-icon',
   standalone: true,
-  template: ''
+  template: '',
 })
 class MockNgIconComponent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -52,25 +52,25 @@ describe('RichTextToolbarComponent', () => {
       addRowAfter: jest.fn().mockReturnThis(),
       deleteRow: jest.fn().mockReturnThis(),
       deleteTable: jest.fn().mockReturnThis(),
-      run: jest.fn()
+      run: jest.fn(),
     };
 
     editorMock = {
       chain: jest.fn().mockReturnValue(chainMock),
-      isActive: jest.fn().mockReturnValue(false)
+      isActive: jest.fn().mockReturnValue(false),
     };
 
     await TestBed.configureTestingModule({
       imports: [RichTextToolbarComponent],
       providers: [
-        provideIcons({ heroBold }) // Provide at least one icon to satisfy provider requirement if needed
-      ]
+        provideIcons({ heroBold }), // Provide at least one icon to satisfy provider requirement if needed
+      ],
     })
-    .overrideComponent(RichTextToolbarComponent, {
-      remove: { imports: [NgIcon] },
-      add: { imports: [MockNgIconComponent] }
-    })
-    .compileComponents();
+      .overrideComponent(RichTextToolbarComponent, {
+        remove: { imports: [NgIcon] },
+        add: { imports: [MockNgIconComponent] },
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(RichTextToolbarComponent);
     component = fixture.componentInstance;
@@ -98,73 +98,83 @@ describe('RichTextToolbarComponent', () => {
     it('should generate toolbar groups', () => {
       const groups = component.toolbarGroups;
       expect(groups.length).toBeGreaterThan(0);
-      expect(groups.find(g => g.name === 'Format')).toBeDefined();
+      expect(groups.find((g) => g.name === 'Format')).toBeDefined();
     });
 
     it('should show table management tools when table is active', () => {
       editorMock.isActive.mockReturnValue(true); // Simulate table active
       const groups = component.toolbarGroups;
-      const tableGroup = groups.find(g => g.name === 'Table Management');
+      const tableGroup = groups.find((g) => g.name === 'Table Management');
       expect(tableGroup).toBeDefined();
     });
 
     it('should NOT show table management tools when table is inactive', () => {
       editorMock.isActive.mockReturnValue(false);
       const groups = component.toolbarGroups;
-      const tableGroup = groups.find(g => g.name === 'Table Management');
+      const tableGroup = groups.find((g) => g.name === 'Table Management');
       expect(tableGroup).toBeUndefined();
     });
   });
 
   describe('Tool Actions', () => {
     it('should execute bold action', () => {
-      const tool = component.toolbarGroups[0].tools.find(t => t.id === 'bold');
+      const tool = component.toolbarGroups[0].tools.find(
+        (t) => t.id === 'bold'
+      );
       tool?.action();
       expect(chainMock.toggleBold).toHaveBeenCalled();
       expect(chainMock.run).toHaveBeenCalled();
     });
 
     it('should execute heading action', () => {
-      const tool = component.toolbarGroups[1].tools.find(t => t.id === 'heading1');
+      const tool = component.toolbarGroups[1].tools.find(
+        (t) => t.id === 'heading1'
+      );
       tool?.action();
       expect(chainMock.toggleHeading).toHaveBeenCalledWith({ level: 1 });
     });
 
     it('should execute text align action', () => {
-        const tool = component.toolbarGroups[2].tools.find(t => t.id === 'alignLeft');
-        tool?.action();
-        expect(chainMock.setTextAlign).toHaveBeenCalledWith('left');
+      const tool = component.toolbarGroups[2].tools.find(
+        (t) => t.id === 'alignLeft'
+      );
+      tool?.action();
+      expect(chainMock.setTextAlign).toHaveBeenCalledWith('left');
     });
 
     it('should execute undo action', () => {
-        const groups = component.toolbarGroups;
-        const actionGroup = groups.find(g => g.name === 'Actions');
-        const tool = actionGroup?.tools.find(t => t.id === 'undo');
-        tool?.action();
-        expect(chainMock.undo).toHaveBeenCalled();
+      const groups = component.toolbarGroups;
+      const actionGroup = groups.find((g) => g.name === 'Actions');
+      const tool = actionGroup?.tools.find((t) => t.id === 'undo');
+      tool?.action();
+      expect(chainMock.undo).toHaveBeenCalled();
     });
 
     it('should prompt for URL and set link', () => {
-        const promptSpy = jest.spyOn(window, 'prompt').mockReturnValue('http://example.com');
-        const groups = component.toolbarGroups;
-        const mediaGroup = groups.find(g => g.name === 'Media & Tables');
-        const tool = mediaGroup?.tools.find(t => t.id === 'link');
-        
-        tool?.action();
-        
-        expect(promptSpy).toHaveBeenCalled();
-        expect(chainMock.setLink).toHaveBeenCalledWith({ href: 'http://example.com' });
+      const promptSpy = jest
+        .spyOn(window, 'prompt')
+        .mockReturnValue('http://example.com');
+      const groups = component.toolbarGroups;
+      const mediaGroup = groups.find((g) => g.name === 'Media & Tables');
+      const tool = mediaGroup?.tools.find((t) => t.id === 'link');
+
+      tool?.action();
+
+      expect(promptSpy).toHaveBeenCalled();
+      expect(chainMock.setLink).toHaveBeenCalledWith({
+        href: 'http://example.com',
+      });
     });
 
     it('should not set link if prompt is cancelled', () => {
-        jest.spyOn(window, 'prompt').mockReturnValue(null);
-        const groups = component.toolbarGroups;
-        const mediaGroup = groups.find(g => g.name === 'Media & Tables');
-        const tool = mediaGroup?.tools.find(t => t.id === 'link');
-        
-        tool?.action();
-        
-        expect(chainMock.setLink).not.toHaveBeenCalled();
+      jest.spyOn(window, 'prompt').mockReturnValue(null);
+      const groups = component.toolbarGroups;
+      const mediaGroup = groups.find((g) => g.name === 'Media & Tables');
+      const tool = mediaGroup?.tools.find((t) => t.id === 'link');
+
+      tool?.action();
+
+      expect(chainMock.setLink).not.toHaveBeenCalled();
     });
   });
 });

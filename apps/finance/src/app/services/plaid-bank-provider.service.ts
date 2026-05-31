@@ -35,7 +35,10 @@ export class PlaidBankProviderService {
     return 'https://sandbox.plaid.com';
   }
 
-  private async request<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  private async request<T>(
+    path: string,
+    body: Record<string, unknown>
+  ): Promise<T> {
     if (!this.clientId || !this.secret) {
       throw new InternalServerErrorException(
         'Plaid is not configured. Set PLAID_CLIENT_ID and PLAID_SECRET.'

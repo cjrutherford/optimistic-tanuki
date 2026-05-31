@@ -207,7 +207,8 @@ export class ClassifiedsComponent implements OnInit, OnDestroy {
         const profile = profileMap.get(ad.profileId);
         return {
           ...ad,
-          sellerProfileName: ad.sellerProfileName || profile?.profileName || null,
+          sellerProfileName:
+            ad.sellerProfileName || profile?.profileName || null,
           sellerProfilePic: ad.sellerProfilePic || profile?.profilePic || null,
         };
       });

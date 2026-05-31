@@ -71,6 +71,10 @@ func (w *Writer) WriteValidationReport(data []byte) error {
 	return w.WriteFile(filepath.Join("reports", "validation.txt"), data)
 }
 
+func (w *Writer) WriteDBSetupPlan(data []byte) error {
+	return w.WriteFile(filepath.Join("config", "db-setup.generated.yaml"), data)
+}
+
 func (w *Writer) WriteK8sFiles(files map[string][]byte) error {
 	for name, data := range files {
 		relPath := filepath.Join("k8s", name)

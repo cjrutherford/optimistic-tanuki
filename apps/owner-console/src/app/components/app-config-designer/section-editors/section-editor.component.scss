@@ -27,7 +27,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color, var(--border));
 
   h3 {
     margin: 0;
@@ -42,13 +42,16 @@
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 4px;
-  color: var(--foreground-secondary, #666);
+  color: var(
+    --foreground-secondary,
+    color-mix(in oklab, var(--foreground) 70%, transparent)
+  );
   display: flex;
   align-items: center;
 
   &:hover {
-    background-color: var(--accent-light, #f0f0f0);
-    color: var(--accent, #007acc);
+    background-color: var(--accent-light, var(--surface, var(--background)));
+    color: var(--accent, color-mix(in oklab, var(--primary) 90%, black));
   }
 
   mat-icon {
@@ -71,7 +74,7 @@
     display: block;
     font-weight: 500;
     margin-bottom: 0.5rem;
-    color: var(--foreground, #333);
+    color: var(--foreground, var(--foreground));
     font-size: 0.9rem;
   }
 }
@@ -83,7 +86,7 @@
     display: block;
     font-weight: 500;
     margin-bottom: 0.25rem;
-    color: var(--foreground, #333);
+    color: var(--foreground, var(--foreground));
     font-size: 0.875rem;
   }
 }
@@ -91,15 +94,15 @@
 .select-input {
   width: 100%;
   padding: 0.625rem;
-  border: 1px solid var(--border-color, #e0e0e0);
+  border: 1px solid var(--border-color, var(--border));
   border-radius: 4px;
   background: var(--background, white);
-  color: var(--foreground, #333);
+  color: var(--foreground, var(--foreground));
   font-size: 0.9rem;
 
   &:focus {
     outline: none;
-    border-color: var(--accent, #007acc);
+    border-color: var(--accent, color-mix(in oklab, var(--primary) 90%, black));
   }
 }
 
@@ -117,8 +120,8 @@
 }
 
 .array-item {
-  background: var(--background-secondary, #f8f9fa);
-  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--background-secondary, var(--surface, var(--background)));
+  border: 1px solid var(--border-color, var(--border));
   border-radius: 8px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -130,11 +133,11 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  border-bottom: 1px solid var(--border-color, var(--border));
 
   span {
     font-weight: 500;
-    color: var(--foreground, #333);
+    color: var(--foreground, var(--foreground));
   }
 }
 
@@ -144,20 +147,23 @@
   cursor: pointer;
   padding: 0.5rem;
   border-radius: 4px;
-  color: var(--foreground-secondary, #666);
+  color: var(
+    --foreground-secondary,
+    color-mix(in oklab, var(--foreground) 70%, transparent)
+  );
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
 
   &:hover {
-    background: var(--accent-light, #f0f0f0);
-    color: var(--accent, #007acc);
+    background: var(--accent-light, var(--surface, var(--background)));
+    color: var(--accent, color-mix(in oklab, var(--primary) 90%, black));
   }
 
   &.danger:hover {
-    background: #ffebee;
-    color: #d32f2f;
+    background: color-mix(in oklab, var(--danger) 10%, transparent);
+    color: var(--danger);
   }
 
   mat-icon {
@@ -169,7 +175,7 @@
 
 .editor-actions {
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color, #e0e0e0);
+  border-top: 1px solid var(--border-color, var(--border));
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;

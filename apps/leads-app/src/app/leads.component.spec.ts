@@ -345,7 +345,9 @@ describe('LeadsComponent', () => {
       component.searchQuery = 'legacy owner';
       component.filterLeads();
 
-      expect(component.filteredLeads.map((lead) => lead.id)).toEqual(['lead-a']);
+      expect(component.filteredLeads.map((lead) => lead.id)).toEqual([
+        'lead-a',
+      ]);
     });
   });
 });

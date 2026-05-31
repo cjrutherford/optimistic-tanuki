@@ -208,7 +208,10 @@ describe('LazyLoadDirective', () => {
           target: newImgElement.nativeElement,
         } as IntersectionObserverEntry;
 
-        observerCallback([mockEntry], mockObserver as unknown as IntersectionObserver);
+        observerCallback(
+          [mockEntry],
+          mockObserver as unknown as IntersectionObserver
+        );
 
         expect(mockObserver.disconnect).toHaveBeenCalled();
       } finally {
@@ -231,7 +234,7 @@ describe('LazyLoadDirective', () => {
       // When native loading is supported, src should be set
       // When not supported, src is only set on intersection
       const src = imgElement.nativeElement.getAttribute('src');
-      
+
       // Either has src (native loading) or is null (waiting for intersection)
       if ('loading' in HTMLImageElement.prototype) {
         expect(src).toBeTruthy();
@@ -320,12 +323,12 @@ describe('LazyLoadDirective', () => {
 
       const images = multiFixture.debugElement.queryAll(By.css('img'));
       expect(images.length).toBe(3);
-      
+
       // All images should have loading attribute set
       images.forEach((img) => {
         expect(img.nativeElement.getAttribute('loading')).toBe('lazy');
       });
-      
+
       // If native loading is supported, src should be set
       if ('loading' in HTMLImageElement.prototype) {
         images.forEach((img) => {
@@ -335,4 +338,3 @@ describe('LazyLoadDirective', () => {
     });
   });
 });
-

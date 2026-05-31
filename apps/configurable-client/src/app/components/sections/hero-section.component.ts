@@ -35,8 +35,8 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
         padding: 4rem 2rem;
         text-align: center;
         overflow: hidden;
-        color: var(--foreground, var(--text-color, #111827));
-        background: var(--background, var(--background-color, #ffffff));
+        color: var(--foreground, #111827);
+        background: var(--background, #ffffff);
       }
 
       .hero-background {
@@ -70,7 +70,7 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       .cta-button {
         display: inline-block;
         padding: 1rem 2rem;
-        background-color: var(--primary, var(--primary-color, #007bff));
+        background-color: var(--primary, #007bff);
         color: var(--primary-foreground, white);
         text-decoration: none;
         border-radius: 4px;
@@ -81,7 +81,7 @@ import { HeroSection } from '@optimistic-tanuki/app-config-models';
       .cta-button:hover {
         background-color: color-mix(
           in srgb,
-          var(--primary, var(--primary-color, #007bff)) 88%,
+          var(--primary, #007bff) 88%,
           black
         );
       }

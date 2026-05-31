@@ -39,7 +39,7 @@ export class AppComponent implements OnInit {
 
       if (!hasStoredPersonalityTheme) {
         this.themeService.setTheme('light');
-        this.themeService.setPersonality('classic');
+        this.themeService.setPersonality('professional');
         this.themeService.setPrimaryColor('#0d5f73');
         return;
       }

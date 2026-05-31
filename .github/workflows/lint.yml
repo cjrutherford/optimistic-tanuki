@@ -47,6 +47,9 @@ jobs:
       - name: Check formatting
         run: pnpm exec nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
+      - name: Client UI heuristics (allowlist)
+        run: pnpm run ui:heuristics:ci
+
   lint-all:
     name: Lint (All - Weekly)
     runs-on: ubuntu-24.04

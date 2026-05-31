@@ -86,7 +86,10 @@ export class FinanceSummaryService {
             normalizedBudgetCategory
         );
       })
-      .reduce((sum, transaction) => sum + this.numberValue(transaction.amount), 0);
+      .reduce(
+        (sum, transaction) => sum + this.numberValue(transaction.amount),
+        0
+      );
   }
 
   private pushRule(
@@ -463,7 +466,10 @@ export class FinanceSummaryService {
         0
       );
     const budgetsAtRiskCount = scopedBudgets.filter((budget) => {
-      const spent = this.budgetSpentFromTransactions(budget, scopedTransactions);
+      const spent = this.budgetSpentFromTransactions(
+        budget,
+        scopedTransactions
+      );
       const limit = this.numberValue(budget.limit);
       return limit > 0 && spent / limit >= 0.8;
     }).length;
@@ -498,11 +504,12 @@ export class FinanceSummaryService {
   async getOnboardingState(
     scope: FinanceScope
   ): Promise<FinanceOnboardingStateDto> {
-    const [accountsResult, budgetsResult, transactionsResult] = await Promise.all([
-      this.accountService.findAll(scope),
-      this.budgetService.findAll(scope),
-      this.transactionService.findAll(scope),
-    ]);
+    const [accountsResult, budgetsResult, transactionsResult] =
+      await Promise.all([
+        this.accountService.findAll(scope),
+        this.budgetService.findAll(scope),
+        this.transactionService.findAll(scope),
+      ]);
     const accounts = accountsResult ?? [];
     const budgets = budgetsResult ?? [];
     const transactions = transactionsResult ?? [];

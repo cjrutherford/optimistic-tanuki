@@ -12,5 +12,5 @@ export const serverRoutes: ServerRoute[] = [
   {
     path: 'forum/thread/:threadId',
     renderMode: RenderMode.Client,
-  }
+  },
 ];

@@ -143,26 +143,32 @@ export class LeadsService {
         })
       : [];
     const qualificationByLeadId = new Map(
-      qualifications.map((qualification) => [qualification.leadId, qualification])
+      qualifications.map((qualification) => [
+        qualification.leadId,
+        qualification,
+      ])
     );
 
     return topics.map((topic) => {
       const topicQualifications = links
         .filter((link) => link.topicId === topic.id)
         .map((link) => qualificationByLeadId.get(link.leadId))
-        .filter(
-          (qualification): qualification is LeadQualification =>
-            Boolean(qualification)
+        .filter((qualification): qualification is LeadQualification =>
+          Boolean(qualification)
         );
 
       return {
         ...topic,
-        qualificationSummary: this.buildQualificationSummary(topicQualifications),
+        qualificationSummary:
+          this.buildQualificationSummary(topicQualifications),
       };
     });
   }
 
-  async findTopicById(id: string, profileId: string): Promise<LeadTopic | null> {
+  async findTopicById(
+    id: string,
+    profileId: string
+  ): Promise<LeadTopic | null> {
     return this.leadTopicRepository.findOneBy({ id, profileId });
   }
 
@@ -178,11 +184,21 @@ export class LeadsService {
       userId: context.userId,
       description: dto.description || '',
       excludedTerms: this.normalizeTopicTerms(dto.excludedTerms),
-      discoveryIntent: dto.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS,
+      discoveryIntent:
+        dto.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources,
-      googleMapsCities: this.normalizeTopicGoogleMapsList(dto.googleMapsCities, sources),
-      googleMapsTypes: this.normalizeTopicGoogleMapsList(dto.googleMapsTypes, sources),
-      googleMapsLocation: this.normalizeTopicGoogleMapsLocation(dto.googleMapsLocation, sources),
+      googleMapsCities: this.normalizeTopicGoogleMapsList(
+        dto.googleMapsCities,
+        sources
+      ),
+      googleMapsTypes: this.normalizeTopicGoogleMapsList(
+        dto.googleMapsTypes,
+        sources
+      ),
+      googleMapsLocation: this.normalizeTopicGoogleMapsLocation(
+        dto.googleMapsLocation,
+        sources
+      ),
       googleMapsRadiusMiles: this.normalizeTopicGoogleMapsRadiusMiles(
         dto.googleMapsRadiusMiles,
         sources
@@ -199,31 +215,44 @@ export class LeadsService {
     dto: UpdateLeadTopicDto,
     profileId: string
   ): Promise<LeadTopic | null> {
-    const existing = await this.leadTopicRepository.findOneBy({ id, profileId });
+    const existing = await this.leadTopicRepository.findOneBy({
+      id,
+      profileId,
+    });
     if (!existing) {
       return null;
     }
-    const nextSources = dto.sources !== undefined
-      ? this.normalizeTopicSources(dto.sources)
-      : undefined;
+    const nextSources =
+      dto.sources !== undefined
+        ? this.normalizeTopicSources(dto.sources)
+        : undefined;
 
-    await this.leadTopicRepository.update({ id, profileId }, {
-      ...dto,
-      excludedTerms: this.normalizeTopicTerms(dto.excludedTerms),
-      discoveryIntent: dto.discoveryIntent,
-      sources: nextSources,
-      googleMapsCities: this.normalizeTopicGoogleMapsList(dto.googleMapsCities, nextSources),
-      googleMapsTypes: this.normalizeTopicGoogleMapsList(dto.googleMapsTypes, nextSources),
-      googleMapsLocation: this.normalizeTopicGoogleMapsLocation(
-        dto.googleMapsLocation,
-        nextSources
-      ),
-      googleMapsRadiusMiles: this.normalizeTopicGoogleMapsRadiusMiles(
-        dto.googleMapsRadiusMiles,
-        nextSources
-      ),
-      lastRun: dto.lastRun ? new Date(dto.lastRun) : dto.lastRun,
-    });
+    await this.leadTopicRepository.update(
+      { id, profileId },
+      {
+        ...dto,
+        excludedTerms: this.normalizeTopicTerms(dto.excludedTerms),
+        discoveryIntent: dto.discoveryIntent,
+        sources: nextSources,
+        googleMapsCities: this.normalizeTopicGoogleMapsList(
+          dto.googleMapsCities,
+          nextSources
+        ),
+        googleMapsTypes: this.normalizeTopicGoogleMapsList(
+          dto.googleMapsTypes,
+          nextSources
+        ),
+        googleMapsLocation: this.normalizeTopicGoogleMapsLocation(
+          dto.googleMapsLocation,
+          nextSources
+        ),
+        googleMapsRadiusMiles: this.normalizeTopicGoogleMapsRadiusMiles(
+          dto.googleMapsRadiusMiles,
+          nextSources
+        ),
+        lastRun: dto.lastRun ? new Date(dto.lastRun) : dto.lastRun,
+      }
+    );
     return this.leadTopicRepository.findOneBy({ id, profileId });
   }
 
@@ -231,7 +260,9 @@ export class LeadsService {
     await this.leadTopicRepository.delete({ id, profileId });
   }
 
-  private normalizeTopicSources(sources?: LeadDiscoverySource[]): LeadDiscoverySource[] {
+  private normalizeTopicSources(
+    sources?: LeadDiscoverySource[]
+  ): LeadDiscoverySource[] {
     const normalized = Array.from(new Set((sources || []).filter(Boolean)));
     return normalized.length ? normalized : [...DEFAULT_LEAD_DISCOVERY_SOURCES];
   }
@@ -264,9 +295,7 @@ export class LeadsService {
 
     const normalized = Array.from(
       new Set(
-        values
-          .map((value) => value.trim())
-          .filter((value) => value.length > 0)
+        values.map((value) => value.trim()).filter((value) => value.length > 0)
       )
     );
 
@@ -300,7 +329,10 @@ export class LeadsService {
     return Math.round(value);
   }
 
-  async findFlagsByLead(leadId: string, profileId: string): Promise<LeadFlag[]> {
+  async findFlagsByLead(
+    leadId: string,
+    profileId: string
+  ): Promise<LeadFlag[]> {
     return this.leadFlagRepository.find({
       where: { leadId, profileId },
       order: { createdAt: 'DESC' },
@@ -363,7 +395,10 @@ export class LeadsService {
     profile: UserOnboardingProfile,
     context: LeadAuthContext
   ) {
-    return this.leadQualificationService.saveOnboardingProfile(profile, context);
+    return this.leadQualificationService.saveOnboardingProfile(
+      profile,
+      context
+    );
   }
 
   private buildQualificationSummary(

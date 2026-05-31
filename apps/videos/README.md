@@ -33,15 +33,18 @@ pnpm exec nx serve videos
 ### Backend Services
 
 #### Video Service (`apps/videos`)
+
 A microservice handling all video-related operations:
 
 **Entities:**
+
 - **Channel**: Content creator channels with profile associations
 - **Video**: Video content with metadata (duration, resolution, encoding)
 - **ChannelSubscription**: User subscriptions to channels
 - **VideoView**: Analytics for tracking video views and watch duration
 
 **Key Features:**
+
 - CRUD operations for channels and videos
 - Channel subscription management
 - Video view tracking
@@ -50,6 +53,7 @@ A microservice handling all video-related operations:
 - Public/unlisted/private visibility controls
 
 **API Endpoints** (via Gateway):
+
 - `GET /videos` - List all public videos
 - `GET /videos/recommended` - Get recommended videos
 - `GET /videos/trending` - Get trending videos
@@ -66,20 +70,25 @@ A microservice handling all video-related operations:
 ### Frontend Components
 
 #### Video UI Library (`libs/video-ui`)
+
 Reusable Angular components for video playback and display:
 
 **Components:**
+
 - **VideoPlayerComponent**: HTML5 video player with controls
+
   - Features: play, pause, seek, duration display
   - Events: play, pause, ended, timeUpdate
   - Methods: playVideo(), pauseVideo(), seekTo()
 
 - **ChannelHeaderComponent**: Display channel information
+
   - Shows channel banner, avatar, name, description
   - Subscriber count display
   - Subscribe/Unsubscribe button
 
 - **VideoCardComponent**: Video thumbnail preview
+
   - Thumbnail with duration overlay
   - Video title, channel name
   - View count and time ago display
@@ -146,7 +155,7 @@ VideoView {
 ### Service Communication
 
 ```
-Client (Angular) 
+Client (Angular)
   ↓ HTTP
 Gateway Service (:3000)
   ↓ TCP Microservices
@@ -167,12 +176,14 @@ PostgreSQL (videos database)
 ### Running the Video Service
 
 #### Development
+
 ```bash
 pnpm exec nx serve videos
 pnpm exec nx serve videos --watch
 ```
 
 #### Docker
+
 ```bash
 # Build and start all services
 docker-compose up -d
@@ -184,6 +195,7 @@ docker-compose up -d videos
 ### Running the Video Client
 
 #### Development
+
 ```bash
 # Start the Angular app
 pnpm exec nx serve video-client
@@ -192,6 +204,7 @@ pnpm exec nx serve video-client
 ```
 
 #### Docker
+
 ```bash
 # Build and start the client
 docker-compose up -d video-client
@@ -221,6 +234,7 @@ docker-compose exec videos node seed-videos.js
 ```
 
 Sample data includes:
+
 - 3 Channels (Tech Tutorials, Cooking Adventures, Fitness & Health)
 - 7 Videos with realistic metadata
 - Sample subscriptions
@@ -228,25 +242,25 @@ Sample data includes:
 ### Using the UI Components
 
 ```typescript
-import { 
-  VideoPlayerComponent, 
-  ChannelHeaderComponent, 
-  VideoCardComponent, 
-  VideoGridComponent 
+import {
+  VideoPlayerComponent,
+  ChannelHeaderComponent,
+  VideoCardComponent,
+  VideoGridComponent
 } from '@optimistic-tanuki/video-ui';
 
 // In your component
 @Component({
   selector: 'app-video-page',
   template: `
-    <video-player 
+    <video-player
       [videoUrl]="videoUrl"
       [title]="videoTitle"
       (play)="onVideoPlay()"
       (ended)="onVideoEnded()"
     ></video-player>
-    
-    <video-grid 
+
+    <video-grid
       [videos]="videos"
       (videoClick)="navigateToVideo($event)"
     ></video-grid>
@@ -283,6 +297,7 @@ services:
 ## Development Roadmap
 
 ### Completed ✅
+
 - Video service backend with full CRUD
 - Channel management
 - Subscription system
@@ -298,11 +313,13 @@ services:
 - Home page with recommendations
 
 ### In Progress 🚧
+
 - Video upload to asset service
 - Thumbnail generation
 - Enhanced recommendation algorithm (ML-based)
 
 ### Planned 📋
+
 - Comments integration with social service
 - Like/share functionality (backend integration)
 - Search and filtering
@@ -329,6 +346,7 @@ pnpm exec nx test videos --test-file=channel.service.spec.ts
 ## API Examples
 
 ### Creating a Channel
+
 ```bash
 curl -X POST http://localhost:3000/videos/channels \
   -H "Authorization: Bearer <token>" \
@@ -342,11 +360,13 @@ curl -X POST http://localhost:3000/videos/channels \
 ```
 
 ### Getting Recommended Videos
+
 ```bash
 curl http://localhost:3000/videos/recommended?limit=10
 ```
 
 ### Subscribing to a Channel
+
 ```bash
 curl -X POST http://localhost:3000/videos/subscriptions \
   -H "Authorization: Bearer <token>" \

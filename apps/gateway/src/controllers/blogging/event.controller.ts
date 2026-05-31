@@ -12,7 +12,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { BlogEventCommands as EventCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  BlogEventCommands as EventCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   BlogEventQueryDto as EventQueryDto,
   CreateBlogEventDto as CreateEventDto,

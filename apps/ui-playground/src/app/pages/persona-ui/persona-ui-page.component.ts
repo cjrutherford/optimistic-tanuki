@@ -20,7 +20,8 @@ class PlaygroundPersonaService {
       {
         id: 'persona-1',
         name: 'Project Management Copilot',
-        description: 'Helps organize tasks, milestones, and delivery decisions.',
+        description:
+          'Helps organize tasks, milestones, and delivery decisions.',
         goals: ['Clarify scope', 'Sequence work', 'Reduce ambiguity'],
         skills: ['planning', 'prioritization', 'status summaries'],
         interests: ['delivery', 'roadmaps', 'coordination'],
@@ -28,21 +29,29 @@ class PlaygroundPersonaService {
         strengths: ['Structured breakdowns', 'Next-step planning'],
         objectives: ['Keep work moving', 'Surface blockers early'],
         coreObjective: 'Turn ambiguous requests into executable plans.',
-        exampleResponses: ['Here is the delivery sequence.', 'These are the blockers.'],
+        exampleResponses: [
+          'Here is the delivery sequence.',
+          'These are the blockers.',
+        ],
         promptTemplate: 'Act as a pragmatic project management copilot.',
       },
       {
         id: 'persona-2',
         name: 'Design System Editor',
-        description: 'Refines token naming, previews, component docs, and interaction polish.',
+        description:
+          'Refines token naming, previews, component docs, and interaction polish.',
         goals: ['Improve consistency', 'Raise visual quality', 'Tighten docs'],
         skills: ['design systems', 'component APIs', 'documentation'],
         interests: ['tokens', 'UI patterns', 'playgrounds'],
         limitations: ['No user research context'],
         strengths: ['Naming clarity', 'Surface-level API review'],
         objectives: ['Make design tools easier to use'],
-        coreObjective: 'Improve consistency and clarity across UI building blocks.',
-        exampleResponses: ['Rename these tokens.', 'These previews need stronger defaults.'],
+        coreObjective:
+          'Improve consistency and clarity across UI building blocks.',
+        exampleResponses: [
+          'Rename these tokens.',
+          'These previews need stronger defaults.',
+        ],
         promptTemplate: 'Act as a design system editor focused on clarity.',
       },
     ]);
@@ -101,7 +110,8 @@ export class PersonaUiPageComponent {
       headline: 'Assistant selection surface',
       importName: 'PersonaSelectionMenuComponent',
       selector: 'lib-persona-selection-menu',
-      summary: 'Menu for choosing between available AI helpers and assistant modes.',
+      summary:
+        'Menu for choosing between available AI helpers and assistant modes.',
       props: [],
     },
   ];

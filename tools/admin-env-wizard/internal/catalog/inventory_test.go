@@ -20,6 +20,7 @@ func TestDeployableAppsIncludesExpectedServicesAndClients(t *testing.T) {
 		"local-hub":           {},
 		"marketing-generator": {},
 		"payments":            {},
+		"ui-playground":       {},
 		"video-client":        {},
 		"video-transcoder-worker": {},
 		"videos":              {},
@@ -82,6 +83,11 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 			id:             "marketing-generator",
 			composeService: "marketing-generator",
 			manifestPath:   "k8s/base/clients/marketing-generator.yaml",
+		},
+		{
+			id:             "ui-playground",
+			composeService: "ui-playground",
+			manifestPath:   "k8s/base/clients/ui-playground.yaml",
 		},
 		{
 			id:             "video-client",

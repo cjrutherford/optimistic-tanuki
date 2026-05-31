@@ -28,7 +28,11 @@ import {
   CommunitySponsorship,
 } from '../../services/payment.service';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
-import { ModalComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
+import {
+  ModalComponent,
+  BadgeComponent,
+  IconComponent,
+} from '@optimistic-tanuki/common-ui';
 import {
   CommunityPostsComponent,
   CommunityChatComponent,
@@ -50,6 +54,7 @@ import {
     DonationProgressComponent,
     ModalComponent,
     BadgeComponent,
+    IconComponent,
   ],
   templateUrl: './community.component.html',
   styleUrls: ['./community.component.scss'],

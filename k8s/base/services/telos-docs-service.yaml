@@ -21,33 +21,33 @@ spec:
             - containerPort: 3008
           env:
             - name: NODE_ENV
-              value: "production"
+              value: 'production'
             - name: PORT
-              value: "3008"
+              value: '3008'
             - name: POSTGRES_HOST
-              value: "postgres"
+              value: 'postgres'
             - name: POSTGRES_PORT
-              value: "5432"
+              value: '5432'
             - name: REDIS_HOST
-              value: "redis"
+              value: 'redis'
             - name: REDIS_PORT
-              value: "6379"
+              value: '6379'
             - name: STORAGE_STRATEGY
-              value: "network"
+              value: 'network'
             - name: S3_ENDPOINT
-              value: "http://seaweedfs:8888"
+              value: 'http://seaweedfs:8888'
             - name: S3_BUCKET
-              value: "assets"
+              value: 'assets'
           envFrom:
             - secretRef:
                 name: optimistic-tanuki-secrets
           resources:
             requests:
-              memory: "128Mi"
-              cpu: "100m"
+              memory: '128Mi'
+              cpu: '100m'
             limits:
-              memory: "512Mi"
-              cpu: "500m"
+              memory: '512Mi'
+              cpu: '500m'
           livenessProbe:
             tcpSocket:
               port: 3008

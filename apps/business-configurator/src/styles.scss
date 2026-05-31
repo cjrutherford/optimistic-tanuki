@@ -2,6 +2,19 @@
 
 /* Hardware Portal Global Styles */
 
+:root {
+  /* Configurator brand palette - dark hardware editorial */
+  --config-bg: #0a0a0a;
+  --config-foreground: #fff;
+  --config-link: #4a9eff;
+  --config-shell-bg-1: #071015;
+  --config-shell-bg-2: #0d161c;
+  --config-shell-foreground: #ebfffb;
+  --config-brand-gradient-from: #2dd4bf;
+  --config-brand-gradient-to: #0f172a;
+  --config-brand-foreground: #031011;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -11,13 +24,13 @@ body {
   padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
     Ubuntu, sans-serif;
-  background-color: #0a0a0a;
-  color: #fff;
+  background-color: var(--config-bg);
+  color: var(--config-foreground);
   min-height: 100vh;
 }
 
 a {
-  color: #4a9eff;
+  color: var(--config-link);
   text-decoration: none;
 }
 

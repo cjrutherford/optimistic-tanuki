@@ -260,7 +260,9 @@ export class LeadsComponent implements OnInit {
     return keywords.length ? keywords : undefined;
   }
 
-  private normalizeKeywordList(values: string[] | undefined): string[] | undefined {
+  private normalizeKeywordList(
+    values: string[] | undefined
+  ): string[] | undefined {
     const keywords = (values || [])
       .map((keyword) => keyword.trim())
       .filter((keyword) => keyword.length > 0);
@@ -291,7 +293,9 @@ export class LeadsComponent implements OnInit {
       source: this.normalizeSearchToken(lead.source),
       status: this.normalizeSearchToken(lead.status),
       assignedTo: this.normalizeSearchToken(lead.assignedTo),
-      keywords: this.normalizeSearchToken((lead.searchKeywords || []).join(' ')),
+      keywords: this.normalizeSearchToken(
+        (lead.searchKeywords || []).join(' ')
+      ),
       contacts: this.normalizeSearchToken(
         (lead.contacts || [])
           .map((contact) => `${contact.label} ${contact.value} ${contact.href}`)

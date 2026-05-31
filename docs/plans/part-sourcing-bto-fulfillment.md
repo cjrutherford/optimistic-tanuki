@@ -108,58 +108,58 @@ Integrated pipeline:
 
 Multi-source aggregation for all part types. Each source type determines sync methodology.
 
-| Source Type | Description | Rate Limit | Auth Required |
-|------------|-------------|-----------|--------------|
-| scrape     | HTML scraping via fetch | 10 req/min | No |
-| api        | REST API integration | Varies | API key |
-| dropship   | Direct fulfillment partner | Varies | Account |
+| Source Type | Description                | Rate Limit | Auth Required |
+| ----------- | -------------------------- | ---------- | ------------- |
+| scrape      | HTML scraping via fetch    | 10 req/min | No            |
+| api         | REST API integration       | Varies     | API key       |
+| dropship    | Direct fulfillment partner | Varies     | Account       |
 
 ### Enumerated Sources
 
 #### Primary Component Sources
 
-| Source ID | Name | Type | Categories | Base URL |
-|----------|------|------|------------|----------|
+| Source ID    | Name         | Type   | Categories                                        | Base URL                 |
+| ------------ | ------------ | ------ | ------------------------------------------------- | ------------------------ |
 | pcpartpicker | PCPartPicker | scrape | cpu, ram, storage, gpu, motherboard, psu, cooling | https://pcpartpicker.com |
-| newegg | Newegg | scrape | cpu, ram, storage, gpu, motherboard, psu, cooling | https://newegg.com |
-| amazon | Amazon | scrape | cpu, ram, storage, gpu, peripherals, cables | https://amazon.com |
-| bhphotovideo | B&H Photo | scrape | cpu, ram, storage, gpu, peripherals | https://bhphotovideo.com |
-| bestbuy | Best Buy | scrape | cpu, ram, storage, gpu, peripherals | https://bestbuy.com |
+| newegg       | Newegg       | scrape | cpu, ram, storage, gpu, motherboard, psu, cooling | https://newegg.com       |
+| amazon       | Amazon       | scrape | cpu, ram, storage, gpu, peripherals, cables       | https://amazon.com       |
+| bhphotovideo | B&H Photo    | scrape | cpu, ram, storage, gpu, peripherals               | https://bhphotovideo.com |
+| bestbuy      | Best Buy     | scrape | cpu, ram, storage, gpu, peripherals               | https://bestbuy.com      |
 
 #### Specialized Sources
 
-| Source ID | Name | Type | Categories | Base URL |
-|----------|------|------|------|------------|----------|
-| octopart | Octopart | api | cpu, ram, storage, gpu, motherboard, psu, cooling | https://octopart.com |
-| digikey | DigiKey | api | cpu, ram, storage, psu, cooling, cables | https://digikey.com |
-| mouser | Mouser | api | cpu, ram, storage, gpu, motherboard, psu, cooling | https://mouser.com |
+| Source ID | Name     | Type | Categories                                        | Base URL             |
+| --------- | -------- | ---- | ------------------------------------------------- | -------------------- |
+| octopart  | Octopart | api  | cpu, ram, storage, gpu, motherboard, psu, cooling | https://octopart.com |
+| digikey   | DigiKey  | api  | cpu, ram, storage, psu, cooling, cables           | https://digikey.com  |
+| mouser    | Mouser   | api  | cpu, ram, storage, gpu, motherboard, psu, cooling | https://mouser.com   |
 
 #### 3D Printed Case Sources
 
-| Source ID | Name | Type | Categories | Base URL |
-|----------|------|------|------------|----------|
-| thingiverse | Thingiverse | scrape | case (printable) | https://thingiverse.com |
-| printables | Printables | scrape | case (printable) | https://printables.com |
-| cults3d | Cults3D | scrape | case (printable) | https://cults3d.com |
+| Source ID     | Name          | Type   | Categories                    | Base URL                  |
+| ------------- | ------------- | ------ | ----------------------------- | ------------------------- |
+| thingiverse   | Thingiverse   | scrape | case (printable)              | https://thingiverse.com   |
+| printables    | Printables    | scrape | case (printable)              | https://printables.com    |
+| cults3d       | Cults3D       | scrape | case (printable)              | https://cults3d.com       |
 | instructables | Instructables | scrape | case (printable), peripherals | https://instructables.com |
-| makerworld | MakerWorld | scrape | case (printable) | https://makerworld.com |
+| makerworld    | MakerWorld    | scrape | case (printable)              | https://makerworld.com    |
 
 #### Single-Board Computer Sources
 
-| Source ID | Name | Type | Categories | Base URL |
-|----------|------|------|------------|----------|
-| raspberrypi | Raspberry Pi | scrape | cpu (arm), case | https://raspberrypi.com |
-| argon40 | Argon40 | scrape | case | https://argon40.com |
-| pimoroni | Pimoroni | scrape | cpu (arm), case | https://pimoroni.com |
-| thepihut | The Pi Hut | scrape | cpu (arm), case, peripherals | https://thepihut.com |
+| Source ID   | Name         | Type   | Categories                   | Base URL                |
+| ----------- | ------------ | ------ | ---------------------------- | ----------------------- |
+| raspberrypi | Raspberry Pi | scrape | cpu (arm), case              | https://raspberrypi.com |
+| argon40     | Argon40      | scrape | case                         | https://argon40.com     |
+| pimoroni    | Pimoroni     | scrape | cpu (arm), case              | https://pimoroni.com    |
+| thepihut    | The Pi Hut   | scrape | cpu (arm), case, peripherals | https://thepihut.com    |
 
 #### Peripherals and Networking Sources
 
-| Source ID | Name | Type | Categories | Base URL |
-|----------|------|------|------------|----------|
-| newassoc | New Association | scrape | peripherals | https://newassoc.com |
-| startech | StarTech | scrape | networking, cables | https://startech.com |
-| cables | Cables | scrape | cables | https://cables.com |
+| Source ID | Name            | Type   | Categories         | Base URL             |
+| --------- | --------------- | ------ | ------------------ | -------------------- |
+| newassoc  | New Association | scrape | peripherals        | https://newassoc.com |
+| startech  | StarTech        | scrape | networking, cables | https://startech.com |
+| cables    | Cables          | scrape | cables             | https://cables.com   |
 
 ---
 
@@ -167,21 +167,21 @@ Multi-source aggregation for all part types. Each source type determines sync me
 
 ### System Configurator Categories
 
-| Category    | Description                        | Primary Sources               | 3D/SBC Sources |
-| ----------- | ---------------------------------- | ----------------------------| ----------------|
-| cpu         | Processors (ARM, x86)              | pcpartpicker, newegg, amazon  | raspberrypi, pimoroni |
-| ram         | Memory (SODIMM, DIMM)              | pcpartpicker, newegg, digikey | raspberrypi |
-| storage     | NVMe, SATA, USB                    | pcpartpicker, newegg, bhphoto  | raspberrypi |
-| gpu         | Discrete accelerators              | pcpartpicker, newegg, bestbuy | - |
-| motherboard | Mainboards (Mini-ITX, ATX)         | pcpartpicker, newegg, mouser | pimoroni |
-| case        | Enclosures (commercial)            | pcpartpicker, newegg, bhphoto | argon40, pimoroni |
-| case-3d     | Enclosures (printable)            | thingiverse, printables, cults3d | makerworld |
-| psu         | Power supply units                 | pcpartpicker, newegg, digikey | - |
-| cooling     | Air and liquid cooling             | pcpartpicker, newegg, mouser | - |
-| cables      | Data and power cables            | startech, cables, digikey | - |
-| peripherals | KB, mouse, monitor               | amazon, bestbuy, newassoc | argon40, pimoroni |
-| networking  | NICs, switches                   | startech, bhphoto | - |
-| os          | Operating system profiles         | Direct integration          | - |
+| Category    | Description                | Primary Sources                  | 3D/SBC Sources        |
+| ----------- | -------------------------- | -------------------------------- | --------------------- |
+| cpu         | Processors (ARM, x86)      | pcpartpicker, newegg, amazon     | raspberrypi, pimoroni |
+| ram         | Memory (SODIMM, DIMM)      | pcpartpicker, newegg, digikey    | raspberrypi           |
+| storage     | NVMe, SATA, USB            | pcpartpicker, newegg, bhphoto    | raspberrypi           |
+| gpu         | Discrete accelerators      | pcpartpicker, newegg, bestbuy    | -                     |
+| motherboard | Mainboards (Mini-ITX, ATX) | pcpartpicker, newegg, mouser     | pimoroni              |
+| case        | Enclosures (commercial)    | pcpartpicker, newegg, bhphoto    | argon40, pimoroni     |
+| case-3d     | Enclosures (printable)     | thingiverse, printables, cults3d | makerworld            |
+| psu         | Power supply units         | pcpartpicker, newegg, digikey    | -                     |
+| cooling     | Air and liquid cooling     | pcpartpicker, newegg, mouser     | -                     |
+| cables      | Data and power cables      | startech, cables, digikey        | -                     |
+| peripherals | KB, mouse, monitor         | amazon, bestbuy, newassoc        | argon40, pimoroni     |
+| networking  | NICs, switches             | startech, bhphoto                | -                     |
+| os          | Operating system profiles  | Direct integration               | -                     |
 
 ### Chassis Tiers
 

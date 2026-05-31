@@ -20,18 +20,18 @@ export class LeadOnboardingService {
   private readonly baseUrl = '/api/leads';
 
   analyzeOnboarding(
-    profile: UserOnboardingProfile,
+    profile: UserOnboardingProfile
   ): Observable<{ topics: GeneratedTopicSuggestion[] }> {
     return this.http.post<{ topics: GeneratedTopicSuggestion[] }>(
       `${this.baseUrl}/onboarding/analyze`,
-      profile,
+      profile
     );
   }
 
   analyzeMadLib(text: string): Observable<MadLibAnalysisResult> {
     return this.http.post<MadLibAnalysisResult>(
       `${this.baseUrl}/onboarding/mad-lib/analyze`,
-      { text },
+      { text }
     );
   }
 
@@ -41,7 +41,7 @@ export class LeadOnboardingService {
 
     return this.http.post<ResumeParseResult>(
       `${this.baseUrl}/onboarding/resume/parse`,
-      formData,
+      formData
     );
   }
 
@@ -52,28 +52,28 @@ export class LeadOnboardingService {
         params: {
           q: query,
         },
-      },
+      }
     );
   }
 
   advanceDiscInterview(
-    request: DiscInterviewRequest,
+    request: DiscInterviewRequest
   ): Observable<DiscInterviewResponse> {
     return this.http.post<DiscInterviewResponse>(
       `${this.baseUrl}/onboarding/disc/advance`,
-      request,
+      request
     );
   }
 
   confirmOnboarding(
     profile: UserOnboardingProfile,
-    topics: GeneratedTopicSuggestion[],
+    topics: GeneratedTopicSuggestion[]
   ): Observable<{ topics: Topic[] }> {
     const payload: ConfirmOnboardingRequest = { profile, topics };
 
     return this.http.post<{ topics: Topic[] }>(
       `${this.baseUrl}/onboarding/confirm`,
-      payload,
+      payload
     );
   }
 }

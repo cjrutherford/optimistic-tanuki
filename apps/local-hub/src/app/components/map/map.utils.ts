@@ -26,6 +26,7 @@ const ATLAS_RADIUS_MILES = 250;
 const ATLAS_MAX_MARKERS = 24;
 const ATLAS_FALLBACK_MARKERS = 8;
 const EARTH_RADIUS_MILES = 3958.8;
+const WEB_MERCATOR_MAX_LATITUDE = 85.05112878;
 
 export function isRenderableCoordinate(
   coordinates: MapCoordinates | null | undefined
@@ -35,6 +36,15 @@ export function isRenderableCoordinate(
   }
 
   if (!Number.isFinite(coordinates.lat) || !Number.isFinite(coordinates.lng)) {
+    return false;
+  }
+
+  if (
+    coordinates.lat < -WEB_MERCATOR_MAX_LATITUDE ||
+    coordinates.lat > WEB_MERCATOR_MAX_LATITUDE ||
+    coordinates.lng < -180 ||
+    coordinates.lng > 180
+  ) {
     return false;
   }
 

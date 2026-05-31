@@ -266,23 +266,23 @@ tr:hover {
 
 .source-badge {
   &[data-source='upwork'] {
-    background: #14a800;
+    background: var(--brand-upwork);
     color: var(--app-primary-foreground);
   }
   &[data-source='linkedin'] {
-    background: #0077b5;
+    background: var(--brand-linkedin);
     color: var(--app-primary-foreground);
   }
   &[data-source='referral'] {
-    background: #8b5cf6;
+    background: var(--brand-referral);
     color: var(--app-primary-foreground);
   }
   &[data-source='cold'] {
-    background: #64748b;
+    background: var(--brand-cold);
     color: var(--app-primary-foreground);
   }
   &[data-source='local'] {
-    background: #10b981;
+    background: var(--brand-local);
     color: var(--app-primary-foreground);
   }
   &[data-source='other'] {
@@ -293,32 +293,32 @@ tr:hover {
 
 .status-badge {
   &[data-status='new'] {
-    background: #dbeafe;
-    color: #1e40af;
+    background: var(--status-new-bg);
+    color: var(--status-new-fg);
   }
   &[data-status='contacted'] {
-    background: #fef3c7;
-    color: #92400e;
+    background: var(--status-contacted-bg);
+    color: var(--status-contacted-fg);
   }
   &[data-status='qualified'] {
-    background: #ede9fe;
-    color: #5b21b6;
+    background: var(--status-qualified-bg);
+    color: var(--status-qualified-fg);
   }
   &[data-status='proposal'] {
-    background: #fce7f3;
-    color: #9d174d;
+    background: var(--status-proposal-bg);
+    color: var(--status-proposal-fg);
   }
   &[data-status='negotiation'] {
-    background: #ffedd5;
-    color: #9a3412;
+    background: var(--status-negotiation-bg);
+    color: var(--status-negotiation-fg);
   }
   &[data-status='won'] {
-    background: #dcfce7;
-    color: #166534;
+    background: var(--status-won-bg);
+    color: var(--status-won-fg);
   }
   &[data-status='lost'] {
-    background: #fee2e2;
-    color: #991b1b;
+    background: var(--status-lost-bg);
+    color: var(--status-lost-fg);
   }
 }
 
@@ -351,12 +351,20 @@ tr:hover {
   }
 
   &.warning:hover {
-    background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface) 84%);
+    background: color-mix(
+      in srgb,
+      var(--app-warning) 16%,
+      var(--app-surface) 84%
+    );
     color: var(--app-warning);
   }
 
   &.danger:hover {
-    background: color-mix(in srgb, var(--app-danger) 16%, var(--app-surface) 84%);
+    background: color-mix(
+      in srgb,
+      var(--app-danger) 16%,
+      var(--app-surface) 84%
+    );
     color: var(--app-danger);
   }
 }
@@ -594,10 +602,18 @@ form {
 
 // Flagged row indicator
 tr.flagged {
-  background: color-mix(in srgb, var(--app-warning) 8%, var(--app-background) 92%);
+  background: color-mix(
+    in srgb,
+    var(--app-warning) 8%,
+    var(--app-background) 92%
+  );
 
   &:hover {
-    background: color-mix(in srgb, var(--app-warning) 12%, var(--app-background) 88%);
+    background: color-mix(
+      in srgb,
+      var(--app-warning) 12%,
+      var(--app-background) 88%
+    );
   }
 }
 
@@ -630,7 +646,11 @@ tr.flagged {
   justify-content: center;
   width: 20px;
   height: 20px;
-  background: color-mix(in srgb, var(--app-warning) 16%, var(--app-surface) 84%);
+  background: color-mix(
+    in srgb,
+    var(--app-warning) 16%,
+    var(--app-surface) 84%
+  );
   border-radius: var(--radius-sm);
   color: var(--app-warning);
   cursor: pointer;

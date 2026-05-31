@@ -1,0 +1,18 @@
+<div
+  class="state-message"
+  [attr.data-kind]="kind"
+  [attr.data-tone]="tone"
+  [attr.role]="kind === 'error' ? 'alert' : 'status'"
+  [attr.aria-live]="kind === 'error' ? 'assertive' : 'polite'"
+>
+  <div *ngIf="!hideIcon" class="state-message__icon" aria-hidden="true">
+    <ng-content select="[slot=icon]"></ng-content>
+    <span *ngIf="iconGlyph" class="state-message__glyph">{{ iconGlyph }}</span>
+  </div>
+  <h3 class="state-message__headline">{{ headline }}</h3>
+  <p *ngIf="body" class="state-message__body">{{ body }}</p>
+  <div class="state-message__actions">
+    <ng-content select="[slot=actions]"></ng-content>
+    <ng-content></ng-content>
+  </div>
+</div>

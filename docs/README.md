@@ -1,12 +1,14 @@
 # Optimistic Tanuki Documentation
 
-Welcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today.
+Welcome to the Optimistic Tanuki documentation index. This page is the fastest way to find the docs that match the repo as it exists today: a product portfolio, a composable platform, and a contributor workspace in one Nx monorepo.
 
 ## Start Here
 
 Use the shortest path that matches what you are doing:
 
 - new contributor: [Getting Started](./getting-started/README.md)
+- product or platform evaluator: [Product Overview](../PRODUCT.md)
+- marketing and pitch materials: [Marketing README](./marketing/README.md)
 - understanding repo layout: [Workspace Map](./architecture/workspace-map.md)
 - finding an app, library, or tool: [Workspace Catalog](./reference/workspace-catalog.md)
 - local development workflow: [Docker Compose](./devops/docker-compose.md)
@@ -24,6 +26,12 @@ The current branch has a few operational surfaces that matter more than the olde
 - staging and production image tags are carried in Kustomize overlay `images:` blocks
 - ArgoCD applies a parameterized application manifest from `k8s/argo-app/application.yaml`
 - there is now a second Go tool, `tools/stack-client`, for authenticated gateway access from a terminal UI
+
+## Root Guides
+
+- [Product Overview](../PRODUCT.md) - product portfolio, platform proof, visual story, and adoption paths
+- [Contributing](../CONTRIBUTING.md)
+- [Governance](../GOVERNANCE.md)
 
 ## Documentation Structure
 
@@ -88,7 +96,15 @@ Step-by-step guides for specific tasks:
 
 ### Marketing
 
-- [Marketing README](./marketing/README.md) - Index for Signal Foundry marketing docs and positioning inputs
+- [Marketing README](./marketing/README.md) - Index for product, platform, and developer-facing marketing docs
+- [Repo Story](./marketing/repo-story.md) - Narrative pitch for the portfolio, service layer, deployment story, and package path
+- [Towne Square](./marketing/towne-square.md) - One-pager for the local-first community platform
+- [Forge of Will](./marketing/forge-of-will.md) - One-pager for the focused project execution product
+- [Fin Commander](./marketing/fin-commander.md) - One-pager for the guided financial workflow product
+- [Signal Foundry](./marketing/signal-foundry.md) - One-pager for the campaign workbench product
+- [Platform Product Matrix](./marketing/platform-product-matrix.md) - Product comparison across audience, packaging, and deployment posture
+- [npm Developer Packages](./marketing/npm-developer-packages.md) - Developer landing page for the public package surface
+- [Admin Environment Wizard Demo Script](./marketing/admin-env-demo-script.md) - Ops/platform walkthrough from generated deployment to Swagger UI
 - [Service Offerings](./marketing/service-offerings.md) - Service-led marketing input reference
 - [Library Offerings](./marketing/library-offerings.md) - Library and package marketing input reference
 - [Pricing Models](./marketing/pricing-models.md) - Pricing posture reference for marketing surfaces
@@ -189,6 +205,7 @@ For the full list see the [`docs/plans/`](./plans/) directory.
   - [Client Interface Overview](./client-interface.md)
 - [Forge of Will](../apps/forgeofwill/README.md)
 - [Marketing Generator](../apps/marketing-generator/README.md)
+- [Developer Portal](../apps/developer-portal/README.md)
 - [Christopher Rutherford Net](../apps/christopherrutherford-net/README.md)
 
 ## Library Documentation

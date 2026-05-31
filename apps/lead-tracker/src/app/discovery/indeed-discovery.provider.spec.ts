@@ -1,4 +1,7 @@
-import { LeadDiscoverySource, LeadTopicDiscoveryIntent } from '@optimistic-tanuki/models/leads-contracts';
+import {
+  LeadDiscoverySource,
+  LeadTopicDiscoveryIntent,
+} from '@optimistic-tanuki/models/leads-contracts';
 import { LeadTopic } from '@optimistic-tanuki/models/leads-entities';
 import { IndeedDiscoveryProvider } from './indeed-discovery.provider';
 
@@ -9,7 +12,9 @@ describe('IndeedDiscoveryProvider', () => {
       searchWeb: jest.fn().mockResolvedValue([]),
       analyzePage: jest.fn(),
     };
-    const provider = new IndeedDiscoveryProvider(searchAcquisitionService as any);
+    const provider = new IndeedDiscoveryProvider(
+      searchAcquisitionService as any
+    );
     const topic = {
       id: 'topic-1',
       name: 'React Engineer',
@@ -30,12 +35,12 @@ describe('IndeedDiscoveryProvider', () => {
     const queries = searchAcquisitionService.searchWeb.mock.calls.map(
       (call) => call[0] as string
     );
-    expect(queries.some((query) => query.includes('site:indeed.com/viewjob'))).toBe(
-      true
-    );
-    expect(queries.some((query) => query.includes('site:indeed.com/jobs'))).toBe(
-      true
-    );
+    expect(
+      queries.some((query) => query.includes('site:indeed.com/viewjob'))
+    ).toBe(true);
+    expect(
+      queries.some((query) => query.includes('site:indeed.com/jobs'))
+    ).toBe(true);
     expect(queries.some((query) => query.includes('remote'))).toBe(true);
   });
 });

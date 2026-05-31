@@ -1,12 +1,12 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  CreateDateColumn, 
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
-  Index
+  Index,
 } from 'typeorm';
 import { Post } from './post.entity';
 
@@ -37,7 +37,7 @@ export class BlogComponent {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @ManyToOne(() => Post, post => post.components, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Post, (post) => post.components, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'blogPostId' })
   post: Post;
 }

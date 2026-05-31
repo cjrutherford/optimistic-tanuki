@@ -7,21 +7,35 @@ function readAppFile(relativePath: string): string {
   return readFileSync(join(appRoot, relativePath), 'utf8');
 }
 
+function normalize(value: string): string {
+  return value
+    .replace(/\s+/g, ' ')
+    .replace(/\(\s+/g, '(')
+    .replace(/\s+\)/g, ')')
+    .trim();
+}
+
 describe('leads-app theme sweep', () => {
   it('defines dark-aware app token aliases', () => {
-    const styles = readAppFile('styles.scss');
+    const styles = normalize(readAppFile('styles.scss'));
 
     expect(styles).toContain(
-      '--app-surface: var(--background-elevated, var(--surface, #ffffff));'
+      normalize(
+        '--app-surface: var(--background-elevated, var(--surface, #ffffff));'
+      )
     );
     expect(styles).toContain(
-      '--app-surface-muted: var(--surface-muted, color-mix(in srgb, var(--app-surface) 72%, var(--app-background) 28%));'
+      normalize(
+        '--app-surface-muted: var(--surface-muted, color-mix(in srgb, var(--app-surface) 72%, var(--app-background) 28%));'
+      )
     );
     expect(styles).toContain(
-      '--app-foreground-secondary: var(--foreground-secondary, #64748b);'
+      normalize(
+        '--app-foreground-secondary: var(--foreground-secondary, #64748b);'
+      )
     );
     expect(styles).toContain(
-      '--app-foreground-muted: var(--foreground-muted, #94a3b8);'
+      normalize('--app-foreground-muted: var(--foreground-muted, #94a3b8);')
     );
   });
 

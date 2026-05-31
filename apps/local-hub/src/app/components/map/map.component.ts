@@ -47,6 +47,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private map: any;
   private leaflet: any;
   private tileLayer: any;
+  private isTileLayerAttached = false;
   private markers: any[] = [];
   private centerOverlays: any[] = [];
   private radiusOverlays: any[] = [];
@@ -139,9 +140,11 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     );
     this.document.documentElement.style.setProperty('--map-label', accentColor);
 
+    const initialView = this.getInitialMapView();
+
     this.map = L.map(this.mapContainer.nativeElement, {
-      center: [this.centerLat, this.centerLng],
-      zoom: this.zoom,
+      center: [initialView.lat, initialView.lng],
+      zoom: initialView.zoom,
       zoomControl: false,
       attributionControl: true,
       zoomSnap: 0.5,
@@ -161,7 +164,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
         updateWhenZooming: false,
         keepBuffer: 6,
       }
-    ).addTo(this.map);
+    );
 
     L.control
       .zoom({
@@ -174,6 +177,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.setupResizeObserver();
 
     this.refreshMapContent();
+    this.attachTileLayerWhenReady();
     this.isLoading.set(false);
   }
 
@@ -196,6 +200,28 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
         this.renderSingleLocationMode(this.leaflet);
         break;
     }
+
+    this.attachTileLayerWhenReady();
+  }
+
+  private attachTileLayerWhenReady(): void {
+    if (!this.map || !this.tileLayer || this.isTileLayerAttached) {
+      return;
+    }
+
+    if (this.mode === 'atlas-nearby' && !this.hasAtlasContent()) {
+      return;
+    }
+
+    this.tileLayer.addTo(this.map);
+    this.isTileLayerAttached = true;
+  }
+
+  private hasAtlasContent(): boolean {
+    return (
+      isRenderableCoordinate(this.userLocation) ||
+      this.cities.some((city) => isRenderableCoordinate(city.coordinates))
+    );
   }
 
   private clearOverlays(): void {
@@ -355,6 +381,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private renderSingleLocationMode(L: any): void {
     this.addFocusMarker(L);
+    this.addUserMarker(L);
     const focusCoordinates = this.getFocusCoordinates();
     if (!focusCoordinates) {
       this.scheduleInvalidateSize();
@@ -498,7 +525,6 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
           }
 
           this.map.invalidateSize(true);
-          this.tileLayer?.redraw?.();
         });
       });
     });
@@ -514,6 +540,39 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private getFocusCoordinates(): MapCoordinates | null {
     const focusCoordinates = { lat: this.centerLat, lng: this.centerLng };
     return isRenderableCoordinate(focusCoordinates) ? focusCoordinates : null;
+  }
+
+  private getInitialMapView(): MapCoordinates & { zoom: number } {
+    if (this.mode === 'atlas-nearby') {
+      const selection = buildAtlasNearbySelection({
+        cities: this.cities,
+        userLocation: this.userLocation,
+      });
+      const firstMarker = selection.markers[0];
+
+      if (firstMarker) {
+        return {
+          lat: firstMarker.lat,
+          lng: firstMarker.lng,
+          zoom: Math.max(this.zoom, selection.markers.length === 1 ? 9 : 8),
+        };
+      }
+
+      if (isRenderableCoordinate(this.userLocation)) {
+        return {
+          ...this.userLocation,
+          zoom: Math.max(this.zoom, 7),
+        };
+      }
+    }
+
+    const focusCoordinates = this.getFocusCoordinates();
+
+    return {
+      lat: focusCoordinates?.lat ?? 31.9,
+      lng: focusCoordinates?.lng ?? -81.1,
+      zoom: this.zoom,
+    };
   }
 
   private createMarker(

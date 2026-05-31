@@ -31,13 +31,10 @@ export class AuthenticationService {
 
   login(data: LoginRequest) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
-        `${this.baseUrl}/login`,
-        {
-          ...data,
-          email: this.normalizeEmail(data.email),
-        }
-      )
+      this.http.post<{ data: { newToken: string } }>(`${this.baseUrl}/login`, {
+        ...data,
+        email: this.normalizeEmail(data.email),
+      })
     );
   }
 

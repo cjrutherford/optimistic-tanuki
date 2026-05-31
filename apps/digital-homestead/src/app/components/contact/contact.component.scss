@@ -69,7 +69,7 @@
 .form-group textarea {
   width: 100%;
   padding: var(--spacing-sm);
-  border: 2px solid #e1e8ed;
+  border: 2px solid var(--input-border);
   border-radius: 6px;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
   transition: all 0.3s ease;
@@ -113,7 +113,7 @@
 .cta-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(142, 68, 173, 0.4);
-  background: linear-gradient(135deg, #9b59b6 0%, #3498db 100%);
+  background: var(--gradient-hover);
 }
 
 @media (max-width: 768px) {

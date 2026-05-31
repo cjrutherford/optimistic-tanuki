@@ -48,11 +48,9 @@ export class FeedService {
       .pipe(map((entries) => entries.map((e) => this.mapToPostDto(e))));
   }
 
-  private mapToPostDto(
-    entry: DailyFourEntry | DailySixEntry
-  ): DailyPostDto {
+  private mapToPostDto(entry: DailyFourEntry | DailySixEntry): DailyPostDto {
     const prompts: { [key: string]: string } = {};
-    
+
     // Extract prompt fields (excluding metadata fields)
     const excludedFields = ['id', 'createdAt', 'userId', 'public'];
     for (const [key, value] of Object.entries(entry)) {

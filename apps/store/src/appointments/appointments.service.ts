@@ -44,7 +44,11 @@ export class AppointmentsService {
     const start = new Date(createAppointmentDto.startTime);
     const end = new Date(createAppointmentDto.endTime);
 
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      end <= start
+    ) {
       throw new BadRequestException('Booking window is invalid.');
     }
 
@@ -87,7 +91,9 @@ export class AppointmentsService {
     );
 
     if (!match) {
-      throw new BadRequestException('Selected time is outside the published availability.');
+      throw new BadRequestException(
+        'Selected time is outside the published availability.'
+      );
     }
 
     const conflictingAppointments = await this.appointmentRepository.find({
@@ -97,7 +103,10 @@ export class AppointmentsService {
       } as never,
     });
     const hasConflict = conflictingAppointments.some((appointment) => {
-      if (appointment.status === 'cancelled' || appointment.status === 'denied') {
+      if (
+        appointment.status === 'cancelled' ||
+        appointment.status === 'denied'
+      ) {
         return false;
       }
 
@@ -244,7 +253,9 @@ export class AppointmentsService {
 
     // Generate invoice number with timestamp and random component for uniqueness
     const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
     const invoiceNumber = `INV-${timestamp}-${random}`;
 
     const invoice = this.invoiceRepository.create({

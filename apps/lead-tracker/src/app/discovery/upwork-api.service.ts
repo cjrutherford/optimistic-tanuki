@@ -64,7 +64,9 @@ export class UpworkApiService {
       return {
         jobs: [],
         queryText,
-        warnings: ['Upwork API search skipped because the topic did not produce any usable search terms.'],
+        warnings: [
+          'Upwork API search skipped because the topic did not produce any usable search terms.',
+        ],
       };
     }
 
@@ -82,7 +84,10 @@ export class UpworkApiService {
     try {
       accessToken = await this.getAccessToken(config);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to authenticate with the Upwork API.';
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Unable to authenticate with the Upwork API.';
       return {
         jobs: [],
         queryText,
@@ -108,7 +113,9 @@ export class UpworkApiService {
       );
 
       const responseBody = response.data as Record<string, unknown> | undefined;
-      const errors = Array.isArray(responseBody?.errors) ? responseBody.errors : [];
+      const errors = Array.isArray(responseBody?.errors)
+        ? responseBody.errors
+        : [];
       if (errors.length) {
         warnings.push(
           ...errors
@@ -117,9 +124,13 @@ export class UpworkApiService {
         );
       }
 
-      const jobs = this.normalizeJobs(responseBody?.data as Record<string, unknown> | undefined);
+      const jobs = this.normalizeJobs(
+        responseBody?.data as Record<string, unknown> | undefined
+      );
       if (!jobs.length && !warnings.length) {
-        warnings.push('Upwork API returned no job results for the generated query.');
+        warnings.push(
+          'Upwork API returned no job results for the generated query.'
+        );
       }
 
       return {
@@ -128,8 +139,11 @@ export class UpworkApiService {
         warnings,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Upwork API request failed.';
-      this.logger.warn(`Upwork API request failed for query "${queryText}": ${message}`);
+      const message =
+        error instanceof Error ? error.message : 'Upwork API request failed.';
+      this.logger.warn(
+        `Upwork API request failed for query "${queryText}": ${message}`
+      );
       return {
         jobs: [],
         queryText,
@@ -139,9 +153,11 @@ export class UpworkApiService {
   }
 
   private getConfig(): UpworkApiConfig {
-    return this.configService.get<UpworkApiConfig>('leadDiscovery.upwork', {
-      infer: true,
-    }) || {};
+    return (
+      this.configService.get<UpworkApiConfig>('leadDiscovery.upwork', {
+        infer: true,
+      }) || {}
+    );
   }
 
   private async getAccessToken(config: UpworkApiConfig): Promise<string> {
@@ -149,12 +165,17 @@ export class UpworkApiService {
       return config.accessToken.trim();
     }
 
-    if (this.cachedToken?.accessToken && this.isCachedTokenValid(this.cachedToken)) {
+    if (
+      this.cachedToken?.accessToken &&
+      this.isCachedTokenValid(this.cachedToken)
+    ) {
       return this.cachedToken.accessToken;
     }
 
     if (!config.clientId || !config.clientSecret) {
-      throw new Error('Upwork API mode requires either an access token or both clientId and clientSecret.');
+      throw new Error(
+        'Upwork API mode requires either an access token or both clientId and clientSecret.'
+      );
     }
 
     const tokenUrl = config.tokenUrl || DEFAULT_UPWORK_TOKEN_URL;
@@ -186,7 +207,9 @@ export class UpworkApiService {
     const expiresIn = Number(tokenResponse.expires_in);
     this.cachedToken = {
       accessToken,
-      expiresAt: Number.isFinite(expiresIn) ? Date.now() + Math.max(expiresIn - 60, 0) * 1000 : undefined,
+      expiresAt: Number.isFinite(expiresIn)
+        ? Date.now() + Math.max(expiresIn - 60, 0) * 1000
+        : undefined,
     };
 
     return accessToken;
@@ -196,7 +219,10 @@ export class UpworkApiService {
     return !token.expiresAt || token.expiresAt > Date.now();
   }
 
-  private buildGraphqlHeaders(accessToken: string, tenantId?: string): Record<string, string> {
+  private buildGraphqlHeaders(
+    accessToken: string,
+    tenantId?: string
+  ): Record<string, string> {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${accessToken}`,
       'content-type': 'application/json',
@@ -216,17 +242,23 @@ export class UpworkApiService {
     }
 
     const message = (value as { message?: unknown }).message;
-    return typeof message === 'string' && message.trim() ? message.trim() : null;
+    return typeof message === 'string' && message.trim()
+      ? message.trim()
+      : null;
   }
 
-  private normalizeJobs(data: Record<string, unknown> | undefined): UpworkApiJob[] {
+  private normalizeJobs(
+    data: Record<string, unknown> | undefined
+  ): UpworkApiJob[] {
     const rawNodes = this.collectNodes(data);
     return rawNodes
       .map((node) => this.normalizeJobNode(node))
       .filter((job): job is UpworkApiJob => Boolean(job));
   }
 
-  private collectNodes(data: Record<string, unknown> | undefined): Array<Record<string, unknown>> {
+  private collectNodes(
+    data: Record<string, unknown> | undefined
+  ): Array<Record<string, unknown>> {
     if (!data) {
       return [];
     }
@@ -292,18 +324,24 @@ export class UpworkApiService {
   }
 
   private normalizeJobNode(node: Record<string, unknown>): UpworkApiJob | null {
-    const id = this.readString(node.id) || this.readString(node.uid) || this.readString(node.ciphertext);
+    const id =
+      this.readString(node.id) ||
+      this.readString(node.uid) ||
+      this.readString(node.ciphertext);
     const title = this.readString(node.title);
     if (!id || !title) {
       return null;
     }
 
-    const skills = this.readSkills(node.skills) || this.readSkills(node.skillNames) || [];
+    const skills =
+      this.readSkills(node.skills) || this.readSkills(node.skillNames) || [];
     const budget =
       this.readBudget(node.budget) ||
       this.readBudget(node.hourlyBudgetMin) ||
       this.readString(node.budgetSummary);
-    const client = this.readClientCompany(node.client) || this.readString(node.clientCompany);
+    const client =
+      this.readClientCompany(node.client) ||
+      this.readString(node.clientCompany);
 
     return {
       id,
@@ -313,10 +351,14 @@ export class UpworkApiService {
         this.readString(node.descriptionText) ||
         this.readString(node.summary) ||
         undefined,
-      url: this.readString(node.jobUrl) || this.readString(node.url) || undefined,
+      url:
+        this.readString(node.jobUrl) || this.readString(node.url) || undefined,
       clientCompany: client || undefined,
       budgetSummary: budget || undefined,
-      category: this.readString(node.category) || this.readNestedString(node.category, 'name') || undefined,
+      category:
+        this.readString(node.category) ||
+        this.readNestedString(node.category, 'name') ||
+        undefined,
       skills,
       experienceLevel:
         this.readString(node.experienceLevel) ||
@@ -377,10 +419,17 @@ export class UpworkApiService {
     }
 
     const record = value as Record<string, unknown>;
-    const amount = this.readString(record.amount) || (typeof record.amount === 'number' ? `${record.amount}` : null);
-    const currency = this.readString(record.currencyCode) || this.readString(record.currency);
-    const minimum = this.readString(record.min) || (typeof record.min === 'number' ? `${record.min}` : null);
-    const maximum = this.readString(record.max) || (typeof record.max === 'number' ? `${record.max}` : null);
+    const amount =
+      this.readString(record.amount) ||
+      (typeof record.amount === 'number' ? `${record.amount}` : null);
+    const currency =
+      this.readString(record.currencyCode) || this.readString(record.currency);
+    const minimum =
+      this.readString(record.min) ||
+      (typeof record.min === 'number' ? `${record.min}` : null);
+    const maximum =
+      this.readString(record.max) ||
+      (typeof record.max === 'number' ? `${record.max}` : null);
 
     if (amount) {
       return currency ? `${amount} ${currency}` : amount;

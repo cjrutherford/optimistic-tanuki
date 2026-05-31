@@ -17,7 +17,7 @@ export interface DeveloperCatalogEntry {
 }
 
 export function createCatalogEntry(
-  entry: DeveloperCatalogEntry,
+  entry: DeveloperCatalogEntry
 ): DeveloperCatalogEntry {
   return {
     ...entry,
@@ -26,7 +26,7 @@ export function createCatalogEntry(
 }
 
 export function validateCatalogEntries(
-  entries: DeveloperCatalogEntry[],
+  entries: DeveloperCatalogEntry[]
 ): DeveloperCatalogEntry[] {
   const names = new Set<string>();
 
@@ -42,7 +42,7 @@ export function validateCatalogEntries(
       !entry.billingEligibility.some((eligibility) => eligibility !== 'none')
     ) {
       throw new Error(
-        `${entry.name} app-service entries must declare billable eligibility`,
+        `${entry.name} app-service entries must declare billable eligibility`
       );
     }
 

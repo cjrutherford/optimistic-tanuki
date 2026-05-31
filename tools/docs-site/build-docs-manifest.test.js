@@ -166,4 +166,46 @@ describe('buildDocsManifest', () => {
       manifest.items.find((item) => item.sourcePath === 'README.md')?.body
     ).toContain('Top level workspace summary.');
   });
+
+  it('preserves lastUpdated for unchanged manifest items', async () => {
+    const { buildDocsManifest } = await import('./build-docs-manifest.mjs');
+    const outputPath = path.join(tempRoot, 'docs-manifest.json');
+
+    const firstManifest = await buildDocsManifest({
+      workspaceRoot: tempRoot,
+      configPath: path.join(tempRoot, 'docs-source.config.json'),
+      outputPath,
+    });
+    await fs.writeFile(
+      outputPath,
+      JSON.stringify(
+        {
+          ...firstManifest,
+          items: firstManifest.items.map((item) =>
+            item.sourcePath === 'README.md'
+              ? { ...item, lastUpdated: '2024-01-02T03:04:05.000Z' }
+              : item
+          ),
+        },
+        null,
+        2
+      )
+    );
+    await fs.utimes(
+      path.join(tempRoot, 'README.md'),
+      new Date(),
+      new Date('2026-05-29T12:00:00.000Z')
+    );
+
+    const nextManifest = await buildDocsManifest({
+      workspaceRoot: tempRoot,
+      configPath: path.join(tempRoot, 'docs-source.config.json'),
+      outputPath,
+    });
+
+    expect(
+      nextManifest.items.find((item) => item.sourcePath === 'README.md')
+        ?.lastUpdated
+    ).toBe('2024-01-02T03:04:05.000Z');
+  });
 });

@@ -96,7 +96,10 @@ describe('VoteService', () => {
     const vote = { id: '1' } as unknown as Vote;
     voteRepo.findOne.mockResolvedValue(vote);
     await service.findOne('1', { relations: ['post'] });
-    expect(voteRepo.findOne).toHaveBeenCalledWith({ where: { id: '1' }, relations: ['post'] });
+    expect(voteRepo.findOne).toHaveBeenCalledWith({
+      where: { id: '1' },
+      relations: ['post'],
+    });
   });
 
   it('should update a vote', async () => {

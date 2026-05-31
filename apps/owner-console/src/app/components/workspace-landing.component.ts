@@ -61,7 +61,11 @@ interface WorkspaceLandingData {
       .workspace-panel {
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 20px;
-        background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 248, 248, 0.92));
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.95),
+          rgba(248, 248, 248, 0.92)
+        );
         padding: 24px;
       }
 
@@ -109,9 +113,7 @@ interface WorkspaceLandingData {
         background: var(--surface-color, rgba(255, 255, 255, 0.94));
         color: inherit;
         text-decoration: none;
-        transition:
-          transform 160ms ease,
-          border-color 160ms ease,
+        transition: transform 160ms ease, border-color 160ms ease,
           box-shadow 160ms ease;
       }
 

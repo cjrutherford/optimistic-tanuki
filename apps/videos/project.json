@@ -69,10 +69,5 @@
       }
     }
   },
-  "tags": [
-    "type:app",
-    "scope:videos",
-    "platform:server",
-    "visibility:internal"
-  ]
+  "tags": ["type:app", "scope:videos", "platform:server", "visibility:internal"]
 }

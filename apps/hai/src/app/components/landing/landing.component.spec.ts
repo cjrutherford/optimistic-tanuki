@@ -22,7 +22,8 @@ describe('LandingComponent', () => {
           name: 'Towne Square',
           tagline: 'Local-first social media and classifieds.',
           category: 'Local Community',
-          resolvedHref: 'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/local-hub',
+          resolvedHref:
+            'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/local-hub',
           isPublic: false,
         },
         {
@@ -85,7 +86,9 @@ describe('LandingComponent', () => {
   it('uses motion layers in the hero scene', () => {
     const nativeElement = fixture.nativeElement as HTMLElement;
 
-    expect(nativeElement.querySelector('otui-topographic-drift')).not.toBeNull();
+    expect(
+      nativeElement.querySelector('otui-topographic-drift')
+    ).not.toBeNull();
     expect(nativeElement.querySelector('otui-aurora-ribbon')).not.toBeNull();
     expect(nativeElement.querySelector('otui-pulse-rings')).not.toBeNull();
   });

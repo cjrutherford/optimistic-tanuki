@@ -1,12 +1,14 @@
 # Marketing Briefs
 
 ## Summary
+
 This document captures internal marketing guidance for `forgeofwill`,
 `digital-homestead`, `christopherrutherford-net`, `leads-app`, and Towne
 Square (`local-hub`). It is not final web copy. It defines audience, promise,
 proof, and the content gaps that future public-facing pages should address.
 
 ## Forge of Will
+
 - Audience:
   individuals and small teams managing projects, delivery, planning, and
   execution.
@@ -23,6 +25,7 @@ proof, and the content gaps that future public-facing pages should address.
   not just evocative visual branding.
 
 ## Digital Homestead
+
 - Audience:
   people exploring self-hosting, digital ownership, creative independence, and
   community-first online life.
@@ -38,6 +41,7 @@ proof, and the content gaps that future public-facing pages should address.
   understand the concrete path from interest to action.
 
 ## ChristopherRutherford.net
+
 - Audience:
   potential consulting clients, collaborators, and organizations looking for
   senior engineering help.
@@ -54,6 +58,7 @@ proof, and the content gaps that future public-facing pages should address.
   delivered, and why the approach differs from generic development agencies.
 
 ## Leads App
+
 - Audience:
   solo operators, agencies, and small sales teams doing discovery and
   qualification work.
@@ -70,6 +75,7 @@ proof, and the content gaps that future public-facing pages should address.
   from topic discovery to lead action in one narrative.
 
 ## Towne Square / Local Hub
+
 - Audience:
   residents, local organizers, moderators, and community builders who want a
   local-first digital commons.
@@ -87,6 +93,7 @@ proof, and the content gaps that future public-facing pages should address.
   everyday coordination.
 
 ## Recommended Next Copy Work
+
 - Build one concise homepage message architecture for each app:
   audience, promise, proof, CTA.
 - Add one “how it works” band for `leads-app` and `local-hub`.

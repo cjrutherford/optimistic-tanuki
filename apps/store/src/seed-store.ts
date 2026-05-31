@@ -19,7 +19,9 @@ async function bootstrap() {
     const appointmentsService = app.get(AppointmentsService);
 
     // Clear existing data (optional)
-    logger.log('Seeding store with dummy products, subscriptions, resources, and appointments...');
+    logger.log(
+      'Seeding store with dummy products, subscriptions, resources, and appointments...'
+    );
 
     // Create dummy products
     const products = [
@@ -121,7 +123,8 @@ async function bootstrap() {
       {
         name: 'Conference Room A',
         type: 'room',
-        description: 'Large conference room with video conferencing equipment, seats up to 12 people.',
+        description:
+          'Large conference room with video conferencing equipment, seats up to 12 people.',
         location: 'Building 1, Floor 3',
         capacity: 12,
         amenities: ['projector', 'whiteboard', 'video_conference', 'wifi'],
@@ -132,7 +135,8 @@ async function bootstrap() {
       {
         name: 'Conference Room B',
         type: 'room',
-        description: 'Small meeting room perfect for team discussions, seats up to 6 people.',
+        description:
+          'Small meeting room perfect for team discussions, seats up to 6 people.',
         location: 'Building 1, Floor 2',
         capacity: 6,
         amenities: ['whiteboard', 'tv_screen', 'wifi'],
@@ -143,10 +147,17 @@ async function bootstrap() {
       {
         name: 'Video Production Studio',
         type: 'room',
-        description: 'Professional video production studio with green screen, lighting, and audio equipment.',
+        description:
+          'Professional video production studio with green screen, lighting, and audio equipment.',
         location: 'Building 2, Floor 1',
         capacity: 4,
-        amenities: ['green_screen', 'lighting', 'microphones', 'cameras', 'soundproofing'],
+        amenities: [
+          'green_screen',
+          'lighting',
+          'microphones',
+          'cameras',
+          'soundproofing',
+        ],
         hourlyRate: 100,
         isActive: true,
         imageUrl: '/assets/resources/studio.jpg',
@@ -154,7 +165,8 @@ async function bootstrap() {
       {
         name: 'MacBook Pro M3',
         type: 'equipment',
-        description: '16-inch MacBook Pro with M3 Max chip, 64GB RAM, ideal for video editing and development.',
+        description:
+          '16-inch MacBook Pro with M3 Max chip, 64GB RAM, ideal for video editing and development.',
         location: 'Equipment Room',
         capacity: 1,
         amenities: ['high_performance', 'portable'],
@@ -165,7 +177,8 @@ async function bootstrap() {
       {
         name: 'Professional Camera Kit',
         type: 'equipment',
-        description: 'Complete camera kit with Sony A7S III, lenses, tripod, and accessories.',
+        description:
+          'Complete camera kit with Sony A7S III, lenses, tripod, and accessories.',
         location: 'Equipment Room',
         capacity: 1,
         amenities: ['4k_video', 'multiple_lenses', 'stabilization'],
@@ -176,7 +189,8 @@ async function bootstrap() {
       {
         name: 'Company Van',
         type: 'vehicle',
-        description: 'Mercedes Sprinter van for transportation and equipment hauling.',
+        description:
+          'Mercedes Sprinter van for transportation and equipment hauling.',
         location: 'Parking Garage Level 2',
         capacity: 8,
         amenities: ['gps', 'bluetooth', 'cargo_space'],
@@ -202,10 +216,13 @@ async function bootstrap() {
     // Create availability slots for resources
     if (createdResources.length > 0) {
       logger.log('Creating availability slots for resources...');
-      
+
       // Conference rooms available Mon-Fri 9AM-5PM
-      for (const resource of createdResources.filter(r => r.type === 'room')) {
-        for (let day = 1; day <= 5; day++) { // Monday to Friday
+      for (const resource of createdResources.filter(
+        (r) => r.type === 'room'
+      )) {
+        for (let day = 1; day <= 5; day++) {
+          // Monday to Friday
           try {
             await availabilitiesService.create({
               resourceId: resource.id,
@@ -216,7 +233,9 @@ async function bootstrap() {
               serviceType: 'meeting_space',
               isActive: true,
             });
-            logger.log(`Created availability for ${resource.name} on day ${day}`);
+            logger.log(
+              `Created availability for ${resource.name} on day ${day}`
+            );
           } catch (error) {
             logger.warn(`Could not create availability: ${error.message}`);
           }
@@ -224,7 +243,9 @@ async function bootstrap() {
       }
 
       // Equipment available 7 days a week
-      for (const resource of createdResources.filter(r => r.type === 'equipment')) {
+      for (const resource of createdResources.filter(
+        (r) => r.type === 'equipment'
+      )) {
         for (let day = 0; day <= 6; day++) {
           try {
             await availabilitiesService.create({
@@ -236,7 +257,9 @@ async function bootstrap() {
               serviceType: 'equipment_rental',
               isActive: true,
             });
-            logger.log(`Created availability for ${resource.name} on day ${day}`);
+            logger.log(
+              `Created availability for ${resource.name} on day ${day}`
+            );
           } catch (error) {
             logger.warn(`Could not create availability: ${error.message}`);
           }
@@ -247,9 +270,9 @@ async function bootstrap() {
     // Create sample appointments/bookings
     if (createdResources.length > 0) {
       logger.log('Creating sample appointments...');
-      
+
       const sampleUserId = '00000000-0000-0000-0000-000000000001'; // Dummy user ID
-      
+
       const appointments = [
         {
           userId: sampleUserId,

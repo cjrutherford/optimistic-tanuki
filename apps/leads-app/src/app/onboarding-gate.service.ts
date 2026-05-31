@@ -57,11 +57,13 @@ export const onboardingRequiredGuard: CanActivateFn = (): Observable<
   const onboardingGate = inject(OnboardingGateService);
   const router = inject(Router);
 
-  return onboardingGate.getState().pipe(
-    map((state) =>
-      state.requiresOnboarding ? router.createUrlTree(['/onboarding']) : true
-    )
-  );
+  return onboardingGate
+    .getState()
+    .pipe(
+      map((state) =>
+        state.requiresOnboarding ? router.createUrlTree(['/onboarding']) : true
+      )
+    );
 };
 
 export const onboardingRequiredMatchGuard: CanMatchFn = (): Observable<
@@ -70,11 +72,13 @@ export const onboardingRequiredMatchGuard: CanMatchFn = (): Observable<
   const onboardingGate = inject(OnboardingGateService);
   const router = inject(Router);
 
-  return onboardingGate.getState().pipe(
-    map((state) =>
-      state.requiresOnboarding ? router.createUrlTree(['/onboarding']) : true
-    )
-  );
+  return onboardingGate
+    .getState()
+    .pipe(
+      map((state) =>
+        state.requiresOnboarding ? router.createUrlTree(['/onboarding']) : true
+      )
+    );
 };
 
 export const onboardingPageGuard: CanActivateFn = (): Observable<
@@ -83,11 +87,13 @@ export const onboardingPageGuard: CanActivateFn = (): Observable<
   const onboardingGate = inject(OnboardingGateService);
   const router = inject(Router);
 
-  return onboardingGate.getState().pipe(
-    map((state) =>
-      state.requiresOnboarding ? true : router.createUrlTree(['/'])
-    )
-  );
+  return onboardingGate
+    .getState()
+    .pipe(
+      map((state) =>
+        state.requiresOnboarding ? true : router.createUrlTree(['/'])
+      )
+    );
 };
 
 export const onboardingPageMatchGuard: CanMatchFn = (): Observable<
@@ -96,9 +102,11 @@ export const onboardingPageMatchGuard: CanMatchFn = (): Observable<
   const onboardingGate = inject(OnboardingGateService);
   const router = inject(Router);
 
-  return onboardingGate.getState().pipe(
-    map((state) =>
-      state.requiresOnboarding ? true : router.createUrlTree(['/'])
-    )
-  );
+  return onboardingGate
+    .getState()
+    .pipe(
+      map((state) =>
+        state.requiresOnboarding ? true : router.createUrlTree(['/'])
+      )
+    );
 };

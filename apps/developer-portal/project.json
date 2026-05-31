@@ -1,0 +1,101 @@
+{
+  "name": "developer-portal",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/developer-portal/src",
+  "tags": [
+    "type:app",
+    "scope:developer-portal",
+    "platform:web",
+    "visibility:public"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/developer-portal",
+        "browser": "apps/developer-portal/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/developer-portal/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/developer-portal/public"
+          }
+        ],
+        "styles": ["apps/developer-portal/src/styles.scss"],
+        "server": "apps/developer-portal/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/developer-portal/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "developer-portal:build:production"
+        },
+        "development": {
+          "buildTarget": "developer-portal:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "extract-i18n": {
+      "executor": "@angular/build:extract-i18n",
+      "options": {
+        "buildTarget": "developer-portal:build"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/developer-portal/jest.config.ts",
+        "tsConfig": "apps/developer-portal/tsconfig.spec.json"
+      }
+    },
+    "serve-static": {
+      "continuous": true,
+      "executor": "@nx/web:file-server",
+      "options": {
+        "buildTarget": "developer-portal:build",
+        "staticFilePath": "dist/apps/developer-portal/browser",
+        "spa": true,
+        "port": 4215
+      }
+    }
+  }
+}

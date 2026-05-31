@@ -5,20 +5,31 @@
     </div>
     <div class="header-content">
       <div class="header-icon" aria-hidden="true">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-          <circle cx="12" cy="7" r="4"/>
+        <svg
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+          <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
       <h1 class="header-title">My Account</h1>
-      <p class="header-subtitle">Manage your profile, communities, and preferences</p>
+      <p class="header-subtitle">
+        Manage your profile, communities, and preferences
+      </p>
     </div>
   </header>
 
   <div class="account-inner">
     <section class="theme-section">
       <h2>Personality</h2>
-      <p class="theme-description">Choose the visual personality for your local hub experience</p>
+      <p class="theme-description">
+        Choose the visual personality for your local hub experience
+      </p>
       <div class="theme-grid">
         @for (personality of availablePersonalities(); track personality.id) {
         <button

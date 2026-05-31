@@ -35,6 +35,13 @@ const (
 	InfraSeaweedFS InfraKind = "seaweedfs"
 )
 
+type DatabaseProvisionMode string
+
+const (
+	DatabaseProvisionManaged  DatabaseProvisionMode = "managed"
+	DatabaseProvisionExternal DatabaseProvisionMode = "external"
+)
+
 type ServicePoint struct {
 	ServiceID string
 	Hostname  string
@@ -43,11 +50,25 @@ type ServicePoint struct {
 	Public    bool
 }
 
+type DatabaseSlot struct {
+	ID            string
+	Infra         InfraKind
+	ProvisionMode DatabaseProvisionMode
+	Host          string
+	Port          int
+	DatabaseName  string
+	Username      string
+	PasswordKey   string
+	Create        bool
+	Migrate       bool
+	Seed          bool
+}
+
 type DatabaseBinding struct {
-	ServiceID    string
+	SlotID       string
 	Infra        InfraKind
 	DatabaseName string
-	UsernameKey  string
+	Username     string
 	PasswordKey  string
 	Shared       bool
 }
@@ -64,19 +85,20 @@ type ServiceSelection struct {
 }
 
 type EnvironmentDefinition struct {
-	Name         string
-	Namespace    string
-	Targets      []Target
-	ComposeMode  ComposeMode
-	Provider     Provider
-	Capabilities []string
-	ImageOwner   string
-	DefaultTag   string
-	IncludeInfra []InfraKind
-	Services     []ServiceSelection
-	ApplyCompose bool
-	ApplyK8s     bool
-	OutputDir    string
+	Name          string
+	Namespace     string
+	Targets       []Target
+	ComposeMode   ComposeMode
+	Provider      Provider
+	Capabilities  []string
+	ImageOwner    string
+	DefaultTag    string
+	IncludeInfra  []InfraKind
+	DatabaseSlots []DatabaseSlot
+	Services      []ServiceSelection
+	ApplyCompose  bool
+	ApplyK8s      bool
+	OutputDir     string
 }
 
 func (e *EnvironmentDefinition) Normalize() {
@@ -94,6 +116,11 @@ func (e *EnvironmentDefinition) Normalize() {
 	}
 	if e.Provider == "" {
 		e.Provider = ProviderVultr
+	}
+	for i := range e.DatabaseSlots {
+		if e.DatabaseSlots[i].ProvisionMode == "" {
+			e.DatabaseSlots[i].ProvisionMode = DatabaseProvisionManaged
+		}
 	}
 }
 
@@ -118,6 +145,35 @@ func (e *EnvironmentDefinition) Validate() error {
 	}
 	if e.ApplyK8s && !containsTarget(e.Targets, TargetK8s) {
 		return fmt.Errorf("cannot apply k8s without selecting k8s target")
+	}
+
+	slots := map[string]struct{}{}
+	for _, slot := range e.DatabaseSlots {
+		id := strings.TrimSpace(slot.ID)
+		if id == "" {
+			return fmt.Errorf("database slot id cannot be empty")
+		}
+		if _, exists := slots[id]; exists {
+			return fmt.Errorf("duplicate database slot id %q", id)
+		}
+		slots[id] = struct{}{}
+		if slot.Infra == "" {
+			return fmt.Errorf("database slot %q must define infra kind", id)
+		}
+		if slot.ProvisionMode != "" && slot.ProvisionMode != DatabaseProvisionManaged && slot.ProvisionMode != DatabaseProvisionExternal {
+			return fmt.Errorf("database slot %q has invalid provision mode %q", id, slot.ProvisionMode)
+		}
+	}
+
+	for _, service := range e.Services {
+		if service.DatabaseBinding == nil {
+			continue
+		}
+		if slotID := strings.TrimSpace(service.DatabaseBinding.SlotID); slotID != "" {
+			if _, exists := slots[slotID]; !exists {
+				return fmt.Errorf("service %q references unknown database slot %q", service.ServiceID, slotID)
+			}
+		}
 	}
 	return nil
 }

@@ -13,7 +13,11 @@
   margin-bottom: 0.8rem;
   padding: 0.45rem 0.85rem;
   border: 1px solid
-    color-mix(in srgb, var(--local-complement, var(--complement)) 25%, transparent);
+    color-mix(
+      in srgb,
+      var(--local-complement, var(--complement)) 25%,
+      transparent
+    );
   border-radius: 999px;
   background: color-mix(in srgb, var(--background) 82%, transparent);
   color: color-mix(in srgb, var(--foreground) 88%, var(--accent) 12%);
@@ -28,8 +32,7 @@
   gap: 0.9rem;
   flex-wrap: wrap;
   margin-top: 1rem;
-  animation: editorial-rise 0.8s 0.16s var(--personality-transition, ease)
-    both;
+  animation: editorial-rise 0.8s 0.16s var(--personality-transition, ease) both;
 }
 
 .hero-cta {
@@ -41,9 +44,7 @@
   border-radius: 999px;
   border: 1px solid transparent;
   text-decoration: none;
-  transition:
-    transform 160ms ease,
-    border-color 160ms ease,
+  transition: transform 160ms ease, border-color 160ms ease,
     background 160ms ease;
 
   &:hover {
@@ -70,8 +71,7 @@
     color-mix(in srgb, var(--accent) 65%, var(--complement) 35%);
   background: color-mix(in srgb, var(--background) 78%, transparent);
   box-shadow: 0 18px 36px color-mix(in srgb, black 18%, transparent);
-  animation: editorial-rise 0.8s 0.22s var(--personality-transition, ease)
-    both;
+  animation: editorial-rise 0.8s 0.22s var(--personality-transition, ease) both;
 
   p {
     margin: 0.6rem 0 0;
@@ -94,8 +94,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
   margin: 1rem 0 0;
-  animation: editorial-rise 0.8s 0.28s var(--personality-transition, ease)
-    both;
+  animation: editorial-rise 0.8s 0.28s var(--personality-transition, ease) both;
 }
 
 .pillar-card {
@@ -138,8 +137,7 @@
 }
 
 .hero-stage {
-  animation: editorial-rise 0.8s 0.08s var(--personality-transition, ease)
-    both;
+  animation: editorial-rise 0.8s 0.08s var(--personality-transition, ease) both;
 }
 
 lib-hero {
@@ -159,8 +157,7 @@ lib-hero {
   justify-content: flex-end;
   align-items: flex-start;
   padding: clamp(1.5rem, 3vw, 2.5rem);
-  background:
-    linear-gradient(
+  background: linear-gradient(
       180deg,
       color-mix(in srgb, black 10%, transparent) 0%,
       color-mix(in srgb, black 62%, transparent) 62%,

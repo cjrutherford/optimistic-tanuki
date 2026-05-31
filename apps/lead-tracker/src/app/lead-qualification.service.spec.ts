@@ -13,7 +13,9 @@ import { DiscoveryPipelineService } from './discovery/pipeline.service';
 
 describe('LeadQualificationService', () => {
   let service: LeadQualificationService;
-  let onboardingProfileRepository: jest.Mocked<Repository<LeadOnboardingProfileRecord>>;
+  let onboardingProfileRepository: jest.Mocked<
+    Repository<LeadOnboardingProfileRecord>
+  >;
   let qualificationRepository: jest.Mocked<Repository<LeadQualification>>;
   let pipelineService: jest.Mocked<DiscoveryPipelineService>;
 

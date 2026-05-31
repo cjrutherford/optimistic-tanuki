@@ -22,7 +22,7 @@ export class BillingService {
   constructor(
     private readonly invoicePreviewService: InvoicePreviewService,
     private readonly usageMeteringService: UsageMeteringService,
-    private readonly usageBlocksService: UsageBlocksService,
+    private readonly usageBlocksService: UsageBlocksService
   ) {}
 
   recordUsage(input: RecordUsageDto): Promise<RecordUsageResult> {
@@ -42,7 +42,7 @@ export class BillingService {
   }
 
   consumeUsageBlock(
-    input: ConsumeUsageBlockDto,
+    input: ConsumeUsageBlockDto
   ): Promise<ConsumeUsageBlockResult> {
     return this.usageBlocksService.consumeUsageBlock(input);
   }
@@ -52,7 +52,7 @@ export class BillingService {
   }
 
   async previewInvoiceForPeriod(
-    input: PeriodInvoicePreviewInput,
+    input: PeriodInvoicePreviewInput
   ): Promise<InvoicePreview> {
     const [usageSummary, usageBlockBalance] = await Promise.all([
       this.usageMeteringService.getUsageSummary({

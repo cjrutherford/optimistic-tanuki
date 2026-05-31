@@ -10,7 +10,7 @@ import { ProjectCommands } from '@optimistic-tanuki/constants';
 
 @Controller()
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) { }
+  constructor(private readonly projectService: ProjectService) {}
 
   @MessagePattern({ cmd: ProjectCommands.CREATE })
   async create(@Payload() createProjectDto: CreateProjectDto) {

@@ -61,9 +61,7 @@ import {
           } @case ('boolean') {
           <lib-checkbox
             [value]="booleanFieldValue(field.key)"
-            (changeEvent)="
-              fieldChanged.emit({ key: field.key, value: $event })
-            "
+            (changeEvent)="fieldChanged.emit({ key: field.key, value: $event })"
           ></lib-checkbox>
           } @default {
           <lib-text-input
@@ -94,7 +92,10 @@ export class SchemaBlockInspectorComponent {
   @Input() block: BlockInstance | null = null;
   @Input() definition: BlockDefinition | null = null;
 
-  @Output() fieldChanged = new EventEmitter<{ key: string; value: string | number | boolean }>();
+  @Output() fieldChanged = new EventEmitter<{
+    key: string;
+    value: string | number | boolean;
+  }>();
 
   fieldValue(fieldKey: string): string {
     if (!this.block) {

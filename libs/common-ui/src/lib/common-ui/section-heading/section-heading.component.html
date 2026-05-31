@@ -1,11 +1,12 @@
 <div
   class="section-heading"
-  [style.background]="background"
-  [style.padding]="padding"
-  [style.border-radius]="borderRadius"
-  [style.color]="color"
+  [style.background]="background || null"
+  [style.padding]="padding || null"
+  [style.border-radius]="borderRadius || null"
+  [style.color]="color || null"
 >
-  <h2>{{ heading }}</h2>
-  <h3 *ngIf="subheading">{{ subheading }}</h3>
+  <p *ngIf="eyebrow" class="section-heading__eyebrow">{{ eyebrow }}</p>
+  <h2 class="section-heading__title">{{ heading }}</h2>
+  <h3 *ngIf="subheading" class="section-heading__subtitle">{{ subheading }}</h3>
   <ng-content></ng-content>
 </div>

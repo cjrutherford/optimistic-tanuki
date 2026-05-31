@@ -26,17 +26,31 @@ export class TrainerConfigService {
     private readonly logger: Logger
   ) {}
 
-  async getConfig(configKey = 'default'): Promise<TrainerSiteConfigEntity | null> {
-    this.logger.log(`[TrainerConfigService] Fetching config for key: ${configKey}`);
-    const config = await this.configRepository.findOne({ where: { configKey } });
+  async getConfig(
+    configKey = 'default'
+  ): Promise<TrainerSiteConfigEntity | null> {
+    this.logger.log(
+      `[TrainerConfigService] Fetching config for key: ${configKey}`
+    );
+    const config = await this.configRepository.findOne({
+      where: { configKey },
+    });
     return config || null;
   }
 
-  async createConfig(dto: TrainerSiteConfigDto, configKey = 'default'): Promise<TrainerSiteConfigEntity> {
-    this.logger.log(`[TrainerConfigService] Creating config for key: ${configKey}`);
+  async createConfig(
+    dto: TrainerSiteConfigDto,
+    configKey = 'default'
+  ): Promise<TrainerSiteConfigEntity> {
+    this.logger.log(
+      `[TrainerConfigService] Creating config for key: ${configKey}`
+    );
     const entity = new TrainerSiteConfigEntity();
     entity.configKey = configKey;
-    entity.leadContext = dto.leadContext || { profileId: '', appScope: 'business-site' };
+    entity.leadContext = dto.leadContext || {
+      profileId: '',
+      appScope: 'business-site',
+    };
     entity.brand = dto.brand || {};
     entity.contact = dto.contact || {};
     entity.features = dto.features || {};
@@ -48,11 +62,16 @@ export class TrainerConfigService {
     return await this.configRepository.save(entity);
   }
 
-  async updateConfig(id: string, dto: TrainerSiteConfigDto): Promise<TrainerSiteConfigEntity> {
+  async updateConfig(
+    id: string,
+    dto: TrainerSiteConfigDto
+  ): Promise<TrainerSiteConfigEntity> {
     this.logger.log(`[TrainerConfigService] Updating config id: ${id}`);
     const config = await this.configRepository.findOne({ where: { id } });
     if (!config) {
-      throw new NotFoundException(`Trainer site config with ID ${id} not found`);
+      throw new NotFoundException(
+        `Trainer site config with ID ${id} not found`
+      );
     }
 
     if (dto.leadContext !== undefined) config.leadContext = dto.leadContext;
@@ -69,8 +88,13 @@ export class TrainerConfigService {
     return await this.configRepository.save(config);
   }
 
-  async upsertConfig(dto: TrainerSiteConfigDto, configKey = 'default'): Promise<TrainerSiteConfigEntity> {
-    this.logger.log(`[TrainerConfigService] Upserting config for key: ${configKey}`);
+  async upsertConfig(
+    dto: TrainerSiteConfigDto,
+    configKey = 'default'
+  ): Promise<TrainerSiteConfigEntity> {
+    this.logger.log(
+      `[TrainerConfigService] Upserting config for key: ${configKey}`
+    );
     const existing = await this.getConfig(configKey);
     if (existing) {
       return this.updateConfig(existing.id, dto);

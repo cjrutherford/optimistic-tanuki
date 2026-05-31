@@ -34,9 +34,9 @@ describe('BusinessClientTasksPageComponent', () => {
               ])
             ),
             submitCheckIn: jest.fn().mockReturnValue(of({ id: 'checkin-1' })),
-            completeClientRoutine: jest.fn().mockReturnValue(
-              of({ id: 'routine-1', status: 'completed' })
-            ),
+            completeClientRoutine: jest
+              .fn()
+              .mockReturnValue(of({ id: 'routine-1', status: 'completed' })),
           },
         },
         {

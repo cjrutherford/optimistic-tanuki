@@ -1,7 +1,4 @@
-import {
-  PREDEFINED_PERSONALITIES,
-  getPersonalityById,
-} from './personalities';
+import { PREDEFINED_PERSONALITIES, getPersonalityById } from './personalities';
 
 describe('personality presentation contract', () => {
   it('defines presentation traits for every predefined personality', () => {
@@ -14,15 +11,13 @@ describe('personality presentation contract', () => {
       expect(personality.presentation.typography.familyValue).toBeTruthy();
       expect(personality.presentation.typography.weightValue).toBeTruthy();
       expect(personality.presentation.animation.duration).toMatch(/ms|s/);
-      expect(
-        personality.presentation.components.button.borderRadius
-      ).toMatch(/px$/);
-      expect(
-        personality.presentation.components.card.boxShadow
-      ).toBeTruthy();
-      expect(
-        personality.presentation.components.input.borderWidth
-      ).toMatch(/px$/);
+      expect(personality.presentation.components.button.borderRadius).toMatch(
+        /px$/
+      );
+      expect(personality.presentation.components.card.boxShadow).toBeTruthy();
+      expect(personality.presentation.components.input.borderWidth).toMatch(
+        /px$/
+      );
     }
   });
 
@@ -32,9 +27,7 @@ describe('personality presentation contract', () => {
     expect(bold?.presentation.border.styleValue).toBe('solid');
     expect(bold?.presentation.border.widthValue).toBe('3px');
     expect(bold?.presentation.border.radiusValue).toBe('8px');
-    expect(bold?.presentation.shadow.value).toBe(
-      '4px 4px 0px rgba(0,0,0,0.2)'
-    );
+    expect(bold?.presentation.shadow.value).toBe('4px 4px 0px rgba(0,0,0,0.2)');
     expect(bold?.presentation.typography.familyValue).toBe(
       "'Inter', -apple-system, sans-serif"
     );

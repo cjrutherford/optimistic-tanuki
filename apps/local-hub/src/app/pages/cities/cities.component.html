@@ -7,7 +7,9 @@
     <div class="header-content">
       <div class="header-top">
         <div class="brand">
-          <span class="brand-icon">🏠</span>
+          <span class="brand-icon"
+            ><otui-icon name="home" [size]="18"></otui-icon
+          ></span>
           <span class="brand-text">Towne Square</span>
         </div>
       </div>
@@ -47,7 +49,9 @@
         <div class="map-header">
           <p class="eyebrow">Live Atlas</p>
           <h2 class="section-title">
-            <span class="title-icon">🗺️</span>
+            <span class="title-icon"
+              ><otui-icon name="location" [size]="18"></otui-icon
+            ></span>
             Regional Map
           </h2>
           <p class="section-subtitle">
@@ -68,11 +72,8 @@
         </div>
         <div class="map-note">
           <span class="map-note-kicker">Visible now</span>
-          @if (userLocation()) {
-          nearby localities from
-          } @else {
-          total localities from
-          }
+          @if (userLocation()) { nearby localities from } @else { total
+          localities from }
           <strong>{{ filteredCities().length }}</strong> results and
           <strong>{{ filteredCommunities().length }}</strong> communities
         </div>
@@ -90,15 +91,17 @@
           <div>
             <p class="eyebrow">Refine</p>
             <h2 class="section-title">
-              <span class="title-icon">🔎</span>
+              <span class="title-icon"
+                ><otui-icon name="filter" [size]="18"></otui-icon
+              ></span>
               Search & Filters
             </h2>
           </div>
           <span
             class="toggle-indicator"
             [class.expanded]="isSectionExpanded('filters')"
-            >⌄</span
-          >
+            ><otui-icon name="chevron-down" [size]="18"></otui-icon
+          ></span>
         </button>
 
         @if (isSectionExpanded('filters')) {
@@ -177,15 +180,17 @@
           <div>
             <p class="eyebrow">Signed In</p>
             <h2 class="section-title">
-              <span class="title-icon">⭐</span>
+              <span class="title-icon"
+                ><otui-icon name="star" [size]="18"></otui-icon
+              ></span>
               Your Communities
             </h2>
           </div>
           <span
             class="toggle-indicator"
             [class.expanded]="isSectionExpanded('myCommunities')"
-            >⌄</span
-          >
+            ><otui-icon name="chevron-down" [size]="18"></otui-icon
+          ></span>
         </button>
 
         @if (isSectionExpanded('myCommunities')) {
@@ -259,15 +264,17 @@
           <div>
             <p class="eyebrow">Browse</p>
             <h2 class="section-title">
-              <span class="title-icon">🏛️</span>
+              <span class="title-icon"
+                ><otui-icon name="home" [size]="18"></otui-icon
+              ></span>
               Supported Localities
             </h2>
           </div>
           <span
             class="toggle-indicator"
             [class.expanded]="isSectionExpanded('cities')"
-            >⌄</span
-          >
+            ><otui-icon name="chevron-down" [size]="18"></otui-icon
+          ></span>
         </button>
 
         @if (isSectionExpanded('cities')) {
@@ -342,15 +349,17 @@
           <div>
             <p class="eyebrow">Network</p>
             <h2 class="section-title">
-              <span class="title-icon">👥</span>
+              <span class="title-icon"
+                ><otui-icon name="users" [size]="18"></otui-icon
+              ></span>
               All Communities
             </h2>
           </div>
           <span
             class="toggle-indicator"
             [class.expanded]="isSectionExpanded('communities')"
-            >⌄</span
-          >
+            ><otui-icon name="chevron-down" [size]="18"></otui-icon
+          ></span>
         </button>
 
         @if (isSectionExpanded('communities')) {

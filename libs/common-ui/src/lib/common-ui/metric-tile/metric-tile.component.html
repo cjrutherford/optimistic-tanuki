@@ -1,0 +1,25 @@
+<div class="metric-tile" [attr.data-tone]="resolvedTone">
+  <p class="metric-tile__label">{{ label }}</p>
+  <p class="metric-tile__value">{{ value }}</p>
+  <div class="metric-tile__footer" *ngIf="delta || caption">
+    <span
+      *ngIf="delta"
+      class="metric-tile__delta"
+      [attr.data-direction]="deltaDirection"
+      [attr.aria-label]="'Change ' + deltaDirection + ' ' + delta"
+    >
+      <span class="metric-tile__delta-arrow" aria-hidden="true">{{
+        deltaDirection === 'up'
+          ? '\u2197'
+          : deltaDirection === 'down'
+          ? '\u2198'
+          : '\u2192'
+      }}</span>
+      {{ delta }}
+    </span>
+    <span *ngIf="caption" class="metric-tile__caption">{{ caption }}</span>
+  </div>
+  <div class="metric-tile__chart">
+    <ng-content></ng-content>
+  </div>
+</div>

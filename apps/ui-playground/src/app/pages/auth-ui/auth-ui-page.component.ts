@@ -100,7 +100,8 @@ export class AuthUiPageComponent {
       headline: 'Account creation panel',
       importName: 'RegisterBlockComponent',
       selector: 'lib-register-block',
-      summary: 'Account onboarding fragment with a strong call-to-action layout.',
+      summary:
+        'Account onboarding fragment with a strong call-to-action layout.',
       props: [],
     },
     {
@@ -118,7 +119,8 @@ export class AuthUiPageComponent {
       headline: 'Second-factor verification panel',
       importName: 'MfaBlockComponent',
       selector: 'lib-mfa-block',
-      summary: 'Prompt for one-time passcodes during onboarding or step-up auth.',
+      summary:
+        'Prompt for one-time passcodes during onboarding or step-up auth.',
       props: [],
     },
   ];

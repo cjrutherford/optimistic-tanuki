@@ -24,7 +24,9 @@ export class StorageModule {
     let adapterProvider: Provider<StorageAdapter>;
     const logger = new Logger('StorageModule');
 
-    logger.log(`Registering StorageModule with options: ${JSON.stringify(options)}`);
+    logger.log(
+      `Registering StorageModule with options: ${JSON.stringify(options)}`
+    );
 
     const firstEnabledAdapter = options.enabledAdapters[0];
 
@@ -37,7 +39,9 @@ export class StorageModule {
     switch (firstEnabledAdapter) {
       case 'local': {
         if (!options.localStoragePath) {
-          logger.error('Local storage adapter requires localStoragePath option.');
+          logger.error(
+            'Local storage adapter requires localStoragePath option.'
+          );
           throw new Error(
             'Local storage adapter requires localStoragePath option.'
           );
@@ -52,7 +56,9 @@ export class StorageModule {
       }
       case 'network': {
         if (!options.s3Options) {
-          logger.error('Network adapter requires S3 options (or other network config).');
+          logger.error(
+            'Network adapter requires S3 options (or other network config).'
+          );
           throw new Error(
             'Network adapter requires S3 options (or other network config)'
           );
@@ -72,7 +78,9 @@ export class StorageModule {
         break;
       }
       default:
-        logger.error(`Unsupported storage strategy in enabledAdapters: ${firstEnabledAdapter}`);
+        logger.error(
+          `Unsupported storage strategy in enabledAdapters: ${firstEnabledAdapter}`
+        );
         throw new Error(
           `Unsupported storage strategy in enabledAdapters: ${firstEnabledAdapter}`
         );
@@ -105,7 +113,11 @@ export class StorageModule {
             const moduleOptions = configService.get<StorageModuleOptions>(
               'storage-module-options'
             );
-            logger.log(`Configuring storage adapter with options: ${JSON.stringify(moduleOptions)}`);
+            logger.log(
+              `Configuring storage adapter with options: ${JSON.stringify(
+                moduleOptions
+              )}`
+            );
             const firstEnabledAdapter = moduleOptions?.enabledAdapters?.[0];
 
             if (!firstEnabledAdapter) {
@@ -117,18 +129,24 @@ export class StorageModule {
               case 'local': {
                 const localStoragePath =
                   moduleOptions?.localStoragePath || './storage';
-                logger.log(`Setting up LocalStorageAdapter with path: ${localStoragePath}`);
+                logger.log(
+                  `Setting up LocalStorageAdapter with path: ${localStoragePath}`
+                );
                 return new LocalStorageAdapter(logger, localStoragePath);
               }
               case 'network': {
                 const s3Options =
                   moduleOptions?.s3Options || defaultS3ServiceOptions;
-                logger.log(`Setting up NetworkStorageAdapter with S3 endpoint: ${s3Options.endpoint}`);
+                logger.log(
+                  `Setting up NetworkStorageAdapter with S3 endpoint: ${s3Options.endpoint}`
+                );
                 const s3Service = new S3Service(logger, s3Options);
                 return new NetworkStorageAdapter(logger, s3Service);
               }
               default:
-                logger.error(`Unsupported storage strategy: ${firstEnabledAdapter}`);
+                logger.error(
+                  `Unsupported storage strategy: ${firstEnabledAdapter}`
+                );
                 throw new Error(
                   `Unsupported storage strategy: ${firstEnabledAdapter}`
                 );

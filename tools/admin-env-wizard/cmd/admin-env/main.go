@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/catalog"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/cli"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/configurator"
@@ -62,7 +61,7 @@ func main() {
 			},
 			secrets,
 		)
-		if _, err := tea.NewProgram(model, tea.WithMouseCellMotion()).Run(); err != nil {
+		if err := model.Run(); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to run tui: %v\n", err)
 			os.Exit(1)
 		}
@@ -135,6 +134,7 @@ func main() {
 			fmt.Printf("Output written to: %s\n", result.OutputDir)
 			fmt.Printf("Runtime env: %s\n", filepath.Join(result.OutputDir, result.RuntimeEnvPath))
 			fmt.Printf("Registry: %s\n", filepath.Join(result.OutputDir, result.RegistryPath))
+			fmt.Printf("DB setup plan: %s\n", filepath.Join(result.OutputDir, result.DatabaseSetupPath))
 			fmt.Printf("Validation report: %s\n", filepath.Join(result.OutputDir, result.ValidationReportPath))
 			return
 		}

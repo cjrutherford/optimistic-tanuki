@@ -13,7 +13,9 @@ import { BusinessClientBillingPageComponent } from './business-client-billing-pa
 
 describe('BusinessClientBillingPageComponent', () => {
   async function render(allowOnlinePayment: boolean) {
-    const payClientInvoice = jest.fn().mockReturnValue(of({ id: 'invoice-1', status: 'paid' }));
+    const payClientInvoice = jest
+      .fn()
+      .mockReturnValue(of({ id: 'invoice-1', status: 'paid' }));
 
     await TestBed.configureTestingModule({
       imports: [BusinessClientBillingPageComponent],

@@ -243,10 +243,10 @@ data:
 	files["base/kustomization.yaml"] = baseKustomizationData
 
 	overlayData, overlayErr := yaml.Marshal(Kustomization{
-		APIVersion: "kustomize.config.k8s.io/v1beta1",
-		Kind:       "Kustomization",
-		Namespace:  env.Namespace,
-		Resources:  []string{"../../base"},
+		APIVersion:            "kustomize.config.k8s.io/v1beta1",
+		Kind:                  "Kustomization",
+		Namespace:             env.Namespace,
+		Resources:             []string{"../../base"},
 		PatchesStrategicMerge: []string{"provider-patch.yaml"},
 	})
 	if overlayErr != nil {
@@ -414,6 +414,7 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 
 	switch preset.ID {
 	case "postgres":
+		slot := findDatabaseSlot(env, "postgres-primary")
 		profile := profileFor(env.Provider)
 		pvc := K8sPVC{
 			APIVersion: "v1",
@@ -428,13 +429,21 @@ func generateInfraK8s(preset catalog.Preset, env *domain.EnvironmentDefinition) 
 		files["postgres-pvc.yaml"] = pvcData
 
 		deployment := createDeployment(preset, env, 5432)
+		username := "postgres"
+		password := "POSTGRES_PASSWORD"
+		databaseName := "postgres"
+		if slot != nil {
+			username = slot.Username
+			password = slot.PasswordKey
+			databaseName = slot.DatabaseName
+		}
 		deployment.Spec.Template.Spec.Containers[0].Env = []struct {
 			Name  string `yaml:"name"`
 			Value string `yaml:"value"`
 		}{
-			{Name: "POSTGRES_USER", Value: "postgres"},
-			{Name: "POSTGRES_PASSWORD", Value: "postgres"},
-			{Name: "POSTGRES_DB", Value: "postgres"},
+			{Name: "POSTGRES_USER", Value: username},
+			{Name: "POSTGRES_PASSWORD", Value: password},
+			{Name: "POSTGRES_DB", Value: databaseName},
 		}
 		deployment.Spec.Template.Spec.Volumes = []struct {
 			Name                  string `yaml:"name"`
@@ -482,8 +491,12 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 	files := make(map[string][]byte)
 	profile := profileFor(env.Provider)
 	tuning := workloadTuningForProfile(profile, preset.ID, string(preset.Category))
-
-	imageName := fmt.Sprintf("%s:%s", preset.Image.Name, env.DefaultTag)
+	selection := findServiceSelection(env, preset.ID)
+	tag := env.DefaultTag
+	if selection != nil && selection.ImageTag != "" {
+		tag = selection.ImageTag
+	}
+	imageName := fmt.Sprintf("%s:%s", preset.Image.Name, tag)
 
 	replicas := preset.K8s.Replicas
 	if replicas == 0 {
@@ -491,6 +504,9 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 	}
 	if tuning.Replicas > 0 {
 		replicas = tuning.Replicas
+	}
+	if selection != nil && selection.Replicas > 0 {
+		replicas = selection.Replicas
 	}
 
 	deployment := K8sDeployment{
@@ -538,12 +554,11 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 		}{{ContainerPort: preset.K8s.InternalPort}}
 	}
 
+	envValues := map[string]string{}
 	for k, v := range preset.Compose.EnvDefaults {
-		container.Env = append(container.Env, struct {
-			Name  string `yaml:"name"`
-			Value string `yaml:"value"`
-		}{Name: k, Value: v})
+		envValues[k] = v
 	}
+	envValues = applyServiceDatabaseEnv(envValues, env, selection)
 
 	if tuning.RequestMemory != "" {
 		container.Resources.Requests.Memory = composeMemoryToK8s(tuning.RequestMemory)
@@ -559,13 +574,7 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 	}
 
 	if preset.ID == "gateway" {
-		container.Env = append(container.Env, struct {
-			Name  string `yaml:"name"`
-			Value string `yaml:"value"`
-		}{
-			Name:  "GATEWAY_COMPOSITION_PATH",
-			Value: "/etc/optimistic-tanuki/gateway/composition.yaml",
-		})
+		envValues["GATEWAY_COMPOSITION_PATH"] = "/etc/optimistic-tanuki/gateway/composition.yaml"
 		deployment.Spec.Template.Spec.Volumes = append(
 			deployment.Spec.Template.Spec.Volumes,
 			struct {
@@ -596,6 +605,7 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 			},
 		)
 	}
+	container.Env = orderedK8sEnv(envValues)
 
 	for _, volume := range preset.Compose.Volumes {
 		switch volume {
@@ -667,6 +677,28 @@ func generateServiceK8s(preset catalog.Preset, env *domain.EnvironmentDefinition
 	}
 
 	return files
+}
+
+func orderedK8sEnv(values map[string]string) []struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+} {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]struct {
+		Name  string `yaml:"name"`
+		Value string `yaml:"value"`
+	}, 0, len(keys))
+	for _, key := range keys {
+		result = append(result, struct {
+			Name  string `yaml:"name"`
+			Value string `yaml:"value"`
+		}{Name: key, Value: values[key]})
+	}
+	return result
 }
 
 func createDeployment(preset catalog.Preset, env *domain.EnvironmentDefinition, port int) K8sDeployment {

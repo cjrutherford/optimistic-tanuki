@@ -7,7 +7,11 @@ export const clientPortalFeatureGuard: CanActivateFn = () => {
   const siteConfig = inject(BusinessSiteConfigStore);
   const router = inject(Router);
 
-  return siteConfig.fetch().pipe(
-    map((site) => (site.features.clientPortal.enabled ? true : router.createUrlTree(['/'])))
-  );
+  return siteConfig
+    .fetch()
+    .pipe(
+      map((site) =>
+        site.features.clientPortal.enabled ? true : router.createUrlTree(['/'])
+      )
+    );
 };

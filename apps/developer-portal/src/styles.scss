@@ -1,0 +1,26 @@
+/* Developer Portal global styles.
+ *
+ * The portal intentionally renders as a dark editorial dev surface
+ * regardless of the user's theme preference, so its palette is
+ * defined as literal brand tokens at :root rather than driven by the
+ * ThemeService personality. The ThemeService still applies its
+ * tokens, but the portal-specific tokens below take precedence in
+ * portal-shell scoped selectors.
+ */
+
+:root {
+  /* Portal brand palette - dark slate editorial */
+  --portal-bg-1: #020617;
+  --portal-bg-2: #0f172a;
+  --portal-bg-3: #111827;
+  --portal-surface: rgba(15, 23, 42, 0.82);
+  --portal-surface-soft: rgba(15, 23, 42, 0.6);
+  --portal-foreground: #e2e8f0;
+  --portal-foreground-muted: #cbd5e1;
+  --portal-foreground-subtle: #94a3b8;
+  --portal-accent: #38bdf8;
+  --portal-accent-gradient-from: #22d3ee;
+  --portal-accent-gradient-to: #3b82f6;
+  --portal-border: rgba(148, 163, 184, 0.16);
+  --portal-border-strong: rgba(148, 163, 184, 0.35);
+}

@@ -59,12 +59,10 @@ describe('LangGraphService', () => {
         {
           provide: LangChainService,
           useValue: {
-            executeConversation: jest
-              .fn()
-              .mockResolvedValue({
-                response: 'Direct response',
-                toolCalls: [],
-              }),
+            executeConversation: jest.fn().mockResolvedValue({
+              response: 'Direct response',
+              toolCalls: [],
+            }),
           },
         },
         {

@@ -75,6 +75,7 @@ describe('AppComponent', () => {
             getAccentColor: jest.fn().mockReturnValue('#4fd1c5'),
             getCurrentPersonality: jest.fn().mockReturnValue(personality),
             setTheme: jest.fn(),
+            setPersonality: jest.fn(),
             setPrimaryColor: jest.fn(),
           },
         },
@@ -128,6 +129,22 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app.title).toEqual('client-interface');
+  });
+
+  it('bootstraps the soft-touch personality on first load', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockReturnValue(null);
+    const themeService = TestBed.inject(ThemeService) as unknown as {
+      setPersonality: jest.Mock;
+    };
+    themeService.setPersonality.mockClear();
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(themeService.setPersonality).toHaveBeenCalledWith('soft-touch');
+    getItemSpy.mockRestore();
   });
 
   it('renders the murmuration motion background shell', () => {

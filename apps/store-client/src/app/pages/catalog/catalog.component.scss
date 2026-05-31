@@ -19,7 +19,7 @@
 
   p {
     font-size: 1.125rem;
-    color: #666;
+    color: var(--text-muted);
     margin: 0;
   }
 }
@@ -32,12 +32,12 @@
 }
 
 .loading {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .error {
-  color: #dc3545;
-  background-color: #f8d7da;
-  border: 1px solid #f5c6cb;
+  color: var(--danger);
+  background-color: var(--danger-soft-bg);
+  border: 1px solid var(--danger-soft-border);
   border-radius: 4px;
 }

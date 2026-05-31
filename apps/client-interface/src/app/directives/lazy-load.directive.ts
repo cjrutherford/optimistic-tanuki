@@ -8,15 +8,16 @@ export class LazyLoadDirective implements OnInit {
   @Input('appLazyLoad') imageSrc!: string;
   @Input() placeholder = '';
 
-  constructor(
-    private el: ElementRef,
-    private renderer: Renderer2
-  ) {}
+  constructor(private el: ElementRef, private renderer: Renderer2) {}
 
   ngOnInit() {
     // Set placeholder if provided
     if (this.placeholder) {
-      this.renderer.setAttribute(this.el.nativeElement, 'src', this.placeholder);
+      this.renderer.setAttribute(
+        this.el.nativeElement,
+        'src',
+        this.placeholder
+      );
     }
 
     // Set loading attribute for native lazy loading
@@ -36,7 +37,11 @@ export class LazyLoadDirective implements OnInit {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          this.renderer.setAttribute(this.el.nativeElement, 'src', this.imageSrc);
+          this.renderer.setAttribute(
+            this.el.nativeElement,
+            'src',
+            this.imageSrc
+          );
           observer.disconnect();
         }
       });

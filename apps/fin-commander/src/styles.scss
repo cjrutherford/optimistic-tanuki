@@ -1,11 +1,23 @@
 html {
   scroll-behavior: smooth;
-  color-scheme: light;
+  /**
+   * Announce support for both schemes so native form chrome (scrollbars,
+   * date pickers, select dropdowns) tracks whichever surface they render
+   * on. The default ThemeService palette for fin-commander's
+   * `professional` personality is light, so light remains the effective
+   * default; the explicit `body.dark` rule below promotes dark chrome
+   * when ThemeService.setTheme('dark') (or a future personality override)
+   * adds the `dark` class to body.
+   */
+  color-scheme: light dark;
 }
 
 body {
   margin: 0;
-  font-family: var(--font-body, var(--personality-font-family, 'Manrope', sans-serif));
+  font-family: var(
+    --font-body,
+    var(--personality-font-family, 'Manrope', sans-serif)
+  );
   color: var(--foreground);
   background: radial-gradient(
       circle at top left,
@@ -57,11 +69,14 @@ a {
 }
 
 /* Form element base styling */
-input, select, textarea {
+input,
+select,
+textarea {
   font-family: var(--fc-font-body);
   font-size: 0.9rem;
   padding: 0.85rem 1.1rem;
-  border: var(--fc-border-width) solid color-mix(in srgb, var(--border) 70%, transparent);
+  border: var(--fc-border-width) solid
+    color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: var(--fc-input-radius);
   background: color-mix(in srgb, var(--surface) 92%, var(--background));
   color: var(--foreground);
@@ -69,7 +84,7 @@ input, select, textarea {
   outline: none;
 
   &::placeholder {
-    color: var(--muted, #64748b);
+    color: var(--muted-foreground);
     opacity: 0.7;
   }
 
@@ -84,7 +99,7 @@ input, select, textarea {
 }
 
 /* Base button styling for plain buttons */
-button:not([class*="otui"]) {
+button:not([class*='otui']) {
   font-family: var(--fc-font-body);
   font-weight: 700;
   font-size: 0.85rem;

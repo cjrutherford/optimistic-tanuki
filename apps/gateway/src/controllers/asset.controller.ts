@@ -12,7 +12,11 @@ import {
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { AssetCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { AssetListQuery, AssetType, CreateAssetDto } from '@optimistic-tanuki/models';
+import {
+  AssetListQuery,
+  AssetType,
+  CreateAssetDto,
+} from '@optimistic-tanuki/models';
 import { Response } from 'express';
 import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../decorators/permissions.decorator';
@@ -82,10 +86,10 @@ export class AssetController {
     @Query('type') type?: AssetType
   ) {
     const assets = await firstValueFrom(
-      this.assetService.send(
-        { cmd: AssetCommands.LIST },
-        { profileId, type } as AssetListQuery
-      )
+      this.assetService.send({ cmd: AssetCommands.LIST }, {
+        profileId,
+        type,
+      } as AssetListQuery)
     );
     return assets.map((asset: { id: string }) => ({
       ...asset,

@@ -93,6 +93,9 @@ export class Transaction {
   @Column({ type: 'boolean', default: false })
   pending: boolean;
 
-  @Column({ type: 'varchar', default: BankTransactionReviewStatus.NEEDS_REVIEW })
+  @Column({
+    type: 'varchar',
+    default: BankTransactionReviewStatus.NEEDS_REVIEW,
+  })
   reviewStatus: BankTransactionReviewStatus;
 }

@@ -101,7 +101,7 @@ export class TaskMcpService {
   constructor(
     @Inject(ServiceTokens.PROJECT_PLANNING_SERVICE)
     private readonly projectPlanningService: ClientProxy
-  ) { }
+  ) {}
 
   @McpTool({
     name: 'list_tasks',

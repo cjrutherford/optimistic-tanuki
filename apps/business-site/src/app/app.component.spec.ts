@@ -298,7 +298,9 @@ describe('AppComponent', () => {
         provideRouter([]),
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig: jest.fn(() => new Subject().asObservable()) },
+          useValue: {
+            getSiteConfig: jest.fn(() => new Subject().asObservable()),
+          },
         },
         {
           provide: BusinessAuthService,
@@ -339,7 +341,9 @@ describe('AppComponent', () => {
         provideRouter([]),
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig: jest.fn(() => new Subject().asObservable()) },
+          useValue: {
+            getSiteConfig: jest.fn(() => new Subject().asObservable()),
+          },
         },
         {
           provide: BusinessAuthService,
@@ -382,7 +386,9 @@ describe('AppComponent', () => {
         provideRouter([]),
         {
           provide: BusinessApiService,
-          useValue: { getSiteConfig: jest.fn(() => new Subject().asObservable()) },
+          useValue: {
+            getSiteConfig: jest.fn(() => new Subject().asObservable()),
+          },
         },
         {
           provide: BusinessAuthService,

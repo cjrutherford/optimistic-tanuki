@@ -22,17 +22,22 @@ Inputs:
 
 Outputs per deployment:
 
+- `deployment.yaml`
 - `deploy.sh`
 - `compose/docker-compose.yaml`
 - `compose/deploy.sh`
 - `compose/fragments/docker-compose.base.yaml`
 - `compose/fragments/docker-compose.provider.yaml`
 - `compose/fragments/docker-compose.capabilities.yaml`
+- `config/app-registry.generated.json`
+- `config/runtime.env`
+- `config/db-setup.generated.yaml`
 - `gateway/composition.yaml`
 - `k8s/kustomization.yaml`
 - `k8s/deploy.sh`
 - `k8s/base/*`
 - `k8s/overlays/<provider>/*`
+- `reports/validation.txt`
 
 The gateway composition file is part of the deployment contract. It tells the shared gateway image which service-backed surfaces should exist for that deployment.
 
@@ -119,17 +124,27 @@ That writes one generated deployment tree per entry:
 
 ```bash
 cd tools/admin-env-wizard
-go run ./cmd/admin-env tui
+GOCACHE=/tmp/go-build go run ./cmd/admin-env tui
 ```
 
-The TUI is useful for:
+The terminal UI now behaves like a document-oriented workspace editor:
 
-- environment basics
-- target selection
-- Compose mode
-- infra selection
-- service selection
-- output review
+- top menus for file, navigation, edit, and diagnostics actions
+- left-side document navigation
+- a single active document view for `Deployment`, `Profile`, `Databases`, `Services`, `Images`, `Compose`, `Kubernetes`, `Secrets`, `Apply`, and `Diagnostics`
+- contextual help tied to the active document
+- database slot lifecycle summaries and service override previews
+
+Useful keys:
+
+- `Left` / `Right`: move across the top menus
+- `Enter` / `Down`: open or activate the current menu item
+- `e`: edit the active document where an editor exists
+- `a` / `d`: add or delete a database slot from the `Databases` document
+- `space`: toggle the active service from the `Services` document
+- `s`: save deployment/secrets files
+- `g`: regenerate the workspace artifacts
+- `r`: refresh diagnostics
 
 ## Generator Model
 
@@ -197,7 +212,7 @@ GOCACHE=/tmp/go-build go run ./cmd/deployment-inventory
 
 ### Root deploy helper
 
-Every generated deployment includes a root `deploy.sh`. The output directory defaults to `dist/admin-env/<env>` when using the TUI or when no `-output-dir` flag is given to the CLI. If you pass `-output-dir` to `admin-env generate`, replace the path below with your chosen directory.
+Every generated deployment includes a root `deploy.sh`. The output directory defaults to `dist/admin-env/<env>` when using the TUI or when no `-output-dir` flag is given to the CLI. Generated workspaces also include `deployment.yaml`, `config/runtime.env`, `config/db-setup.generated.yaml`, and `reports/validation.txt`. If you pass `-output-dir` to `admin-env generate`, replace the path below with your chosen directory.
 
 Examples (using the default output path):
 

@@ -44,6 +44,7 @@ describe('AppComponent', () => {
   let app: AppComponent;
 
   beforeEach(async () => {
+    themeServiceMock.setPersonality.mockClear();
     await TestBed.configureTestingModule({
       imports: [
         AppComponent,
@@ -79,8 +80,28 @@ describe('AppComponent', () => {
   });
 
   it('does not overwrite the saved personality on startup', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation((key) =>
+        key === 'optimistic-tanuki-personality-theme'
+          ? '{"personalityId":"bold"}'
+          : null
+      );
+
     fixture.detectChanges();
 
     expect(themeServiceMock.setPersonality).not.toHaveBeenCalled();
+    getItemSpy.mockRestore();
+  });
+
+  it('bootstraps the soft-touch personality on first load', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockReturnValue(null);
+
+    fixture.detectChanges();
+
+    expect(themeServiceMock.setPersonality).toHaveBeenCalledWith('soft-touch');
+    getItemSpy.mockRestore();
   });
 });

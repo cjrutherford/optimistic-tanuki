@@ -1,7 +1,4 @@
-import {
-  HAI_APP_DIRECTORY,
-  resolveHaiAppLinks,
-} from './hai-app.directory';
+import { HAI_APP_DIRECTORY, resolveHaiAppLinks } from './hai-app.directory';
 
 describe('HAI app directory', () => {
   it('lists the five registry-backed HAI offerings', () => {

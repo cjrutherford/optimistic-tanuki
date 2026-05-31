@@ -1,7 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { TrainerConfigCommands } from '@optimistic-tanuki/constants';
-import { TrainerConfigService, TrainerSiteConfigDto } from './trainer-config.service';
+import {
+  TrainerConfigService,
+  TrainerSiteConfigDto,
+} from './trainer-config.service';
 
 @Controller()
 export class TrainerConfigController {
@@ -31,7 +34,9 @@ export class TrainerConfigController {
   }
 
   @MessagePattern(TrainerConfigCommands.CREATE_CONFIG)
-  async createConfig(@Payload() payload: TrainerSiteConfigDto & { configKey?: string }) {
+  async createConfig(
+    @Payload() payload: TrainerSiteConfigDto & { configKey?: string }
+  ) {
     const { configKey = 'default', ...dto } = payload;
     const config = await this.trainerConfigService.createConfig(dto, configKey);
     return {
@@ -52,8 +57,13 @@ export class TrainerConfigController {
   }
 
   @MessagePattern(TrainerConfigCommands.UPDATE_CONFIG)
-  async updateConfig(@Payload() payload: { id: string; config: TrainerSiteConfigDto }) {
-    const config = await this.trainerConfigService.updateConfig(payload.id, payload.config);
+  async updateConfig(
+    @Payload() payload: { id: string; config: TrainerSiteConfigDto }
+  ) {
+    const config = await this.trainerConfigService.updateConfig(
+      payload.id,
+      payload.config
+    );
     return {
       id: config.id,
       configKey: config.configKey,
@@ -72,7 +82,9 @@ export class TrainerConfigController {
   }
 
   @MessagePattern(TrainerConfigCommands.UPSERT_CONFIG)
-  async upsertConfig(@Payload() payload: TrainerSiteConfigDto & { configKey?: string }) {
+  async upsertConfig(
+    @Payload() payload: TrainerSiteConfigDto & { configKey?: string }
+  ) {
     const { configKey = 'default', ...dto } = payload;
     const config = await this.trainerConfigService.upsertConfig(dto, configKey);
     return {

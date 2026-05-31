@@ -51,17 +51,29 @@ import { AgUsersTableComponent } from './ag-users-table.component';
             Remove roles that should no longer apply to this profile.
           </p>
 
-          <div *ngIf="roleManagementLoading" class="empty-state">Loading role assignments...</div>
-          <div *ngIf="!roleManagementLoading && userRoles.length === 0" class="empty-state">
+          <div *ngIf="roleManagementLoading" class="empty-state">
+            Loading role assignments...
+          </div>
+          <div
+            *ngIf="!roleManagementLoading && userRoles.length === 0"
+            class="empty-state"
+          >
             No role assignments found for this user.
           </div>
 
-          <div class="role-list" *ngIf="!roleManagementLoading && userRoles.length > 0">
+          <div
+            class="role-list"
+            *ngIf="!roleManagementLoading && userRoles.length > 0"
+          >
             <div class="role-item" *ngFor="let assignment of userRoles">
               <div>
-                <strong>{{ assignment.role?.name || assignment.roleId }}</strong>
+                <strong>{{
+                  assignment.role?.name || assignment.roleId
+                }}</strong>
                 <p>
-                  {{ assignment.role?.description || 'No description provided.' }}
+                  {{
+                    assignment.role?.description || 'No description provided.'
+                  }}
                 </p>
                 <span class="scope-chip">
                   {{ assignment.appScope?.name || assignment.appScopeId }}
@@ -84,12 +96,20 @@ import { AgUsersTableComponent } from './ag-users-table.component';
             Assign a role from the current catalog to this profile.
           </p>
 
-          <div *ngIf="roleManagementLoading" class="empty-state">Loading available roles...</div>
-          <div *ngIf="!roleManagementLoading && availableRoles.length === 0" class="empty-state">
+          <div *ngIf="roleManagementLoading" class="empty-state">
+            Loading available roles...
+          </div>
+          <div
+            *ngIf="!roleManagementLoading && availableRoles.length === 0"
+            class="empty-state"
+          >
             No additional roles are available to assign.
           </div>
 
-          <div class="role-list" *ngIf="!roleManagementLoading && availableRoles.length > 0">
+          <div
+            class="role-list"
+            *ngIf="!roleManagementLoading && availableRoles.length > 0"
+          >
             <div class="role-item" *ngFor="let role of availableRoles">
               <div>
                 <strong>{{ role.name }}</strong>
@@ -282,7 +302,9 @@ export class UsersManagementComponent implements OnInit {
     this.rolesService.unassignRole(assignment.id).subscribe({
       next: () => {
         this.messageService.addMessage({
-          content: `Removed ${assignment.role?.name || 'role'} from ${this.getSelectedUserName()}.`,
+          content: `Removed ${
+            assignment.role?.name || 'role'
+          } from ${this.getSelectedUserName()}.`,
           type: 'success',
         });
         if (this.selectedUser) {
@@ -321,11 +343,15 @@ export class UsersManagementComponent implements OnInit {
       userRoles: this.rolesService.getUserRoles(profileId),
     }).subscribe({
       next: ({ roles, userRoles }) => {
-        const assignedRoleIds = new Set(userRoles.map((assignment) => assignment.roleId));
+        const assignedRoleIds = new Set(
+          userRoles.map((assignment) => assignment.roleId)
+        );
 
         this.roles = roles;
         this.userRoles = userRoles;
-        this.availableRoles = roles.filter((role) => !assignedRoleIds.has(role.id));
+        this.availableRoles = roles.filter(
+          (role) => !assignedRoleIds.has(role.id)
+        );
         this.roleManagementLoading = false;
       },
       error: (err) => {
@@ -346,9 +372,7 @@ export class UsersManagementComponent implements OnInit {
 
   private getSelectedUserName(): string {
     return (
-      this.selectedUser?.profileName ||
-      this.selectedUser?.id ||
-      'selected user'
+      this.selectedUser?.profileName || this.selectedUser?.id || 'selected user'
     );
   }
 }

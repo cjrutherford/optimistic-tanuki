@@ -41,7 +41,7 @@ export class TaskFormComponent implements OnInit {
   @Input() availableTags: TaskTag[] = [];
   isEditing = signal<boolean>(false);
   @Output() formSubmit: EventEmitter<Task> = new EventEmitter<Task>();
-  
+
   selectedTagIds: string[] = [];
   statusOptions = [
     { value: 'TODO', label: 'To Do' },
@@ -76,7 +76,7 @@ export class TaskFormComponent implements OnInit {
         priority: this.task.priority,
       });
       // Set selected tags
-      this.selectedTagIds = this.task.tags?.map(tag => tag.id) || [];
+      this.selectedTagIds = this.task.tags?.map((tag) => tag.id) || [];
     } else {
       this.isEditing.set(false);
     }
@@ -98,12 +98,12 @@ export class TaskFormComponent implements OnInit {
   onSubmit() {
     if (this.taskForm.valid) {
       console.log('Form Submitted!', this.taskForm.value);
-      
+
       // Get the selected tags objects
-      const selectedTags = this.availableTags.filter(tag => 
+      const selectedTags = this.availableTags.filter((tag) =>
         this.selectedTagIds.includes(tag.id)
       );
-      
+
       const emittedValue: Task = {
         ...this.taskForm.value,
         id: this.task ? this.task.id : '',

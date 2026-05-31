@@ -9,13 +9,19 @@ import {
   LocalCommunity,
 } from '../../services/community.service';
 import { MapComponent } from '../../components/map/map.component';
-import { CardComponent } from '@optimistic-tanuki/common-ui';
+import { CardComponent, IconComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../services/auth-state.service';
 
 @Component({
   selector: 'app-cities',
   standalone: true,
-  imports: [CommonModule, FormsModule, MapComponent, CardComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MapComponent,
+    CardComponent,
+    IconComponent,
+  ],
   templateUrl: './cities.component.html',
   styleUrls: ['./cities.component.scss'],
 })
@@ -66,7 +72,8 @@ export class CitiesComponent implements OnInit {
     const query = this.normalizeSearchValue(this.searchQuery());
 
     return this.cities().filter((city) => {
-      const matchesState = states.length === 0 || states.includes(city.adminArea);
+      const matchesState =
+        states.length === 0 || states.includes(city.adminArea);
       const citySearchCorpus = [
         city.name,
         city.adminArea,
@@ -251,7 +258,9 @@ export class CitiesComponent implements OnInit {
       return true;
     }
 
-    return values.some((value) => this.normalizeSearchValue(value).includes(query));
+    return values.some((value) =>
+      this.normalizeSearchValue(value).includes(query)
+    );
   }
 
   getTotalCommunities(): number {

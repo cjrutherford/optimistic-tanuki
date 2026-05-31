@@ -1,10 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  CreateChannelDto,
-  UpdateChannelDto,
-} from '@optimistic-tanuki/models';
+import { CreateChannelDto, UpdateChannelDto } from '@optimistic-tanuki/models';
 import { randomUUID } from 'crypto';
 import { Channel } from '../../entities/channel.entity';
 import { ChannelFeed } from '../../entities/channel-feed.entity';
@@ -93,7 +90,9 @@ export class ChannelService {
       ...updateChannelDto,
       communitySlug:
         updateChannelDto.communitySlug ??
-        (updateChannelDto.name ? this.slugify(updateChannelDto.name) : undefined),
+        (updateChannelDto.name
+          ? this.slugify(updateChannelDto.name)
+          : undefined),
       updatedAt: new Date(),
     });
     return this.findOne(id);

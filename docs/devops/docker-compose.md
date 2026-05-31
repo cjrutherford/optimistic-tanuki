@@ -192,7 +192,7 @@ These commands are meant for the hybrid inner loop. They only start shared infra
 ### Frontends
 
 - Main app: `http://localhost:8080`
-- Leads app: `http://localhost:4201`
+- Leads app: `http://localhost:8095`
 - Forge of Will: `http://localhost:8081`
 - Digital Homestead: `http://localhost:8082`
 - christopherrutherford.net: `http://localhost:8083`
@@ -202,6 +202,11 @@ These commands are meant for the hybrid inner loop. They only start shared infra
 - Local Hub: `http://localhost:8087`
 - Configurable Client: `http://localhost:8090`
 - Hardware Configurator: `http://localhost:8091`
+- Marketing Generator: `http://localhost:8092`
+- Video Client: `http://localhost:8093`
+- Business Site: `http://localhost:8094`
+- Business Configurator: `http://localhost:8096`
+- Developer Portal: `http://localhost:8097`
 
 ### Backend and Infra
 

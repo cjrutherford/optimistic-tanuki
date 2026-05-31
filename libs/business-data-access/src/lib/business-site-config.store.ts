@@ -13,7 +13,9 @@ import {
 export class BusinessSiteConfigStore {
   private readonly api = inject(BusinessApiService);
 
-  private readonly _site = signal<BusinessSiteConfig>(cloneBusinessSiteConfig());
+  private readonly _site = signal<BusinessSiteConfig>(
+    cloneBusinessSiteConfig()
+  );
   private readonly _configId = signal<string | null>(null);
   private readonly _loaded = signal(false);
   private inFlight$: Observable<BusinessSiteConfig> | null = null;
@@ -38,7 +40,9 @@ export class BusinessSiteConfigStore {
     this.inFlight$ = this.api.getSiteConfig().pipe(
       map((response) => {
         this._configId.set(response?.configId ?? null);
-        return mergeBusinessSiteConfig(response?.config ?? DEFAULT_BUSINESS_SITE_CONFIG);
+        return mergeBusinessSiteConfig(
+          response?.config ?? DEFAULT_BUSINESS_SITE_CONFIG
+        );
       }),
       catchError(() => {
         this._configId.set(null);
@@ -55,7 +59,10 @@ export class BusinessSiteConfigStore {
     return this.inFlight$;
   }
 
-  setSite(config: Partial<BusinessSiteConfig> | BusinessSiteConfig, configId = this._configId()): void {
+  setSite(
+    config: Partial<BusinessSiteConfig> | BusinessSiteConfig,
+    configId = this._configId()
+  ): void {
     this._site.set(mergeBusinessSiteConfig(config));
     this._configId.set(configId ?? null);
     this._loaded.set(true);

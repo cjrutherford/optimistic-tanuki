@@ -16,6 +16,7 @@ type GenerateResult struct {
 	DeployScript         string
 	RegistryPath         string
 	RuntimeEnvPath       string
+	DatabaseSetupPath    string
 	ValidationReportPath string
 	GeneratedK8s         []string
 }
@@ -30,9 +31,43 @@ func DefaultEnvironment() *domain.EnvironmentDefinition {
 		ImageOwner:   "cjrutherford",
 		DefaultTag:   "latest",
 		IncludeInfra: []domain.InfraKind{domain.InfraPostgres, domain.InfraRedis},
+		DatabaseSlots: []domain.DatabaseSlot{
+			{
+				ID:            "postgres-primary",
+				Infra:         domain.InfraPostgres,
+				ProvisionMode: domain.DatabaseProvisionManaged,
+				Host:          "db",
+				Port:          5432,
+				DatabaseName:  "demo",
+				Username:      "postgres",
+				PasswordKey:   "POSTGRES_PASSWORD",
+				Create:        true,
+				Migrate:       true,
+			},
+			{
+				ID:            "redis-primary",
+				Infra:         domain.InfraRedis,
+				ProvisionMode: domain.DatabaseProvisionManaged,
+				Host:          "redis",
+				Port:          6379,
+				DatabaseName:  "0",
+				Username:      "default",
+				PasswordKey:   "REDIS_PASSWORD",
+			},
+		},
 		Capabilities: []string{"community"},
 		Services: []domain.ServiceSelection{
-			{ServiceID: "gateway", Enabled: true},
+			{
+				ServiceID: "gateway",
+				Enabled:   true,
+				DatabaseBinding: &domain.DatabaseBinding{
+					SlotID:       "postgres-primary",
+					Infra:        domain.InfraPostgres,
+					DatabaseName: "demo",
+					Username:     "postgres",
+					PasswordKey:  "POSTGRES_PASSWORD",
+				},
+			},
 		},
 	}
 }

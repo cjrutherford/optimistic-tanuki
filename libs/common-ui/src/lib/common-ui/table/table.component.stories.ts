@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-function */
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
-import { TableComponent, TableColumn, TableRow, TableAction } from './table.component';
+import {
+  TableComponent,
+  TableColumn,
+  TableRow,
+  TableAction,
+} from './table.component';
 import { CommonModule } from '@angular/common';
 
 const meta: Meta<TableComponent> = {
@@ -13,7 +18,8 @@ const meta: Meta<TableComponent> = {
     }),
   ],
   parameters: {
-    componentSubtitle: 'A fully accessible semantic table component with sorting, selection, and theme support',
+    componentSubtitle:
+      'A fully accessible semantic table component with sorting, selection, and theme support',
     docs: {
       description: {
         component: `
@@ -84,16 +90,54 @@ const sampleColumns: TableColumn[] = [
 ];
 
 const sampleData: TableRow[] = [
-  { name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active', lastActive: '2 min ago' },
-  { name: 'Jane Smith', email: 'jane@example.com', role: 'Editor', status: 'Active', lastActive: '1 hour ago' },
-  { name: 'Bob Johnson', email: 'bob@example.com', role: 'Viewer', status: 'Inactive', lastActive: '2 days ago' },
-  { name: 'Alice Williams', email: 'alice@example.com', role: 'Editor', status: 'Active', lastActive: '5 min ago' },
-  { name: 'Charlie Brown', email: 'charlie@example.com', role: 'Viewer', status: 'Pending', lastActive: '1 week ago' },
+  {
+    name: 'John Doe',
+    email: 'john@example.com',
+    role: 'Admin',
+    status: 'Active',
+    lastActive: '2 min ago',
+  },
+  {
+    name: 'Jane Smith',
+    email: 'jane@example.com',
+    role: 'Editor',
+    status: 'Active',
+    lastActive: '1 hour ago',
+  },
+  {
+    name: 'Bob Johnson',
+    email: 'bob@example.com',
+    role: 'Viewer',
+    status: 'Inactive',
+    lastActive: '2 days ago',
+  },
+  {
+    name: 'Alice Williams',
+    email: 'alice@example.com',
+    role: 'Editor',
+    status: 'Active',
+    lastActive: '5 min ago',
+  },
+  {
+    name: 'Charlie Brown',
+    email: 'charlie@example.com',
+    role: 'Viewer',
+    status: 'Pending',
+    lastActive: '1 week ago',
+  },
 ];
 
 const sampleActions: TableAction[] = [
-  { label: 'Edit', action: (row) => console.log('Edit:', row), variant: 'primary' },
-  { label: 'Delete', action: (row) => console.log('Delete:', row), variant: 'danger' },
+  {
+    label: 'Edit',
+    action: (row) => console.log('Edit:', row),
+    variant: 'primary',
+  },
+  {
+    label: 'Delete',
+    action: (row) => console.log('Delete:', row),
+    variant: 'danger',
+  },
 ];
 
 // ==================== NEW API STORIES ====================
@@ -118,7 +162,8 @@ export const WithSorting: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Click on column headers to sort. The table tracks sort state and emits sort events.',
+        story:
+          'Click on column headers to sort. The table tracks sort state and emits sort events.',
       },
     },
   },
@@ -134,7 +179,8 @@ export const WithSelection: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Checkboxes allow selecting individual rows or all rows. Selection state is emitted via rowSelect event.',
+        story:
+          'Checkboxes allow selecting individual rows or all rows. Selection state is emitted via rowSelect event.',
       },
     },
   },
@@ -150,7 +196,8 @@ export const WithActions: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Row actions appear in the rightmost column. Each action can have a variant (primary, secondary, danger).',
+        story:
+          'Row actions appear in the rightmost column. Each action can have a variant (primary, secondary, danger).',
       },
     },
   },
@@ -240,7 +287,8 @@ export const StickyHeader: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Sticky header keeps column headers visible when scrolling through long tables.',
+        story:
+          'Sticky header keeps column headers visible when scrolling through long tables.',
       },
     },
   },
@@ -261,7 +309,8 @@ export const FullFeatured: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'This example shows all features combined: sorting, selection, striped rows, hover effects, and actions.',
+        story:
+          'This example shows all features combined: sorting, selection, striped rows, hover effects, and actions.',
       },
     },
   },
@@ -290,7 +339,8 @@ export const Accessibility: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'This table documents the accessibility features built into the component.',
+        story:
+          'This table documents the accessibility features built into the component.',
       },
     },
   },

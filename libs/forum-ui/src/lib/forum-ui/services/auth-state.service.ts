@@ -1,22 +1,22 @@
 import { Injectable, signal } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthStateService {
   private tokenKey = 'auth_token';
-  
+
   private _currentUser = signal<any>(null);
-  
+
   getDecodedTokenValue(): any {
     const token = localStorage.getItem(this.tokenKey);
     if (!token) return null;
-    
+
     try {
       // Simple base64 decode for JWT payload (2nd part)
       const payload = token.split('.')[1];
       if (!payload) return null;
-      
+
       const decoded = JSON.parse(atob(payload));
       return decoded;
     } catch (error) {

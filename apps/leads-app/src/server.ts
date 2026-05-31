@@ -68,7 +68,9 @@ app.get('**', (req, res, next) => {
 
 if (isMainModule(import.meta.url)) {
   app.listen(listenPort, () => {
-    console.log(`Node Express server listening on http://localhost:${listenPort}`);
+    console.log(
+      `Node Express server listening on http://localhost:${listenPort}`
+    );
   });
 }
 

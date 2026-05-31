@@ -106,7 +106,8 @@ export class SocialUiPageComponent {
   readonly comments: CommentDto[] = [
     {
       id: 'comment-1',
-      content: 'Curated playground previews make it easier to compare component tone.',
+      content:
+        'Curated playground previews make it easier to compare component tone.',
       postId: 'demo-post',
       userId: 'demo-user',
       profileId: 'peer-profile',
@@ -149,7 +150,8 @@ export class SocialUiPageComponent {
       headline: 'Threaded conversation stack',
       importName: 'CommentListComponent',
       selector: 'lib-comment-list',
-      summary: 'Comment thread renderer that resolves profile stubs for replies.',
+      summary:
+        'Comment thread renderer that resolves profile stubs for replies.',
       props: [],
     },
     {
@@ -158,7 +160,8 @@ export class SocialUiPageComponent {
       headline: 'Rich social post surface',
       importName: 'PostComponent',
       selector: 'lib-post',
-      summary: 'Complete social post card with content, links, and threaded comments.',
+      summary:
+        'Complete social post card with content, links, and threaded comments.',
       props: [],
     },
   ];

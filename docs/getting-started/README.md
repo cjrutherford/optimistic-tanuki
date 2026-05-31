@@ -33,7 +33,7 @@ The repo also contains:
 Before you begin, ensure you have the following installed:
 
 - **[Docker](https://docs.docker.com/get-docker/)** - For running services in containers
-- **[Node.js](https://nodejs.org/)** v18 or higher - JavaScript runtime
+- **[Node.js](https://nodejs.org/)** v20 or higher - JavaScript runtime
 - **[pnpm](https://pnpm.io/installation)** - Fast, disk-efficient package manager
 
 ## Installation
@@ -97,7 +97,7 @@ pnpm run docker:dev:seed
 **Primary Entry Points**
 
 - Main App: http://localhost:8080
-- Leads App: http://localhost:4201
+- Leads App: http://localhost:8095
 - Forge of Will: http://localhost:8081
 - Owner Console: http://localhost:8084
 - API Gateway: http://localhost:3000
@@ -353,6 +353,6 @@ Now that you have the application running:
 
 - **Documentation**: Check the [Documentation Index](../README.md)
 - **Issues**: Report bugs on [GitHub Issues](https://github.com/cjrutherford/optimistic-tanuki/issues)
-- **Contributing**: See the [Contributing Guide](../../README.md#-contributing)
+- **Contributing**: See the [Contributing Guide](../../CONTRIBUTING.md)
 
 Use `docs/devops/docker-compose.md` as the source of truth for the current local-stack workflow.

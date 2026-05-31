@@ -38,7 +38,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -46,7 +46,7 @@ describe('AuthInterceptor', () => {
     });
 
     expect(forwardedRequest?.headers.get('Authorization')).toBe(
-      'Bearer fin-token',
+      'Bearer fin-token'
     );
   });
 
@@ -62,7 +62,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -84,7 +84,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -108,7 +108,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -116,7 +116,7 @@ describe('AuthInterceptor', () => {
     });
 
     expect(forwardedRequest?.headers.get('x-finance-tenant-id')).toBe(
-      'tenant-42',
+      'tenant-42'
     );
   });
 
@@ -133,7 +133,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -157,7 +157,7 @@ describe('AuthInterceptor', () => {
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 
@@ -165,7 +165,7 @@ describe('AuthInterceptor', () => {
     });
 
     expect(forwardedRequest?.headers.get('x-finance-tenant-id')).toBe(
-      'tenant-42',
+      'tenant-42'
     );
   });
 
@@ -181,12 +181,12 @@ describe('AuthInterceptor', () => {
       const request = new HttpRequest(
         'POST',
         '/api/finance/onboarding/bootstrap',
-        {},
+        {}
       );
       const next: HttpHandlerFn = (req): ReturnType<HttpHandlerFn> => {
         forwardedRequest = req;
         return of(
-          new HttpResponse({ status: 200, url: req.url }),
+          new HttpResponse({ status: 200, url: req.url })
         ) as ReturnType<HttpHandlerFn>;
       };
 

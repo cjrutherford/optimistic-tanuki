@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -65,16 +66,35 @@ const paymentServiceMock = {
 };
 
 const classifiedServiceMock = {
-  findByCommunity: jest.fn().mockResolvedValue({ data: [] as ClassifiedAdDto[] }),
+  findByCommunity: jest
+    .fn()
+    .mockResolvedValue({ data: [] as ClassifiedAdDto[] }),
 };
 
 describe('CityComponent', () => {
   let fixture: ComponentFixture<CityComponent>;
+  const geolocation = {
+    getCurrentPosition: jest.fn(),
+  };
 
   beforeEach(async () => {
+    geolocation.getCurrentPosition.mockImplementation((success) => {
+      success({
+        coords: {
+          latitude: 32.05,
+          longitude: -81.1,
+        },
+      });
+    });
+    Object.defineProperty(global.navigator, 'geolocation', {
+      configurable: true,
+      value: geolocation,
+    });
+
     await TestBed.configureTestingModule({
       imports: [CityComponent, RouterTestingModule, HttpClientTestingModule],
       providers: [
+        { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: CommunityService, useValue: communityServiceMock },
         { provide: AuthStateService, useValue: authStateMock },
         { provide: MessageService, useValue: { addMessage: jest.fn() } },
@@ -96,11 +116,20 @@ describe('CityComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    const mapComponent = fixture.debugElement.query(
-      By.directive(MapComponent)
-    )?.componentInstance as MapComponent | undefined;
+    const mapComponent = fixture.debugElement.query(By.directive(MapComponent))
+      ?.componentInstance as MapComponent | undefined;
 
     expect(mapComponent).toBeDefined();
     expect(mapComponent?.mode).toBe('single-location');
+  });
+
+  it('passes browser geolocation to the city detail map', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const mapComponent = fixture.debugElement.query(By.directive(MapComponent))
+      ?.componentInstance as MapComponent | undefined;
+
+    expect(mapComponent?.userLocation).toEqual({ lat: 32.05, lng: -81.1 });
   });
 });

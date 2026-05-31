@@ -14,7 +14,11 @@ describe('business-site e2e global setup', () => {
       },
       {
         command: 'bash',
-        args: ['./scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '5'],
+        args: [
+          './scripts/docker-start-phased.sh',
+          'docker-compose.dev.yaml',
+          '5',
+        ],
         cwd: workspaceRoot,
       },
     ]);

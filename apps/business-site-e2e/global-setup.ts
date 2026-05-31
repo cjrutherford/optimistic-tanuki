@@ -10,7 +10,12 @@ type SetupCommand = {
   env?: NodeJS.ProcessEnv;
 };
 
-function run(command: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv) {
+function run(
+  command: string,
+  args: string[],
+  cwd: string,
+  env?: NodeJS.ProcessEnv
+) {
   return new Promise<void>((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
@@ -25,7 +30,9 @@ function run(command: string, args: string[], cwd: string, env?: NodeJS.ProcessE
         resolve();
         return;
       }
-      reject(new Error(`${command} ${args.join(' ')} exited with code ${code}`));
+      reject(
+        new Error(`${command} ${args.join(' ')} exited with code ${code}`)
+      );
     });
   });
 }
@@ -117,7 +124,11 @@ export function getStackStartupCommands(workspaceRoot: string): SetupCommand[] {
     },
     {
       command: 'bash',
-      args: ['./scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '5'],
+      args: [
+        './scripts/docker-start-phased.sh',
+        'docker-compose.dev.yaml',
+        '5',
+      ],
       cwd: workspaceRoot,
     },
   ];
@@ -125,21 +136,34 @@ export function getStackStartupCommands(workspaceRoot: string): SetupCommand[] {
 
 async function globalSetup(_config: FullConfig) {
   if (process.env['SKIP_SETUP'] === 'true') {
-    console.log('\n[Playwright Global Setup] SKIP_SETUP=true, skipping Docker startup');
+    console.log(
+      '\n[Playwright Global Setup] SKIP_SETUP=true, skipping Docker startup'
+    );
     return;
   }
 
   const workspaceRoot = join(__dirname, '../../');
 
-  console.log('\n[Playwright Global Setup] Building business-site stack artifacts...');
+  console.log(
+    '\n[Playwright Global Setup] Building business-site stack artifacts...'
+  );
   await run('pnpm', ['run', 'build:docker:dev'], workspaceRoot);
 
-  console.log('\n[Playwright Global Setup] Starting business-site stack via phased docker startup...');
+  console.log(
+    '\n[Playwright Global Setup] Starting business-site stack via phased docker startup...'
+  );
   for (const command of getStackStartupCommands(workspaceRoot)) {
-    await run(command.command, command.args, command.cwd ?? workspaceRoot, command.env);
+    await run(
+      command.command,
+      command.args,
+      command.cwd ?? workspaceRoot,
+      command.env
+    );
   }
 
-  console.log('[Playwright Global Setup] Waiting for gateway and business-site ports...');
+  console.log(
+    '[Playwright Global Setup] Waiting for gateway and business-site ports...'
+  );
   await waitForPort(3000);
   await waitForPort(8094);
   await waitForHttpOk('http://127.0.0.1:3000/api/business/site-config');
@@ -147,9 +171,16 @@ async function globalSetup(_config: FullConfig) {
 
   const seedCommands = getSetupSeedCommands(workspaceRoot);
 
-  console.log('[Playwright Global Setup] Seeding permissions and business users...');
+  console.log(
+    '[Playwright Global Setup] Seeding permissions and business users...'
+  );
   for (const seedCommand of seedCommands) {
-    await run(seedCommand.command, seedCommand.args, workspaceRoot, seedCommand.env);
+    await run(
+      seedCommand.command,
+      seedCommand.args,
+      workspaceRoot,
+      seedCommand.env
+    );
   }
 }
 

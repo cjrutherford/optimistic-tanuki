@@ -1,29 +1,25 @@
-# Optimistic Tanuki
+# Optimistic Tanuki Contributor Guide
 
 [![CI](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/ci.yml)
 [![Build](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml/badge.svg)](https://github.com/cjrutherford/optimistic-tanuki/actions/workflows/build.yml)
 
-Optimistic Tanuki is a multi-product platform for community, local coordination, focused execution, and financial planning, implemented as an Nx monorepo.
+Optimistic Tanuki is a multi-product web-app portfolio and composable platform: named Angular applications, NestJS services, shared libraries, Go deployment tooling, Docker Compose workflows, and Kubernetes GitOps delivery in one Nx monorepo.
 
-The repository houses a portfolio of operator-facing applications designed to help people run real groups, real work, and real decisions with less fragmentation.
+Start with [PRODUCT.md](./PRODUCT.md) for the external product story and portfolio map. Use this README when you are contributing to the repository.
 
-- Optimistic Tanuki (`client-interface`): the main community-owned social networking app for defined groups
-- Towne Square (`local-hub`): local-first coordination, classifieds, and civic participation
-- Forge of Will (`forgeofwill`): focused project execution with context, notes, and risk tracking
-- Fin Commander (`fin-commander`): guided financial workflows for ledgers, plans, and scenarios
+Useful root documents:
 
-The product surface is broader than the main apps:
-
-- hosted services such as `billing` can be offered as managed infrastructure with self-hosted Docker options where documented
-- public libraries such as `@optimistic-tanuki/billing-sdk` are intended to be distributed free through npm
-- public npm packages are published from the mirror-repo workflow, not directly from this monorepo
-
-The codebase itself combines NestJS services, Angular and SSR clients, a Docker Compose development stack, and a Kubernetes GitOps deployment surface.
+- [PRODUCT.md](./PRODUCT.md) - product portfolio, positioning, visual story, and adoption paths
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - contribution workflow
+- [GOVERNANCE.md](./GOVERNANCE.md) - project governance
+- [docs/README.md](./docs/README.md) - documentation index
 
 ## Start Here
 
 Use the entrypoint that matches the job:
 
+- product and marketing story: [PRODUCT.md](./PRODUCT.md)
+- marketing documentation: [docs/marketing/README.md](./docs/marketing/README.md)
 - first-time setup: [docs/getting-started/README.md](./docs/getting-started/README.md)
 - workspace navigation: [docs/architecture/workspace-map.md](./docs/architecture/workspace-map.md)
 - full project inventory: [docs/reference/workspace-catalog.md](./docs/reference/workspace-catalog.md)
@@ -50,8 +46,9 @@ pnpm run docker:dev
 Primary local endpoints:
 
 - Main app: `http://localhost:8080`
-- Leads app: `http://localhost:4201`
+- Leads app: `http://localhost:8095`
 - Gateway: `http://localhost:3000`
+- Developer portal: `http://localhost:8097`
 
 Prerequisites:
 

@@ -1,0 +1,105 @@
+.state-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  text-align: center;
+  padding: var(--state-message-padding, 2.5rem 1.5rem);
+  background: var(--state-message-background, transparent);
+  color: var(--state-message-color, var(--foreground, inherit));
+  border-radius: var(--state-message-radius, var(--radius-md, 12px));
+  border: 1px dashed
+    color-mix(
+      in oklab,
+      var(--state-message-accent, currentColor) 35%,
+      transparent
+    );
+
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 999px;
+    background: color-mix(
+      in oklab,
+      var(--state-message-accent, currentColor) 14%,
+      transparent
+    );
+    color: var(--state-message-accent, currentColor);
+  }
+
+  &__glyph {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+
+  &__headline {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: inherit;
+  }
+
+  &__body {
+    margin: 0;
+    max-width: 36ch;
+    color: var(
+      --muted-foreground,
+      color-mix(in oklab, currentColor 70%, transparent)
+    );
+  }
+
+  &__actions {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  // Tone -> accent token
+  &[data-tone='info'] {
+    --state-message-accent: var(--info, var(--primary, currentColor));
+  }
+  &[data-tone='success'] {
+    --state-message-accent: var(--success, currentColor);
+  }
+  &[data-tone='warning'] {
+    --state-message-accent: var(--warning, currentColor);
+  }
+  &[data-tone='danger'] {
+    --state-message-accent: var(--danger, currentColor);
+  }
+  &[data-tone='neutral'] {
+    --state-message-accent: var(--muted-foreground, currentColor);
+  }
+
+  // Loading variant gets a subtle pulse on the icon
+  &[data-kind='loading'] {
+    .state-message__icon {
+      animation: state-message-pulse 1.4s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes state-message-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-message[data-kind='loading'] .state-message__icon {
+    animation: none;
+  }
+}

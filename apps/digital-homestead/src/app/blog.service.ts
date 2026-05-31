@@ -125,21 +125,31 @@ export class BlogService {
    * Get components for a blog post
    */
   getComponentsForPost(postId: string): Observable<BlogComponentDto[]> {
-    return this.http.get<BlogComponentDto[]>(`/api/blog-components/post/${postId}`);
+    return this.http.get<BlogComponentDto[]>(
+      `/api/blog-components/post/${postId}`
+    );
   }
 
   /**
    * Create a blog component
    */
-  createComponent(component: CreateBlogComponentDto): Observable<BlogComponentDto> {
+  createComponent(
+    component: CreateBlogComponentDto
+  ): Observable<BlogComponentDto> {
     return this.http.post<BlogComponentDto>('/api/blog-components', component);
   }
 
   /**
    * Update a blog component
    */
-  updateComponent(id: string, component: UpdateBlogComponentDto): Observable<BlogComponentDto> {
-    return this.http.put<BlogComponentDto>(`/api/blog-components/${id}`, component);
+  updateComponent(
+    id: string,
+    component: UpdateBlogComponentDto
+  ): Observable<BlogComponentDto> {
+    return this.http.put<BlogComponentDto>(
+      `/api/blog-components/${id}`,
+      component
+    );
   }
 
   /**
