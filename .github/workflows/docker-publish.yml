@@ -100,6 +100,10 @@ jobs:
             type: service
           - app: wellness
             type: service
+          - app: business-configurator
+            type: client
+          - app: developer-portal
+            type: client
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
