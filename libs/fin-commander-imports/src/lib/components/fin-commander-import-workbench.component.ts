@@ -58,18 +58,44 @@ import {
       </label>
 
       <div class="actions">
-        <button type="button" (click)="previewImport()">Preview import</button>
+        <button type="button" (click)="previewImport()" [disabled]="busy()">
+          Preview import
+        </button>
+        @if (!pendingCommit()) {
         <button
           type="button"
           class="secondary"
-          (click)="commitPreview()"
-          [disabled]="!preview()"
+          (click)="requestCommit()"
+          [disabled]="!preview() || !accountId || busy()"
         >
           Commit preview
         </button>
+        } @else {
+        <button
+          type="button"
+          class="ghost"
+          (click)="cancelCommit()"
+          [disabled]="busy()"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="danger"
+          (click)="commitPreview()"
+          [disabled]="busy()"
+        >
+          Confirm commit ({{ preview()?.transactions?.length ?? 0 }})
+        </button>
+        }
       </div>
 
-      @if (preview(); as activePreview) {
+      @if (pendingCommit() && preview(); as activePreview) {
+      <p class="commit-warning" role="alert">
+        About to write {{ activePreview.transactions.length }} transactions to
+        the selected account. This cannot be undone from here.
+      </p>
+      } @if (preview(); as activePreview) {
       <article class="preview-card">
         <h3>{{ activePreview.title }}</h3>
         @if (activePreview.warnings.length) {
@@ -105,7 +131,7 @@ import {
         </table>
       </article>
       } @if (status()) {
-      <p class="status">{{ status() }}</p>
+      <p class="status" role="status" aria-live="polite">{{ status() }}</p>
       }
     </section>
   `,
@@ -165,6 +191,25 @@ import {
       .secondary {
         background: var(--accent, #d97706);
       }
+      .ghost {
+        background: transparent;
+        color: var(--foreground, #1f2937);
+        border: 1px solid var(--border, rgba(148, 163, 184, 0.4));
+      }
+      .danger {
+        background: var(--danger, #dc2626);
+        color: #fff;
+      }
+      .commit-warning {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        border-radius: var(--border-radius-md, 12px);
+        background: color-mix(in srgb, var(--danger, #dc2626) 12%, transparent);
+        border: 1px solid
+          color-mix(in srgb, var(--danger, #dc2626) 35%, transparent);
+        color: var(--danger, #dc2626);
+        font-size: 0.85rem;
+      }
       .preview-card {
         padding: 1rem;
         background: var(--surface, #ffffff);
@@ -195,6 +240,8 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
   readonly accounts = signal<Account[]>([]);
   readonly preview = signal<FinCommanderImportPreview | null>(null);
   readonly status = signal<string>('');
+  readonly pendingCommit = signal(false);
+  readonly busy = signal(false);
 
   providerId = this.registry.manifests[0].id;
   workspace: FinanceWorkspace = 'personal';
@@ -229,9 +276,42 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
   }
 
   async previewImport() {
-    const provider = await this.registry.loadProvider(this.providerId);
-    this.preview.set(await provider.preview(this.rawInput));
-    this.status.set('Preview ready. Review the rows before commit.');
+    this.pendingCommit.set(false);
+    this.busy.set(true);
+    try {
+      const provider = await this.registry.loadProvider(this.providerId);
+      const preview = await provider.preview(this.rawInput);
+      this.preview.set(preview);
+      const count = preview.transactions.length;
+      const warningCount = preview.warnings.length;
+      this.status.set(
+        `Preview ready: ${count} transaction${count === 1 ? '' : 's'}` +
+          (warningCount
+            ? `, ${warningCount} warning${warningCount === 1 ? '' : 's'}.`
+            : '.')
+      );
+    } catch (error) {
+      this.preview.set(null);
+      this.status.set(
+        `Preview failed: ${
+          error instanceof Error ? error.message : 'Unknown error.'
+        }`
+      );
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  requestCommit() {
+    if (!this.preview() || !this.accountId) {
+      this.status.set('Choose an account and run a preview before committing.');
+      return;
+    }
+    this.pendingCommit.set(true);
+  }
+
+  cancelCommit() {
+    this.pendingCommit.set(false);
   }
 
   async commitPreview() {
@@ -240,24 +320,39 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
       this.status.set(
         'Choose an account before committing imported transactions.'
       );
+      this.pendingCommit.set(false);
       return;
     }
 
-    for (const transaction of preview.transactions) {
-      await this.financeService.createTransaction({
-        accountId: this.accountId,
-        amount: transaction.amount,
-        type: transaction.type,
-        category: transaction.category,
-        description: transaction.description,
-        payeeOrVendor: transaction.payeeOrVendor,
-        transactionDate: new Date(transaction.postedOn),
-        workspace: this.workspace,
-      });
+    this.busy.set(true);
+    let committed = 0;
+    try {
+      for (const transaction of preview.transactions) {
+        await this.financeService.createTransaction({
+          accountId: this.accountId,
+          amount: transaction.amount,
+          type: transaction.type,
+          category: transaction.category,
+          description: transaction.description,
+          payeeOrVendor: transaction.payeeOrVendor,
+          transactionDate: new Date(transaction.postedOn),
+          workspace: this.workspace,
+        });
+        committed += 1;
+      }
+      this.status.set(`Committed ${committed} imported transactions.`);
+      this.preview.set(null);
+    } catch (error) {
+      this.status.set(
+        `Commit halted after ${committed} of ${
+          preview.transactions.length
+        } transactions: ${
+          error instanceof Error ? error.message : 'Unknown error.'
+        }`
+      );
+    } finally {
+      this.pendingCommit.set(false);
+      this.busy.set(false);
     }
-
-    this.status.set(
-      `Committed ${preview.transactions.length} imported transactions.`
-    );
   }
 }

@@ -11,6 +11,7 @@ import {
   ActivatedRoute,
   Router,
   RouterLink,
+  RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -33,12 +34,14 @@ type ShellNavItem = {
     CommonModule,
     FormsModule,
     RouterLink,
+    RouterLinkActive,
     RouterOutlet,
     SignalMeshComponent,
   ],
   template: `
     @if (plan(); as activePlan) {
     <div class="shell-root">
+      <a class="skip-link" href="#fc-main">Skip to main content</a>
       <!-- ── TOP BAR ─────────────────────────────────────────── -->
       <header class="topbar">
         <div class="topbar-left">
@@ -54,6 +57,9 @@ type ShellNavItem = {
           [class.open]="planDrawerOpen()"
           (click)="togglePlanDrawer()"
           aria-label="Switch plan"
+          aria-haspopup="true"
+          aria-controls="plan-drawer"
+          [attr.aria-expanded]="planDrawerOpen()"
         >
           <span class="toggle-label">Plans</span>
           <span class="toggle-chevron">{{ planDrawerOpen() ? '▲' : '▼' }}</span>
@@ -61,7 +67,14 @@ type ShellNavItem = {
       </header>
 
       <!-- ── PLAN SWITCHER DRAWER ──────────────────────────────── -->
-      <div class="plan-drawer" [class.open]="planDrawerOpen()">
+      <div
+        class="plan-drawer"
+        id="plan-drawer"
+        role="region"
+        aria-label="Plan switcher"
+        [attr.aria-hidden]="!planDrawerOpen()"
+        [class.open]="planDrawerOpen()"
+      >
         <div class="drawer-inner">
           <span class="drawer-label">Switch Plan</span>
           <div class="plan-list">
@@ -70,6 +83,7 @@ type ShellNavItem = {
               class="plan-pill"
               [routerLink]="['/commander', option.id, 'overview']"
               [class.active]="option.id === activePlan.id"
+              [attr.aria-current]="option.id === activePlan.id ? 'page' : null"
               (click)="planDrawerOpen.set(false)"
             >
               <span class="plan-pill-dot"></span>
@@ -117,6 +131,8 @@ type ShellNavItem = {
             class="nav-item"
             [routerLink]="['/commander', activePlan.id, item.segment]"
             routerLinkActive="active"
+            #navRla="routerLinkActive"
+            [attr.aria-current]="navRla.isActive ? 'page' : null"
           >
             <span class="nav-icon" aria-hidden="true">{{ item.icon }}</span>
             <span class="nav-label">{{ item.label }}</span>
@@ -126,7 +142,7 @@ type ShellNavItem = {
       </nav>
 
       <!-- ── CONTENT ────────────────────────────────────────────── -->
-      <main class="shell-content">
+      <main class="shell-content" id="fc-main" tabindex="-1">
         <router-outlet></router-outlet>
       </main>
 
@@ -137,6 +153,8 @@ type ShellNavItem = {
           class="bottom-nav-item"
           [routerLink]="['/commander', activePlan.id, item.segment]"
           routerLinkActive="active"
+          #bottomRla="routerLinkActive"
+          [attr.aria-current]="bottomRla.isActive ? 'page' : null"
         >
           <span class="bottom-nav-icon">{{ item.icon }}</span>
           <span class="bottom-nav-label">{{ item.label }}</span>

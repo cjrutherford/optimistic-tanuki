@@ -932,6 +932,60 @@ test.describe('Fin Commander user journey', () => {
     expectNoBrowserErrors(diagnostics);
   });
 
+  test('allows a personal-only account to add the business workspace later', async ({
+    page,
+    baseURL,
+  }) => {
+    const diagnostics = await startDiagnostics(page);
+    const user: BrowserUser = {
+      email: uniqueEmail('fc-add-workspace'),
+      password: 'TestPassword123!',
+      firstName: 'Workspace',
+      lastName: 'Adder',
+    };
+
+    await registerViaBrowser(page, baseURL as string, user);
+    await loginViaBrowser(page, baseURL as string, user);
+    await ensureProfileSaved(page);
+    await bootstrapFinanceWorkspaces(page, {
+      accountName: 'Workspace Expansion',
+      includeBusinessWorkspace: false,
+    });
+
+    await page.goto('/onboarding', { waitUntil: 'networkidle' });
+    await expect(
+      page.getByRole('heading', { name: 'Start in Fin Commander' })
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Add workspaces' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Choose your workspaces' })
+    ).toBeVisible();
+    await page
+      .getByRole('button', {
+        name: 'Business Operating cash, expenses, and revenue',
+      })
+      .click();
+
+    await expectResponseOk(
+      page,
+      (response) =>
+        response.url().includes('/api/finance/onboarding/bootstrap') &&
+        response.request().method() === 'POST',
+      async () => {
+        await page.getByRole('button', { name: 'Continue' }).click();
+      }
+    );
+
+    await page.goto('/finance/business/accounts', {
+      waitUntil: 'networkidle',
+    });
+    await expect(
+      page.locator('tr:has-text("Business Operating")')
+    ).toBeVisible();
+
+    expectNoBrowserErrors(diagnostics);
+  });
+
   test('covers the canonical first-run path without seeded demo plans', async ({
     page,
     baseURL,

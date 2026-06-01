@@ -47,15 +47,21 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
         <div class="summary-cards">
           <div class="card">
             <h3>Total Balance</h3>
-            <p class="amount">\${{ summary()?.metrics?.totalBalance ?? 0 }}</p>
+            <p class="amount">
+              {{ formatCurrency(summary()?.metrics?.totalBalance) }}
+            </p>
           </div>
           <div class="card">
             <h3>Net Worth</h3>
-            <p class="amount">\${{ summary()?.metrics?.netWorth ?? 0 }}</p>
+            <p class="amount">
+              {{ formatCurrency(summary()?.metrics?.netWorth) }}
+            </p>
           </div>
           <div class="card">
             <h3>Monthly Spend</h3>
-            <p class="count">\${{ summary()?.metrics?.monthlySpend ?? 0 }}</p>
+            <p class="count">
+              {{ formatCurrency(summary()?.metrics?.monthlySpend) }}
+            </p>
           </div>
           <div class="card">
             <h3>Budgets At Risk</h3>
@@ -71,6 +77,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
           <p class="eyebrow">Work Queue</p>
           <h2>Resolve the items that improve accuracy first</h2>
         </div>
+        @if ((workQueue()?.items?.length ?? 0) > 0) {
         <div class="coach-grid">
           @for (card of workQueue()?.items ?? []; track card.id) {
           <article class="coach-card" [attr.data-severity]="card.severity">
@@ -87,6 +94,12 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
           </article>
           }
         </div>
+        } @else {
+        <p class="status work-queue-empty">
+          Work queue is clear. New review items will appear here as Commander
+          spots anomalies, missing categories, or budgets that need attention.
+        </p>
+        }
       </section>
 
       <section class="section">
@@ -101,7 +114,8 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             @if (budgets().length) { @for (budget of budgets().slice(0, 3);
             track budget.id) {
             <p>
-              {{ budget.name }}: \${{ budget.spent }} / \${{ budget.limit }}
+              {{ budget.name }}: {{ formatCurrency(budget.spent) }} /
+              {{ formatCurrency(budget.limit) }}
             </p>
             } } @else {
             <p>No budgets yet for this workspace.</p>
@@ -127,7 +141,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             <h3>Tracked Assets</h3>
             @if (assets().length) { @for (asset of assets().slice(0, 4); track
             asset.id) {
-            <p>{{ asset.name }}: \${{ asset.totalValue }}</p>
+            <p>{{ asset.name }}: {{ formatCurrency(asset.totalValue) }}</p>
             } } @else {
             <p>No off-ledger assets tracked yet.</p>
             }
@@ -154,9 +168,9 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
           <tbody>
             @for (transaction of recentTransactions(); track transaction.id) {
             <tr>
-              <td>{{ transaction.transactionDate | date : 'shortDate' }}</td>
+              <td>{{ transaction.transactionDate | date : 'mediumDate' }}</td>
               <td>{{ transaction.type }}</td>
-              <td>\${{ transaction.amount }}</td>
+              <td>{{ formatCurrency(transaction.amount) }}</td>
               <td>{{ transaction.category }}</td>
             </tr>
             }
@@ -405,5 +419,14 @@ export class DashboardComponent implements OnInit {
     return this.workspace() === 'net-worth'
       ? 'Assets and liability coverage'
       : 'Budgets and recurring obligations';
+  }
+
+  formatCurrency(value: number | null | undefined): string {
+    const amount =
+      typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
   }
 }

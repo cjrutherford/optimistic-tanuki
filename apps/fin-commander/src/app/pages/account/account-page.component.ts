@@ -46,18 +46,27 @@ import { TenantContextService } from '../../tenant-context.service';
           @if (summary()) {
           <div class="metric-pair">
             <span>Total balance</span>
-            <strong>\${{ summary()?.metrics?.totalBalance ?? 0 }}</strong>
+            <strong>{{
+              formatCurrency(summary()?.metrics?.totalBalance)
+            }}</strong>
           </div>
           <div class="metric-pair">
             <span>Net worth</span>
-            <strong>\${{ summary()?.metrics?.netWorth ?? 0 }}</strong>
+            <strong>{{ formatCurrency(summary()?.metrics?.netWorth) }}</strong>
           </div>
           <div class="metric-pair">
             <span>Budgets at risk</span>
             <strong>{{ summary()?.metrics?.budgetsAtRiskCount ?? 0 }}</strong>
           </div>
+          } @else if (loadError()) {
+          <p role="alert" class="error-copy">
+            {{ loadError() }}
+            <button type="button" class="retry-btn" (click)="reloadSummary()">
+              Try again
+            </button>
+          </p>
           } @else {
-          <p>Loading account health…</p>
+          <p aria-live="polite">Loading account health…</p>
           }
         </article>
 
@@ -158,6 +167,22 @@ import { TenantContextService } from '../../tenant-context.service';
         text-decoration: none;
         font-weight: 600;
       }
+      .error-copy {
+        color: var(--danger, #b91c1c);
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .retry-btn {
+        align-self: flex-start;
+        background: transparent;
+        color: var(--primary);
+        border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+        border-radius: var(--fc-button-radius, 9999px);
+        padding: 0.35rem 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
       @media (max-width: 800px) {
         .hero {
           grid-template-columns: 1fr;
@@ -170,6 +195,12 @@ export class AccountPageComponent implements OnInit {
   readonly tenantContext = inject(TenantContextService);
   private readonly financeService = inject(FinanceService);
   readonly summary = signal<FinanceWorkspaceSummary | null>(null);
+  readonly loadError = signal<string>('');
+  private readonly currencyFormatter = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
   readonly tenantName = computed(
     () => this.tenantContext.activeTenant()?.name ?? 'Active account'
   );
@@ -178,12 +209,24 @@ export class AccountPageComponent implements OnInit {
   );
 
   async ngOnInit() {
+    await this.reloadSummary();
+  }
+
+  formatCurrency(value: number | undefined | null): string {
+    return this.currencyFormatter.format(value ?? 0);
+  }
+
+  async reloadSummary(): Promise<void> {
+    this.loadError.set('');
     try {
       this.summary.set(
         await this.financeService.getWorkspaceSummary('personal')
       );
     } catch {
       this.summary.set(null);
+      this.loadError.set(
+        "We couldn't load finance health for this account. Check your connection and try again."
+      );
     }
   }
 }

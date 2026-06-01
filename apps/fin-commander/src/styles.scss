@@ -14,6 +14,12 @@ html {
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: color-mix(
+    in srgb,
+    var(--primary) 18%,
+    transparent
+  );
   font-family: var(
     --font-body,
     var(--personality-font-family, 'Manrope', sans-serif)
@@ -36,6 +42,60 @@ body {
         100%
     );
   transition: background 0.4s ease, color 0.3s ease;
+}
+
+a,
+button,
+input,
+select,
+textarea,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role='button']:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 82%, white 18%);
+  outline-offset: 3px;
+  box-shadow: var(--fc-focus-ring);
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0.5rem;
+  z-index: 1000;
+  padding: 0.6rem 1rem;
+  background: var(--primary);
+  color: var(--background);
+  border-radius: var(--fc-button-radius, 9999px);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top var(--fc-transition-fast, 150ms ease);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 body.dark {
@@ -62,7 +122,16 @@ a {
   --fc-card-shadow-hover: 0 28px 56px rgba(4, 16, 28, 0.32);
   --fc-button-radius: 9999px;
   --fc-input-radius: 14px;
-  --fc-transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  --fc-transition-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --fc-transition-duration: 220ms;
+  --fc-transition-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --fc-transition: background-color var(--fc-transition-duration)
+      var(--fc-transition-ease),
+    border-color var(--fc-transition-duration) var(--fc-transition-ease),
+    color var(--fc-transition-duration) var(--fc-transition-ease),
+    box-shadow var(--fc-transition-duration) var(--fc-transition-ease),
+    transform var(--fc-transition-duration) var(--fc-transition-ease);
+  --fc-focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
   --fc-border-width: 2px;
   --fc-font-heading: 'Sora', 'Avenir Next', sans-serif;
   --fc-font-body: 'Manrope', 'Segoe UI', sans-serif;

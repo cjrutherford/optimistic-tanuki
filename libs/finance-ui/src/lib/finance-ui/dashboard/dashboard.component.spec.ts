@@ -84,4 +84,17 @@ describe('DashboardComponent', () => {
     expect(sourceText).not.toContain('background: #22492d;');
     expect(sourceText).not.toContain('color: #55715a;');
   });
+
+  it('formats currency through Intl.NumberFormat', () => {
+    expect(fixture.componentInstance.formatCurrency(1234)).toBe('$1,234.00');
+    expect(fixture.componentInstance.formatCurrency(null)).toBe('$0.00');
+    expect(fixture.componentInstance.formatCurrency(undefined)).toBe('$0.00');
+  });
+
+  it('renders an empty-state message when the work queue has no items', () => {
+    const text =
+      fixture.nativeElement.querySelector('.work-queue-empty')?.textContent ??
+      '';
+    expect(text).toContain('Work queue is clear');
+  });
 });

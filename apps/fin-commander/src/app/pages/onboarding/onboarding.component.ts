@@ -128,6 +128,19 @@ type SetupStep =
             starter ledger and add any real accounts you want to track first.
           </p>
 
+          <aside class="step-guidance" role="status" aria-live="polite">
+            <strong>What's next?</strong>
+            <span>
+              Use “Open accounts” to add at least one real account, then return
+              here and pick “Continue onboarding”. If you've already added
+              accounts, just continue.
+            </span>
+          </aside>
+
+          @if (progressError()) {
+          <p class="error-copy" role="alert">{{ progressError() }}</p>
+          }
+
           <div class="button-stack">
             <button
               type="button"
@@ -154,6 +167,19 @@ type SetupStep =
             coaching can work reliably.
           </p>
 
+          <aside class="step-guidance" role="status" aria-live="polite">
+            <strong>Blocked here?</strong>
+            <span>
+              We can't auto-advance until at least one transaction has a
+              category. Open transactions, set a category on any row, then
+              return and pick “Check progress”.
+            </span>
+          </aside>
+
+          @if (progressError()) {
+          <p class="error-copy" role="alert">{{ progressError() }}</p>
+          }
+
           <div class="button-stack">
             <button
               type="button"
@@ -179,6 +205,19 @@ type SetupStep =
             Add a budget for your main spending category so Fin Commander can
             show budget pressure and tradeoffs.
           </p>
+
+          <aside class="step-guidance" role="status" aria-live="polite">
+            <strong>Blocked here?</strong>
+            <span>
+              We need a saved budget before this step completes. Use “Open
+              budgets”, create one for any category, then come back and pick
+              “Check progress”.
+            </span>
+          </aside>
+
+          @if (progressError()) {
+          <p class="error-copy" role="alert">{{ progressError() }}</p>
+          }
 
           <div class="button-stack">
             <button
@@ -209,6 +248,13 @@ type SetupStep =
           <div class="button-stack">
             <button type="button" class="primary-btn" (click)="openLedger()">
               Open ledger
+            </button>
+            <button
+              type="button"
+              class="secondary-btn"
+              (click)="openWorkspaceSelection()"
+            >
+              Add workspaces
             </button>
             <button
               type="button"
@@ -471,7 +517,9 @@ export class OnboardingComponent implements OnInit {
   readonly workspaces = signal<FinanceWorkspace[]>(['personal']);
   readonly accountError = signal('');
   readonly workspaceError = signal('');
+  readonly progressError = signal('');
   readonly createdTenantId = signal<string | null>(null);
+  readonly enabledWorkspaces = signal<FinanceWorkspace[]>([]);
   readonly primaryWorkspace = computed<FinanceWorkspace>(
     () => this.workspaces()[0] ?? 'personal'
   );
@@ -581,12 +629,18 @@ export class OnboardingComponent implements OnInit {
     this.creating.set(true);
 
     try {
-      await this.financeService.bootstrapWorkspaces(
-        this.workspaces().filter(
-          (workspace): workspace is 'personal' | 'business' =>
-            workspace === 'personal' || workspace === 'business'
-        )
+      const enabled = this.enabledWorkspaces();
+      const selectedWorkspaces = this.workspaces().filter(
+        (workspace): workspace is 'personal' | 'business' =>
+          workspace === 'personal' || workspace === 'business'
       );
+      const newWorkspaces = selectedWorkspaces.filter(
+        (workspace) => !enabled.includes(workspace)
+      );
+
+      if (newWorkspaces.length > 0) {
+        await this.financeService.bootstrapWorkspaces(newWorkspaces);
+      }
       await this.tenantContext.loadTenantContext();
       const tenantId = this.createdTenantId();
       if (tenantId) {
@@ -600,6 +654,15 @@ export class OnboardingComponent implements OnInit {
     } finally {
       this.creating.set(false);
     }
+  }
+
+  openWorkspaceSelection(): void {
+    const available = this.enabledWorkspaces().filter(
+      (workspace): workspace is 'personal' | 'business' =>
+        workspace === 'personal' || workspace === 'business'
+    );
+    this.workspaces.set(available.length ? available : ['personal']);
+    this.currentStep.set('workspace');
   }
 
   async finishFinanceAccountSetup(): Promise<void> {
@@ -631,8 +694,38 @@ export class OnboardingComponent implements OnInit {
   }
 
   async refreshSetupProgress(preferredStep?: SetupStep): Promise<void> {
-    const state = await this.financeService.getOnboardingState();
+    this.progressError.set('');
+    if (!this.tenantContext.activeTenant()?.id && !this.createdTenantId()) {
+      this.progressError.set(
+        'We need an account before we can check setup progress. Finish step 1 first.'
+      );
+      this.currentStep.set('account');
+      return;
+    }
+
+    let state;
+    try {
+      state = await this.financeService.getOnboardingState();
+    } catch {
+      this.progressError.set(
+        "We couldn't reach the finance service to check progress. Check your connection and try again."
+      );
+      return;
+    }
+
+    this.enabledWorkspaces.set(state.availableWorkspaces);
+    const selectableWorkspaces = state.availableWorkspaces.filter(
+      (workspace): workspace is 'personal' | 'business' =>
+        workspace === 'personal' || workspace === 'business'
+    );
+    if (selectableWorkspaces.length > 0) {
+      this.workspaces.set(selectableWorkspaces);
+    }
+
     if (state.requiresOnboarding || state.availableWorkspaces.length === 0) {
+      this.progressError.set(
+        'No workspaces are enabled yet. Pick at least one workspace to keep going.'
+      );
       this.currentStep.set('workspace');
       return;
     }
@@ -650,11 +743,21 @@ export class OnboardingComponent implements OnInit {
     }
 
     if (!categorizeTransactionsComplete) {
+      if (this.currentStep() === 'categorize-transactions') {
+        this.progressError.set(
+          "We don't see any categorized transactions yet. Categorize at least one transaction, then check progress again."
+        );
+      }
       this.currentStep.set('categorize-transactions');
       return;
     }
 
     if (!createBudgetComplete) {
+      if (this.currentStep() === 'create-budget') {
+        this.progressError.set(
+          "We don't see a saved budget yet. Create one for any category, then check progress again."
+        );
+      }
       this.currentStep.set('create-budget');
       return;
     }
