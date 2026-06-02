@@ -34,6 +34,20 @@ describe('financeRoutes host seams', () => {
     expect(routes[1].children?.[0].redirectTo).toBe('business');
   });
 
+  it('mounts business financial utility pages inside the finance shell', () => {
+    const shellChildren = financeRoutes[1].children ?? [];
+    const paths = shellChildren.map((route) => route.path);
+
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        ':workspace/invoices',
+        ':workspace/invoices/new',
+        ':workspace/checkout',
+        ':workspace/payments',
+      ])
+    );
+  });
+
   it('redirects through the host when host readiness requirements fail', async () => {
     const hostConfig: FinanceHostConfig = {
       routeBase: '/workspace',

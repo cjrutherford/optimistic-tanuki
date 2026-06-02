@@ -6,6 +6,10 @@ import { Budget } from '../entities/budget.entity';
 import { RecurringItem } from '../entities/recurring-item.entity';
 import { FinanceTenant } from '../entities/finance-tenant.entity';
 import { FinanceTenantMember } from '../entities/finance-tenant-member.entity';
+import { BankConnection } from '../entities/bank-connection.entity';
+import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
+import { FinancialInvoice } from '../entities/financial-invoice.entity';
+import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
 
 const config = {
   type: 'postgres' as const,
@@ -22,6 +26,10 @@ const config = {
     RecurringItem,
     FinanceTenant,
     FinanceTenantMember,
+    BankConnection,
+    LinkedBankAccount,
+    FinancialInvoice,
+    FinancialCheckoutSession,
   ],
   migrations: ['migrations/*.ts'],
   synchronize: false,

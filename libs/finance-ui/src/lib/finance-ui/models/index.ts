@@ -176,6 +176,94 @@ export interface UpdateTransaction {
   reviewStatus?: BankTransactionReviewStatus;
 }
 
+export type FinancialInvoiceStatus =
+  | 'draft'
+  | 'sent'
+  | 'partially_paid'
+  | 'paid'
+  | 'void'
+  | 'overdue';
+
+export interface FinancialInvoiceLine {
+  description: string;
+  quantity: number;
+  unitAmount: number;
+}
+
+export interface FinancialInvoice {
+  id: string;
+  invoiceNumber: string;
+  customerName: string;
+  customerEmail?: string;
+  status: FinancialInvoiceStatus;
+  currency: string;
+  subtotal: number;
+  total: number;
+  amountPaid: number;
+  workspace: FinanceWorkspace;
+  dueDate?: Date;
+  notes?: string;
+  lines: FinancialInvoiceLine[];
+}
+
+export interface CreateFinancialInvoice {
+  customerName: string;
+  customerEmail?: string;
+  currency?: string;
+  workspace?: FinanceWorkspace;
+  dueDate?: Date;
+  notes?: string;
+  lines: FinancialInvoiceLine[];
+}
+
+export interface UpdateFinancialInvoice {
+  customerName?: string;
+  customerEmail?: string;
+  currency?: string;
+  dueDate?: Date;
+  notes?: string;
+  lines?: FinancialInvoiceLine[];
+}
+
+export interface RecordFinancialInvoicePayment {
+  amount: number;
+  accountId: string;
+  paidAt?: Date;
+  method?: string;
+}
+
+export type FinancialCheckoutSessionStatus =
+  | 'pending_provider'
+  | 'open'
+  | 'paid'
+  | 'expired'
+  | 'cancelled';
+
+export interface FinancialCheckoutSession {
+  id: string;
+  invoiceId?: string;
+  amount: number;
+  currency: string;
+  customerName: string;
+  customerEmail?: string;
+  description?: string;
+  status: FinancialCheckoutSessionStatus;
+  providerCheckoutUrl?: string;
+  workspace: FinanceWorkspace;
+}
+
+export interface CreateFinancialCheckoutSession {
+  invoiceId?: string;
+  amount: number;
+  currency?: string;
+  customerName: string;
+  customerEmail?: string;
+  description?: string;
+  workspace?: FinanceWorkspace;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;

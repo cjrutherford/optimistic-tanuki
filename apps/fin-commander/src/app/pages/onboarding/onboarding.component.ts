@@ -572,6 +572,14 @@ export class OnboardingComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
+    if (!this.tenantContext.activeTenant()?.type) {
+      try {
+        await this.tenantContext.loadTenantContext();
+      } catch {
+        // Keep the user on account setup when tenant context cannot hydrate.
+      }
+    }
+
     if (this.tenantContext.activeTenant()?.type) {
       await this.refreshSetupProgress();
     }

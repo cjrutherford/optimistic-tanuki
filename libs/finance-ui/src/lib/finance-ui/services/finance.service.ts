@@ -25,6 +25,12 @@ import {
   UpdateRecurringItem,
   FinanceTenant,
   FinanceTenantMember,
+  FinancialCheckoutSession,
+  FinancialInvoice,
+  CreateFinancialCheckoutSession,
+  CreateFinancialInvoice,
+  RecordFinancialInvoicePayment,
+  UpdateFinancialInvoice,
 } from '../models';
 import { firstValueFrom } from 'rxjs';
 
@@ -452,5 +458,81 @@ export class FinanceService {
           .filter((category): category is string => !!category)
       )
     ).sort((left, right) => left.localeCompare(right));
+  }
+
+  async getInvoices(workspace?: FinanceWorkspace): Promise<FinancialInvoice[]> {
+    return firstValueFrom(
+      this.http.get<FinancialInvoice[]>(
+        `${this.baseUrl}/invoices${this.workspaceQuery(workspace)}`
+      )
+    );
+  }
+
+  async getInvoice(id: string): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.get<FinancialInvoice>(`${this.baseUrl}/invoice/${id}`)
+    );
+  }
+
+  async createInvoice(
+    invoice: CreateFinancialInvoice
+  ): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.post<FinancialInvoice>(`${this.baseUrl}/invoices`, invoice)
+    );
+  }
+
+  async updateInvoice(
+    id: string,
+    invoice: UpdateFinancialInvoice
+  ): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.put<FinancialInvoice>(`${this.baseUrl}/invoice/${id}`, invoice)
+    );
+  }
+
+  async sendInvoice(id: string): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.post<FinancialInvoice>(`${this.baseUrl}/invoice/${id}/send`, {})
+    );
+  }
+
+  async voidInvoice(id: string): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.post<FinancialInvoice>(`${this.baseUrl}/invoice/${id}/void`, {})
+    );
+  }
+
+  async recordInvoicePayment(
+    id: string,
+    payment: RecordFinancialInvoicePayment
+  ): Promise<FinancialInvoice> {
+    return firstValueFrom(
+      this.http.post<FinancialInvoice>(
+        `${this.baseUrl}/invoice/${id}/pay`,
+        payment
+      )
+    );
+  }
+
+  async createCheckoutSession(
+    session: CreateFinancialCheckoutSession
+  ): Promise<FinancialCheckoutSession> {
+    return firstValueFrom(
+      this.http.post<FinancialCheckoutSession>(
+        `${this.baseUrl}/checkout-sessions`,
+        session
+      )
+    );
+  }
+
+  async getCheckoutSessions(
+    workspace?: FinanceWorkspace
+  ): Promise<FinancialCheckoutSession[]> {
+    return firstValueFrom(
+      this.http.get<FinancialCheckoutSession[]>(
+        `${this.baseUrl}/checkout-sessions${this.workspaceQuery(workspace)}`
+      )
+    );
   }
 }

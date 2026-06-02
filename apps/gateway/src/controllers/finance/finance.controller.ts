@@ -26,6 +26,7 @@ import {
   FinanceSummaryCommands,
   FinanceTenantCommands,
   FinanceBankingCommands,
+  FinancialUtilitiesCommands,
 } from '@optimistic-tanuki/constants';
 import {
   AccountDto,
@@ -56,6 +57,12 @@ import {
   RecurringItemDto,
   UpdateBudgetDto,
   UpdateRecurringItemDto,
+  CreateFinancialCheckoutSessionDto,
+  CreateFinancialInvoiceDto,
+  FinancialCheckoutSessionDto,
+  FinancialInvoiceDto,
+  RecordFinancialInvoicePaymentDto,
+  UpdateFinancialInvoiceDto,
 } from '@optimistic-tanuki/models';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -1063,6 +1070,200 @@ export class FinanceController {
         { id, ...this.getScope(user, appScope, tenantId) }
       ),
       { defaultValue: undefined }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Create a business invoice' })
+  @Post('invoices')
+  @RequirePermissions('finance.invoice.create')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async createInvoice(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() invoiceDto: CreateFinancialInvoiceDto
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.CREATE_INVOICE },
+      {
+        ...invoiceDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'List business invoices' })
+  @Get('invoices')
+  @RequirePermissions('finance.invoice.read')
+  async listInvoices(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Query('workspace') workspace?: FinanceWorkspace
+  ): Promise<FinancialInvoiceDto[]> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.LIST_INVOICES },
+      this.withWorkspaceScope(user, appScope, tenantId, workspace)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Get a business invoice' })
+  @Get('invoice/:id')
+  @RequirePermissions('finance.invoice.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getInvoice(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.GET_INVOICE },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Update a business invoice' })
+  @Put('invoice/:id')
+  @RequirePermissions('finance.invoice.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async updateInvoice(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() invoiceDto: UpdateFinancialInvoiceDto
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.UPDATE_INVOICE },
+      {
+        id,
+        data: invoiceDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Send a business invoice' })
+  @Post('invoice/:id/send')
+  @RequirePermissions('finance.invoice.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async sendInvoice(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.SEND_INVOICE },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Void a business invoice' })
+  @Post('invoice/:id/void')
+  @RequirePermissions('finance.invoice.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async voidInvoice(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.VOID_INVOICE },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial invoice')
+  @ApiOperation({ summary: 'Record an invoice payment' })
+  @Post('invoice/:id/pay')
+  @RequirePermissions('finance.invoice.pay')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async recordInvoicePayment(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() paymentDto: RecordFinancialInvoicePaymentDto
+  ): Promise<FinancialInvoiceDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.RECORD_INVOICE_PAYMENT },
+      {
+        id,
+        data: paymentDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial checkout')
+  @ApiOperation({ summary: 'Create a checkout or deposit session' })
+  @Post('checkout-sessions')
+  @RequirePermissions('finance.checkout.create')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async createCheckoutSession(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() checkoutDto: CreateFinancialCheckoutSessionDto
+  ): Promise<FinancialCheckoutSessionDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.CREATE_CHECKOUT_SESSION },
+      {
+        ...checkoutDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial checkout')
+  @ApiOperation({ summary: 'List checkout and deposit sessions' })
+  @Get('checkout-sessions')
+  @RequirePermissions('finance.checkout.read')
+  async listCheckoutSessions(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Query('workspace') workspace?: FinanceWorkspace
+  ): Promise<FinancialCheckoutSessionDto[]> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.LIST_CHECKOUT_SESSIONS },
+      this.withWorkspaceScope(user, appScope, tenantId, workspace)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('financial checkout')
+  @ApiOperation({ summary: 'Get a checkout or deposit session' })
+  @Get('checkout-session/:id')
+  @RequirePermissions('finance.checkout.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getCheckoutSession(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinancialCheckoutSessionDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinancialUtilitiesCommands.GET_CHECKOUT_SESSION },
+      { id, ...this.getScope(user, appScope, tenantId) }
     );
   }
 

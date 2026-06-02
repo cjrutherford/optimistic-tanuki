@@ -68,7 +68,23 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
                 [routerLink]="['/finance', workspace.id, 'recurring']"
                 >Recurring</a
               >
-              }
+              @if (workspace.id === 'business') {
+              <a
+                class="link-pill utility"
+                [routerLink]="['/finance', 'business', 'invoices']"
+                >Invoices</a
+              >
+              <a
+                class="link-pill utility"
+                [routerLink]="['/finance', 'business', 'checkout']"
+                >Checkout</a
+              >
+              <a
+                class="link-pill utility"
+                [routerLink]="['/finance', 'business', 'payments']"
+                >Payments</a
+              >
+              } }
             </div>
           </nav>
         </article>
@@ -338,6 +354,29 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
           border-color: var(--primary);
           color: var(--primary);
           transform: translateY(-1px);
+        }
+
+        &.utility {
+          background: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 12%,
+            var(--surface)
+          );
+          border-color: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 38%,
+            transparent
+          );
+        }
+
+        &.utility:hover {
+          background: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 18%,
+            var(--surface)
+          );
+          color: var(--secondary, var(--primary));
+          border-color: var(--secondary, var(--primary));
         }
       }
 

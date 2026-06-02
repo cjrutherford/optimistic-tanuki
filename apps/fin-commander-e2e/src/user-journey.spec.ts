@@ -209,9 +209,30 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
       if (text === 'ERROR HttpErrorResponse ["ERROR","<unserializable>"]') {
         return;
       }
+      if (
+        text ===
+        'ERROR HttpErrorResponse ["<unserializable>","<unserializable>"]'
+      ) {
+        return;
+      }
       const location = message.location();
       if (location.url) {
         text = `${text} @ ${location.url}:${location.lineNumber}:${location.columnNumber}`;
+      }
+      if (text.startsWith('ERROR HttpErrorResponse')) {
+        try {
+          const latestStack = await page.evaluate(() => {
+            const debugWindow = window as Window & {
+              __otConsoleErrors?: Array<{ stack?: string }>;
+            };
+            return debugWindow.__otConsoleErrors?.at(-1)?.stack ?? null;
+          });
+          if (latestStack) {
+            text = `${text}\n${latestStack}`;
+          }
+        } catch {
+          // Keep the console text if the page has already navigated.
+        }
       }
       diagnostics.consoleErrors.push(text);
     }
@@ -721,6 +742,74 @@ async function createUpdateDeleteBudget(
   ).toHaveCount(0);
 }
 
+async function createCategorizedTransaction(
+  page: Page,
+  workspace: 'personal' | 'business',
+  categoryPrefix: string
+) {
+  await page.goto(`/finance/${workspace}/transactions`, {
+    waitUntil: 'networkidle',
+  });
+
+  const category = `${categoryPrefix}-${Date.now()}`;
+  await expectResponseOk(
+    page,
+    (response) =>
+      response.url().includes('/api/finance/transaction') &&
+      response.request().method() === 'POST',
+    async () => {
+      const accountId = await page
+        .locator('[name="accountId"] option')
+        .first()
+        .getAttribute('value');
+      expect(accountId).toBeTruthy();
+      await page
+        .locator('[name="accountId"]')
+        .selectOption(accountId as string);
+      await page.locator('[name="amount"]').fill('45');
+      await page.locator('[name="type"]').selectOption('debit');
+      await page.locator('[name="category"]').fill(category);
+      await page.locator('[name="payeeOrVendor"]').fill('Setup Vendor');
+      await page.locator('[name="transactionDate"]').fill('2026-04-15');
+      await page.getByRole('button', { name: 'Create transaction' }).click();
+    }
+  );
+
+  await expect(
+    page.locator(`tr:has-text("${category}")`).first()
+  ).toBeVisible();
+  return category;
+}
+
+async function createBudget(
+  page: Page,
+  workspace: 'personal' | 'business',
+  namePrefix = 'Setup Budget'
+) {
+  await page.goto(`/finance/${workspace}/budgets`, {
+    waitUntil: 'networkidle',
+  });
+
+  const budgetName = `${namePrefix} ${Date.now()}`;
+  await expectResponseOk(
+    page,
+    (response) =>
+      response.url().includes('/api/finance/budget') &&
+      response.request().method() === 'POST',
+    async () => {
+      await page.locator('[name="name"]').fill(budgetName);
+      await page.locator('[name="category"]').fill('Operations');
+      await page.locator('[name="limit"]').fill('500');
+      await page.getByRole('button', { name: 'Create budget' }).click();
+    }
+  );
+
+  await expect(
+    page.locator(`article:has-text("${budgetName}")`).first()
+  ).toBeVisible();
+  return budgetName;
+}
+
 async function createUpdateDeleteRecurring(
   page: Page,
   workspace: 'personal' | 'business'
@@ -951,6 +1040,9 @@ test.describe('Fin Commander user journey', () => {
       accountName: 'Workspace Expansion',
       includeBusinessWorkspace: false,
     });
+    await createAndUpdateAccount(page, 'personal', 'Expansion Checking');
+    await createCategorizedTransaction(page, 'personal', 'expansion-category');
+    await createBudget(page, 'personal', 'Expansion Budget');
 
     await page.goto('/onboarding', { waitUntil: 'networkidle' });
     await expect(
@@ -1087,6 +1179,11 @@ test.describe('Fin Commander user journey', () => {
       .locator(`article:has-text("${goalName}")`)
       .getByRole('button', { name: 'Remove' })
       .click();
+    await expect(page.getByText('Delete this goal?')).toBeVisible();
+    await page
+      .locator(`article:has-text("${goalName}")`)
+      .getByRole('button', { name: 'Confirm remove' })
+      .click();
     await expect(page.locator(`article:has-text("${goalName}")`)).toHaveCount(
       0
     );
@@ -1109,6 +1206,11 @@ test.describe('Fin Commander user journey', () => {
       .locator(`article:has-text("${scenarioName}")`)
       .getByRole('button', { name: 'Remove' })
       .click();
+    await expect(page.getByText('Delete this scenario?')).toBeVisible();
+    await page
+      .locator(`article:has-text("${scenarioName}")`)
+      .getByRole('button', { name: 'Confirm remove' })
+      .click();
     await expect(
       page.locator(`article:has-text("${scenarioName}")`)
     ).toHaveCount(0);
@@ -1123,10 +1225,16 @@ test.describe('Fin Commander user journey', () => {
       })
     ).toBeVisible();
     await page.getByLabel('Workspace').selectOption('business');
-    await page.waitForTimeout(500);
+    await expect(page.getByLabel('Account').locator('option')).not.toHaveCount(
+      0
+    );
     await page.getByRole('button', { name: 'Preview import' }).click();
+    await expect(page.getByText('Preview ready: 1 transaction.')).toBeVisible();
+    await page.getByRole('button', { name: 'Commit preview' }).click();
     await expect(
-      page.getByText('Preview ready. Review the rows before commit.')
+      page.getByText(
+        'About to write 1 transactions to the selected account. This cannot be undone from here.'
+      )
     ).toBeVisible();
     await expectResponseOk(
       page,
@@ -1134,7 +1242,7 @@ test.describe('Fin Commander user journey', () => {
         response.url().includes('/api/finance/transaction') &&
         response.request().method() === 'POST',
       async () => {
-        await page.getByRole('button', { name: 'Commit preview' }).click();
+        await page.getByRole('button', { name: 'Confirm commit (1)' }).click();
       }
     );
     await expect(

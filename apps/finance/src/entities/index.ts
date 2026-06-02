@@ -7,3 +7,5 @@ export { FinanceTenant } from './finance-tenant.entity';
 export { FinanceTenantMember } from './finance-tenant-member.entity';
 export { BankConnection } from './bank-connection.entity';
 export { LinkedBankAccount } from './linked-bank-account.entity';
+export { FinancialInvoice } from './financial-invoice.entity';
+export { FinancialCheckoutSession } from './financial-checkout-session.entity';

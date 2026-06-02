@@ -69,7 +69,23 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
           routerLinkActive="active"
           >Transactions</a
         >
-        @if (currentWorkspace() !== 'net-worth') {
+        @if (currentWorkspace() === 'business') {
+        <a
+          [routerLink]="workspaceSectionLink('business', 'invoices')"
+          routerLinkActive="active"
+          >Invoices</a
+        >
+        <a
+          [routerLink]="workspaceSectionLink('business', 'checkout')"
+          routerLinkActive="active"
+          >Checkout</a
+        >
+        <a
+          [routerLink]="workspaceSectionLink('business', 'payments')"
+          routerLinkActive="active"
+          >Payments</a
+        >
+        } @if (currentWorkspace() !== 'net-worth') {
         <a
           [routerLink]="workspaceSectionLink(currentWorkspace(), 'budgets')"
           routerLinkActive="active"
@@ -244,9 +260,18 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
   }
 
   syncWorkspace() {
-    const segment = this.router.url.split('/')[2] as
-      | FinanceWorkspace
-      | undefined;
+    const urlSegments = this.router.url
+      .split('?')[0]
+      .split('/')
+      .filter(Boolean);
+    const routeBaseSegments = this.routeBaseSegments();
+    const workspaceIndex = routeBaseSegments.every(
+      (segment, index) => urlSegments[index] === segment
+    )
+      ? routeBaseSegments.length
+      : 1;
+    const segment = urlSegments[workspaceIndex] as FinanceWorkspace | undefined;
+
     if (
       segment === 'personal' ||
       segment === 'business' ||

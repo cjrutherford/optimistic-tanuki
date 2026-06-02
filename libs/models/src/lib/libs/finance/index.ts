@@ -20,3 +20,5 @@ export * from './update-budget.dto';
 export * from './finance-tenant.dto';
 export * from './bank-connection.dto';
 export * from './linked-bank-account.dto';
+export * from './financial-invoice.dto';
+export * from './financial-checkout-session.dto';

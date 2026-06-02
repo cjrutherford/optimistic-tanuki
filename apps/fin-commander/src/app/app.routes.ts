@@ -111,6 +111,8 @@ export const appRoutes: Route[] = [
   {
     path: FINANCE_ROUTE_PATH,
     canActivate: [AuthGuard, ProfileGuard],
+    // Other branded hosts can mount createFinanceRoutes(...) the same way;
+    // see docs/finance-utilities-integration.md for business-site guidance.
     children: financeRoutes,
   },
   {

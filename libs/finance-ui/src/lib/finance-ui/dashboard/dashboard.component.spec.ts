@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DashboardComponent } from './dashboard.component';
 import { FinanceService } from '../services/finance.service';
+import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 describe('DashboardComponent', () => {
   let fixture: ComponentFixture<DashboardComponent>;
@@ -52,6 +53,14 @@ describe('DashboardComponent', () => {
             },
           },
         },
+        {
+          provide: FINANCE_HOST_CONFIG,
+          useValue: {
+            routeBase: '/owner/finance',
+            shellTitle: 'Owner Finance',
+            defaultWorkspace: 'business',
+          },
+        },
       ],
     }).compileComponents();
 
@@ -68,6 +77,12 @@ describe('DashboardComponent', () => {
     const labels = links.map((link) => link.textContent?.trim());
 
     expect(labels).toEqual(['Accounts', 'Transactions']);
+  });
+
+  it('builds child links from the configured host route base', () => {
+    expect(
+      fixture.componentInstance.workspaceSectionLink('business', 'invoices')
+    ).toEqual(['/', 'owner', 'finance', 'business', 'invoices']);
   });
 
   it('uses shared theme variables instead of hardcoded finance branding tokens', () => {

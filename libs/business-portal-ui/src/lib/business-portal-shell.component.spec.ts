@@ -72,6 +72,21 @@ describe('BusinessPortalShellComponent', () => {
     ]);
   });
 
+  it('shows owner finance links when invoices are enabled', () => {
+    const component = createComponent('/owner/dashboard', true, true);
+
+    expect(component.links()).toEqual([
+      { path: '/owner/dashboard', label: 'Dashboard' },
+      { path: '/owner/requests', label: 'Requests' },
+      { path: '/owner/clients', label: 'Clients' },
+      { path: '/owner/availability', label: 'Availability' },
+      { path: '/owner/finance/business/invoices', label: 'Invoices' },
+      { path: '/owner/finance/business/checkout', label: 'Checkout' },
+      { path: '/owner/finance/business/payments', label: 'Payments' },
+      { path: '/owner/site', label: 'Site Editor' },
+    ]);
+  });
+
   it('omits the routines link for client routes when client tasks are disabled', () => {
     const component = createComponent('/client/dashboard', false);
 

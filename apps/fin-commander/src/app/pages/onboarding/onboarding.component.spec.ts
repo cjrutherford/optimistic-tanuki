@@ -111,6 +111,32 @@ describe('OnboardingComponent', () => {
     expect(fixture.componentInstance.workspaces()).toEqual(['personal']);
   });
 
+  it('hydrates tenant context before deciding the onboarding step', async () => {
+    tenantContext.activeTenant.mockReturnValueOnce(null).mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.getOnboardingState.mockResolvedValue({
+      requiresOnboarding: false,
+      availableWorkspaces: ['personal'],
+      checklist: [
+        { id: 'categorize-transactions', complete: true },
+        { id: 'create-budget', complete: true },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+
+    await fixture.componentInstance.ngOnInit();
+
+    expect(tenantContext.loadTenantContext).toHaveBeenCalled();
+    expect(financeService.getOnboardingState).toHaveBeenCalled();
+    expect(fixture.componentInstance.currentStep()).toBe('complete');
+  });
+
   it('only bootstraps newly selected workspaces when expanding setup', async () => {
     tenantContext.activeTenant.mockReturnValue({
       id: 'tenant-1',

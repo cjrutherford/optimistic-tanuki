@@ -200,6 +200,22 @@ export class BusinessPortalShellComponent {
           { path: '/owner/requests', label: 'Requests' },
           { path: '/owner/clients', label: 'Clients' },
           { path: '/owner/availability', label: 'Availability' },
+          ...(this.siteConfig.site().features.invoices.enabled
+            ? [
+                {
+                  path: '/owner/finance/business/invoices',
+                  label: 'Invoices',
+                },
+                {
+                  path: '/owner/finance/business/checkout',
+                  label: 'Checkout',
+                },
+                {
+                  path: '/owner/finance/business/payments',
+                  label: 'Payments',
+                },
+              ]
+            : []),
           { path: '/owner/site', label: 'Site Editor' },
         ]
   );

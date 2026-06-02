@@ -9,9 +9,12 @@ import { FinanceTenant } from '../entities/finance-tenant.entity';
 import { FinanceTenantMember } from '../entities/finance-tenant-member.entity';
 import { BankConnection } from '../entities/bank-connection.entity';
 import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
+import { FinancialInvoice } from '../entities/financial-invoice.entity';
+import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
 import * as path from 'path';
 import { AddFinanceTenantType1760613363000 } from '../migrations/add-finance-tenant-type.migration';
 import { BankConnections1771000000000 } from '../migrations/1771000000000-bank-connections';
+import { FinancialUtilities1771500000000 } from '../migrations/1771500000000-financial-utilities';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -25,6 +28,8 @@ const loadDatabase = (config: ConfigService) => {
     FinanceTenantMember,
     BankConnection,
     LinkedBankAccount,
+    FinancialInvoice,
+    FinancialCheckoutSession,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
@@ -37,6 +42,7 @@ const loadDatabase = (config: ConfigService) => {
     migrations: [
       AddFinanceTenantType1760613363000,
       BankConnections1771000000000,
+      FinancialUtilities1771500000000,
       path.resolve(__dirname, '../migrations/*.js'),
     ],
     migrationsRun: true,

@@ -14,6 +14,8 @@ import { FinanceTenant } from '../entities/finance-tenant.entity';
 import { FinanceTenantMember } from '../entities/finance-tenant-member.entity';
 import { BankConnection } from '../entities/bank-connection.entity';
 import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
+import { FinancialInvoice } from '../entities/financial-invoice.entity';
+import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
 import { DataSource } from 'typeorm';
 import { AccountService } from './services/account.service';
 import { TransactionService } from './services/transaction.service';
@@ -24,6 +26,7 @@ import { RecurringItemService } from './services/recurring-item.service';
 import { FinanceTenantService } from './services/finance-tenant.service';
 import { BankConnectionService } from './services/bank-connection.service';
 import { PlaidBankProviderService } from './services/plaid-bank-provider.service';
+import { FinancialUtilitiesService } from './services/financial-utilities.service';
 
 @Module({
   imports: [
@@ -47,6 +50,7 @@ import { PlaidBankProviderService } from './services/plaid-bank-provider.service
     FinanceTenantService,
     BankConnectionService,
     PlaidBankProviderService,
+    FinancialUtilitiesService,
     {
       provide: getRepositoryToken(Account),
       useFactory: (ds: DataSource) => ds.getRepository(Account),
@@ -90,6 +94,17 @@ import { PlaidBankProviderService } from './services/plaid-bank-provider.service
     {
       provide: getRepositoryToken(LinkedBankAccount),
       useFactory: (ds: DataSource) => ds.getRepository(LinkedBankAccount),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinancialInvoice),
+      useFactory: (ds: DataSource) => ds.getRepository(FinancialInvoice),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinancialCheckoutSession),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(FinancialCheckoutSession),
       inject: ['FINANCE_CONNECTION'],
     },
   ],

@@ -4,6 +4,7 @@ import { clientAuthGuard } from './client-auth.guard';
 import { clientPortalFeatureGuard } from './client-portal-feature.guard';
 import { clientTasksFeatureGuard } from './client-tasks-feature.guard';
 import { invoicesFeatureGuard } from './invoices-feature.guard';
+import { ownerFinanceFeatureGuard } from './owner-finance-feature.guard';
 
 describe('appRoutes', () => {
   it('exposes public, client, and owner route families', () => {
@@ -68,6 +69,29 @@ describe('appRoutes', () => {
         'requests',
         'clients',
         'availability',
+        'finance',
+      ])
+    );
+  });
+
+  it('mounts the shared finance utilities under the owner workspace', () => {
+    const ownerRoute = appRoutes.find((route) => route.path === 'owner');
+    const financeRoute = (ownerRoute?.children ?? []).find(
+      (route) => route.path === 'finance'
+    );
+
+    expect(financeRoute?.canActivate).toEqual([ownerFinanceFeatureGuard]);
+    expect((financeRoute?.children ?? [])[1]?.children?.[0]?.redirectTo).toBe(
+      'business'
+    );
+    expect(
+      (financeRoute?.children ?? [])[1]?.children?.map((route) => route.path)
+    ).toEqual(
+      expect.arrayContaining([
+        ':workspace/invoices',
+        ':workspace/invoices/new',
+        ':workspace/checkout',
+        ':workspace/payments',
       ])
     );
   });

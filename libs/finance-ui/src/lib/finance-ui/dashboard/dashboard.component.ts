@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FinanceService } from '../services/finance.service';
+import { FINANCE_HOST_CONFIG } from '../finance.routes';
 import {
   Budget,
   FinanceCoachCard,
@@ -27,8 +28,10 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
         </div>
 
         <div class="quick-actions">
-          <a [routerLink]="['/finance', workspace(), 'accounts']">Accounts</a>
-          <a [routerLink]="['/finance', workspace(), 'transactions']"
+          <a [routerLink]="workspaceSectionLink(workspace(), 'accounts')"
+            >Accounts</a
+          >
+          <a [routerLink]="workspaceSectionLink(workspace(), 'transactions')"
             >Transactions</a
           >
         </div>
@@ -120,7 +123,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             } } @else {
             <p>No budgets yet for this workspace.</p>
             }
-            <a [routerLink]="['/finance', workspace(), 'budgets']"
+            <a [routerLink]="workspaceSectionLink(workspace(), 'budgets')"
               >Open budgets</a
             >
           </article>
@@ -132,7 +135,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             } } @else {
             <p>No recurring items yet for this workspace.</p>
             }
-            <a [routerLink]="['/finance', workspace(), 'recurring']"
+            <a [routerLink]="workspaceSectionLink(workspace(), 'recurring')"
               >Open recurring</a
             >
           </article>
@@ -145,7 +148,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             } } @else {
             <p>No off-ledger assets tracked yet.</p>
             }
-            <a [routerLink]="['/finance', 'net-worth', 'assets']"
+            <a [routerLink]="workspaceSectionLink('net-worth', 'assets')"
               >Open assets</a
             >
           </article>
@@ -347,6 +350,7 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
 export class DashboardComponent implements OnInit {
   private readonly financeService = inject(FinanceService);
   private readonly route = inject(ActivatedRoute);
+  private readonly hostConfig = inject(FINANCE_HOST_CONFIG);
 
   summary = signal<FinanceWorkspaceSummary | null>(null);
   workQueue = signal<FinanceWorkQueue | null>(null);
@@ -428,5 +432,13 @@ export class DashboardComponent implements OnInit {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
+  }
+
+  workspaceSectionLink(workspace: FinanceWorkspace, section: string): string[] {
+    return ['/', ...this.routeBaseSegments(), workspace, section];
+  }
+
+  private routeBaseSegments(): string[] {
+    return this.hostConfig.routeBase.split('/').filter(Boolean);
   }
 }
