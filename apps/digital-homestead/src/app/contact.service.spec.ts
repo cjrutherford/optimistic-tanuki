@@ -5,8 +5,6 @@ import {
 } from '@angular/common/http/testing';
 
 import { ContactService } from './contact.service';
-import { of } from 'rxjs';
-
 describe('ContactService', () => {
   let service: ContactService;
   let httpMock: HttpTestingController;
@@ -50,6 +48,13 @@ describe('ContactService', () => {
 
     const req = httpMock.expectOne('/api/contact');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      ...data,
+      subject: '[Digital Homestead] General Inquiry',
+      appScope: 'digital-homestead',
+      sourcePage: '/#contact',
+      sourceLabel: 'Digital Homestead',
+    });
     req.flush(expectedResponse);
   });
 
@@ -75,6 +80,9 @@ describe('ContactService', () => {
 
     const req = httpMock.expectOne('/api/contact');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body.subject).toBe(
+      '[Digital Homestead] General Inquiry'
+    );
     req.flush(expectedResponse);
   });
 

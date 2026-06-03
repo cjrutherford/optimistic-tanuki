@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { EmailService } from '@optimistic-tanuki/email';
 import {
   Lead,
   LeadFlag,
@@ -44,8 +45,12 @@ describe('LeadsService', () => {
     profileId: 'test-profile',
     userId: 'test-user',
     appScope: 'test-scope',
+    contactSubject: 'General inquiry',
+    contactMessage: 'Need help with a scoped delivery project.',
+    contactSourceLabel: 'HAI',
     createdAt: new Date(),
     updatedAt: new Date(),
+    lastRespondedAt: null,
   };
 
   const mockFlag: LeadFlag = {
@@ -133,6 +138,9 @@ describe('LeadsService', () => {
       logFailure: jest.fn(),
       saveOnboardingProfile: jest.fn(),
     };
+    const mockEmailService = {
+      sendEmail: jest.fn().mockResolvedValue({ success: true }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -160,6 +168,10 @@ describe('LeadsService', () => {
         {
           provide: LeadQualificationService,
           useValue: mockLeadQualificationService,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
         },
       ],
     }).compile();

@@ -117,6 +117,16 @@ permissions:
     ttl: 300000 # Cache TTL in milliseconds (5 minutes)
     maxSize: 10000 # Maximum cache entries (for memory/file providers)
 
+contactLeads:
+  appScopes:
+    hai:
+      sourceLabel: HAI
+    christopherrutherford-net:
+      sourceLabel: Christopher Rutherford Net
+    digital-homestead:
+      sourceLabel: Digital Homestead
+    business-site:
+      sourceLabel: Business Site
 
     # File-based cache configuration (only used when provider is 'file')
     # cacheDir: /tmp/permissions-cache

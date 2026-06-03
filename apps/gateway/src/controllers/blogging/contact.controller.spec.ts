@@ -1,24 +1,34 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactController } from './contact.controller';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ContactCommands,
+  LeadCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { Logger } from '@nestjs/common';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
-
-import { ContactCommands } from '@optimistic-tanuki/constants';
+import { ConfigService } from '@nestjs/config';
 
 describe('ContactController', () => {
   let controller: ContactController;
   let contactService: any;
+  let leadService: any;
+  let profileService: any;
 
   beforeEach(async () => {
     contactService = {
       send: jest.fn(),
-      connect: jest.fn().mockResolvedValue(null),
-      close: jest.fn(),
+    };
+    leadService = {
+      send: jest.fn(),
+    };
+    profileService = {
+      send: jest.fn().mockReturnValue(of([{ id: 'global-profile' }])),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -29,10 +39,29 @@ describe('ContactController', () => {
           useValue: contactService,
         },
         {
+          provide: ServiceTokens.LEAD_SERVICE,
+          useValue: leadService,
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: profileService,
+        },
+        {
           provide: Logger,
           useValue: {
             log: jest.fn(),
             error: jest.fn(),
+            warn: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue({
+              appScopes: {
+                hai: { sourceLabel: 'HAI' },
+              },
+            }),
           },
         },
         Reflector,
@@ -70,12 +99,33 @@ describe('ContactController', () => {
   });
 
   it('should create a contact', async () => {
-    const dto: any = { name: 'Test' };
-    contactService.send.mockReturnValue(of({}));
+    const dto: any = {
+      name: 'Test',
+      email: 'test@example.com',
+      subject: 'General',
+      message: 'This is a valid lead message.',
+      appScope: 'hai',
+    };
+    leadService.send.mockReturnValue(of({ id: 'lead-1' }));
+
     await controller.createContact(dto);
-    expect(contactService.send).toHaveBeenCalledWith(
-      { cmd: ContactCommands.CREATE },
-      dto
+
+    expect(leadService.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        context: expect.objectContaining({
+          appScope: 'hai',
+          profileId: 'global-profile',
+        }),
+        dto: expect.objectContaining({
+          name: 'Test',
+          contactMessage: 'This is a valid lead message.',
+        }),
+      })
+    );
+    expect(profileService.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetAll },
+      { where: { appScope: 'global' } }
     );
   });
 

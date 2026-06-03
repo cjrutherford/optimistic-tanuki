@@ -4,6 +4,11 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import {
+  ConsoleEmailProvider,
+  EmailModule,
+  SmtpEmailProvider,
+} from '@optimistic-tanuki/email';
+import {
   Lead,
   LeadFlag,
   LeadOnboardingProfileRecord,
@@ -67,6 +72,32 @@ import loadConfig from '../config';
             LeadOnboardingProfileRecord,
           ],
         };
+      },
+    }),
+    EmailModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const smtpHost = config.get<string>('SMTP_HOST');
+        if (smtpHost) {
+          return {
+            providers: [
+              new SmtpEmailProvider({
+                host: smtpHost,
+                port: config.get<number>('SMTP_PORT') || 587,
+                secure: config.get<boolean>('SMTP_SECURE') || false,
+                auth: {
+                  user: config.get<string>('SMTP_USER') || '',
+                  pass: config.get<string>('SMTP_PASS') || '',
+                },
+                defaultFrom:
+                  config.get<string>('SMTP_FROM') ||
+                  'noreply@optimistic-tanuki.dev',
+              }),
+            ],
+          };
+        }
+
+        return { providers: [new ConsoleEmailProvider()] };
       },
     }),
   ],

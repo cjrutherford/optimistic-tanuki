@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { EmailService } from '@optimistic-tanuki/email';
 import {
   Lead,
   LeadFlag,
@@ -21,6 +22,7 @@ import {
   UpdateLeadTopicDto,
   LeadStats,
   LeadStatus,
+  SendLeadResponseDto,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models/leads-contracts';
 import { LeadQualificationService } from './lead-qualification.service';
@@ -40,12 +42,14 @@ export class LeadsService {
     private readonly leadTopicLinkRepository: Repository<LeadTopicLink>,
     @InjectRepository(LeadQualification)
     private readonly qualificationRepository: Repository<LeadQualification>,
-    private readonly leadQualificationService: LeadQualificationService
+    private readonly leadQualificationService: LeadQualificationService,
+    private readonly emailService: EmailService
   ) {}
 
   async findAll(filters?: {
     status?: string;
     source?: string;
+    appScope?: string;
     profileId: string;
   }): Promise<Array<Lead & { isFlagged: boolean }>> {
     const query = this.leadRepository.createQueryBuilder('lead');
@@ -59,6 +63,11 @@ export class LeadsService {
     }
     if (filters?.source) {
       query.andWhere('lead.source = :source', { source: filters.source });
+    }
+    if (filters?.appScope) {
+      query.andWhere('lead.appScope = :appScope', {
+        appScope: filters.appScope,
+      });
     }
 
     const leads = await query
@@ -121,6 +130,64 @@ export class LeadsService {
 
   async delete(id: string, profileId: string): Promise<void> {
     await this.leadRepository.delete({ id, profileId });
+  }
+
+  async sendResponse(
+    id: string,
+    dto: SendLeadResponseDto,
+    context: LeadAuthContext
+  ): Promise<{
+    lead: (Lead & { isFlagged: boolean }) | null;
+    delivery: { success: boolean; error?: string };
+  }> {
+    const lead = await this.findOne(id, context.profileId);
+    if (!lead) {
+      return {
+        lead: null,
+        delivery: { success: false, error: `Lead ${id} not found` },
+      };
+    }
+
+    const toEmail = dto.toEmail?.trim() || lead.email?.trim();
+    if (!toEmail) {
+      return {
+        lead,
+        delivery: {
+          success: false,
+          error: 'Lead does not have a recipient email address',
+        },
+      };
+    }
+
+    const delivery = await this.emailService.sendEmail({
+      to: toEmail,
+      subject: dto.subject,
+      text: dto.message,
+      replyTo: process.env.SMTP_FROM,
+    });
+
+    const responseNote = [
+      '',
+      '---',
+      `Operator response sent: ${new Date().toISOString()}`,
+      `Subject: ${dto.subject}`,
+      dto.message,
+    ].join('\n');
+
+    await this.leadRepository.update(
+      { id, profileId: context.profileId },
+      {
+        notes: `${lead.notes || ''}${responseNote}`.trim(),
+        status: dto.status || LeadStatus.CONTACTED,
+        nextFollowUp: dto.nextFollowUp || lead.nextFollowUp,
+        lastRespondedAt: delivery.success ? new Date() : lead.lastRespondedAt,
+      }
+    );
+
+    return {
+      lead: await this.findOne(id, context.profileId),
+      delivery,
+    };
   }
 
   async findAllTopics(profileId: string): Promise<LeadTopic[]> {

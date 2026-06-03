@@ -68,4 +68,16 @@ export class CreateLeadDto {
   @IsOptional()
   @IsString()
   assignedTo?: string;
+
+  @IsOptional()
+  @IsString()
+  contactSubject?: string;
+
+  @IsOptional()
+  @IsString()
+  contactMessage?: string;
+
+  @IsOptional()
+  @IsString()
+  contactSourceLabel?: string;
 }

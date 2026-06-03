@@ -214,6 +214,16 @@ export type PermissionsCacheConfig = {
   };
 };
 
+export type ContactLeadRoutingEntry = {
+  profileId?: string;
+  sourceLabel?: string;
+};
+
+export type ContactLeadRoutingConfig = {
+  defaultProfileId?: string;
+  appScopes?: Record<string, ContactLeadRoutingEntry>;
+};
+
 export type Config = {
   listenPort: number;
   auth?: {
@@ -223,6 +233,7 @@ export type Config = {
   permissions?: {
     cache?: PermissionsCacheConfig;
   };
+  contactLeads?: ContactLeadRoutingConfig;
   services: {
     asset: TcpServiceConfig;
     authentication: TcpServiceConfig;

@@ -6,6 +6,7 @@ export const LeadCommands = {
   DELETE: 'lead.delete',
   GET_STATS: 'lead.getStats',
   SEARCH: 'lead.search',
+  SEND_RESPONSE: 'lead.sendResponse',
 } as const;
 
 export const LeadTopicCommands = {

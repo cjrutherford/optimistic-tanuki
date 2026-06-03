@@ -60,6 +60,15 @@ export class Lead {
   @Column({ nullable: true })
   assignedTo?: string;
 
+  @Column({ nullable: true })
+  contactSubject?: string;
+
+  @Column({ type: 'text', nullable: true })
+  contactMessage?: string;
+
+  @Column({ nullable: true })
+  contactSourceLabel?: string;
+
   @Column({ type: 'varchar', default: 'leads-app' })
   appScope: string;
 
@@ -80,4 +89,7 @@ export class Lead {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastRespondedAt?: Date;
 }

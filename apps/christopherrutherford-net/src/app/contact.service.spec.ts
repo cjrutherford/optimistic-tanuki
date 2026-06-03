@@ -49,6 +49,13 @@ describe('ContactService', () => {
 
     const req = httpMock.expectOne('/api/contact');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({
+      ...data,
+      subject: '[Christopher Rutherford net] General Inquiry',
+      appScope: 'christopherrutherford-net',
+      sourcePage: '/#contact',
+      sourceLabel: 'Christopher Rutherford Net',
+    });
     req.flush(expectedResponse);
   });
 
@@ -74,6 +81,9 @@ describe('ContactService', () => {
 
     const req = httpMock.expectOne('/api/contact');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body.subject).toBe(
+      '[Christopher Rutherford net] General Inquiry'
+    );
     req.flush(expectedResponse);
   });
 

@@ -27,6 +27,7 @@ import {
   SignalMeshComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
+import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { BusinessRichContentRendererComponent } from './business-rich-content-renderer.component';
 
 @Component({
@@ -44,6 +45,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
     SignalMeshComponent,
     TopographicDriftComponent,
     ShimmerBeamComponent,
+    ContactFormComponent,
     BusinessRichContentRendererComponent,
   ],
   template: `
@@ -383,13 +385,19 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 <span>{{ site().contact.location }}</span>
               </div>
             </div>
-            <div class="actions">
-              @if (site().features.booking.enabled) {
-              <a class="cta-primary" routerLink="/book">{{
-                site().contact.consultationLabel
-              }}</a>
-              } @if (site().features.clientPortal.enabled) {
-              <a class="cta-secondary" routerLink="/client">Client Login</a>
+            <div class="contact-form-panel">
+              <lib-contact-form
+                [title]="'Contact ' + site().brand.businessName"
+                [buttonText]="
+                  contactSubmitting
+                    ? 'Sending...'
+                    : site().contact.consultationLabel
+                "
+                [subjects]="contactSubjects"
+                (formSubmit)="submitContactForm($event)"
+              ></lib-contact-form>
+              @if (contactStatus) {
+              <p class="contact-feedback">{{ contactStatus }}</p>
               }
             </div>
           </div>
@@ -1148,14 +1156,24 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .contact-grid {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: end;
+        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        align-items: start;
         gap: 1.5rem;
       }
 
       .contact-info {
         display: grid;
         gap: 0.75rem;
+      }
+
+      .contact-form-panel {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .contact-feedback {
+        margin: 0;
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
       }
 
       .contact-row {
@@ -1203,6 +1221,14 @@ export class BusinessLandingPageComponent {
     () => `layout-${this.site().landingPage.layout}`
   );
   readonly offers = toSignal(this.api.getOffers(), { initialValue: [] });
+  contactSubmitting = false;
+  contactStatus: string | null = null;
+  readonly contactSubjects = [
+    { value: 'consultation', label: 'Consultation' },
+    { value: 'project', label: 'Project Inquiry' },
+    { value: 'support', label: 'Support' },
+    { value: 'general', label: 'General Inquiry' },
+  ];
   readonly gridZones = [
     'hero-wide',
     'top-left',
@@ -1303,6 +1329,37 @@ export class BusinessLandingPageComponent {
 
   constructor() {
     this.siteConfig.fetch().subscribe();
+  }
+
+  submitContactForm(event: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }): void {
+    this.contactSubmitting = true;
+    this.contactStatus = null;
+
+    this.api
+      .submitContactLead(
+        {
+          ...event,
+          sourcePage: '/#contact',
+        },
+        this.site().leadContext?.profileId || undefined
+      )
+      .subscribe({
+        next: () => {
+          this.contactSubmitting = false;
+          this.contactStatus =
+            'Message received. We will reach out with next steps.';
+        },
+        error: () => {
+          this.contactSubmitting = false;
+          this.contactStatus =
+            'Unable to send the message right now. Please try again shortly.';
+        },
+      });
   }
 
   private defaultSplitSlot(sectionId: string): 'primary' | 'secondary' {

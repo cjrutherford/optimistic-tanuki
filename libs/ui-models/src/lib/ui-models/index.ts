@@ -53,6 +53,13 @@ export type { CommentDto, CreateCommentDto, UpdateCommentDto } from './comment';
 export type { VoteDto, CreateVoteDto } from './vote';
 export type { FollowDto, FollowEventDto } from './follow';
 export { type CreateAttachmentDto } from './create-attachment.dto';
+export type {
+  ForumPostDto,
+  ThreadDto,
+  TopicDto,
+  UpdateThreadDto,
+  UpdateTopicDto,
+} from './forum';
 export {
   type CommunityDto,
   type CreateCommunityDto,
@@ -86,3 +93,4 @@ export * from './availability-override';
 export * from './invoice';
 export * from './resource';
 export * from './video';
+export * from './lead';

@@ -14,7 +14,12 @@ export class ContactService {
     subject: string;
   }) {
     if (data.subject === '') data.subject = 'General Inquiry';
-    data.subject = `[Christopher Rutherford net] ${data.subject}`;
-    return this.http.post('/api/contact', data);
+    return this.http.post('/api/contact', {
+      ...data,
+      subject: `[Christopher Rutherford net] ${data.subject}`,
+      appScope: 'christopherrutherford-net',
+      sourcePage: '/#contact',
+      sourceLabel: 'Christopher Rutherford Net',
+    });
   }
 }

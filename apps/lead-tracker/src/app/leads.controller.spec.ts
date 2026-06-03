@@ -33,6 +33,7 @@ describe('LeadsController', () => {
       update: jest.fn(),
       delete: jest.fn(),
       getStats: jest.fn(),
+      sendResponse: jest.fn(),
       findAllTopics: jest.fn(),
       findTopicById: jest.fn(),
       createTopic: jest.fn(),

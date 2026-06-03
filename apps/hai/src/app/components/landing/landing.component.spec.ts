@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import { LandingComponent } from './landing.component';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
@@ -57,7 +58,7 @@ describe('LandingComponent', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await TestBed.configureTestingModule({
-      imports: [LandingComponent],
+      imports: [LandingComponent, HttpClientTestingModule],
       providers: [
         { provide: HaiAppDirectoryService, useValue: directoryServiceStub },
       ],

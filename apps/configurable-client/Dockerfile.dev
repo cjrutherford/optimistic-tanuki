@@ -1,0 +1,21 @@
+FROM node:24-alpine
+RUN apk add --no-cache dumb-init
+
+WORKDIR /app
+
+ARG GIT_SHA=unknown
+
+ENV NODE_ENV=development
+ENV PORT=4000
+ENV GIT_SHA=${GIT_SHA}
+
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
+
+EXPOSE 4000
+
+CMD ["node", "/app/dist/apps/configurable-client/server/server.mjs"]

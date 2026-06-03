@@ -103,6 +103,16 @@ export interface BusinessLeadIntake {
   profileId?: string;
 }
 
+export interface BusinessContactLeadSubmission {
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  subject?: string;
+  message: string;
+  sourcePage?: string;
+}
+
 export interface BusinessLeadIntakeRecord {
   id: string;
   name: string;
@@ -202,6 +212,24 @@ export class BusinessApiService {
     return this.http.post<BusinessLeadIntakeRecord>(
       `${this.baseUrl}/leads`,
       payload,
+      {
+        headers: this.clientAuthHeaders(),
+      }
+    );
+  }
+
+  submitContactLead(
+    payload: BusinessContactLeadSubmission,
+    routingProfileId?: string
+  ): Observable<{ message: string; leadId: string | null }> {
+    return this.http.post<{ message: string; leadId: string | null }>(
+      '/api/contact',
+      {
+        ...payload,
+        appScope: 'business-site',
+        routingProfileId,
+        sourceLabel: 'Business Site',
+      },
       {
         headers: this.clientAuthHeaders(),
       }

@@ -14,7 +14,12 @@ export class ContactService {
     subject: string;
   }) {
     if (data.subject === '') data.subject = 'General Inquiry';
-    data.subject = `[Digital Homestead] ${data.subject}`;
-    return this.http.post('/api/contact', data);
+    return this.http.post('/api/contact', {
+      ...data,
+      subject: `[Digital Homestead] ${data.subject}`,
+      appScope: 'digital-homestead',
+      sourcePage: '/#contact',
+      sourceLabel: 'Digital Homestead',
+    });
   }
 }

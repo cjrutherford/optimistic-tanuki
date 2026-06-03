@@ -169,6 +169,28 @@ export const OPERATOR_WORKSPACES: OperatorWorkspaceConfig[] = [
     ],
   },
   {
+    path: 'crm',
+    label: 'CRM',
+    description:
+      'Cross-app lead intake, follow-up, and operator response workflows.',
+    summary:
+      'Handle inbound contact requests from one operator inbox with app filters and response tooling.',
+    checklist: [
+      'Review new inbound contact requests across public applications.',
+      'Keep assignees, notes, and follow-up dates current.',
+      'Respond to qualified requests directly from the owner console.',
+    ],
+    cards: [
+      {
+        title: 'Contact Leads',
+        description:
+          'Open the cross-platform operator inbox for public contact submissions.',
+        route: '/dashboard/contacts',
+        highlight: 'Operator inbox',
+      },
+    ],
+  },
+  {
     path: 'community-ops',
     label: 'Community Ops',
     description:

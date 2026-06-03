@@ -25,68 +25,26 @@ export const appRoutes: Route[] = [
       ),
     canActivate: [authGuard],
     children: [
+      ...OPERATOR_WORKSPACES.map((workspace) => ({
+        path: workspace.path,
+        loadComponent: () =>
+          import('./components/workspace-landing.component').then(
+            (m) => m.WorkspaceLandingComponent
+          ),
+        data: {
+          title: workspace.label,
+          description: workspace.description,
+          summary: workspace.summary,
+          checklist: workspace.checklist,
+          cards: workspace.cards,
+        },
+      })),
       {
         path: 'overview',
         loadComponent: () =>
           import('./components/operator-overview.component').then(
             (m) => m.OperatorOverviewComponent
           ),
-      },
-      {
-        path: OPERATOR_WORKSPACES[0].path,
-        loadComponent: () =>
-          import('./components/workspace-landing.component').then(
-            (m) => m.WorkspaceLandingComponent
-          ),
-        data: {
-          title: OPERATOR_WORKSPACES[0].label,
-          description: OPERATOR_WORKSPACES[0].description,
-          summary: OPERATOR_WORKSPACES[0].summary,
-          checklist: OPERATOR_WORKSPACES[0].checklist,
-          cards: OPERATOR_WORKSPACES[0].cards,
-        },
-      },
-      {
-        path: OPERATOR_WORKSPACES[1].path,
-        loadComponent: () =>
-          import('./components/workspace-landing.component').then(
-            (m) => m.WorkspaceLandingComponent
-          ),
-        data: {
-          title: OPERATOR_WORKSPACES[1].label,
-          description: OPERATOR_WORKSPACES[1].description,
-          summary: OPERATOR_WORKSPACES[1].summary,
-          checklist: OPERATOR_WORKSPACES[1].checklist,
-          cards: OPERATOR_WORKSPACES[1].cards,
-        },
-      },
-      {
-        path: OPERATOR_WORKSPACES[2].path,
-        loadComponent: () =>
-          import('./components/workspace-landing.component').then(
-            (m) => m.WorkspaceLandingComponent
-          ),
-        data: {
-          title: OPERATOR_WORKSPACES[2].label,
-          description: OPERATOR_WORKSPACES[2].description,
-          summary: OPERATOR_WORKSPACES[2].summary,
-          checklist: OPERATOR_WORKSPACES[2].checklist,
-          cards: OPERATOR_WORKSPACES[2].cards,
-        },
-      },
-      {
-        path: OPERATOR_WORKSPACES[3].path,
-        loadComponent: () =>
-          import('./components/workspace-landing.component').then(
-            (m) => m.WorkspaceLandingComponent
-          ),
-        data: {
-          title: OPERATOR_WORKSPACES[3].label,
-          description: OPERATOR_WORKSPACES[3].description,
-          summary: OPERATOR_WORKSPACES[3].summary,
-          checklist: OPERATOR_WORKSPACES[3].checklist,
-          cards: OPERATOR_WORKSPACES[3].cards,
-        },
       },
       {
         path: 'operations',
@@ -220,6 +178,13 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./components/resource-management.component').then(
             (m) => m.ResourceManagementComponent
+          ),
+      },
+      {
+        path: 'contacts',
+        loadComponent: () =>
+          import('./components/contact-leads-management.component').then(
+            (m) => m.ContactLeadsManagementComponent
           ),
       },
       {
