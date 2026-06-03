@@ -10,10 +10,12 @@ export interface FinanceHostWorkspaceConfig {
 export interface FinanceHostConfig {
   routeBase: string;
   shellTitle: string;
+  shellLede?: string;
   authGuardLabel?: string;
   defaultWorkspace: FinanceWorkspace;
   redirectTo?: string;
   isReady?: () => boolean | Promise<boolean>;
+  showWorkspaceSubnav?: boolean;
   workspaceLabels?: Partial<
     Record<FinanceWorkspace, Partial<FinanceHostWorkspaceConfig>>
   >;
@@ -22,10 +24,12 @@ export interface FinanceHostConfig {
 export const DEFAULT_FINANCE_HOST_CONFIG: FinanceHostConfig = {
   routeBase: '/finance',
   shellTitle: 'Finance Workspace',
+  shellLede: 'Track and manage your finances.',
   authGuardLabel: 'Finance access',
   defaultWorkspace: 'personal',
   redirectTo: '/login',
   isReady: () => true,
+  showWorkspaceSubnav: true,
 };
 
 export const FINANCE_HOST_CONFIG = new InjectionToken<FinanceHostConfig>(

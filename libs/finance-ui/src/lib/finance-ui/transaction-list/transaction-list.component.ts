@@ -1,7 +1,12 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import {
+  AgGridUiComponent,
+  ColDef,
+  GridOptions,
+} from '@optimistic-tanuki/ag-grid-ui';
 import { FinanceService } from '../services/finance.service';
 import {
   Account,
@@ -11,56 +16,87 @@ import {
   Transaction,
 } from '../models';
 import { isAbortLikeHttpError } from '../services/http-error.utils';
+import { FinanceWorkspaceScreenComponent } from '../finance-workspace-screen/finance-workspace-screen.component';
 
 @Component({
   selector: 'ot-transaction-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridUiComponent,
+    FinanceWorkspaceScreenComponent,
+  ],
   template: `
-    <div class="transaction-list">
-      <h2>Transactions</h2>
+    <ot-finance-workspace-screen
+      eyebrow="Transactions"
+      title="Ledger review"
+      lede="Update rows directly in the ledger. The grid keeps filters, source review, and inline edits in one operating surface shared with the rest of finance."
+    >
+      <section class="workspace-panel" screen-toolbar>
+        <h3 class="workspace-panel-title">Filters</h3>
+        <p class="workspace-panel-copy">
+          Narrow the ledger before editing individual cells or creating a new
+          transaction from the quick form.
+        </p>
 
-      <div class="filters">
-        <select [(ngModel)]="selectedSourceType" name="selectedSourceType">
-          <option value="">All sources</option>
-          <option value="manual">Manual</option>
-          <option value="import">Import</option>
-          <option value="bank-sync">Bank sync</option>
-        </select>
-        <select [(ngModel)]="selectedAccountId" name="selectedAccountId">
-          <option value="">All accounts</option>
-          @for (account of accounts(); track account.id) {
-          <option [value]="account.id">{{ account.name }}</option>
-          }
-        </select>
-        <label class="review-filter">
+        <div class="workspace-filter-row">
+          <select
+            [ngModel]="selectedSourceType()"
+            (ngModelChange)="selectedSourceType.set($event)"
+            name="selectedSourceType"
+          >
+            <option value="">All sources</option>
+            <option value="manual">Manual</option>
+            <option value="import">Import</option>
+            <option value="bank-sync">Bank sync</option>
+          </select>
+          <select
+            [ngModel]="selectedAccountId()"
+            (ngModelChange)="selectedAccountId.set($event)"
+            name="selectedAccountId"
+          >
+            <option value="">All accounts</option>
+            @for (account of accounts(); track account.id) {
+            <option [value]="account.id">{{ account.name }}</option>
+            }
+          </select>
+          <select
+            [ngModel]="reviewFilter()"
+            (ngModelChange)="reviewFilter.set($event)"
+            name="reviewFilter"
+          >
+            <option value="all">All review states</option>
+            <option value="needs-review">Needs review</option>
+            <option value="reviewed">Reviewed</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="workspace-panel">
+        <h3 class="workspace-panel-title">Quick create</h3>
+        <p class="workspace-panel-copy">
+          Add a transaction from the same workspace. Existing rows below can be
+          edited inline without opening a separate form.
+        </p>
+
+        <form class="workspace-form" (ngSubmit)="saveTransaction()">
+          <select [(ngModel)]="draft.accountId" name="accountId" required>
+            @for (account of accounts(); track account.id) {
+            <option [value]="account.id">{{ account.name }}</option>
+            }
+          </select>
           <input
-            type="checkbox"
-            [(ngModel)]="needsReviewOnly"
-            name="needsReviewOnly"
+            [(ngModel)]="draft.amount"
+            name="amount"
+            type="number"
+            placeholder="Amount"
+            required
           />
-          Needs review only
-        </label>
-      </div>
-
-      <form class="editor" (ngSubmit)="saveTransaction()">
-        <select [(ngModel)]="draft.accountId" name="accountId" required>
-          @for (account of accounts(); track account.id) {
-          <option [value]="account.id">{{ account.name }}</option>
-          }
-        </select>
-        <input
-          [(ngModel)]="draft.amount"
-          name="amount"
-          type="number"
-          placeholder="Amount"
-          required
-        />
-        <select [(ngModel)]="draft.type" name="type">
-          <option value="debit">Debit</option>
-          <option value="credit">Credit</option>
-        </select>
-        <div class="category-field">
+          <select [(ngModel)]="draft.type" name="type">
+            <option value="debit">Debit</option>
+            <option value="credit">Credit</option>
+          </select>
           <input
             [(ngModel)]="draft.category"
             name="category"
@@ -72,148 +108,70 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             <option [value]="category"></option>
             }
           </datalist>
-        </div>
-        <input
-          [(ngModel)]="draft.payeeOrVendor"
-          name="payeeOrVendor"
-          placeholder="Payee or vendor"
-        />
-        <select [(ngModel)]="draft.transferType" name="transferType">
-          <option value="">No transfer type</option>
-          <option value="owner-draw">Owner draw</option>
-          <option value="owner-contribution">Owner contribution</option>
-          <option value="internal-transfer">Internal transfer</option>
-        </select>
-        <input
-          [(ngModel)]="draft.transactionDate"
-          name="transactionDate"
-          type="date"
-          required
-        />
-        <button type="submit">
-          {{ editingId() ? 'Update transaction' : 'Create transaction' }}
-        </button>
-      </form>
-      @if (loading()) {
-      <p>Loading transactions...</p>
-      } @else {
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Type</th>
-            <th>Source</th>
-            <th>Category</th>
-            <th>Amount</th>
-            <th>Review</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (transaction of filteredTransactions(); track transaction.id) {
-          <tr>
-            <td>{{ transaction.transactionDate | date }}</td>
-            <td>{{ transaction.type }}</td>
-            <td>
-              <span
-                class="source-pill"
-                [attr.data-source]="transaction.sourceType || 'manual'"
-              >
-                {{ sourceLabel(transaction.sourceType) }}
-              </span>
-            </td>
-            <td>{{ transaction.category }}</td>
-            <td>{{ transaction.amount }}</td>
-            <td>{{ transaction.reviewStatus || 'needs-review' }}</td>
-            <td>{{ transaction.description }}</td>
-            <td>
-              <button (click)="editTransaction(transaction)">Edit</button>
-              <button (click)="deleteTransaction(transaction.id)">
-                Delete
-              </button>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
-      }
-    </div>
+          <input
+            [(ngModel)]="draft.payeeOrVendor"
+            name="payeeOrVendor"
+            placeholder="Payee or vendor"
+          />
+          <input
+            [(ngModel)]="draft.transactionDate"
+            name="transactionDate"
+            type="date"
+            required
+          />
+          <button type="submit" class="workspace-button-primary">
+            {{ editingId() ? 'Update transaction' : 'Create transaction' }}
+          </button>
+        </form>
+      </section>
+
+      <section class="workspace-grid-panel">
+        <otui-ag-grid
+          [rowData]="filteredTransactions()"
+          [columnDefs]="columnDefs"
+          [gridOptions]="gridOptions"
+          [loading]="loading()"
+          height="500px"
+        ></otui-ag-grid>
+      </section>
+    </ot-finance-workspace-screen>
   `,
   styles: [
     `
-      .transaction-list {
-        padding: 20px;
-        color: var(--foreground, #1f2937);
-        font-family: var(--font-body, 'Helvetica Neue', Arial, sans-serif);
+      :host {
+        display: block;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--surface, #ffffff);
-        border-radius: var(--border-radius-lg, 16px);
-        overflow: hidden;
-      }
-      .filters {
+
+      :host ::ng-deep .grid-actions {
         display: flex;
-        gap: 12px;
+        gap: 0.5rem;
         flex-wrap: wrap;
-        margin-bottom: 16px;
       }
-      .review-filter {
+
+      :host ::ng-deep .source-chip,
+      :host ::ng-deep .review-chip {
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        color: var(--muted, #6b7280);
-      }
-      .editor {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
-        padding: 16px;
-        background: var(--surface, #ffffff);
-        border-radius: var(--border-radius-lg, 18px);
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-      }
-      .editor input,
-      .editor select,
-      .editor button,
-      .filters select {
-        padding: 10px 12px;
-        border-radius: var(--border-radius-md, 12px);
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-      }
-      .editor button {
-        background: var(--primary, #2563eb);
-        color: var(--background, #ffffff);
-        font-weight: 700;
-      }
-      .source-pill {
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 11px;
-        padding: 6px 10px;
         border-radius: 999px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      :host ::ng-deep .source-chip {
         background: rgba(37, 99, 235, 0.12);
         color: var(--primary, #2563eb);
       }
-      .source-pill[data-source='bank-sync'] {
-        background: rgba(22, 101, 52, 0.12);
-        color: #166534;
-      }
-      .source-pill[data-source='import'] {
+
+      :host ::ng-deep .review-chip[data-review='needs-review'] {
         background: rgba(180, 83, 9, 0.12);
         color: #b45309;
       }
-      th,
-      td {
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: var(--background, #f8fafc);
+
+      :host ::ng-deep .review-chip[data-review='reviewed'] {
+        background: rgba(22, 101, 52, 0.12);
+        color: #166534;
       }
     `,
   ],
@@ -222,41 +180,184 @@ export class TransactionListComponent implements OnInit {
   private readonly financeService = inject(FinanceService);
   private readonly route = inject(ActivatedRoute);
 
-  transactions = signal<Transaction[]>([]);
-  accounts = signal<Account[]>([]);
-  categoryOptions = signal<string[]>([]);
-  loading = signal(false);
-  workspace = signal<FinanceWorkspace>('personal');
-  editingId = signal<string | null>(null);
-  draft: any = this.emptyDraft();
-  selectedSourceType = '';
-  selectedAccountId = '';
-  needsReviewOnly = false;
+  readonly transactions = signal<Transaction[]>([]);
+  readonly accounts = signal<Account[]>([]);
+  readonly categoryOptions = signal<string[]>([]);
+  readonly loading = signal(false);
+  readonly workspace = signal<FinanceWorkspace>('personal');
+  readonly editingId = signal<string | null>(null);
+  readonly selectedSourceType = signal('');
+  readonly selectedAccountId = signal('');
+  readonly reviewFilter = signal<'all' | 'needs-review' | 'reviewed'>('all');
+
+  draft: {
+    accountId: string;
+    amount: number;
+    type: string;
+    category: string;
+    payeeOrVendor: string;
+    transferType: string;
+    transactionDate: string;
+    workspace: FinanceWorkspace;
+    isRecurring: boolean;
+  } = this.emptyDraft();
+
+  filteredTransactions(): Transaction[] {
+    return this.transactions().filter((transaction) => {
+      if (
+        this.selectedSourceType() &&
+        (transaction.sourceType || 'manual') !== this.selectedSourceType()
+      ) {
+        return false;
+      }
+
+      if (
+        this.selectedAccountId() &&
+        transaction.accountId !== this.selectedAccountId()
+      ) {
+        return false;
+      }
+
+      if (
+        this.reviewFilter() !== 'all' &&
+        (transaction.reviewStatus || 'needs-review') !== this.reviewFilter()
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  readonly columnDefs: ColDef<Transaction>[] = [
+    {
+      field: 'transactionDate',
+      headerName: 'Date',
+      editable: true,
+      valueFormatter: (params) => this.formatDate(params.value),
+      valueGetter: (params) =>
+        this.toDateInputValue(params.data?.transactionDate),
+      valueSetter: (params) =>
+        this.updateCellValue(
+          params.data,
+          'transactionDate',
+          new Date(params.newValue)
+        ),
+    },
+    {
+      field: 'type',
+      headerName: 'Type',
+      editable: true,
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: {
+        values: ['debit', 'credit'],
+      },
+    },
+    {
+      field: 'sourceType',
+      headerName: 'Source',
+      editable: false,
+      cellRenderer: (params: { value?: BankSyncSourceType }) => {
+        const chip = document.createElement('span');
+        chip.className = 'source-chip';
+        chip.textContent = this.sourceLabel(params.value);
+        return chip;
+      },
+    },
+    {
+      field: 'category',
+      headerName: 'Category',
+      editable: true,
+    },
+    {
+      field: 'amount',
+      headerName: 'Amount',
+      editable: true,
+      valueParser: (params) => Number(params.newValue),
+      valueFormatter: (params) => this.formatCurrency(params.value),
+    },
+    {
+      field: 'reviewStatus',
+      headerName: 'Review',
+      editable: true,
+      cellEditor: 'agSelectCellEditor',
+      cellEditorParams: {
+        values: ['needs-review', 'reviewed'],
+      },
+      cellRenderer: (params: { value?: string }) => {
+        const chip = document.createElement('span');
+        chip.className = 'review-chip';
+        chip.dataset['review'] = params.value || 'needs-review';
+        chip.textContent = params.value || 'needs-review';
+        return chip;
+      },
+    },
+    {
+      field: 'payeeOrVendor',
+      headerName: 'Payee',
+      editable: true,
+      valueFormatter: (params) => params.value || 'Unknown',
+    },
+    {
+      field: 'description',
+      headerName: 'Description',
+      editable: true,
+      valueFormatter: (params) => params.value || '',
+    },
+    {
+      headerName: 'Actions',
+      editable: false,
+      sortable: false,
+      filter: false,
+      maxWidth: 220,
+      cellRenderer: (params: { data?: Transaction }) => {
+        const data = params.data;
+        if (!data) {
+          return '';
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'grid-actions';
+        wrapper.append(
+          this.buildActionButton('Edit form', () => this.editTransaction(data)),
+          this.buildActionButton(
+            'Delete',
+            () => void this.deleteTransaction(data.id),
+            'workspace-button-danger'
+          )
+        );
+        return wrapper;
+      },
+    },
+  ];
+
+  readonly gridOptions: GridOptions<Transaction> = {
+    domLayout: 'normal',
+    pagination: true,
+    singleClickEdit: true,
+    stopEditingWhenCellsLoseFocus: true,
+    defaultColDef: {
+      sortable: true,
+      filter: true,
+      resizable: true,
+      flex: 1,
+      minWidth: 120,
+    },
+    onCellValueChanged: (event) => {
+      if (!event.data) {
+        return;
+      }
+
+      void this.persistInlineUpdate(event.data);
+    },
+  };
 
   async ngOnInit() {
     const workspace = (this.route.snapshot.paramMap.get('workspace') ??
       'personal') as FinanceWorkspace;
     this.workspace.set(workspace);
     this.draft = this.emptyDraft();
-    this.loading.set(true);
-    try {
-      const [transactions, accounts, categoryOptions] = await Promise.all([
-        this.financeService.getTransactions(workspace),
-        this.financeService.getAccounts(workspace),
-        this.financeService.getCategorySuggestions(workspace),
-      ]);
-      this.transactions.set(transactions);
-      this.accounts.set(accounts);
-      this.categoryOptions.set(categoryOptions);
-      this.draft.accountId = accounts[0]?.id ?? '';
-    } catch (error) {
-      if (isAbortLikeHttpError(error)) {
-        return;
-      }
-      console.error('Error loading transactions:', error);
-    } finally {
-      this.loading.set(false);
-    }
+    await this.loadData();
   }
 
   emptyDraft() {
@@ -273,30 +374,6 @@ export class TransactionListComponent implements OnInit {
     };
   }
 
-  filteredTransactions(): Transaction[] {
-    return this.transactions().filter((transaction) => {
-      if (
-        this.selectedSourceType &&
-        (transaction.sourceType || 'manual') !== this.selectedSourceType
-      ) {
-        return false;
-      }
-
-      if (
-        this.selectedAccountId &&
-        transaction.accountId !== this.selectedAccountId
-      ) {
-        return false;
-      }
-
-      if (this.needsReviewOnly && transaction.reviewStatus !== 'needs-review') {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
   sourceLabel(sourceType?: BankSyncSourceType): string {
     switch (sourceType) {
       case 'bank-sync':
@@ -311,11 +388,15 @@ export class TransactionListComponent implements OnInit {
   editTransaction(transaction: Transaction) {
     this.editingId.set(transaction.id);
     this.draft = {
-      ...transaction,
-      transactionDate: new Date(transaction.transactionDate)
-        .toISOString()
-        .slice(0, 10),
+      accountId: transaction.accountId,
+      amount: Number(transaction.amount),
+      type: transaction.type,
+      category: transaction.category,
+      payeeOrVendor: transaction.payeeOrVendor ?? '',
       transferType: transaction.transferType ?? '',
+      transactionDate: this.toDateInputValue(transaction.transactionDate),
+      workspace: this.workspace(),
+      isRecurring: transaction.isRecurring,
     };
   }
 
@@ -334,11 +415,122 @@ export class TransactionListComponent implements OnInit {
     }
     this.editingId.set(null);
     this.draft = this.emptyDraft();
-    await this.ngOnInit();
+    await this.loadData();
   }
 
   async deleteTransaction(id: string) {
     await this.financeService.deleteTransaction(id);
-    await this.ngOnInit();
+    await this.loadData();
+  }
+
+  private async loadData(): Promise<void> {
+    this.loading.set(true);
+    try {
+      const [transactions, accounts, categoryOptions] = await Promise.all([
+        this.financeService.getTransactions(this.workspace()),
+        this.financeService.getAccounts(this.workspace()),
+        this.financeService.getCategorySuggestions(this.workspace()),
+      ]);
+      this.transactions.set(transactions);
+      this.accounts.set(accounts);
+      this.categoryOptions.set(categoryOptions);
+      this.draft.accountId = accounts[0]?.id ?? '';
+    } catch (error) {
+      if (isAbortLikeHttpError(error)) {
+        return;
+      }
+      console.error('Error loading transactions:', error);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  private async persistInlineUpdate(transaction: Transaction): Promise<void> {
+    const payload: CreateTransaction = {
+      amount: Number(transaction.amount),
+      type: transaction.type,
+      accountId: transaction.accountId,
+      description: transaction.description,
+      category: transaction.category?.trim(),
+      transactionDate: new Date(transaction.transactionDate),
+      reference: transaction.reference,
+      isRecurring: transaction.isRecurring,
+      workspace: this.workspace(),
+      payeeOrVendor: transaction.payeeOrVendor,
+      transferType: transaction.transferType,
+      sourceType: transaction.sourceType,
+      sourceProvider: transaction.sourceProvider,
+      externalTransactionId: transaction.externalTransactionId,
+      pending: transaction.pending,
+      reviewStatus: transaction.reviewStatus,
+    };
+
+    try {
+      await this.financeService.updateTransaction(transaction.id, payload);
+      await this.loadData();
+    } catch (error) {
+      if (isAbortLikeHttpError(error)) {
+        return;
+      }
+
+      console.error('Error updating transaction inline:', error);
+      await this.loadData();
+    }
+  }
+
+  private updateCellValue<T extends keyof Transaction>(
+    transaction: Transaction | undefined,
+    key: T,
+    value: Transaction[T]
+  ): boolean {
+    if (!transaction) {
+      return false;
+    }
+
+    (transaction as Transaction)[key] = value;
+    return true;
+  }
+
+  private formatCurrency(value: unknown): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(Number(value ?? 0));
+  }
+
+  private formatDate(value: unknown): string {
+    if (!value) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+    }).format(new Date(value as string | Date));
+  }
+
+  private toDateInputValue(value: Date | string | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    return new Date(value).toISOString().slice(0, 10);
+  }
+
+  private buildActionButton(
+    label: string,
+    onClick: () => void,
+    className = ''
+  ): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.className = className;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onClick();
+    });
+
+    return button;
   }
 }

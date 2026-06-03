@@ -3,6 +3,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FinanceOnboardingState, FinanceWorkspace } from '../models';
 import { FinanceService } from '../services/finance.service';
+import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 @Component({
   selector: 'ot-finance-setup-checklist',
@@ -76,6 +77,7 @@ import { FinanceService } from '../services/finance.service';
 export class SetupChecklistComponent implements OnInit {
   private readonly financeService = inject(FinanceService);
   private readonly route = inject(ActivatedRoute);
+  private readonly hostConfig = inject(FINANCE_HOST_CONFIG);
 
   readonly state = signal<FinanceOnboardingState | null>(null);
   readonly workspace = signal<FinanceWorkspace>('personal');
@@ -110,21 +112,21 @@ export class SetupChecklistComponent implements OnInit {
         label: 'Create or review workspace accounts',
         complete: state.availableWorkspaces.includes(workspace),
         action: 'Open accounts',
-        route: `/finance/${workspace}/accounts`,
+        route: this.workspaceRoute(workspace, 'accounts'),
       },
       {
         id: 'transactions',
         label: 'Categorize early transactions',
         complete: checklistStatus('categorize-transactions'),
         action: 'Review transactions',
-        route: `/finance/${workspace}/transactions`,
+        route: this.workspaceRoute(workspace, 'transactions'),
       },
       {
         id: 'budget',
         label: 'Create at least one active budget',
         complete: checklistStatus('create-budget'),
         action: 'Open budgets',
-        route: `/finance/${workspace}/budgets`,
+        route: this.workspaceRoute(workspace, 'budgets'),
       },
     ];
 
@@ -133,5 +135,29 @@ export class SetupChecklistComponent implements OnInit {
     }
 
     return items;
+  }
+
+  private workspaceRoute(
+    workspace: FinanceWorkspace,
+    section: string
+  ): string[] {
+    const configuredSegments = this.hostConfig.routeBase
+      .split('/')
+      .filter(Boolean);
+    const currentSegments = (
+      this.route.snapshot.pathFromRoot ?? [this.route.snapshot]
+    )
+      .flatMap((route) => (route.url ?? []).map((segment) => segment.path))
+      .filter(Boolean);
+
+    const baseSegments = configuredSegments.map((segment, index) =>
+      segment.startsWith(':')
+        ? this.route.snapshot.paramMap.get(segment.slice(1)) ??
+          currentSegments[index] ??
+          segment.slice(1)
+        : segment
+    );
+
+    return ['/', ...baseSegments, workspace, section];
   }
 }

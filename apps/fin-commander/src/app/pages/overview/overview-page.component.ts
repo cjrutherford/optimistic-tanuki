@@ -8,6 +8,11 @@ import {
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
 import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
+import {
+  tenantAccountsRoute,
+  tenantPlanRoute,
+  tenantPlansRoute,
+} from '../../tenant-routes';
 
 @Component({
   selector: 'fc-overview-page',
@@ -137,7 +142,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
             <p class="empty-message">No accounts configured</p>
             <a
               class="cta-link"
-              [routerLink]="['/finance', workspace.workspace, 'accounts']"
+              [routerLink]="accountsRoute(workspace.workspace, 'accounts')"
             >
               Connect accounts
             </a>
@@ -148,7 +153,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <div class="card-footer">
           <a
             class="action-link"
-            [routerLink]="['/finance', workspace.workspace]"
+            [routerLink]="accountsRoute(workspace.workspace)"
           >
             Open workspace
             <span class="action-arrow">→</span>
@@ -167,7 +172,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <p>Create financial targets to track your progress.</p>
         <a
           class="cta-button"
-          [routerLink]="['/commander', activeOverview.plan.id, 'goals']"
+          [routerLink]="planRoute(activeOverview.plan.id, 'goals')"
         >
           Create first goal
         </a>
@@ -181,7 +186,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <p>Plan for the future by modeling different outcomes.</p>
         <a
           class="cta-button"
-          [routerLink]="['/commander', activeOverview.plan.id, 'scenarios']"
+          [routerLink]="planRoute(activeOverview.plan.id, 'scenarios')"
         >
           Create first scenario
         </a>
@@ -198,7 +203,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         Create your first plan to track goals, compare scenarios, and keep each
         workspace aligned.
       </p>
-      <a class="empty-button" routerLink="/commander/new/overview">
+      <a class="empty-button" [routerLink]="plansRoute()">
         Create your first plan →
       </a>
     </section>
@@ -952,7 +957,7 @@ export class OverviewPageComponent {
           description:
             'Link accounts so this workspace can roll up balances and activity.',
           cta: 'Connect',
-          routerLink: ['/finance', ws.workspace, 'accounts'],
+          routerLink: this.accountsRoute(ws.workspace, 'accounts'),
         });
       }
     }
@@ -963,7 +968,7 @@ export class OverviewPageComponent {
         label: 'Create your first goal',
         description: 'Set a target so Commander can track progress over time.',
         cta: 'New goal',
-        routerLink: ['/commander', overview.plan.id, 'goals'],
+        routerLink: this.planRoute(overview.plan.id, 'goals'),
       });
     }
 
@@ -974,7 +979,7 @@ export class OverviewPageComponent {
         description:
           'Compare outcomes by varying income, spend, or savings assumptions.',
         cta: 'New scenario',
-        routerLink: ['/commander', overview.plan.id, 'scenarios'],
+        routerLink: this.planRoute(overview.plan.id, 'scenarios'),
       });
     }
 
@@ -990,5 +995,33 @@ export class OverviewPageComponent {
       return;
     }
     this.overview.set(overview);
+  }
+
+  plansRoute(): string[] {
+    return tenantPlansRoute(this.route.snapshot.paramMap.get('tenantId'));
+  }
+
+  planRoute(
+    planId: string,
+    section:
+      | 'overview'
+      | 'cash-flow'
+      | 'goals'
+      | 'scenarios'
+      | 'imports' = 'overview'
+  ): string[] {
+    return tenantPlanRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      planId,
+      section
+    );
+  }
+
+  accountsRoute(workspace: string, section?: string): string[] {
+    return tenantAccountsRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      workspace,
+      section
+    );
   }
 }

@@ -125,7 +125,7 @@ describe('LandingComponent', () => {
     });
 
     expect(fixture.nativeElement.textContent).toContain('Open your plan');
-    expect(fixture.nativeElement.textContent).toContain('Review your ledger');
+    expect(fixture.nativeElement.textContent).toContain('Review accounts');
     expect(fixture.nativeElement.textContent).not.toContain('Register');
   });
 

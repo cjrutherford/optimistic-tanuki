@@ -149,6 +149,47 @@ describe('AgGridUiComponent', () => {
     expect(component.accent).toBe('#ff0000');
   });
 
+  it('derives internal grid CSS tokens from the theme system', () => {
+    const mockColors = {
+      background: '#ffffff',
+      foreground: '#000000',
+      accent: '#ff0000',
+      accentShades: Array(10).fill(['', '#ff0000']),
+      accentGradients: {},
+      complementary: '#00ff00',
+      complementaryShades: Array(10).fill(['', '#00ff00']),
+      complementaryGradients: {},
+      tertiary: '#0000ff',
+      tertiaryShades: Array(10).fill(['', '#0000ff']),
+      tertiaryGradients: {},
+      success: '#00ff00',
+      successShades: Array(10).fill(['', '#00ff00']),
+      successGradients: {},
+      danger: '#ff0000',
+      dangerShades: Array(10).fill(['', '#ff0000']),
+      dangerGradients: {},
+      warning: '#ffff00',
+      warningShades: Array(10).fill(['', '#ffff00']),
+      warningGradients: {},
+    };
+
+    component.theme = 'light';
+    component.applyTheme(mockColors);
+
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(
+      host.style.getPropertyValue('--local-header-background')
+    ).toBeTruthy();
+    expect(
+      host.style.getPropertyValue('--local-row-hover-background')
+    ).toBeTruthy();
+    expect(
+      host.style.getPropertyValue('--local-row-selected-background')
+    ).toBeTruthy();
+    expect(host.style.getPropertyValue('--local-grid-font-size')).toBeTruthy();
+  });
+
   it('should expose personality id for host binding', () => {
     expect(component.personalityId).toBe('classic');
   });

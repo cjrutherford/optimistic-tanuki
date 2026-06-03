@@ -8,6 +8,7 @@ import {
   FinanceWorkspace,
 } from '@optimistic-tanuki/finance-ui';
 import { TenantContextService } from '../../tenant-context.service';
+import { tenantAccountsRoute, tenantPlansRoute } from '../../tenant-routes';
 
 type OnboardingStep =
   | 'account'
@@ -674,11 +675,13 @@ export class OnboardingComponent implements OnInit {
   }
 
   async finishFinanceAccountSetup(): Promise<void> {
-    await this.router.navigate([
-      '/finance',
-      this.primaryWorkspace(),
-      'accounts',
-    ]);
+    await this.router.navigate(
+      tenantAccountsRoute(
+        this.activeTenantId(),
+        this.primaryWorkspace(),
+        'accounts'
+      )
+    );
   }
 
   async continueFromFinanceAccountStep(): Promise<void> {
@@ -686,19 +689,23 @@ export class OnboardingComponent implements OnInit {
   }
 
   async openTransactionCategorization(): Promise<void> {
-    await this.router.navigate([
-      '/finance',
-      this.primaryWorkspace(),
-      'transactions',
-    ]);
+    await this.router.navigate(
+      tenantAccountsRoute(
+        this.activeTenantId(),
+        this.primaryWorkspace(),
+        'transactions'
+      )
+    );
   }
 
   async openBudgetSetup(): Promise<void> {
-    await this.router.navigate([
-      '/finance',
-      this.primaryWorkspace(),
-      'budgets',
-    ]);
+    await this.router.navigate(
+      tenantAccountsRoute(
+        this.activeTenantId(),
+        this.primaryWorkspace(),
+        'budgets'
+      )
+    );
   }
 
   async refreshSetupProgress(preferredStep?: SetupStep): Promise<void> {
@@ -774,10 +781,20 @@ export class OnboardingComponent implements OnInit {
   }
 
   async openLedger(): Promise<void> {
-    await this.router.navigate(['/finance', this.primaryWorkspace()]);
+    await this.router.navigate(
+      tenantAccountsRoute(this.activeTenantId(), this.primaryWorkspace())
+    );
   }
 
   async openCommander(): Promise<void> {
-    await this.router.navigate(['/commander', 'new', 'overview']);
+    await this.router.navigate(tenantPlansRoute(this.activeTenantId()));
+  }
+
+  private activeTenantId(): string {
+    return (
+      this.tenantContext.activeTenant()?.id ??
+      this.createdTenantId() ??
+      'active'
+    );
   }
 }

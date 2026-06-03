@@ -12,6 +12,7 @@ import { AuthStateService } from '../state/auth-state.service';
 import { ProfileService } from '../profile.service';
 import { resolveNextSetupRoute } from '../setup-route-policy';
 import { TenantContextService } from '../tenant-context.service';
+import { tenantOverviewRoute } from '../tenant-routes';
 
 @Component({
   selector: 'fc-login',
@@ -87,7 +88,9 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    await this.router.navigate(['/finance']);
+    await this.router.navigate(
+      tenantOverviewRoute(this.tenantContext.activeTenantId())
+    );
   }
 
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
@@ -150,6 +153,8 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    await this.router.navigate(['/finance']);
+    await this.router.navigate(
+      tenantOverviewRoute(this.tenantContext.activeTenantId())
+    );
   }
 }

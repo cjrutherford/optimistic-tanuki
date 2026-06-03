@@ -169,7 +169,9 @@ describe('OnboardingComponent', () => {
     await fixture.componentInstance.finishFinanceAccountSetup();
 
     expect(router.navigate).toHaveBeenCalledWith([
-      '/finance',
+      '/tenants',
+      'active',
+      'accounts',
       'personal',
       'accounts',
     ]);

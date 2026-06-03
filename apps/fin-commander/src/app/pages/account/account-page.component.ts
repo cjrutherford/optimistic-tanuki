@@ -6,6 +6,8 @@ import {
   FinanceWorkspaceSummary,
 } from '@optimistic-tanuki/finance-ui';
 import { TenantContextService } from '../../tenant-context.service';
+import { ActivatedRoute } from '@angular/router';
+import { tenantAccountsRoute, tenantPlansRoute } from '../../tenant-routes';
 
 @Component({
   selector: 'fc-account-page',
@@ -15,29 +17,30 @@ import { TenantContextService } from '../../tenant-context.service';
     <section class="account-shell">
       <header class="hero">
         <div>
-          <p class="eyebrow">Account</p>
+          <p class="eyebrow">Tenant Overview</p>
           <h1>{{ tenantName() }}</h1>
           <p class="lede">
-            Manage the active Fin Commander account, its workspaces, and the
-            finance surfaces attached to it.
+            Keep the tenant's accounts, transactions, and planning workflows
+            connected from one overview.
           </p>
         </div>
         <div class="actions">
           <a routerLink="/settings">Edit settings</a>
-          <a routerLink="/finance/personal/accounts">Open finance accounts</a>
+          <a [routerLink]="accountsRoute('accounts')">Open accounts</a>
+          <a [routerLink]="plansRoute()">Open plans</a>
         </div>
       </header>
 
       <section class="grid">
         <article class="card">
-          <h2>Context</h2>
+          <h2>Tenant context</h2>
           <div class="metric-pair">
             <span>Type</span>
             <strong>{{ tenantType() }}</strong>
           </div>
           <div class="metric-pair">
-            <span>Workspaces</span>
-            <strong>Personal, Business, Net Worth</strong>
+            <span>Primary flow</span>
+            <strong>Accounts, transactions, plans</strong>
           </div>
         </article>
 
@@ -71,14 +74,15 @@ import { TenantContextService } from '../../tenant-context.service';
         </article>
 
         <article class="card">
-          <h2>Next actions</h2>
+          <h2>Related workflows</h2>
           <div class="link-list">
-            <a routerLink="/finance/personal/accounts"
+            <a [routerLink]="accountsRoute('accounts')"
               >Linked and manual accounts</a
             >
-            <a routerLink="/finance/personal/transactions"
+            <a [routerLink]="accountsRoute('transactions')"
               >Review transactions</a
             >
+            <a [routerLink]="plansRoute()">Browse plans</a>
             <a routerLink="/onboarding">Onboarding and setup</a>
           </div>
         </article>
@@ -194,6 +198,7 @@ import { TenantContextService } from '../../tenant-context.service';
 export class AccountPageComponent implements OnInit {
   readonly tenantContext = inject(TenantContextService);
   private readonly financeService = inject(FinanceService);
+  private readonly route = inject(ActivatedRoute);
   readonly summary = signal<FinanceWorkspaceSummary | null>(null);
   readonly loadError = signal<string>('');
   private readonly currencyFormatter = new Intl.NumberFormat(undefined, {
@@ -228,5 +233,17 @@ export class AccountPageComponent implements OnInit {
         "We couldn't load finance health for this account. Check your connection and try again."
       );
     }
+  }
+
+  plansRoute(): string[] {
+    return tenantPlansRoute(this.route.snapshot.paramMap.get('tenantId'));
+  }
+
+  accountsRoute(section: string): string[] {
+    return tenantAccountsRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      'personal',
+      section
+    );
   }
 }

@@ -290,4 +290,31 @@ describe('FinanceShellComponent', () => {
       fixture.componentInstance.workspaceSectionLink('business', 'checkout')
     ).toEqual(['/', 'owner', 'finance', 'business', 'checkout']);
   });
+
+  it('hides the setup status card after setup is complete', async () => {
+    const fixture = await renderShell({
+      url: '/owner/finance/personal/accounts',
+      hostConfig: {
+        routeBase: '/owner/finance',
+        shellTitle: 'Tenant Accounts',
+        defaultWorkspace: 'personal',
+      },
+      onboardingState: {
+        requiresOnboarding: false,
+        availableWorkspaces: ['personal', 'business', 'net-worth'],
+        checklist: [
+          { id: 'accounts', label: 'Add account', complete: true },
+          {
+            id: 'categorize-transactions',
+            label: 'Categorize transactions',
+            complete: true,
+          },
+          { id: 'create-budget', label: 'Create budget', complete: true },
+        ],
+      },
+    });
+
+    expect(fixture.nativeElement.textContent).not.toContain('Setup Progress');
+    expect(fixture.nativeElement.textContent).not.toContain('Review setup');
+  });
 });

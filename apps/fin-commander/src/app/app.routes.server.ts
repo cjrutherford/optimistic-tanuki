@@ -10,39 +10,51 @@ export const serverRoutes: ServerRoute[] = [
     renderMode: RenderMode.Prerender,
   },
   {
-    path: 'commander/:planId',
+    path: 'tenants/active',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'commander/:planId/overview',
+    path: 'tenants/:tenantId',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'commander/:planId/cash-flow',
+    path: 'tenants/:tenantId/overview',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'commander/:planId/goals',
+    path: 'tenants/:tenantId/plans',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'commander/:planId/scenarios',
+    path: 'tenants/:tenantId/plans/:planId/overview',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'commander/:planId/imports',
+    path: 'tenants/:tenantId/plans/:planId/cash-flow',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'finance',
+    path: 'tenants/:tenantId/plans/:planId/goals',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'finance/:workspace',
+    path: 'tenants/:tenantId/plans/:planId/scenarios',
     renderMode: RenderMode.Client,
   },
   {
-    path: 'finance/:workspace/:section',
+    path: 'tenants/:tenantId/plans/:planId/imports',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'tenants/:tenantId/accounts',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'tenants/:tenantId/accounts/:workspace',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'tenants/:tenantId/accounts/:workspace/:section',
     renderMode: RenderMode.Client,
   },
   {

@@ -1,16 +1,50 @@
+<ng-template #tree let-items let-depth="depth">
+  <ul class="nav-tree" [attr.data-depth]="depth">
+    @for (item of items; track item.label) {
+    <li class="nav-node">
+      <button
+        type="button"
+        class="nav-link"
+        [class.active]="item.isActive"
+        [class.group]="!!item.children?.length"
+        (click)="onNavItemClick(item)"
+      >
+        <span>{{ item.label }}</span>
+      </button>
+      @if (item.children?.length) {
+      <ng-container
+        [ngTemplateOutlet]="tree"
+        [ngTemplateOutletContext]="{
+          $implicit: item.children,
+          depth: depth + 1
+        }"
+      ></ng-container>
+      }
+    </li>
+    }
+  </ul>
+</ng-template>
+
+@if (mode === 'docked') {
+<otui-card class="nav-sidebar-card docked">
+  <div class="nav-heading">{{ heading }}</div>
+  <ng-container
+    [ngTemplateOutlet]="tree"
+    [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
+  ></ng-container>
+</otui-card>
+} @else {
 <otui-modal
   [heading]="heading"
   (close)="onClose()"
   [position]="'sidebar-left'"
   [visible]="isOpen"
 >
-  <otui-card>
-    <div class="nav-links">
-      @for (item of navItems; track item.label) {
-      <otui-button [variant]="getVariant(item)" (action)="onNavItemClick(item)">
-        {{ item.label }}
-      </otui-button>
-      }
-    </div>
+  <otui-card class="nav-sidebar-card">
+    <ng-container
+      [ngTemplateOutlet]="tree"
+      [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
+    ></ng-container>
   </otui-card>
 </otui-modal>
+}
