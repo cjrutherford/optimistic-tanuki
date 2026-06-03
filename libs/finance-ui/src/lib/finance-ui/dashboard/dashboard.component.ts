@@ -439,6 +439,21 @@ export class DashboardComponent implements OnInit {
   }
 
   private routeBaseSegments(): string[] {
-    return this.hostConfig.routeBase.split('/').filter(Boolean);
+    const configuredSegments = this.hostConfig.routeBase
+      .split('/')
+      .filter(Boolean);
+    const currentSegments = (
+      this.route.snapshot.pathFromRoot ?? [this.route.snapshot]
+    )
+      .flatMap((route) => (route.url ?? []).map((segment) => segment.path))
+      .filter(Boolean);
+
+    return configuredSegments.map((segment, index) =>
+      segment.startsWith(':')
+        ? this.route.snapshot.paramMap.get(segment.slice(1)) ??
+          currentSegments[index] ??
+          segment.slice(1)
+        : segment
+    );
   }
 }
