@@ -27,6 +27,7 @@ describe('LeadsService', () => {
   let leadTopicLinkRepository: jest.Mocked<Repository<LeadTopicLink>>;
   let qualificationRepository: jest.Mocked<Repository<LeadQualification>>;
   let leadQualificationService: jest.Mocked<LeadQualificationService>;
+  let emailService: { sendEmail: jest.Mock };
 
   const mockLead: Lead = {
     id: '123e4567-e89b-12d3-a456-426614174000',
@@ -138,7 +139,7 @@ describe('LeadsService', () => {
       logFailure: jest.fn(),
       saveOnboardingProfile: jest.fn(),
     };
-    const mockEmailService = {
+    emailService = {
       sendEmail: jest.fn().mockResolvedValue({ success: true }),
     };
 
@@ -171,7 +172,7 @@ describe('LeadsService', () => {
         },
         {
           provide: EmailService,
-          useValue: mockEmailService,
+          useValue: emailService,
         },
       ],
     }).compile();
@@ -321,6 +322,95 @@ describe('LeadsService', () => {
       );
       expect(repository.findOne).toHaveBeenCalled();
       expect(result.status).toBe(LeadStatus.CONTACTED);
+    });
+  });
+
+  describe('sendResponse', () => {
+    const dto = {
+      subject: 'Thanks for reaching out',
+      message: 'We can help with that.',
+      status: LeadStatus.QUALIFIED,
+      nextFollowUp: '2026-04-10',
+    };
+
+    it('should persist sent status when delivery succeeds', async () => {
+      repository.findOne
+        .mockResolvedValueOnce({ ...mockLead, flags: [] } as any)
+        .mockResolvedValueOnce({
+          ...mockLead,
+          ...dto,
+          notes: `${mockLead.notes}\n---\nOperator response sent: 2026-06-03T00:00:00.000Z\nSubject: ${dto.subject}\n${dto.message}`,
+          lastRespondedAt: new Date(),
+          flags: [],
+        } as any);
+
+      await service.sendResponse(mockLead.id, dto, authContext);
+
+      expect(emailService.sendEmail).toHaveBeenCalledWith({
+        to: mockLead.email,
+        subject: dto.subject,
+        text: dto.message,
+        replyTo: process.env.SMTP_FROM,
+      });
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: mockLead.id, profileId: authContext.profileId },
+        expect.objectContaining({
+          status: LeadStatus.QUALIFIED,
+          nextFollowUp: dto.nextFollowUp,
+          lastRespondedAt: expect.any(Date),
+          notes: expect.stringContaining('Operator response sent:'),
+        })
+      );
+    });
+
+    it('should return an error when no recipient email is available', async () => {
+      repository.findOne.mockResolvedValueOnce({
+        ...mockLead,
+        email: '',
+        flags: [],
+      } as any);
+
+      const result = await service.sendResponse(mockLead.id, dto, authContext);
+
+      expect(result).toEqual({
+        lead: { ...mockLead, email: '', flags: [], isFlagged: false },
+        delivery: {
+          success: false,
+          error: 'Lead does not have a recipient email address',
+        },
+      });
+      expect(emailService.sendEmail).not.toHaveBeenCalled();
+      expect(repository.update).not.toHaveBeenCalled();
+    });
+
+    it('should record a failure note without changing status when delivery fails', async () => {
+      emailService.sendEmail.mockResolvedValueOnce({
+        success: false,
+        error: 'SMTP unavailable',
+      });
+      repository.findOne
+        .mockResolvedValueOnce({ ...mockLead, flags: [] } as any)
+        .mockResolvedValueOnce({
+          ...mockLead,
+          notes: `${mockLead.notes}\n---\nOperator response failed: 2026-06-03T00:00:00.000Z\nSubject: ${dto.subject}\nSMTP unavailable`,
+          flags: [],
+        } as any);
+
+      const result = await service.sendResponse(mockLead.id, dto, authContext);
+
+      expect(repository.update).toHaveBeenCalledWith(
+        { id: mockLead.id, profileId: authContext.profileId },
+        expect.objectContaining({
+          status: mockLead.status,
+          nextFollowUp: mockLead.nextFollowUp,
+          lastRespondedAt: mockLead.lastRespondedAt,
+          notes: expect.stringContaining('Operator response failed:'),
+        })
+      );
+      expect(result.delivery).toEqual({
+        success: false,
+        error: 'SMTP unavailable',
+      });
     });
   });
 

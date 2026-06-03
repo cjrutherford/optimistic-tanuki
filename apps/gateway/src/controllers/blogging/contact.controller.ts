@@ -84,10 +84,8 @@ export class ContactController {
 
       const routing = await this.resolveRouting(contactLead);
       const linkedUserId =
-        contactLead.userId ||
-        user?.userId ||
-        `public-contact:${contactLead.appScope}`;
-      const linkedProfileId = contactLead.profileId || user?.profileId || '';
+        user?.userId || `public-contact:${contactLead.appScope}`;
+      const linkedProfileId = user?.profileId || '';
 
       const createLeadDto: CreateLeadDto = {
         name: contactLead.name.trim(),
@@ -344,13 +342,6 @@ export class ContactController {
   private async resolveRouting(
     payload: PublicContactLeadIntakeDto
   ): Promise<{ profileId: string; sourceLabel?: string }> {
-    if (payload.routingProfileId?.trim()) {
-      return {
-        profileId: payload.routingProfileId.trim(),
-        sourceLabel: payload.sourceLabel,
-      };
-    }
-
     const config = this.getRoutingConfig();
     const scopedConfig = config.appScopes?.[payload.appScope];
     const configuredProfileId =

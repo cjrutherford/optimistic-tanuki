@@ -129,6 +129,53 @@ describe('ContactController', () => {
     );
   });
 
+  it('should ignore public identity and routing overrides', async () => {
+    const dto: any = {
+      name: 'Test',
+      email: 'test@example.com',
+      subject: 'General',
+      message: 'This is a valid lead message.',
+      appScope: 'hai',
+      userId: 'spoof-user',
+      profileId: 'spoof-profile',
+      routingProfileId: 'spoof-routing-profile',
+    };
+    const user = {
+      userId: 'authenticated-user',
+      profileId: 'authenticated-profile',
+    };
+    leadService.send.mockReturnValue(of({ id: 'lead-1' }));
+
+    await controller.createContact(dto, user as any);
+
+    expect(leadService.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        context: expect.objectContaining({
+          userId: 'authenticated-user',
+          profileId: 'global-profile',
+        }),
+        dto: expect.objectContaining({
+          notes: expect.stringContaining(
+            'Linked profile: authenticated-profile'
+          ),
+        }),
+      })
+    );
+    expect(leadService.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        dto: expect.objectContaining({
+          notes: expect.not.stringContaining('spoof-profile'),
+        }),
+      })
+    );
+    expect(profileService.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.GetAll },
+      { where: { appScope: 'global' } }
+    );
+  });
+
   it('should find all contacts', async () => {
     const query: any = {};
     contactService.send.mockReturnValue(of([]));

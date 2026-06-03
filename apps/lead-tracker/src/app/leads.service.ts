@@ -166,20 +166,31 @@ export class LeadsService {
       replyTo: process.env.SMTP_FROM,
     });
 
+    const responseTimestamp = new Date().toISOString();
+    const responseHeader = delivery.success
+      ? `Operator response sent: ${responseTimestamp}`
+      : `Operator response failed: ${responseTimestamp}`;
+    const responseBody = delivery.success
+      ? [dto.message]
+      : [delivery.error || 'Email delivery failed'];
     const responseNote = [
       '',
       '---',
-      `Operator response sent: ${new Date().toISOString()}`,
+      responseHeader,
       `Subject: ${dto.subject}`,
-      dto.message,
+      ...responseBody,
     ].join('\n');
 
     await this.leadRepository.update(
       { id, profileId: context.profileId },
       {
         notes: `${lead.notes || ''}${responseNote}`.trim(),
-        status: dto.status || LeadStatus.CONTACTED,
-        nextFollowUp: dto.nextFollowUp || lead.nextFollowUp,
+        status: delivery.success
+          ? dto.status || LeadStatus.CONTACTED
+          : lead.status,
+        nextFollowUp: delivery.success
+          ? dto.nextFollowUp || lead.nextFollowUp
+          : lead.nextFollowUp,
         lastRespondedAt: delivery.success ? new Date() : lead.lastRespondedAt,
       }
     );

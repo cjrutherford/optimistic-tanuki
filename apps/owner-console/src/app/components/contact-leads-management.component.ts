@@ -174,7 +174,10 @@ import { ContactLeadsService } from '../services/contact-leads.service';
               <span>Post-send status</span>
               <select [(ngModel)]="responseModel.status">
                 <option [ngValue]="undefined">Contacted</option>
-                <option *ngFor="let status of statuses" [value]="status">
+                <option
+                  *ngFor="let status of postSendStatuses"
+                  [value]="status"
+                >
                   {{ status }}
                 </option>
               </select>
@@ -402,6 +405,9 @@ export class ContactLeadsManagementComponent implements OnInit {
   };
 
   readonly statuses = Object.values(LeadStatus);
+  readonly postSendStatuses = this.statuses.filter(
+    (status) => status !== LeadStatus.CONTACTED
+  );
 
   ngOnInit(): void {
     this.loadLeads();
@@ -455,7 +461,6 @@ export class ContactLeadsManagementComponent implements OnInit {
         lead.contactSubject ||
         `Re: ${lead.contactSourceLabel || lead.appScope} inquiry`,
       message: '',
-      status: LeadStatus.CONTACTED,
       nextFollowUp: this.toDateInputValue(lead.nextFollowUp),
     };
     this.responseStatus = null;
