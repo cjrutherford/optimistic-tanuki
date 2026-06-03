@@ -23,6 +23,7 @@ Use `docs/devops/docker-compose.md` as the canonical local-workflow guide.
 ```bash
 pnpm run docker:dev
 pnpm run docker:dev:bootstrap
+pnpm run docker:build
 pnpm run watch:build
 pnpm run docker:infra:up
 pnpm run watch:build:scope -- --projects=gateway
@@ -83,6 +84,14 @@ Deployment and management scripts are located in `scripts/`.
 | `deploy-staging.sh`    | Validate inventory, apply infra, and sync the staging overlay    |
 | `apply-terraform.sh`   | Apply Terraform configuration                                    |
 | `teardown.sh`          | Tear down Kubernetes resources                                   |
+
+### Docker Workflow Scripts
+
+| Script                     | Description                                                                    |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `docker-build-batched.sh`  | Planner-backed batched Compose image builds, default batch size `10`           |
+| `docker-start-phased.sh`   | Phased startup plus incremental restart of changed services when a plan exists |
+| `docker-plan-services.mjs` | Generates the changed-service manifest used by local Docker flows and CI       |
 
 ### Validation Scripts
 

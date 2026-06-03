@@ -2,12 +2,24 @@
 set -euo pipefail
 
 DRY_RUN=0
+FULL_RESTART=0
 COMPOSE_FILE="docker-compose.yaml"
 
-if [ "${1:-}" = "--dry-run" ]; then
-    DRY_RUN=1
-    shift
-fi
+while [ "$#" -gt 0 ]; do
+    case "${1:-}" in
+        --dry-run)
+            DRY_RUN=1
+            shift
+            ;;
+        --full-restart)
+            FULL_RESTART=1
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
 
 if [[ "${1:-}" == *"docker-compose"* ]]; then
     COMPOSE_FILE="$1"
@@ -45,6 +57,50 @@ run_compose() {
     fi
 }
 
+STATE_DIR=${DOCKER_BUILD_STATE_DIR:-tmp/docker-compose-state}
+PLAN_FILE=${DOCKER_BUILD_PLAN_FILE:-$STATE_DIR/$(basename "$COMPOSE_FILE").plan.json}
+
+restart_from_plan() {
+    if [ "$FULL_RESTART" -eq 1 ] || [ ! -f "$PLAN_FILE" ]; then
+        return 1
+    fi
+
+    local restart_services
+    restart_services=$(node -e '
+const fs = require("fs");
+const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+for (const service of plan.restartServices || []) {
+  console.log(service);
+}
+' "$PLAN_FILE")
+
+    local running_services
+    if [ "$DRY_RUN" -eq 1 ]; then
+        running_services="placeholder"
+    else
+        running_services=$(docker compose "${COMPOSE_FLAGS[@]}" ps --services --filter status=running)
+    fi
+
+    if [ -z "$running_services" ]; then
+        return 1
+    fi
+
+    if [ -z "$restart_services" ]; then
+        echo "No changed services require restart"
+        run_compose ps
+        rm -f "$PLAN_FILE"
+        exit 0
+    fi
+
+    mapfile -t RESTART_ARRAY <<< "$restart_services"
+    echo "=== Incremental restart ==="
+    run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
+    echo ""
+    run_compose ps
+    rm -f "$PLAN_FILE"
+    exit 0
+}
+
 run_phase() {
     local description="$1"
     local phase_delay="$2"
@@ -62,6 +118,10 @@ run_phase() {
     fi
     echo ""
 }
+
+if restart_from_plan; then
+    exit 0
+fi
 
 echo "=== Phase 1: Infrastructure (postgres, redis) ==="
 run_compose up -d "${EXTRA_FLAGS[@]}" postgres redis

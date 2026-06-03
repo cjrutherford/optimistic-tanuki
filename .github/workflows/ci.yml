@@ -43,11 +43,36 @@ jobs:
       - name: Derive SHAs for nx affected
         uses: nrwl/nx-set-shas@v4
 
+      - name: Generate Docker change plan
+        run: |
+          mkdir -p tmp/docker-workflow
+          node scripts/docker-plan-services.mjs \
+            --workspace-root "$PWD" \
+            --compose-file docker-compose.yaml \
+            --write-plan tmp/docker-workflow/services.plan.json \
+            --base-ref "${{ env.NX_BASE }}" \
+            --head-ref "${{ env.NX_HEAD }}"
+
       - name: Check formatting
         run: pnpm exec nx format:check --base=${{ env.NX_BASE }} --head=${{ env.NX_HEAD }}
 
       - name: Validate nx workspace
         run: pnpm exec nx show projects
+
+      - name: Upload Docker plan artifact
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: docker-plan
+          path: tmp/docker-workflow/services.plan.json
+          retention-days: 7
+
+      - name: Save Docker plan cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: tmp/docker-workflow/services.plan.json
+          key: docker-plan-${{ github.sha }}-ci
 
   # Main CI job with affected commands
   affected:

@@ -81,7 +81,12 @@ run_seed_from_workspace() {
   shift 2
 
   echo "Seeding ${service} from workspace mount..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -w "$workdir" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 run_seed_from_workspace_env() {
@@ -92,7 +97,12 @@ run_seed_from_workspace_env() {
   shift 4
 
   echo "Seeding ${service} from workspace mount..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "${env_key}=${env_value}" -w "$workdir" "$service" "$@"
+  docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
 refresh_service() {
@@ -199,10 +209,16 @@ run_seed_with_media_volume_from_image() {
   workdir="$2"
   shift 2
 
-  echo "Seeding ${service} from a one-shot container..."
-  docker compose ${COMPOSE_FILES} run --rm -T --no-deps -e "ASSETS_HOST=assets" -w "$workdir" "$service" "$@"
+  echo "Seeding ${service} inside running container..."
+  docker compose ${COMPOSE_FILES} exec -T -e "ASSETS_HOST=assets" "$service" sh -lc '
+    workdir="$1"
+    shift
+    cd "$workdir"
+    exec "$@"
+  ' sh "${workdir}" "$@"
 }
 
+refresh_service videos
 run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"

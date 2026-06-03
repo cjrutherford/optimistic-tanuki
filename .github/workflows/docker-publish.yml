@@ -12,98 +12,87 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  determine_changes:
+    name: Determine Changed Images
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Restore Docker plan cache
+        id: restore-plan
+        uses: actions/cache/restore@v4
+        with:
+          path: tmp/docker-workflow/services.plan.json
+          key: docker-plan-${{ github.sha }}-docker-publish
+          restore-keys: |
+            docker-plan-${{ github.sha }}-
+
+      - name: Install dependencies
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Derive SHAs for docker planning
+        if: steps.restore-plan.outputs.cache-hit != 'true' && github.event_name != 'workflow_dispatch'
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Generate Docker change plan fallback
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p tmp/docker-workflow
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node scripts/docker-plan-services.mjs \
+              --workspace-root "$PWD" \
+              --compose-file docker-compose.yaml \
+              --write-plan tmp/docker-workflow/services.plan.json \
+              --force-all
+          else
+            node scripts/docker-plan-services.mjs \
+              --workspace-root "$PWD" \
+              --compose-file docker-compose.yaml \
+              --write-plan tmp/docker-workflow/services.plan.json \
+              --base-ref "${{ env.NX_BASE }}" \
+              --head-ref "${{ env.NX_HEAD }}"
+          fi
+
+      - name: Resolve changed app matrix
+        id: matrix
+        run: |
+          MATRIX=$(node --input-type=module -e "import fs from 'node:fs'; import { resolveDockerBuildMatrix } from './scripts/lib/docker-build-matrix.mjs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write(JSON.stringify(resolveDockerBuildMatrix({ buildApps: plan.buildApps || [] })));")
+          HAS_CHANGES=$(node --input-type=module -e "import fs from 'node:fs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write((plan.buildApps || []).length > 0 ? 'true' : 'false');")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "has_changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
+
+      - name: Save Docker plan cache
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: tmp/docker-workflow/services.plan.json
+          key: docker-plan-${{ github.sha }}-docker-publish
+
   build_and_push:
     name: Build and Push ${{ matrix.app }}
     runs-on: ubuntu-24.04
+    needs: [determine_changes]
+    if: needs.determine_changes.outputs.has_changes == 'true'
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix:
-        include:
-          - app: ai-orchestrator
-            type: service
-          - app: app-configurator
-            type: service
-          - app: assets
-            type: service
-          - app: authentication
-            type: service
-          - app: blogging
-            type: service
-          - app: business-site
-            type: client
-          - app: chat-collector
-            type: service
-          - app: christopherrutherford-net
-            type: client
-          - app: classifieds
-            type: service
-          - app: client-interface
-            type: client
-          - app: configurable-client
-            type: client
-          - app: d6
-            type: client
-          - app: digital-homestead
-            type: client
-          - app: fin-commander
-            type: client
-          - app: finance
-            type: service
-          - app: forgeofwill
-            type: client
-          - app: forum
-            type: service
-          - app: gateway
-            type: service
-          - app: hai
-            type: client
-          - app: lead-tracker
-            type: service
-          - app: leads-app
-            type: client
-          - app: local-hub
-            type: client
-          - app: marketing-generator
-            type: client
-          - app: ui-playground
-            type: client
-          - app: owner-console
-            type: client
-          - app: payments
-            type: service
-          - app: permissions
-            type: service
-          - app: profile
-            type: service
-          - app: project-planning
-            type: service
-          - app: prompt-proxy
-            type: service
-          - app: social
-            type: service
-          - app: store
-            type: service
-          - app: store-client
-            type: client
-          - app: system-configurator
-            type: client
-          - app: system-configurator-api
-            type: service
-          - app: telos-docs-service
-            type: service
-          - app: video-client
-            type: client
-          - app: video-transcoder-worker
-            type: service
-          - app: videos
-            type: service
-          - app: wellness
-            type: service
-          - app: business-configurator
-            type: client
-          - app: developer-portal
-            type: client
+      matrix: ${{ fromJson(needs.determine_changes.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -120,25 +109,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Install pnpm
-        if: matrix.type == 'service'
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        if: matrix.type == 'service'
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          cache: 'pnpm'
-
-      - name: Install Dependencies
-        if: matrix.type == 'service'
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Nx Projects
-        if: matrix.type == 'service'
-        run: pnpm exec nx build ${{ matrix.app }} --configuration=production
 
       - name: Extract Docker metadata
         id: meta
@@ -159,3 +129,5 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}

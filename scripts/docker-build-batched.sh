@@ -2,13 +2,18 @@
 set -euo pipefail
 
 DRY_RUN=0
-BATCH_SIZE=${DOCKER_BATCH_SIZE:-4}
+FORCE_ALL=0
+BATCH_SIZE=${DOCKER_BATCH_SIZE:-10}
 COMPOSE_FILE="docker-compose.yaml"
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --dry-run)
             DRY_RUN=1
+            shift
+            ;;
+        --full-rebuild)
+            FORCE_ALL=1
             shift
             ;;
         -*)
@@ -53,6 +58,55 @@ export BUILDX_CONFIG=${BUILDX_CONFIG:-/tmp/ot-buildx}
 
 mkdir -p "$BUILDX_CONFIG"
 
+STATE_DIR=${DOCKER_BUILD_STATE_DIR:-tmp/docker-compose-state}
+PLAN_FILE=${DOCKER_BUILD_PLAN_FILE:-$STATE_DIR/$(basename "$COMPOSE_FILE").plan.json}
+STATE_FILE=${DOCKER_BUILD_STATE_FILE:-$STATE_DIR/$(basename "$COMPOSE_FILE").state.json}
+
+mkdir -p "$STATE_DIR"
+
+PLAN_ARGS=(
+    scripts/docker-plan-services.mjs
+    --workspace-root
+    "$PWD"
+    --compose-file
+    "$COMPOSE_FILE"
+    --state-file
+    "$STATE_FILE"
+    --write-plan
+    "$PLAN_FILE"
+)
+
+if [ "$FORCE_ALL" -eq 1 ]; then
+    PLAN_ARGS+=(--force-all)
+fi
+
+SAVE_ARGS=(
+    scripts/docker-plan-services.mjs
+    --workspace-root
+    "$PWD"
+    --compose-file
+    "$COMPOSE_FILE"
+    --state-file
+    "$STATE_FILE"
+    --write-plan
+    "$PLAN_FILE"
+    --save-state
+)
+
+if [ "$FORCE_ALL" -eq 1 ]; then
+    SAVE_ARGS+=(--force-all)
+fi
+
+node "${PLAN_ARGS[@]}" >/dev/null
+
+SERVICES=$(node -e '
+const fs = require("fs");
+const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+for (const service of plan.buildServices || []) {
+  console.log(service);
+}
+' "$PLAN_FILE")
+
 if [ -n "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     BAKE_FILE="$DOCKER_BUILD_BAKE_FILE"
     CLEANUP_BAKE_FILE=0
@@ -68,16 +122,6 @@ fi
 if [ -z "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     docker compose "${COMPOSE_FLAGS[@]}" build --print > "$BAKE_FILE"
 fi
-
-SERVICES=$(node -e '
-const fs = require("fs");
-const bake = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-for (const name of Object.keys(bake.target ?? {})) {
-  if (name !== "db-setup" && !name.endsWith("-seed")) {
-    console.log(name);
-  }
-}
-' "$BAKE_FILE")
 
 run_bake() {
     if [ "$DRY_RUN" -eq 1 ]; then
@@ -98,7 +142,8 @@ process.exit(Object.prototype.hasOwnProperty.call(bake.target ?? {}, "db-setup")
 fi
 
 if [ -z "$SERVICES" ]; then
-    echo "No services with build sections found in $COMPOSE_FILE"
+    echo "No changed services to build for $COMPOSE_FILE"
+    node "${SAVE_ARGS[@]}" >/dev/null
     exit 0
 fi
 
@@ -132,3 +177,5 @@ if [ "${#BATCH[@]}" -gt 0 ]; then
 fi
 
 echo "=== Build complete ==="
+
+node "${SAVE_ARGS[@]}" >/dev/null

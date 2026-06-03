@@ -67,7 +67,13 @@ The repo supports three local development modes:
 - hybrid inner loop for fast single-app iteration
 - plain production-like Compose for image startup checks
 
-The Docker dev stack is intentionally expensive: `pnpm run docker:dev` does a full Nx build, Docker image builds, and phased startup before the stack is usable.
+The Docker dev stack is still expensive on the first run: `pnpm run docker:dev` does a full Nx build, Docker image builds, and phased startup before the stack is usable.
+
+After that first run, the root Compose workflow now prefers incremental image rebuilds and targeted container restarts:
+
+- `pnpm run docker:build` and related batched build scripts default to batch size `10`
+- only changed services are rebuilt when the planner can prove their Docker inputs changed
+- phased startup reuses the generated restart plan to restart changed services and their dependents instead of replaying the full stack start every time
 
 The dist-driven container loop is:
 
@@ -81,6 +87,13 @@ Recommended turnaround strategy:
 2. Use `pnpm run watch:build:scope -- --projects=<project>` for the active app.
 3. Use the full Compose dev stack only when validating cross-service integration.
 4. Use `pnpm run docker:dev:reset` only when image or volume drift makes targeted iteration unreliable.
+
+Useful Docker escape hatches:
+
+```bash
+./scripts/docker-build-batched.sh --full-rebuild
+./scripts/docker-start-phased.sh --full-restart
+```
 
 ```bash
 # Full Compose dev stack
