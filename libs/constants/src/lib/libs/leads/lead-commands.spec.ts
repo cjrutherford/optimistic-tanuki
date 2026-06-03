@@ -28,4 +28,8 @@ describe('LeadCommands', () => {
   it('should have correct SEARCH command', () => {
     expect(LeadCommands.SEARCH).toBe('lead.search');
   });
+
+  it('should have correct SEND_RESPONSE command', () => {
+    expect(LeadCommands.SEND_RESPONSE).toBe('lead.sendResponse');
+  });
 });

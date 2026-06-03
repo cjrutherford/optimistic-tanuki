@@ -13,6 +13,7 @@ import {
   LocationAutocompleteSuggestion,
   LeadTopicDiscoveryResultDto,
   RunLeadTopicDiscoveryDto,
+  SendLeadResponseDto,
   UpdateLeadDto,
   UpdateLeadTopicDto,
   UserOnboardingProfile,
@@ -42,7 +43,13 @@ export class LeadsController {
 
   @MessagePattern({ cmd: LeadCommands.FIND_ALL })
   async findAll(
-    @Payload() filters?: { status?: string; source?: string; profileId: string }
+    @Payload()
+    filters?: {
+      status?: string;
+      source?: string;
+      appScope?: string;
+      profileId: string;
+    }
   ) {
     return this.leadsService.findAll(filters);
   }
@@ -79,6 +86,18 @@ export class LeadsController {
   @MessagePattern({ cmd: LeadCommands.GET_STATS })
   async getStats(@Payload() data: { profileId: string }) {
     return this.leadsService.getStats(data.profileId);
+  }
+
+  @MessagePattern({ cmd: LeadCommands.SEND_RESPONSE })
+  async sendResponse(
+    @Payload()
+    data: {
+      id: string;
+      dto: SendLeadResponseDto;
+      context: LeadAuthContext;
+    }
+  ) {
+    return this.leadsService.sendResponse(data.id, data.dto, data.context);
   }
 
   @MessagePattern({ cmd: LeadTopicCommands.FIND_ALL })

@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ForumPostDto, ThreadDto, TopicDto } from '@optimistic-tanuki/models';
+import {
+  ForumPostDto,
+  ThreadDto,
+  TopicDto,
+} from '@optimistic-tanuki/ui-models';
 import { ForumModerationReport, ForumService } from '../services/forum.service';
 
 @Component({

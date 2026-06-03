@@ -14,7 +14,7 @@ services:
     container_name: ot_authentication # Corrected typo
     build:
       context: .
-      dockerfile: ./apps/authentication/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/authentication:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
@@ -49,8 +49,9 @@ services:
     container_name: ot_client_interface # Added
     build:
       context: .
-      dockerfile: ./apps/client-interface/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       # The new Dockerfile handles copying built assets, so direct volume mounting of dist might conflict or be unnecessary for SSR.
@@ -86,8 +87,9 @@ services:
     container_name: fow_client_interface # Added
     build:
       context: .
-      dockerfile: ./apps/forgeofwill/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/forgeofwill:/app/apps/forgeofwill
@@ -117,8 +119,9 @@ services:
     container_name: dh_client_interface # Added
     build:
       context: .
-      dockerfile: ./apps/digital-homestead/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/digital-homestead:/app/apps/digital-homestead
@@ -148,8 +151,9 @@ services:
     container_name: hai_client_interface
     build:
       context: .
-      dockerfile: ./apps/hai/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/hai:/app/apps/hai
@@ -180,8 +184,9 @@ services:
     container_name: ot_fin_commander
     build:
       context: .
-      dockerfile: ./apps/fin-commander/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/fin-commander:/app/apps/fin-commander
@@ -212,8 +217,9 @@ services:
     container_name: ot_marketing_generator
     build:
       context: .
-      dockerfile: ./apps/marketing-generator/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/marketing-generator:/app/apps/marketing-generator
@@ -244,7 +250,7 @@ services:
     container_name: ot_ui_playground
     build:
       context: .
-      dockerfile: ./apps/ui-playground/Dockerfile
+      dockerfile: ./docker/dev/static-runtime.Dockerfile
       args:
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
@@ -259,8 +265,9 @@ services:
     container_name: ot_business_site
     build:
       context: .
-      dockerfile: ./apps/business-site/Dockerfile.dev
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/business-site:/app/apps/business-site
@@ -293,7 +300,9 @@ services:
     container_name: crdn_client_interface # Added
     build:
       context: .
-      dockerfile: ./apps/christopherrutherford-net/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./apps/christopherrutherford-net:/app/apps/christopherrutherford-net
       - ./libs:/app/libs
@@ -318,11 +327,45 @@ services:
     environment:
       - NODE_ENV=development
 
+  owner-console:
+    container_name: owner_console
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
+    volumes:
+      - ./apps/owner-console:/app/apps/owner-console
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /app/node_modules
+    ports:
+      - '${OWNER_CONSOLE_PORT:-8084}:4000'
+      - '9254:9254'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/owner-console/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/owner-console/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9254 /app/dist/apps/owner-console/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   leads-app:
     container_name: ot_leads_app
     build:
       context: .
-      dockerfile: ./apps/leads-app/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./apps/leads-app:/app/apps/leads-app
       - ./libs:/app/libs
@@ -352,7 +395,9 @@ services:
     container_name: ot_system_configurator
     build:
       context: .
-      dockerfile: ./apps/system-configurator/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./apps/system-configurator:/app/apps/system-configurator
       - ./dist/apps:/app/dist/apps
@@ -383,9 +428,9 @@ services:
     container_name: ot_business_configurator
     build:
       context: .
-      dockerfile: ./apps/business-configurator/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
-        - BUILD_CONFIGURATION=development
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/business-configurator:/app/apps/business-configurator
@@ -418,8 +463,9 @@ services:
     container_name: ot_developer_portal
     build:
       context: .
-      dockerfile: ./apps/developer-portal/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/developer-portal:/app/apps/developer-portal
@@ -448,11 +494,116 @@ services:
     depends_on:
       - gateway
 
+  configurable-client:
+    container_name: ot_configurable_client
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/configurable-client:/app/apps/configurable-client
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /app/node_modules
+    ports:
+      - '${CONFIGURABLE_CLIENT_PORT:-8090}:4000'
+      - '9253:9253'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/configurable-client/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/configurable-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9253 /app/dist/apps/configurable-client/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+      - app-configurator
+      - app-configurator-seed
+
+  store-client:
+    container_name: ot_store_client
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
+    volumes:
+      - ./apps/store-client:/app/apps/store-client
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /app/node_modules
+    ports:
+      - '${STORE_CLIENT_PORT:-8085}:4000'
+      - '9255:9255'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/store-client/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/store-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9255 /app/dist/apps/store-client/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
+  local-hub-client-interface:
+    container_name: ot_local_hub
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
+    volumes:
+      - ./apps/local-hub:/app/apps/local-hub
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /app/node_modules
+    ports:
+      - '${LOCAL_HUB_PORT:-8087}:4000'
+      - '9256:9256'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/local-hub/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/local-hub/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9256 /app/dist/apps/local-hub/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+    depends_on:
+      - gateway
+
   system-configurator-api:
     container_name: ot_system_configurator_api
     build:
       context: .
-      dockerfile: ./apps/system-configurator-api/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/system-configurator-api:/usr/src/app
       - /usr/src/app/node_modules
@@ -486,11 +637,210 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  app-configurator:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/app-configurator:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  app-configurator-seed:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/app-configurator:/usr/src/app
+      - /usr/src/app/node_modules
+    command: sh -c "sleep 5 && node seed-script.js"
+
+  forum:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/forum:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  permissions:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/permissions:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  store:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/store:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  chat-collector:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/chat-collector:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  prompt-proxy:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/prompt-proxy:/usr/src/app
+      - ./apps/prompt-proxy/src/assets/config.yaml:/usr/src/assets/config.yaml:ro
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  ai-orchestration:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/ai-orchestrator:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  telos-docs-service:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/telos-docs-service:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  blogging:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/blogging:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
   gateway:
     container_name: ot_gateway # Added
     build:
       context: .
-      dockerfile: ./apps/gateway/Dockerfile.dev
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
       - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
@@ -598,7 +948,7 @@ services:
     container_name: ot_profile
     build:
       context: .
-      dockerfile: ./apps/profile/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/profile:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
@@ -629,7 +979,7 @@ services:
     container_name: ot_project_planning
     build:
       context: .
-      dockerfile: ./apps/project-planning/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/project-planning:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
@@ -658,7 +1008,7 @@ services:
     container_name: ot_lead_tracker
     build:
       context: .
-      dockerfile: ./apps/lead-tracker/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/lead-tracker:/usr/src/app/dist/apps/lead-tracker
     command:
@@ -695,7 +1045,7 @@ services:
     container_name: ot_social
     build:
       context: .
-      dockerfile: ./apps/social/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/social:/usr/src/app
       - /usr/src/app/node_modules # Ensures node_modules from the image are used
@@ -712,7 +1062,9 @@ services:
     container_name: ot_wellness
     build:
       context: .
-      dockerfile: ./apps/wellness/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./dist/apps/wellness:/app/wellness
       - ./apps/wellness/src/assets/config.yaml:/app/wellness/assets/config.yaml:ro
@@ -742,7 +1094,9 @@ services:
     container_name: ot_classifieds
     build:
       context: .
-      dockerfile: ./apps/classifieds/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./dist/apps:/app/dist/apps
       - ./apps/classifieds/src/assets:/app/dist/apps/assets
@@ -772,7 +1126,7 @@ services:
     container_name: ot_payments
     build:
       context: .
-      dockerfile: ./apps/payments/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/payments:/usr/src/app
       - ./apps/payments/src/assets:/usr/src/app/assets
@@ -804,7 +1158,7 @@ services:
     container_name: ot_finance
     build:
       context: .
-      dockerfile: ./apps/finance/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps:/usr/src/app/dist/apps
       - /usr/src/app/node_modules
@@ -836,7 +1190,7 @@ services:
     container_name: ot_assets
     build:
       context: .
-      dockerfile: ./apps/assets/Dockerfile
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     user: '0:0'
     volumes:
       - ./dist/apps/assets:/usr/src/app
@@ -870,8 +1224,9 @@ services:
     container_name: ot_d6
     build:
       context: .
-      dockerfile: ./apps/d6/Dockerfile
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
       args:
+        - APP_ROOT=/app
         - GIT_SHA=${GIT_SHA:-unknown}
     volumes:
       - ./apps/d6:/app/apps/d6
@@ -899,6 +1254,9 @@ services:
 
   videos:
     container_name: ot_videos
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps:/usr/src/app/dist/apps
       - /usr/src/app/node_modules
@@ -925,12 +1283,22 @@ services:
     container_name: ot_video_transcoder_worker
     build:
       context: .
-      dockerfile: ./apps/video-transcoder-worker/Dockerfile
+      dockerfile: ./docker/dev/go-runtime.Dockerfile
     volumes:
+      - ./dist/apps/video-transcoder-worker:/usr/src/app
       - asset-data:/usr/src/app/storage
       - video-processing-data:/tmp/video-processing
+    environment:
+      - PORT=3023
+      - HOST=0.0.0.0
+      - VIDEO_TRANSCODER_OUTPUT_ROOT=/tmp/video-processing
 
   video-client:
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
     volumes:
       - ./dist/apps/video-client:/app/dist/apps/video-client
     command:

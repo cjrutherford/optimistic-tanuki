@@ -49,6 +49,9 @@ echo ""
 
 export DOCKER_BUILDKIT=1
 export BUILDKIT_PROGRESS=plain
+export BUILDX_CONFIG=${BUILDX_CONFIG:-/tmp/ot-buildx}
+
+mkdir -p "$BUILDX_CONFIG"
 
 if [ -n "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     BAKE_FILE="$DOCKER_BUILD_BAKE_FILE"

@@ -1,9 +1,11 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import {
   HaiAppDirectoryService,
   HaiExpansionComponent,
 } from '@optimistic-tanuki/hai-ui';
+import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import {
   AuroraRibbonComponent,
   PulseRingsComponent,
@@ -17,6 +19,7 @@ import {
   imports: [
     CommonModule,
     HaiExpansionComponent,
+    ContactFormComponent,
     AuroraRibbonComponent,
     PulseRingsComponent,
     ShimmerBeamComponent,
@@ -28,8 +31,11 @@ import {
 export class LandingComponent {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly appDirectory = inject(HaiAppDirectoryService);
+  private readonly http = inject(HttpClient);
 
   readonly ecosystem$ = this.appDirectory.getResolvedApps('hai');
+  submittingContact = false;
+  contactStatus: string | null = null;
 
   readonly servicePillars = [
     {
@@ -74,6 +80,13 @@ export class LandingComponent {
     },
   ];
 
+  readonly contactSubjects = [
+    { value: 'software-delivery', label: 'Software Delivery' },
+    { value: 'cloud-architecture', label: 'Cloud Architecture' },
+    { value: 'personal-cloud', label: 'Personal Cloud' },
+    { value: 'general', label: 'General Inquiry' },
+  ];
+
   get reducedMotion(): boolean {
     if (!isPlatformBrowser(this.platformId)) {
       return true;
@@ -84,5 +97,34 @@ export class LandingComponent {
     }
 
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
+  submitContactForm(event: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+  }) {
+    this.submittingContact = true;
+    this.contactStatus = null;
+
+    this.http
+      .post('/api/contact', {
+        ...event,
+        appScope: 'hai',
+        sourcePage: '/#contact',
+        sourceLabel: 'HAI',
+      })
+      .subscribe({
+        next: () => {
+          this.submittingContact = false;
+          this.contactStatus = 'Message received. We will follow up shortly.';
+        },
+        error: () => {
+          this.submittingContact = false;
+          this.contactStatus =
+            'Unable to submit the message right now. Please try again shortly.';
+        },
+      });
   }
 }

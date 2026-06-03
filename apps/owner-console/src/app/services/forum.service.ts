@@ -7,7 +7,7 @@ import {
   UpdateTopicDto,
   UpdateThreadDto,
   ForumPostDto,
-} from '@optimistic-tanuki/models';
+} from '@optimistic-tanuki/ui-models';
 
 export interface ForumModerationReport {
   id: string;

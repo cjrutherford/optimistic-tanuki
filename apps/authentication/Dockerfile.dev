@@ -1,0 +1,17 @@
+FROM docker.io/node:24-alpine AS runner
+RUN apk add --no-cache dumb-init libc6-compat
+
+WORKDIR /usr/src/app
+
+ENV NODE_ENV=development
+ENV PORT=3001
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
+COPY libs/ ./libs/
+COPY apps/authentication/ ./apps/authentication/
+
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
+
+EXPOSE 3001
+
+CMD ["dumb-init", "node", "main.js"]
