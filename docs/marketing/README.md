@@ -50,6 +50,10 @@ flowchart LR
 
 Each one-pager uses the same structure: audience, promise, workflow, proof, deployment posture, and call to action.
 
+## Core Messaging Reference
+
+- [Messaging Pillars](./messaging-pillars.md) is the canonical source for positioning, the 5 messaging pillars, the elevator pitch, tone guidelines, and the FAQ outline. Start here when generating any outward-facing content.
+
 ## Platform And Developer Materials
 
 - [Repo Story](./repo-story.md) connects the products, service layer, deployment tooling, and package path into one pitch.
@@ -58,6 +62,20 @@ Each one-pager uses the same structure: audience, promise, workflow, proof, depl
 - [Admin Environment Wizard Demo Script](./admin-env-demo-script.md) gives an ops-oriented walkthrough from generated deployment output to a live gateway contract.
 - [Service Offerings](./service-offerings.md), [Library Offerings](./library-offerings.md), and [Pricing Models](./pricing-models.md) capture current packaging vocabulary and constraints.
 - [Design System: Personalities](../design-system/personalities.md) catalogs the 12 personalities, the canonical product mapping, and the distinctiveness matrix used by the theme system.
+
+## Agent Prompts For Generating Marketing Materials
+
+These prompts live in `.github/prompts/` and can be used with any AI agent that supports prompt files. Each prompt loads the relevant ground truth docs and provides output structure, tone, and constraint guidance.
+
+| Prompt | Use it to |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| `generate-product-landing-copy.prompt.md` | Write landing page hero copy, feature highlights, and CTAs for any product |
+| `generate-social-posts.prompt.md` | Write Twitter/X, LinkedIn, and Mastodon post sets per product or theme |
+| `generate-email-campaign.prompt.md` | Write announcement, nurture, onboarding, or developer email sequences |
+| `generate-developer-pitch.prompt.md` | Write SDK getting-started guides, README sections, blog posts, and API overviews |
+| `generate-platform-pitch.prompt.md` | Write pitch deck narratives, one-pagers, capabilities briefs, and demo scripts for operator and platform audiences |
+
+All prompts require agents to read the ground truth files in `docs/marketing/` before generating output, and to anchor all claims to repo evidence.
 
 ## Current Boundaries
 
