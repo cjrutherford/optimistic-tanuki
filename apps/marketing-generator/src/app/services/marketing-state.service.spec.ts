@@ -188,4 +188,19 @@ describe('MarketingStateService', () => {
     expect(localStorage.getItem('signal-foundry-workspaces')).not.toBe('{');
     expect(localStorage.getItem('signal-foundry-concepts')).toBeNull();
   });
+
+  it('exposes operator-facing workspace status for shell surfaces', () => {
+    const service = TestBed.inject(MarketingStateService);
+
+    service.createWorkspace('Launch Sprint');
+    service.renameCurrentWorkspace('Launch Sprint v2');
+
+    expect(service.workspaceStatus().storageLabel).toBe('Browser storage only');
+    expect(service.workspaceStatus().currentWorkspaceName).toBe(
+      'Launch Sprint v2'
+    );
+    expect(service.workspaceStatus().workspaceCount).toBeGreaterThan(0);
+    expect(service.workspaceStatus().currentVersionCount).toBeGreaterThan(0);
+    expect(service.workspaceStatus().lastSavedAt).toEqual(expect.any(String));
+  });
 });

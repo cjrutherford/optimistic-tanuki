@@ -114,4 +114,13 @@ describe('LandingComponent', () => {
     expect(nativeElement.querySelector('.manifesto-rail')).not.toBeNull();
     expect(nativeElement.querySelector('otui-shimmer-beam')).not.toBeNull();
   });
+
+  it('keeps the primary messaging serious while leaving the acronym section playful', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Software, cloud, and personal-cloud systems');
+    expect(text).toContain('Build durable software');
+    expect(text).toContain('A lighter note');
+    expect(text).not.toContain('essentially meaningless');
+  });
 });

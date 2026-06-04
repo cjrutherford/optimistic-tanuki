@@ -256,6 +256,15 @@ export interface MarketingWorkspace {
   versions: MarketingWorkspaceVersion[];
 }
 
+export interface MarketingWorkspaceStatus {
+  storageLabel: string;
+  currentWorkspaceName: string;
+  workspaceCount: number;
+  currentVersionCount: number;
+  conceptCount: number;
+  lastSavedAt: string;
+}
+
 export interface MarketingEvent {
   id: string;
   type: MarketingEventType;

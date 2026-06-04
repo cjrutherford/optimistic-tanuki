@@ -18,6 +18,7 @@ import {
   GenerationProvenance,
   GenerationRequest,
   MarketingWorkspace,
+  MarketingWorkspaceStatus,
   MaterialSurface,
   PricingModel,
 } from '../types';
@@ -62,6 +63,58 @@ interface EditorSurface {
     MaterialTemplatePreviewComponent,
   ],
   template: `
+    <section class="command-deck" *ngIf="concepts().length">
+      <article class="deck-card deck-card-primary">
+        <span class="eyebrow">Operating status</span>
+        <h2>{{ workspaceStatus().currentWorkspaceName }}</h2>
+        <p>
+          {{ workspaceStatus().storageLabel }} ·
+          {{ formatSavedAt(workspaceStatus().lastSavedAt) }}
+        </p>
+        <div class="deck-metrics">
+          <div>
+            <strong>{{ workspaceStatus().workspaceCount }}</strong>
+            <span>workspaces</span>
+          </div>
+          <div>
+            <strong>{{ workspaceStatus().currentVersionCount }}</strong>
+            <span>versions</span>
+          </div>
+          <div>
+            <strong>{{ workspaceStatus().conceptCount }}</strong>
+            <span>concepts</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="deck-card">
+        <span class="eyebrow">Generation provenance</span>
+        <h2>{{ provenanceLabel(selectedConcept().generationProvenance) }}</h2>
+        <p>
+          {{ provenanceDescription(selectedConcept().generationProvenance) }}
+        </p>
+        <ul class="deck-list">
+          <li>
+            AI polish:
+            {{
+              request.includeAiPolish
+                ? 'enabled for this run'
+                : 'disabled for this run'
+            }}
+          </li>
+          <li>Primary channel: {{ request.channel | titlecase }}</li>
+          <li>
+            Deliverables:
+            {{
+              request.deliverables.length
+                ? request.deliverables.length + ' configured'
+                : 'native channel output only'
+            }}
+          </li>
+        </ul>
+      </article>
+    </section>
+
     <section class="results-layout" *ngIf="concepts().length; else emptyState">
       <article class="gallery-panel">
         <div class="panel-head">
@@ -916,6 +969,73 @@ interface EditorSurface {
   `,
   styles: [
     `
+      .command-deck {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .deck-card {
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 90%,
+          transparent
+        );
+        border-radius: var(--border-radius-lg, 20px);
+        box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25));
+        padding: 1.3rem 1.4rem;
+      }
+
+      .deck-card-primary {
+        background: radial-gradient(
+            circle at top left,
+            color-mix(in srgb, var(--primary, #d97706) 22%, transparent),
+            transparent 55%
+          ),
+          color-mix(in srgb, var(--surface, #10151c) 90%, transparent);
+      }
+
+      .deck-card h2 {
+        margin: 0.35rem 0 0.6rem;
+        font-family: var(--font-heading, 'Instrument Serif', serif);
+        font-weight: 500;
+        line-height: 0.98;
+      }
+
+      .deck-card p,
+      .deck-list,
+      .deck-list li {
+        color: var(--muted, rgba(255, 255, 255, 0.72));
+      }
+
+      .deck-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .deck-metrics div {
+        padding: 0.85rem 0.9rem;
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--foreground, #fff) 5%, transparent);
+        display: grid;
+        gap: 0.18rem;
+      }
+
+      .deck-metrics strong {
+        font-size: 1.25rem;
+      }
+
+      .deck-list {
+        margin: 0.9rem 0 0;
+        padding-left: 1rem;
+        display: grid;
+        gap: 0.45rem;
+      }
+
       .results-layout {
         display: grid;
         grid-template-columns: minmax(0, 0.95fr) minmax(380px, 1.05fr);
@@ -1598,6 +1718,7 @@ interface EditorSurface {
       }
 
       @media (max-width: 1180px) {
+        .command-deck,
         .results-layout,
         .gallery-grid,
         .channel-grid,
@@ -1636,6 +1757,23 @@ export class ResultsPageComponent {
           this.state as { currentWorkspaceId: () => string }
         ).currentWorkspaceId()
       : ''
+  );
+  protected readonly workspaceStatus = computed<MarketingWorkspaceStatus>(() =>
+    typeof (this.state as { workspaceStatus?: unknown }).workspaceStatus ===
+    'function'
+      ? (
+          this.state as {
+            workspaceStatus: () => MarketingWorkspaceStatus;
+          }
+        ).workspaceStatus()
+      : {
+          storageLabel: 'Browser storage only',
+          currentWorkspaceName: this.currentWorkspaceName(),
+          workspaceCount: this.workspaces().length,
+          currentVersionCount: this.workspaceVersions().length,
+          conceptCount: this.concepts().length,
+          lastSavedAt: '',
+        }
   );
   protected readonly request = cloneRequest(this.state.request());
   protected readonly personas = AUDIENCE_PERSONAS;
@@ -2561,6 +2699,30 @@ export class ResultsPageComponent {
       default:
         return 'Template only';
     }
+  }
+
+  provenanceDescription(provenance: GenerationProvenance | undefined): string {
+    switch (provenance) {
+      case 'ai-enriched':
+        return 'Hybrid assistance shaped this concept and the workbench is carrying the enriched copy forward.';
+      case 'ai-fallback':
+        return 'Template-safe copy is in place because enrichment was unavailable for this run.';
+      default:
+        return 'This concept was produced from the structured template system without enrichment.';
+    }
+  }
+
+  formatSavedAt(value: string): string {
+    if (!value) {
+      return 'Saved locally during this session';
+    }
+
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) {
+      return 'Saved locally';
+    }
+
+    return `Saved locally ${timestamp.toLocaleString()}`;
   }
 
   workflowLabel(status: ConceptWorkflowStatus | undefined): string {
