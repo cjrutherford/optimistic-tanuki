@@ -7,11 +7,13 @@ import {
   signal,
 } from '@angular/core';
 import {
+  NavigationEnd,
   Router,
   RouterLink,
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { MarketingStateService } from './services/marketing-state.service';
 import {
@@ -274,25 +276,29 @@ export class AppComponent {
   private readonly router = inject(Router);
   protected readonly menuOpen = signal(false);
   protected readonly workspaceStatus = this.state.workspaceStatus;
+  private readonly currentUrl = signal(this.router.url);
   protected readonly navItems = computed<NavItem[]>(() => [
     {
       label: 'Overview',
-      isActive: this.router.url === '/',
+      isActive: this.currentUrl() === '/',
       action: () => void this.router.navigateByUrl('/'),
     },
     {
       label: 'Create',
-      isActive: this.router.url.startsWith('/create'),
+      isActive: this.currentUrl().startsWith('/create'),
       action: () => void this.router.navigateByUrl('/create'),
     },
     {
       label: 'Results',
-      isActive: this.router.url.startsWith('/results'),
+      isActive: this.currentUrl().startsWith('/results'),
       action: () => void this.router.navigateByUrl('/results'),
     },
   ]);
 
   constructor() {
+    this.router.events
+      .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+      .subscribe((e) => this.currentUrl.set(e.urlAfterRedirects));
     if (isPlatformBrowser(this.platformId)) {
       this.themeService.setTheme('dark');
       this.themeService.setPersonality('control-center');

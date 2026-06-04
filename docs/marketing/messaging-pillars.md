@@ -23,25 +23,25 @@ Use it as ground truth when generating landing copy, social posts, email campaig
 >
 > Teams adopt it three ways: as a finished product portfolio with deployable applications, as a composable service layer with reusable backend capabilities, or as a developer toolbox with selected npm-ready packages and shared contracts — without rebuilding authentication, billing, social, AI orchestration, or deployment automation from scratch.
 
-*Source: `docs/marketing/repo-story.md:18-28`, `PRODUCT.md:3-6`*
+_Source: `docs/marketing/repo-story.md:18-28`, `PRODUCT.md:3-6`_
 
 ---
 
 ## The Five Products
 
-| Product | Nx project | Audience | Personality | One-line promise |
-|---|---|---|---|---|
-| **Optimistic Tanuki** | `client-interface` | Communities | `classic` | A trustworthy, community-owned social space. |
-| **Towne Square** | `local-hub` | Residents, local operators | `soft-touch` | One local place for coordination, classifieds, commerce, and civic participation. |
-| **Forge of Will** | `forgeofwill` | Individuals, small teams, consultants | `bold` | Turn plans into visible progress in one focused execution workspace. |
-| **Fin Commander** | `fin-commander` | Households, advisors, finance teams | `professional` | Move from account setup to usable financial plans and scenarios without losing context. |
-| **Signal Foundry** | `marketing-generator` | Marketers, product teams, agencies | `electric` | Turn a structured brief into strategy directions, channel drafts, material assets, and a refinement history. |
+| Product               | Nx project            | Audience                              | Personality    | One-line promise                                                                                             |
+| --------------------- | --------------------- | ------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Optimistic Tanuki** | `client-interface`    | Communities                           | `classic`      | A trustworthy, community-owned social space.                                                                 |
+| **Towne Square**      | `local-hub`           | Residents, local operators            | `soft-touch`   | One local place for coordination, classifieds, commerce, and civic participation.                            |
+| **Forge of Will**     | `forgeofwill`         | Individuals, small teams, consultants | `bold`         | Turn plans into visible progress in one focused execution workspace.                                         |
+| **Fin Commander**     | `fin-commander`       | Households, advisors, finance teams   | `professional` | Move from account setup to usable financial plans and scenarios without losing context.                      |
+| **Signal Foundry**    | `marketing-generator` | Marketers, product teams, agencies    | `electric`     | Turn a structured brief into strategy directions, channel drafts, material assets, and a refinement history. |
 
-*Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`*
+_Source: `PRODUCT.md:51-58`, `docs/marketing/platform-product-matrix.md:7-21`_
 
 ---
 
-## Messaging Pillars
+## Core Pillars
 
 ### Pillar 1 — Five products, one platform
 
@@ -59,7 +59,7 @@ Use it as ground truth when generating landing copy, social posts, email campaig
 
 **Body:** The personality system is not a color palette swap. It is a complete design language covering typography, spacing, shadows, animations, border radii, and color harmony — all derived from a single Angular component set. Towne Square ships a warm, pill-radius neighborhood aesthetic; Signal Foundry ships neon glows and DM Serif Display headlines; Fin Commander ships Source Sans Pro and near-instant transitions. Every product feels built for its audience.
 
-**Proof:** `docs/design-system/personalities.md`, `libs/theme-models/src/lib/personalities.ts`, `libs/theme-models/src/lib/product-personalities.ts`. *PRODUCT.md:68-74*.
+**Proof:** `docs/design-system/personalities.md`, `libs/theme-models/src/lib/personalities.ts`, `libs/theme-models/src/lib/product-personalities.ts`. _PRODUCT.md:68-74_.
 
 ---
 
@@ -107,15 +107,15 @@ Use it as ground truth when generating landing copy, social posts, email campaig
 
 ## Tone and Voice Guidelines
 
-| Dimension | Direction |
-|---|---|
-| **Clarity over cleverness** | State the product benefit before the architecture. Buyers understand outcomes; platform complexity comes after. |
-| **Anchor claims to repo evidence** | Every claim about features, workflows, or deployment should trace back to a README, service doc, or source file. |
-| **Honest about boundaries** | Public pricing is posture and vocabulary, not a published price sheet. Hosted demos are not implied unless separately deployed. |
-| **Personality matches product** | Towne Square copy should feel warm and community-oriented (soft-touch). Forge of Will copy should feel action-forward (bold). Fin Commander copy should feel clear and conservative (professional). Signal Foundry copy should feel energetic and creative (electric). |
-| **Platform story follows product story** | Lead with the buyer's product problem. Name the relevant product. Then show the platform underneath as proof, not as the lead. |
+| Dimension                                | Direction                                                                                                                                                                                                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Clarity over cleverness**              | State the product benefit before the architecture. Buyers understand outcomes; platform complexity comes after.                                                                                                                                                        |
+| **Anchor claims to repo evidence**       | Every claim about features, workflows, or deployment should trace back to a README, service doc, or source file.                                                                                                                                                       |
+| **Honest about boundaries**              | Public pricing is posture and vocabulary, not a published price sheet. Hosted demos are not implied unless separately deployed.                                                                                                                                        |
+| **Personality matches product**          | Towne Square copy should feel warm and community-oriented (soft-touch). Forge of Will copy should feel action-forward (bold). Fin Commander copy should feel clear and conservative (professional). Signal Foundry copy should feel energetic and creative (electric). |
+| **Platform story follows product story** | Lead with the buyer's product problem. Name the relevant product. Then show the platform underneath as proof, not as the lead.                                                                                                                                         |
 
-*Source: `docs/marketing/repo-story.md:95-102`, `docs/marketing/platform-product-matrix.md:23-27`, `GOVERNANCE.md:22-26`*
+_Source: `docs/marketing/repo-story.md:95-102`, `docs/marketing/platform-product-matrix.md:23-27`, `GOVERNANCE.md:22-26`_
 
 ---
 
@@ -177,18 +177,18 @@ No. The gateway is composition-aware. AI orchestration can be included or exclud
 
 ## Key Reference Files
 
-| File | Use |
-|---|---|
-| `PRODUCT.md` | Product portfolio map, personality table, platform proof table, positioning |
-| `docs/marketing/repo-story.md` | Full portfolio-platform-proof narrative and pitch flow |
-| `docs/marketing/platform-product-matrix.md` | Buyer-facing product comparison by audience, workflow, maturity |
-| `docs/marketing/signal-foundry.md` | Signal Foundry one-pager and proof-of-platform case study |
-| `docs/marketing/towne-square.md` | Towne Square one-pager |
-| `docs/marketing/forge-of-will.md` | Forge of Will one-pager |
-| `docs/marketing/fin-commander.md` | Fin Commander one-pager |
-| `docs/marketing/npm-developer-packages.md` | Developer package surface and release posture |
-| `docs/marketing/service-offerings.md` | Hosted vs. self-hosted service packaging vocabulary |
-| `docs/marketing/pricing-models.md` | Pricing shape vocabulary (metered, block, unlimited) |
-| `docs/design-system/personalities.md` | Personality catalog and distinctiveness matrix |
-| `tools/admin-env-wizard/README.md` | Deployment automation for operator and ops audiences |
-| `docs/marketing/admin-env-demo-script.md` | Live demo script: catalog selection to running gateway |
+| File                                        | Use                                                                         |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| `PRODUCT.md`                                | Product portfolio map, personality table, platform proof table, positioning |
+| `docs/marketing/repo-story.md`              | Full portfolio-platform-proof narrative and pitch flow                      |
+| `docs/marketing/platform-product-matrix.md` | Buyer-facing product comparison by audience, workflow, maturity             |
+| `docs/marketing/signal-foundry.md`          | Signal Foundry one-pager and proof-of-platform case study                   |
+| `docs/marketing/towne-square.md`            | Towne Square one-pager                                                      |
+| `docs/marketing/forge-of-will.md`           | Forge of Will one-pager                                                     |
+| `docs/marketing/fin-commander.md`           | Fin Commander one-pager                                                     |
+| `docs/marketing/npm-developer-packages.md`  | Developer package surface and release posture                               |
+| `docs/marketing/service-offerings.md`       | Hosted vs. self-hosted service packaging vocabulary                         |
+| `docs/marketing/pricing-models.md`          | Pricing shape vocabulary (metered, block, unlimited)                        |
+| `docs/design-system/personalities.md`       | Personality catalog and distinctiveness matrix                              |
+| `tools/admin-env-wizard/README.md`          | Deployment automation for operator and ops audiences                        |
+| `docs/marketing/admin-env-demo-script.md`   | Live demo script: catalog selection to running gateway                      |

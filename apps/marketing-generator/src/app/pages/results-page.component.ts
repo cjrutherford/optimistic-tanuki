@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import DOMPurify from 'isomorphic-dompurify';
 import { MaterialRichTextEditorComponent } from '../components/material-rich-text-editor.component';
 import { MaterialTemplatePreviewComponent } from '../components/material-template-preview.component';
 import { AUDIENCE_PERSONAS } from '../data/presets';
@@ -3173,12 +3174,36 @@ export class ResultsPageComponent {
         : `<p>${this.escapeHtml(value.trim())}</p>`
       : '<p></p>';
 
-    return normalized
-      .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
-      .replace(/\son\w+="[^"]*"/gi, '')
-      .replace(/\son\w+='[^']*'/gi, '')
-      .replace(/javascript:/gi, '');
+    return DOMPurify.sanitize(normalized, {
+      ALLOWED_TAGS: [
+        'p',
+        'br',
+        'strong',
+        'em',
+        'u',
+        's',
+        'b',
+        'i',
+        'ul',
+        'ol',
+        'li',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'blockquote',
+        'pre',
+        'code',
+        'a',
+        'span',
+        'div',
+      ],
+      ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'class'],
+      ALLOW_DATA_ATTR: false,
+      FORCE_BODY: false,
+    });
   }
 
   private looksLikeHtml(value: string): boolean {
@@ -3201,9 +3226,18 @@ export class ResultsPageComponent {
     imageBase64?: string | null
   ): string | null {
     if (imageBase64) {
-      return imageBase64.startsWith('data:image/')
+      const dataUrl = imageBase64.startsWith('data:image/')
         ? imageBase64
         : `data:image/png;base64,${imageBase64}`;
+      // Validate: only allow well-formed data: image URLs with safe MIME types
+      // and base64-alphabet data content to prevent attribute injection.
+      const safeDataUrl =
+        /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=\s]+$/.test(
+          dataUrl
+        )
+          ? dataUrl
+          : null;
+      return safeDataUrl;
     }
 
     if (!imageUrl) {

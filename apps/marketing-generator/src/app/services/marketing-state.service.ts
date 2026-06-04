@@ -74,7 +74,7 @@ export class MarketingStateService {
       currentWorkspaceName: current?.name || 'Current Workspace',
       workspaceCount: this.workspaces().length,
       currentVersionCount: current?.versions.length || 0,
-      conceptCount: current?.concepts.length || this.concepts().length,
+      conceptCount: current?.concepts.length ?? this.concepts().length,
       lastSavedAt: this.lastSavedAt(),
     };
   });

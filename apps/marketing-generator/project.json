@@ -63,7 +63,7 @@
       "continuous": true,
       "executor": "@angular/build:dev-server",
       "options": {
-        "allowedHosts": ["*"]
+        "allowedHosts": ["localhost"]
       },
       "configurations": {
         "production": {
