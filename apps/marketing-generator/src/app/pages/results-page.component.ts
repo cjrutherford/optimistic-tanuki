@@ -2143,6 +2143,13 @@ export class ResultsPageComponent {
     };
   } {
     const concept = this.selectedConcept();
+    const exportFiles: Array<{
+      path: string;
+      type: string;
+      surface: 'channel' | 'material' | 'bundle';
+    }> = [
+      { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
+    ];
     const channelFiles = concept.channelOutputs.flatMap((output) => [
       {
         path: `${output.id}.html`,
@@ -2163,6 +2170,23 @@ export class ResultsPageComponent {
       surface: 'material' as const,
       content: this.buildMaterialExportHtml(asset),
     }));
+    const manifestExportFiles: Array<{
+      path: string;
+      type: string;
+      surface: 'channel' | 'material' | 'bundle';
+    }> = [
+      ...exportFiles,
+      ...channelFiles.map(({ path, type, surface }) => ({
+        path,
+        type,
+        surface,
+      })),
+      ...assetFiles.map(({ path, type, surface }) => ({
+        path,
+        type,
+        surface,
+      })),
+    ];
     const markdown = [
       `# ${concept.headline}`,
       `Provenance: ${this.provenanceLabel(concept.generationProvenance)}`,
@@ -2192,19 +2216,7 @@ export class ResultsPageComponent {
       channels: concept.channelOutputs.map((output) => output.type),
       assets: assetFiles.map((file) => file.path),
       businessName: this.request.brand.businessName || 'Unspecified brand',
-      exportFiles: [
-        { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
-        ...channelFiles.map(({ path, type, surface }) => ({
-          path,
-          type,
-          surface,
-        })),
-        ...assetFiles.map(({ path, type, surface }) => ({
-          path,
-          type,
-          surface,
-        })),
-      ],
+      exportFiles: manifestExportFiles,
     };
 
     return {
