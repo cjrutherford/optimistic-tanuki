@@ -43,7 +43,17 @@ describe('MaterialTemplatePreviewComponent', () => {
           value: '<3 local-first previews',
         },
       ],
-      imageSlots: [],
+      imageSlots: [
+        {
+          id: 'img-1',
+          prompt: 'Editorial product art with warm highlights',
+          alt: 'Billing dashboard hero image',
+          imageUrl: null,
+          status: 'prompt-ready',
+          imageBase64: null,
+          errorMessage: null,
+        },
+      ],
     };
 
     await TestBed.configureTestingModule({
@@ -66,6 +76,9 @@ describe('MaterialTemplatePreviewComponent', () => {
     );
     expect(fixture.nativeElement.textContent).toContain(
       '<3 local-first previews'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'Billing dashboard hero image'
     );
     expect(fixture.nativeElement.innerHTML).toContain(
       '&lt;3 local-first previews'

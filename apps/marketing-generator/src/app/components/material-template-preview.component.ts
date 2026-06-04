@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
-import { CampaignAsset, MaterialSurface } from '../types';
+import { CampaignAsset, MaterialImageSlot, MaterialSurface } from '../types';
 
 @Component({
   selector: 'app-material-template-preview',
@@ -18,6 +18,28 @@ import { CampaignAsset, MaterialSurface } from '../types';
       </div>
 
       <div class="template-body">
+        <section
+          *ngFor="let slot of surface().imageSlots"
+          class="image-slot"
+          [class.has-image]="hasRenderableImage(slot)"
+        >
+          <ng-container *ngIf="hasRenderableImage(slot); else promptPreview">
+            <img
+              class="image-preview"
+              [src]="imageSrc(slot)"
+              [alt]="slot.alt"
+            />
+          </ng-container>
+
+          <ng-template #promptPreview>
+            <div class="image-placeholder">
+              <span class="image-kicker">Image prompt</span>
+              <strong>{{ slot.alt }}</strong>
+              <p>{{ slot.prompt }}</p>
+            </div>
+          </ng-template>
+        </section>
+
         <section
           *ngFor="let block of surface().textBlocks"
           class="template-block"
@@ -79,6 +101,61 @@ import { CampaignAsset, MaterialSurface } from '../types';
         display: grid;
         gap: 0.9rem;
         align-content: start;
+      }
+
+      .image-slot {
+        position: relative;
+        overflow: hidden;
+        min-height: 9rem;
+        border-radius: 1.2rem;
+        border: 1px solid color-mix(in srgb, white 14%, transparent);
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--asset-primary, #d97706) 22%, transparent),
+          color-mix(in srgb, var(--asset-accent, #34d399) 16%, #0f1720)
+        );
+      }
+
+      .image-slot.has-image {
+        background: color-mix(in srgb, #020617 92%, transparent);
+      }
+
+      .image-placeholder {
+        display: grid;
+        align-content: end;
+        min-height: 100%;
+        gap: 0.45rem;
+        padding: 1rem;
+        background: linear-gradient(
+          180deg,
+          transparent,
+          color-mix(in srgb, #020617 64%, transparent)
+        );
+      }
+
+      .image-kicker {
+        font-size: 0.72rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, white 62%, transparent);
+      }
+
+      .image-placeholder strong,
+      .image-placeholder p {
+        margin: 0;
+      }
+
+      .image-placeholder p {
+        color: color-mix(in srgb, white 80%, transparent);
+        line-height: 1.5;
+      }
+
+      .image-preview {
+        display: block;
+        width: 100%;
+        height: 100%;
+        min-height: 9rem;
+        object-fit: cover;
       }
 
       .template-block {
@@ -191,6 +268,24 @@ export class MaterialTemplatePreviewComponent {
       case 'web-ad':
         return 'web-display-ad';
     }
+  }
+
+  hasRenderableImage(slot: MaterialImageSlot): boolean {
+    return !!this.imageSrc(slot);
+  }
+
+  imageSrc(slot: MaterialImageSlot): string | null {
+    if (slot.imageBase64) {
+      return slot.imageBase64.startsWith('data:image/')
+        ? slot.imageBase64
+        : `data:image/png;base64,${slot.imageBase64}`;
+    }
+
+    if (/^(https?:)?\/\//i.test(slot.imageUrl || '')) {
+      return slot.imageUrl;
+    }
+
+    return null;
   }
 
   private looksLikeHtml(value: string): boolean {

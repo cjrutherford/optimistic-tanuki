@@ -346,7 +346,7 @@ describe('ResultsPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Self-hosted');
   });
 
-  it('renders template preview shells and plain text material editors', async () => {
+  it('renders template preview shells with rich text and imagery editors', async () => {
     const request: GenerationRequest = {
       offeringKind: 'preset-app',
       selectedOfferingId: 'billing-service',
@@ -464,7 +464,17 @@ describe('ResultsPageComponent', () => {
                         'Hosted metering without bespoke billing plumbing.',
                     },
                   ],
-                  imageSlots: [],
+                  imageSlots: [
+                    {
+                      id: 'img-1',
+                      prompt: 'Billing dashboard with usage trends',
+                      alt: 'Billing dashboard hero image',
+                      imageUrl: null,
+                      status: 'prompt-ready',
+                      imageBase64: null,
+                      errorMessage: null,
+                    },
+                  ],
                 },
               ],
               downloadFileName: 'billing-service-flyer',
@@ -503,8 +513,9 @@ describe('ResultsPageComponent', () => {
       fixture.nativeElement.querySelector('.template-preview')
     ).not.toBeNull();
     expect(
-      fixture.nativeElement.querySelector('.editor-stack textarea')
+      fixture.nativeElement.querySelector('[data-testid="tiptap-editor"]')
     ).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Rendered image URL');
     expect(fixture.nativeElement.textContent).toContain('AI enriched');
     expect(fixture.nativeElement.textContent).toContain('Email campaign draft');
     expect(fixture.nativeElement.textContent).toContain('Download JSON bundle');
@@ -670,6 +681,30 @@ describe('ResultsPageComponent', () => {
       'email-sequence',
     ]);
     expect(bundle.manifest.assets).toEqual(['billing-service-flyer.html']);
+    expect(bundle.manifest.exportFiles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'channel-1.html',
+          surface: 'channel',
+        }),
+        expect.objectContaining({
+          path: 'channel-2.html',
+          surface: 'channel',
+        }),
+        expect.objectContaining({
+          path: 'billing-service-flyer.html',
+          surface: 'material',
+        }),
+      ])
+    );
+    expect(bundle.json.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining([
+        'billing-concept.md',
+        'channel-1.html',
+        'channel-2.html',
+        'billing-service-flyer.html',
+      ])
+    );
     expect(bundle.json.request.secondaryChannels).toEqual(['email']);
   });
 

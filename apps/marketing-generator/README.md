@@ -22,9 +22,11 @@ The app currently supports:
 - six strategy directions per generation run
 - coordinated multi-channel output bundles across web, email, and social
 - editable material assets for flyer, brochure, business card, and web ad formats
+- rich-text editing for web, email, social, and material asset copy inside the results workbench
 - named workspaces with duplication, version snapshots, and restore
 - concept compare, shortlist, and winner selection workflow
-- export/download for markdown bundles, JSON bundles, manifests, and HTML assets
+- editable imagery prompts, alt text, and optional rendered image URLs for material surfaces
+- export/download for markdown bundles, JSON bundles, manifests, and production-ready HTML assets for channel and material outputs
 - local-first telemetry for selections, exports, edits, regenerations, and workspace activity
 - concept feedback capture and per-block regeneration on channel and material copy
 - prompt preparation for image generation, without rendered-image fulfillment
@@ -49,7 +51,7 @@ Users review the generated concept gallery on `/results`, shortlist directions, 
 
 ### Refine and export
 
-Users can edit channel blocks and material copy directly, regenerate individual blocks, record concept feedback, and export:
+Users can edit channel blocks and material copy directly in a WYSIWYG editor, tune imagery prompts and URLs, regenerate individual blocks, record concept feedback, and export:
 
 - markdown bundles
 - JSON bundles
