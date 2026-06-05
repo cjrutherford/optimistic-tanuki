@@ -10,20 +10,30 @@ export const appRoutes: Route[] = [
     title: 'Signal Foundry',
   },
   {
-    path: 'create',
+    path: 'offers',
+    loadComponent: () =>
+      import('./pages/offers-page.component').then(
+        (m) => m.OffersPageComponent
+      ),
+    title: 'Offer Workspaces',
+  },
+  {
+    path: 'offers/new',
     loadComponent: () =>
       import('./pages/create-page.component').then(
         (m) => m.CreatePageComponent
       ),
-    title: 'Build Marketing Workbench',
+    title: 'Create Offer Bundle',
   },
   {
-    path: 'results',
+    path: 'offers/:offerId',
     loadComponent: () =>
       import('./pages/results-page.component').then(
         (m) => m.ResultsPageComponent
       ),
-    title: 'Marketing Outputs',
+    title: 'Offer Bundle Workspace',
   },
+  { path: 'create', redirectTo: '/offers/new', pathMatch: 'full' },
+  { path: 'results', redirectTo: '/offers', pathMatch: 'full' },
   { path: '**', redirectTo: '' },
 ];

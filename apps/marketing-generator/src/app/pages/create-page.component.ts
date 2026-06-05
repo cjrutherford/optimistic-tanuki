@@ -29,13 +29,13 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
     <section class="studio-shell">
       <article class="wizard-panel">
         <div class="panel-head">
-          <span class="eyebrow">Studio brief</span>
-          <h1>Build a campaign system that matches the offer.</h1>
+          <span class="eyebrow">Offer brief</span>
+          <h1>Build one coordinated asset bundle around the offer.</h1>
           <p>
-            Define the product, audience, strategy, outputs, and brand
-            direction. The result is a grouped workbench with concept
-            comparison, coordinated channel drafts, material-ready copy, and
-            downstream refinement on the results page.
+            Define the offer, audience, bundle scope, and brand cues. The result
+            is a versioned offer workspace with generated bundle directions,
+            coordinated channel drafts, and material-ready assets you can refine
+            in one place.
           </p>
         </div>
 
@@ -158,9 +158,9 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
             </section>
 
             <section *ngSwitchCase="2" class="block matrix">
-              <h2>Strategy</h2>
+              <h2>Bundle scope</h2>
               <label>
-                <span>Intent</span>
+                <span>Objective</span>
                 <select
                   [(ngModel)]="request.campaignIntent"
                   name="campaignIntent"
@@ -177,6 +177,14 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                   <option value="email">Email</option>
                   <option value="social">Social</option>
                 </select>
+              </label>
+              <label>
+                <span>Message context</span>
+                <textarea
+                  [(ngModel)]="request.visualDirection"
+                  name="visualDirection"
+                  placeholder="Core promise, proof, objections, or message hierarchy notes for this offer…"
+                ></textarea>
               </label>
               <div class="channel-bundle-block">
                 <span>Bundled supporting channels</span>
@@ -204,10 +212,6 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
                   <option value="warm">Warm</option>
                 </select>
               </label>
-            </section>
-
-            <section *ngSwitchCase="3" class="block outputs-block">
-              <h2>Outputs</h2>
               <p class="section-copy">
                 The primary channel always produces a native draft. Choose the
                 supporting bundled channels and material outputs you want in the
@@ -236,7 +240,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
               </div>
             </section>
 
-            <section *ngSwitchCase="4" class="block brand-block">
+            <section *ngSwitchCase="3" class="block brand-block">
               <h2>Brand</h2>
               <div class="brand-grid">
                 <label>
@@ -309,7 +313,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
               </div>
             </section>
 
-            <section *ngSwitchCase="5" class="block">
+            <section *ngSwitchCase="4" class="block">
               <h2>Review</h2>
               <div class="review-card">
                 <p><strong>Offer:</strong> {{ summaryOffering() }}</p>
@@ -364,6 +368,15 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
         <span class="eyebrow">Live brief</span>
         <h2>{{ summaryOffering() }}</h2>
         <p>{{ summaryAudience() }}</p>
+        <div class="positioning-card">
+          <span class="eyebrow">Message context</span>
+          <p>
+            {{
+              request.visualDirection.trim() ||
+                'Add the offer promise, proof, and objections you want the bundle to carry.'
+            }}
+          </p>
+        </div>
         <div class="positioning-card" *ngIf="selectedOffering() as offering">
           <span class="eyebrow">Positioning snapshot</span>
           <p>
@@ -411,7 +424,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
         </div>
         <dl>
           <div>
-            <dt>Intent</dt>
+            <dt>Objective</dt>
             <dd>{{ request.campaignIntent }}</dd>
           </div>
           <div>
@@ -423,7 +436,7 @@ function cloneRequest(request: GenerationRequest): GenerationRequest {
             <dd>{{ bundledChannelSummary() }}</dd>
           </div>
           <div>
-            <dt>Outputs</dt>
+            <dt>Bundle scope</dt>
             <dd>{{ request.deliverables.length }} material selections</dd>
           </div>
           <div>
@@ -765,8 +778,7 @@ export class CreatePageComponent {
   protected readonly stepLabels = [
     'Offer',
     'Audience',
-    'Strategy',
-    'Outputs',
+    'Bundle',
     'Brand',
     'Review',
   ];
@@ -1000,6 +1012,8 @@ export class CreatePageComponent {
     }
 
     const normalizedRequest = this.normalizedRequest();
+    const workspaceName = this.summaryOffering();
+    this.state.createWorkspace(workspaceName);
     this.state.setRequest(normalizedRequest);
     this.insights.logEvent({
       type: 'generation_requested',
@@ -1023,7 +1037,7 @@ export class CreatePageComponent {
         )
       : this.applyProvenance(baseConcepts, false, false);
     this.state.setConcepts(concepts);
-    await this.router.navigate(['/results']);
+    await this.router.navigate(['/offers', this.state.currentWorkspace()?.id]);
   }
 
   private normalizedRequest(): GenerationRequest {

@@ -23,9 +23,10 @@ export class AppComponent implements OnInit {
   readonly haiAboutConfig = {
     appId: 'hai',
     appName: 'HAI',
-    appTagline: 'Software, cloud, and personal-cloud systems.',
+    appTagline:
+      'Hopeful Aspirations Industries · Software, cloud, and personal-cloud systems.',
     appDescription:
-      'HAI (Heavily Articulated Iguanas) builds software systems, cloud platforms, and personal cloud tooling for people who want durable, owned computing.',
+      'Hopeful Aspirations Industries (HAI) builds software systems, cloud platforms, and personal-cloud tooling through a repo-backed product and delivery business.',
     appUrl: '/hai',
   };
 

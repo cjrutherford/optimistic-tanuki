@@ -33,7 +33,7 @@ const buildInsightsStub = () => ({
 });
 
 describe('ResultsPageComponent', () => {
-  it('renders objective alignment and proof points for the selected concept', async () => {
+  it('renders offer bundle workspace framing with objective alignment and proof points', async () => {
     const request: GenerationRequest = {
       offeringKind: 'preset-app',
       selectedOfferingId: 'forgeofwill',
@@ -183,6 +183,9 @@ describe('ResultsPageComponent', () => {
     const fixture = TestBed.createComponent(ResultsPageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain(
+      'Offer bundle workspace'
+    );
     expect(fixture.nativeElement.textContent).toContain('Objective alignment');
     expect(fixture.nativeElement.textContent).toContain('Proof points');
     expect(fixture.nativeElement.textContent).toContain(
@@ -341,6 +344,7 @@ describe('ResultsPageComponent', () => {
     const fixture = TestBed.createComponent(ResultsPageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Asset suite');
     expect(fixture.nativeElement.textContent).toContain('Delivery model');
     expect(fixture.nativeElement.textContent).toContain('Pricing model');
     expect(fixture.nativeElement.textContent).toContain('Self-hosted');

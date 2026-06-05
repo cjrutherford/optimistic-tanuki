@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import DOMPurify from 'isomorphic-dompurify';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MaterialRichTextEditorComponent } from '../components/material-rich-text-editor.component';
 import { MaterialTemplatePreviewComponent } from '../components/material-template-preview.component';
 import { AUDIENCE_PERSONAS } from '../data/presets';
@@ -119,12 +119,14 @@ interface EditorSurface {
     <section class="results-layout" *ngIf="concepts().length; else emptyState">
       <article class="gallery-panel">
         <div class="panel-head">
-          <span class="eyebrow">Generated workbench</span>
-          <h1>Compare strategy directions, then refine the built assets.</h1>
+          <span class="eyebrow">Offer bundle workspace</span>
+          <h1>
+            Choose a bundle direction, then refine the coordinated asset suite.
+          </h1>
           <p>
-            The concept gallery chooses the direction. The workbench below lets
-            you tune the actual channel drafts and material copy before
-            exporting or copying them.
+            Start with bundle directions for this offer, pick the strongest
+            direction, then edit the actual channel drafts and material assets
+            before export.
           </p>
         </div>
 
@@ -180,7 +182,7 @@ interface EditorSurface {
 
       <aside class="detail-panel">
         <section class="output-stack workspace-stack">
-          <span class="eyebrow">Workspaces</span>
+          <span class="eyebrow">Offer workspaces</span>
           <h3>{{ currentWorkspaceName() }}</h3>
           <label>
             <span>Workspace name</span>
@@ -192,7 +194,7 @@ interface EditorSurface {
           </label>
           <div class="copy-actions">
             <button type="button" (click)="createWorkspaceFromCurrent()">
-              New workspace
+              New offer workspace
             </button>
             <button type="button" (click)="renameWorkspace()">Rename</button>
             <button type="button" (click)="duplicateWorkspace()">
@@ -229,7 +231,7 @@ interface EditorSurface {
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Performance loop</span>
+          <span class="eyebrow">Workspace activity</span>
           <h3>Usage signals</h3>
           <div class="metric-grid">
             <article class="channel-card">
@@ -416,7 +418,7 @@ interface EditorSurface {
               Download manifest
             </button>
             <button type="button" class="secondary" routerLink="/create">
-              Edit studio
+              Edit offer brief
             </button>
           </div>
           <p class="copy-feedback" *ngIf="copiedMessage()">
@@ -668,8 +670,8 @@ interface EditorSurface {
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Channel outputs</span>
-          <h3>Built channel drafts</h3>
+          <span class="eyebrow">Asset suite</span>
+          <h3>Coordinated channel drafts</h3>
           <div class="channel-grid">
             <button
               *ngFor="let output of selectedConcept().channelOutputs"
@@ -758,7 +760,7 @@ interface EditorSurface {
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Material outputs</span>
+          <span class="eyebrow">Asset suite</span>
           <h3>Built marketing assets</h3>
           <div class="material-grid">
             <button
@@ -958,13 +960,13 @@ interface EditorSurface {
 
     <ng-template #emptyState>
       <section class="empty-state">
-        <span class="eyebrow">No concepts yet</span>
-        <h1>Generate a campaign workbench first.</h1>
+        <span class="eyebrow">No bundle directions yet</span>
+        <h1>Open an offer workspace first.</h1>
         <p>
-          Your strategy and outputs will appear here after the studio brief is
+          Your generated asset bundle will appear here after the offer brief is
           complete.
         </p>
-        <a routerLink="/create">Go to the generator</a>
+        <a routerLink="/offers/new">Start a new offer brief</a>
       </section>
     </ng-template>
   `,
@@ -1744,6 +1746,7 @@ export class ResultsPageComponent {
   private readonly enrichmentApi = inject(MarketingEnrichmentApiService);
   private readonly insights = inject(MarketingInsightsService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly concepts = this.state.concepts;
   protected readonly workspaces = computed(() =>
@@ -1755,26 +1758,26 @@ export class ResultsPageComponent {
     typeof (this.state as { currentWorkspaceId?: unknown })
       .currentWorkspaceId === 'function'
       ? (
-          this.state as { currentWorkspaceId: () => string }
-        ).currentWorkspaceId()
+        this.state as { currentWorkspaceId: () => string }
+      ).currentWorkspaceId()
       : ''
   );
   protected readonly workspaceStatus = computed<MarketingWorkspaceStatus>(() =>
     typeof (this.state as { workspaceStatus?: unknown }).workspaceStatus ===
-    'function'
+      'function'
       ? (
-          this.state as {
-            workspaceStatus: () => MarketingWorkspaceStatus;
-          }
-        ).workspaceStatus()
-      : {
-          storageLabel: 'Browser storage only',
-          currentWorkspaceName: this.currentWorkspaceName(),
-          workspaceCount: this.workspaces().length,
-          currentVersionCount: this.workspaceVersions().length,
-          conceptCount: this.concepts().length,
-          lastSavedAt: '',
+        this.state as {
+          workspaceStatus: () => MarketingWorkspaceStatus;
         }
+      ).workspaceStatus()
+      : {
+        storageLabel: 'Browser storage only',
+        currentWorkspaceName: this.currentWorkspaceName(),
+        workspaceCount: this.workspaces().length,
+        currentVersionCount: this.workspaceVersions().length,
+        conceptCount: this.concepts().length,
+        lastSavedAt: '',
+      }
   );
   protected readonly request = cloneRequest(this.state.request());
   protected readonly personas = AUDIENCE_PERSONAS;
@@ -1882,6 +1885,13 @@ export class ResultsPageComponent {
   });
 
   constructor() {
+    this.route.paramMap.subscribe((params) => {
+      const offerId = params.get('offerId');
+      if (offerId && offerId !== this.currentWorkspaceId()) {
+        this.loadWorkspace(offerId);
+      }
+    });
+
     const currentWorkspace = this.readCurrentWorkspace();
     this.selectedId.set(
       currentWorkspace?.selectedConceptId || this.concepts()[0]?.id || ''
@@ -1984,11 +1994,11 @@ export class ResultsPageComponent {
       channelOutputs: concept.channelOutputs.map((output) =>
         output.id === outputId
           ? {
-              ...output,
-              blocks: output.blocks.map((block) =>
-                block.id === blockId ? { ...block, value } : block
-              ),
-            }
+            ...output,
+            blocks: output.blocks.map((block) =>
+              block.id === blockId ? { ...block, value } : block
+            ),
+          }
           : output
       ),
     }));
@@ -2037,18 +2047,18 @@ export class ResultsPageComponent {
       materialOutputs: concept.materialOutputs.map((asset) =>
         asset.id === materialId
           ? {
-              ...asset,
-              surfaces: asset.surfaces.map((surface) =>
-                surface.id === surfaceId
-                  ? {
-                      ...surface,
-                      textBlocks: surface.textBlocks.map((block) =>
-                        block.id === blockId ? { ...block, value } : block
-                      ),
-                    }
-                  : surface
-              ),
-            }
+            ...asset,
+            surfaces: asset.surfaces.map((surface) =>
+              surface.id === surfaceId
+                ? {
+                  ...surface,
+                  textBlocks: surface.textBlocks.map((block) =>
+                    block.id === blockId ? { ...block, value } : block
+                  ),
+                }
+                : surface
+            ),
+          }
           : asset
       ),
     }));
@@ -2096,10 +2106,10 @@ export class ResultsPageComponent {
       : null;
     const concepts = enrichmentResult
       ? this.applyProvenance(
-          enrichmentResult.concepts,
-          true,
-          enrichmentResult.enrichmentApplied
-        )
+        enrichmentResult.concepts,
+        true,
+        enrichmentResult.enrichmentApplied
+      )
       : this.applyProvenance(baseConcepts, false, false);
     this.state.setConcepts(concepts);
     this.selectedId.set(concepts[0]?.id ?? '');
@@ -2287,8 +2297,8 @@ export class ResultsPageComponent {
       type: string;
       surface: 'channel' | 'material' | 'bundle';
     }> = [
-      { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
-    ];
+        { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
+      ];
     const channelFiles = concept.channelOutputs.flatMap((output) => [
       {
         path: `${output.id}.html`,
@@ -2314,18 +2324,18 @@ export class ResultsPageComponent {
       type: string;
       surface: 'channel' | 'material' | 'bundle';
     }> = [
-      ...exportFiles,
-      ...channelFiles.map(({ path, type, surface }) => ({
-        path,
-        type,
-        surface,
-      })),
-      ...assetFiles.map(({ path, type, surface }) => ({
-        path,
-        type,
-        surface,
-      })),
-    ];
+        ...exportFiles,
+        ...channelFiles.map(({ path, type, surface }) => ({
+          path,
+          type,
+          surface,
+        })),
+        ...assetFiles.map(({ path, type, surface }) => ({
+          path,
+          type,
+          surface,
+        })),
+      ];
     const markdown = [
       `# ${concept.headline}`,
       `Provenance: ${this.provenanceLabel(concept.generationProvenance)}`,
@@ -2389,23 +2399,22 @@ export class ResultsPageComponent {
         `
 <section class="surface-section">
   <h2>${this.escapeHtml(surface.label)}</h2>
-  ${
-    surface.imageSlots.length
-      ? `<div class="image-export-grid">
+  ${surface.imageSlots.length
+            ? `<div class="image-export-grid">
   ${surface.imageSlots
-    .map((slot) => this.buildImageExportHtml(slot))
-    .join('\n')}
+              .map((slot) => this.buildImageExportHtml(slot))
+              .join('\n')}
 </div>`
-      : ''
-  }
+            : ''
+          }
   ${surface.textBlocks
-    .map(
-      (block) => `<div class="text-block ${block.role}">
+            .map(
+              (block) => `<div class="text-block ${block.role}">
     <span class="block-label">${this.escapeHtml(block.label)}</span>
     <div class="block-copy">${this.sanitizeRichTextHtml(block.value)}</div>
   </div>`
-    )
-    .join('\n')}
+            )
+            .join('\n')}
 </section>`.trim()
       )
       .join('\n');
@@ -2429,8 +2438,8 @@ export class ResultsPageComponent {
         border-radius: 24px;
         padding: 2rem;
         background: linear-gradient(180deg, ${this.escapeHtml(
-          this.request.brand.accentColor
-        )}22, transparent 24%);
+      this.request.brand.accentColor
+    )}22, transparent 24%);
         box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
       }
       h1, h2 { margin: 0 0 1rem; }
@@ -2491,8 +2500,8 @@ export class ResultsPageComponent {
         display: grid;
         align-content: end;
         background: linear-gradient(135deg, ${this.escapeHtml(
-          this.request.brand.primaryColor
-        )}22, ${this.escapeHtml(this.request.brand.accentColor)}22);
+      this.request.brand.primaryColor
+    )}22, ${this.escapeHtml(this.request.brand.accentColor)}22);
       }
       .image-export-meta {
         display: grid;
@@ -2508,8 +2517,8 @@ export class ResultsPageComponent {
   <body>
     <article class="shell">
       <div class="meta">${this.escapeHtml(
-        this.request.brand.businessName || 'Signal Foundry'
-      )}</div>
+      this.request.brand.businessName || 'Signal Foundry'
+    )}</div>
       <h1>${this.escapeHtml(asset.label)}</h1>
       ${payload}
     </article>
@@ -2568,11 +2577,10 @@ export class ResultsPageComponent {
         gap: 0.45rem;
         padding: 1rem;
         border-radius: 18px;
-        background: ${
-          output.type === 'social-campaign'
-            ? 'linear-gradient(155deg, #111827, #1f2937)'
-            : '#fff7ed'
-        };
+        background: ${output.type === 'social-campaign'
+        ? 'linear-gradient(155deg, #111827, #1f2937)'
+        : '#fff7ed'
+      };
         color: ${output.type === 'social-campaign' ? '#f8fafc' : '#111827'};
       }
       .channel-block.cta .channel-copy {
@@ -2590,11 +2598,10 @@ export class ResultsPageComponent {
         font-size: 0.78rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: ${
-          output.type === 'social-campaign'
-            ? 'rgba(248, 250, 252, 0.72)'
-            : '#92400e'
-        };
+        color: ${output.type === 'social-campaign'
+        ? 'rgba(248, 250, 252, 0.72)'
+        : '#92400e'
+      };
       }
       .channel-block.hero .channel-copy,
       .channel-block.subject .channel-copy,
@@ -2622,14 +2629,13 @@ export class ResultsPageComponent {
   ): string {
     const imageSrc = this.safeImageUrl(slot.imageUrl, slot.imageBase64);
     return `<article class="image-export-card">
-  ${
-    imageSrc
-      ? `<img src="${imageSrc}" alt="${this.escapeHtml(slot.alt)}" />`
-      : `<div class="image-export-fallback">
+  ${imageSrc
+        ? `<img src="${imageSrc}" alt="${this.escapeHtml(slot.alt)}" />`
+        : `<div class="image-export-fallback">
     <strong>${this.escapeHtml(slot.alt || 'Image placeholder')}</strong>
     <p>${this.escapeHtml(slot.prompt)}</p>
   </div>`
-  }
+      }
   <div class="image-export-meta">
     <p><strong>Alt:</strong> ${this.escapeHtml(slot.alt)}</p>
     <p><strong>Status:</strong> ${this.escapeHtml(slot.status)}</p>
@@ -2750,8 +2756,8 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : concept.workflowStatus === 'archived'
-            ? 'archived'
-            : 'candidate',
+              ? 'archived'
+              : 'candidate',
       }))
     );
   }
@@ -2773,16 +2779,15 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : loserIds.includes(concept.id)
-            ? ('archived' as const)
-            : concept.workflowStatus === 'shortlisted'
-            ? 'shortlisted'
-            : 'candidate',
+              ? ('archived' as const)
+              : concept.workflowStatus === 'shortlisted'
+                ? 'shortlisted'
+                : 'candidate',
       }))
     );
     this.compareConceptIds.set([]);
     this.state.setDecisionSummary(
-      `Winner chosen: ${winner.headline} over ${
-        loserIds.length
+      `Winner chosen: ${winner.headline} over ${loserIds.length
       } compared option${loserIds.length === 1 ? '' : 's'}.`
     );
     this.logEvent('compare_winner_selected', { conceptId });
@@ -2802,12 +2807,12 @@ export class ResultsPageComponent {
       this.state.concepts().map((concept) =>
         concept.id === conceptId
           ? {
-              ...concept,
-              workflowStatus:
-                concept.workflowStatus === 'shortlisted'
-                  ? ('candidate' as const)
-                  : ('shortlisted' as const),
-            }
+            ...concept,
+            workflowStatus:
+              concept.workflowStatus === 'shortlisted'
+                ? ('candidate' as const)
+                : ('shortlisted' as const),
+          }
           : concept
       )
     );
@@ -2851,8 +2856,7 @@ export class ResultsPageComponent {
       (
         this.state as { saveWorkspaceVersion: (name?: string) => void }
       ).saveWorkspaceVersion(
-        `${this.currentWorkspaceName()} snapshot ${
-          this.workspaceVersions().length + 1
+        `${this.currentWorkspaceName()} snapshot ${this.workspaceVersions().length + 1
         }`
       );
       this.logEvent('workspace_version_saved', {
@@ -2874,8 +2878,8 @@ export class ResultsPageComponent {
       this.workspaceName.set(currentWorkspace?.name || 'Current Workspace');
       this.selectedId.set(
         currentWorkspace?.selectedConceptId ||
-          this.state.concepts()[0]?.id ||
-          ''
+        this.state.concepts()[0]?.id ||
+        ''
       );
       this.compareConceptIds.set([]);
       this.copiedMessage.set('Workspace version restored.');
@@ -3071,18 +3075,18 @@ export class ResultsPageComponent {
       materialOutputs: concept.materialOutputs.map((asset) =>
         asset.id === materialId
           ? {
-              ...asset,
-              surfaces: asset.surfaces.map((surface) =>
-                surface.id === surfaceId
-                  ? {
-                      ...surface,
-                      imageSlots: surface.imageSlots.map((slot) =>
-                        slot.id === slotId ? { ...slot, ...updates } : slot
-                      ),
-                    }
-                  : surface
-              ),
-            }
+            ...asset,
+            surfaces: asset.surfaces.map((surface) =>
+              surface.id === surfaceId
+                ? {
+                  ...surface,
+                  imageSlots: surface.imageSlots.map((slot) =>
+                    slot.id === slotId ? { ...slot, ...updates } : slot
+                  ),
+                }
+                : surface
+            ),
+          }
           : asset
       ),
     }));
@@ -3095,8 +3099,8 @@ export class ResultsPageComponent {
         output.type === 'landing-page'
           ? 'web'
           : output.type === 'email-sequence'
-          ? 'email'
-          : 'social',
+            ? 'email'
+            : 'social',
       title: output.label,
       subtitle: output.type,
       description: output.summary,
@@ -3159,8 +3163,7 @@ export class ResultsPageComponent {
         ),
         ...surface.imageSlots.map(
           (slot) =>
-            `Image: ${slot.alt} | ${slot.status} | ${
-              slot.imageUrl || slot.prompt
+            `Image: ${slot.alt} | ${slot.status} | ${slot.imageUrl || slot.prompt
             }`
         ),
       ]),
@@ -3257,10 +3260,10 @@ export class ResultsPageComponent {
       generationProvenance: !includeAiPolish
         ? ('template-only' as const)
         : enrichmentApplied && concept.generationMode === 'hybrid'
-        ? ('ai-enriched' as const)
-        : enrichmentApplied
-        ? ('template-only' as const)
-        : ('ai-fallback' as const),
+          ? ('ai-enriched' as const)
+          : enrichmentApplied
+            ? ('template-only' as const)
+            : ('ai-fallback' as const),
     }));
   }
 
@@ -3277,8 +3280,8 @@ export class ResultsPageComponent {
     return typeof (this.state as { currentWorkspace?: unknown })
       .currentWorkspace === 'function'
       ? (
-          this.state as { currentWorkspace: () => MarketingWorkspace | null }
-        ).currentWorkspace()
+        this.state as { currentWorkspace: () => MarketingWorkspace | null }
+      ).currentWorkspace()
       : null;
   }
 
@@ -3341,6 +3344,6 @@ export class ResultsPageComponent {
     this.copiedMessage.set(
       'Clipboard unavailable here. Returning to the generator.'
     );
-    await this.router.navigate(['/create']);
+    await this.router.navigate(['/offers/new']);
   }
 }

@@ -20,33 +20,31 @@
     </div>
 
     <div class="hero-copy">
-      <p class="eyebrow">
-        Software Delivery + Cloud Architecture + Personal Cloud
-      </p>
+      <p class="eyebrow">Hopeful Aspirations Industries</p>
       <h1>
-        Software, cloud, and personal-cloud systems for digital homesteading.
+        Software, cloud, and personal-cloud systems built to stay legible.
       </h1>
       <p class="lede">
-        <hai-expansion></hai-expansion> helps people and organizations build
-        durable software, calmer cloud architecture, and pre-configured personal
-        computing systems they can actually own.
+        HAI helps founders, teams, and households build durable systems they can
+        actually operate. The repo is a primary company asset and the main
+        production vehicle for what HAI ships.
       </p>
 
       <div class="hero-actions">
-        <a class="cta primary" href="/hai-computer"
+        <a class="cta primary" href="#contact">Start a Project</a>
+        <a class="cta secondary" href="/hai-computer"
           >Explore HAI Computer Systems</a
         >
-        <a class="cta secondary" href="#ecosystem">Browse the HAI ecosystem</a>
       </div>
     </div>
 
     <aside class="hero-signal" data-theme-surface="card">
       <p class="card-label">Built For</p>
       <ul>
-        <li>Cloud-native product teams</li>
-        <li>Homelab and personal-cloud adopters</li>
-        <li>Families building their digital homestead</li>
-        <li>Organizations that want software with staying power</li>
+        <li>Founders and operators who need senior implementation help</li>
+        <li>Teams improving cloud systems without losing control</li>
+        <li>People building owned compute and personal-cloud capability</li>
+        <li>Organizations that value durable, legible software systems</li>
       </ul>
 
       <div class="signal-note">
@@ -54,6 +52,37 @@
         <strong>Owned capability over rented complexity.</strong>
       </div>
     </aside>
+  </section>
+
+  <section class="story-grid" id="services">
+    <article class="story-panel" data-theme-surface="card">
+      <p class="eyebrow">Services</p>
+      <h2>We help people ship durable systems without renting confusion.</h2>
+      <p>
+        HAI delivers application development, platform integration, cloud
+        architecture, and personal-cloud systems. The work is practical: clearer
+        product systems, stronger infrastructure choices, and owned computing
+        that does not collapse into operational fog.
+      </p>
+      <div class="proof-band">
+        <span class="eyebrow">Proof</span>
+        <ul class="proof-list">
+          @for (proof of serviceProof; track proof) {
+          <li>{{ proof }}</li>
+          }
+        </ul>
+      </div>
+    </article>
+
+    <div class="service-list">
+      @for (pillar of servicePillars; track pillar.title) {
+      <article class="service-card" data-theme-surface="card">
+        <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
+        <h3>{{ pillar.title }}</h3>
+        <p>{{ pillar.description }}</p>
+      </article>
+      }
+    </div>
   </section>
 
   <section class="manifesto-rail" data-theme-surface="feature">
@@ -87,40 +116,19 @@
     </div>
   </section>
 
-  <section class="story-grid" id="services">
-    <article class="story-panel" data-theme-surface="card">
-      <p class="eyebrow">Services</p>
-      <h2>We build systems that stay legible as they grow.</h2>
-      <p>
-        HAI delivers application development, platform integration, cloud
-        architecture, and personal-cloud systems. We work where product vision,
-        service boundaries, and real infrastructure have to fit together.
-      </p>
-    </article>
-
-    <div class="service-list">
-      @for (pillar of servicePillars; track pillar.title) {
-      <article class="service-card" data-theme-surface="card">
-        <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
-        <h3>{{ pillar.title }}</h3>
-        <p>{{ pillar.description }}</p>
-      </article>
-      }
-    </div>
-  </section>
-
   <section
     class="personal-cloud-panel"
     data-theme-surface="feature"
     id="personal-cloud"
   >
     <div class="section-copy">
-      <p class="eyebrow">Digital Homesteading</p>
-      <h2>Personal cloud should feel grounded, not experimental.</h2>
+      <p class="eyebrow">Personal Cloud</p>
+      <h2>Owned computing should feel grounded, not experimental.</h2>
       <p>
-        We package personal-cloud systems for homelab, family compute, and
-        self-hosted workflows so they feel approachable, stable, and useful. The
-        goal is not novelty. The goal is owned capability.
+        HAI packages personal-cloud systems for homelab, family compute, and
+        self-hosted workflows so they feel approachable, stable, and useful. HAI
+        Computer and related systems work as concrete proof that the ownership
+        story can become an actual operating environment.
       </p>
     </div>
 
@@ -147,10 +155,12 @@
   <section class="ecosystem-panel" id="ecosystem">
     <div class="section-copy">
       <p class="eyebrow">HAI Apps</p>
-      <h2>An ecosystem of practical software.</h2>
+      <h2>An ecosystem that proves the work ships.</h2>
       <p>
-        HAI products share a common thread: tools that feel useful, legible, and
-        built to endure.
+        The HAI ecosystem is supporting proof: products that share the same
+        emphasis on legibility, ownership, and practical usefulness. The
+        repository is not just a portfolio artifact. It is where the company
+        builds, integrates, and operates its main production work.
       </p>
     </div>
 
@@ -174,16 +184,14 @@
   </section>
 
   <section class="acronym-generator-panel" data-theme-surface="feature">
-    <div
-      class="section-copy"
-      style="text-align: center; max-width: 800px; margin: 0 auto"
-    >
+    <div class="section-copy acronym-copy">
       <p class="eyebrow">A lighter note</p>
       <h2>What does HAI actually stand for today?</h2>
       <p>
-        The acronym generator is the playful edge of the brand, not the
-        operating model. The real work stays practical: durable software,
-        clearer cloud systems, and owned computing that people can rely on.
+        The real name is Hopeful Aspirations Industries. The acronym generator
+        is the playful edge of the brand, not the operating model. The real work
+        stays practical: durable software, clearer cloud systems, and owned
+        computing that people can rely on.
       </p>
 
       <div class="generator-box" data-theme-surface="card">
@@ -199,13 +207,10 @@
   </section>
 
   <section class="contact-panel" data-theme-surface="hero" id="contact">
-    <p class="eyebrow">Start A Conversation</p>
-    <h2>
-      Build durable software, calmer cloud architecture, or a practical
-      personal-cloud system.
-    </h2>
+    <p class="eyebrow">{{ contactLead.title }}</p>
+    <h2>{{ contactLead.description }}</h2>
     <lib-contact-form
-      [title]="'Get in touch with HAI'"
+      [title]="'Start a project with HAI'"
       [buttonText]="submittingContact ? 'Sending...' : 'Send Message'"
       [subjects]="contactSubjects"
       [bannerImage]="

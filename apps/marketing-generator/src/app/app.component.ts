@@ -58,8 +58,8 @@ import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
             <span class="brand-copy">
               <strong>Signal Foundry</strong>
               <small
-                >Hybrid demo + workbench for campaign strategy, structured
-                refinement, and export-ready outputs</small
+                >Offer-based bundle generation for founder-operators who need
+                coordinated marketing assets in one place</small
               >
             </span>
           </a>
@@ -72,8 +72,8 @@ import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
             >
               Overview
             </a>
-            <a routerLink="/create" routerLinkActive="active">Create</a>
-            <a routerLink="/results" routerLinkActive="active">Results</a>
+            <a routerLink="/offers" routerLinkActive="active">Offers</a>
+            <a routerLink="/offers/new" routerLinkActive="active">New Offer</a>
           </nav>
         </div>
       </header>
@@ -85,19 +85,19 @@ import { MetricTileComponent } from '@optimistic-tanuki/common-ui';
           <small>{{ workspaceStatus().storageLabel }}</small>
         </article>
         <otui-metric-tile
-          label="Active Planning Containers"
+          label="Active Offers"
           [value]="workspaceStatus().workspaceCount"
-          caption="workspaces in circulation"
+          caption="offer workspaces"
         ></otui-metric-tile>
         <otui-metric-tile
-          label="Versions In Focus"
+          label="Saved Versions"
           [value]="workspaceStatus().currentVersionCount"
-          caption="saved revision points"
+          caption="bundle revisions"
         ></otui-metric-tile>
         <otui-metric-tile
-          label="Concepts In Run"
+          label="Bundle Directions"
           [value]="workspaceStatus().conceptCount"
-          caption="active generated directions"
+          caption="generated directions"
         ></otui-metric-tile>
       </section>
 
@@ -292,6 +292,16 @@ export class AppComponent {
       label: 'Results',
       isActive: this.currentUrl().startsWith('/results'),
       action: () => void this.router.navigateByUrl('/results'),
+    },
+    {
+      label: 'Offers',
+      isActive: this.router.url.startsWith('/offers'),
+      action: () => void this.router.navigateByUrl('/offers'),
+    },
+    {
+      label: 'New Offer',
+      isActive: this.router.url.startsWith('/offers/new'),
+      action: () => void this.router.navigateByUrl('/offers/new'),
     },
   ]);
 

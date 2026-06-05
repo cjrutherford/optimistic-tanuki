@@ -69,8 +69,11 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders the HAI Computer CTA', () => {
-    expect(fixture.nativeElement.textContent).toContain('Explore HAI Computer');
+  it('renders a project-start CTA and the HAI Computer path', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Start a Project');
+    expect(text).toContain('Explore HAI Computer Systems');
   });
 
   it('renders the registry-backed HAI app cards', () => {
@@ -118,9 +121,23 @@ describe('LandingComponent', () => {
   it('keeps the primary messaging serious while leaving the acronym section playful', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Software, cloud, and personal-cloud systems');
-    expect(text).toContain('Build durable software');
+    expect(text).toContain('Hopeful Aspirations Industries');
+    expect(text).toContain(
+      'Software, cloud, and personal-cloud systems built to stay legible'
+    );
+    expect(text).toContain('Start a Project');
+    expect(text).toContain('repo is a primary company asset');
     expect(text).toContain('A lighter note');
-    expect(text).not.toContain('essentially meaningless');
+    expect(text).toContain('The real name is Hopeful Aspirations Industries');
+  });
+
+  it('keeps services ahead of ecosystem and playful brand language in the page narrative', () => {
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text.indexOf('Services')).toBeGreaterThan(-1);
+    expect(text.indexOf('Services')).toBeLessThan(text.indexOf('HAI Apps'));
+    expect(text.indexOf('Services')).toBeLessThan(
+      text.indexOf('A lighter note')
+    );
   });
 });

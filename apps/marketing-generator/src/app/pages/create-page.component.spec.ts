@@ -6,7 +6,7 @@ import { MarketingGeneratorService } from '../services/marketing-generator.servi
 import { MarketingEnrichmentApiService } from '../services/marketing-enrichment-api.service';
 
 describe('CreatePageComponent', () => {
-  it('shows positioning snapshot content for the selected preset offering', async () => {
+  it('shows offer brief framing and message context for the selected preset offering', async () => {
     await TestBed.configureTestingModule({
       imports: [CreatePageComponent],
       providers: [
@@ -23,9 +23,9 @@ describe('CreatePageComponent', () => {
     const fixture = TestBed.createComponent(CreatePageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Offer brief');
+    expect(fixture.nativeElement.textContent).toContain('Message context');
     expect(fixture.nativeElement.textContent).toContain('Positioning snapshot');
-    expect(fixture.nativeElement.textContent).toContain('Objectives');
-    expect(fixture.nativeElement.textContent).toContain('Proof points');
   });
 
   it('shows delivery and pricing details for service and package offerings', async () => {
@@ -59,7 +59,7 @@ describe('CreatePageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Self-hosted');
   });
 
-  it('shows bundled channel output selections in the brief summary', async () => {
+  it('shows bundled channel output selections in the bundle scope summary', async () => {
     await TestBed.resetTestingModule()
       .configureTestingModule({
         imports: [CreatePageComponent],
@@ -85,6 +85,7 @@ describe('CreatePageComponent', () => {
     const fixture = TestBed.createComponent(CreatePageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Bundle scope');
     expect(fixture.nativeElement.textContent).toContain('Bundled channels');
     expect(fixture.nativeElement.textContent).toContain('Web, Email, Social');
   });

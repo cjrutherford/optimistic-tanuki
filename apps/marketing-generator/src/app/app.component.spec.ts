@@ -116,9 +116,7 @@ describe('AppComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain('Launch Sprint');
     expect(fixture.nativeElement.textContent).toContain('Browser storage only');
-    expect(fixture.nativeElement.textContent).toContain(
-      'workspaces in circulation'
-    );
+    expect(fixture.nativeElement.textContent).toContain('offer workspaces');
   });
 
   it('renders shared platform chrome for navigation and theming', async () => {
@@ -154,5 +152,7 @@ describe('AppComponent', () => {
     expect(
       fixture.nativeElement.querySelector('otui-nav-sidebar')
     ).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Offers');
+    expect(fixture.nativeElement.textContent).toContain('New Offer');
   });
 });

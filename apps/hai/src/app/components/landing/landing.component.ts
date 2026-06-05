@@ -42,20 +42,26 @@ export class LandingComponent {
       icon: '\u25B3',
       title: 'Software Delivery',
       description:
-        'Angular applications, platform workflows, and integration-heavy product work.',
+        'Application delivery for founders and teams that need momentum, clearer systems, and senior implementation help.',
     },
     {
       icon: '\u25C7',
       title: 'Cloud Architecture',
       description:
-        'Service boundaries, APIs, delivery pipelines, and operational clarity that hold up in production.',
+        'Service boundaries, APIs, delivery pipelines, and production systems designed to stay understandable under load.',
     },
     {
       icon: '\u25CB',
       title: 'Personal Cloud',
       description:
-        'Private compute, self-hosting, backups, and family infrastructure designed for ownership.',
+        'Owned compute, self-hosting, backups, and family infrastructure that feels practical instead of experimental.',
     },
+  ];
+
+  readonly serviceProof = [
+    'Application and platform work shaped around maintainability, not one-off delivery.',
+    'Cloud decisions that preserve operational clarity instead of hiding complexity behind tooling.',
+    'Personal-cloud systems grounded in backups, local AI, and real household use.',
   ];
 
   readonly ownershipNotes = [
@@ -79,6 +85,12 @@ export class LandingComponent {
       value: 'Tools, systems, and hardware configured to endure.',
     },
   ];
+
+  readonly contactLead = {
+    title: 'Start a Project',
+    description:
+      'Talk to HAI about software delivery, cloud architecture, or a practical personal-cloud system that needs to work in the real world.',
+  };
 
   readonly contactSubjects = [
     { value: 'software-delivery', label: 'Software Delivery' },
