@@ -18,4 +18,13 @@ describe('AboutComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders capability groups instead of the old biography wall', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.textContent).toContain('Capabilities');
+    expect(compiled.textContent).toContain('Application delivery');
+    expect(compiled.textContent).toContain('Platform and operations');
+    expect(compiled.textContent).toContain('Data and workflow systems');
+  });
 });

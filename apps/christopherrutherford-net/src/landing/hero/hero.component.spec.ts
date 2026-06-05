@@ -19,17 +19,18 @@ describe('HeroComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders the editorial hero wrapper and value pillar grid', () => {
+  it('renders the editorial hero wrapper and dual CTAs', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
     expect(compiled.querySelector('.hero-shell')).toBeTruthy();
-    expect(compiled.querySelector('.hero-pillars')).toBeTruthy();
+    expect(compiled.textContent).toContain('Start a project');
+    expect(compiled.textContent).toContain('Explore work');
   });
 
-  it('renders the hero blurb card and icon-backed value pillars', () => {
+  it('renders the proof strip instead of the old pillar layout', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.querySelector('.hero-blurb-card')).toBeTruthy();
-    expect(compiled.querySelector('.hero-pillars')).toBeTruthy();
+    expect(compiled.querySelector('.hero-proof-strip')).toBeTruthy();
+    expect(compiled.querySelector('.hero-pillars')).toBeFalsy();
   });
 });

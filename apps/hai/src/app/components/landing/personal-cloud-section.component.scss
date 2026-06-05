@@ -1,0 +1,105 @@
+:host {
+  display: block;
+}
+
+.personal-cloud-panel,
+.ownership-card {
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  box-shadow: var(--hai-shadow-panel);
+}
+
+.personal-cloud-panel {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding: clamp(1.6rem, 3vw, 2.8rem);
+  background: var(--hai-panel-background);
+  backdrop-filter: blur(14px);
+}
+
+.section-copy,
+.ownership-card {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  margin: 0 0 0.8rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  line-height: 1;
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+}
+
+.section-copy p,
+.ownership-list {
+  font: 400 1rem/1.75
+    var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.ownership-layout {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 1rem;
+  align-items: stretch;
+  margin-top: 1.2rem;
+}
+
+.ownership-card {
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: var(--hai-panel-background);
+  backdrop-filter: blur(14px);
+}
+
+.ownership-list {
+  display: grid;
+  gap: 1.2rem;
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.ownership-list li {
+  position: relative;
+  padding-left: 1.4rem;
+}
+
+.ownership-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--primary) 50%, transparent);
+  transform: rotate(45deg);
+}
+
+.ownership-motion {
+  min-height: 19rem;
+}
+
+.ownership-motion::part(section) {
+  border-radius: inherit;
+}
+
+@media (max-width: 960px) {
+  .ownership-layout {
+    grid-template-columns: 1fr;
+  }
+}

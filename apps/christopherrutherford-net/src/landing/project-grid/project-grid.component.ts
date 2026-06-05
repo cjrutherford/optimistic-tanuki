@@ -1,60 +1,83 @@
 import { Component, inject } from '@angular/core';
 
-import { HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
-import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
+import { CommonModule } from '@angular/common';
+import {
+  CardComponent,
+  HeadingComponent,
+  TileComponent,
+} from '@optimistic-tanuki/common-ui';
 import {
   HaiAppDirectoryService,
   HaiResolvedAppLink,
 } from '@optimistic-tanuki/hai-ui';
-import { CommonModule } from '@angular/common';
+import { map } from 'rxjs';
+import { PORTFOLIO_ENTRIES } from '../portfolio.data';
 
-interface PortfolioProject {
-  title: string;
-  bannerImage: string;
-  excerpt: string;
-  readMoreText: string;
-  readMoreLink: string;
-  secondaryButtonText: string;
-  secondaryButtonLink: string;
+interface PortfolioCardViewModel {
+  id: string;
+  name: string;
+  category: string;
+  tagline: string;
+  summary: string;
+  proof: string;
+  tone: (typeof PORTFOLIO_ENTRIES)[number]['tone'];
+  logoSrc?: string;
+  liveHref?: string;
+  repoHref: string;
+  isPublic: boolean;
+  initials: string;
 }
 
 @Component({
   selector: 'app-project-grid',
-  imports: [
-    CommonModule,
-    TileComponent,
-    HeadingComponent,
-    BlogPostCardComponent,
-  ],
+  imports: [CommonModule, TileComponent, HeadingComponent, CardComponent],
   templateUrl: './project-grid.component.html',
   styleUrl: './project-grid.component.scss',
 })
 export class ProjectGridComponent {
   private readonly appDirectory = inject(HaiAppDirectoryService);
-  readonly projects$ = this.appDirectory.getResolvedApps();
+  private readonly portfolioEntries = PORTFOLIO_ENTRIES;
 
-  private readonly bannerImages: Record<string, string> = {
-    'optimistic-tanuki': 'assets/images/tanuki.png',
-    'towne-square': 'assets/images/private-cloud.png',
-    'forge-of-will': 'assets/images/open-project.png',
-    'fin-commander': 'assets/images/firefly-iii.svg',
-    'opportunity-compass': 'assets/images/process-analytics.png',
-  };
+  readonly projects$ = this.appDirectory
+    .getResolvedApps()
+    .pipe(map((apps) => this.toPortfolioCards(apps)));
 
-  portfolioProjects(apps: HaiResolvedAppLink[]): PortfolioProject[] {
-    return apps.map((app) => ({
-      title: app.name,
-      bannerImage:
-        this.bannerImages[app.appId] ?? 'assets/images/custom-app.png',
-      excerpt: app.portfolioSummary,
-      readMoreText: app.isPublic ? 'Open Project' : 'View Repository',
-      readMoreLink: app.resolvedHref,
-      secondaryButtonText: app.isPublic ? 'View Repository' : '',
-      secondaryButtonLink: app.isPublic ? app.repositoryUrl : '',
-    }));
+  private toPortfolioCards(
+    apps: HaiResolvedAppLink[]
+  ): PortfolioCardViewModel[] {
+    const appMap = new Map(apps.map((app) => [app.appId, app]));
+
+    return this.portfolioEntries
+      .map((entry) => {
+        const app = appMap.get(entry.id);
+        if (!app) {
+          return null;
+        }
+
+        return {
+          id: entry.id,
+          name: app.name,
+          category: app.category,
+          tagline: app.tagline,
+          summary: entry.summary,
+          proof: entry.proof,
+          tone: entry.tone,
+          logoSrc: app.logoSrc,
+          liveHref: app.isPublic ? app.resolvedHref : undefined,
+          repoHref: app.repositoryUrl,
+          isPublic: app.isPublic,
+          initials: this.getInitials(app.name),
+        } satisfies PortfolioCardViewModel;
+      })
+      .filter((entry): entry is Exclude<typeof entry, null> => entry !== null);
   }
 
-  linkTo(url: string): void {
-    window.open(url, '_blank');
+  private getInitials(name: string): string {
+    return name
+      .split(/\s+/)
+      .map((part) => part[0] ?? '')
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 }

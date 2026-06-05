@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   margin-left: auto;
   margin-right: auto;
   padding: 2rem;
@@ -52,6 +51,14 @@
   border: none;
   background: transparent;
   box-shadow: none;
+}
+
+@media (min-width: 1200px) {
+  .landing-container.personality-shell > app-services-grid,
+  .landing-container.personality-shell > app-project-grid,
+  .landing-container.personality-shell > app-contact {
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {

@@ -4,48 +4,35 @@
   flex-wrap: wrap;
   justify-content: stretch;
   align-items: stretch;
-  gap: 40px;
-  padding: 10px;
-  margin: 2px;
+  gap: 1.5rem;
+  padding: 0;
+
   > * {
-    flex: 1 1 calc(33% - 32px); /* 3 items per row with some gap */
+    flex: 1 1 calc(33% - 1rem);
     box-sizing: border-box;
-    min-width: 250px; /* Ensure a minimum width for smaller screens */
-    max-width: 400px; /* Optional: limit max width */
+    min-width: 250px;
+    max-width: 400px;
   }
 }
-.svg-background-in-div {
-  position: absolute; /* Positioned relative to .content */
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0; /* Behind the content-inner */
-  pointer-events: none; /* Allows clicks to pass through to content if needed */
-}
 
-.svg-background-in-div svg {
-  width: 100%;
-  height: 100%;
+.section-heading-tile {
   display: block;
+  margin-bottom: 1rem;
 }
-.project-image-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.project-content-container {
-  position: relative;
-  z-index: 1; /* Ensure content is above the SVG background */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 10px;
 
-  text-align: center;
+.section-kicker {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-intro {
+  max-width: 50rem;
+  margin: 0.85rem 0 0;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--foreground) 82%, white 18%);
 }

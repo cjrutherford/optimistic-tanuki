@@ -1,333 +1,37 @@
 <div class="about-layout">
-  <!-- Left: Tall Card with Paragraphs -->
   <otui-card class="about-left-card">
-    <otui-heading
-      [text]="'From Code to Community:'"
-      [size]="'2rem'"
-      [color]="'#fff'"
-    ></otui-heading>
-    <br />
-    <otui-heading
-      [text]="'My Path in Software Engineering & Beyond'"
-      [size]="'2rem'"
-      [color]="'#fff'"
-    ></otui-heading>
-    <br />
-    <br />
+    <otui-heading [text]="'Capabilities'" [size]="'2rem'"></otui-heading>
+    <p class="about-intro">
+      I work across product delivery, architecture, and implementation. The
+      through-line is pretty simple: build things that are useful, and build
+      them in a way people can actually work with later.
+    </p>
     <div class="about-paragraphs">
       <p>
-        My journey in software engineering has been driven by a passion for
-        building robust, scalable solutions and a deep commitment to fostering
-        supportive communities. From architecting microservice platforms to
-        automating complex billing processes, my experience has equipped me with
-        the skills to tackle diverse technical challenges.
+        My background covers customer-facing apps, workflow-heavy business
+        tools, platform work, and the in-between space where product decisions
+        and technical decisions keep affecting each other.
       </p>
       <p>
-        I believe in the power of collaboration and mentorship, and strive to
-        create environments where everyone can learn, grow, and contribute.
-        Whether leading teams or working independently, my focus remains on
-        delivering value and empowering others.
-      </p>
-      <p>
-        Beyond code, I am dedicated to building bridges between technology and
-        people, ensuring that solutions are not only technically sound but also
-        accessible and impactful.
-      </p>
-      <p>
-        I am committed to continuous learning and staying updated with the
-        latest industry trends, ensuring that my skills remain relevant and
-        effective.
+        I’m most useful when a team needs to turn a messy situation into
+        something workable: clearer structure, better tradeoffs, and a delivery
+        path that doesn’t fall apart the moment it leaves the whiteboard.
       </p>
     </div>
   </otui-card>
 
-  <!-- Right: Horizontal Scroll Cards -->
   <div class="about-right-cards">
-    <!-- Languages -->
-    <otui-card class="scroll-card">
-      <otui-heading
-        [text]="'Languages'"
-        [size]="'1.5rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-      <div class="scroll-section">
-        <div class="item">
-          <img src="/assets/images/js-logo.png" alt="Javascript Logo" />
-          <p>JavaScript</p>
+    @for (group of capabilityGroups; track group.title) {
+    <otui-card class="capability-card">
+      <otui-heading [text]="group.title" [size]="'1.5rem'"></otui-heading>
+      <div class="capability-list">
+        @for (item of group.items; track item) {
+        <div class="capability-item">
+          <p>{{ item }}</p>
         </div>
-        <div class="item">
-          <img src="/assets/images/ts-logo.png" alt="TypeScript Logo" />
-          <p>TypeScript</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/py-logo.png" alt="Python Logo" />
-          <p>Python</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/cs-logo.png" alt="" />
-          <p>C#</p>
-        </div>
-      </div></otui-card
-    >
-    <!-- Cloud/DevOps -->
-    <otui-card class="scroll-card">
-      <otui-heading
-        [text]="'Cloud/DevOps'"
-        [size]="'1.5rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-      <div class="scroll-section">
-        <div class="item">
-          <img src="/assets/images/docker.png" alt="Docker Logo" />
-          <p>Docker</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/kubernetes.png" alt="Kubernetes Logo" />
-          <p>Kubernetes</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/azure.png" alt="Azure Logo" />
-          <p>Azure</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/aws.webp" alt="AWS Logo" />
-          <p>AWS</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/gcloud.png" alt="Gcloud Logo" />
-          <p>Gcloud</p>
-        </div>
+        }
       </div>
     </otui-card>
-    <otui-card class="scroll-card">
-      <otui-heading
-        [text]="'Databases'"
-        [size]="'1.5rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-      <div class="scroll-section">
-        <div class="item">
-          <img src="/assets/images/mongodb.png" alt="MongoDB Logo" />
-          <p>MongoDB</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/postgres.png" alt="PostgreSQL Logo" />
-          <p>PostgreSQL</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/mysql.png" alt="MySQL Logo" />
-          <p>MySQL</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/redis.svg" alt="Redis Logo" />
-          <p>Redis</p>
-        </div>
-      </div>
-    </otui-card>
-    <otui-card class="scroll-card">
-      <otui-heading
-        [text]="'Frameworks'"
-        [size]="'1.5rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-      <div class="scroll-section">
-        <div class="item">
-          <img src="/assets/images/angular-logo.gif" alt="Angular Logo" />
-          <p>Angular</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/react.svg" alt="React Logo" />
-          <p>React</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/express-js.png" alt="Express.js Logo" />
-          <p>Express.js</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/nestjs.svg" alt="NestJS Logo" />
-          <p>NestJS</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/asp-net.png" alt="ASP.NET Logo" />
-          <p>ASP.NET</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/fastapi.svg" alt="FastAPI Logo" />
-          <p>FastAPI</p>
-        </div>
-      </div>
-    </otui-card>
-    <otui-card class="scroll-card">
-      <otui-heading
-        [text]="'Other Technologies & Disciplines'"
-        [size]="'1.5rem'"
-        [color]="'#fff'"
-      ></otui-heading>
-      <div class="scroll-section">
-        <div class="item">
-          <img src="/assets/images/git.png" alt="Git Logo" />
-          <p>Git</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/chrome.jpg" alt="Chrome Logo" />
-          <p>Chrome Extensions</p>
-        </div>
-        <div class="item">
-          <img
-            src="/assets/images/process-analytics.png"
-            alt="Process Analytics Logo"
-          />
-          <p>Process Analytics and Automation</p>
-        </div>
-        <div class="item">
-          <img src="/assets/images/microservice.png" alt="Microservices Logo" />
-          <p>Microservice Architecture</p>
-        </div>
-      </div>
-    </otui-card>
+    }
   </div>
 </div>
-<!-- <div class="aboutGrid">
-    <otui-heading 
-        [text]="'From Code  to Community:'" 
-        [size]="'2rem'" 
-        [color]="'#fff'"
-        class="col-2-6"
-        style="text-align: center;"
-    ></otui-heading>
-    <otui-heading 
-        [text]="'My Path in Software Engineering & Beyond'" 
-        [size]="'2rem'" 
-        [color]="'#fff'"
-        class="col-2-6"
-        style="text-align: center;"
-    ></otui-heading>
-
-    <otui-tile class="col-3 row-3">
-        <p>My journey in software engineering has been driven by a passion for building robust, scalable solutions and a deep commitment to fostering supportive communities. From architecting microservice platforms to automating complex billing processes, my experience has equipped me with the skills to tackle diverse technical challenges.</p>
-    </otui-tile>
-    <otui-tile class="col-3 row-4">
-        <p>At Blockstream, I developed a monetized API dashboard and architected a microservice-based miner hosting platform, emphasizing scalability and maintainability. My time at Polymorph, Inc. further honed my full-stack capabilities, leading platform migrations to Google Cloud and implementing project management workflows. At OnCare, I focused on improving developer quality of life and establishing Angular best practices, while at Dittach, I worked on Node.js services and Google authorization for Chrome extensions.</p>
-    </otui-tile>
-    <otui-tile class="col-3 row-5">
-        <p>Throughout my career, I've embraced roles that involve not just writing code, but also providing mentorship, establishing standards, and unifying development efforts. My background in support and software development fuels my current drive to build strong communities, both for myself and for the broader independent workforce. I believe technology is a powerful enabler for independence, and collective effort can unlock unprecedented success.</p>
-    </otui-tile>
-
-    <otui-tile class="col-5 row-3" style="height: 100%;">
-        <otui-heading [text]="'Languages'" [size]="'1.5rem'" [color]="'#fff'"></otui-heading>
-        <div class="utility-grid">
-            <div class="item">
-                <img src="/assets/images/js-logo.png" alt="Javascript Logo" >
-                <p>JavaScript</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/ts-logo.png" alt="TypeScript Logo" >
-                <p>TypeScript</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/py-logo.png" alt="Python Logo" >   
-                <p>Python</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/cs-logo.png" alt="">
-                <p>C#</p>
-            </div>
-        </div>
-    </otui-tile>
-    <otui-tile class="col-5 row-4" style="height: 100%;">
-        <otui-heading [text]="'Cloud/DevOps'" [size]="'1.5rem'" [color]="'#fff'"></otui-heading>
-        <div class="utility-grid">
-            <div class="item">
-                <img src="/assets/images/docker.png" alt="Docker Logo">
-                <p>Docker</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/kubernetes.png" alt="Kubernetes Logo">
-                <p>Kubernetes</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/azure.png" alt="Azure Logo">
-                <p>Azure</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/aws.webp" alt="AWS Logo">
-                <p>AWS</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/gcloud.png" alt="Gcloud Logo">
-                <p>Gcloud</p>
-            </div>
-        </div>
-    </otui-tile>
-    <otui-tile class="col-5 row-5" style="height: 100%;">
-        <otui-heading [text]="'Databases'" [size]="'1.5rem'" [color]="'#fff'"></otui-heading>
-        <div class="utility-grid">
-            <div class="item">
-                <img src="/assets/images/mongodb.png" alt="MongoDB Logo">
-                <p>MongoDB</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/postgres.png" alt="PostgreSQL Logo">
-                <p>PostgreSQL</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/mysql.png" alt="MySQL Logo">
-                <p>MySQL</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/redis.svg" alt="Redis Logo">
-                <p>Redis</p>
-            </div>
-        </div>
-    </otui-tile>
-    <otui-tile class="col-4 row-3-6" style="height: 100%;">
-        <otui-heading [text]="'Frameworks'" [size]="'1.5rem'" [color]="'#fff'"></otui-heading>
-        <div class="utility-grid">
-            <div class="item">
-                <img src="/assets/images/angular-logo.gif" alt="Angular Logo">
-                <p>Angular</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/react.svg" alt="React Logo">
-                <p>React</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/express-js.png" alt="Express.js Logo">
-                <p>Express.js</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/nestjs.svg" alt="NestJS Logo">
-                <p>NestJS</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/asp-net.png" alt="ASP.NET Logo">
-                <p>ASP.NET</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/fastapi.svg" alt="FastAPI Logo">
-                <p>FastAPI</p>
-            </div>
-        </div>
-    </otui-tile>
-    <otui-tile class="col-2 row-3-5" style="height: 100%;">
-        <otui-heading [text]="'Other Technologies & Disciplines'" [size]="'1.5rem'" [color]="'#fff'"></otui-heading>
-        <div class="utility-grid">
-            <div class="item">
-                <img src="/assets/images/git.png" alt="Git Logo">
-                <p>Git</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/chrome.jpg" alt="Chrome Logo">
-                <p>Chrome Extensions</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/process-analytics.png" alt="Process Analytics Logo">
-                <p>Process Analytics and Automation</p>
-            </div>
-            <div class="item">
-                <img src="/assets/images/microservice.png" alt="Microservices Logo">
-                <p>Microservice Architecture</p>
-            </div>
-        </div>
-    </otui-tile>
-</div> -->

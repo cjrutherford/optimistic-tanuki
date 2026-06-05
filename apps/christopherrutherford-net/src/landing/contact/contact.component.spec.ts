@@ -29,4 +29,10 @@ describe('ContactComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('uses project-oriented contact subjects', () => {
+    expect(component.subjects.map((subject) => subject.label)).toEqual(
+      expect.arrayContaining(['Project Inquiry', 'Consulting', 'Collaboration'])
+    );
+  });
 });

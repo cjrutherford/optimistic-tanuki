@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 import { HeadingComponent, TileComponent } from '@optimistic-tanuki/common-ui';
 import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
+import { SERVICE_ENTRIES } from '../services.data';
 
 @Component({
   selector: 'app-services-grid',
@@ -9,4 +10,10 @@ import { BlogPostCardComponent } from '@optimistic-tanuki/blogging-ui';
   templateUrl: './services-grid.component.html',
   styleUrl: './services-grid.component.scss',
 })
-export class ServicesGridComponent {}
+export class ServicesGridComponent {
+  readonly services = SERVICE_ENTRIES;
+
+  linkTo(url: string): void {
+    window.location.href = url;
+  }
+}

@@ -1,29 +1,31 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 import {
-  HaiAppDirectoryService,
-  HaiExpansionComponent,
-} from '@optimistic-tanuki/hai-ui';
-import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
-import {
-  AuroraRibbonComponent,
   PulseRingsComponent,
-  ShimmerBeamComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
+import { ServicesSectionComponent } from './services-section.component';
+import { ManifestoSectionComponent } from './manifesto-section.component';
+import { PersonalCloudSectionComponent } from './personal-cloud-section.component';
+import { EcosystemSectionComponent } from './ecosystem-section.component';
+import { AcronymSectionComponent } from './acronym-section.component';
+import { ContactSectionComponent } from './contact-section.component';
 
 @Component({
   selector: 'hai-landing',
   standalone: true,
   imports: [
     CommonModule,
-    HaiExpansionComponent,
-    ContactFormComponent,
-    AuroraRibbonComponent,
     PulseRingsComponent,
-    ShimmerBeamComponent,
     TopographicDriftComponent,
+    ServicesSectionComponent,
+    ManifestoSectionComponent,
+    PersonalCloudSectionComponent,
+    EcosystemSectionComponent,
+    AcronymSectionComponent,
+    ContactSectionComponent,
   ],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
