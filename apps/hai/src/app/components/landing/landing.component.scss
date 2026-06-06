@@ -149,7 +149,6 @@
 
 h1 {
   margin: 0;
-  max-width: 11ch;
   font-size: clamp(3rem, 7vw, 5.8rem);
   line-height: 0.95;
   font-family: var(
@@ -282,10 +281,6 @@ h1 {
     width: min(24rem, 70vw);
     height: min(24rem, 70vw);
     transform: translateX(-50%);
-  }
-
-  h1 {
-    max-width: 12ch;
   }
 }
 
