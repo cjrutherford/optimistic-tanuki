@@ -101,6 +101,46 @@ describe('FinancialUtilitiesService', () => {
     );
   });
 
+  it('retries invoice creation when a generated invoice number collides', async () => {
+    const duplicateKeyError = Object.assign(new Error('duplicate key'), {
+      code: '23505',
+    });
+
+    invoiceRepo.save
+      .mockRejectedValueOnce(duplicateKeyError)
+      .mockImplementation(
+        async (invoice) =>
+          ({
+            id: 'invoice-2',
+            ...invoice,
+          } as FinancialInvoice)
+      );
+
+    const invoice = await service.createInvoice({
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tenantId: 'tenant-1',
+      appScope: 'finance',
+      workspace: 'business',
+      customerName: 'Retry Bakery',
+      lines: [
+        {
+          description: 'Retainer',
+          quantity: 1,
+          unitAmount: 300,
+        },
+      ],
+    });
+
+    expect(invoiceRepo.save).toHaveBeenCalledTimes(2);
+    expect(
+      (invoiceRepo.save.mock.calls[0][0] as FinancialInvoice).invoiceNumber
+    ).not.toBe(
+      (invoiceRepo.save.mock.calls[1][0] as FinancialInvoice).invoiceNumber
+    );
+    expect(invoice.id).toBe('invoice-2');
+  });
+
   it('records invoice payments as localized finance transactions', async () => {
     const invoice = {
       id: 'invoice-1',

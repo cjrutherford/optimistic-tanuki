@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Component, computed, inject } from '@angular/core';
+import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 @Component({
   selector: 'ot-finance-onboarding',
@@ -15,7 +15,7 @@ import { Router } from '@angular/router';
           Finance setup now lives inside the main onboarding flow so you only
           see one guided path.
         </p>
-        <a class="primary" href="/onboarding">Open onboarding</a>
+        <a class="primary" [href]="onboardingHref()">Open onboarding</a>
       </div>
     </section>
   `,
@@ -70,9 +70,8 @@ import { Router } from '@angular/router';
   ],
 })
 export class OnboardingComponent {
-  private readonly router = inject(Router);
-
-  constructor() {
-    void this.router.navigateByUrl('/onboarding');
-  }
+  private readonly hostConfig = inject(FINANCE_HOST_CONFIG);
+  readonly onboardingHref = computed(
+    () => this.hostConfig.onboardingRoute ?? '/onboarding'
+  );
 }

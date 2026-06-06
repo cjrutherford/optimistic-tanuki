@@ -14,6 +14,7 @@ export interface FinanceHostConfig {
   authGuardLabel?: string;
   defaultWorkspace: FinanceWorkspace;
   redirectTo?: string;
+  onboardingRoute?: string;
   isReady?: () => boolean | Promise<boolean>;
   showWorkspaceSubnav?: boolean;
   workspaceLabels?: Partial<
@@ -28,6 +29,7 @@ export const DEFAULT_FINANCE_HOST_CONFIG: FinanceHostConfig = {
   authGuardLabel: 'Finance access',
   defaultWorkspace: 'personal',
   redirectTo: '/login',
+  onboardingRoute: '/onboarding',
   isReady: () => true,
   showWorkspaceSubnav: true,
 };

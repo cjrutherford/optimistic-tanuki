@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindManyOptions, Repository } from 'typeorm';
 import {
@@ -45,10 +46,17 @@ export class FinancialUtilitiesService {
       String(date.getUTCMonth() + 1).padStart(2, '0'),
       String(date.getUTCDate()).padStart(2, '0'),
     ].join('');
-    const suffix = Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, '0');
+    const suffix = randomUUID().slice(0, 8).toUpperCase();
     return `FIN-${stamp}-${suffix}`;
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === '23505'
+    );
   }
 
   async createInvoice(
@@ -59,21 +67,33 @@ export class FinancialUtilitiesService {
     }
 
     const subtotal = this.invoiceTotal(input.lines);
-    const invoice = this.invoiceRepo.create({
-      ...input,
-      invoiceNumber: this.invoiceNumber(),
-      workspace: input.workspace ?? 'business',
-      currency: input.currency ?? 'USD',
-      customerEmail: input.customerEmail ?? null,
-      notes: input.notes ?? null,
-      dueDate: input.dueDate ?? null,
-      subtotal,
-      total: subtotal,
-      amountPaid: 0,
-      status: 'draft',
-    });
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const invoice = this.invoiceRepo.create({
+        ...input,
+        invoiceNumber: this.invoiceNumber(),
+        workspace: input.workspace ?? 'business',
+        currency: input.currency ?? 'USD',
+        customerEmail: input.customerEmail ?? null,
+        notes: input.notes ?? null,
+        dueDate: input.dueDate ?? null,
+        subtotal,
+        total: subtotal,
+        amountPaid: 0,
+        status: 'draft',
+      });
 
-    return this.invoiceRepo.save(invoice);
+      try {
+        return await this.invoiceRepo.save(invoice);
+      } catch (error) {
+        if (!this.isUniqueViolation(error) || attempt === 2) {
+          throw error;
+        }
+      }
+    }
+
+    throw new BadRequestException(
+      'Unable to generate a unique invoice number.'
+    );
   }
 
   async listInvoices(

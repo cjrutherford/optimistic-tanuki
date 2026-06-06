@@ -137,6 +137,69 @@ describe('FinanceShellComponent', () => {
     expect(navigateByUrl).toHaveBeenCalledWith('/onboarding');
   });
 
+  it('redirects embedded finance hosts to their configured onboarding route', async () => {
+    const events = new Subject<NavigationEnd>();
+    const navigateByUrl = jest.fn().mockResolvedValue(true);
+
+    await TestBed.configureTestingModule({
+      imports: [FinanceShellComponent],
+      providers: [
+        provideRouter([
+          { path: 'owner/finance', component: RouterStubComponent },
+          {
+            path: 'owner/finance/onboarding',
+            component: RouterStubComponent,
+          },
+          {
+            path: 'owner/finance/:workspace',
+            component: RouterStubComponent,
+          },
+        ]),
+        {
+          provide: Router,
+          useValue: {
+            url: '/owner/finance',
+            events,
+            navigateByUrl,
+            createUrlTree: jest.fn(),
+            serializeUrl: jest.fn().mockReturnValue('/'),
+          },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            root: {},
+          },
+        },
+        {
+          provide: FinanceService,
+          useValue: {
+            getOnboardingState: jest.fn().mockResolvedValue({
+              requiresOnboarding: true,
+              availableWorkspaces: [],
+              checklist: [],
+            }),
+          },
+        },
+        {
+          provide: FINANCE_HOST_CONFIG,
+          useValue: {
+            routeBase: '/owner/finance',
+            shellTitle: 'Owner Finance',
+            defaultWorkspace: 'business',
+            onboardingRoute: '/owner/finance/onboarding',
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(FinanceShellComponent);
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(navigateByUrl).toHaveBeenCalledWith('/owner/finance/onboarding');
+  });
+
   it('hides budgets and recurring links for the net-worth workspace', async () => {
     const events = new Subject<NavigationEnd>();
 

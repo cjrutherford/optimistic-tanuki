@@ -274,7 +274,7 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
       state.requiresOnboarding &&
       this.router.url === this.hostConfig.routeBase
     ) {
-      await this.router.navigateByUrl('/onboarding');
+      await this.router.navigateByUrl(this.onboardingRoute());
     }
   }
 
@@ -323,7 +323,7 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
         state.availableWorkspaces.length === 0 ||
         state.checklist.some((item) => !item.complete))
     ) {
-      return ['/onboarding'];
+      return this.routeCommands(this.onboardingRoute());
     }
 
     return ['/', ...this.routeBaseSegments(), this.currentWorkspace(), 'setup'];
@@ -341,6 +341,14 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
 
   workspaceSectionLink(workspace: FinanceWorkspace, section: string): string[] {
     return ['/', ...this.routeBaseSegments(), workspace, section];
+  }
+
+  private onboardingRoute(): string {
+    return this.hostConfig.onboardingRoute ?? '/onboarding';
+  }
+
+  private routeCommands(target: string): string[] {
+    return ['/', ...target.split('/').filter(Boolean)];
   }
 
   private routeBaseSegments(): string[] {

@@ -13,6 +13,7 @@ import { ownerFinanceFeatureGuard } from './owner-finance-feature.guard';
 
 const ownerFinanceConfig = {
   routeBase: '/owner/finance',
+  onboardingRoute: '/owner/finance/onboarding',
   shellTitle: 'Owner Finance',
   defaultWorkspace: 'business' as const,
   workspaceLabels: {
