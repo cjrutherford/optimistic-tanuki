@@ -35,6 +35,14 @@ Operational meaning:
 - batched Docker image builds run through `scripts/docker-build-batched.sh`
 - phased startup runs through `scripts/docker-start-phased.sh docker-compose.dev.yaml 5`
 
+Current rebuild behavior:
+
+- default batched Docker build size is `10`
+- the batched build script records planner state under `tmp/docker-compose-state/`
+- first run builds the whole relevant Compose surface
+- later runs rebuild only changed services and write a restart plan for the startup script
+- phased startup uses that plan to restart only changed services and their dependents when the stack is already running
+
 Use it when:
 
 - you need the integrated local platform
@@ -110,8 +118,17 @@ pnpm run docker:build:slow
 
 Implementation detail:
 
-- `scripts/docker-build-batched.sh` derives a bake file from Compose and builds services in batches
+- `scripts/docker-build-batched.sh` derives a bake file from Compose, computes a changed-service plan, and builds services in batches of `10` by default
 - `docker:build:slow` is the explicit sequential fallback
+
+Useful direct invocations:
+
+```bash
+./scripts/docker-build-batched.sh
+./scripts/docker-build-batched.sh --full-rebuild
+./scripts/docker-start-phased.sh docker-compose.dev.yaml
+./scripts/docker-start-phased.sh --full-restart docker-compose.dev.yaml
+```
 
 Use batched builds for normal work. Use `docker:build:slow` only when you need a transparent, one-service-at-a-time path for debugging build failures.
 

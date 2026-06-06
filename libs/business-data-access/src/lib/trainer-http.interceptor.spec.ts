@@ -74,4 +74,26 @@ describe('businessHttpInterceptor', () => {
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush([]);
   });
+
+  it('prefers the owner token for finance api requests when both sessions exist', () => {
+    localStorage.setItem(
+      'business-site:client-user',
+      JSON.stringify({
+        token: 'client-token',
+        profileId: 'client-profile-1',
+        userId: 'client-user-1',
+        email: 'client@example.com',
+      })
+    );
+    localStorage.setItem('business-site:client-token', 'client-token');
+
+    http.get('/api/finance/invoices').subscribe();
+
+    const request = httpMock.expectOne('/api/finance/invoices');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer business-site-token'
+    );
+    expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
+    request.flush([]);
+  });
 });

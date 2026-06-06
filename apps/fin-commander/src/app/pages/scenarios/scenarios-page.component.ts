@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -38,6 +38,7 @@ function createScenarioId(): string {
               id="name"
               class="field-input"
               [(ngModel)]="draft.name"
+              (ngModelChange)="onDraftChange()"
               name="name"
               placeholder="e.g., Job Change"
               required
@@ -49,6 +50,7 @@ function createScenarioId(): string {
               id="summary"
               class="field-input"
               [(ngModel)]="draft.summary"
+              (ngModelChange)="onDraftChange()"
               name="summary"
               placeholder="Brief description of the scenario"
               required
@@ -67,6 +69,7 @@ function createScenarioId(): string {
               id="assumptionLabel"
               class="field-input"
               [(ngModel)]="assumptionLabel"
+              (ngModelChange)="onDraftChange()"
               name="assumptionLabel"
               placeholder="e.g., Salary increase"
               required
@@ -78,6 +81,7 @@ function createScenarioId(): string {
               id="assumptionDelta"
               class="field-input"
               [(ngModel)]="assumptionDelta"
+              (ngModelChange)="onDraftChange()"
               name="assumptionDelta"
               placeholder="+$15,000/year"
               required
@@ -102,16 +106,27 @@ function createScenarioId(): string {
         </div>
 
         <div class="editor-footer">
+          @if (draftErrors().length > 0) {
+          <ul class="hint-errors" role="alert" aria-live="assertive">
+            @for (err of draftErrors(); track err) {
+            <li>{{ err }}</li>
+            }
+          </ul>
+          }
           <button
             type="submit"
             class="btn-primary"
-            [disabled]="!draft.name.trim() || !assumptionLabel.trim()"
+            [disabled]="draftErrors().length > 0"
           >
             Create Scenario
-            <span class="btn-arrow">→</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
           </button>
         </div>
       </form>
+
+      <p class="sr-status" role="status" aria-live="polite">
+        {{ statusMessage() }}
+      </p>
 
       <!-- ── SCENARIOS GRID ──────────────────────────────────────── -->
       @if (scenarios().length > 0) {
@@ -148,13 +163,30 @@ function createScenarioId(): string {
           </div>
 
           <div class="scenario-footer">
+            @if (pendingDeleteId() === scenario.id) {
+            <span class="confirm-prompt" role="alert">
+              Delete this scenario?
+            </span>
+            <button type="button" class="btn-ghost" (click)="cancelDelete()">
+              Cancel
+            </button>
             <button
               type="button"
               class="btn-danger"
-              (click)="deleteScenario(scenario.id)"
+              (click)="confirmDelete(scenario.id)"
+            >
+              Confirm remove
+            </button>
+            } @else {
+            <button
+              type="button"
+              class="btn-danger"
+              (click)="requestDelete(scenario.id)"
+              [attr.aria-label]="'Remove scenario ' + scenario.name"
             >
               Remove
             </button>
+            }
           </div>
         </article>
         }
@@ -336,7 +368,57 @@ function createScenarioId(): string {
         padding: 1rem 1.5rem;
         border-top: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
         display: flex;
+        align-items: center;
         justify-content: flex-end;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .hint-errors {
+        list-style: disc inside;
+        margin: 0 auto 0 0;
+        padding: 0;
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.78rem;
+        color: var(--danger, #dc2626);
+      }
+
+      .sr-status {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .confirm-prompt {
+        margin-right: auto;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--danger, #dc2626);
+      }
+
+      .btn-ghost {
+        padding: 0.5rem 1.1rem;
+        background: transparent;
+        color: var(--foreground);
+        font-size: 0.74rem;
+        font-weight: 600;
+        border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+        border-radius: var(--fc-button-radius, 9999px);
+        cursor: pointer;
+        margin-right: 0.5rem;
+        transition: var(--fc-transition);
+
+        &:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
       }
 
       .btn-primary {
@@ -599,6 +681,20 @@ export class ScenariosPageComponent {
   );
 
   readonly scenarios = signal<FinCommanderScenario[]>([]);
+  readonly pendingDeleteId = signal<string | null>(null);
+  readonly statusMessage = signal('');
+  readonly draftVersion = signal(0);
+  readonly draftErrors = computed(() => {
+    this.draftVersion();
+    const errors: string[] = [];
+    if (!this.draft.name.trim()) errors.push('Scenario name is required.');
+    if (!this.draft.summary.trim()) errors.push('Summary is required.');
+    if (!this.assumptionLabel.trim())
+      errors.push('Assumption label is required.');
+    if (!this.assumptionDelta.trim())
+      errors.push('Assumption delta is required.');
+    return errors;
+  });
   private planId = '';
 
   draft: FinCommanderScenario = {
@@ -639,6 +735,9 @@ export class ScenariosPageComponent {
   }
 
   saveScenario() {
+    this.bumpDraft();
+    if (this.draftErrors().length > 0) return;
+    const name = this.draft.name.trim();
     this.store.saveScenario({
       ...this.draft,
       id: createScenarioId(),
@@ -651,13 +750,42 @@ export class ScenariosPageComponent {
         },
       ],
     });
+    this.statusMessage.set(`Scenario "${name}" saved.`);
     this.resetDraft();
     this.loadScenarios();
   }
 
-  deleteScenario(scenarioId: string) {
+  requestDelete(scenarioId: string) {
+    this.pendingDeleteId.set(scenarioId);
+  }
+
+  cancelDelete() {
+    this.pendingDeleteId.set(null);
+  }
+
+  confirmDelete(scenarioId: string) {
+    const removed = this.scenarios().find(
+      (scenario) => scenario.id === scenarioId
+    );
     this.store.deleteScenario(scenarioId);
+    this.pendingDeleteId.set(null);
+    this.statusMessage.set(
+      removed ? `Removed scenario "${removed.name}".` : 'Scenario removed.'
+    );
     this.loadScenarios();
+  }
+
+  onDraftChange() {
+    this.bumpDraft();
+  }
+
+  private bumpDraft() {
+    this.draftVersion.update((value) => value + 1);
+  }
+
+  /** @deprecated Kept for backwards compatibility; use {@link requestDelete} + {@link confirmDelete}. */
+  deleteScenario(scenarioId: string) {
+    this.confirmDelete(scenarioId);
   }
 
   private loadScenarios() {
@@ -677,5 +805,6 @@ export class ScenariosPageComponent {
     this.assumptionLabel = '';
     this.assumptionDelta = '';
     this.assumptionImpact = 'spend';
+    this.bumpDraft();
   }
 }

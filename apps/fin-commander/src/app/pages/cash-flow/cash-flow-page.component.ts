@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, inject } from '@angular/core';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
+import { tenantAccountsRoute } from '../../tenant-routes';
 
 @Component({
   selector: 'fc-cash-flow-page',
@@ -11,7 +12,7 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
     <section class="page">
       <header class="page-header">
         <span class="eyebrow">Cash Flow</span>
-        <h2>Finance workspaces</h2>
+        <h2>Account operating areas</h2>
       </header>
 
       <div class="workspaces-grid">
@@ -43,32 +44,48 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
           <p class="workspace-copy">{{ workspace.copy }}</p>
 
           <nav class="card-links">
-            <a class="link-primary" [routerLink]="['/finance', workspace.id]">
+            <a class="link-primary" [routerLink]="accountsRoute(workspace.id)">
               Overview →
             </a>
             <div class="link-secondary-group">
               <a
                 class="link-pill"
-                [routerLink]="['/finance', workspace.id, 'accounts']"
+                [routerLink]="accountsRoute(workspace.id, 'accounts')"
                 >Accounts</a
               >
               <a
                 class="link-pill"
-                [routerLink]="['/finance', workspace.id, 'transactions']"
+                [routerLink]="accountsRoute(workspace.id, 'transactions')"
                 >Transactions</a
               >
               @if (workspace.id !== 'net-worth') {
               <a
                 class="link-pill"
-                [routerLink]="['/finance', workspace.id, 'budgets']"
+                [routerLink]="accountsRoute(workspace.id, 'budgets')"
                 >Budgets</a
               >
               <a
                 class="link-pill"
-                [routerLink]="['/finance', workspace.id, 'recurring']"
+                [routerLink]="accountsRoute(workspace.id, 'recurring')"
                 >Recurring</a
               >
-              }
+              @if (workspace.id === 'business') {
+              <a
+                class="link-pill utility"
+                [routerLink]="accountsRoute('business', 'invoices')"
+                >Invoices</a
+              >
+              <a
+                class="link-pill utility"
+                [routerLink]="accountsRoute('business', 'checkout')"
+                >Checkout</a
+              >
+              <a
+                class="link-pill utility"
+                [routerLink]="accountsRoute('business', 'payments')"
+                >Payments</a
+              >
+              } }
             </div>
           </nav>
         </article>
@@ -339,6 +356,29 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
           color: var(--primary);
           transform: translateY(-1px);
         }
+
+        &.utility {
+          background: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 12%,
+            var(--surface)
+          );
+          border-color: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 38%,
+            transparent
+          );
+        }
+
+        &.utility:hover {
+          background: color-mix(
+            in srgb,
+            var(--secondary, var(--primary)) 18%,
+            var(--surface)
+          );
+          color: var(--secondary, var(--primary));
+          border-color: var(--secondary, var(--primary));
+        }
       }
 
       @media (max-width: 480px) {
@@ -350,6 +390,7 @@ import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
   ],
 })
 export class CashFlowPageComponent {
+  private readonly route = inject(ActivatedRoute);
   readonly workspaces = [
     {
       id: 'personal',
@@ -373,4 +414,12 @@ export class CashFlowPageComponent {
       copy: 'Use the ledger rollup and tracked assets to verify long-range position.',
     },
   ];
+
+  accountsRoute(workspace: string, section?: string): string[] {
+    return tenantAccountsRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      workspace,
+      section
+    );
+  }
 }

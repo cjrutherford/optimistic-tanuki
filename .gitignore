@@ -98,3 +98,4 @@ worktrees/*
 apps/local-hub-e2e/test-results/
 apps/authentication/src/assets/config.yaml
 .pnpm-store
+opencode.json

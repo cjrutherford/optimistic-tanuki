@@ -84,13 +84,94 @@ describe('OnboardingComponent', () => {
     expect(fixture.componentInstance.currentStep()).toBe('finance-account');
   });
 
+  it('lets a completed personal workspace return to workspace selection', async () => {
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.getOnboardingState.mockResolvedValue({
+      requiresOnboarding: false,
+      availableWorkspaces: ['personal'],
+      checklist: [
+        { id: 'setup-business', complete: false },
+        { id: 'categorize-transactions', complete: true },
+        { id: 'create-budget', complete: true },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+
+    await fixture.componentInstance.ngOnInit();
+    fixture.componentInstance.openWorkspaceSelection();
+
+    expect(fixture.componentInstance.currentStep()).toBe('workspace');
+    expect(fixture.componentInstance.workspaces()).toEqual(['personal']);
+  });
+
+  it('hydrates tenant context before deciding the onboarding step', async () => {
+    tenantContext.activeTenant.mockReturnValueOnce(null).mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.getOnboardingState.mockResolvedValue({
+      requiresOnboarding: false,
+      availableWorkspaces: ['personal'],
+      checklist: [
+        { id: 'categorize-transactions', complete: true },
+        { id: 'create-budget', complete: true },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+
+    await fixture.componentInstance.ngOnInit();
+
+    expect(tenantContext.loadTenantContext).toHaveBeenCalled();
+    expect(financeService.getOnboardingState).toHaveBeenCalled();
+    expect(fixture.componentInstance.currentStep()).toBe('complete');
+  });
+
+  it('only bootstraps newly selected workspaces when expanding setup', async () => {
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.bootstrapWorkspaces.mockResolvedValue({
+      requiresOnboarding: false,
+      availableWorkspaces: ['personal', 'business'],
+      checklist: [],
+    });
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+    fixture.componentInstance.enabledWorkspaces.set(['personal']);
+    fixture.componentInstance.workspaces.set(['personal', 'business']);
+
+    await fixture.componentInstance.enableWorkspaces();
+
+    expect(financeService.bootstrapWorkspaces).toHaveBeenCalledWith([
+      'business',
+    ]);
+    expect(fixture.componentInstance.currentStep()).toBe('finance-account');
+  });
+
   it('opens the finance accounts surface from the account setup handoff', async () => {
     const fixture = TestBed.createComponent(OnboardingComponent);
 
     await fixture.componentInstance.finishFinanceAccountSetup();
 
     expect(router.navigate).toHaveBeenCalledWith([
-      '/finance',
+      '/tenants',
+      'active',
+      'accounts',
       'personal',
       'accounts',
     ]);
@@ -110,5 +191,68 @@ describe('OnboardingComponent', () => {
 
     expect(financeService.getOnboardingState).not.toHaveBeenCalled();
     expect(fixture.componentInstance.currentStep()).toBe('account');
+  });
+
+  it('surfaces blocked guidance when categorize-transactions is incomplete and user checks progress', async () => {
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.getOnboardingState.mockResolvedValue({
+      requiresOnboarding: false,
+      availableWorkspaces: ['personal'],
+      checklist: [
+        { id: 'categorize-transactions', complete: false },
+        { id: 'create-budget', complete: false },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+    fixture.componentInstance.currentStep.set('categorize-transactions');
+
+    await fixture.componentInstance.refreshSetupProgress();
+
+    expect(fixture.componentInstance.currentStep()).toBe(
+      'categorize-transactions'
+    );
+    expect(fixture.componentInstance.progressError()).toContain(
+      'categorized transactions'
+    );
+  });
+
+  it('surfaces a recovery message when the finance service is unreachable', async () => {
+    tenantContext.activeTenant.mockReturnValue({
+      id: 'tenant-1',
+      name: 'Household',
+      profileId: 'profile-1',
+      appScope: 'finance',
+      type: 'household',
+    });
+    financeService.getOnboardingState.mockRejectedValue(
+      new Error('network down')
+    );
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+    await fixture.componentInstance.refreshSetupProgress();
+
+    expect(fixture.componentInstance.progressError()).toContain(
+      'finance service'
+    );
+  });
+
+  it('redirects to the account step with guidance when no tenant exists', async () => {
+    tenantContext.activeTenant.mockReturnValue(null);
+
+    const fixture = TestBed.createComponent(OnboardingComponent);
+    fixture.componentInstance.currentStep.set('categorize-transactions');
+
+    await fixture.componentInstance.refreshSetupProgress();
+
+    expect(fixture.componentInstance.currentStep()).toBe('account');
+    expect(fixture.componentInstance.progressError()).toContain('account');
+    expect(financeService.getOnboardingState).not.toHaveBeenCalled();
   });
 });

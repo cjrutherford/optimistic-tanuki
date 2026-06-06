@@ -2464,6 +2464,60 @@
       "appScope": "finance"
     },
     {
+      "name": "finance.invoice.create",
+      "description": "Create finance invoices",
+      "active": true,
+      "resource": "finance.invoice",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.invoice.read",
+      "description": "Read finance invoices",
+      "active": true,
+      "resource": "finance.invoice",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.invoice.update",
+      "description": "Update finance invoices",
+      "active": true,
+      "resource": "finance.invoice",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.invoice.pay",
+      "description": "Record finance invoice payments",
+      "active": true,
+      "resource": "finance.invoice",
+      "action": "pay",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.checkout.create",
+      "description": "Create finance checkout sessions",
+      "active": true,
+      "resource": "finance.checkout",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.checkout.read",
+      "description": "Read finance checkout sessions",
+      "active": true,
+      "resource": "finance.checkout",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
       "name": "videos.channel.create",
       "description": "Create a video channel community",
       "active": true,

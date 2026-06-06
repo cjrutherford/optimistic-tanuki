@@ -75,6 +75,34 @@ export function createFinanceRoutes(
             ),
         },
         {
+          path: ':workspace/invoices',
+          loadComponent: () =>
+            import('./invoice-list/invoice-list.component').then(
+              (m) => m.InvoiceListComponent
+            ),
+        },
+        {
+          path: ':workspace/invoices/new',
+          loadComponent: () =>
+            import('./invoice-editor/invoice-editor.component').then(
+              (m) => m.InvoiceEditorComponent
+            ),
+        },
+        {
+          path: ':workspace/checkout',
+          loadComponent: () =>
+            import('./checkout-sessions/checkout-sessions.component').then(
+              (m) => m.CheckoutSessionsComponent
+            ),
+        },
+        {
+          path: ':workspace/payments',
+          loadComponent: () =>
+            import('./business-payments/business-payments.component').then(
+              (m) => m.BusinessPaymentsComponent
+            ),
+        },
+        {
           path: 'net-worth/assets',
           loadComponent: () =>
             import('./asset-tracker/asset-tracker.component').then(

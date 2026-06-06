@@ -27,6 +27,7 @@ describe('LoginComponent', () => {
   const tenantContext = {
     loadTenantContext: jest.fn().mockResolvedValue(undefined),
     activeTenant: jest.fn(),
+    activeTenantId: jest.fn(),
   };
   const financeService = {
     getOnboardingState: jest.fn(),
@@ -167,6 +168,7 @@ describe('LoginComponent', () => {
       id: 'tenant-1',
       type: 'household',
     });
+    tenantContext.activeTenantId.mockReturnValue('tenant-1');
     financeService.getOnboardingState.mockResolvedValue({
       requiresOnboarding: false,
       availableWorkspaces: ['personal'],
@@ -178,6 +180,10 @@ describe('LoginComponent', () => {
       password: 'secret',
     });
 
-    expect(router.navigate).toHaveBeenCalledWith(['/finance']);
+    expect(router.navigate).toHaveBeenCalledWith([
+      '/tenants',
+      'tenant-1',
+      'overview',
+    ]);
   });
 });

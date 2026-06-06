@@ -9,6 +9,7 @@ import {
   FinanceSummaryCommands,
   FinanceTenantCommands,
   FinanceBankingCommands,
+  FinancialUtilitiesCommands,
 } from '@optimistic-tanuki/constants';
 import {
   BankConnectionCreateDto,
@@ -27,6 +28,10 @@ import {
   FinanceWorkspace,
   UpdateRecurringItemDto,
   UpdateBudgetDto,
+  CreateFinancialCheckoutSessionDto,
+  CreateFinancialInvoiceDto,
+  RecordFinancialInvoicePaymentDto,
+  UpdateFinancialInvoiceDto,
 } from '@optimistic-tanuki/models';
 import { AccountService } from './services/account.service';
 import { TransactionService } from './services/transaction.service';
@@ -40,11 +45,14 @@ import {
   InventoryItem,
   Budget,
   RecurringItem,
+  FinancialInvoice,
+  FinancialCheckoutSession,
 } from '../entities';
 import { extractFinanceScope, FinanceScope } from './services/finance-scope';
 import { RecurringItemService } from './services/recurring-item.service';
 import { FinanceTenantService } from './services/finance-tenant.service';
 import { BankConnectionService } from './services/bank-connection.service';
+import { FinancialUtilitiesService } from './services/financial-utilities.service';
 
 @Controller()
 export class AppController {
@@ -56,7 +64,8 @@ export class AppController {
     private readonly financeSummaryService: FinanceSummaryService,
     private readonly recurringItemService: RecurringItemService,
     private readonly financeTenantService: FinanceTenantService,
-    private readonly bankConnectionService: BankConnectionService
+    private readonly bankConnectionService: BankConnectionService,
+    private readonly financialUtilitiesService: FinancialUtilitiesService
   ) {}
 
   private extractFindManyOptions<T>(
@@ -248,6 +257,108 @@ export class AppController {
   @MessagePattern({ cmd: FinanceBankingCommands.PROCESS_WEBHOOK })
   async processBankWebhook(@Payload() payload: Record<string, unknown>) {
     return this.bankConnectionService.processWebhook(payload);
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.CREATE_INVOICE })
+  async createFinancialInvoice(@Payload() payload: CreateFinancialInvoiceDto) {
+    return this.financialUtilitiesService.createInvoice(
+      await this.withResolvedTenant(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.LIST_INVOICES })
+  async listFinancialInvoices(
+    @Payload() payload?: FindManyOptions<FinancialInvoice> & FinanceScope
+  ) {
+    return this.financialUtilitiesService.listInvoices(
+      extractFinanceScope(payload as Record<string, unknown>),
+      this.extractFindManyOptions(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.GET_INVOICE })
+  async getFinancialInvoice(@Payload() payload: { id: string } & FinanceScope) {
+    return this.financialUtilitiesService.getInvoice(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.UPDATE_INVOICE })
+  async updateFinancialInvoice(
+    @Payload()
+    payload: { id: string; data: UpdateFinancialInvoiceDto } & FinanceScope
+  ) {
+    return this.financialUtilitiesService.updateInvoice(
+      payload.id,
+      payload.data,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.SEND_INVOICE })
+  async sendFinancialInvoice(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return this.financialUtilitiesService.sendInvoice(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.VOID_INVOICE })
+  async voidFinancialInvoice(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return this.financialUtilitiesService.voidInvoice(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.RECORD_INVOICE_PAYMENT })
+  async recordFinancialInvoicePayment(
+    @Payload()
+    payload: {
+      id: string;
+      data: RecordFinancialInvoicePaymentDto;
+    } & FinanceScope
+  ) {
+    return this.financialUtilitiesService.recordInvoicePayment(
+      payload.id,
+      payload.data,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.CREATE_CHECKOUT_SESSION })
+  async createFinancialCheckoutSession(
+    @Payload() payload: CreateFinancialCheckoutSessionDto
+  ) {
+    return this.financialUtilitiesService.createCheckoutSession(
+      await this.withResolvedTenant(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.LIST_CHECKOUT_SESSIONS })
+  async listFinancialCheckoutSessions(
+    @Payload()
+    payload?: FindManyOptions<FinancialCheckoutSession> & FinanceScope
+  ) {
+    return this.financialUtilitiesService.listCheckoutSessions(
+      extractFinanceScope(payload as Record<string, unknown>),
+      this.extractFindManyOptions(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinancialUtilitiesCommands.GET_CHECKOUT_SESSION })
+  async getFinancialCheckoutSession(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return this.financialUtilitiesService.getCheckoutSession(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
   }
 
   // Inventory Item endpoints

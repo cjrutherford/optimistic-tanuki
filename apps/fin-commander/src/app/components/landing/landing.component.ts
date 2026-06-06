@@ -8,6 +8,11 @@ import {
   FinanceWorkspace,
 } from '@optimistic-tanuki/finance-ui';
 import { FinCommanderPlanStore } from '@optimistic-tanuki/fin-commander-data-access';
+import {
+  tenantAccountsRoute,
+  tenantPlanRoute,
+  tenantPlansRoute,
+} from '../../tenant-routes';
 
 type LandingAction = {
   label: string;
@@ -98,7 +103,11 @@ export class LandingComponent {
     ) {
       return {
         label: 'Finish setup',
-        route: ['/finance', this.primaryWorkspace(), 'setup'],
+        route: tenantAccountsRoute(
+          this.currentTenantRouteId(),
+          this.primaryWorkspace(),
+          'setup'
+        ),
       };
     }
 
@@ -106,13 +115,13 @@ export class LandingComponent {
     if (firstPlan) {
       return {
         label: 'Open your plan',
-        route: ['/commander', firstPlan.id, 'overview'],
+        route: tenantPlanRoute(this.currentTenantRouteId(), firstPlan.id),
       };
     }
 
     return {
-      label: 'Create your first plan',
-      route: ['/commander', 'new', 'overview'],
+      label: 'Open tenant plans',
+      route: tenantPlansRoute(this.currentTenantRouteId()),
     };
   });
 
@@ -122,8 +131,11 @@ export class LandingComponent {
     }
 
     return {
-      label: 'Review your ledger',
-      route: ['/finance', this.primaryWorkspace()],
+      label: 'Review accounts',
+      route: tenantAccountsRoute(
+        this.currentTenantRouteId(),
+        this.primaryWorkspace()
+      ),
     };
   });
 
@@ -152,5 +164,13 @@ export class LandingComponent {
         (workspace) => workspace !== 'net-worth'
       ) ?? 'personal'
     );
+  }
+
+  private currentTenantRouteId(): string {
+    if (typeof this.tenantContext.activeTenantId === 'function') {
+      return this.tenantContext.activeTenantId() ?? 'active';
+    }
+
+    return this.tenantContext.activeTenant()?.id ?? 'active';
   }
 }

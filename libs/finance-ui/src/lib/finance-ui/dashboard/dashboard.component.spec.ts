@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DashboardComponent } from './dashboard.component';
 import { FinanceService } from '../services/finance.service';
+import { FINANCE_HOST_CONFIG } from '../finance.routes';
 
 describe('DashboardComponent', () => {
   let fixture: ComponentFixture<DashboardComponent>;
@@ -52,6 +53,14 @@ describe('DashboardComponent', () => {
             },
           },
         },
+        {
+          provide: FINANCE_HOST_CONFIG,
+          useValue: {
+            routeBase: '/owner/finance',
+            shellTitle: 'Owner Finance',
+            defaultWorkspace: 'business',
+          },
+        },
       ],
     }).compileComponents();
 
@@ -70,6 +79,12 @@ describe('DashboardComponent', () => {
     expect(labels).toEqual(['Accounts', 'Transactions']);
   });
 
+  it('builds child links from the configured host route base', () => {
+    expect(
+      fixture.componentInstance.workspaceSectionLink('business', 'invoices')
+    ).toEqual(['/', 'owner', 'finance', 'business', 'invoices']);
+  });
+
   it('uses shared theme variables instead of hardcoded finance branding tokens', () => {
     const sourceText = readFileSync(
       join(__dirname, 'dashboard.component.ts'),
@@ -83,5 +98,18 @@ describe('DashboardComponent', () => {
     );
     expect(sourceText).not.toContain('background: #22492d;');
     expect(sourceText).not.toContain('color: #55715a;');
+  });
+
+  it('formats currency through Intl.NumberFormat', () => {
+    expect(fixture.componentInstance.formatCurrency(1234)).toBe('$1,234.00');
+    expect(fixture.componentInstance.formatCurrency(null)).toBe('$0.00');
+    expect(fixture.componentInstance.formatCurrency(undefined)).toBe('$0.00');
+  });
+
+  it('renders an empty-state message when the work queue has no items', () => {
+    const text =
+      fixture.nativeElement.querySelector('.work-queue-empty')?.textContent ??
+      '';
+    expect(text).toContain('Work queue is clear');
   });
 });

@@ -28,6 +28,109 @@
       var(--local-easing, var(--animation-easing, ease));
 }
 
+.ag-grid-wrapper ::ng-deep .ag-root-wrapper,
+.ag-grid-wrapper ::ng-deep .ag-root-wrapper-body,
+.ag-grid-wrapper ::ng-deep .ag-header,
+.ag-grid-wrapper ::ng-deep .ag-row,
+.ag-grid-wrapper ::ng-deep .ag-cell,
+.ag-grid-wrapper ::ng-deep .ag-header-cell,
+.ag-grid-wrapper ::ng-deep .ag-paging-panel,
+.ag-grid-wrapper ::ng-deep .ag-overlay {
+  font-family: var(--local-font-family, var(--font-family-base, inherit));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-root-wrapper {
+  border: none;
+  border-radius: var(--local-border-radius, var(--border-radius-md, 8px));
+  background: var(--local-background, var(--background, #ffffff));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-header {
+  background: var(
+    --local-header-background,
+    color-mix(
+      in srgb,
+      var(--local-background, #ffffff) 88%,
+      var(--local-accent, #3f51b5) 12%
+    )
+  );
+  color: var(--local-foreground, var(--foreground, #212121));
+  border-bottom: var(--local-border-width, 1px) solid
+    var(--local-border-color, var(--complement, #c0af4b));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-header-cell,
+.ag-grid-wrapper ::ng-deep .ag-paging-panel,
+.ag-grid-wrapper ::ng-deep .ag-cell {
+  font-size: var(--local-grid-font-size, 14px);
+  color: var(--local-foreground, var(--foreground, #212121));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-header-cell:hover {
+  background: var(
+    --local-header-hover-background,
+    color-mix(
+      in srgb,
+      var(--local-header-background, #f3f4f6) 90%,
+      var(--local-accent, #3f51b5) 10%
+    )
+  );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-row {
+  background: var(--local-row-background, var(--local-background, #ffffff));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-row.ag-row-odd {
+  background: var(
+    --local-row-alt-background,
+    color-mix(
+      in srgb,
+      var(--local-background, #ffffff) 94%,
+      var(--local-accent, #3f51b5) 6%
+    )
+  );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-row:hover {
+  background: var(
+    --local-row-hover-background,
+    color-mix(
+      in srgb,
+      var(--local-background, #ffffff) 90%,
+      var(--local-accent, #3f51b5) 10%
+    )
+  );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-row-selected,
+.ag-grid-wrapper ::ng-deep .ag-row.ag-row-selected {
+  background: var(
+    --local-row-selected-background,
+    color-mix(
+      in srgb,
+      var(--local-background, #ffffff) 82%,
+      var(--local-accent, #3f51b5) 18%
+    )
+  ) !important;
+}
+
+.ag-grid-wrapper ::ng-deep .ag-paging-panel,
+.ag-grid-wrapper ::ng-deep .ag-overlay,
+.ag-grid-wrapper ::ng-deep .ag-header-cell-text,
+.ag-grid-wrapper ::ng-deep .ag-cell-value {
+  color: var(--local-foreground, var(--foreground, #212121));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-icon,
+.ag-grid-wrapper ::ng-deep .ag-picker-field-icon,
+.ag-grid-wrapper ::ng-deep .ag-sort-indicator-icon {
+  color: var(
+    --local-muted-foreground,
+    var(--local-foreground, var(--foreground, #212121))
+  );
+}
+
 :host([data-personality='minimal']) .ag-grid-wrapper {
   box-shadow: var(--shadow-none, none);
   border-radius: var(--border-radius-sm, 4px);

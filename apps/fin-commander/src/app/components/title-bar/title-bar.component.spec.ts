@@ -193,7 +193,7 @@ describe('TitleBarComponent', () => {
 
     expect(
       fixture.componentInstance.navItems().map((item) => item.label)
-    ).toEqual(['Ledger', 'Commander', 'Settings']);
+    ).toEqual(['Tenant', 'Plans', 'Settings']);
   });
 
   it('shows only onboarded finance workspaces in signed-in navigation', async () => {
@@ -257,7 +257,7 @@ describe('TitleBarComponent', () => {
 
     expect(
       fixture.componentInstance.navItems().map((item) => item.label)
-    ).toEqual(['Ledger', 'Commander', 'Settings']);
+    ).toEqual(['Tenant', 'Plans', 'Settings']);
   });
 
   it('navigates using the first scoped plan instead of home-command defaults', async () => {
@@ -334,14 +334,12 @@ describe('TitleBarComponent', () => {
 
     fixture.componentInstance
       .navItems()
-      .find((item) => item.label === 'Commander')
+      .find((item) => item.label === 'Plans')
       ?.action?.();
 
-    expect(navigateByUrl).toHaveBeenCalledWith(
-      '/commander/tenant-plan/overview'
-    );
+    expect(navigateByUrl).toHaveBeenCalledWith('/tenants/tenant-1/plans');
     expect(navigateByUrl).not.toHaveBeenCalledWith(
-      '/commander/home-command/overview'
+      '/tenants/tenant-1/plans/home-command/overview'
     );
   });
 
@@ -408,10 +406,10 @@ describe('TitleBarComponent', () => {
 
     fixture.componentInstance
       .navItems()
-      .find((item) => item.label === 'Commander')
+      .find((item) => item.label === 'Plans')
       ?.action?.();
 
-    expect(navigateByUrl).toHaveBeenCalledWith('/commander/new/overview');
+    expect(navigateByUrl).toHaveBeenCalledWith('/tenants/tenant-1/plans');
   });
 
   it('uses the active commander route plan instead of the first stored plan', async () => {
@@ -513,7 +511,7 @@ describe('TitleBarComponent', () => {
     expect(
       fixture.componentInstance
         .navItems()
-        .find((item) => item.label === 'Commander')
+        .find((item) => item.label === 'Plans')
     ).toBeDefined();
   });
 
@@ -590,7 +588,7 @@ describe('TitleBarComponent', () => {
 
     expect(
       fixture.componentInstance.navItems().map((item) => item.label)
-    ).toEqual(['Ledger', 'Commander', 'Settings']);
+    ).toEqual(['Tenant', 'Plans', 'Settings']);
     expect(fixture.nativeElement.textContent).not.toContain('Cash Flow');
     expect(fixture.nativeElement.textContent).not.toContain('Goals');
     expect(fixture.nativeElement.textContent).not.toContain('Scenarios');

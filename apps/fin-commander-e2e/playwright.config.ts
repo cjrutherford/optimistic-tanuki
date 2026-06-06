@@ -3,6 +3,7 @@ import { nxE2EPreset } from '@nx/playwright/preset';
 
 const baseURL = process.env['BASE_URL'] || 'http://localhost:8089';
 const isCI = process.env['CI'] === 'true';
+const browserChannel = process.env['PLAYWRIGHT_CHANNEL'];
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
@@ -27,6 +28,7 @@ export default defineConfig({
       name: 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
   ],

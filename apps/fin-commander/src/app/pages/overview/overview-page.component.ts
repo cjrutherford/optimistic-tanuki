@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
@@ -8,6 +8,11 @@ import {
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
 import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
+import {
+  tenantAccountsRoute,
+  tenantPlanRoute,
+  tenantPlansRoute,
+} from '../../tenant-routes';
 
 @Component({
   selector: 'fc-overview-page',
@@ -61,8 +66,42 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
             Keep your next money moves, tradeoffs, and workspace rollups in one
             planning view.
           </p>
+
+          <p class="spotlight-meta">
+            Last updated
+            <time [attr.datetime]="activeOverview.plan.updatedAt">{{
+              formatUpdatedAt(activeOverview.plan.updatedAt)
+            }}</time>
+          </p>
         </div>
       </article>
+
+      <!-- ── NEXT BEST ACTIONS ───────────────────────────────── -->
+      @if (nextBestActions().length > 0) {
+      <article class="next-actions-card" aria-labelledby="next-actions-heading">
+        <header class="next-actions-header">
+          <h2 id="next-actions-heading" class="next-actions-title">
+            Next best actions
+          </h2>
+          <p class="next-actions-sub">
+            Suggested moves based on what's missing from this plan.
+          </p>
+        </header>
+        <ul class="next-actions-list" aria-live="polite">
+          @for (action of nextBestActions(); track action.id) {
+          <li class="next-action-item">
+            <div class="next-action-text">
+              <span class="next-action-label">{{ action.label }}</span>
+              <span class="next-action-desc">{{ action.description }}</span>
+            </div>
+            <a class="next-action-cta" [routerLink]="action.routerLink">
+              {{ action.cta }} <span aria-hidden="true">→</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </article>
+      }
 
       <!-- ── WORKSPACE CARDS ─────────────────────────────────── -->
       @for (workspace of activeOverview.workspaces; track workspace.workspace;
@@ -103,7 +142,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
             <p class="empty-message">No accounts configured</p>
             <a
               class="cta-link"
-              [routerLink]="['/finance', workspace.workspace, 'accounts']"
+              [routerLink]="accountsRoute(workspace.workspace, 'accounts')"
             >
               Connect accounts
             </a>
@@ -114,7 +153,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <div class="card-footer">
           <a
             class="action-link"
-            [routerLink]="['/finance', workspace.workspace]"
+            [routerLink]="accountsRoute(workspace.workspace)"
           >
             Open workspace
             <span class="action-arrow">→</span>
@@ -133,7 +172,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <p>Create financial targets to track your progress.</p>
         <a
           class="cta-button"
-          [routerLink]="['/commander', activeOverview.plan.id, 'goals']"
+          [routerLink]="planRoute(activeOverview.plan.id, 'goals')"
         >
           Create first goal
         </a>
@@ -147,7 +186,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         <p>Plan for the future by modeling different outcomes.</p>
         <a
           class="cta-button"
-          [routerLink]="['/commander', activeOverview.plan.id, 'scenarios']"
+          [routerLink]="planRoute(activeOverview.plan.id, 'scenarios')"
         >
           Create first scenario
         </a>
@@ -164,7 +203,7 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         Create your first plan to track goals, compare scenarios, and keep each
         workspace aligned.
       </p>
-      <a class="empty-button" routerLink="/commander/new/overview">
+      <a class="empty-button" [routerLink]="plansRoute()">
         Create your first plan →
       </a>
     </section>
@@ -329,6 +368,124 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
         line-height: 1.7;
         color: var(--muted);
         max-width: 60ch;
+      }
+
+      .spotlight-meta {
+        margin: 0;
+        font-size: 0.74rem;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+
+        time {
+          margin-left: 0.4rem;
+          color: var(--foreground);
+          text-transform: none;
+          letter-spacing: 0;
+          font-variant-numeric: tabular-nums;
+        }
+      }
+
+      /* ─── NEXT BEST ACTIONS ─────────────────────────────────── */
+      .next-actions-card {
+        grid-column: 1 / -1;
+        padding: 1.25rem 1.5rem 1.4rem;
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
+        border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent);
+        border-radius: var(--fc-card-radius, 18px);
+        box-shadow: var(--fc-card-shadow, 0 20px 40px rgba(4, 16, 28, 0.18));
+        animation: cardReveal 0.5s 0.1s
+          var(--fc-transition-easing, cubic-bezier(0.16, 1, 0.3, 1)) both;
+      }
+
+      .next-actions-header {
+        display: grid;
+        gap: 0.25rem;
+        margin-bottom: 0.9rem;
+      }
+
+      .next-actions-title {
+        margin: 0;
+        font-family: var(--fc-font-heading, 'Sora', sans-serif);
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--foreground);
+      }
+
+      .next-actions-sub {
+        margin: 0;
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+
+      .next-actions-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.6rem;
+      }
+
+      .next-action-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.75rem 0.9rem;
+        background: color-mix(in srgb, var(--primary) 5%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+        border-radius: 12px;
+      }
+
+      .next-action-text {
+        display: grid;
+        gap: 0.15rem;
+        min-width: 0;
+      }
+
+      .next-action-label {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--foreground);
+      }
+
+      .next-action-desc {
+        font-size: 0.78rem;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .next-action-cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.55rem 1rem;
+        background: var(--primary);
+        color: var(--background);
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: var(--fc-button-radius, 9999px);
+        white-space: nowrap;
+        transition: var(--fc-transition);
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 18px
+            color-mix(in srgb, var(--primary) 40%, transparent);
+        }
+      }
+
+      @media (max-width: 580px) {
+        .next-action-item {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .next-action-cta {
+          justify-content: center;
+        }
       }
 
       /* ─── WORKSPACE CARD ─────────────────────────────────────── */
@@ -763,6 +920,72 @@ export class OverviewPageComponent {
     }).format(balance);
   }
 
+  formatUpdatedAt(value: string | undefined): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
+  readonly nextBestActions = computed(() => {
+    const overview = this.overview();
+    if (!overview)
+      return [] as Array<{
+        id: string;
+        label: string;
+        description: string;
+        cta: string;
+        routerLink: unknown[];
+      }>;
+
+    const actions: Array<{
+      id: string;
+      label: string;
+      description: string;
+      cta: string;
+      routerLink: unknown[];
+    }> = [];
+
+    for (const ws of overview.workspaces) {
+      if (!ws.available) {
+        actions.push({
+          id: `connect-${ws.workspace}`,
+          label: `Connect ${ws.workspace} accounts`,
+          description:
+            'Link accounts so this workspace can roll up balances and activity.',
+          cta: 'Connect',
+          routerLink: this.accountsRoute(ws.workspace, 'accounts'),
+        });
+      }
+    }
+
+    if (overview.goals.length === 0) {
+      actions.push({
+        id: 'create-goal',
+        label: 'Create your first goal',
+        description: 'Set a target so Commander can track progress over time.',
+        cta: 'New goal',
+        routerLink: this.planRoute(overview.plan.id, 'goals'),
+      });
+    }
+
+    if (overview.scenarios.length === 0) {
+      actions.push({
+        id: 'create-scenario',
+        label: 'Model a scenario',
+        description:
+          'Compare outcomes by varying income, spend, or savings assumptions.',
+        cta: 'New scenario',
+        routerLink: this.planRoute(overview.plan.id, 'scenarios'),
+      });
+    }
+
+    return actions.slice(0, 4);
+  });
+
   private async loadOverview(
     planId: string,
     loadVersion: number
@@ -772,5 +995,33 @@ export class OverviewPageComponent {
       return;
     }
     this.overview.set(overview);
+  }
+
+  plansRoute(): string[] {
+    return tenantPlansRoute(this.route.snapshot.paramMap.get('tenantId'));
+  }
+
+  planRoute(
+    planId: string,
+    section:
+      | 'overview'
+      | 'cash-flow'
+      | 'goals'
+      | 'scenarios'
+      | 'imports' = 'overview'
+  ): string[] {
+    return tenantPlanRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      planId,
+      section
+    );
+  }
+
+  accountsRoute(workspace: string, section?: string): string[] {
+    return tenantAccountsRoute(
+      this.route.snapshot.paramMap.get('tenantId'),
+      workspace,
+      section
+    );
   }
 }

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  computed,
   effect,
   inject,
   signal,
@@ -45,6 +46,7 @@ function createGoalId(): string {
               id="name"
               class="field-input"
               [(ngModel)]="draft.name"
+              (ngModelChange)="onDraftChange()"
               name="name"
               placeholder="e.g., Emergency Fund"
               required
@@ -58,6 +60,7 @@ function createGoalId(): string {
                 id="targetAmount"
                 class="field-input has-prefix"
                 [(ngModel)]="draft.targetAmount"
+                (ngModelChange)="onDraftChange()"
                 name="targetAmount"
                 type="number"
                 placeholder="10,000"
@@ -75,6 +78,7 @@ function createGoalId(): string {
                 id="currentAmount"
                 class="field-input has-prefix"
                 [(ngModel)]="draft.currentAmount"
+                (ngModelChange)="onDraftChange()"
                 name="currentAmount"
                 type="number"
                 placeholder="0"
@@ -88,6 +92,7 @@ function createGoalId(): string {
               id="dueDate"
               class="field-input"
               [(ngModel)]="draft.dueDate"
+              (ngModelChange)="onDraftChange()"
               name="dueDate"
               type="date"
               required
@@ -99,6 +104,7 @@ function createGoalId(): string {
               id="strategy"
               class="field-input"
               [(ngModel)]="draft.strategy"
+              (ngModelChange)="onDraftChange()"
               name="strategy"
               placeholder="Auto-transfer $500/month from checking"
               required
@@ -108,7 +114,13 @@ function createGoalId(): string {
 
         <div class="editor-footer">
           <div class="editor-footer-hint">
-            @if (draft.targetAmount > 0 && draft.currentAmount >= 0) {
+            @if (draftErrors().length > 0) {
+            <ul class="hint-errors" role="alert" aria-live="assertive">
+              @for (err of draftErrors(); track err) {
+              <li>{{ err }}</li>
+              }
+            </ul>
+            } @else if (draft.targetAmount > 0 && draft.currentAmount >= 0) {
             <span class="hint-text">
               Starting at {{ getPreviewPercent() }}% of your target
             </span>
@@ -117,13 +129,17 @@ function createGoalId(): string {
           <button
             type="submit"
             class="btn-primary"
-            [disabled]="!draft.name.trim()"
+            [disabled]="draftErrors().length > 0"
           >
             Save Goal
-            <span class="btn-arrow">→</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
           </button>
         </div>
       </form>
+
+      <p class="sr-status" role="status" aria-live="polite">
+        {{ statusMessage() }}
+      </p>
 
       <!-- ── GOALS GRID ────────────────────────────────────────── -->
       @if (goals().length > 0) {
@@ -176,13 +192,28 @@ function createGoalId(): string {
           </div>
 
           <div class="goal-footer">
+            @if (pendingDeleteId() === goal.id) {
+            <span class="confirm-prompt" role="alert"> Delete this goal? </span>
+            <button type="button" class="btn-ghost" (click)="cancelDelete()">
+              Cancel
+            </button>
             <button
               type="button"
               class="btn-danger"
-              (click)="deleteGoal(goal.id)"
+              (click)="confirmDelete(goal.id)"
+            >
+              Confirm remove
+            </button>
+            } @else {
+            <button
+              type="button"
+              class="btn-danger"
+              (click)="requestDelete(goal.id)"
+              [attr.aria-label]="'Remove goal ' + goal.name"
             >
               Remove
             </button>
+            }
           </div>
         </article>
         }
@@ -363,6 +394,53 @@ function createGoalId(): string {
         font-size: 0.78rem;
         color: var(--muted);
         font-style: italic;
+      }
+
+      .hint-errors {
+        list-style: disc inside;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.78rem;
+        color: var(--danger, #dc2626);
+      }
+
+      .sr-status {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      .confirm-prompt {
+        margin-right: auto;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--danger, #dc2626);
+      }
+
+      .btn-ghost {
+        padding: 0.5rem 1.1rem;
+        background: transparent;
+        color: var(--foreground);
+        font-size: 0.74rem;
+        font-weight: 600;
+        border: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+        border-radius: var(--fc-button-radius, 9999px);
+        cursor: pointer;
+        margin-right: 0.5rem;
+        transition: var(--fc-transition);
+
+        &:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
       }
 
       .btn-primary {
@@ -634,6 +712,24 @@ export class GoalsPageComponent {
   );
 
   readonly goals = signal<FinCommanderGoal[]>([]);
+  readonly pendingDeleteId = signal<string | null>(null);
+  readonly statusMessage = signal('');
+  // Re-evaluate `draftErrors` whenever the draft mutates by bumping this tick.
+  readonly draftVersion = signal(0);
+  readonly draftErrors = computed(() => {
+    this.draftVersion();
+    const errors: string[] = [];
+    if (!this.draft.name.trim()) errors.push('Goal name is required.');
+    if (!(this.draft.targetAmount > 0))
+      errors.push('Target amount must be greater than zero.');
+    if (this.draft.currentAmount < 0)
+      errors.push('Current amount cannot be negative.');
+    if (this.draft.currentAmount > this.draft.targetAmount)
+      errors.push('Current amount cannot exceed the target.');
+    if (!this.draft.dueDate) errors.push('Due date is required.');
+    if (!this.draft.strategy.trim()) errors.push('Strategy is required.');
+    return errors;
+  });
   private planId = '';
 
   draft: FinCommanderGoal = {
@@ -688,14 +784,44 @@ export class GoalsPageComponent {
   }
 
   saveGoal() {
+    this.bumpDraft();
+    if (this.draftErrors().length > 0) return;
     this.store.saveGoal({ ...this.draft, id: createGoalId() });
+    this.statusMessage.set(`Goal "${this.draft.name.trim()}" saved.`);
     this.resetDraft();
     this.loadGoals();
   }
 
-  deleteGoal(goalId: string) {
+  requestDelete(goalId: string) {
+    this.pendingDeleteId.set(goalId);
+  }
+
+  cancelDelete() {
+    this.pendingDeleteId.set(null);
+  }
+
+  confirmDelete(goalId: string) {
+    const removed = this.goals().find((goal) => goal.id === goalId);
     this.store.deleteGoal(goalId);
+    this.pendingDeleteId.set(null);
+    this.statusMessage.set(
+      removed ? `Removed goal "${removed.name}".` : 'Goal removed.'
+    );
     this.loadGoals();
+  }
+
+  /** Bump the draft version signal so `draftErrors` re-evaluates after ngModel writes. */
+  onDraftChange() {
+    this.bumpDraft();
+  }
+
+  private bumpDraft() {
+    this.draftVersion.update((value) => value + 1);
+  }
+
+  /** @deprecated Use {@link requestDelete} + {@link confirmDelete}; kept for backwards compatibility in tests. */
+  deleteGoal(goalId: string) {
+    this.confirmDelete(goalId);
   }
 
   private loadGoals() {
@@ -712,5 +838,6 @@ export class GoalsPageComponent {
       dueDate: new Date().toISOString().slice(0, 10),
       strategy: '',
     };
+    this.bumpDraft();
   }
 }

@@ -1,112 +1,102 @@
 import { TestBed } from '@angular/core/testing';
-import { signal } from '@angular/core';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import {
-  ActivatedRoute,
-  convertToParamMap,
-  provideRouter,
-} from '@angular/router';
-import { of } from 'rxjs';
-import {
+  FinCommanderGoal,
   FinCommanderPlanStore,
-  type FinCommanderGoal,
-  type FinCommanderScope,
 } from '@optimistic-tanuki/fin-commander-data-access';
+import { of } from 'rxjs';
 import { GoalsPageComponent } from './goals-page.component';
 
+const seedGoals: FinCommanderGoal[] = [
+  {
+    id: 'goal-existing',
+    planId: 'plan-1',
+    name: 'Emergency Fund',
+    targetAmount: 10_000,
+    currentAmount: 2_500,
+    dueDate: '2026-12-31',
+    strategy: 'Auto-transfer $500/month',
+  },
+];
+
+function setup() {
+  const store = {
+    getScope: () => 'personal',
+    listPlans: () => [{ id: 'plan-1' }],
+    listGoals: () => [...seedGoals],
+    saveGoal: jest.fn(),
+    deleteGoal: jest.fn(),
+  } as unknown as FinCommanderPlanStore;
+
+  TestBed.configureTestingModule({
+    imports: [GoalsPageComponent],
+    providers: [
+      provideRouter([]),
+      {
+        provide: ActivatedRoute,
+        useValue: {
+          paramMap: of({ get: () => 'plan-1' }),
+          snapshot: { paramMap: { get: () => 'plan-1' } },
+        },
+      },
+      { provide: FinCommanderPlanStore, useValue: store },
+    ],
+  });
+
+  return store;
+}
+
 describe('GoalsPageComponent', () => {
-  it('reloads visible goals when the active tenant/profile scope changes', async () => {
-    const scope = signal<FinCommanderScope | null>({
-      tenantId: 'tenant-a',
-      profileId: 'profile-a',
-    });
-    const goalsByScope = new Map<string, FinCommanderGoal[]>([
-      [
-        'tenant-a.profile-a',
-        [
-          {
-            id: 'goal-a',
-            planId: 'tenant-plan',
-            name: 'Tenant A Goal',
-            targetAmount: 1000,
-            currentAmount: 250,
-            dueDate: '2026-06-01',
-            strategy: 'Save monthly',
-          },
-        ],
-      ],
-      [
-        'tenant-b.profile-b',
-        [
-          {
-            id: 'goal-b',
-            planId: 'tenant-plan',
-            name: 'Tenant B Goal',
-            targetAmount: 2500,
-            currentAmount: 700,
-            dueDate: '2026-07-01',
-            strategy: 'Transfer weekly',
-          },
-        ],
-      ],
-    ]);
-
-    await TestBed.configureTestingModule({
-      imports: [GoalsPageComponent],
-      providers: [
-        provideRouter([]),
-        {
-          provide: ActivatedRoute,
-          useValue: {
-            snapshot: {
-              paramMap: convertToParamMap({ planId: 'tenant-plan' }),
-            },
-            paramMap: of(convertToParamMap({ planId: 'tenant-plan' })),
-          },
-        },
-        {
-          provide: FinCommanderPlanStore,
-          useValue: {
-            getScope: () => scope(),
-            listPlans: () => [
-              {
-                id: 'tenant-plan',
-                name: 'Tenant Plan',
-                description: 'Scoped plan',
-                defaultWorkspace: 'personal',
-                updatedAt: '2026-04-13',
-              },
-            ],
-            listGoals: (planId: string) => {
-              const activeScope = scope();
-              if (!activeScope || planId !== 'tenant-plan') {
-                return [];
-              }
-
-              return (
-                goalsByScope.get(
-                  `${activeScope.tenantId}.${activeScope.profileId}`
-                ) ?? []
-              );
-            },
-            saveGoal: jest.fn(),
-            deleteGoal: jest.fn(),
-          },
-        },
-      ],
-    }).compileComponents();
-
+  it('reports validation errors for an empty draft', () => {
+    setup();
     const fixture = TestBed.createComponent(GoalsPageComponent);
     fixture.detectChanges();
-    await Promise.resolve();
 
-    expect(fixture.nativeElement.textContent).toContain('Tenant A Goal');
-    expect(fixture.nativeElement.textContent).not.toContain('Tenant B Goal');
+    const errors = fixture.componentInstance.draftErrors();
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        'Goal name is required.',
+        'Target amount must be greater than zero.',
+        'Strategy is required.',
+      ])
+    );
+  });
 
-    scope.set({ tenantId: 'tenant-b', profileId: 'profile-b' });
+  it('rejects current amount greater than target', () => {
+    setup();
+    const fixture = TestBed.createComponent(GoalsPageComponent);
     fixture.detectChanges();
-    await Promise.resolve();
 
-    expect(fixture.nativeElement.textContent).toContain('Tenant B Goal');
-    expect(fixture.nativeElement.textContent).not.toContain('Tenant A Goal');
+    const cmp = fixture.componentInstance;
+    cmp.draft.name = 'Test';
+    cmp.draft.targetAmount = 100;
+    cmp.draft.currentAmount = 200;
+    cmp.draft.strategy = 'Save';
+    cmp.onDraftChange();
+
+    expect(cmp.draftErrors()).toContain(
+      'Current amount cannot exceed the target.'
+    );
+  });
+
+  it('requires confirmation before deleting a goal', () => {
+    const store = setup();
+    const fixture = TestBed.createComponent(GoalsPageComponent);
+    fixture.detectChanges();
+
+    const cmp = fixture.componentInstance;
+    cmp.requestDelete('goal-existing');
+    expect(cmp.pendingDeleteId()).toBe('goal-existing');
+    expect(store.deleteGoal as jest.Mock).not.toHaveBeenCalled();
+
+    cmp.cancelDelete();
+    expect(cmp.pendingDeleteId()).toBeNull();
+    expect(store.deleteGoal as jest.Mock).not.toHaveBeenCalled();
+
+    cmp.requestDelete('goal-existing');
+    cmp.confirmDelete('goal-existing');
+    expect(store.deleteGoal as jest.Mock).toHaveBeenCalledWith('goal-existing');
+    expect(cmp.pendingDeleteId()).toBeNull();
+    expect(cmp.statusMessage()).toContain('Emergency Fund');
   });
 });

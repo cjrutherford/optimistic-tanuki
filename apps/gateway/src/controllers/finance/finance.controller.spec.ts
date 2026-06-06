@@ -12,6 +12,7 @@ import {
   FinanceSummaryCommands,
   FinanceTenantCommands,
   FinanceBankingCommands,
+  FinancialUtilitiesCommands,
 } from '@optimistic-tanuki/constants';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 
@@ -116,6 +117,12 @@ describe('FinanceController', () => {
       'finance.tenant.manage',
       'finance.member.manage',
       'finance.bank.manage',
+      'finance.invoice.create',
+      'finance.invoice.read',
+      'finance.invoice.update',
+      'finance.invoice.pay',
+      'finance.checkout.create',
+      'finance.checkout.read',
     ];
 
     const permissionMetadata = Object.getOwnPropertyNames(
@@ -330,6 +337,79 @@ describe('FinanceController', () => {
         profileId: 'profile-1',
         appScope: 'finance',
       }
+    );
+  });
+
+  it('routes invoice lifecycle commands through the authenticated tenant scope', async () => {
+    financeClient.send.mockReturnValue(of({ id: 'invoice-1' }));
+
+    await (controller as any).createInvoice(
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'finance',
+      'tenant-1',
+      {
+        customerName: 'Acme Bakery',
+        lines: [{ description: 'Retainer', quantity: 1, unitAmount: 500 }],
+      }
+    );
+    await (controller as any).recordInvoicePayment(
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'invoice-1',
+      'finance',
+      'tenant-1',
+      { amount: 500, accountId: 'account-1', method: 'card' }
+    );
+
+    expect(financeClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: FinancialUtilitiesCommands.CREATE_INVOICE },
+      expect.objectContaining({
+        customerName: 'Acme Bakery',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      })
+    );
+    expect(financeClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: FinancialUtilitiesCommands.RECORD_INVOICE_PAYMENT },
+      {
+        id: 'invoice-1',
+        data: { amount: 500, accountId: 'account-1', method: 'card' },
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
+    );
+  });
+
+  it('routes checkout sessions through the authenticated tenant scope', async () => {
+    financeClient.send.mockReturnValue(of({ id: 'checkout-1' }));
+
+    await (controller as any).createCheckoutSession(
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'finance',
+      'tenant-1',
+      {
+        invoiceId: 'invoice-1',
+        amount: 250,
+        customerName: 'Acme Bakery',
+      }
+    );
+
+    expect(financeClient.send).toHaveBeenCalledWith(
+      { cmd: FinancialUtilitiesCommands.CREATE_CHECKOUT_SESSION },
+      expect.objectContaining({
+        invoiceId: 'invoice-1',
+        amount: 250,
+        customerName: 'Acme Bakery',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      })
     );
   });
 });

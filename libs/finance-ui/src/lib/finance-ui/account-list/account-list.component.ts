@@ -9,42 +9,54 @@ import {
   CreateAccount,
   FinanceWorkspace,
 } from '../models';
-import { RouterModule } from '@angular/router';
 import { isAbortLikeHttpError } from '../services/http-error.utils';
+import {
+  AgGridUiComponent,
+  ColDef,
+  GridOptions,
+} from '@optimistic-tanuki/ag-grid-ui';
+import { FinanceWorkspaceScreenComponent } from '../finance-workspace-screen/finance-workspace-screen.component';
 
 @Component({
   selector: 'ot-account-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridUiComponent,
+    FinanceWorkspaceScreenComponent,
+  ],
   template: `
-    <div class="account-list">
-      <header class="page-header">
-        <div>
-          <p class="eyebrow">Accounts</p>
-          <h2>Linked institutions and manual ledgers</h2>
-        </div>
-        <button
-          type="button"
-          class="connect-bank"
-          (click)="connectBankAccount()"
-        >
-          Connect bank account
-        </button>
-      </header>
+    <ot-finance-workspace-screen
+      eyebrow="Accounts"
+      title="Linked institutions and manual ledgers"
+      lede="Manage your ledger without leaving the workspace. Connected institutions stay visible above the same grid pattern used across budgets and transactions."
+      [status]="status()"
+    >
+      <button
+        screen-actions
+        type="button"
+        class="workspace-button-primary"
+        (click)="connectBankAccount()"
+      >
+        Connect bank account
+      </button>
 
-      <section class="linked-section">
+      <section class="workspace-panel linked-section" screen-toolbar>
         <div class="section-heading">
-          <h3>Linked accounts</h3>
-          <p>
-            Bank feeds stay connected here. Use sync, reconnect, or disconnect
-            without leaving finance.
-          </p>
+          <div>
+            <h3 class="workspace-panel-title">Linked accounts</h3>
+            <p class="workspace-panel-copy">
+              Bank feeds stay connected here. Use sync, reconnect, or disconnect
+              without leaving finance.
+            </p>
+          </div>
         </div>
 
         @if (loading()) {
-        <p>Loading accounts...</p>
+        <p class="workspace-panel-copy">Loading accounts...</p>
         } @else if (connections().length === 0) {
-        <p class="empty-copy">
+        <p class="workspace-panel-copy">
           No linked bank accounts yet. Connect Plaid to start importing live
           transactions.
         </p>
@@ -90,19 +102,19 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             }
 
             <div class="card-actions">
-              <button type="button" (click)="syncConnection(connection.id)">
-                Sync now
-              </button>
               <button
                 type="button"
-                class="secondary"
-                (click)="connectBankAccount()"
+                class="workspace-button-primary"
+                (click)="syncConnection(connection.id)"
               >
+                Sync now
+              </button>
+              <button type="button" (click)="connectBankAccount()">
                 Reconnect
               </button>
               <button
                 type="button"
-                class="danger"
+                class="workspace-button-danger"
                 (click)="disconnectConnection(connection.id)"
               >
                 Disconnect
@@ -114,16 +126,18 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
         }
       </section>
 
-      <section class="manual-section">
+      <section class="workspace-panel manual-section">
         <div class="section-heading">
-          <h3>Manual accounts</h3>
-          <p>
-            Cash, credit, or non-linked balances still live in the ledger as
-            editable manual accounts.
-          </p>
+          <div>
+            <h3 class="workspace-panel-title">Manual accounts</h3>
+            <p class="workspace-panel-copy">
+              Use the quick-create form for new ledgers, then review and update
+              balances in the shared operating grid below.
+            </p>
+          </div>
         </div>
 
-        <form class="editor" (ngSubmit)="saveAccount()">
+        <form class="workspace-form" (ngSubmit)="saveAccount()">
           <input
             [(ngModel)]="draft.name"
             name="name"
@@ -149,66 +163,30 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
             placeholder="Currency"
             required
           />
-          <button type="submit">
+          <button type="submit" class="workspace-button-primary">
             {{ editingId() ? 'Update account' : 'Create account' }}
           </button>
         </form>
 
-        @if (!loading()) {
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th>Balance</th>
-              <th>Currency</th>
-              <th>Institution</th>
-              <th>Last Reviewed</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (account of manualAccounts(); track account.id) {
-            <tr>
-              <td>{{ account.name }}</td>
-              <td>{{ account.type }}</td>
-              <td>{{ account.balance }}</td>
-              <td>{{ account.currency }}</td>
-              <td>{{ account.institutionName || 'Manual' }}</td>
-              <td>
-                {{
-                  account.lastReviewedAt
-                    ? (account.lastReviewedAt | date : 'mediumDate')
-                    : 'Needs review'
-                }}
-              </td>
-              <td>
-                <button (click)="editAccount(account)">Edit</button>
-                <button (click)="markReviewed(account)">Mark Reviewed</button>
-                <button (click)="deleteAccount(account.id)">Delete</button>
-              </td>
-            </tr>
-            }
-          </tbody>
-        </table>
-        }
+        <div class="workspace-grid-panel">
+          <otui-ag-grid
+            [rowData]="manualAccounts()"
+            [columnDefs]="columnDefs"
+            [gridOptions]="gridOptions"
+            [loading]="loading()"
+            height="420px"
+          ></otui-ag-grid>
+        </div>
       </section>
-
-      @if (status()) {
-      <p class="status-copy">{{ status() }}</p>
-      }
-    </div>
+    </ot-finance-workspace-screen>
   `,
   styles: [
     `
       .account-list {
-        padding: 20px;
-        color: var(--foreground, #1f2937);
-        font-family: var(--font-body, 'Helvetica Neue', Arial, sans-serif);
         display: grid;
-        gap: 20px;
+        gap: 1rem;
       }
-      .page-header,
+
       .section-heading,
       .card-topline,
       .card-actions {
@@ -220,34 +198,28 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
       .section-heading {
         align-items: start;
       }
-      .eyebrow {
-        margin: 0 0 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.14em;
-        font-size: 12px;
-        color: var(--muted, #6b7280);
-      }
-      .page-header h2,
-      .section-heading h3 {
-        margin: 0;
-      }
       .linked-section,
       .manual-section {
         display: grid;
-        gap: 16px;
+        gap: 1rem;
       }
       .connection-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 16px;
+        gap: 1rem;
       }
       .connection-card {
-        background: var(--surface, #ffffff);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 97%,
+          transparent
+        );
         border-radius: var(--border-radius-lg, 18px);
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-        padding: 18px;
+        border: 1px solid
+          color-mix(in srgb, var(--border, #94a3b8) 24%, transparent);
+        padding: 1rem;
         display: grid;
-        gap: 12px;
+        gap: 0.75rem;
       }
       .institution {
         margin: 0;
@@ -299,59 +271,16 @@ import { isAbortLikeHttpError } from '../services/http-error.utils';
         color: #991b1b;
         background: rgba(153, 27, 27, 0.12);
       }
-      .connect-bank,
-      .card-actions button,
-      .editor button {
-        background: var(--primary, #2563eb);
-        color: var(--background, #ffffff);
-        font-weight: 700;
-        border: none;
-        padding: 10px 14px;
-        border-radius: var(--border-radius-md, 12px);
+
+      .error-copy {
+        margin: 0;
+        color: #991b1b;
       }
-      .card-actions .secondary {
-        background: var(--accent, #d97706);
-      }
-      .card-actions .danger {
-        background: #991b1b;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        background: var(--surface, #ffffff);
-        border-radius: var(--border-radius-lg, 16px);
-        overflow: hidden;
-      }
-      .editor {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        gap: 12px;
-        margin-bottom: 16px;
-        padding: 16px;
-        background: var(--surface, #ffffff);
-        border-radius: var(--border-radius-lg, 18px);
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-      }
-      .editor input,
-      .editor select,
-      .editor button {
-        padding: 10px 12px;
-        border-radius: var(--border-radius-md, 12px);
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-      }
-      .editor button {
-        background: var(--primary, #2563eb);
-        color: var(--background, #ffffff);
-        font-weight: 700;
-      }
-      th,
-      td {
-        border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
-        padding: 8px;
-        text-align: left;
-      }
-      th {
-        background-color: var(--background, #f8fafc);
+
+      :host ::ng-deep .grid-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
       }
     `,
   ],
@@ -367,6 +296,80 @@ export class AccountListComponent implements OnInit {
   workspace = signal<FinanceWorkspace>('personal');
   editingId = signal<string | null>(null);
   draft: Partial<CreateAccount> = this.emptyDraft();
+
+  readonly columnDefs: ColDef<Account>[] = [
+    {
+      field: 'name',
+      headerName: 'Name',
+    },
+    {
+      field: 'type',
+      headerName: 'Type',
+    },
+    {
+      field: 'balance',
+      headerName: 'Balance',
+      valueFormatter: (params) => this.formatCurrency(params.value),
+    },
+    {
+      field: 'currency',
+      headerName: 'Currency',
+      maxWidth: 120,
+    },
+    {
+      field: 'institutionName',
+      headerName: 'Institution',
+      valueFormatter: (params) => params.value || 'Manual',
+    },
+    {
+      field: 'lastReviewedAt',
+      headerName: 'Last reviewed',
+      valueFormatter: (params) => this.formatReviewDate(params.value),
+    },
+    {
+      headerName: 'Actions',
+      sortable: false,
+      filter: false,
+      editable: false,
+      maxWidth: 260,
+      cellRenderer: (params: { data?: Account }) => {
+        const data = params.data;
+        if (!data) {
+          return '';
+        }
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'grid-actions';
+
+        wrapper.append(
+          this.buildActionButton('Edit', () => this.editAccount(data)),
+          this.buildActionButton(
+            'Reviewed',
+            () => void this.markReviewed(data)
+          ),
+          this.buildActionButton(
+            'Delete',
+            () => void this.deleteAccount(data.id),
+            'workspace-button-danger'
+          )
+        );
+
+        return wrapper;
+      },
+    },
+  ];
+
+  readonly gridOptions: GridOptions<Account> = {
+    domLayout: 'normal',
+    pagination: true,
+    defaultColDef: {
+      sortable: true,
+      filter: true,
+      resizable: true,
+      flex: 1,
+      minWidth: 120,
+    },
+  };
 
   async ngOnInit() {
     this.draft = this.emptyDraft();
@@ -416,6 +419,43 @@ export class AccountListComponent implements OnInit {
 
   manualAccounts(): Account[] {
     return this.accounts().filter((account) => !account.providerConnectionId);
+  }
+
+  private formatCurrency(value: unknown): string {
+    const amount = Number(value ?? 0);
+
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  }
+
+  private formatReviewDate(value: unknown): string {
+    if (!value) {
+      return 'Needs review';
+    }
+
+    return new Intl.DateTimeFormat('en-US', {
+      dateStyle: 'medium',
+    }).format(new Date(value as string | Date));
+  }
+
+  private buildActionButton(
+    label: string,
+    onClick: () => void,
+    className = ''
+  ): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.className = className;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onClick();
+    });
+
+    return button;
   }
 
   async saveAccount() {

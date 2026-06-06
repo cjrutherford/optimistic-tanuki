@@ -34,7 +34,9 @@ What `docker:dev` actually does:
 - builds the dev images with `docker:build:dev`
 - starts the stack with `docker:dev:up`, which uses `scripts/docker-start-phased.sh`
 
-This is intentionally slower than a local single-app loop because it rebuilds a large Nx project set, rebuilds Docker images, and starts the stack in phases.
+The first run is still intentionally slower than a local single-app loop because it builds a large Nx project set, builds Docker images, and starts the stack in phases.
+
+Follow-up runs are now cheaper than the original workflow because the Docker build step keeps a repo-local service state file and only rebuilds services whose Compose definition or Docker build inputs changed. The phased startup script then prefers an incremental restart path for the changed service set instead of always replaying the full stack startup.
 
 Common commands:
 
@@ -45,6 +47,31 @@ pnpm run docker:dev:logs
 pnpm run docker:dev:down
 pnpm run docker:dev:reset
 ```
+
+### Incremental Rebuild Rules
+
+The root Compose workflow now has a planner-backed rebuild path:
+
+- `scripts/docker-build-batched.sh` defaults to a batch size of `10`
+- changed services are detected from `docker-compose*.yaml`, each Dockerfile, and the Docker build inputs referenced by those Dockerfiles
+- planner state is stored under `tmp/docker-compose-state/`
+- `scripts/docker-start-phased.sh` reuses the most recent plan file to restart only the changed services and their reverse dependents when possible
+
+That means the normal local flow is now:
+
+```text
+first run -> build everything needed -> phased startup
+later run -> rebuild changed services only -> restart affected containers only
+```
+
+Escape hatches:
+
+```bash
+./scripts/docker-build-batched.sh --full-rebuild
+./scripts/docker-start-phased.sh --full-restart
+```
+
+You should reach for the full rebuild or full restart path only when local planner state, volumes, or Docker cache drift makes the incremental path unreliable.
 
 ### 2. Hybrid Inner Loop
 
@@ -232,7 +259,7 @@ If `dist/` is incomplete, rerun:
 pnpm run docker:dev
 ```
 
-Remember that `docker:dev:up` is phased startup, not a raw `docker compose up -d`, so reproducing the same behavior means using the repo scripts.
+Remember that `docker:dev:up` is phased startup with optional incremental restart, not a raw `docker compose up -d`, so reproducing the same behavior means using the repo scripts.
 
 ### Source changes do not appear in the running stack
 
@@ -254,6 +281,7 @@ Then confirm the service is either listed in the verified matrix above or has th
 
 - switch from `watch:build` to `watch:build:scope`
 - run the active app locally with `pnpm exec nx serve <project>`
+- rerun `pnpm run docker:build` to let the planner rebuild only the changed image set
 - reserve `pnpm run docker:dev:reset` for stale-image or stale-volume problems
 
 ### Seed commands fail

@@ -5,33 +5,52 @@ import { ProfileGuard } from './guards/profile.guard';
 import { onboardingCompleteGuard } from './guards/onboarding-complete.guard';
 
 describe('appRoutes', () => {
-  it('redirects the commander entry route to the no-plan overview path', () => {
+  it('redirects the legacy commander entry route to the tenant shell', () => {
     const commanderRoute = appRoutes.find(
       (route) => route.path === 'commander'
     );
 
     expect(commanderRoute).toBeDefined();
     expect(commanderRoute?.pathMatch).toBe('full');
-    expect(commanderRoute?.redirectTo).toBe('commander/new/overview');
+    expect(commanderRoute?.redirectTo).toBe('tenants/active/plans');
   });
 
-  it('registers the commander entry route with server rendering', () => {
+  it('keeps legacy redirect routes unguarded and relies on the tenant shell guards', () => {
+    const legacyRoutes = [
+      'account',
+      'finance',
+      'finance/:workspace',
+      'finance/:workspace/:section',
+    ];
+
+    for (const path of legacyRoutes) {
+      const route = appRoutes.find((candidate) => candidate.path === path);
+
+      expect(route).toBeDefined();
+      expect(route?.redirectTo).toContain('tenants/active/');
+      expect(route?.canActivate).toBeUndefined();
+    }
+  });
+
+  it('registers tenant-first routes with server rendering', () => {
     const serverRoutesSource = readFileSync(
       resolve(__dirname, 'app.routes.server.ts'),
       'utf8'
     );
 
-    expect(serverRoutesSource).not.toContain("path: 'commander'");
-    expect(serverRoutesSource).toContain("path: 'commander/:planId/overview'");
+    expect(serverRoutesSource).toContain("path: 'tenants/:tenantId'");
+    expect(serverRoutesSource).toContain(
+      "path: 'tenants/:tenantId/plans/:planId/overview'"
+    );
   });
 
-  it('hydrates profile context before running commander onboarding checks', () => {
-    const commanderRoute = appRoutes.find(
-      (route) => route.path === 'commander/:planId'
+  it('hydrates profile context before running tenant planning checks', () => {
+    const tenantRoute = appRoutes.find(
+      (route) => route.path === 'tenants/:tenantId'
     );
 
-    expect(commanderRoute).toBeDefined();
-    expect(commanderRoute?.canActivate).toEqual(
+    expect(tenantRoute).toBeDefined();
+    expect(tenantRoute?.canActivate).toEqual(
       expect.arrayContaining([ProfileGuard, onboardingCompleteGuard])
     );
   });

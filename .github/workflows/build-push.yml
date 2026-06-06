@@ -68,100 +68,91 @@ jobs:
       - name: Validate compose and k8s parity
         run: bash scripts/validate-compose-k8s-parity.sh
 
+  determine-changes:
+    name: Determine Changed Images
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      has_changes: ${{ steps.matrix.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'pnpm'
+
+      - name: Restore Docker plan cache
+        id: restore-plan
+        uses: actions/cache/restore@v4
+        with:
+          path: tmp/docker-workflow/services.plan.json
+          key: docker-plan-${{ github.sha }}-build-push
+          restore-keys: |
+            docker-plan-${{ github.sha }}-
+
+      - name: Install dependencies
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Derive SHAs for docker planning
+        if: steps.restore-plan.outputs.cache-hit != 'true' && github.event_name != 'workflow_dispatch'
+        uses: nrwl/nx-set-shas@v4
+
+      - name: Generate Docker change plan fallback
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p tmp/docker-workflow
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node scripts/docker-plan-services.mjs \
+              --workspace-root "$PWD" \
+              --compose-file docker-compose.yaml \
+              --write-plan tmp/docker-workflow/services.plan.json \
+              --force-all
+          else
+            node scripts/docker-plan-services.mjs \
+              --workspace-root "$PWD" \
+              --compose-file docker-compose.yaml \
+              --write-plan tmp/docker-workflow/services.plan.json \
+              --base-ref "${{ env.NX_BASE }}" \
+              --head-ref "${{ env.NX_HEAD }}"
+          fi
+
+      - name: Resolve changed app matrix
+        id: matrix
+        run: |
+          MATRIX=$(node --input-type=module -e "import fs from 'node:fs'; import { resolveDockerBuildMatrix } from './scripts/lib/docker-build-matrix.mjs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write(JSON.stringify(resolveDockerBuildMatrix({ buildApps: plan.buildApps || [] })));")
+          HAS_CHANGES=$(node --input-type=module -e "import fs from 'node:fs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write((plan.buildApps || []).length > 0 ? 'true' : 'false');")
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "has_changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Docker plan artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: docker-plan
+          path: tmp/docker-workflow/services.plan.json
+          retention-days: 7
+
+      - name: Save Docker plan cache
+        if: steps.restore-plan.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: tmp/docker-workflow/services.plan.json
+          key: docker-plan-${{ github.sha }}-build-push
+
   build-and-push:
     name: Build and Push Images
     runs-on: ubuntu-24.04
-    needs: [validate-deployment-contract]
+    needs: [validate-deployment-contract, determine-changes]
+    if: needs.determine-changes.outputs.has_changes == 'true'
     strategy:
       max-parallel: 4
-      matrix:
-        include:
-          # Backend services
-          - app: ai-orchestrator
-            type: service
-          - app: app-configurator
-            type: service
-          - app: assets
-            type: service
-          - app: authentication
-            type: service
-          - app: blogging
-            type: service
-          - app: chat-collector
-            type: service
-          - app: classifieds
-            type: service
-          - app: finance
-            type: service
-          - app: forum
-            type: service
-          - app: gateway
-            type: service
-          - app: lead-tracker
-            type: service
-          - app: payments
-            type: service
-          - app: permissions
-            type: service
-          - app: profile
-            type: service
-          - app: project-planning
-            type: service
-          - app: prompt-proxy
-            type: service
-          - app: social
-            type: service
-          - app: store
-            type: service
-          - app: system-configurator-api
-            type: service
-          - app: telos-docs-service
-            type: service
-          - app: wellness
-            type: service
-          # Client services
-          - app: christopherrutherford-net
-            type: client
-          - app: client-interface
-            type: client
-          - app: configurable-client
-            type: client
-          - app: d6
-            type: client
-          - app: digital-homestead
-            type: client
-          - app: fin-commander
-            type: client
-          - app: forgeofwill
-            type: client
-          - app: hai
-            type: client
-          - app: leads-app
-            type: client
-          - app: local-hub
-            type: client
-          - app: marketing-generator
-            type: client
-          - app: business-configurator
-            type: client
-          - app: developer-portal
-            type: client
-          - app: ui-playground
-            type: client
-          - app: business-site
-            type: client
-          - app: owner-console
-            type: client
-          - app: store-client
-            type: client
-          - app: system-configurator
-            type: client
-          - app: video-client
-            type: client
-          - app: video-transcoder-worker
-            type: service
-          - app: videos
-            type: service
+      matrix: ${{ fromJson(needs.determine-changes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -197,14 +188,6 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref != 'refs/heads/main' }}
 
-      - name: Install dependencies
-        if: matrix.type == 'service'
-        run: pnpm install --frozen-lockfile
-
-      - name: Build application
-        if: matrix.type == 'service'
-        run: pnpm exec nx build ${{ matrix.app }} --configuration=production
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -213,8 +196,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
   update-staging-overlay:
     name: Update Staging Overlay
@@ -268,19 +251,24 @@ jobs:
 
   notify:
     name: Notify
-    needs: [update-staging-overlay]
+    needs: [determine-changes, update-staging-overlay]
     if: always()
     runs-on: ubuntu-24.04
     steps:
+      - name: No-op
+        if: needs.determine-changes.outputs.has_changes != 'true'
+        run: |
+          echo "No Docker image changes detected for this revision."
+
       - name: Success
-        if: needs.update-staging-overlay.result == 'success'
+        if: needs.determine-changes.outputs.has_changes == 'true' && needs.update-staging-overlay.result == 'success'
         run: |
           echo "✅ Build, push, and staging overlay update completed!"
           echo "   Git SHA: ${{ github.sha }}"
           echo "   ArgoCD will sync automatically (or manually trigger sync)"
 
       - name: Failure
-        if: failure()
+        if: needs.determine-changes.outputs.has_changes == 'true' && failure()
         run: |
           echo "❌ Build or manifest update failed!"
           echo "   Check GitHub Actions logs for details."

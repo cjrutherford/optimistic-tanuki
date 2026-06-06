@@ -1,16 +1,16 @@
 import { Route } from '@angular/router';
-import { financeRoutes } from '@optimistic-tanuki/finance-ui';
+import { createFinanceRoutes } from '@optimistic-tanuki/finance-ui';
 import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { onboardingCompleteGuard } from './guards/onboarding-complete.guard';
 import { ProfileGuard } from './guards/profile.guard';
 
 export const FINANCE_ROUTE_PATH = 'finance';
-export const COMMANDER_ROUTE_PATH = 'commander/:planId';
+export const TENANT_ROUTE_PATH = 'tenants/:tenantId';
 export const LOGIN_ROUTE_PATH = 'login';
 export const REGISTER_ROUTE_PATH = 'register';
 
-const commanderChildren: Route[] = [
+const planChildren: Route[] = [
   {
     path: '',
     pathMatch: 'full',
@@ -50,6 +50,44 @@ const commanderChildren: Route[] = [
       import('./pages/imports/imports-page.component').then(
         (m) => m.ImportsPageComponent
       ),
+  },
+];
+
+const tenantFinanceChildren = createFinanceRoutes({
+  routeBase: '/tenants/:tenantId/accounts',
+  shellTitle: 'Tenant Accounts',
+  shellLede:
+    'Keep accounts, transactions, and setup work aligned for this tenant.',
+  showWorkspaceSubnav: false,
+}).filter((route) => route.path !== 'onboarding');
+
+const tenantChildren: Route[] = [
+  {
+    path: '',
+    pathMatch: 'full',
+    redirectTo: 'overview',
+  },
+  {
+    path: 'overview',
+    loadComponent: () =>
+      import('./pages/account/account-page.component').then(
+        (m) => m.AccountPageComponent
+      ),
+  },
+  {
+    path: 'plans',
+    loadComponent: () =>
+      import('./pages/plans/plans-page.component').then(
+        (m) => m.PlansPageComponent
+      ),
+  },
+  {
+    path: 'plans/:planId',
+    children: planChildren,
+  },
+  {
+    path: 'accounts',
+    children: tenantFinanceChildren,
   },
 ];
 
@@ -102,29 +140,52 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'account',
-    canActivate: [AuthGuard, ProfileGuard],
-    loadComponent: () =>
-      import('./pages/account/account-page.component').then(
-        (m) => m.AccountPageComponent
-      ),
+    pathMatch: 'full',
+    redirectTo: 'tenants/active/overview',
   },
   {
     path: FINANCE_ROUTE_PATH,
-    canActivate: [AuthGuard, ProfileGuard],
-    children: financeRoutes,
+    pathMatch: 'full',
+    redirectTo: 'tenants/active/accounts',
+  },
+  {
+    path: `${FINANCE_ROUTE_PATH}/:workspace`,
+    redirectTo: 'tenants/active/accounts/:workspace',
+  },
+  {
+    path: `${FINANCE_ROUTE_PATH}/:workspace/:section`,
+    redirectTo: 'tenants/active/accounts/:workspace/:section',
   },
   {
     path: 'commander',
     pathMatch: 'full',
-    redirectTo: 'commander/new/overview',
+    redirectTo: 'tenants/active/plans',
   },
   {
-    path: COMMANDER_ROUTE_PATH,
+    path: 'commander/:planId',
+    pathMatch: 'full',
+    redirectTo: 'tenants/active/plans/:planId/overview',
+  },
+  {
+    path: 'commander/:planId/:section',
+    redirectTo: 'tenants/active/plans/:planId/:section',
+  },
+  {
+    path: 'tenants/active',
     canActivate: [AuthGuard, ProfileGuard, onboardingCompleteGuard],
     loadComponent: () =>
-      import('./pages/commander-shell/commander-shell.component').then(
-        (m) => m.CommanderShellComponent
+      import('./pages/tenant-shell/tenant-shell.component').then(
+        (m) => m.TenantShellComponent
       ),
-    children: commanderChildren,
+    children: tenantChildren,
+  },
+  {
+    path: TENANT_ROUTE_PATH,
+    canActivate: [AuthGuard, ProfileGuard, onboardingCompleteGuard],
+    loadComponent: () =>
+      import('./pages/tenant-shell/tenant-shell.component').then(
+        (m) => m.TenantShellComponent
+      ),
+    children: tenantChildren,
   },
 ];

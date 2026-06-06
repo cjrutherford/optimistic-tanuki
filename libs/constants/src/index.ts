@@ -138,4 +138,5 @@ export {
   FinanceSummaryCommands,
   FinanceTenantCommands,
   FinanceBankingCommands,
+  FinancialUtilitiesCommands,
 } from './lib/libs/finance';

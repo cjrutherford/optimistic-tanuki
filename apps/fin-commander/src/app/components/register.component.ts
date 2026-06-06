@@ -13,6 +13,7 @@ import { FinanceService } from '@optimistic-tanuki/finance-ui';
 import { ProfileService } from '../profile.service';
 import { TenantContextService } from '../tenant-context.service';
 import { resolveNextSetupRoute } from '../setup-route-policy';
+import { tenantOverviewRoute } from '../tenant-routes';
 
 @Component({
   selector: 'fc-register',
@@ -133,6 +134,8 @@ export class RegisterComponent {
       return;
     }
 
-    await this.router.navigate(['/finance']);
+    await this.router.navigate(
+      tenantOverviewRoute(this.tenantContext.activeTenantId())
+    );
   }
 }

@@ -9,6 +9,7 @@ import {
 export interface NavItem {
   label: string;
   action?: () => void; // Optional action function
+  children?: NavItem[];
   variant?:
     | 'primary'
     | 'secondary'
@@ -32,6 +33,7 @@ export class NavSidebarComponent {
   @Input() isOpen = false;
   @Input() navItems: NavItem[] = [];
   @Input() heading = 'Navigation';
+  @Input() mode: 'drawer' | 'docked' = 'drawer';
   @Output() close = new EventEmitter<void>();
 
   onClose() {
@@ -46,7 +48,9 @@ export class NavSidebarComponent {
     // Handle action items
     if (item.action) {
       item.action();
-      this.close.emit(); // Close sidebar after navigation
+      if (this.mode === 'drawer') {
+        this.close.emit(); // Close sidebar after navigation
+      }
     }
   }
 

@@ -1,10 +1,29 @@
 import { Route } from '@angular/router';
+import {
+  createFinanceRoutes,
+  FINANCE_HOST_CONFIG,
+} from '@optimistic-tanuki/finance-ui';
 import { bookingFeatureGuard } from './booking-feature.guard';
 import { businessAuthGuard } from './trainer-auth.guard';
 import { clientAuthGuard } from './client-auth.guard';
 import { clientPortalFeatureGuard } from './client-portal-feature.guard';
 import { clientTasksFeatureGuard } from './client-tasks-feature.guard';
 import { invoicesFeatureGuard } from './invoices-feature.guard';
+import { ownerFinanceFeatureGuard } from './owner-finance-feature.guard';
+
+const ownerFinanceConfig = {
+  routeBase: '/owner/finance',
+  onboardingRoute: '/owner/finance/onboarding',
+  shellTitle: 'Owner Finance',
+  defaultWorkspace: 'business' as const,
+  workspaceLabels: {
+    business: {
+      label: 'Owner Finance',
+      navLabel: 'Billing',
+      description: 'Invoices, checkout sessions, and business payments',
+    },
+  },
+};
 
 const ownerChildren: Route[] = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
@@ -42,6 +61,17 @@ const ownerChildren: Route[] = [
       import('@optimistic-tanuki/business-portal-ui').then(
         (m) => m.BusinessOwnerAvailabilityPageComponent
       ),
+  },
+  {
+    path: 'finance',
+    canActivate: [ownerFinanceFeatureGuard],
+    providers: [
+      {
+        provide: FINANCE_HOST_CONFIG,
+        useValue: ownerFinanceConfig,
+      },
+    ],
+    children: createFinanceRoutes(ownerFinanceConfig),
   },
 ];
 

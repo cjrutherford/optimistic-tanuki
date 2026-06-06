@@ -4,6 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TenantContextService } from '../tenant-context.service';
 import { FinanceAccountType } from '@optimistic-tanuki/finance-ui';
+import {
+  tenantAccountsRoute,
+  tenantOverviewRoute,
+  tenantPlansRoute,
+} from '../tenant-routes';
 
 @Component({
   selector: 'fc-tenant-switcher',
@@ -184,18 +189,22 @@ export class TenantSwitcherComponent {
   }
 
   private async navigateAfterTenantChange(): Promise<void> {
-    if (this.router.url.startsWith('/commander')) {
-      await this.router.navigate(['/account']);
+    const activeTenantId = this.tenantContext.activeTenantId() ?? 'active';
+
+    if (this.router.url.includes('/plans/')) {
+      await this.router.navigate(tenantPlansRoute(activeTenantId));
       return;
     }
 
-    const workspaceMatch = this.router.url.match(/^\/finance\/([^/]+)/);
+    const workspaceMatch = this.router.url.match(/\/accounts\/([^/]+)/);
     if (workspaceMatch?.[1]) {
-      await this.router.navigate(['/finance', workspaceMatch[1]]);
+      await this.router.navigate(
+        tenantAccountsRoute(activeTenantId, workspaceMatch[1])
+      );
       return;
     }
 
-    await this.router.navigate(['/finance']);
+    await this.router.navigate(tenantOverviewRoute(activeTenantId));
   }
 
   accountTypeLabel(type: FinanceAccountType): string {

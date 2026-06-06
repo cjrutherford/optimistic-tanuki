@@ -195,6 +195,24 @@ export class AgGridUiComponent
     });
 
     this.setLocalCSSVariables({
+      'header-background': isDark
+        ? colors.accentShades[8][1]
+        : colors.accentShades[2][1],
+      'header-hover-background': isDark
+        ? colors.accentShades[7][1]
+        : colors.accentShades[1][1],
+      'row-background': colors.background,
+      'row-alt-background': isDark
+        ? colors.accentShades[9][1]
+        : colors.accentShades[0][1],
+      'row-hover-background': isDark
+        ? colors.accentShades[7][1]
+        : colors.accentShades[1][1],
+      'row-selected-background': isDark
+        ? colors.accentShades[6][1]
+        : colors.accentShades[2][1],
+      'muted-foreground': colors.complementaryShades[6][1],
+      'grid-font-size': '14px',
       'font-family':
         personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
       'border-radius': `calc(var(--border-radius-md, 8px) * ${borderRadiusMultiplier})`,

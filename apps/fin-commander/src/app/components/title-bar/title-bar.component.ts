@@ -25,6 +25,12 @@ import { TenantContextService } from '../../tenant-context.service';
 import { FinCommanderPlanStore } from '@optimistic-tanuki/fin-commander-data-access';
 import { ProfileContext } from '../../profile.context';
 import { filter, Subscription } from 'rxjs';
+import {
+  tenantAccountsRoute,
+  tenantOverviewRoute,
+  tenantPlanRoute,
+  tenantPlansRoute,
+} from '../../tenant-routes';
 
 type GuidanceAction = {
   label: string;
@@ -82,7 +88,9 @@ export class TitleBarComponent implements OnInit, OnDestroy {
   );
   readonly activePlan = computed(() => {
     void this.currentUrl();
-    const match = this.router.url.match(/^\/commander\/([^/]+)/);
+    const match = this.router.url.match(
+      /^\/(?:tenants\/[^/]+\/plans|commander)\/([^/]+)/
+    );
     const routePlanId = match?.[1] ?? null;
 
     if (routePlanId) {
@@ -155,12 +163,12 @@ export class TitleBarComponent implements OnInit, OnDestroy {
 
     return [
       {
-        label: 'Ledger',
-        action: () => this.go(this.ledgerRoute()),
+        label: 'Tenant',
+        action: () => this.go(this.tenantOverviewRoute()),
       },
       {
-        label: 'Commander',
-        action: () => this.go(this.commanderRoute()),
+        label: 'Plans',
+        action: () => this.go(this.plansRoute()),
       },
       {
         label: 'Settings',
@@ -204,7 +212,7 @@ export class TitleBarComponent implements OnInit, OnDestroy {
         label: 'Choose your workspaces',
         route: '/onboarding',
         description:
-          'Pick the ledgers you want ready before you start planning.',
+          'Pick the financial areas you want ready before you start planning.',
       };
     }
 
@@ -216,23 +224,24 @@ export class TitleBarComponent implements OnInit, OnDestroy {
         label: 'Finish setup checklist',
         route: '/onboarding',
         description:
-          'Add your first financial account and finish the ledger basics.',
+          'Add your first financial account and finish the account basics.',
       };
     }
 
     if (!this.activePlan()) {
       return {
         label: 'Create your first plan',
-        route: '/commander/new/overview',
-        description: 'Start a plan once your account and ledgers are ready.',
+        route: this.plansRoute(),
+        description:
+          'Start a plan once your tenant accounts and setup work are ready.',
       };
     }
 
     return {
       label: 'Open your plan',
-      route: this.commanderRoute(),
+      route: this.planRoute(this.activePlan()!.id),
       description:
-        'Review your active plan, goals, and scenario work in one place.',
+        'Review your active plan, goals, and scenario work in one tenant view.',
     };
   });
 
@@ -241,9 +250,14 @@ export class TitleBarComponent implements OnInit, OnDestroy {
 
     if (this.profileContext.isAuthenticated()) {
       actions.push({
-        label: 'Review your ledger',
-        route: this.ledgerRoute(),
-        description: 'Open the current ledger workspace.',
+        label: 'Review accounts',
+        route: this.accountsRoute(),
+        description: 'Open the current tenant account workflows.',
+      });
+      actions.push({
+        label: 'Browse plans',
+        route: this.plansRoute(),
+        description: 'See every plan attached to this tenant.',
       });
     }
 
@@ -280,19 +294,26 @@ export class TitleBarComponent implements OnInit, OnDestroy {
     }
   }
 
-  private ledgerRoute(): string {
-    const match = this.router.url.match(/^\/finance\/([^/]+)/);
-    const routeWorkspace = match?.[1] as FinanceWorkspace | undefined;
-    const workspace =
-      routeWorkspace && this.isWorkspace(routeWorkspace)
-        ? routeWorkspace
-        : this.setupWorkspace();
-    return `/finance/${workspace}`;
+  private tenantRouteId(): string {
+    return this.tenantContext.activeTenantId() ?? 'active';
   }
 
-  private commanderRoute(): string {
-    const planId = this.activePlan()?.id;
-    return planId ? `/commander/${planId}/overview` : '/commander/new/overview';
+  private tenantOverviewRoute(): string {
+    return this.asPath(tenantOverviewRoute(this.tenantRouteId()));
+  }
+
+  private plansRoute(): string {
+    return this.asPath(tenantPlansRoute(this.tenantRouteId()));
+  }
+
+  private planRoute(planId: string): string {
+    return this.asPath(tenantPlanRoute(this.tenantRouteId(), planId));
+  }
+
+  private accountsRoute(): string {
+    return this.asPath(
+      tenantAccountsRoute(this.tenantRouteId(), this.setupWorkspace())
+    );
   }
 
   private setupWorkspace(): FinanceWorkspace {
@@ -323,5 +344,9 @@ export class TitleBarComponent implements OnInit, OnDestroy {
       default:
         return 'Personal Ledger';
     }
+  }
+
+  private asPath(route: string[]): string {
+    return route.join('/').replace(/\/+/g, '/');
   }
 }

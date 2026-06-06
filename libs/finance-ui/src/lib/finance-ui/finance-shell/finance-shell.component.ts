@@ -10,6 +10,7 @@ import {
 import {
   NavigationEnd,
   Router,
+  ActivatedRoute,
   RouterLink,
   RouterLinkActive,
   RouterOutlet,
@@ -29,10 +30,10 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
         <div>
           <p class="eyebrow">{{ shellTitle() }}</p>
           <h1>{{ heroHeading() }}</h1>
-          <p class="lede">Track and manage your finances.</p>
+          <p class="lede">{{ shellLede() }}</p>
         </div>
 
-        @if (onboardingState(); as state) {
+        @if (onboardingState(); as state) { @if (showSetupStatusCard()) {
         <div class="status-card">
           <h2>Setup Progress</h2>
           <p>
@@ -41,10 +42,10 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
           </p>
           <a [routerLink]="setupProgressRoute()">Review setup</a>
         </div>
-        }
+        } }
       </header>
 
-      @if (router.url !== onboardingPath()) {
+      @if (showWorkspaceSubnav() && router.url !== onboardingPath()) {
       <nav class="subnav" aria-label="Workspace sections">
         <a
           [routerLink]="workspaceLink(currentWorkspace())"
@@ -69,7 +70,23 @@ import { FINANCE_HOST_CONFIG } from '../finance.routes';
           routerLinkActive="active"
           >Transactions</a
         >
-        @if (currentWorkspace() !== 'net-worth') {
+        @if (currentWorkspace() === 'business') {
+        <a
+          [routerLink]="workspaceSectionLink('business', 'invoices')"
+          routerLinkActive="active"
+          >Invoices</a
+        >
+        <a
+          [routerLink]="workspaceSectionLink('business', 'checkout')"
+          routerLinkActive="active"
+          >Checkout</a
+        >
+        <a
+          [routerLink]="workspaceSectionLink('business', 'payments')"
+          routerLinkActive="active"
+          >Payments</a
+        >
+        } @if (currentWorkspace() !== 'net-worth') {
         <a
           [routerLink]="workspaceSectionLink(currentWorkspace(), 'budgets')"
           routerLinkActive="active"
@@ -184,12 +201,34 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
   private readonly financeService = inject(FinanceService);
   private readonly hostConfig = inject(FINANCE_HOST_CONFIG);
   readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly subscriptions = new Subscription();
 
   readonly onboardingState = signal<FinanceOnboardingState | null>(null);
   readonly currentWorkspace = signal<FinanceWorkspace>('personal');
   readonly shellTitle = computed(() => this.hostConfig.shellTitle);
   readonly heroHeading = computed(() => `${this.hostConfig.shellTitle}`);
+  readonly shellLede = computed(
+    () =>
+      this.hostConfig.shellLede ??
+      'Track accounts, transactions, and setup work for this tenant.'
+  );
+  readonly showWorkspaceSubnav = computed(
+    () => this.hostConfig.showWorkspaceSubnav ?? true
+  );
+  readonly showSetupStatusCard = computed(() => {
+    const state = this.onboardingState();
+
+    if (!state) {
+      return false;
+    }
+
+    return (
+      state.requiresOnboarding ||
+      state.availableWorkspaces.length === 0 ||
+      state.checklist.some((item) => !item.complete)
+    );
+  });
   readonly workspaces = computed(() => {
     const workspaceLabels = this.hostConfig.workspaceLabels ?? {};
 
@@ -235,7 +274,7 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
       state.requiresOnboarding &&
       this.router.url === this.hostConfig.routeBase
     ) {
-      await this.router.navigateByUrl('/onboarding');
+      await this.router.navigateByUrl(this.onboardingRoute());
     }
   }
 
@@ -244,9 +283,18 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
   }
 
   syncWorkspace() {
-    const segment = this.router.url.split('/')[2] as
-      | FinanceWorkspace
-      | undefined;
+    const urlSegments = this.router.url
+      .split('?')[0]
+      .split('/')
+      .filter(Boolean);
+    const routeBaseSegments = this.routeBaseSegments();
+    const workspaceIndex = routeBaseSegments.every(
+      (segment, index) => urlSegments[index] === segment
+    )
+      ? routeBaseSegments.length
+      : 1;
+    const segment = urlSegments[workspaceIndex] as FinanceWorkspace | undefined;
+
     if (
       segment === 'personal' ||
       segment === 'business' ||
@@ -275,7 +323,7 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
         state.availableWorkspaces.length === 0 ||
         state.checklist.some((item) => !item.complete))
     ) {
-      return ['/onboarding'];
+      return this.routeCommands(this.onboardingRoute());
     }
 
     return ['/', ...this.routeBaseSegments(), this.currentWorkspace(), 'setup'];
@@ -295,7 +343,29 @@ export class FinanceShellComponent implements OnInit, OnDestroy {
     return ['/', ...this.routeBaseSegments(), workspace, section];
   }
 
+  private onboardingRoute(): string {
+    return this.hostConfig.onboardingRoute ?? '/onboarding';
+  }
+
+  private routeCommands(target: string): string[] {
+    return ['/', ...target.split('/').filter(Boolean)];
+  }
+
   private routeBaseSegments(): string[] {
-    return this.hostConfig.routeBase.split('/').filter(Boolean);
+    const configuredSegments = this.hostConfig.routeBase
+      .split('/')
+      .filter(Boolean);
+    const currentSegments = this.router.url
+      .split('?')[0]
+      .split('/')
+      .filter(Boolean);
+
+    return configuredSegments.map((segment, index) =>
+      segment.startsWith(':')
+        ? currentSegments[index] ??
+          this.route.snapshot.paramMap.get(segment.slice(1)) ??
+          segment.slice(1)
+        : segment
+    );
   }
 }
