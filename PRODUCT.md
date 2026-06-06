@@ -103,6 +103,8 @@ This distinction keeps the story approachable. A buyer can understand the produc
 ## Where To Go Next
 
 - marketing documentation index: [docs/marketing/README.md](./docs/marketing/README.md)
+- messaging pillars, positioning, pitch, and FAQ: [docs/marketing/messaging-pillars.md](./docs/marketing/messaging-pillars.md)
 - repo story narrative: [docs/marketing/repo-story.md](./docs/marketing/repo-story.md)
+- agent prompts for generating marketing materials: [`.github/prompts/`](./.github/prompts/)
 - workspace and contributor guide: [README.md](./README.md)
 - documentation index: [docs/README.md](./docs/README.md)

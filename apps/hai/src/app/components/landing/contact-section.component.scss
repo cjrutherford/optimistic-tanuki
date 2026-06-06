@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.contact-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.6rem, 3vw, 2.5rem);
+  text-align: center;
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  box-shadow: var(--hai-shadow-panel);
+  background: var(--hai-panel-strong);
+  overflow: clip;
+}
+
+.eyebrow {
+  margin: 0 0 0.8rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  line-height: 1;
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+}
+
+.contact-panel p {
+  font: 400 1rem/1.75
+    var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.contact-status {
+  margin: 1rem auto 0;
+  max-width: 36rem;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}

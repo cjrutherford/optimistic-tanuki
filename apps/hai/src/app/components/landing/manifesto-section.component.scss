@@ -1,0 +1,125 @@
+:host {
+  display: block;
+}
+
+.manifesto-rail {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 1rem;
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+  padding: clamp(1.2rem, 2.7vw, 2.1rem);
+  position: relative;
+  overflow: clip;
+  border-radius: var(--hai-radius-panel);
+  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
+  box-shadow: var(--hai-shadow-panel);
+  background: var(--hai-panel-background);
+  backdrop-filter: blur(14px);
+}
+
+.manifesto-copy,
+.manifesto-card {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  margin: 0 0 0.8rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 62%, var(--secondary));
+}
+
+h2 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  line-height: 1;
+  font-family: var(
+    --font-heading,
+    var(--personality-font-family, Georgia, serif)
+  );
+}
+
+.manifesto-copy p,
+.manifesto-card p {
+  font: 400 1rem/1.75
+    var(--font-body, var(--personality-font-family, sans-serif));
+  color: color-mix(in srgb, var(--foreground) 74%, transparent);
+}
+
+.manifesto-copy {
+  align-self: center;
+}
+
+.manifesto-track {
+  position: relative;
+  min-height: 16rem;
+  border-radius: calc(var(--hai-radius-panel) - 0.2rem);
+  overflow: clip;
+}
+
+.manifesto-beam {
+  position: absolute;
+  inset: 0;
+  opacity: 0.95;
+}
+
+.manifesto-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  padding: 1rem;
+  min-height: 100%;
+  align-items: end;
+}
+
+.manifesto-card {
+  min-height: 9.75rem;
+  padding: 1.1rem;
+  border-radius: var(--hai-radius-panel);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 72%,
+    transparent
+  );
+  backdrop-filter: blur(18px);
+}
+
+.manifesto-label {
+  display: inline-flex;
+  margin-bottom: 0.75rem;
+  font: 700 0.78rem/1.1
+    var(--personality-font-family, var(--font-body, sans-serif));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
+}
+
+.manifesto-card p {
+  margin: 0;
+  color: color-mix(in srgb, var(--foreground) 82%, transparent);
+}
+
+@media (max-width: 960px) {
+  .manifesto-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .manifesto-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .manifesto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manifesto-rail {
+    padding: 1rem;
+  }
+}

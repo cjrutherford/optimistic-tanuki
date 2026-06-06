@@ -6,38 +6,109 @@ import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
 describe('ProjectGridComponent', () => {
   let component: ProjectGridComponent;
   let fixture: ComponentFixture<ProjectGridComponent>;
-  const directoryServiceStub = {
-    getResolvedApps: jest.fn().mockReturnValue(
-      of([
-        {
-          appId: 'optimistic-tanuki',
-          name: 'Optimistic Tanuki',
-          portfolioSummary: 'A resume-building social platform project.',
-          repositoryUrl:
-            'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/client-interface',
-          resolvedHref: 'https://social.example.com',
-          isPublic: true,
-        },
-        {
-          appId: 'opportunity-compass',
-          name: 'Opportunity Compass',
-          portfolioSummary:
-            'An opportunity discovery tool based on interests, locality, and skills.',
-          repositoryUrl:
-            'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
-          resolvedHref:
-            'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
-          isPublic: false,
-        },
-      ])
-    ),
-  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProjectGridComponent],
       providers: [
-        { provide: HaiAppDirectoryService, useValue: directoryServiceStub },
+        {
+          provide: HaiAppDirectoryService,
+          useValue: {
+            getResolvedApps: jest.fn().mockReturnValue(
+              of([
+                {
+                  appId: 'optimistic-tanuki',
+                  name: 'Optimistic Tanuki',
+                  tagline: 'General social media offering.',
+                  category: 'Social Platform',
+                  resolvedHref: 'https://social.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/client-interface',
+                  logoSrc: '/optimistic-tanuki/assets/tanuki.svg',
+                  isPublic: true,
+                },
+                {
+                  appId: 'towne-square',
+                  name: 'Towne Square',
+                  tagline: 'Local-first social media and classifieds.',
+                  category: 'Local Community',
+                  resolvedHref: 'https://towne.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/local-hub',
+                  logoSrc: '/towne-square/assets/ts.png',
+                  isPublic: true,
+                },
+                {
+                  appId: 'forge-of-will',
+                  name: 'Forge of Will',
+                  tagline: 'Personal project planning.',
+                  category: 'Planning',
+                  resolvedHref: 'https://forge.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/forgeofwill',
+                  logoSrc: '/forge-of-will/android-chrome-192x192.png',
+                  isPublic: true,
+                },
+                {
+                  appId: 'fin-commander',
+                  name: 'Fin Commander',
+                  tagline: 'Small personal finance manager.',
+                  category: 'Finance',
+                  resolvedHref: 'https://finance.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/fin-commander',
+                  logoSrc: '/fin-commander/images/fin-commander-icon.png',
+                  isPublic: true,
+                },
+                {
+                  appId: 'opportunity-compass',
+                  name: 'Opportunity Compass',
+                  tagline:
+                    'Discover opportunities from interests and locality.',
+                  category: 'Discovery',
+                  resolvedHref: 'https://opportunities.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
+                  logoSrc: '/opportunity-compass/favicon.ico',
+                  isPublic: true,
+                },
+                {
+                  appId: 'developer-portal',
+                  name: 'Developer Portal',
+                  tagline: 'Docs, onboarding, and developer entry.',
+                  category: 'Developer Experience',
+                  resolvedHref: 'https://developer.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/developer-portal',
+                  logoSrc: '/developer-portal/favicon.ico',
+                  isPublic: true,
+                },
+                {
+                  appId: 'store-client',
+                  name: 'Store',
+                  tagline: 'Bookings, donations, and storefront flows.',
+                  category: 'Commerce',
+                  resolvedHref: 'https://store.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/store-client',
+                  logoSrc: '/store/assets/store-icon.png',
+                  isPublic: true,
+                },
+                {
+                  appId: 'video-platform',
+                  name: 'Video Platform',
+                  tagline: 'Share and discover video content.',
+                  category: 'Media',
+                  resolvedHref: 'https://video.example.com',
+                  repositoryUrl:
+                    'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/video-client',
+                  logoSrc: '/video-platform/android-chrome-192x192.png',
+                  isPublic: true,
+                },
+              ])
+            ),
+          },
+        },
       ],
     }).compileComponents();
 
@@ -50,41 +121,22 @@ describe('ProjectGridComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('renders portfolio projects from the HAI app registry', () => {
+  it('renders the curated portfolio entries', () => {
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Optimistic Tanuki');
-    expect(text).toContain('Opportunity Compass');
-    expect(text).toContain('resume-building social platform project');
-    expect(text).toContain('opportunity discovery tool');
+    expect(text).toContain('Developer Portal');
+    expect(text).toContain('Video Platform');
+    expect(text).toContain('proof of work');
+    expect(text).toContain('View repository');
   });
 
-  it('uses public CTAs for public projects and repository CTAs for private projects', () => {
-    const projects = component.portfolioProjects([
-      {
-        appId: 'optimistic-tanuki',
-        name: 'Optimistic Tanuki',
-        portfolioSummary: 'Public project',
-        repositoryUrl:
-          'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/client-interface',
-        resolvedHref: 'https://social.example.com',
-        isPublic: true,
-      } as any,
-      {
-        appId: 'opportunity-compass',
-        name: 'Opportunity Compass',
-        portfolioSummary: 'Private project',
-        repositoryUrl:
-          'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
-        resolvedHref:
-          'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
-        isPublic: false,
-      } as any,
-    ]);
+  it('includes the expanded customer-facing app set', () => {
+    const text = fixture.nativeElement.textContent;
 
-    expect(projects[0].readMoreText).toBe('Open Project');
-    expect(projects[0].secondaryButtonText).toBe('View Repository');
-    expect(projects[1].readMoreText).toBe('View Repository');
-    expect(projects[1].secondaryButtonText).toBe('');
+    expect(text).toContain('Towne Square');
+    expect(text).toContain('Fin Commander');
+    expect(text).toContain('Opportunity Compass');
+    expect(text).toContain('Store');
   });
 });

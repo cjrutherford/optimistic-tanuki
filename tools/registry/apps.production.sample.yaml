@@ -1,0 +1,80 @@
+# Sample production registry for the current public-facing deployment.
+# Adjust apiBaseUrl values if some apps route through a different gateway host.
+version: '1.0.0'
+generatedAt: '2026-06-05T00:00:00Z'
+apps:
+  - appId: hai
+    name: HAI Company Website
+    domain: hopefulaspirationsindustries.com
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Company site and ecosystem entry point for Hopeful Aspirations Industries.
+    sortOrder: 1
+
+  - appId: system-configurator
+    name: HAI Computer
+    domain: hopefulaspirationsindustries.com
+    subdomain: computer
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Build-to-order personal cloud and homelab systems.
+    sortOrder: 2
+
+  - appId: developer-portal
+    name: Developer Portal
+    domain: hopefulaspirationsindustries.com
+    subdomain: dev
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Public developer-facing documentation and integration entry point.
+    sortOrder: 3
+
+  - appId: forgeofwill
+    name: Forge of Will
+    domain: forgeofwill.com
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Planning and execution workspace for goals, tasks, and projects.
+    sortOrder: 4
+
+  - appId: client-interface
+    name: Optimistic Tanuki
+    domain: optimistic-tanuki.com
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Client-facing social and community interface for the broader platform.
+    sortOrder: 5
+
+  - appId: store
+    name: HAI Store
+    domain: hopefulaspirationsindustries.com
+    subdomain: store
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Public storefront for HAI products, services, and bookings.
+    sortOrder: 6
+
+  - appId: christopherrutherford-net
+    name: ChristopherRutherford.net
+    domain: christopherrutherford.net
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: internal
+    description: Christopher Rutherford portfolio site; deployed but not actively advertised.
+    sortOrder: 50
+
+  - appId: digital-homestead
+    name: Digital Homestead
+    domain: christopherrutherford.net
+    subdomain: digital-homestead
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Public publishing and homestead-oriented content experience.
+    sortOrder: 51

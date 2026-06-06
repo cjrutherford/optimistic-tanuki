@@ -23,7 +23,7 @@ export class TitleBarComponent {
     { label: 'Services', action: () => this.jump('#services') },
     { label: 'Personal Cloud', action: () => this.jump('#personal-cloud') },
     { label: 'Ecosystem', action: () => this.jump('#ecosystem') },
-    { label: 'Contact', action: () => this.jump('#contact') },
+    { label: 'Start a Project', action: () => this.jump('#contact') },
     { label: 'HAI Computer', action: () => this.leave('system-configurator') },
   ];
 

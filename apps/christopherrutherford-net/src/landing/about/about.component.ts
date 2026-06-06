@@ -1,54 +1,43 @@
 import { Component } from '@angular/core';
 
 import { CardComponent, HeadingComponent } from '@optimistic-tanuki/common-ui';
-import {
-  Themeable,
-  ThemeColors,
-  ThemeService,
-} from '@optimistic-tanuki/theme-lib';
+
+interface CapabilityGroup {
+  title: string;
+  items: string[];
+}
 
 @Component({
   selector: 'app-about',
-  host: {
-    // Using standardized local variables with fallbacks
-    '[style.--local-background]': 'background',
-    '[style.--local-foreground]': 'foreground',
-    '[style.--local-accent]': 'accent',
-    '[style.--local-complement]': 'complement',
-    '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
-  },
-  providers: [ThemeService],
   imports: [HeadingComponent, CardComponent],
   templateUrl: './about.component.html',
   styleUrl: './about.component.scss',
 })
-export class AboutComponent extends Themeable {
-  override applyTheme(colors: ThemeColors): void {
-    // Use standardized color assignments
-    this.complement = colors.complementary;
-    this.background = `linear-gradient(30deg, ${colors.accent}, ${colors.background})`;
-    this.accent = colors.accent;
-    this.borderColor = colors.complementary;
-
-    // Use standardized gradient names
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.complementaryGradients['dark'];
-    } else {
-      this.borderGradient = colors.complementaryGradients['light'];
-    }
-
-    this.foreground = colors.foreground;
-    this.complement = colors.complementary;
-    this.transitionDuration = '0.15s'; // Use standardized duration
-    this.borderColor = colors.complementary;
-  }
-
-  constructor() {
-    super();
-    // Set a predefined palette instead of manual colors
-    this.themeService.setTheme('dark');
-    this.themeService.setPersonality('soft-touch');
-    this.themeService.setPrimaryColor('#1b5e20');
-  }
+export class AboutComponent {
+  readonly capabilityGroups: CapabilityGroup[] = [
+    {
+      title: 'Application delivery',
+      items: [
+        'Angular, React, TypeScript, Node.js, and NestJS',
+        'Customer-facing workflows, dashboards, and product surfaces',
+        'Information architecture and interaction design for dense applications',
+      ],
+    },
+    {
+      title: 'Platform and operations',
+      items: [
+        'Docker, Kubernetes, Azure, AWS, and Google Cloud',
+        'Service boundaries, platform cleanup, and maintainable architecture',
+        'Self-hosted, ownership-friendly systems and deployment workflows',
+      ],
+    },
+    {
+      title: 'Data and workflow systems',
+      items: [
+        'PostgreSQL, MySQL, MongoDB, and Redis',
+        'Commerce, finance, media, community, and planning domains',
+        'Workflow design that matches how teams and users actually operate',
+      ],
+    },
+  ];
 }

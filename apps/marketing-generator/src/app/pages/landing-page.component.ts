@@ -1,11 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import {
+  MetricTileComponent,
+  SectionHeadingComponent,
+} from '@optimistic-tanuki/common-ui';
 import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
 
 @Component({
   selector: 'app-landing-page',
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    RouterLink,
+    MetricTileComponent,
+    SectionHeadingComponent,
+  ],
   template: `
     <section class="hero-grid">
       <article class="hero-copy">
@@ -30,26 +39,29 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
       </article>
 
       <aside class="hero-panel">
-        <div class="metric-card">
-          <strong>6</strong>
-          <span>strategy directions per request</span>
-        </div>
-        <div class="metric-card">
-          <strong>{{ offeringsCount }}</strong>
-          <span>starting offerings across apps and services</span>
-        </div>
-        <div class="metric-card">
-          <strong>{{ audienceCount }}</strong>
-          <span>preset personas built for operator-facing messaging</span>
-        </div>
+        <otui-metric-tile
+          label="Strategy Directions"
+          value="6"
+          caption="per guided run"
+        ></otui-metric-tile>
+        <otui-metric-tile
+          label="Starting Offerings"
+          [value]="offeringsCount"
+          caption="apps and services in the catalog"
+        ></otui-metric-tile>
+        <otui-metric-tile
+          label="Audience Personas"
+          [value]="audienceCount"
+          caption="operator-facing message profiles"
+        ></otui-metric-tile>
       </aside>
     </section>
 
     <section class="band">
-      <div class="section-head">
-        <span class="eyebrow">What it configures</span>
-        <h2>Offerings, audience, strategy, outputs, and brand direction.</h2>
-      </div>
+      <otui-section-heading
+        eyebrow="What it configures"
+        heading="Offerings, audience, strategy, outputs, and brand direction."
+      ></otui-section-heading>
 
       <div class="cards">
         <article class="card">
@@ -172,28 +184,6 @@ import { AUDIENCE_PERSONAS, OFFERING_PRESETS } from '../data/presets';
         padding: 1.2rem;
         display: grid;
         gap: 1rem;
-      }
-
-      .metric-card {
-        padding: 1.1rem;
-        border-radius: 1.2rem;
-        background: color-mix(
-          in srgb,
-          var(--surface, #10151c) 84%,
-          transparent
-        );
-        border: 1px solid
-          color-mix(
-            in srgb,
-            var(--border, rgba(255, 255, 255, 0.12)) 90%,
-            transparent
-          );
-      }
-
-      .metric-card strong {
-        display: block;
-        font-size: 2.4rem;
-        margin-bottom: 0.35rem;
       }
 
       .band {

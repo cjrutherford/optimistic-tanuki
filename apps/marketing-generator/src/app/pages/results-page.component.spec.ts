@@ -33,7 +33,7 @@ const buildInsightsStub = () => ({
 });
 
 describe('ResultsPageComponent', () => {
-  it('renders objective alignment and proof points for the selected concept', async () => {
+  it('renders offer bundle workspace framing with objective alignment and proof points', async () => {
     const request: GenerationRequest = {
       offeringKind: 'preset-app',
       selectedOfferingId: 'forgeofwill',
@@ -183,6 +183,9 @@ describe('ResultsPageComponent', () => {
     const fixture = TestBed.createComponent(ResultsPageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain(
+      'Offer bundle workspace'
+    );
     expect(fixture.nativeElement.textContent).toContain('Objective alignment');
     expect(fixture.nativeElement.textContent).toContain('Proof points');
     expect(fixture.nativeElement.textContent).toContain(
@@ -341,12 +344,13 @@ describe('ResultsPageComponent', () => {
     const fixture = TestBed.createComponent(ResultsPageComponent);
     fixture.detectChanges();
 
+    expect(fixture.nativeElement.textContent).toContain('Asset suite');
     expect(fixture.nativeElement.textContent).toContain('Delivery model');
     expect(fixture.nativeElement.textContent).toContain('Pricing model');
     expect(fixture.nativeElement.textContent).toContain('Self-hosted');
   });
 
-  it('renders template preview shells and plain text material editors', async () => {
+  it('renders template preview shells with rich text and imagery editors', async () => {
     const request: GenerationRequest = {
       offeringKind: 'preset-app',
       selectedOfferingId: 'billing-service',
@@ -464,7 +468,17 @@ describe('ResultsPageComponent', () => {
                         'Hosted metering without bespoke billing plumbing.',
                     },
                   ],
-                  imageSlots: [],
+                  imageSlots: [
+                    {
+                      id: 'img-1',
+                      prompt: 'Billing dashboard with usage trends',
+                      alt: 'Billing dashboard hero image',
+                      imageUrl: null,
+                      status: 'prompt-ready',
+                      imageBase64: null,
+                      errorMessage: null,
+                    },
+                  ],
                 },
               ],
               downloadFileName: 'billing-service-flyer',
@@ -503,8 +517,9 @@ describe('ResultsPageComponent', () => {
       fixture.nativeElement.querySelector('.template-preview')
     ).not.toBeNull();
     expect(
-      fixture.nativeElement.querySelector('.editor-stack textarea')
+      fixture.nativeElement.querySelector('[data-testid="tiptap-editor"]')
     ).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Rendered image URL');
     expect(fixture.nativeElement.textContent).toContain('AI enriched');
     expect(fixture.nativeElement.textContent).toContain('Email campaign draft');
     expect(fixture.nativeElement.textContent).toContain('Download JSON bundle');
@@ -670,6 +685,30 @@ describe('ResultsPageComponent', () => {
       'email-sequence',
     ]);
     expect(bundle.manifest.assets).toEqual(['billing-service-flyer.html']);
+    expect(bundle.manifest.exportFiles).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'channel-1.html',
+          surface: 'channel',
+        }),
+        expect.objectContaining({
+          path: 'channel-2.html',
+          surface: 'channel',
+        }),
+        expect.objectContaining({
+          path: 'billing-service-flyer.html',
+          surface: 'material',
+        }),
+      ])
+    );
+    expect(bundle.json.files.map((file) => file.path)).toEqual(
+      expect.arrayContaining([
+        'billing-concept.md',
+        'channel-1.html',
+        'channel-2.html',
+        'billing-service-flyer.html',
+      ])
+    );
     expect(bundle.json.request.secondaryChannels).toEqual(['email']);
   });
 
@@ -1207,5 +1246,117 @@ describe('ResultsPageComponent', () => {
       'Social campaign draft'
     );
     expect(fixture.nativeElement.textContent).toContain('Letter Flyer');
+  });
+
+  it('renders workspace operating status and provenance guidance', async () => {
+    const request: GenerationRequest = {
+      offeringKind: 'preset-app',
+      selectedOfferingId: 'billing-service',
+      customApp: {
+        name: '',
+        category: '',
+        summary: '',
+        features: '',
+        differentiators: '',
+        primaryGoal: '',
+      },
+      audienceId: 'technical-buyers',
+      campaignIntent: 'conversion',
+      channel: 'web',
+      secondaryChannels: [],
+      tone: 'technical',
+      includeAiPolish: true,
+      deliverables: [{ type: 'flyer', formatId: 'flyer-letter', quantity: 1 }],
+      brand: {
+        businessName: 'Billing Service',
+        tagline: '',
+        primaryColor: '#f59e0b',
+        secondaryColor: '#111827',
+        accentColor: '#34d399',
+        visualStyle: '',
+        logoUrl: '',
+      },
+      visualDirection: '',
+      generateImages: false,
+    };
+
+    const stateStub = {
+      request: signal(request),
+      concepts: signal([
+        {
+          id: 'billing-concept',
+          angle: 'Hosted usage metering',
+          generationMode: 'template',
+          generationProvenance: 'ai-fallback',
+          headline: 'Hosted metering without bespoke billing plumbing.',
+          subheadline:
+            'Usage blocks, invoice preview, and a self-hosted path stay available.',
+          cta: 'Explore the offer',
+          channelLabel: 'Web landing concept',
+          audienceLabel: 'Technical Buyers',
+          sectionType: 'Statement panel',
+          sections: [
+            { title: 'Delivery model', body: 'Hybrid hosted and self-hosted' },
+          ],
+          channelOutputs: [
+            {
+              id: 'channel-1',
+              type: 'landing-page',
+              label: 'Landing page draft',
+              summary: 'A hosted billing story.',
+              isPrimary: true,
+              blocks: [
+                {
+                  id: 'b1',
+                  role: 'hero',
+                  label: 'Hero headline',
+                  value: 'Hosted metering without bespoke billing plumbing.',
+                },
+              ],
+            },
+          ],
+          materialOutputs: [],
+        },
+      ]),
+      setRequest: jest.fn(),
+      setConcepts: jest.fn(),
+      workspaceStatus: signal({
+        storageLabel: 'Browser storage only',
+        currentWorkspaceName: 'Billing Flow',
+        workspaceCount: 1,
+        currentVersionCount: 2,
+        conceptCount: 1,
+        lastSavedAt: '2026-06-04T12:00:00.000Z',
+      }),
+    };
+
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [ResultsPageComponent],
+        providers: [
+          provideRouter([]),
+          { provide: MarketingStateService, useValue: stateStub },
+          {
+            provide: MarketingGeneratorService,
+            useValue: { generateConcepts: jest.fn() },
+          },
+          {
+            provide: MarketingEnrichmentApiService,
+            useValue: { enrichConcepts: jest.fn() },
+          },
+          { provide: MarketingInsightsService, useValue: buildInsightsStub() },
+        ],
+      })
+      .compileComponents();
+
+    const fixture = TestBed.createComponent(ResultsPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Operating status');
+    expect(fixture.nativeElement.textContent).toContain('Billing Flow');
+    expect(fixture.nativeElement.textContent).toContain('AI fallback');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Template-safe copy is in place because enrichment was unavailable for this run.'
+    );
   });
 });

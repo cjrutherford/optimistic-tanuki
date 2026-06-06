@@ -2,11 +2,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   margin-left: auto;
   margin-right: auto;
   padding: 2rem;
-  max-width: 2048px;
 }
 .landing-container > * {
   width: 100%;
@@ -36,7 +34,7 @@
 }
 
 .landing-container.personality-shell > :not(app-title-bar) {
-  width: min(1180px, calc(100% - 2rem));
+  width: calc(100% - 2rem);
   margin-bottom: 0;
   padding: 1.15rem;
   border: 1px solid
@@ -52,6 +50,14 @@
   border: none;
   background: transparent;
   box-shadow: none;
+}
+
+@media (min-width: 1200px) {
+  .landing-container.personality-shell > app-services-grid,
+  .landing-container.personality-shell > app-project-grid,
+  .landing-container.personality-shell > app-contact {
+    padding: 1.5rem;
+  }
 }
 
 @media (max-width: 768px) {

@@ -1,0 +1,35 @@
+<section
+  class="personal-cloud-panel"
+  data-theme-surface="feature"
+  id="personal-cloud"
+>
+  <div class="section-copy">
+    <p class="eyebrow">Personal Cloud</p>
+    <h2>Owned computing should feel grounded, not experimental.</h2>
+    <p>
+      HAI packages personal-cloud systems for homelab, family compute, and
+      self-hosted workflows so they feel approachable, stable, and useful. HAI
+      Computer and related systems work as concrete proof that the ownership
+      story can become an actual operating environment.
+    </p>
+  </div>
+
+  <div class="ownership-layout">
+    <article class="ownership-card" data-theme-surface="card">
+      <ul class="ownership-list">
+        @for (note of ownershipNotes; track note) {
+        <li>{{ note }}</li>
+        }
+      </ul>
+    </article>
+
+    <otui-aurora-ribbon
+      class="ownership-motion"
+      height="100%"
+      [density]="3"
+      [speed]="0.75"
+      [intensity]="0.64"
+      [reducedMotion]="reducedMotion"
+    ></otui-aurora-ribbon>
+  </div>
+</section>

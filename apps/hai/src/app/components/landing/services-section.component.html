@@ -1,0 +1,30 @@
+<section class="story-grid" id="services">
+  <article class="story-panel" data-theme-surface="card">
+    <p class="eyebrow">Services</p>
+    <h2>We help people ship durable systems without renting confusion.</h2>
+    <p>
+      HAI delivers application development, platform integration, cloud
+      architecture, and personal-cloud systems. The work is practical: clearer
+      product systems, stronger infrastructure choices, and owned computing that
+      does not collapse into operational fog.
+    </p>
+    <div class="proof-band">
+      <span class="eyebrow">Proof</span>
+      <ul class="proof-list">
+        @for (proof of serviceProof; track proof) {
+        <li>{{ proof }}</li>
+        }
+      </ul>
+    </div>
+  </article>
+
+  <div class="service-list">
+    @for (pillar of servicePillars; track pillar.title) {
+    <article class="service-card" data-theme-surface="card">
+      <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
+      <h3>{{ pillar.title }}</h3>
+      <p>{{ pillar.description }}</p>
+    </article>
+    }
+  </div>
+</section>

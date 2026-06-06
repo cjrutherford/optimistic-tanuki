@@ -20,16 +20,16 @@ export class TitleBarComponent {
       action: () => this.navigateTo('#home'),
     },
     {
-      label: 'About',
-      action: () => this.navigateTo('#about'),
+      label: 'Offer',
+      action: () => this.navigateTo('#offer'),
     },
     {
-      label: 'Projects',
-      action: () => this.navigateTo('#projects'),
+      label: 'Work',
+      action: () => this.navigateTo('#work'),
     },
     {
-      label: 'Services',
-      action: () => this.navigateTo('#services'),
+      label: 'Capabilities',
+      action: () => this.navigateTo('#capabilities'),
     },
     {
       label: 'Contact',

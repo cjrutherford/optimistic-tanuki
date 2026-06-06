@@ -1,48 +1,30 @@
-<otui-tile>
+<otui-tile class="section-heading-tile">
+  <span class="section-kicker">What I offer</span>
   <otui-heading
-    [text]="'How I help teams move forward'"
+    [text]="
+      'I help teams sort out product, platform, and delivery work that needs a clearer path'
+    "
     [size]="'2em'"
   ></otui-heading>
+  <p class="section-intro">
+    Sometimes that means building something new. Sometimes it means untangling
+    work that has drifted, stalled, or grown harder to maintain than it should
+    be.
+  </p>
 </otui-tile>
 <div class="projectGrid">
+  @for (service of services; track service.title) {
   <lib-blog-post-card
-    [title]="'Custom product and platform delivery'"
-    [bannerImage]="'assets/images/custom-app.png'"
-    [excerpt]="
-      'Design and build application workflows that fit your team, business model, and operating reality instead of forcing a generic stack.'
-    "
-    [readMoreLink]="'/services/custom-application-development'"
-    [readMoreText]="'Learn More'"
+    [title]="service.title"
+    [bannerImage]="service.image"
+    [excerpt]="service.excerpt"
+    [readMoreLink]="service.primaryHref"
+    [readMoreText]="service.primaryText"
+    [secondaryButtonText]="service.secondaryText"
+    (secondaryButtonAction)="linkTo(service.secondaryHref)"
+    [authorName]="''"
+    [publishDate]="''"
   >
   </lib-blog-post-card>
-  <lib-blog-post-card
-    [title]="'Technical direction and delivery rescue'"
-    [bannerImage]="'assets/images/consulting.png'"
-    [excerpt]="
-      'Step into stalled or ambiguous work, clarify the path, and help teams move from confusion to steady execution.'
-    "
-    [readMoreLink]="'/services/it-consulting'"
-    [readMoreText]="'Learn More'"
-  >
-  </lib-blog-post-card>
-  <lib-blog-post-card
-    [title]="'Private cloud and self-hosted systems'"
-    [bannerImage]="'assets/images/private-cloud.png'"
-    [excerpt]="
-      'Build infrastructure that gives your organization more control, clearer operations, and fewer long-term surprises.'
-    "
-    [readMoreLink]="'/services/private-cloud'"
-    [readMoreText]="'Learn More'"
-  >
-  </lib-blog-post-card>
-  <lib-blog-post-card
-    [title]="'Tailored systems for teams and communities'"
-    [bannerImage]="'assets/images/custom-app.png'"
-    [excerpt]="
-      'Create practical shared tooling for organizations, teams, and communities that need software shaped around how people actually work together.'
-    "
-    [readMoreLink]="'/services/custom-solutions'"
-    [readMoreText]="'Learn More'"
-  >
-  </lib-blog-post-card>
+  }
 </div>

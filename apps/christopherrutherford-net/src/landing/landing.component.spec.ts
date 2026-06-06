@@ -38,4 +38,13 @@ describe('LandingComponent', () => {
       compiled.querySelector('.landing-container.personality-shell')
     ).toBeTruthy();
   });
+
+  it('renders the updated landing section anchors', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('#offer')).toBeTruthy();
+    expect(compiled.querySelector('#work')).toBeTruthy();
+    expect(compiled.querySelector('#capabilities')).toBeTruthy();
+    expect(compiled.querySelector('#contact')).toBeTruthy();
+  });
 });

@@ -22,6 +22,10 @@ describe('ServicesGridComponent', () => {
   it('positions the services grid as outcome-driven consulting', () => {
     const compiled = fixture.nativeElement as HTMLElement;
 
-    expect(compiled.textContent).toContain('How I help teams move forward');
+    expect(compiled.textContent).toContain(
+      'I help teams sort out product, platform, and delivery work that needs a clearer path'
+    );
+    expect(compiled.textContent).toContain('Explore work');
+    expect(compiled.textContent).toContain('Start a project');
   });
 });

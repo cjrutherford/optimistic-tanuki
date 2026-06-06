@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import DOMPurify from 'isomorphic-dompurify';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MaterialRichTextEditorComponent } from '../components/material-rich-text-editor.component';
 import { MaterialTemplatePreviewComponent } from '../components/material-template-preview.component';
 import { AUDIENCE_PERSONAS } from '../data/presets';
 import { MarketingEnrichmentApiService } from '../services/marketing-enrichment-api.service';
@@ -17,6 +19,7 @@ import {
   GenerationProvenance,
   GenerationRequest,
   MarketingWorkspace,
+  MarketingWorkspaceStatus,
   MaterialSurface,
   PricingModel,
 } from '../types';
@@ -57,18 +60,73 @@ interface EditorSurface {
     CommonModule,
     FormsModule,
     RouterLink,
+    MaterialRichTextEditorComponent,
     MaterialTemplatePreviewComponent,
   ],
   template: `
+    <section class="command-deck" *ngIf="concepts().length">
+      <article class="deck-card deck-card-primary">
+        <span class="eyebrow">Operating status</span>
+        <h2>{{ workspaceStatus().currentWorkspaceName }}</h2>
+        <p>
+          {{ workspaceStatus().storageLabel }} ·
+          {{ formatSavedAt(workspaceStatus().lastSavedAt) }}
+        </p>
+        <div class="deck-metrics">
+          <div>
+            <strong>{{ workspaceStatus().workspaceCount }}</strong>
+            <span>workspaces</span>
+          </div>
+          <div>
+            <strong>{{ workspaceStatus().currentVersionCount }}</strong>
+            <span>versions</span>
+          </div>
+          <div>
+            <strong>{{ workspaceStatus().conceptCount }}</strong>
+            <span>concepts</span>
+          </div>
+        </div>
+      </article>
+
+      <article class="deck-card">
+        <span class="eyebrow">Generation provenance</span>
+        <h2>{{ provenanceLabel(selectedConcept().generationProvenance) }}</h2>
+        <p>
+          {{ provenanceDescription(selectedConcept().generationProvenance) }}
+        </p>
+        <ul class="deck-list">
+          <li>
+            AI polish:
+            {{
+              request.includeAiPolish
+                ? 'enabled for this run'
+                : 'disabled for this run'
+            }}
+          </li>
+          <li>Primary channel: {{ request.channel | titlecase }}</li>
+          <li>
+            Deliverables:
+            {{
+              request.deliverables.length
+                ? request.deliverables.length + ' configured'
+                : 'native channel output only'
+            }}
+          </li>
+        </ul>
+      </article>
+    </section>
+
     <section class="results-layout" *ngIf="concepts().length; else emptyState">
       <article class="gallery-panel">
         <div class="panel-head">
-          <span class="eyebrow">Generated workbench</span>
-          <h1>Compare strategy directions, then refine the built assets.</h1>
+          <span class="eyebrow">Offer bundle workspace</span>
+          <h1>
+            Choose a bundle direction, then refine the coordinated asset suite.
+          </h1>
           <p>
-            The concept gallery chooses the direction. The workbench below lets
-            you tune the actual channel drafts and material copy before
-            exporting or copying them.
+            Start with bundle directions for this offer, pick the strongest
+            direction, then edit the actual channel drafts and material assets
+            before export.
           </p>
         </div>
 
@@ -124,7 +182,7 @@ interface EditorSurface {
 
       <aside class="detail-panel">
         <section class="output-stack workspace-stack">
-          <span class="eyebrow">Workspaces</span>
+          <span class="eyebrow">Offer workspaces</span>
           <h3>{{ currentWorkspaceName() }}</h3>
           <label>
             <span>Workspace name</span>
@@ -136,7 +194,7 @@ interface EditorSurface {
           </label>
           <div class="copy-actions">
             <button type="button" (click)="createWorkspaceFromCurrent()">
-              New workspace
+              New offer workspace
             </button>
             <button type="button" (click)="renameWorkspace()">Rename</button>
             <button type="button" (click)="duplicateWorkspace()">
@@ -173,7 +231,7 @@ interface EditorSurface {
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Performance loop</span>
+          <span class="eyebrow">Workspace activity</span>
           <h3>Usage signals</h3>
           <div class="metric-grid">
             <article class="channel-card">
@@ -360,7 +418,7 @@ interface EditorSurface {
               Download manifest
             </button>
             <button type="button" class="secondary" routerLink="/create">
-              Edit studio
+              Edit offer brief
             </button>
           </div>
           <p class="copy-feedback" *ngIf="copiedMessage()">
@@ -479,7 +537,10 @@ interface EditorSurface {
                         (click)="selectPreviewRegion(region.id)"
                       >
                         <span class="region-label">{{ region.label }}</span>
-                        <span class="region-value">{{ region.value }}</span>
+                        <span
+                          class="region-value"
+                          [innerHTML]="previewRegionHtml(region.value)"
+                        ></span>
                       </button>
                     </div>
                   </ng-container>
@@ -503,7 +564,10 @@ interface EditorSurface {
                         (click)="selectPreviewRegion(region.id)"
                       >
                         <span class="region-label">{{ region.label }}</span>
-                        <span class="region-value">{{ region.value }}</span>
+                        <span
+                          class="region-value"
+                          [innerHTML]="previewRegionHtml(region.value)"
+                        ></span>
                       </button>
                     </div>
                   </ng-container>
@@ -527,7 +591,10 @@ interface EditorSurface {
                         (click)="selectPreviewRegion(region.id)"
                       >
                         <span class="region-label">{{ region.label }}</span>
-                        <span class="region-value">{{ region.value }}</span>
+                        <span
+                          class="region-value"
+                          [innerHTML]="previewRegionHtml(region.value)"
+                        ></span>
                       </button>
                     </div>
                   </ng-container>
@@ -549,7 +616,10 @@ interface EditorSurface {
                         (click)="selectPreviewRegion(region.id)"
                       >
                         <span class="region-label">{{ region.label }}</span>
-                        <span class="region-value">{{ region.value }}</span>
+                        <span
+                          class="region-value"
+                          [innerHTML]="previewRegionHtml(region.value)"
+                        ></span>
                       </button>
                     </div>
                   </ng-container>
@@ -578,12 +648,11 @@ interface EditorSurface {
 
               <label class="inspector-field">
                 <span>Selected content</span>
-                <textarea
-                  [ngModel]="region.value"
-                  (ngModelChange)="updateSelectedPreviewRegion($event)"
-                  (blur)="recordSelectedPreviewRegionEdit()"
-                  name="selectedPreviewRegion"
-                ></textarea>
+                <app-material-rich-text-editor
+                  [content]="region.value"
+                  (contentChange)="updateSelectedPreviewRegion($event)"
+                  (editorBlur)="recordSelectedPreviewRegionEdit()"
+                />
               </label>
 
               <div class="inspector-meta">
@@ -601,8 +670,8 @@ interface EditorSurface {
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Channel outputs</span>
-          <h3>Built channel drafts</h3>
+          <span class="eyebrow">Asset suite</span>
+          <h3>Coordinated channel drafts</h3>
           <div class="channel-grid">
             <button
               *ngFor="let output of selectedConcept().channelOutputs"
@@ -620,7 +689,7 @@ interface EditorSurface {
                 <p>{{ output.summary }}</p>
                 <div class="preview-lines">
                   <span *ngFor="let block of output.blocks.slice(1, 4)">{{
-                    block.value
+                    plainText(block.value)
                   }}</span>
                 </div>
               </div>
@@ -649,9 +718,16 @@ interface EditorSurface {
                 <button
                   type="button"
                   class="copy-mini"
+                  (click)="downloadOutputHtml(activeChannel)"
+                >
+                  Download HTML
+                </button>
+                <button
+                  type="button"
+                  class="copy-mini"
                   (click)="downloadOutput(activeChannel)"
                 >
-                  Download markdown
+                  Markdown
                 </button>
               </div>
             </div>
@@ -669,21 +745,22 @@ interface EditorSurface {
                     Regenerate
                   </button>
                 </span>
-                <textarea
-                  [ngModel]="block.value"
-                  (ngModelChange)="
+                <app-material-rich-text-editor
+                  [content]="block.value"
+                  (contentChange)="
                     updateChannelBlock(activeChannel.id, block.id, $event)
                   "
-                  (blur)="recordChannelBlockEdit(activeChannel.id, block.id)"
-                  [name]="block.id"
-                ></textarea>
+                  (editorBlur)="
+                    recordChannelBlockEdit(activeChannel.id, block.id)
+                  "
+                />
               </label>
             </div>
           </div>
         </section>
 
         <section class="output-stack">
-          <span class="eyebrow">Material outputs</span>
+          <span class="eyebrow">Asset suite</span>
           <h3>Built marketing assets</h3>
           <div class="material-grid">
             <button
@@ -782,9 +859,9 @@ interface EditorSurface {
                       Regenerate
                     </button>
                   </span>
-                  <textarea
-                    [ngModel]="block.value"
-                    (ngModelChange)="
+                  <app-material-rich-text-editor
+                    [content]="block.value"
+                    (contentChange)="
                       updateMaterialTextBlock(
                         activeMaterial.id,
                         activeSurface.id,
@@ -792,16 +869,88 @@ interface EditorSurface {
                         $event
                       )
                     "
-                    (blur)="
+                    (editorBlur)="
                       recordMaterialBlockEdit(
                         activeMaterial.id,
                         activeSurface.id,
                         block.id
                       )
                     "
-                    [name]="block.id"
-                  ></textarea>
+                  />
                 </label>
+              </div>
+
+              <div
+                class="image-editor-stack"
+                *ngIf="activeSurface.imageSlots.length"
+              >
+                <div
+                  class="image-editor-card"
+                  *ngFor="let slot of activeSurface.imageSlots"
+                >
+                  <div class="field-row">
+                    <span>{{ slot.alt || 'Imagery' }}</span>
+                    <span class="image-status">{{ slot.status }}</span>
+                  </div>
+
+                  <label>
+                    <span>Rendered image URL</span>
+                    <input
+                      [ngModel]="slot.imageUrl"
+                      (ngModelChange)="
+                        updateMaterialImageUrl(
+                          activeMaterial.id,
+                          activeSurface.id,
+                          slot.id,
+                          $event
+                        )
+                      "
+                      (blur)="
+                        recordMaterialImageEdit(activeMaterial.id, slot.id)
+                      "
+                      [name]="slot.id + '-imageUrl'"
+                      placeholder="https://..."
+                    />
+                  </label>
+
+                  <label>
+                    <span>Alt text</span>
+                    <input
+                      [ngModel]="slot.alt"
+                      (ngModelChange)="
+                        updateMaterialImageAlt(
+                          activeMaterial.id,
+                          activeSurface.id,
+                          slot.id,
+                          $event
+                        )
+                      "
+                      (blur)="
+                        recordMaterialImageEdit(activeMaterial.id, slot.id)
+                      "
+                      [name]="slot.id + '-alt'"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Image prompt</span>
+                    <textarea
+                      [ngModel]="slot.prompt"
+                      (ngModelChange)="
+                        updateMaterialImagePrompt(
+                          activeMaterial.id,
+                          activeSurface.id,
+                          slot.id,
+                          $event
+                        )
+                      "
+                      (blur)="
+                        recordMaterialImageEdit(activeMaterial.id, slot.id)
+                      "
+                      [name]="slot.id + '-prompt'"
+                    ></textarea>
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -811,18 +960,85 @@ interface EditorSurface {
 
     <ng-template #emptyState>
       <section class="empty-state">
-        <span class="eyebrow">No concepts yet</span>
-        <h1>Generate a campaign workbench first.</h1>
+        <span class="eyebrow">No bundle directions yet</span>
+        <h1>Open an offer workspace first.</h1>
         <p>
-          Your strategy and outputs will appear here after the studio brief is
+          Your generated asset bundle will appear here after the offer brief is
           complete.
         </p>
-        <a routerLink="/create">Go to the generator</a>
+        <a routerLink="/offers/new">Start a new offer brief</a>
       </section>
     </ng-template>
   `,
   styles: [
     `
+      .command-deck {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .deck-card {
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 90%,
+          transparent
+        );
+        border-radius: var(--border-radius-lg, 20px);
+        box-shadow: var(--shadow-lg, 0 18px 60px rgba(0, 0, 0, 0.25));
+        padding: 1.3rem 1.4rem;
+      }
+
+      .deck-card-primary {
+        background: radial-gradient(
+            circle at top left,
+            color-mix(in srgb, var(--primary, #d97706) 22%, transparent),
+            transparent 55%
+          ),
+          color-mix(in srgb, var(--surface, #10151c) 90%, transparent);
+      }
+
+      .deck-card h2 {
+        margin: 0.35rem 0 0.6rem;
+        font-family: var(--font-heading, 'Instrument Serif', serif);
+        font-weight: 500;
+        line-height: 0.98;
+      }
+
+      .deck-card p,
+      .deck-list,
+      .deck-list li {
+        color: var(--muted, rgba(255, 255, 255, 0.72));
+      }
+
+      .deck-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+      }
+
+      .deck-metrics div {
+        padding: 0.85rem 0.9rem;
+        border-radius: 1rem;
+        background: color-mix(in srgb, var(--foreground, #fff) 5%, transparent);
+        display: grid;
+        gap: 0.18rem;
+      }
+
+      .deck-metrics strong {
+        font-size: 1.25rem;
+      }
+
+      .deck-list {
+        margin: 0.9rem 0 0;
+        padding-left: 1rem;
+        display: grid;
+        gap: 0.45rem;
+      }
+
       .results-layout {
         display: grid;
         grid-template-columns: minmax(0, 0.95fr) minmax(380px, 1.05fr);
@@ -1058,7 +1274,8 @@ interface EditorSurface {
       }
 
       .tuning-card select,
-      .editor-grid textarea {
+      .image-editor-card input,
+      .image-editor-card textarea {
         border-radius: var(--border-radius-md, 14px);
         border: 1px solid
           color-mix(
@@ -1075,7 +1292,7 @@ interface EditorSurface {
         color: var(--foreground, #f7f1e6);
       }
 
-      .editor-grid textarea {
+      .image-editor-card textarea {
         min-height: 5.8rem;
         resize: vertical;
       }
@@ -1334,13 +1551,21 @@ interface EditorSurface {
         line-height: 1.55;
       }
 
+      .region-value :is(p, ul, ol) {
+        margin: 0;
+      }
+
+      .region-value :is(ul, ol) {
+        padding-left: 1.1rem;
+      }
+
       .inspector-field {
         display: grid;
         gap: 0.5rem;
       }
 
-      .inspector-field textarea {
-        min-height: 16rem;
+      .inspector-field app-material-rich-text-editor {
+        display: block;
       }
 
       .inspector-meta {
@@ -1422,6 +1647,44 @@ interface EditorSurface {
         align-items: start;
       }
 
+      .image-editor-stack {
+        display: grid;
+        gap: 0.85rem;
+        margin-top: 1rem;
+      }
+
+      .image-editor-card {
+        display: grid;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: var(--border-radius-md, 14px);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        background: color-mix(
+          in srgb,
+          var(--surface, #10151c) 84%,
+          transparent
+        );
+      }
+
+      .image-editor-card label {
+        display: grid;
+        gap: 0.4rem;
+        color: var(--muted, rgba(255, 255, 255, 0.72));
+      }
+
+      .image-status {
+        display: inline-flex;
+        align-items: center;
+        width: fit-content;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--foreground, #fff) 8%, transparent);
+        color: var(--primary, #f59e0b);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.72rem;
+      }
+
       .surface-canvas,
       app-material-template-preview {
         position: sticky;
@@ -1450,6 +1713,7 @@ interface EditorSurface {
 
       button:focus-visible,
       select:focus-visible,
+      input:focus-visible,
       a:focus-visible,
       textarea:focus-visible {
         outline: 2px solid var(--primary, #f59e0b);
@@ -1457,6 +1721,7 @@ interface EditorSurface {
       }
 
       @media (max-width: 1180px) {
+        .command-deck,
         .results-layout,
         .gallery-grid,
         .channel-grid,
@@ -1481,6 +1746,7 @@ export class ResultsPageComponent {
   private readonly enrichmentApi = inject(MarketingEnrichmentApiService);
   private readonly insights = inject(MarketingInsightsService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly concepts = this.state.concepts;
   protected readonly workspaces = computed(() =>
@@ -1492,9 +1758,26 @@ export class ResultsPageComponent {
     typeof (this.state as { currentWorkspaceId?: unknown })
       .currentWorkspaceId === 'function'
       ? (
-          this.state as { currentWorkspaceId: () => string }
-        ).currentWorkspaceId()
+        this.state as { currentWorkspaceId: () => string }
+      ).currentWorkspaceId()
       : ''
+  );
+  protected readonly workspaceStatus = computed<MarketingWorkspaceStatus>(() =>
+    typeof (this.state as { workspaceStatus?: unknown }).workspaceStatus ===
+      'function'
+      ? (
+        this.state as {
+          workspaceStatus: () => MarketingWorkspaceStatus;
+        }
+      ).workspaceStatus()
+      : {
+        storageLabel: 'Browser storage only',
+        currentWorkspaceName: this.currentWorkspaceName(),
+        workspaceCount: this.workspaces().length,
+        currentVersionCount: this.workspaceVersions().length,
+        conceptCount: this.concepts().length,
+        lastSavedAt: '',
+      }
   );
   protected readonly request = cloneRequest(this.state.request());
   protected readonly personas = AUDIENCE_PERSONAS;
@@ -1602,6 +1885,13 @@ export class ResultsPageComponent {
   });
 
   constructor() {
+    this.route.paramMap.subscribe((params) => {
+      const offerId = params.get('offerId');
+      if (offerId && offerId !== this.currentWorkspaceId()) {
+        this.loadWorkspace(offerId);
+      }
+    });
+
     const currentWorkspace = this.readCurrentWorkspace();
     this.selectedId.set(
       currentWorkspace?.selectedConceptId || this.concepts()[0]?.id || ''
@@ -1704,11 +1994,11 @@ export class ResultsPageComponent {
       channelOutputs: concept.channelOutputs.map((output) =>
         output.id === outputId
           ? {
-              ...output,
-              blocks: output.blocks.map((block) =>
-                block.id === blockId ? { ...block, value } : block
-              ),
-            }
+            ...output,
+            blocks: output.blocks.map((block) =>
+              block.id === blockId ? { ...block, value } : block
+            ),
+          }
           : output
       ),
     }));
@@ -1735,6 +2025,17 @@ export class ResultsPageComponent {
     }
   }
 
+  previewRegionHtml(value: string): string {
+    return this.sanitizeRichTextHtml(value);
+  }
+
+  plainText(value: string): string {
+    return value
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   updateMaterialTextBlock(
     materialId: string,
     surfaceId: string,
@@ -1746,21 +2047,48 @@ export class ResultsPageComponent {
       materialOutputs: concept.materialOutputs.map((asset) =>
         asset.id === materialId
           ? {
-              ...asset,
-              surfaces: asset.surfaces.map((surface) =>
-                surface.id === surfaceId
-                  ? {
-                      ...surface,
-                      textBlocks: surface.textBlocks.map((block) =>
-                        block.id === blockId ? { ...block, value } : block
-                      ),
-                    }
-                  : surface
-              ),
-            }
+            ...asset,
+            surfaces: asset.surfaces.map((surface) =>
+              surface.id === surfaceId
+                ? {
+                  ...surface,
+                  textBlocks: surface.textBlocks.map((block) =>
+                    block.id === blockId ? { ...block, value } : block
+                  ),
+                }
+                : surface
+            ),
+          }
           : asset
       ),
     }));
+  }
+
+  updateMaterialImagePrompt(
+    materialId: string,
+    surfaceId: string,
+    slotId: string,
+    prompt: string
+  ): void {
+    this.updateMaterialImageSlot(materialId, surfaceId, slotId, { prompt });
+  }
+
+  updateMaterialImageAlt(
+    materialId: string,
+    surfaceId: string,
+    slotId: string,
+    alt: string
+  ): void {
+    this.updateMaterialImageSlot(materialId, surfaceId, slotId, { alt });
+  }
+
+  updateMaterialImageUrl(
+    materialId: string,
+    surfaceId: string,
+    slotId: string,
+    imageUrl: string
+  ): void {
+    this.updateMaterialImageSlot(materialId, surfaceId, slotId, { imageUrl });
   }
 
   async regenerate(): Promise<void> {
@@ -1778,10 +2106,10 @@ export class ResultsPageComponent {
       : null;
     const concepts = enrichmentResult
       ? this.applyProvenance(
-          enrichmentResult.concepts,
-          true,
-          enrichmentResult.enrichmentApplied
-        )
+        enrichmentResult.concepts,
+        true,
+        enrichmentResult.enrichmentApplied
+      )
       : this.applyProvenance(baseConcepts, false, false);
     this.state.setConcepts(concepts);
     this.selectedId.set(concepts[0]?.id ?? '');
@@ -1851,7 +2179,7 @@ export class ResultsPageComponent {
     }
 
     if (activeSurface.output) {
-      this.downloadOutput(activeSurface.output);
+      this.downloadOutputHtml(activeSurface.output);
       return;
     }
 
@@ -1896,11 +2224,25 @@ export class ResultsPageComponent {
     this.logEvent('output_downloaded', {
       conceptId: this.selectedConcept().id,
       outputId: output.id,
+      metadata: { format: 'markdown' },
     });
     this.downloadText(
       `${output.id}.md`,
       this.formatChannelOutput(output),
       'text/markdown'
+    );
+  }
+
+  downloadOutputHtml(output: ChannelOutput): void {
+    this.logEvent('output_downloaded', {
+      conceptId: this.selectedConcept().id,
+      outputId: output.id,
+      metadata: { format: 'html' },
+    });
+    this.downloadText(
+      `${output.id}.html`,
+      this.buildChannelExportHtml(output),
+      'text/html'
     );
   }
 
@@ -1924,6 +2266,11 @@ export class ResultsPageComponent {
       channels: string[];
       assets: string[];
       businessName: string;
+      exportFiles: Array<{
+        path: string;
+        type: string;
+        surface: 'channel' | 'material' | 'bundle';
+      }>;
     };
     json: {
       request: GenerationRequest;
@@ -1935,16 +2282,60 @@ export class ResultsPageComponent {
         channels: string[];
         assets: string[];
         businessName: string;
+        exportFiles: Array<{
+          path: string;
+          type: string;
+          surface: 'channel' | 'material' | 'bundle';
+        }>;
       };
       files: Array<{ path: string; type: string; content: string }>;
     };
   } {
     const concept = this.selectedConcept();
+    const exportFiles: Array<{
+      path: string;
+      type: string;
+      surface: 'channel' | 'material' | 'bundle';
+    }> = [
+        { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
+      ];
+    const channelFiles = concept.channelOutputs.flatMap((output) => [
+      {
+        path: `${output.id}.html`,
+        type: 'text/html',
+        surface: 'channel' as const,
+        content: this.buildChannelExportHtml(output),
+      },
+      {
+        path: `${output.id}.md`,
+        type: 'text/markdown',
+        surface: 'channel' as const,
+        content: this.formatChannelOutput(output),
+      },
+    ]);
     const assetFiles = concept.materialOutputs.map((asset) => ({
       path: asset.downloadFileName + '.html',
       type: 'text/html',
+      surface: 'material' as const,
       content: this.buildMaterialExportHtml(asset),
     }));
+    const manifestExportFiles: Array<{
+      path: string;
+      type: string;
+      surface: 'channel' | 'material' | 'bundle';
+    }> = [
+        ...exportFiles,
+        ...channelFiles.map(({ path, type, surface }) => ({
+          path,
+          type,
+          surface,
+        })),
+        ...assetFiles.map(({ path, type, surface }) => ({
+          path,
+          type,
+          surface,
+        })),
+      ];
     const markdown = [
       `# ${concept.headline}`,
       `Provenance: ${this.provenanceLabel(concept.generationProvenance)}`,
@@ -1957,6 +2348,9 @@ export class ResultsPageComponent {
       ...concept.sections.map(
         (section) => `## ${section.title}\n${section.body}`
       ),
+      '## Production exports',
+      ...channelFiles.map((file) => `- ${file.path}`),
+      ...assetFiles.map((file) => `- ${file.path}`),
       ...concept.channelOutputs.map((output) =>
         this.formatChannelOutput(output)
       ),
@@ -1971,6 +2365,7 @@ export class ResultsPageComponent {
       channels: concept.channelOutputs.map((output) => output.type),
       assets: assetFiles.map((file) => file.path),
       businessName: this.request.brand.businessName || 'Unspecified brand',
+      exportFiles: manifestExportFiles,
     };
 
     return {
@@ -1987,6 +2382,11 @@ export class ResultsPageComponent {
             type: 'text/markdown',
             content: markdown,
           },
+          ...channelFiles.map(({ path, type, content }) => ({
+            path,
+            type,
+            content,
+          })),
           ...assetFiles,
         ],
       },
@@ -1997,11 +2397,24 @@ export class ResultsPageComponent {
     const payload = asset.surfaces
       .map((surface) =>
         `
-<section>
-  <h2>${surface.label}</h2>
+<section class="surface-section">
+  <h2>${this.escapeHtml(surface.label)}</h2>
+  ${surface.imageSlots.length
+            ? `<div class="image-export-grid">
+  ${surface.imageSlots
+              .map((slot) => this.buildImageExportHtml(slot))
+              .join('\n')}
+</div>`
+            : ''
+          }
   ${surface.textBlocks
-    .map((block) => `<p><strong>${block.label}:</strong> ${block.value}</p>`)
-    .join('\n')}
+            .map(
+              (block) => `<div class="text-block ${block.role}">
+    <span class="block-label">${this.escapeHtml(block.label)}</span>
+    <div class="block-copy">${this.sanitizeRichTextHtml(block.value)}</div>
+  </div>`
+            )
+            .join('\n')}
 </section>`.trim()
       )
       .join('\n');
@@ -2010,23 +2423,24 @@ export class ResultsPageComponent {
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>${asset.label}</title>
+    <title>${this.escapeHtml(asset.label)}</title>
     <style>
       body {
-        font-family: Georgia, serif;
-        margin: 2rem;
+        font-family: Inter, system-ui, sans-serif;
+        margin: 0;
         color: #111827;
-        background: #fffdf8;
+        background: #fff7ed;
       }
       .shell {
-        max-width: 900px;
-        margin: 0 auto;
-        border: 2px solid ${this.request.brand.primaryColor};
-        border-radius: 20px;
+        width: min(1080px, calc(100% - 3rem));
+        margin: 2rem auto;
+        border: 2px solid ${this.escapeHtml(this.request.brand.primaryColor)};
+        border-radius: 24px;
         padding: 2rem;
-        background: linear-gradient(180deg, ${
-          this.request.brand.accentColor
-        }22, transparent 24%);
+        background: linear-gradient(180deg, ${this.escapeHtml(
+      this.request.brand.accentColor
+    )}22, transparent 24%);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
       }
       h1, h2 { margin: 0 0 1rem; }
       .meta {
@@ -2034,40 +2448,219 @@ export class ResultsPageComponent {
         margin-bottom: 1rem;
         padding: 0.35rem 0.7rem;
         border-radius: 999px;
-        background: ${this.request.brand.primaryColor};
+        background: ${this.escapeHtml(this.request.brand.primaryColor)};
         color: white;
       }
-      section { margin-top: 1.5rem; }
-      p { line-height: 1.6; }
+      .surface-section { margin-top: 1.5rem; display: grid; gap: 1rem; }
+      .text-block { display: grid; gap: 0.4rem; }
+      .block-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #92400e;
+      }
+      .block-copy { line-height: 1.7; }
+      .block-copy :is(p, h1, h2, h3, ul, ol) { margin: 0; }
+      .text-block.headline .block-copy,
+      .text-block.subheadline .block-copy {
+        font-family: Georgia, serif;
+      }
+      .text-block.headline .block-copy {
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 0.96;
+      }
+      .text-block.cta .block-copy {
+        display: inline-flex;
+        width: fit-content;
+        padding: 0.75rem 1rem;
+        border-radius: 999px;
+        background: ${this.escapeHtml(this.request.brand.accentColor)};
+        color: #081018;
+        font-weight: 700;
+      }
+      .image-export-grid {
+        display: grid;
+        gap: 1rem;
+      }
+      .image-export-card {
+        overflow: hidden;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 18px;
+        background: white;
+      }
+      .image-export-card img {
+        display: block;
+        width: 100%;
+        max-height: 24rem;
+        object-fit: cover;
+      }
+      .image-export-fallback {
+        min-height: 14rem;
+        padding: 1rem;
+        display: grid;
+        align-content: end;
+        background: linear-gradient(135deg, ${this.escapeHtml(
+      this.request.brand.primaryColor
+    )}22, ${this.escapeHtml(this.request.brand.accentColor)}22);
+      }
+      .image-export-meta {
+        display: grid;
+        gap: 0.35rem;
+        padding: 1rem;
+      }
+      .image-export-meta p {
+        margin: 0;
+        line-height: 1.6;
+      }
     </style>
   </head>
   <body>
     <article class="shell">
-      <div class="meta">${
-        this.request.brand.businessName || 'Signal Foundry'
-      }</div>
-      <h1>${asset.label}</h1>
+      <div class="meta">${this.escapeHtml(
+      this.request.brand.businessName || 'Signal Foundry'
+    )}</div>
+      <h1>${this.escapeHtml(asset.label)}</h1>
       ${payload}
     </article>
   </body>
 </html>`;
   }
 
+  private buildChannelExportHtml(output: ChannelOutput): string {
+    const renderedBlocks = output.blocks
+      .map(
+        (block) => `<section class="channel-block ${block.role}">
+  <span class="channel-label">${this.escapeHtml(block.label)}</span>
+  <div class="channel-copy">${this.sanitizeRichTextHtml(block.value)}</div>
+</section>`
+      )
+      .join('\n');
+
+    return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${this.escapeHtml(output.label)}</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, sans-serif;
+        background: ${output.type === 'email-sequence' ? '#eef2ff' : '#f8fafc'};
+        color: #111827;
+      }
+      .shell {
+        width: min(960px, calc(100% - 3rem));
+        margin: 2rem auto;
+        padding: 2rem;
+        border-radius: 24px;
+        background: white;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+      }
+      .meta {
+        display: inline-flex;
+        margin-bottom: 1rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 999px;
+        background: ${this.escapeHtml(this.request.brand.primaryColor)};
+        color: white;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.78rem;
+      }
+      .channel-stack {
+        display: grid;
+        gap: 1rem;
+      }
+      .channel-block {
+        display: grid;
+        gap: 0.45rem;
+        padding: 1rem;
+        border-radius: 18px;
+        background: ${output.type === 'social-campaign'
+        ? 'linear-gradient(155deg, #111827, #1f2937)'
+        : '#fff7ed'
+      };
+        color: ${output.type === 'social-campaign' ? '#f8fafc' : '#111827'};
+      }
+      .channel-block.cta .channel-copy {
+        display: inline-flex;
+        width: fit-content;
+        padding: 0.75rem 1rem;
+        border-radius: 999px;
+        background: ${this.escapeHtml(this.request.brand.accentColor)};
+        color: #081018;
+        font-weight: 700;
+      }
+      .channel-copy { line-height: 1.7; }
+      .channel-copy :is(p, h1, h2, h3, ul, ol) { margin: 0; }
+      .channel-label {
+        font-size: 0.78rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: ${output.type === 'social-campaign'
+        ? 'rgba(248, 250, 252, 0.72)'
+        : '#92400e'
+      };
+      }
+      .channel-block.hero .channel-copy,
+      .channel-block.subject .channel-copy,
+      .channel-block.hook .channel-copy {
+        font-family: Georgia, serif;
+        font-size: clamp(1.8rem, 4vw, 2.8rem);
+        line-height: 0.96;
+      }
+    </style>
+  </head>
+  <body>
+    <article class="shell">
+      <div class="meta">${this.escapeHtml(output.type)}</div>
+      <h1>${this.escapeHtml(output.label)}</h1>
+      <div class="channel-stack">
+        ${renderedBlocks}
+      </div>
+    </article>
+  </body>
+</html>`;
+  }
+
+  private buildImageExportHtml(
+    slot: MaterialSurface['imageSlots'][number]
+  ): string {
+    const imageSrc = this.safeImageUrl(slot.imageUrl, slot.imageBase64);
+    return `<article class="image-export-card">
+  ${imageSrc
+        ? `<img src="${imageSrc}" alt="${this.escapeHtml(slot.alt)}" />`
+        : `<div class="image-export-fallback">
+    <strong>${this.escapeHtml(slot.alt || 'Image placeholder')}</strong>
+    <p>${this.escapeHtml(slot.prompt)}</p>
+  </div>`
+      }
+  <div class="image-export-meta">
+    <p><strong>Alt:</strong> ${this.escapeHtml(slot.alt)}</p>
+    <p><strong>Status:</strong> ${this.escapeHtml(slot.status)}</p>
+    <p><strong>Prompt:</strong> ${this.escapeHtml(slot.prompt)}</p>
+  </div>
+</article>`;
+  }
+
   protected assetPreviewText(asset: CampaignAsset): string {
     return asset.surfaces
       .flatMap((surface) => surface.textBlocks)
-      .map((block) => block.value)
+      .map((block) => this.plainText(block.value))
       .filter(Boolean)
       .slice(0, 3)
       .join(' ');
   }
 
   protected assetHeadline(asset: CampaignAsset): string {
-    return asset.surfaces[0]?.textBlocks[0]?.value || asset.label;
+    return this.plainText(
+      asset.surfaces[0]?.textBlocks[0]?.value || asset.label
+    );
   }
 
   protected channelHeadline(output: ChannelOutput): string {
-    return output.blocks[0]?.value || output.label;
+    return this.plainText(output.blocks[0]?.value || output.label);
   }
 
   protected firstSurfaceId(asset: CampaignAsset): string {
@@ -2115,6 +2708,30 @@ export class ResultsPageComponent {
     }
   }
 
+  provenanceDescription(provenance: GenerationProvenance | undefined): string {
+    switch (provenance) {
+      case 'ai-enriched':
+        return 'Hybrid assistance shaped this concept and the workbench is carrying the enriched copy forward.';
+      case 'ai-fallback':
+        return 'Template-safe copy is in place because enrichment was unavailable for this run.';
+      default:
+        return 'This concept was produced from the structured template system without enrichment.';
+    }
+  }
+
+  formatSavedAt(value: string): string {
+    if (!value) {
+      return 'Saved locally during this session';
+    }
+
+    const timestamp = new Date(value);
+    if (Number.isNaN(timestamp.getTime())) {
+      return 'Saved locally';
+    }
+
+    return `Saved locally ${timestamp.toLocaleString()}`;
+  }
+
   workflowLabel(status: ConceptWorkflowStatus | undefined): string {
     switch (status) {
       case 'selected':
@@ -2139,8 +2756,8 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : concept.workflowStatus === 'archived'
-            ? 'archived'
-            : 'candidate',
+              ? 'archived'
+              : 'candidate',
       }))
     );
   }
@@ -2162,16 +2779,15 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : loserIds.includes(concept.id)
-            ? ('archived' as const)
-            : concept.workflowStatus === 'shortlisted'
-            ? 'shortlisted'
-            : 'candidate',
+              ? ('archived' as const)
+              : concept.workflowStatus === 'shortlisted'
+                ? 'shortlisted'
+                : 'candidate',
       }))
     );
     this.compareConceptIds.set([]);
     this.state.setDecisionSummary(
-      `Winner chosen: ${winner.headline} over ${
-        loserIds.length
+      `Winner chosen: ${winner.headline} over ${loserIds.length
       } compared option${loserIds.length === 1 ? '' : 's'}.`
     );
     this.logEvent('compare_winner_selected', { conceptId });
@@ -2191,12 +2807,12 @@ export class ResultsPageComponent {
       this.state.concepts().map((concept) =>
         concept.id === conceptId
           ? {
-              ...concept,
-              workflowStatus:
-                concept.workflowStatus === 'shortlisted'
-                  ? ('candidate' as const)
-                  : ('shortlisted' as const),
-            }
+            ...concept,
+            workflowStatus:
+              concept.workflowStatus === 'shortlisted'
+                ? ('candidate' as const)
+                : ('shortlisted' as const),
+          }
           : concept
       )
     );
@@ -2240,8 +2856,7 @@ export class ResultsPageComponent {
       (
         this.state as { saveWorkspaceVersion: (name?: string) => void }
       ).saveWorkspaceVersion(
-        `${this.currentWorkspaceName()} snapshot ${
-          this.workspaceVersions().length + 1
+        `${this.currentWorkspaceName()} snapshot ${this.workspaceVersions().length + 1
         }`
       );
       this.logEvent('workspace_version_saved', {
@@ -2263,8 +2878,8 @@ export class ResultsPageComponent {
       this.workspaceName.set(currentWorkspace?.name || 'Current Workspace');
       this.selectedId.set(
         currentWorkspace?.selectedConceptId ||
-          this.state.concepts()[0]?.id ||
-          ''
+        this.state.concepts()[0]?.id ||
+        ''
       );
       this.compareConceptIds.set([]);
       this.copiedMessage.set('Workspace version restored.');
@@ -2409,6 +3024,15 @@ export class ResultsPageComponent {
     });
   }
 
+  recordMaterialImageEdit(materialId: string, blockId: string): void {
+    this.logEvent('block_updated', {
+      conceptId: this.selectedConcept().id,
+      outputId: materialId,
+      blockId,
+      metadata: { surface: 'image' },
+    });
+  }
+
   recordSelectedPreviewRegionEdit(): void {
     const region = this.selectedPreviewRegion();
     if (!region) {
@@ -2440,6 +3064,34 @@ export class ResultsPageComponent {
     this.state.setConcepts(updated);
   }
 
+  private updateMaterialImageSlot(
+    materialId: string,
+    surfaceId: string,
+    slotId: string,
+    updates: Partial<MaterialSurface['imageSlots'][number]>
+  ): void {
+    this.updateConcepts((concept) => ({
+      ...concept,
+      materialOutputs: concept.materialOutputs.map((asset) =>
+        asset.id === materialId
+          ? {
+            ...asset,
+            surfaces: asset.surfaces.map((surface) =>
+              surface.id === surfaceId
+                ? {
+                  ...surface,
+                  imageSlots: surface.imageSlots.map((slot) =>
+                    slot.id === slotId ? { ...slot, ...updates } : slot
+                  ),
+                }
+                : surface
+            ),
+          }
+          : asset
+      ),
+    }));
+  }
+
   private buildChannelEditorSurface(output: ChannelOutput): EditorSurface {
     return {
       id: `surface-${output.id}`,
@@ -2447,8 +3099,8 @@ export class ResultsPageComponent {
         output.type === 'landing-page'
           ? 'web'
           : output.type === 'email-sequence'
-          ? 'email'
-          : 'social',
+            ? 'email'
+            : 'social',
       title: output.label,
       subtitle: output.type,
       description: output.summary,
@@ -2494,7 +3146,9 @@ export class ResultsPageComponent {
     return [
       output.label,
       output.summary,
-      ...output.blocks.map((block) => `${block.label}: ${block.value}`),
+      ...output.blocks.map(
+        (block) => `${block.label}: ${this.plainText(block.value)}`
+      ),
     ].join('\n');
   }
 
@@ -2504,9 +3158,96 @@ export class ResultsPageComponent {
       `Layout: ${asset.layoutVariant}`,
       ...asset.surfaces.flatMap((surface) => [
         `${surface.label}`,
-        ...surface.textBlocks.map((block) => `${block.label}: ${block.value}`),
+        ...surface.textBlocks.map(
+          (block) => `${block.label}: ${this.plainText(block.value)}`
+        ),
+        ...surface.imageSlots.map(
+          (slot) =>
+            `Image: ${slot.alt} | ${slot.status} | ${slot.imageUrl || slot.prompt
+            }`
+        ),
       ]),
     ].join('\n');
+  }
+
+  private sanitizeRichTextHtml(value: string): string {
+    const normalized = value.trim()
+      ? this.looksLikeHtml(value)
+        ? value
+        : `<p>${this.escapeHtml(value.trim())}</p>`
+      : '<p></p>';
+
+    return DOMPurify.sanitize(normalized, {
+      ALLOWED_TAGS: [
+        'p',
+        'br',
+        'strong',
+        'em',
+        'u',
+        's',
+        'b',
+        'i',
+        'ul',
+        'ol',
+        'li',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'blockquote',
+        'pre',
+        'code',
+        'a',
+        'span',
+        'div',
+      ],
+      ALLOWED_ATTR: ['href', 'title', 'target', 'rel', 'class'],
+      ALLOW_DATA_ATTR: false,
+      FORCE_BODY: false,
+    });
+  }
+
+  private looksLikeHtml(value: string): boolean {
+    return /^<(?:(?:[A-Za-z][\w:-]*)|\/(?:[A-Za-z][\w:-]*)|!DOCTYPE|!--)/.test(
+      value.trim()
+    );
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private safeImageUrl(
+    imageUrl?: string | null,
+    imageBase64?: string | null
+  ): string | null {
+    if (imageBase64) {
+      const dataUrl = imageBase64.startsWith('data:image/')
+        ? imageBase64
+        : `data:image/png;base64,${imageBase64}`;
+      // Validate: only allow well-formed data: image URLs with safe MIME types
+      // and base64-alphabet data content to prevent attribute injection.
+      const safeDataUrl =
+        /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml);base64,[A-Za-z0-9+/=\s]+$/.test(
+          dataUrl
+        )
+          ? dataUrl
+          : null;
+      return safeDataUrl;
+    }
+
+    if (!imageUrl) {
+      return null;
+    }
+
+    return /^(https?:)?\/\//i.test(imageUrl) ? this.escapeHtml(imageUrl) : null;
   }
 
   private applyProvenance(
@@ -2519,10 +3260,10 @@ export class ResultsPageComponent {
       generationProvenance: !includeAiPolish
         ? ('template-only' as const)
         : enrichmentApplied && concept.generationMode === 'hybrid'
-        ? ('ai-enriched' as const)
-        : enrichmentApplied
-        ? ('template-only' as const)
-        : ('ai-fallback' as const),
+          ? ('ai-enriched' as const)
+          : enrichmentApplied
+            ? ('template-only' as const)
+            : ('ai-fallback' as const),
     }));
   }
 
@@ -2539,8 +3280,8 @@ export class ResultsPageComponent {
     return typeof (this.state as { currentWorkspace?: unknown })
       .currentWorkspace === 'function'
       ? (
-          this.state as { currentWorkspace: () => MarketingWorkspace | null }
-        ).currentWorkspace()
+        this.state as { currentWorkspace: () => MarketingWorkspace | null }
+      ).currentWorkspace()
       : null;
   }
 
@@ -2603,6 +3344,6 @@ export class ResultsPageComponent {
     this.copiedMessage.set(
       'Clipboard unavailable here. Returning to the generator.'
     );
-    await this.router.navigate(['/create']);
+    await this.router.navigate(['/offers/new']);
   }
 }

@@ -31,6 +31,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
         [editor]="editor"
         tiptapEditor
         outputFormat="html"
+        (focusout)="handleBlur()"
       ></div>
 
       <div
@@ -106,6 +107,7 @@ export class MaterialRichTextEditorComponent implements OnDestroy {
 
   readonly content = input<string>('');
   readonly contentChange = output<string>();
+  readonly editorBlur = output<void>();
 
   readonly editor = isPlatformBrowser(this.platformId)
     ? new Editor({
@@ -140,6 +142,10 @@ export class MaterialRichTextEditorComponent implements OnDestroy {
 
   setParagraph(): void {
     this.editor?.chain().focus().setParagraph().run();
+  }
+
+  handleBlur(): void {
+    this.editorBlur.emit();
   }
 
   ngOnDestroy(): void {

@@ -1,0 +1,16 @@
+<section class="contact-panel" data-theme-surface="hero" id="contact">
+  <p class="eyebrow">{{ contactLead.title }}</p>
+  <h2>{{ contactLead.description }}</h2>
+  <lib-contact-form
+    [title]="'Start a project with HAI'"
+    [buttonText]="submittingContact ? 'Sending...' : 'Send Message'"
+    [subjects]="contactSubjects"
+    [bannerImage]="
+      'https://fastly.picsum.photos/id/876/1200/300.jpg?hmac=PYu7elypyS9RmFSMJwEADHRZ9VoNICcFdVHC52lEq9Y'
+    "
+    (formSubmit)="formSubmit.emit($event)"
+  ></lib-contact-form>
+  @if (contactStatus) {
+  <p class="contact-status">{{ contactStatus }}</p>
+  }
+</section>

@@ -1,19 +1,51 @@
-<otui-tile>
-  <otui-heading [text]="'Projects'" [size]="'2em'"></otui-heading>
+<otui-tile class="section-heading-tile">
+  <span class="section-kicker">Selected work</span>
+  <otui-heading
+    [text]="
+      'A few of the customer-facing apps that show the range of work I take on'
+    "
+    [size]="'2em'"
+  ></otui-heading>
+  <p class="section-intro">
+    These are here as proof of work, but they are not all solving the same
+    problem. Some are workflow-heavy, some are product-heavy, and some are more
+    about structure, onboarding, or information clarity.
+  </p>
 </otui-tile>
 <div class="projectGrid">
-  @for (project of portfolioProjects((projects$ | async) ?? []); track
-  project.title) {
-  <lib-blog-post-card
-    [title]="project.title"
-    [bannerImage]="project.bannerImage"
-    [excerpt]="project.excerpt"
-    [readMoreText]="project.readMoreText"
-    [readMoreLink]="project.readMoreLink"
-    [secondaryButtonText]="project.secondaryButtonText"
-    (secondaryButtonAction)="linkTo(project.secondaryButtonLink)"
-    [authorName]="''"
-    [publishDate]="''"
-  ></lib-blog-post-card>
+  @for (project of (projects$ | async) ?? []; track project.id) {
+  <otui-card class="portfolio-card" [ngClass]="'tone-' + project.tone">
+    <div class="portfolio-card-header">
+      <div class="portfolio-mark">
+        @if (project.logoSrc) {
+        <img [src]="project.logoSrc" [alt]="project.name + ' logo'" />
+        } @else {
+        <span>{{ project.initials }}</span>
+        }
+      </div>
+      <div class="portfolio-meta">
+        <span class="portfolio-category">{{ project.category }}</span>
+        <h3>{{ project.name }}</h3>
+        <p class="portfolio-tagline">{{ project.tagline }}</p>
+      </div>
+      <span class="portfolio-state">{{
+        project.isPublic ? 'Live app available' : 'Repository only'
+      }}</span>
+    </div>
+
+    <div class="portfolio-copy">
+      <p class="portfolio-summary">{{ project.summary }}</p>
+      <p class="portfolio-proof">{{ project.proof }}</p>
+    </div>
+
+    <div class="portfolio-actions">
+      @if (project.liveHref) {
+      <a class="portfolio-link primary" [href]="project.liveHref">Open app</a>
+      }
+      <a class="portfolio-link secondary" [href]="project.repoHref"
+        >View repository</a
+      >
+    </div>
+  </otui-card>
   }
 </div>

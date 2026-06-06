@@ -1,10 +1,17 @@
-import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
+import {
+  Injectable,
+  PLATFORM_ID,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import {
   BrandProfile,
   CampaignConcept,
   GenerationRequest,
   MarketingWorkspace,
+  MarketingWorkspaceStatus,
   MarketingWorkspaceVersion,
 } from '../types';
 
@@ -50,11 +57,27 @@ export class MarketingStateService {
   private readonly conceptsKey = 'signal-foundry-concepts';
   private readonly workspacesKey = 'signal-foundry-workspaces';
   private readonly currentWorkspaceKey = 'signal-foundry-current-workspace';
+  private readonly lastSavedAtKey = 'signal-foundry-last-saved-at';
 
   readonly request = signal<GenerationRequest>(this.readRequest());
   readonly concepts = signal<CampaignConcept[]>(this.readConcepts());
   readonly workspaces = signal<MarketingWorkspace[]>(this.readWorkspaces());
   readonly currentWorkspaceId = signal<string>(this.readCurrentWorkspaceId());
+  readonly lastSavedAt = signal<string>(this.readLastSavedAt());
+  readonly workspaceStatus = computed<MarketingWorkspaceStatus>(() => {
+    const current = this.currentWorkspace();
+
+    return {
+      storageLabel: this.isBrowser()
+        ? 'Browser storage only'
+        : 'Server render preview',
+      currentWorkspaceName: current?.name || 'Current Workspace',
+      workspaceCount: this.workspaces().length,
+      currentVersionCount: current?.versions.length || 0,
+      conceptCount: current?.concepts.length ?? this.concepts().length,
+      lastSavedAt: this.lastSavedAt(),
+    };
+  });
 
   constructor() {
     if (this.workspaces().length === 0) {
@@ -424,7 +447,10 @@ export class MarketingStateService {
       return;
     }
 
+    const savedAt = new Date().toISOString();
+    this.lastSavedAt.set(savedAt);
     localStorage.setItem(key, JSON.stringify(value));
+    localStorage.setItem(this.lastSavedAtKey, JSON.stringify(savedAt));
   }
 
   private readStoredValue<T>(key: string, fallback: T): T {
@@ -452,5 +478,22 @@ export class MarketingStateService {
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  private readLastSavedAt(): string {
+    if (!this.isBrowser()) {
+      return '';
+    }
+
+    const value = localStorage.getItem(this.lastSavedAtKey);
+    if (!value) {
+      return '';
+    }
+
+    try {
+      return JSON.parse(value) as string;
+    } catch {
+      return value;
+    }
   }
 }

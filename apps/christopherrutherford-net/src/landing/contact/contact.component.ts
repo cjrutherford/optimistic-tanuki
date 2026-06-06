@@ -15,9 +15,9 @@ export class ContactComponent {
   private contactService = inject(ContactService);
 
   subjects = [
-    { value: 'general', label: 'General Inquiry' },
-    { value: 'support', label: 'Support' },
-    { value: 'feedback', label: 'Feedback' },
+    { value: 'project', label: 'Project Inquiry' },
+    { value: 'consulting', label: 'Consulting' },
+    { value: 'collaboration', label: 'Collaboration' },
     { value: 'other', label: 'Other' },
   ];
 
