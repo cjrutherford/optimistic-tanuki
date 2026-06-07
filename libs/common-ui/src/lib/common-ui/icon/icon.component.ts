@@ -69,6 +69,8 @@ export type IconName =
   | 'route'
   | 'view-quilt'
   | 'language'
+  | 'code'
+  | 'external-link'
   | 'settings-applications';
 
 @Component({

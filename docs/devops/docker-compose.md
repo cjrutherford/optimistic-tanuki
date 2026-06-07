@@ -24,17 +24,26 @@ That means adding a new deployable app usually requires coordinated changes acro
 Use this when you need the integrated platform running inside Docker.
 
 ```bash
+pnpm run docker:dev:bootstrap
 pnpm run docker:dev
 pnpm run watch:build
 ```
 
-What `docker:dev` actually does:
+What `docker:dev:bootstrap` actually does:
 
 - runs `build:docker:dev`
 - builds the dev images with `docker:build:dev`
 - starts the stack with `docker:dev:up`, which uses `scripts/docker-start-phased.sh`
+- seeds the shared local data with `docker:dev:seed`
 
-The first run is still intentionally slower than a local single-app loop because it builds a large Nx project set, builds Docker images, and starts the stack in phases.
+What `docker:dev` actually does:
+
+- asks the Docker planner which compose-backed app builds changed
+- runs a targeted Nx development build for that app set
+- rebuilds only changed Docker services with `docker:build:dev`
+- restarts only changed services and dependents through `docker:dev:up`
+
+The first run is still intentionally slower than a local single-app loop because `docker:dev:bootstrap` builds a large Nx project set, builds Docker images, starts the stack in phases, and seeds shared data.
 
 Follow-up runs are now cheaper than the original workflow because the Docker build step keeps a repo-local service state file and only rebuilds services whose Compose definition or Docker build inputs changed. The phased startup script then prefers an incremental restart path for the changed service set instead of always replaying the full stack startup.
 
@@ -42,6 +51,7 @@ Common commands:
 
 ```bash
 pnpm run docker:dev:bootstrap
+pnpm run docker:dev
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 pnpm run docker:dev:down
@@ -60,8 +70,8 @@ The root Compose workflow now has a planner-backed rebuild path:
 That means the normal local flow is now:
 
 ```text
-first run -> build everything needed -> phased startup
-later run -> rebuild changed services only -> restart affected containers only
+first run -> docker:dev:bootstrap -> build everything needed -> phased startup -> seed
+later run -> docker:dev -> rebuild changed app dist + changed services only -> restart affected containers only
 ```
 
 Escape hatches:

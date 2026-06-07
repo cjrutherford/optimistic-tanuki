@@ -118,6 +118,35 @@ GOCACHE=/tmp/go-build go run ./cmd/registry generate \
   --output ../../libs/app-registry/src/lib/default-registry.json
 ```
 
+### Local Dev Rebuild And Reload
+
+For the development Docker stack, use the Go tool as the primary rebuild path,
+then restart `gateway` so the mounted registry file is re-read:
+
+```bash
+cd tools/registry
+go run ./cmd/registry validate
+go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
+docker compose -f ../../docker-compose.yaml -f ../../docker-compose.dev.yaml restart gateway
+```
+
+If your local Go cache needs a writable temp location:
+
+```bash
+cd tools/registry
+GOCACHE=/tmp/go-build GOPATH=/tmp/go GOMODCACHE=/tmp/go/pkg/mod \
+  go run ./cmd/registry validate
+GOCACHE=/tmp/go-build GOPATH=/tmp/go GOMODCACHE=/tmp/go/pkg/mod \
+  go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
+docker compose -f ../../docker-compose.yaml -f ../../docker-compose.dev.yaml restart gateway
+```
+
 ### Edit The Source Registry
 
 ```bash
@@ -144,6 +173,13 @@ platform:
 cd tools/registry
 go run ./cmd/registry generate \
   --output ../../libs/app-registry/src/lib/default-registry.json
+```
+
+Sync the backend seed copy from the generated file:
+
+```bash
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
 ```
 
 That generated file is consumed in two layers:

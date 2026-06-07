@@ -22,6 +22,37 @@ cd tools/registry
 The CLI now resolves the default input path correctly from either the repo root
 or `tools/registry`, but running it here keeps the commands shorter.
 
+## Recommended Dev Workflow
+
+After editing
+[apps.yaml](/home/cjrutherford/workspace/optimistic-tanuki/tools/registry/apps.yaml),
+rebuild the registry with the Go CLI, sync the backend seed copy, then restart
+the local gateway so the mounted file is re-read.
+
+```bash
+cd tools/registry
+go run ./cmd/registry validate
+go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
+docker compose -f ../../docker-compose.yaml -f ../../docker-compose.dev.yaml restart gateway
+```
+
+If your local Go cache needs to stay under `/tmp`, use:
+
+```bash
+cd tools/registry
+GOCACHE=/tmp/go-build GOPATH=/tmp/go GOMODCACHE=/tmp/go/pkg/mod \
+  go run ./cmd/registry validate
+GOCACHE=/tmp/go-build GOPATH=/tmp/go GOMODCACHE=/tmp/go/pkg/mod \
+  go run ./cmd/registry generate \
+  --output ../../libs/app-registry/src/lib/default-registry.json
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
+docker compose -f ../../docker-compose.yaml -f ../../docker-compose.dev.yaml restart gateway
+```
+
 ## Generate
 
 Write the generated registry into the Angular fallback file:
@@ -78,19 +109,29 @@ go run ./cmd/registry export
 
 After regenerating the JSON:
 
-1. Commit the updated source and generated file:
+1. Sync the backend seed copy if you have not already:
 
 ```bash
-git add apps.yaml ../../libs/app-registry/src/lib/default-registry.json
+cp ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
 ```
 
-2. For local Docker runs, restart `gateway` so it remounts the updated file:
+2. Commit the updated source and generated files:
+
+```bash
+git add \
+  apps.yaml \
+  ../../libs/app-registry/src/lib/default-registry.json \
+  ../../libs/app-registry-backend/src/lib/default-registry.json
+```
+
+3. For local Docker runs, restart `gateway` so it remounts the updated file:
 
 ```bash
 docker compose -f ../../docker-compose.yaml -f ../../docker-compose.dev.yaml restart gateway
 ```
 
-3. For Kubernetes, also sync the generated file into the K8s config source:
+4. For Kubernetes, also sync the generated file into the K8s config source:
 
 ```bash
 cp ../../libs/app-registry/src/lib/default-registry.json ../../k8s/base/config/app-registry.json

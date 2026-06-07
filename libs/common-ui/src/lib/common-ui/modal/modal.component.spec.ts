@@ -1,4 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  ComponentFixture,
+  TestBed,
+  fakeAsync,
+  tick,
+} from '@angular/core/testing';
+import { SimpleChange } from '@angular/core';
 import { ModalComponent } from './modal.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 
@@ -6,6 +12,11 @@ describe('ModalComponent', () => {
   let component: ModalComponent;
   let fixture: ComponentFixture<ModalComponent>;
   let themeService: ThemeService;
+
+  // jsdom does not implement window.scrollTo; the scroll-lock teardown calls it.
+  beforeAll(() => {
+    jest.spyOn(window, 'scrollTo').mockImplementation(() => undefined);
+  });
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -137,4 +148,67 @@ describe('ModalComponent', () => {
     fixture.detectChanges();
     expect(component.position).toBe('sidebar-left');
   });
+
+  it('ignores the first [visible] change (handled by ngAfterViewInit)', () => {
+    const onOpen = jest.spyOn(
+      component as unknown as { onModalOpen: () => void },
+      'onModalOpen'
+    );
+
+    component.visible = true;
+    component.ngOnChanges({
+      visible: new SimpleChange(undefined, true, true),
+    });
+
+    expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it('opens, traps focus, and locks scroll when shown via the [visible] input', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0); // run the deferred onModalOpen
+    tick(100); // run the deferred focus move
+
+    expect(document.body.style.position).toBe('fixed');
+    expect(document.activeElement).not.toBe(trigger);
+
+    document.body.removeChild(trigger);
+
+    // Restore body styles to avoid leaking scroll-lock into sibling tests.
+    component.visible = false;
+    component.ngOnChanges({
+      visible: new SimpleChange(true, false, false),
+    });
+  }));
+
+  it('restores focus and unlocks scroll when hidden via the [visible] input', fakeAsync(() => {
+    const trigger = document.createElement('button');
+    document.body.appendChild(trigger);
+    trigger.focus();
+
+    component.visible = true;
+    fixture.detectChanges();
+    component.ngOnChanges({
+      visible: new SimpleChange(false, true, false),
+    });
+    tick(0);
+    tick(100);
+
+    component.visible = false;
+    component.ngOnChanges({
+      visible: new SimpleChange(true, false, false),
+    });
+
+    expect(document.activeElement).toBe(trigger);
+    expect(document.body.style.position).toBe('');
+
+    document.body.removeChild(trigger);
+  }));
 });

@@ -58,17 +58,71 @@
       } @if (activeTab === 'directory') {
       <div class="directory-grid">
         @for (app of appLinks$ | async; track app.appId) {
-        <a
-          class="directory-card"
-          [href]="app.resolvedHref"
-          data-testid="hai-app-link"
-        >
-          <span class="directory-name">{{ app.name }}</span>
-          <span class="directory-tagline">{{ app.tagline }}</span>
-          <span class="directory-link-state">{{
-            app.isPublic ? 'Open app' : 'View repository'
-          }}</span>
-        </a>
+        <article class="directory-card" data-testid="hai-app-card">
+          <header class="directory-head">
+            <span class="directory-icon" aria-hidden="true">
+              @if (app.logoSrc) {
+              <img [src]="app.logoSrc" [alt]="" />
+              } @else {
+              <otui-icon
+                name="extension"
+                [size]="22"
+                stroke="currentColor"
+              ></otui-icon>
+              }
+            </span>
+            <span class="directory-heading-copy">
+              <span class="directory-name">{{ app.name }}</span>
+              <span class="directory-category">{{ app.category }}</span>
+            </span>
+            <span
+              class="directory-status"
+              [class.is-live]="app.isPublic"
+              [attr.data-state]="app.isPublic ? 'running' : 'repository'"
+            >
+              {{ app.isPublic ? 'Live' : 'Repository' }}
+            </span>
+          </header>
+
+          <p class="directory-tagline">{{ app.tagline }}</p>
+
+          <div class="directory-actions">
+            @if (app.runUrl) {
+            <a
+              class="directory-link directory-link-primary"
+              [href]="app.runUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="hai-app-run-link"
+              [attr.aria-label]="'Open ' + app.name + ' (opens in a new tab)'"
+            >
+              <otui-icon
+                name="external-link"
+                [size]="16"
+                stroke="currentColor"
+              ></otui-icon>
+              <span>Open app</span>
+            </a>
+            }
+            <a
+              class="directory-link directory-link-secondary"
+              [href]="app.repositoryUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="hai-app-repo-link"
+              [attr.aria-label]="
+                'View the ' + app.name + ' repository (opens in a new tab)'
+              "
+            >
+              <otui-icon
+                name="code"
+                [size]="16"
+                stroke="currentColor"
+              ></otui-icon>
+              <span>View repository</span>
+            </a>
+          </div>
+        </article>
         }
       </div>
       }

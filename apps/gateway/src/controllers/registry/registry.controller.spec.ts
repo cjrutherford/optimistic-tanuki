@@ -143,6 +143,20 @@ describe('RegistryController', () => {
         },
       })
     ).toThrow(BadRequestException);
+
+    expect(() =>
+      controller.updateApps({
+        registry: {
+          ...DEFAULT_APP_REGISTRY,
+          apps: [
+            {
+              ...DEFAULT_APP_REGISTRY.apps[0],
+              iconUrl: '/assets/logo.png',
+            },
+          ],
+        },
+      })
+    ).toThrow(BadRequestException);
   });
 
   it('does not mutate the passed in navigation link array', () => {

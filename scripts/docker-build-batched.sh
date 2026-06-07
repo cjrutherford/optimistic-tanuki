@@ -80,32 +80,7 @@ if [ "$FORCE_ALL" -eq 1 ]; then
     PLAN_ARGS+=(--force-all)
 fi
 
-SAVE_ARGS=(
-    scripts/docker-plan-services.mjs
-    --workspace-root
-    "$PWD"
-    --compose-file
-    "$COMPOSE_FILE"
-    --state-file
-    "$STATE_FILE"
-    --write-plan
-    "$PLAN_FILE"
-    --save-state
-)
-
-if [ "$FORCE_ALL" -eq 1 ]; then
-    SAVE_ARGS+=(--force-all)
-fi
-
 node "${PLAN_ARGS[@]}" >/dev/null
-
-SERVICES=$(node -e '
-const fs = require("fs");
-const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-for (const service of plan.buildServices || []) {
-  console.log(service);
-}
-' "$PLAN_FILE")
 
 if [ -n "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     BAKE_FILE="$DOCKER_BUILD_BAKE_FILE"
@@ -123,12 +98,89 @@ if [ -z "${DOCKER_BUILD_BAKE_FILE:-}" ]; then
     docker compose "${COMPOSE_FLAGS[@]}" build --print > "$BAKE_FILE"
 fi
 
+MISSING_IMAGE_SERVICES=$(node - <<'NODE' "$PLAN_FILE" "$BAKE_FILE"
+const fs = require('fs');
+const { execFileSync } = require('child_process');
+
+const planFile = process.argv[2];
+const bakeFile = process.argv[3];
+const plan = JSON.parse(fs.readFileSync(planFile, 'utf8'));
+const bake = JSON.parse(fs.readFileSync(bakeFile, 'utf8'));
+
+function imageExists(tag) {
+  try {
+    execFileSync('docker', ['image', 'inspect', tag], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const missingServices = [];
+const buildServices = new Set(plan.buildServices || []);
+const buildApps = new Set(plan.buildApps || []);
+const restartServices = new Set(plan.restartServices || []);
+plan.reasons ||= {};
+
+for (const [serviceName, target] of Object.entries(bake.target || {})) {
+  if (serviceName === 'db-setup' || serviceName.endsWith('-seed')) {
+    continue;
+  }
+
+  if (!plan.services?.[serviceName]) {
+    continue;
+  }
+
+  const tags = Array.isArray(target.tags) ? target.tags.filter(Boolean) : [];
+  const hasLocalImage = tags.length > 0 && tags.some((tag) => imageExists(tag));
+  if (hasLocalImage) {
+    continue;
+  }
+
+  if (!buildServices.has(serviceName)) {
+    missingServices.push(serviceName);
+  }
+
+  buildServices.add(serviceName);
+  restartServices.add(serviceName);
+  if (plan.services[serviceName].appId) {
+    buildApps.add(plan.services[serviceName].appId);
+  }
+  plan.reasons[serviceName] = 'missing-local-image';
+}
+
+plan.buildServices = [...buildServices].sort();
+plan.buildApps = [...buildApps].sort();
+plan.restartServices = [...restartServices].sort();
+
+fs.writeFileSync(planFile, JSON.stringify(plan, null, 2));
+process.stdout.write(`${missingServices.join('\n')}\n`);
+NODE
+)
+
+SERVICES=$(node -e '
+const fs = require("fs");
+const plan = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+for (const service of plan.buildServices || []) {
+  console.log(service);
+}
+' "$PLAN_FILE")
+
 run_bake() {
     if [ "$DRY_RUN" -eq 1 ]; then
         echo "DRY RUN: docker buildx bake -f $BAKE_FILE $*"
     else
         docker buildx bake -f "$BAKE_FILE" "$@"
     fi
+}
+
+save_state_from_plan() {
+    node - <<'NODE' "$PLAN_FILE" "$STATE_FILE"
+const fs = require('fs');
+const plan = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+fs.mkdirSync(require('path').dirname(process.argv[3]), { recursive: true });
+fs.writeFileSync(process.argv[3], JSON.stringify(plan.state, null, 2));
+NODE
 }
 
 if node -e '
@@ -141,9 +193,15 @@ process.exit(Object.prototype.hasOwnProperty.call(bake.target ?? {}, "db-setup")
     echo ""
 fi
 
+if [ -n "$MISSING_IMAGE_SERVICES" ]; then
+    echo "Missing local images detected:"
+    printf '%s\n' "$MISSING_IMAGE_SERVICES"
+    echo ""
+fi
+
 if [ -z "$SERVICES" ]; then
     echo "No changed services to build for $COMPOSE_FILE"
-    node "${SAVE_ARGS[@]}" >/dev/null
+    save_state_from_plan
     exit 0
 fi
 
@@ -178,4 +236,4 @@ fi
 
 echo "=== Build complete ==="
 
-node "${SAVE_ARGS[@]}" >/dev/null
+save_state_from_plan

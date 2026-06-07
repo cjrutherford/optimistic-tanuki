@@ -27,6 +27,7 @@ describe('RegistryManagementComponent', () => {
                 domain: 'haidev.com',
                 uiBaseUrl: 'https://haidev.com',
                 apiBaseUrl: 'https://api.haidev.com',
+                iconUrl: 'https://haidev.com/assets/logo.png',
                 appType: 'client',
                 visibility: 'public',
               },
@@ -37,6 +38,7 @@ describe('RegistryManagementComponent', () => {
                 subdomain: 'store',
                 uiBaseUrl: 'https://store.haidev.com',
                 apiBaseUrl: 'https://api.haidev.com',
+                iconUrl: 'https://store.haidev.com/assets/store-icon.png',
                 appType: 'client',
                 visibility: 'public',
               },
@@ -114,6 +116,20 @@ describe('RegistryManagementComponent', () => {
 
     expect(component.validationErrors).toContain(
       'hai UI host must match haidev.com.'
+    );
+    expect(registryService.updateRegistry).not.toHaveBeenCalled();
+  });
+
+  it('blocks save when the icon url is not absolute', () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance;
+    component.registry.apps[0].iconUrl = '/assets/logo.png';
+    component.saveRegistry();
+
+    expect(component.validationErrors).toContain(
+      'hai icon URL must be absolute.'
     );
     expect(registryService.updateRegistry).not.toHaveBeenCalled();
   });
