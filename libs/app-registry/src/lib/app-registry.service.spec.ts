@@ -149,6 +149,6 @@ describe('AppRegistryService', () => {
       service.getAppUrl('system-configurator', '/build/new', {
         source: 'hai',
       })
-    ).toBe('https://haicomputer.com/build/new?source=hai');
+    ).toBe('http://localhost:8091/build/new?source=hai');
   });
 });

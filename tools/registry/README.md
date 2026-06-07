@@ -1,12 +1,12 @@
 # Registry Tool
 
 This Go tool generates the platform application registry JSON from
-[apps.yaml](/home/cjrutherford/workspace/optimistic-tanuki/tools/registry/apps.yaml).
+[apps.yaml](apps.yaml).
 
 The generated JSON is used in two places:
 
 - Angular apps consume
-  [libs/app-registry/src/lib/default-registry.json](/home/cjrutherford/workspace/optimistic-tanuki/libs/app-registry/src/lib/default-registry.json)
+  [libs/app-registry/src/lib/default-registry.json](../../libs/app-registry/src/lib/default-registry.json)
   as the build-time fallback registry.
 - Gateway mounts that same JSON at runtime through `APP_REGISTRY_PATH` in
   `docker-compose*.yaml`.
@@ -25,7 +25,7 @@ or `tools/registry`, but running it here keeps the commands shorter.
 ## Recommended Dev Workflow
 
 After editing
-[apps.yaml](/home/cjrutherford/workspace/optimistic-tanuki/tools/registry/apps.yaml),
+[apps.yaml](apps.yaml),
 rebuild the registry with the Go CLI, sync the backend seed copy, then restart
 the local gateway so the mounted file is re-read.
 
