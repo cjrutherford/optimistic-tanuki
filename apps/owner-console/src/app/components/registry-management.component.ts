@@ -115,6 +115,10 @@ import {
                 (ngModelChange)="validate()"
               />
             </label>
+            <label class="wide">
+              Icon URL
+              <input [(ngModel)]="app.iconUrl" (ngModelChange)="validate()" />
+            </label>
             <label>
               Type
               <select [(ngModel)]="app.appType">
@@ -523,6 +527,7 @@ export class RegistryManagementComponent implements OnInit {
         domain: 'haidev.com',
         uiBaseUrl: `https://new-app-${nextIndex}.haidev.com`,
         apiBaseUrl: 'https://api.haidev.com',
+        iconUrl: 'https://new-app.example.com/favicon.ico',
         appType: 'client',
         visibility: 'internal',
         sortOrder: nextIndex,
@@ -679,6 +684,17 @@ export class RegistryManagementComponent implements OnInit {
       new URL(app.apiBaseUrl);
     } catch {
       return `${app.appId} API base URL must be absolute.`;
+    }
+
+    if (app.iconUrl) {
+      try {
+        const iconUrl = new URL(app.iconUrl);
+        if (!['http:', 'https:'].includes(iconUrl.protocol)) {
+          return `${app.appId} icon URL must use http or https.`;
+        }
+      } catch {
+        return `${app.appId} icon URL must be absolute.`;
+      }
     }
 
     return '';

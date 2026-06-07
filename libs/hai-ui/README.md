@@ -26,7 +26,7 @@ The library exports:
 
 - Angular peer dependencies: `@angular/common` and `@angular/core`
 - the about components depend on `@optimistic-tanuki/common-ui`
-- `HaiAppDirectoryService` calls `/api/app-config` and resolves public app links with a repository fallback
+- `HaiAppDirectoryService` calls `/api/registry/apps` and resolves public app links and icon URLs with a repository fallback
 - the modal requires a `HaiAboutConfig` input and emits `close`
 
 ## Nx Commands

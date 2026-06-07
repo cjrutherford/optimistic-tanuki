@@ -24,7 +24,7 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://social.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/client-interface',
-                  logoSrc: '/optimistic-tanuki/assets/tanuki.svg',
+                  logoSrc: 'https://social.example.com/assets/tanuki.svg',
                   isPublic: true,
                 },
                 {
@@ -35,7 +35,7 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://towne.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/local-hub',
-                  logoSrc: '/towne-square/assets/ts.png',
+                  logoSrc: 'https://towne.example.com/assets/ts.png',
                   isPublic: true,
                 },
                 {
@@ -46,7 +46,8 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://forge.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/forgeofwill',
-                  logoSrc: '/forge-of-will/android-chrome-192x192.png',
+                  logoSrc:
+                    'https://forge.example.com/android-chrome-192x192.png',
                   isPublic: true,
                 },
                 {
@@ -57,7 +58,8 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://finance.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/fin-commander',
-                  logoSrc: '/fin-commander/images/fin-commander-icon.png',
+                  logoSrc:
+                    'https://finance.example.com/images/fin-commander-icon.png',
                   isPublic: true,
                 },
                 {
@@ -69,7 +71,7 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://opportunities.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/leads-app',
-                  logoSrc: '/opportunity-compass/favicon.ico',
+                  logoSrc: 'https://opportunities.example.com/favicon.ico',
                   isPublic: true,
                 },
                 {
@@ -80,7 +82,7 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://developer.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/developer-portal',
-                  logoSrc: '/developer-portal/favicon.ico',
+                  logoSrc: 'https://developer.example.com/favicon.ico',
                   isPublic: true,
                 },
                 {
@@ -91,7 +93,7 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://store.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/store-client',
-                  logoSrc: '/store/assets/store-icon.png',
+                  logoSrc: 'https://store.example.com/assets/store-icon.png',
                   isPublic: true,
                 },
                 {
@@ -102,7 +104,8 @@ describe('ProjectGridComponent', () => {
                   resolvedHref: 'https://video.example.com',
                   repositoryUrl:
                     'https://github.com/cjrutherford/optimistic-tanuki/tree/main/apps/video-client',
-                  logoSrc: '/video-platform/android-chrome-192x192.png',
+                  logoSrc:
+                    'https://video.example.com/android-chrome-192x192.png',
                   isPublic: true,
                 },
               ])

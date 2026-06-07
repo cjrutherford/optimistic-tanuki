@@ -1,3 +1,4 @@
+import { AppRegistration } from '@optimistic-tanuki/app-registry-backend';
 import { HaiAppLink } from './hai-app.config';
 
 const REPOSITORY_ROOT =
@@ -12,14 +13,20 @@ export interface HaiRegistryApp extends HaiAppLink {
 }
 
 export interface HaiResolvedAppLink extends HaiRegistryApp {
+  /**
+   * Primary destination for the card. Resolves to the running application URL
+   * when one is published, otherwise falls back to the repository URL.
+   * Retained for backward compatibility with single-link consumers.
+   */
   resolvedHref: string;
+  /** True when a public running application URL is available. */
   isPublic: boolean;
-}
-
-export interface HaiAppConfigLinkSource {
-  name: string;
-  domain?: string;
-  active?: boolean;
+  /**
+   * The running/preview application URL, present only when the app is publicly
+   * reachable. App cards should render this as the "Open app" link. When
+   * undefined, only the repository link should be shown.
+   */
+  runUrl?: string;
 }
 
 export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
@@ -33,7 +40,6 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     category: 'Social Platform',
     appPath: 'client-interface',
     repositoryUrl: `${REPOSITORY_ROOT}/client-interface`,
-    logoSrc: '/optimistic-tanuki/assets/tanuki.svg',
     portfolioSummary:
       'A resume-building social platform project where I built social media, messaging, identity, profile, and utility workflows across a larger microservice-oriented product surface.',
   },
@@ -46,7 +52,6 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     category: 'Local Community',
     appPath: 'local-hub',
     repositoryUrl: `${REPOSITORY_ROOT}/local-hub`,
-    logoSrc: '/towne-square/assets/ts.png',
     portfolioSummary:
       'A local-first community product that combines neighborhood social media, classifieds, business listings, commerce, and community discovery into one civic software project.',
   },
@@ -59,7 +64,6 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     category: 'Planning',
     appPath: 'forgeofwill',
     repositoryUrl: `${REPOSITORY_ROOT}/forgeofwill`,
-    logoSrc: '/forge-of-will/android-chrome-192x192.png',
     portfolioSummary:
       'A personal project planning tool where I explored task planning, journals, risk/change tracking, and intentional workflow design for focused personal execution.',
   },
@@ -72,20 +76,18 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     category: 'Finance',
     appPath: 'fin-commander',
     repositoryUrl: `${REPOSITORY_ROOT}/fin-commander`,
-    logoSrc: '/fin-commander/images/fin-commander-icon.png',
     portfolioSummary:
       'A small personal finance manager focused on making accounts, transactions, imports, and financial navigation understandable without enterprise-scale overhead.',
   },
   {
     appId: 'opportunity-compass',
-    configName: 'leads-app',
+    configName: 'opportunity-compass',
     name: 'Opportunity Compass',
     tagline: 'Opportunity discovery from interests, locality, and skills.',
     href: '/opportunity-compass',
     category: 'Discovery',
     appPath: 'leads-app',
     repositoryUrl: `${REPOSITORY_ROOT}/leads-app`,
-    logoSrc: '/opportunity-compass/favicon.ico',
     portfolioSummary:
       'An opportunity discovery tool that helps users turn interests, location, skills, and onboarding context into potential leads, prospects, and next-step opportunities.',
   },
@@ -98,71 +100,66 @@ export const HAI_APP_DIRECTORY: HaiRegistryApp[] = [
     category: 'Developer Experience',
     appPath: 'developer-portal',
     repositoryUrl: `${REPOSITORY_ROOT}/developer-portal`,
-    logoSrc: '/developer-portal/favicon.ico',
     portfolioSummary:
       'A developer-facing portal focused on SDK discovery, API orientation, onboarding, and helping external users get productive with the platform quickly.',
   },
   {
     appId: 'store-client',
-    configName: 'store-client',
+    configName: 'store',
     name: 'Store',
     tagline: 'Bookings, donations, and storefront flows.',
     href: '/store',
     category: 'Commerce',
     appPath: 'store-client',
     repositoryUrl: `${REPOSITORY_ROOT}/store-client`,
-    logoSrc: '/store/assets/store-icon.png',
     portfolioSummary:
       'A commerce shell for bookings, donations, purchases, and other transaction-driven customer workflows that need a clear path from browse to conversion.',
   },
   {
     appId: 'video-platform',
-    configName: 'video-client',
+    configName: 'video-platform',
     name: 'Video Platform',
     tagline: 'Share and discover video content with communities.',
     href: '/video-platform',
     category: 'Media',
     appPath: 'video-client',
     repositoryUrl: `${REPOSITORY_ROOT}/video-client`,
-    logoSrc: '/video-platform/android-chrome-192x192.png',
     portfolioSummary:
       'A video platform spanning upload, playback, visibility, and channel workflows, with product concerns across both creator tooling and audience-facing experiences.',
   },
 ];
 
 export function getHaiAppLinks(currentAppId?: string): HaiAppLink[] {
-  return HAI_APP_DIRECTORY.filter((app) => app.appId !== currentAppId);
+  return HAI_APP_DIRECTORY.filter((app) => !isCurrentHaiApp(app, currentAppId));
 }
 
 export function resolveHaiAppLinks(
-  appConfigs: HaiAppConfigLinkSource[],
+  apps: AppRegistration[],
   currentAppId?: string
 ): HaiResolvedAppLink[] {
-  return HAI_APP_DIRECTORY.filter((app) => app.appId !== currentAppId).map(
-    (app) => {
-      const matchingConfig = appConfigs.find(
-        (config) => config.name === app.configName
-      );
-      const domain = normalizeDomain(matchingConfig?.domain);
-      const isPublic = matchingConfig?.active === true && !!domain;
+  return HAI_APP_DIRECTORY.filter(
+    (app) => !isCurrentHaiApp(app, currentAppId)
+  ).map((app) => {
+    const matchingApp = apps.find(
+      (registryApp) => registryApp.appId === app.configName
+    );
+    const runUrl = matchingApp?.uiBaseUrl || undefined;
+    const isPublic = !!runUrl;
+    const resolvedHref = runUrl ?? app.repositoryUrl;
 
-      return {
-        ...app,
-        resolvedHref: isPublic ? domain : app.repositoryUrl,
-        isPublic,
-      };
-    }
-  );
+    return {
+      ...app,
+      logoSrc: matchingApp?.iconUrl,
+      resolvedHref,
+      isPublic,
+      runUrl,
+    };
+  });
 }
 
-function normalizeDomain(domain?: string): string {
-  if (!domain) {
-    return '';
-  }
-
-  if (/^https?:\/\//.test(domain)) {
-    return domain;
-  }
-
-  return `https://${domain}`;
+function isCurrentHaiApp(app: HaiRegistryApp, currentAppId?: string): boolean {
+  return (
+    !!currentAppId &&
+    (app.appId === currentAppId || app.configName === currentAppId)
+  );
 }

@@ -36,6 +36,7 @@ import { ProfileService } from './profile.service';
       </div>
       <div class="auth-panel">
         <lib-register-block
+          [heroSource]="'assets/compass-splash.png'"
           registerHeader="Create your Lead Command account"
           callToAction="Start with an account, then finish your leads profile flow."
           (submitEvent)="onSubmit($event)"

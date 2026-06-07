@@ -6,7 +6,9 @@ import {
   ElementRef,
   ViewChild,
   AfterViewInit,
+  OnChanges,
   OnDestroy,
+  SimpleChanges,
   Renderer2,
   HostListener,
   inject,
@@ -58,7 +60,10 @@ export type ModalPosition =
   styleUrls: ['./modal.component.scss'],
   host: {
     '[class.theme]': 'theme',
-    '[class.variant]': 'variant',
+    '[class.variant-default]': 'variant === "default"',
+    '[class.variant-glass]': 'variant === "glass"',
+    '[class.variant-gradient]': 'variant === "gradient"',
+    '[class.variant-bordered]': 'variant === "bordered"',
     '[class.size-sm]': 'size === "sm"',
     '[class.size-md]': 'size === "md"',
     '[class.size-lg]': 'size === "lg"',
@@ -80,7 +85,7 @@ export type ModalPosition =
 })
 export class ModalComponent
   extends Themeable
-  implements AfterViewInit, OnDestroy
+  implements AfterViewInit, OnChanges, OnDestroy
 {
   private renderer = inject(Renderer2);
 
@@ -193,6 +198,30 @@ export class ModalComponent
   ngAfterViewInit(): void {
     if (this.visible) {
       this.onModalOpen();
+    }
+  }
+
+  /**
+   * React to declarative visibility changes driven by the `[visible]` input.
+   *
+   * Many host components (e.g. the HAI about modal) toggle the modal purely
+   * through the `visible` input binding rather than the imperative
+   * `show()` / `hide()` methods. Without this hook the focus trap, scroll lock
+   * and return-focus behaviour would never engage for those modals. We only act
+   * on subsequent changes so the initial render is handled by ngAfterViewInit.
+   */
+  ngOnChanges(changes: SimpleChanges): void {
+    const visibleChange = changes['visible'];
+    if (!visibleChange || visibleChange.firstChange) {
+      return;
+    }
+
+    if (this.visible) {
+      // Defer so the dialog is rendered (the template is gated on `visible`)
+      // before we query focusable elements and move focus into the modal.
+      setTimeout(() => this.onModalOpen(), 0);
+    } else {
+      this.onModalClose();
     }
   }
 

@@ -273,6 +273,7 @@
 
 .modal-body {
   flex: 1;
+  background: var(--background, #ffffff);
   padding: 24px;
   overflow-y: auto;
   overflow-x: hidden;

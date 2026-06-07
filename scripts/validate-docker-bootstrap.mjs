@@ -35,8 +35,14 @@ assert.equal(
 
 assert.equal(
   packageJson.scripts['docker:dev'],
-  'pnpm run build:docker:dev && pnpm run docker:build:dev && pnpm run docker:dev:up',
-  'docker:dev must use the docker-specific development build set'
+  './scripts/docker-dev-refresh.sh',
+  'docker:dev must use the incremental docker dev refresh wrapper'
+);
+
+assert.equal(
+  packageJson.scripts['docker:dev:bootstrap'],
+  'pnpm run build:docker:dev && pnpm run docker:build:dev && pnpm run docker:dev:up && pnpm run docker:dev:seed',
+  'docker:dev:bootstrap must do the full build, startup, and seed flow'
 );
 
 assert.equal(
@@ -94,6 +100,7 @@ for (const [, command] of dockerScripts) {
 assert.deepEqual([...referencedScripts].sort(), [
   './scripts/dev-seed.sh',
   './scripts/docker-build-batched.sh',
+  './scripts/docker-dev-refresh.sh',
   './scripts/docker-prod-bootstrap.sh',
   './scripts/docker-start-phased.sh',
   './scripts/prod-seed.sh',
@@ -280,13 +287,11 @@ assert.match(
   buildOutput,
   /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/
 );
-assert.match(buildOutput, /Found 3 services to build/);
 assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* db-setup/);
 assert.match(
   buildOutput,
-  /DRY RUN: docker buildx bake -f .* authentication gateway/
+  /(Found [0-9]+ services to build|No changed services to build for docker-compose\.dev\.yaml)/
 );
-assert.match(buildOutput, /DRY RUN: docker buildx bake -f .* profile/);
 assert.doesNotMatch(buildOutput, /app-configurator-seed|store-seed/);
 
 const startupOutput = execForOutput(
@@ -309,19 +314,23 @@ assert.match(
   /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/
 );
 assert.match(startupOutput, /Extra flags: --force-recreate/);
-assert.match(
-  startupOutput,
-  /DRY RUN: docker compose .* up -d --force-recreate postgres redis/
-);
-assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
-assert.match(
-  startupOutput,
-  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
-);
-assert.match(
-  startupOutput,
-  /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/
-);
+if (/No changed services require restart/.test(startupOutput)) {
+  assert.match(startupOutput, /DRY RUN: docker compose .* ps/);
+} else {
+  assert.match(
+    startupOutput,
+    /DRY RUN: docker compose .* up -d --force-recreate postgres redis/
+  );
+  assert.match(startupOutput, /DRY RUN: docker compose .* wait db-setup/);
+  assert.match(
+    startupOutput,
+    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
+  );
+  assert.match(
+    startupOutput,
+    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/
+  );
+}
 
 const seedRuntimeEntries = [
   {

@@ -212,15 +212,15 @@ test('dev-seed.sh does not rely on docker compose run one-off containers', () =>
   assert.doesNotMatch(script, /docker compose .*\brun --rm\b/);
 });
 
-test('docker:dev includes seeding and docker:dev:bootstrap does not duplicate it', () => {
+test('docker:dev stays incremental while docker:dev:bootstrap owns seeding', () => {
   const packageJsonPath = path.join(repoRoot, 'package.json');
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-  assert.match(packageJson.scripts['docker:dev'], /docker:dev:seed/);
-  assert.doesNotMatch(
-    packageJson.scripts['docker:dev:bootstrap'],
-    /docker:dev:seed/
+  assert.equal(
+    packageJson.scripts['docker:dev'],
+    './scripts/docker-dev-refresh.sh'
   );
+  assert.match(packageJson.scripts['docker:dev:bootstrap'], /docker:dev:seed/);
 });
 
 test('dev-seed.sh refreshes videos before seeding it', () => {

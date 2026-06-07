@@ -14,12 +14,12 @@ Typical entry points:
 
 ```bash
 pnpm install
-pnpm run docker:dev
 pnpm run docker:dev:bootstrap
+pnpm run docker:dev
 pnpm run watch:build
 ```
 
-`docker:dev` is the phased full-stack startup path. `docker:dev:bootstrap` adds the shared seed step after startup.
+`docker:dev:bootstrap` is the first-run path: full development build, Docker build, phased startup, and shared seed data. `docker:dev` is the follow-up path that rebuilds and restarts only the changed app set.
 
 After startup, verify the environment with:
 

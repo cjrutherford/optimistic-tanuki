@@ -238,6 +238,9 @@ export class RegistryController {
       this.validateDomain(app);
       this.validateAppUrl(app.uiBaseUrl, app, 'uiBaseUrl');
       this.validateAbsoluteUrl(app.apiBaseUrl, `${app.appId} apiBaseUrl`);
+      if (app.iconUrl) {
+        this.validateAbsoluteUrl(app.iconUrl, `${app.appId} iconUrl`);
+      }
 
       if (appIds.has(app.appId)) {
         throw new BadRequestException(
