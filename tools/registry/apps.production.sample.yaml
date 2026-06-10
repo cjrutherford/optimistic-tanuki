@@ -6,7 +6,7 @@ apps:
   - appId: hai
     name: HAI Company Website
     domain: hopefulaspirationsindustries.com
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Company site and ecosystem entry point for Hopeful Aspirations Industries.
@@ -16,7 +16,7 @@ apps:
     name: HAI Computer
     domain: hopefulaspirationsindustries.com
     subdomain: computer
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Build-to-order personal cloud and homelab systems.
@@ -26,7 +26,7 @@ apps:
     name: Developer Portal
     domain: hopefulaspirationsindustries.com
     subdomain: dev
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Public developer-facing documentation and integration entry point.
@@ -35,7 +35,7 @@ apps:
   - appId: forgeofwill
     name: Forge of Will
     domain: forgeofwill.com
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://forgeofwill.com/api
     appType: client
     visibility: public
     description: Planning and execution workspace for goals, tasks, and projects.
@@ -44,7 +44,7 @@ apps:
   - appId: client-interface
     name: Optimistic Tanuki
     domain: optimistic-tanuki.com
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://optimistic-tanuki.com/api
     appType: client
     visibility: public
     description: Client-facing social and community interface for the broader platform.
@@ -54,16 +54,26 @@ apps:
     name: HAI Store
     domain: hopefulaspirationsindustries.com
     subdomain: store
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Public storefront for HAI products, services, and bookings.
     sortOrder: 6
 
+  - appId: opportunity-compass
+    name: Opportunity Compass
+    domain: christopherrutherford.net
+    subdomain: lead-tracker.experiments
+    apiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net/api
+    appType: client
+    visibility: public
+    description: small lead generation and followup workspace
+    sortOrder: 7
+
   - appId: christopherrutherford-net
     name: ChristopherRutherford.net
     domain: christopherrutherford.net
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://christopherrutherford.com/api
     appType: client
     visibility: internal
     description: Christopher Rutherford portfolio site; deployed but not actively advertised.
@@ -73,8 +83,38 @@ apps:
     name: Digital Homestead
     domain: christopherrutherford.net
     subdomain: digital-homestead
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://digital-homestead.christopherrutherford.net/api
     appType: client
     visibility: public
     description: Public publishing and homestead-oriented content experience.
     sortOrder: 51
+
+  - appId: fin-commander
+    name: Fin Commander
+    domain: christopherrutherford.net
+    subdomain: fin-commander.experiments
+    apiBaseUrl: https://fin-commander.experiments.christopherrutherford.net/api
+    appType: client
+    visibility: public
+    description: A Sharp financial planning tool.
+    sortOrder: 52
+
+  - appId: d6
+    name: Daily 6
+    domain: christopherrutherford.net
+    subdomain: d6
+    apiBaseUrl: https://d6.christopherrutherford.net/api
+    appType: client
+    visibility: public
+    description: Daily Reflections
+    sortOrder: 53
+
+  - appId: business-site
+    name: Business Shell
+    domain: christopherrutherford.net
+    subdomain: business.experiments
+    apiBaseUrl: https://business.experiments.christopherrutherford.net/api
+    appType: client
+    visibility: public
+    description: Self-configurable business site.
+    sortOrder: 54
