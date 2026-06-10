@@ -30,7 +30,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - /mnt/postgres_data/:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test:
         [

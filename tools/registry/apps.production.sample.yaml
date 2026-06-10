@@ -15,7 +15,7 @@ apps:
   - appId: system-configurator
     name: HAI Computer
     domain: hopefulaspirationsindustries.com
-    subDomain: computer
+    subdomain: computer
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -25,7 +25,7 @@ apps:
   - appId: developer-portal
     name: Developer Portal
     domain: hopefulaspirationsindustries.com
-    subDomain: dev
+    subdomain: dev
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -53,17 +53,17 @@ apps:
   - appId: store
     name: HAI Store
     domain: hopefulaspirationsindustries.com
-    subDomain: store
-    apiBaseUrl: https://hopefulaspirationsindustires.com/api
+    subdomain: store
+    apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Public storefront for HAI products, services, and bookings.
     sortOrder: 6
 
-  - appId: leads-app
+  - appId: opportunity-compass
     name: Opportunity Compass
     domain: christopherrutherford.net
-    subDomain: lead-tracker.experiments
+    subdomain: lead-tracker.experiments
     apiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
@@ -92,18 +92,18 @@ apps:
   - appId: fin-commander
     name: Fin Commander
     domain: christopherrutherford.net
-    subDomain: fin-commander.experiments
+    subdomain: fin-commander.experiments
     apiBaseUrl: https://fin-commander.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
     description: A Sharp financial planning tool.
     sortOrder: 52
 
-  - appId: D6
+  - appId: d6
     name: Daily 6
     domain: christopherrutherford.net
-    subDomain: d6
-    apiBaseUrl: https://d6.christopherrtuherford.net/api
+    subdomain: d6
+    apiBaseUrl: https://d6.christopherrutherford.net/api
     appType: client
     visibility: public
     description: Daily Reflections
@@ -112,7 +112,7 @@ apps:
   - appId: business-site
     name: Business Shell
     domain: christopherrutherford.net
-    subDomain: business.experiments
+    subdomain: business.experiments
     apiBaseUrl: https://business.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
