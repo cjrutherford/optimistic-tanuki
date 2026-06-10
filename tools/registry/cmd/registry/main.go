@@ -42,14 +42,17 @@ type outputRegistry struct {
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		if err.Error() != "" {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+		}
 		os.Exit(1)
 	}
 }
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: registry <generate|validate|add|remove|export>")
+		printUsage()
+		return errors.New("")
 	}
 
 	switch args[0] {
@@ -63,15 +66,42 @@ func run(args []string) error {
 		return remove(args[1:])
 	case "export":
 		return exportEnv(args[1:])
+	case "-help", "--help", "help":
+		printUsage()
+		return nil
 	default:
-		return fmt.Errorf("unknown command %q", args[0])
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", args[0])
+		printUsage()
+		return errors.New("")
 	}
+}
+
+func printUsage() {
+	fmt.Fprintf(os.Stderr, "Registry Tool\n\n")
+	fmt.Fprintf(os.Stderr, "Generates and manages the platform application registry from apps.yaml.\n\n")
+	fmt.Fprintf(os.Stderr, "Usage:\n")
+	fmt.Fprintf(os.Stderr, "  registry <command> [flags]\n\n")
+	fmt.Fprintf(os.Stderr, "Commands:\n")
+	fmt.Fprintf(os.Stderr, "  generate    Generate registry JSON from YAML\n")
+	fmt.Fprintf(os.Stderr, "  validate    Validate the registry YAML\n")
+	fmt.Fprintf(os.Stderr, "  add         Add a new app to the registry\n")
+	fmt.Fprintf(os.Stderr, "  remove      Remove an app from the registry\n")
+	fmt.Fprintf(os.Stderr, "  export      Export app URLs as environment variables\n\n")
+	fmt.Fprintf(os.Stderr, "Use \"registry <command> --help\" for more information about a command.\n")
 }
 
 func generate(args []string) error {
 	fs := flag.NewFlagSet("generate", flag.ContinueOnError)
 	input := fs.String("input", defaultInputPath(), "Input YAML file")
-	output := fs.String("output", "", "Output JSON file")
+	output := fs.String("output", "", "Output JSON file (prints to stdout if omitted)")
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Generate the application registry JSON from the source YAML.\n\n")
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  registry generate [flags]\n\n")
+		fmt.Fprintf(fs.Output(), "Flags:\n")
+		fs.PrintDefaults()
+	}
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -106,6 +136,14 @@ func generate(args []string) error {
 func validate(args []string) error {
 	fs := flag.NewFlagSet("validate", flag.ContinueOnError)
 	input := fs.String("input", defaultInputPath(), "Registry YAML file")
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Validate the registry YAML file structure and content.\n\n")
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  registry validate [flags]\n\n")
+		fmt.Fprintf(fs.Output(), "Flags:\n")
+		fs.PrintDefaults()
+	}
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -125,10 +163,22 @@ func add(args []string) error {
 	domain := fs.String("domain", "", "Domain")
 	subdomain := fs.String("subdomain", "", "Optional subdomain")
 	apiBaseURL := fs.String("apiBaseUrl", "https://api.haidev.com", "API base URL")
-	appType := fs.String("appType", "client", "Application type")
-	visibility := fs.String("visibility", "public", "Visibility")
+	appType := fs.String("appType", "client", "Application type (client|admin|user)")
+	visibility := fs.String("visibility", "public", "Visibility (public|internal)")
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Add a new application to the registry YAML.\n\n")
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  registry add [flags]\n\n")
+		fmt.Fprintf(fs.Output(), "Flags:\n")
+		fs.PrintDefaults()
+	}
 	if err := fs.Parse(args); err != nil {
 		return err
+	}
+
+	if *appID == "" {
+		return errors.New("--appId is required")
 	}
 
 	cfg, err := readConfig(*input)
@@ -154,6 +204,14 @@ func remove(args []string) error {
 	fs := flag.NewFlagSet("remove", flag.ContinueOnError)
 	input := fs.String("input", defaultInputPath(), "Registry YAML file")
 	appID := fs.String("appId", "", "Application ID")
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Remove an application from the registry YAML.\n\n")
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  registry remove [flags]\n\n")
+		fmt.Fprintf(fs.Output(), "Flags:\n")
+		fs.PrintDefaults()
+	}
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -179,6 +237,14 @@ func remove(args []string) error {
 func exportEnv(args []string) error {
 	fs := flag.NewFlagSet("export", flag.ContinueOnError)
 	input := fs.String("input", defaultInputPath(), "Input YAML file")
+	fs.SetOutput(os.Stderr)
+	fs.Usage = func() {
+		fmt.Fprintf(fs.Output(), "Export app URLs as environment variable lines.\n\n")
+		fmt.Fprintf(fs.Output(), "Usage:\n")
+		fmt.Fprintf(fs.Output(), "  registry export [flags]\n\n")
+		fmt.Fprintf(fs.Output(), "Flags:\n")
+		fs.PrintDefaults()
+	}
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
