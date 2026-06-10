@@ -10,6 +10,7 @@ apps:
     appType: client
     visibility: public
     description: Company site and ecosystem entry point for Hopeful Aspirations Industries.
+    iconUrl: https://hopefulaspirationsindustries.com/favicon.ico
     sortOrder: 1
 
   - appId: system-configurator
@@ -60,15 +61,40 @@ apps:
     description: Public storefront for HAI products, services, and bookings.
     sortOrder: 6
 
-  - appId: opportunity-compass
-    name: Opportunity Compass
-    domain: christopherrutherford.net
-    subdomain: lead-tracker.experiments
-    apiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net/api
+  - appId: local-hub
+    name: Towne Square
+    domain: towne-square.com
+    uiBaseUrl: https://towne-square.com
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
     appType: client
     visibility: public
-    description: small lead generation and followup workspace
+    description: Local-first community, classifieds, and business listings.
+    iconUrl: https://towne-square.com/favicon.ico
     sortOrder: 7
+
+  - appId: fin-commander
+    name: Fin Commander
+    domain: experiments.christopherrutherford.net
+    subdomain: fin-commander
+    uiBaseUrl: https://fin-commander.experiments.christopherrutherford.net
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Guided personal finance workflows for accounts, plans, and scenarios.
+    iconUrl: https://fin-commander.experiments.christopherrutherford.net/favicon.ico
+    sortOrder: 8
+
+  - appId: opportunity-compass
+    name: Opportunity Compass
+    domain: experiments.christopherrutherford.net
+    subdomain: leads-app
+    uiBaseUrl: https://leads-app.experiments.christopherrutherford.net
+    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    appType: client
+    visibility: public
+    description: Opportunity discovery from interests, locality, and skills.
+    iconUrl: https://leads-app.experiments.christopherrutherford.net/favicon.ico
+    sortOrder: 9
 
   - appId: christopherrutherford-net
     name: ChristopherRutherford.net
