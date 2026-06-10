@@ -21,10 +21,12 @@ services:
     image: postgres:17
     restart: always
     container_name: db # Changed back from ot_postgres
+    user: '1000:1000'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:

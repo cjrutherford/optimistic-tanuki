@@ -27,6 +27,6 @@ if [ -n "$COMPOSE_ENV_FILE" ]; then
 fi
 
 cd "$PROJECT_DIR"
-compose_cmd pull
+./scripts/batch-pull.sh
 compose_cmd up -d --force-recreate --no-build
 pnpm run docker:prod:seed
