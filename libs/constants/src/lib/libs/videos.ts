@@ -44,3 +44,7 @@ export const VideoCommands = {
   RECORD_VIDEO_VIEW: 'record-video-view',
   FIND_VIDEO_VIEWS: 'find-video-views',
 };
+
+export const VideoTelosCommands = {
+  GET_PROFILE_FACTS: 'videos-get-profile-facts',
+};

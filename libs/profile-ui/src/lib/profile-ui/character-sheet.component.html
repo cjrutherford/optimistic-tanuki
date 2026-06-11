@@ -1,0 +1,46 @@
+@if (enabled) { @if (!profileTelos || profileTelos.generationStatus ===
+'pending' || profileTelos.generationStatus === 'stale') {
+<section class="character-sheet character-sheet--pending">
+  <h2>{{ title }}</h2>
+  <p>{{ pendingCopy }}</p>
+</section>
+} @else if (profileTelos.generationStatus === 'failed') {
+<section class="character-sheet character-sheet--failed">
+  <h2>{{ title }}</h2>
+  <p>{{ failedCopy }}</p>
+</section>
+} @else {
+<section class="character-sheet">
+  <header class="character-sheet__header">
+    <div>
+      <p class="character-sheet__eyebrow">{{ eyebrow }}</p>
+      <h2>{{ displayClassLabel }}</h2>
+      <p>{{ displayArchetypeSummary }}</p>
+    </div>
+    <div class="character-sheet__level">
+      <span>{{ levelLabel }}</span>
+      <strong>{{ profileTelos.characterSheet.level }}</strong>
+    </div>
+  </header>
+
+  <div class="character-sheet__stats">
+    @for (stat of statLabels; track stat.key) {
+    <div class="character-sheet__stat">
+      <span>{{ stat.label }}</span>
+      <strong>{{ profileTelos.characterSheet.stats[stat.key] }}</strong>
+    </div>
+    }
+  </div>
+
+  <div class="character-sheet__copy">
+    <p>{{ profileTelos.overallProfileSummary }}</p>
+    @if (profileTelos.characterSheet.traits.length > 0) {
+    <div class="character-sheet__traits">
+      @for (trait of profileTelos.characterSheet.traits; track trait) {
+      <span>{{ trait }}</span>
+      }
+    </div>
+    }
+  </div>
+</section>
+} }

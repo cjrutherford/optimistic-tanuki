@@ -8,3 +8,4 @@ export { SitemapService } from './sitemap.service';
 export { SeoService } from './seo.service';
 export { SpamProtectionService } from './spam-protection.service';
 export { SanitizationService } from './sanitization.service';
+export { BlogTelosService } from './blog-telos.service';

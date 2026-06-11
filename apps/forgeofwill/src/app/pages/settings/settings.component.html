@@ -39,6 +39,12 @@
     <lib-theme-designer></lib-theme-designer>
   </div>
 
+  <lib-character-sheet
+    [enabled]="characterSheetEnabled()"
+    [skin]="characterSheetSkin()"
+    [profileTelos]="profileTelos()"
+  ></lib-character-sheet>
+
   <lib-profile-editor
     [open]="showProfileEditor"
     [profile]="profile()"

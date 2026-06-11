@@ -1,10 +1,20 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ProjectTelos } from '.';
+import {
+  ProfileCharacterSheetDto,
+  ProfileTelosSourceFactDto,
+} from '@optimistic-tanuki/models';
 
 @Entity()
 export class ProfileTelos {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Column({ unique: true })
+  profileId: string;
+
+  @Column({ nullable: true })
+  appScope: string | null;
 
   @Column()
   name: string;
@@ -38,4 +48,22 @@ export class ProfileTelos {
 
   @Column()
   overallProfileSummary: string;
+
+  @Column({ default: 'pending' })
+  generationStatus: 'pending' | 'ready' | 'stale' | 'failed';
+
+  @Column({ type: 'timestamp', nullable: true })
+  generatedAt: Date | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  sourceUpdatedAt: Date | null;
+
+  @Column({ default: 0 })
+  sourceCount: number;
+
+  @Column({ type: 'jsonb', default: () => "'[]'" })
+  sourceFacts: ProfileTelosSourceFactDto[];
+
+  @Column({ type: 'jsonb', default: () => "'{}'" })
+  characterSheet: ProfileCharacterSheetDto;
 }

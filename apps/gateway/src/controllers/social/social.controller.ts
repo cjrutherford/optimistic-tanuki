@@ -19,9 +19,10 @@ import {
   CommentCommands,
   PostCommands,
   ServiceTokens,
-  VoteCommands,
   ReactionCommands,
+  SocialTelosCommands,
   CommunityCommands,
+  VoteCommands,
 } from '@optimistic-tanuki/constants';
 import { SocialGateway } from '../../app/social-gateway/social.gateway';
 import {
@@ -55,6 +56,7 @@ import {
   RequirePermissions,
 } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('social')
@@ -65,8 +67,19 @@ export class SocialController {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
+    private readonly telosRefresh: ProfileTelosRefreshService,
     @Optional() private readonly socialGateway?: SocialGateway
   ) {}
+
+  private queueProfileTelosRefresh(profileId: string): void {
+    this.telosRefresh.queueSourceRefresh({
+      profileId,
+      namespaceKey: 'social',
+      sourceClient: this.socialClient,
+      sourceCommand: SocialTelosCommands.GET_PROFILE_FACTS,
+      logContext: `social activity for profile ${profileId}`,
+    });
+  }
 
   @UseGuards(AuthGuard)
   @ApiTags('post')
@@ -93,6 +106,8 @@ export class SocialController {
     if (this.socialGateway && result) {
       this.socialGateway.broadcastPostCreated(result);
     }
+
+    this.queueProfileTelosRefresh(postDto.profileId);
 
     return result;
   }
@@ -237,6 +252,12 @@ export class SocialController {
     // Broadcast comment created event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastCommentCreated(result);
+    }
+
+    if (result?.profileId || finalComment.profileId) {
+      this.queueProfileTelosRefresh(
+        result?.profileId || finalComment.profileId
+      );
     }
 
     return result;
@@ -487,6 +508,10 @@ export class SocialController {
       this.socialGateway.broadcastPostUpdated(result);
     }
 
+    if (result?.profileId) {
+      this.queueProfileTelosRefresh(result.profileId);
+    }
+
     return result;
   }
 
@@ -513,6 +538,10 @@ export class SocialController {
     // Broadcast comment updated event via WebSocket
     if (this.socialGateway && result) {
       this.socialGateway.broadcastCommentUpdated(result);
+    }
+
+    if (result?.profileId) {
+      this.queueProfileTelosRefresh(result.profileId);
     }
 
     return result;
@@ -563,6 +592,10 @@ export class SocialController {
       this.socialGateway.broadcastPostDeleted(id);
     }
 
+    if ((result as any)?.profileId) {
+      this.queueProfileTelosRefresh((result as any).profileId);
+    }
+
     return result;
   }
 
@@ -607,6 +640,10 @@ export class SocialController {
     // Broadcast comment deleted event via WebSocket
     if (this.socialGateway && commentPostId) {
       this.socialGateway.broadcastCommentDeleted(id, commentPostId);
+    }
+
+    if ((result as any)?.profileId) {
+      this.queueProfileTelosRefresh((result as any).profileId);
     }
 
     return result;

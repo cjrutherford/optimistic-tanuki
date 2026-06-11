@@ -27,11 +27,15 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 describe('SocialController', () => {
   let socialController: SocialController;
   let clientProxy: ClientProxy;
+  let telosRefresh: { queueSourceRefresh: jest.Mock };
   let consoleLogSpy: jest.SpyInstance;
+  const flushPromises = async () =>
+    await new Promise((resolve) => setTimeout(resolve, 0));
   const mockUser = {
     id: '1',
     userId: '1',
@@ -62,6 +66,12 @@ describe('SocialController', () => {
           provide: 'SOCIAL_SERVICE',
           useValue: {
             send: jest.fn().mockImplementation(() => of({})),
+          },
+        },
+        {
+          provide: ProfileTelosRefreshService,
+          useValue: {
+            queueSourceRefresh: jest.fn(),
           },
         },
         {
@@ -99,6 +109,7 @@ describe('SocialController', () => {
 
     socialController = module.get<SocialController>(SocialController);
     clientProxy = module.get<ClientProxy>('SOCIAL_SERVICE');
+    telosRefresh = module.get(ProfileTelosRefreshService);
   });
 
   afterEach(() => {
@@ -113,9 +124,16 @@ describe('SocialController', () => {
       profileId: mockUser.profileId,
     };
     await socialController.post(mockUser, postDto);
+    await flushPromises();
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.CREATE },
       postDto
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: mockUser.profileId,
+        namespaceKey: 'social',
+      })
     );
   });
 
@@ -161,10 +179,20 @@ describe('SocialController', () => {
       postId: '1',
       profileId: mockUser.profileId,
     };
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ profileId: mockUser.profileId })
+    );
     await socialController.comment(mockUser, commentDto);
+    await flushPromises();
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.CREATE },
       commentDto
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: mockUser.profileId,
+        namespaceKey: 'social',
+      })
     );
   });
 

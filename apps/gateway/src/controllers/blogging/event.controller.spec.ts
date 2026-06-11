@@ -1,24 +1,27 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventController } from './event.controller';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { ServiceTokens, BlogEventCommands } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
 import { Logger } from '@nestjs/common';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
-
-import { BlogEventCommands } from '@optimistic-tanuki/constants';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 describe('EventController', () => {
   let controller: EventController;
   let eventService: any;
+  let telosRefresh: { queueSourceRefresh: jest.Mock };
 
   beforeEach(async () => {
     eventService = {
       send: jest.fn(),
       connect: jest.fn().mockResolvedValue(null),
       close: jest.fn(),
+    };
+    telosRefresh = {
+      queueSourceRefresh: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -34,6 +37,10 @@ describe('EventController', () => {
             log: jest.fn(),
             error: jest.fn(),
           },
+        },
+        {
+          provide: ProfileTelosRefreshService,
+          useValue: telosRefresh,
         },
         Reflector,
         {
@@ -69,13 +76,28 @@ describe('EventController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should create an event', async () => {
-    const dto: any = { title: 'Test' };
-    eventService.send.mockReturnValue(of(dto));
+  it('should create an event and queue blogging refresh', async () => {
+    const dto: any = {
+      name: 'Test',
+      description: 'desc',
+      location: 'Raleigh',
+      organizerId: 'profile-1',
+      startTime: new Date(),
+      endTime: new Date(),
+    };
+    eventService.send.mockReturnValueOnce(of(dto));
+
     await controller.createEvent(dto);
+
     expect(eventService.send).toHaveBeenCalledWith(
       { cmd: BlogEventCommands.CREATE },
       dto
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-1',
+        namespaceKey: 'blogging',
+      })
     );
   });
 
@@ -100,7 +122,9 @@ describe('EventController', () => {
 
   it('should update an event', async () => {
     const dto: any = { title: 'Updated' };
-    eventService.send.mockReturnValue(of({ id: '1', ...dto }));
+    eventService.send.mockReturnValue(
+      of({ id: '1', organizerId: 'profile-1', ...dto })
+    );
     await controller.updateEvent('1', dto);
     expect(eventService.send).toHaveBeenCalledWith(
       { cmd: BlogEventCommands.UPDATE },

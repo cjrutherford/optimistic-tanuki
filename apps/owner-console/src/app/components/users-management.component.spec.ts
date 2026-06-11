@@ -12,7 +12,13 @@ describe('UsersManagementComponent', () => {
     assignRole: jest.Mock;
     unassignRole: jest.Mock;
   };
-  let usersService: { getProfiles: jest.Mock };
+  let usersService: {
+    getProfiles: jest.Mock;
+    getProfileTelos: jest.Mock;
+    regenerateProfileTelos: jest.Mock;
+    regenerateProfileTelosBulk: jest.Mock;
+    resetProfileTelos: jest.Mock;
+  };
   let messageService: { clearMessages: jest.Mock; addMessage: jest.Mock };
 
   beforeEach(async () => {
@@ -33,6 +39,10 @@ describe('UsersManagementComponent', () => {
     };
     usersService = {
       getProfiles: jest.fn().mockReturnValue(of([])),
+      getProfileTelos: jest.fn().mockReturnValue(of(null)),
+      regenerateProfileTelos: jest.fn().mockReturnValue(of({})),
+      regenerateProfileTelosBulk: jest.fn().mockReturnValue(of([])),
+      resetProfileTelos: jest.fn().mockReturnValue(of({})),
     };
     messageService = {
       clearMessages: jest.fn(),
@@ -90,5 +100,70 @@ describe('UsersManagementComponent', () => {
     });
 
     expect(rolesService.unassignRole).toHaveBeenCalledWith('assignment-1');
+  });
+
+  it('opens telos management and loads telos for the selected user', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+    const user = { id: 'profile-1', profileName: 'Operator One' };
+
+    component.onManageTelos(user);
+
+    expect(usersService.getProfileTelos).toHaveBeenCalledWith('profile-1');
+    expect(component.showTelosModal).toBe(true);
+    expect(component.selectedUser).toEqual(user);
+  });
+
+  it('triggers a telos rebuild for the selected user', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+    component.selectedUser = { id: 'profile-1', profileName: 'Operator One' };
+
+    component.regenerateTelos();
+
+    expect(usersService.regenerateProfileTelos).toHaveBeenCalledWith(
+      'profile-1'
+    );
+  });
+
+  it('triggers a bulk telos rebuild for seeded users', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+    component.seededUserIds = ['profile-1', 'profile-2'];
+
+    component.rebuildSeededTelos();
+
+    expect(usersService.regenerateProfileTelosBulk).toHaveBeenCalledWith([
+      'profile-1',
+      'profile-2',
+    ]);
+  });
+
+  it('resets derived telos fields for the selected user', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+    component.selectedUser = { id: 'profile-1', profileName: 'Operator One' };
+
+    component.resetTelos();
+
+    expect(usersService.resetProfileTelos).toHaveBeenCalledWith('profile-1');
+  });
+
+  it('identifies seeded demo users by email convention', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+
+    expect(
+      component['isSeededUser']({
+        id: 'profile-1',
+        email: 'seeded.user@example.com',
+      })
+    ).toBe(true);
+    expect(
+      component['isSeededUser']({
+        id: 'profile-2',
+        email: 'real.user@company.com',
+      })
+    ).toBe(false);
   });
 });

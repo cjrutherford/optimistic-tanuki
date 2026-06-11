@@ -84,7 +84,13 @@ export {
   LocalityType,
 } from './community';
 export { API_BASE_URL } from './api-config.tokens';
-export { type PersonaTelosDto } from './telos';
+export type {
+  PersonaTelosDto,
+  ProfileTelosDto,
+  ProfileCharacterSheetDto,
+  ProfileTelosStatsDto,
+  ProfileTelosSourceFactDto,
+} from './telos';
 export { type PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';
 export * from './store';
 export * from './appointment';

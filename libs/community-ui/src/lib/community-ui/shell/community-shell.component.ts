@@ -1,19 +1,9 @@
 import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  Router,
-  ActivatedRoute,
-  RouterOutlet,
-  RouterLink,
-  RouterLinkActive,
-} from '@angular/router';
+import { Router, ActivatedRoute, RouterOutlet } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 
-import {
-  CardComponent,
-  ButtonComponent,
-  IconComponent,
-} from '@optimistic-tanuki/common-ui';
+import { IconComponent } from '@optimistic-tanuki/common-ui';
 import { Variantable, VariantOptions } from '@optimistic-tanuki/common-ui';
 import {
   ThemeColors,
@@ -26,15 +16,7 @@ import { CommunityDto } from '../models';
   selector: 'lib-community-shell',
   standalone: true,
   providers: [ThemeVariableService],
-  imports: [
-    CommonModule,
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    CardComponent,
-    ButtonComponent,
-    IconComponent,
-  ],
+  imports: [CommonModule, RouterOutlet, IconComponent],
   host: {
     '[class.theme]': 'theme',
     '[style.--local-background]': 'background',

@@ -6,11 +6,18 @@ import {
   UpdateProfileDto,
   AssetDto,
   CreateAssetDto,
+  ProfileTelosDto,
 } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom, map, switchMap, forkJoin } from 'rxjs';
 import { AuthStateService } from './state/auth-state.service';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { type CharacterSheetSkin } from '@optimistic-tanuki/profile-ui';
+
+type CharacterSheetConfig = {
+  enabled: boolean;
+  skin: CharacterSheetSkin;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -19,6 +26,9 @@ export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
+  currentProfileTelos = signal<ProfileTelosDto | null>(null);
+  isCharacterSheetEnabled = signal(false);
+  characterSheetSkin = signal<CharacterSheetSkin>('fantasy');
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authState: AuthStateService = inject(AuthStateService);
   private readonly apiBaseUrl: string = inject(API_BASE_URL);
@@ -155,6 +165,40 @@ export class ProfileService {
     );
     this.currentUserProfile.set(profile);
     this.authState.persistSelectedProfile(profile);
+  }
+
+  async getProfileTelos(profileId?: string): Promise<ProfileTelosDto | null> {
+    const resolvedProfileId = profileId || this.getCurrentUserProfile()?.id;
+    if (!resolvedProfileId) {
+      this.currentProfileTelos.set(null);
+      return null;
+    }
+
+    const telos = await firstValueFrom(
+      this.http.get<ProfileTelosDto>(
+        `${this.apiBaseUrl}/profile/${resolvedProfileId}/telos`
+      )
+    );
+    this.currentProfileTelos.set(telos);
+    return telos;
+  }
+
+  async loadCharacterSheetConfig(): Promise<CharacterSheetConfig> {
+    const config = await firstValueFrom(
+      this.http.get<{ features?: Record<string, any> }>(
+        `${this.apiBaseUrl}/app-config/by-name/client-interface`
+      )
+    );
+    const characterSheetConfig =
+      config?.features?.['profile']?.['characterSheet'];
+    const enabled = characterSheetConfig?.['enabled'] === true;
+    const skin: CharacterSheetSkin =
+      characterSheetConfig?.['skin'] === 'grounded' ? 'grounded' : 'fantasy';
+
+    this.isCharacterSheetEnabled.set(enabled);
+    this.characterSheetSkin.set(skin);
+
+    return { enabled, skin };
   }
 
   async createProfile(profile: CreateProfileDto) {

@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
 import {
   BannerComponent,
+  CharacterSheetComponent,
+  type CharacterSheetSkin,
   ProfileEditorComponent,
 } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import { AuthStateService } from '../state/auth-state.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import { ProfileDto, ProfileTelosDto } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-settings',
@@ -16,6 +18,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
     CommonModule,
     ThemeDesignerComponent,
     BannerComponent,
+    CharacterSheetComponent,
     ProfileEditorComponent,
     ButtonComponent,
   ],
@@ -34,6 +37,9 @@ export class SettingsComponent {
   backgroundImage = '';
 
   profile = signal<ProfileDto | null>(null);
+  profileTelos = signal<ProfileTelosDto | null>(null);
+  characterSheetEnabled = signal(false);
+  characterSheetSkin = signal<CharacterSheetSkin>('fantasy');
 
   constructor(
     public profileService: ProfileService,
@@ -44,6 +50,7 @@ export class SettingsComponent {
       const p = this.profileService.getCurrentUserProfile();
       if (p) {
         this.setProfileFromDto(p);
+        void this.loadProfileTelos(p.id);
       } else {
         // setup empty state defaults from user object
         const user = this.auth.getDecodedTokenValue();
@@ -56,6 +63,8 @@ export class SettingsComponent {
     } catch (e) {
       console.error('Error loading profile in settings:', e);
     }
+
+    void this.loadCharacterSheetConfig();
   }
 
   setProfileFromDto(p: ProfileDto) {
@@ -77,12 +86,42 @@ export class SettingsComponent {
     this.showProfileEditor = false;
   }
 
+  private async loadCharacterSheetConfig() {
+    const { enabled, skin } =
+      await this.profileService.loadCharacterSheetConfig();
+    this.characterSheetEnabled.set(enabled);
+    this.characterSheetSkin.set(skin);
+
+    if (!enabled) {
+      this.profileTelos.set(null);
+      return;
+    }
+
+    const profile = this.profile();
+    if (profile?.id) {
+      void this.loadProfileTelos(profile.id);
+    }
+  }
+
+  private async loadProfileTelos(profileId: string) {
+    if (!this.characterSheetEnabled()) {
+      this.profileTelos.set(null);
+      return;
+    }
+
+    const telos = await this.profileService.getProfileTelos(profileId);
+    this.profileTelos.set(telos);
+  }
+
   async onCreateProfile(dto: any) {
     await this.profileService.createProfile(dto);
     // refresh and set current
     this.profileService.getAllProfiles().then(() => {
       const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p as any);
+      if (p) {
+        this.setProfileFromDto(p as any);
+        void this.loadProfileTelos(p.id);
+      }
     });
   }
 
@@ -90,7 +129,10 @@ export class SettingsComponent {
     await this.profileService.updateProfile(dto.id, dto);
     this.profileService.getProfileById(dto.id).then(() => {
       const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p as any);
+      if (p) {
+        this.setProfileFromDto(p as any);
+        void this.loadProfileTelos(p.id);
+      }
     });
   }
 }

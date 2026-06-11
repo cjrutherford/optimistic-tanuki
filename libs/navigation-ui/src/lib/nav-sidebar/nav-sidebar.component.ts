@@ -1,10 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  ButtonComponent,
-  CardComponent,
-  ModalComponent,
-} from '@optimistic-tanuki/common-ui';
+import { CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 
 export interface NavItem {
   label: string;
@@ -25,7 +21,7 @@ export interface NavItem {
 @Component({
   selector: 'otui-nav-sidebar',
   standalone: true,
-  imports: [CommonModule, ButtonComponent, CardComponent, ModalComponent],
+  imports: [CommonModule, CardComponent, ModalComponent],
   templateUrl: './nav-sidebar.component.html',
   styleUrls: ['./nav-sidebar.component.scss'],
 })

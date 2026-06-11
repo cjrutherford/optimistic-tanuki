@@ -10,16 +10,20 @@ describe('AppController video limit handling', () => {
       completeProcessing: jest.fn(),
       failProcessing: jest.fn(),
     };
+    const videoTelosService = {
+      getProfileFacts: jest.fn(),
+    };
 
     const controller = new AppController(
       {} as never,
       videoService as never,
       {} as never,
       {} as never,
-      {} as never
+      {} as never,
+      videoTelosService as never
     );
 
-    return { controller, videoService };
+    return { controller, videoService, videoTelosService };
   };
 
   it('passes undefined to recommended videos when payload is empty', async () => {
@@ -95,5 +99,13 @@ describe('AppController video limit handling', () => {
       'video-1',
       'ffmpeg failed'
     );
+  });
+
+  it('returns profile facts for TELOS video synthesis', async () => {
+    const { controller, videoTelosService } = createController();
+
+    await controller.getProfileFacts({ profileId: 'profile-1' } as never);
+
+    expect(videoTelosService.getProfileFacts).toHaveBeenCalledWith('profile-1');
   });
 });

@@ -46,6 +46,14 @@
   (createProfile)="createProfile($event)"
 ></lib-profile-editor>
 
+@if (!isViewingOther) {
+<lib-character-sheet
+  [enabled]="characterSheetEnabled()"
+  [skin]="characterSheetSkin()"
+  [profileTelos]="profileTelos()"
+></lib-character-sheet>
+}
+
 <section class="profile-section">
   <h3>Posts</h3>
   @if (userPosts().length > 0) {

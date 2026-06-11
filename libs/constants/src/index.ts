@@ -27,6 +27,7 @@ export {
   PostShareCommands,
   EventCommands as SocialEventCommands,
   ScheduledPostCommands,
+  SocialTelosCommands,
 } from './lib/libs/social';
 
 export { TasksCommands, TimersCommands, NotesCommands } from './lib/libs/tasks';
@@ -52,6 +53,7 @@ export * from './lib/libs/common';
 
 export {
   BlogCommands,
+  BlogTelosCommands,
   BlogComponentCommands,
   ContactCommands,
   EventCommands as BlogEventCommands,
@@ -91,13 +93,16 @@ export {
   ForumLinkCommands,
 } from './lib/libs/forum';
 
-export { VideoCommands } from './lib/libs/videos';
+export { VideoCommands, VideoTelosCommands } from './lib/libs/videos';
 
 export { WellnessCommands } from './lib/libs/wellness';
 
 export { WellnessAiCommands } from './lib/libs/ai-orchestration';
 
-export { ClassifiedCommands } from './lib/libs/classifieds';
+export {
+  ClassifiedCommands,
+  ClassifiedTelosCommands,
+} from './lib/libs/classifieds';
 export { BillingCommands } from './lib/libs/billing';
 
 export {
