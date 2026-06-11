@@ -273,6 +273,14 @@
   (updateProfile)="updateProfile($event)"
   (createProfile)="createProfile($event)"
 ></lib-profile-editor>
+
+@if (!isViewingOther) {
+<lib-character-sheet
+  [enabled]="characterSheetEnabled()"
+  [skin]="characterSheetSkin()"
+  [profileTelos]="profileTelos()"
+></lib-character-sheet>
+}
 } @else {
 <otui-card>
   <div class="no-profile">

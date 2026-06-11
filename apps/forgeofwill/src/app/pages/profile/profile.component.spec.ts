@@ -1,9 +1,4 @@
-import {
-  ComponentFixture,
-  TestBed,
-  fakeAsync,
-  tick,
-} from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { ProfileComponent } from './profile.component';
 import { ProfileService } from '../../profile/profile.service';
 import { of } from 'rxjs';
@@ -41,6 +36,10 @@ describe('ProfileComponent', () => {
       selectProfile: jest.fn(),
       createProfile: jest.fn().mockResolvedValue(undefined),
       updateProfile: jest.fn().mockResolvedValue(undefined),
+      getProfileTelos: jest.fn().mockResolvedValue(null),
+      loadCharacterSheetConfig: jest
+        .fn()
+        .mockResolvedValue({ enabled: false, skin: 'fantasy' }),
     };
 
     await TestBed.configureTestingModule({
@@ -59,11 +58,8 @@ describe('ProfileComponent', () => {
   });
 
   describe('ngOnInit', () => {
-    it('should load profiles and set selected profile', fakeAsync(() => {
+    it('should load profiles and set selected profile', async () => {
       jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
-      jest
-        .spyOn(profileService, 'currentUserProfiles')
-        .mockReturnValue([mockProfile]);
       jest
         .spyOn(profileService, 'currentUserProfiles')
         .mockReturnValue([mockProfile]);
@@ -71,13 +67,12 @@ describe('ProfileComponent', () => {
         .spyOn(profileService, 'getEffectiveProfile')
         .mockReturnValue(mockProfile);
 
-      component.ngOnInit();
-      tick();
+      await component.ngOnInit();
 
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(component.availableProfiles()).toEqual([mockProfile]);
       expect(component.selectedProfile()).toEqual(mockProfile);
-    }));
+    });
 
     it('should prefer effective profile over first profile when available', fakeAsync(() => {
       const globalProfile = {
@@ -107,17 +102,16 @@ describe('ProfileComponent', () => {
       expect(component.selectedProfile()).toEqual(localProfile);
     }));
 
-    it('should not set selected profile if no profiles are available', fakeAsync(() => {
+    it('should not set selected profile if no profiles are available', async () => {
       jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
       jest.spyOn(profileService, 'currentUserProfiles').mockReturnValue([]);
 
-      component.ngOnInit();
-      tick();
+      await component.ngOnInit();
 
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(component.availableProfiles()).toEqual([]);
       expect(component.selectedProfile()).toBeNull();
-    }));
+    });
   });
 
   describe('selectProfile', () => {
@@ -134,7 +128,7 @@ describe('ProfileComponent', () => {
   });
 
   describe('createProfile', () => {
-    it('should create a profile and reload profiles', fakeAsync(() => {
+    it('should create a profile and reload profiles', async () => {
       const createDto: CreateProfileDto = {
         name: 'New Profile',
         userId: 'user1',
@@ -146,7 +140,8 @@ describe('ProfileComponent', () => {
         .mockReturnValue([mockProfile, { ...mockProfile, id: '2' }]);
 
       component.createProfile(createDto);
-      tick();
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(profileService.createProfile).toHaveBeenCalledWith(createDto);
       expect(profileService.getAllProfiles).toHaveBeenCalled();
@@ -154,11 +149,11 @@ describe('ProfileComponent', () => {
         mockProfile,
         { ...mockProfile, id: '2' },
       ]);
-    }));
+    });
   });
 
   describe('updateProfile', () => {
-    it('should update a profile and reload profiles', fakeAsync(() => {
+    it('should update a profile and reload profiles', async () => {
       const updateDto: UpdateProfileDto = {
         id: '1',
         profileName: 'Updated Profile',
@@ -170,7 +165,8 @@ describe('ProfileComponent', () => {
         .mockReturnValue([mockProfile]); // Explicitly set for this test
 
       component.updateProfile(updateDto);
-      tick();
+      await Promise.resolve();
+      await Promise.resolve();
 
       expect(profileService.updateProfile).toHaveBeenCalledWith(
         updateDto.id,
@@ -178,6 +174,6 @@ describe('ProfileComponent', () => {
       );
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(component.availableProfiles()).toEqual([mockProfile]);
-    }));
+    });
   });
 });

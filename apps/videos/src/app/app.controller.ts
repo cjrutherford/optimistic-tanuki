@@ -1,6 +1,9 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { VideoCommands } from '@optimistic-tanuki/constants';
+import {
+  VideoCommands,
+  VideoTelosCommands,
+} from '@optimistic-tanuki/constants';
 import {
   CreateChannelDto,
   UpdateChannelDto,
@@ -20,6 +23,7 @@ import { VideoService } from './services/video.service';
 import { SubscriptionService } from './services/subscription.service';
 import { VideoViewService } from './services/video-view.service';
 import { BroadcastService } from './services/broadcast.service';
+import { VideoTelosService } from './services/video-telos.service';
 
 @Controller()
 export class AppController {
@@ -28,7 +32,8 @@ export class AppController {
     private readonly videoService: VideoService,
     private readonly subscriptionService: SubscriptionService,
     private readonly videoViewService: VideoViewService,
-    private readonly broadcastService: BroadcastService
+    private readonly broadcastService: BroadcastService,
+    private readonly videoTelosService: VideoTelosService
   ) {}
 
   // Channel endpoints
@@ -215,6 +220,11 @@ export class AppController {
   @MessagePattern({ cmd: VideoCommands.FIND_VIDEO_VIEWS })
   async findVideoViews(@Payload() videoId: string) {
     return this.videoViewService.findVideoViews(videoId);
+  }
+
+  @MessagePattern({ cmd: VideoTelosCommands.GET_PROFILE_FACTS })
+  async getProfileFacts(@Payload() payload: { profileId: string }) {
+    return this.videoTelosService.getProfileFacts(payload.profileId);
   }
 
   private normalizeOptionalLimit(limit?: number): number | undefined {

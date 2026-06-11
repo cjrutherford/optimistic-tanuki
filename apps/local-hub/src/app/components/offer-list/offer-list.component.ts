@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PaymentService, Offer } from '../../services/payment.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
@@ -14,7 +14,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 @Component({
   selector: 'app-offer-list',
   standalone: true,
-  imports: [CommonModule, DatePipe, CurrencyPipe, FormsModule],
+  imports: [CommonModule, DatePipe, FormsModule],
   template: `
     <div class="offer-list">
       <div class="header">

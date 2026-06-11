@@ -26,6 +26,7 @@ import { SocialController } from '../controllers/social/social.controller';
 import { FollowController } from '../controllers/social/follow/follow.controller';
 import { ChatGateway } from './chat-gateway/chat.gateway';
 import { SocialGateway } from './social-gateway/social.gateway';
+import { ProfileTelosRefreshService } from './profile-telos-refresh.service';
 import { ContactController } from '../controllers/blogging/contact.controller';
 import { PostController } from '../controllers/blogging/post.controller';
 import { EventController } from '../controllers/blogging/event.controller';
@@ -369,6 +370,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     AuthGuard,
     PermissionsGuard,
     PermissionsProxyService,
+    ProfileTelosRefreshService,
     {
       provide: PermissionsCacheService,
       useFactory: (configService: ConfigService) => {

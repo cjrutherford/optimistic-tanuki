@@ -47,3 +47,7 @@ export const BlogComponentCommands = {
   FIND_BY_QUERY: 'blog-component.findByQuery',
   DELETE_BY_POST: 'blog-component.deleteByPost',
 };
+
+export const BlogTelosCommands = {
+  GET_PROFILE_FACTS: 'blog-telos.getProfileFacts',
+};

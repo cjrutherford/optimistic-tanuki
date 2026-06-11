@@ -6,6 +6,7 @@ import {
 import { ProfileService } from './profile.service';
 import { AuthStateService } from '../auth-state.service';
 import {
+  ProfileTelosDto,
   ProfileDto,
   CreateProfileDto,
   UpdateProfileDto,
@@ -124,6 +125,98 @@ describe('ProfileService', () => {
       req.flush(mockProfile);
       await promise;
       expect(service.currentUserProfile()).toEqual(mockProfile);
+    });
+
+    it('getProfileTelos should fetch the current profile telos document', async () => {
+      service.currentUserProfile.set(mockProfile);
+      const telos = {
+        id: 'telos-1',
+        profileId: '1',
+        name: 'Test Profile',
+        description: 'desc',
+        goals: [],
+        skills: [],
+        interests: [],
+        limitations: [],
+        strengths: [],
+        objectives: [],
+        coreObjective: 'goal',
+        overallProfileSummary: 'summary',
+        generationStatus: 'ready',
+        sourceCount: 1,
+        characterSheet: {
+          classKey: 'scholar',
+          classLabel: 'Scholar',
+          archetypeSummary: 'Learns quickly',
+          level: 3,
+          stats: {
+            strength: 8,
+            dexterity: 10,
+            constitution: 10,
+            intelligence: 15,
+            wisdom: 13,
+            charisma: 12,
+          },
+          traits: ['curious'],
+        },
+      } as any as ProfileTelosDto;
+
+      const promise = service.getProfileTelos();
+      const req = httpMock.expectOne('/api/profile/1/telos');
+      req.flush(telos);
+
+      await promise;
+
+      expect(service.currentProfileTelos()).toEqual(telos);
+    });
+
+    it('loadCharacterSheetConfig should read the app-config feature flag and skin', async () => {
+      const promise = service.loadCharacterSheetConfig();
+      const req = httpMock.expectOne('/api/app-config/by-name/forgeofwill');
+      req.flush({
+        name: 'forgeofwill',
+        features: {
+          profile: {
+            characterSheet: {
+              enabled: true,
+              skin: 'grounded',
+            },
+          },
+        },
+      });
+
+      const config = await promise;
+
+      expect(service.isCharacterSheetEnabled()).toBe(true);
+      expect(service.characterSheetSkin()).toBe('grounded');
+      expect(config).toEqual({
+        enabled: true,
+        skin: 'grounded',
+      });
+    });
+
+    it('loadCharacterSheetConfig should default to fantasy skin when not configured', async () => {
+      const promise = service.loadCharacterSheetConfig();
+      const req = httpMock.expectOne('/api/app-config/by-name/forgeofwill');
+      req.flush({
+        name: 'forgeofwill',
+        features: {
+          profile: {
+            characterSheet: {
+              enabled: false,
+            },
+          },
+        },
+      });
+
+      const config = await promise;
+
+      expect(service.isCharacterSheetEnabled()).toBe(false);
+      expect(service.characterSheetSkin()).toBe('fantasy');
+      expect(config).toEqual({
+        enabled: false,
+        skin: 'fantasy',
+      });
     });
   });
 

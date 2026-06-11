@@ -16,9 +16,11 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   AIOrchestrationCommands,
   PersonaTelosCommands,
+  ProfileTelosCommands,
   ProfileCommands,
   AuthCommands,
   ServiceTokens,
+  SocialTelosCommands,
   TimelineCommands,
   RoleCommands,
   AppScopeCommands,
@@ -27,10 +29,12 @@ import {
 import {
   CreateProfileDto,
   CreateTimelineDto,
+  PersonaTelosDto,
+  ProfileDto,
+  ProfileTelosDto,
   UpdateProfileDto,
   UpdateTimelineDto,
-  ProfileDto,
-  PersonaTelosDto,
+  UpsertProfileTelosSourceDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -42,6 +46,7 @@ import {
   RoleInitService,
   RoleInitBuilder,
 } from '@optimistic-tanuki/permission-lib';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 @ApiTags('profile')
 @Controller('profile')
@@ -66,7 +71,8 @@ export class ProfileController {
     private readonly permissionsClient: ClientProxy,
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
-    private readonly roleInit: RoleInitService
+    private readonly roleInit: RoleInitService,
+    private readonly telosRefresh: ProfileTelosRefreshService
   ) {}
 
   private getAuthenticatedProfileId(user: UserDetails): string {
@@ -86,6 +92,90 @@ export class ProfileController {
     return authenticatedProfileId;
   }
 
+  private normalizeDelimitedValues(value?: string): string[] {
+    if (!value) {
+      return [];
+    }
+
+    return value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  private buildProfileTelosSource(
+    profile: ProfileDto
+  ): UpsertProfileTelosSourceDto {
+    const extendedProfile = profile as ProfileDto & {
+      occupation?: string;
+      location?: string;
+      interests?: string;
+      skills?: string;
+    };
+    const facts = [
+      {
+        sourceType: 'profile',
+        sourceId: profile.id,
+        title: 'Profile biography',
+        content: [
+          profile.profileName,
+          profile.bio,
+          extendedProfile.occupation,
+          extendedProfile.location,
+        ]
+          .filter(Boolean)
+          .join('. '),
+        metadata: {
+          interests: this.normalizeDelimitedValues(extendedProfile.interests),
+          skills: this.normalizeDelimitedValues(extendedProfile.skills),
+        },
+      },
+    ].filter((fact) => fact.content.length > 0);
+
+    return {
+      ...this.buildTelosUpsertPayload(profile),
+      facts,
+    };
+  }
+
+  private buildTelosUpsertPayload(
+    profile: ProfileDto
+  ): Omit<UpsertProfileTelosSourceDto, 'facts'> {
+    const extendedProfile = profile as ProfileDto & {
+      occupation?: string;
+      location?: string;
+      interests?: string;
+      skills?: string;
+    };
+
+    return {
+      profileId: profile.id,
+      appScope: profile.appScope || 'global',
+      profileName: profile.profileName,
+      bio: (profile as any).bio || '',
+      occupation: extendedProfile.occupation || '',
+      location: extendedProfile.location || '',
+      interests: this.normalizeDelimitedValues(extendedProfile.interests),
+      skills: this.normalizeDelimitedValues(extendedProfile.skills),
+    };
+  }
+
+  private queueProfileTelosRefresh(profile: ProfileDto): void {
+    this.telosRefresh.queueDirectUpsert({
+      profile,
+      namespaceKey: 'profile',
+      facts: this.buildProfileTelosSource(profile).facts,
+      logContext: `profile biography for ${profile.id}`,
+    });
+    this.telosRefresh.queueSourceRefresh({
+      profileId: profile.id,
+      namespaceKey: 'social',
+      sourceClient: this.socialClient,
+      sourceCommand: SocialTelosCommands.GET_PROFILE_FACTS,
+      logContext: `social facts for profile ${profile.id}`,
+    });
+  }
+
   @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Create a new profile' })
   @ApiResponse({
@@ -102,6 +192,7 @@ export class ProfileController {
       this.client.send({ cmd: ProfileCommands.Create }, createProfileDto)
     );
     this.l.log(`Profile created with ID: ${createdProfile.id}`);
+    this.queueProfileTelosRefresh(createdProfile);
     if (['forgeofwill'].includes(createProfileDto.appId))
       firstValueFrom(
         this.aiClient.send(
@@ -270,6 +361,18 @@ export class ProfileController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get current user TELOS document' })
+  @ApiResponse({
+    status: 200,
+    description: 'The current user TELOS document has been retrieved.',
+  })
+  @Get('me/telos')
+  async getCurrentProfileTelos(@User() user: UserDetails) {
+    const profileId = this.getAuthenticatedProfileId(user);
+    return this.getProfileTelosByProfileId(profileId);
+  }
+
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Get a profile by ID' })
   @ApiResponse({
     status: 200,
@@ -344,6 +447,85 @@ export class ProfileController {
   }
 
   @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get a TELOS document by profile ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profile TELOS document has been successfully retrieved.',
+  })
+  @Get(':id/telos')
+  async getProfileTelosByProfileId(@Param('id') id: string) {
+    const profile = await firstValueFrom(
+      this.client.send({ cmd: ProfileCommands.Get }, { id })
+    );
+    if (profile) {
+      this.queueProfileTelosRefresh(profile);
+    }
+
+    return await firstValueFrom(
+      this.telosDocsClient.send(
+        { cmd: ProfileTelosCommands.FIND_BY_PROFILE_ID },
+        { profileId: id }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Regenerate a TELOS document by profile ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profile TELOS document regeneration has been requested.',
+  })
+  @Post('telos/regenerate-bulk')
+  async regenerateProfileTelosBulk(
+    @Body() body: { profileIds?: string[] }
+  ): Promise<Array<ProfileTelosDto | null>> {
+    const profileIds = (body.profileIds || []).filter(Boolean);
+    return await Promise.all(
+      profileIds.map((profileId) =>
+        firstValueFrom(
+          this.telosDocsClient.send(
+            { cmd: ProfileTelosCommands.REGENERATE },
+            { profileId }
+          )
+        )
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Regenerate a TELOS document by profile ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The profile TELOS document regeneration has been requested.',
+  })
+  @Post(':id/telos/regenerate')
+  async regenerateProfileTelos(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.telosDocsClient.send(
+        { cmd: ProfileTelosCommands.REGENERATE },
+        { profileId: id }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Reset derived TELOS fields by profile ID' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'The profile TELOS derived fields have been cleared while source facts remain available for rebuild.',
+  })
+  @Delete(':id/telos')
+  async resetProfileTelos(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.telosDocsClient.send(
+        { cmd: ProfileTelosCommands.RESET_DERIVED },
+        { profileId: id }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Update a profile by ID' })
   @ApiResponse({
     status: 200,
@@ -352,14 +534,18 @@ export class ProfileController {
   @ApiResponse({ status: 404, description: 'Profile not found.' })
   @Put(':id')
   @RequirePermissions('profile.update')
-  updateProfile(
+  async updateProfile(
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateProfileDto
   ) {
-    return this.client.send(
-      { cmd: ProfileCommands.Update },
-      { id, ...updateProfileDto }
+    const updatedProfile: ProfileDto = await firstValueFrom(
+      this.client.send(
+        { cmd: ProfileCommands.Update },
+        { id, ...updateProfileDto }
+      )
     );
+    this.queueProfileTelosRefresh(updatedProfile);
+    return updatedProfile;
   }
 
   @UseGuards(AuthGuard)

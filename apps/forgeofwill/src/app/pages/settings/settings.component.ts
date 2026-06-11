@@ -4,12 +4,17 @@ import {
   ThemeDesignerComponent,
   PersonalitySelectorComponent,
 } from '@optimistic-tanuki/theme-ui';
-import { SettingsShellComponent } from '@optimistic-tanuki/profile-ui';
+import {
+  CharacterSheetComponent,
+  type CharacterSheetSkin,
+  SettingsShellComponent,
+} from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../../profile/profile.service';
 import { AuthStateService } from '../../auth-state.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
   CreateProfileDto,
+  ProfileTelosDto,
   ProfileDto,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
@@ -22,6 +27,7 @@ import { ThemeService, Personality } from '@optimistic-tanuki/theme-lib';
     ThemeDesignerComponent,
     PersonalitySelectorComponent,
     SettingsShellComponent,
+    CharacterSheetComponent,
     ButtonComponent,
   ],
   templateUrl: './settings.component.html',
@@ -38,6 +44,9 @@ export class SettingsComponent implements OnInit {
   profileImage = '';
   backgroundImage = '';
   profile = signal<ProfileDto | null>(null);
+  profileTelos = signal<ProfileTelosDto | null>(null);
+  characterSheetEnabled = signal(false);
+  characterSheetSkin = signal<CharacterSheetSkin>('fantasy');
 
   currentPersonalityId = signal<string>('bold');
 
@@ -54,10 +63,11 @@ export class SettingsComponent implements OnInit {
     this.currentPersonalityId.set(config.personalityId);
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     const p = this.profileService.getCurrentUserProfile();
     if (p) {
       this.setProfileFromDto(p);
+      this.profileTelos.set(await this.profileService.getProfileTelos(p.id));
     } else {
       const user = this.auth.getDecodedTokenValue();
       if (user && user.name) {
@@ -66,6 +76,10 @@ export class SettingsComponent implements OnInit {
         this.profileName = `${first || ''} ${last || ''}`.trim();
       }
     }
+    const { enabled, skin } =
+      await this.profileService.loadCharacterSheetConfig();
+    this.characterSheetEnabled.set(enabled);
+    this.characterSheetSkin.set(skin);
   }
 
   setProfileFromDto(p: ProfileDto) {
@@ -93,10 +107,18 @@ export class SettingsComponent implements OnInit {
   async onCreateProfile(dto: CreateProfileDto) {
     await this.profileService.createProfile(dto);
     this.syncProfileFromService();
+    const currentProfile = this.profile();
+    if (currentProfile?.id) {
+      this.profileTelos.set(await this.profileService.getProfileTelos(currentProfile.id));
+    }
   }
 
   async onUpdateProfile(dto: UpdateProfileDto) {
     await this.profileService.updateProfile(dto.id, dto);
     this.syncProfileFromService();
+    const currentProfile = this.profile();
+    if (currentProfile?.id) {
+      this.profileTelos.set(await this.profileService.getProfileTelos(currentProfile.id));
+    }
   }
 }

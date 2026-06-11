@@ -18,6 +18,10 @@ describe('ProfileTelosController', () => {
             remove: jest.fn(),
             findAll: jest.fn(),
             findOne: jest.fn(),
+            findByProfileId: jest.fn(),
+            upsertSource: jest.fn(),
+            regenerate: jest.fn(),
+            resetDerived: jest.fn(),
           },
         },
       ],
@@ -68,6 +72,38 @@ describe('ProfileTelosController', () => {
       const query = { name: 'Test' } as any;
       await controller.findProfiles(query);
       expect(service.findAll).toHaveBeenCalledWith(query);
+    });
+  });
+
+  describe('findProfileByProfileId', () => {
+    it('should call service.findByProfileId with the provided profileId', async () => {
+      const profileId = 'profile-1';
+      await controller.findProfileByProfileId({ profileId });
+      expect(service.findByProfileId).toHaveBeenCalledWith(profileId);
+    });
+  });
+
+  describe('upsertProfileSource', () => {
+    it('should call service.upsertSource with the provided payload', async () => {
+      const payload = { profileId: 'profile-1', facts: [] } as any;
+      await controller.upsertProfileSource(payload);
+      expect(service.upsertSource).toHaveBeenCalledWith(payload);
+    });
+  });
+
+  describe('regenerateProfile', () => {
+    it('should call service.regenerate with the provided profileId', async () => {
+      const profileId = 'profile-1';
+      await controller.regenerateProfile({ profileId });
+      expect(service.regenerate).toHaveBeenCalledWith(profileId);
+    });
+  });
+
+  describe('resetDerivedProfile', () => {
+    it('should call service.resetDerived with the provided profileId', async () => {
+      const profileId = 'profile-1';
+      await controller.resetDerivedProfile({ profileId });
+      expect(service.resetDerived).toHaveBeenCalledWith(profileId);
     });
   });
 });

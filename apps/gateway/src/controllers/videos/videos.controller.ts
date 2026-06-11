@@ -11,7 +11,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { VideoCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ServiceTokens,
+  VideoCommands,
+  VideoTelosCommands,
+} from '@optimistic-tanuki/constants';
 import {
   CreateChannelDto,
   UpdateChannelDto,
@@ -30,13 +34,54 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 @Controller('videos')
 export class VideosController {
   constructor(
     @Inject(ServiceTokens.VIDEOS_SERVICE)
-    private readonly videosService: ClientProxy
+    private readonly videosService: ClientProxy,
+    private readonly telosRefresh: ProfileTelosRefreshService
   ) {}
+
+  private queueProfileTelosRefresh(profileId?: string | null): void {
+    if (!profileId) {
+      return;
+    }
+    this.telosRefresh.queueSourceRefresh({
+      profileId,
+      namespaceKey: 'videos',
+      sourceClient: this.videosService,
+      sourceCommand: VideoTelosCommands.GET_PROFILE_FACTS,
+      logContext: `video activity for profile ${profileId}`,
+    });
+  }
+
+  private async getChannelProfileId(
+    channelId: string
+  ): Promise<string | undefined> {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_ONE_CHANNEL },
+        channelId
+      )
+    );
+
+    return channel?.profileId;
+  }
+
+  private async getVideoProfileId(
+    videoId: string
+  ): Promise<string | undefined> {
+    const video = await firstValueFrom(
+      this.videosService.send({ cmd: VideoCommands.FIND_ONE_VIDEO }, videoId)
+    );
+    if (!video?.channelId) {
+      return undefined;
+    }
+
+    return this.getChannelProfileId(video.channelId);
+  }
 
   // ===== Channel Endpoints =====
 
@@ -44,12 +89,16 @@ export class VideosController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('channels')
   async createChannel(@Body() createChannelDto: CreateChannelDto) {
-    return await firstValueFrom(
+    const channel = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.CREATE_CHANNEL },
         createChannelDto
       )
     );
+    this.queueProfileTelosRefresh(
+      channel?.profileId ?? createChannelDto.profileId
+    );
+    return channel;
   }
 
   @Public()
@@ -89,21 +138,26 @@ export class VideosController {
     @Param('id') id: string,
     @Body() updateChannelDto: UpdateChannelDto
   ) {
-    return await firstValueFrom(
+    const channel = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.UPDATE_CHANNEL },
         { id, updateChannelDto }
       )
     );
+    this.queueProfileTelosRefresh(channel?.profileId);
+    return channel;
   }
 
   @RequirePermissions('videos.channel.delete')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('channels/:id')
   async deleteChannel(@Param('id') id: string) {
-    return await firstValueFrom(
+    const profileId = await this.getChannelProfileId(id);
+    const result = await firstValueFrom(
       this.videosService.send({ cmd: VideoCommands.DELETE_CHANNEL }, id)
     );
+    this.queueProfileTelosRefresh(profileId);
+    return result;
   }
 
   // ===== Video Endpoints =====
@@ -112,12 +166,18 @@ export class VideosController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('/')
   async createVideo(@Body() createVideoDto: CreateVideoDto) {
-    return await firstValueFrom(
+    const video = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.CREATE_VIDEO },
         createVideoDto
       )
     );
+    this.queueProfileTelosRefresh(
+      await this.getChannelProfileId(
+        video?.channelId ?? createVideoDto.channelId
+      )
+    );
+    return video;
   }
 
   @Public()
@@ -176,12 +236,16 @@ export class VideosController {
     @Param('id') id: string,
     @Body() updateVideoDto: UpdateVideoDto
   ) {
-    return await firstValueFrom(
+    const video = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.UPDATE_VIDEO },
         { id, updateVideoDto }
       )
     );
+    this.queueProfileTelosRefresh(
+      await this.getChannelProfileId(video?.channelId)
+    );
+    return video;
   }
 
   @Public()
@@ -212,9 +276,12 @@ export class VideosController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete(':id')
   async deleteVideo(@Param('id') id: string) {
-    return await firstValueFrom(
+    const profileId = await this.getVideoProfileId(id);
+    const result = await firstValueFrom(
       this.videosService.send({ cmd: VideoCommands.DELETE_VIDEO }, id)
     );
+    this.queueProfileTelosRefresh(profileId);
+    return result;
   }
 
   @Post(':id/processing/complete')

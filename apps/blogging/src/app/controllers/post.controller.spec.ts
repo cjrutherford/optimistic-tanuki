@@ -4,18 +4,21 @@ jest.mock('isomorphic-dompurify', () => ({
 
 import { PostController } from './post.controller';
 import { PostService, RssService, SeoService } from '../services';
+import { BlogTelosService } from '../services/blog-telos.service';
 import {
   CreateBlogPostDto,
   BlogPostDto,
   BlogPostQueryDto,
   UpdateBlogPostDto,
 } from '@optimistic-tanuki/models';
+import { BlogTelosCommands } from '@optimistic-tanuki/constants';
 
 describe('PostController', () => {
   let controller: PostController;
   let postService: jest.Mocked<PostService>;
   let rssService: jest.Mocked<RssService>;
   let seoService: jest.Mocked<SeoService>;
+  let blogTelosService: jest.Mocked<BlogTelosService>;
 
   const mockPost: BlogPostDto = {
     id: 'post-1',
@@ -58,7 +61,16 @@ describe('PostController', () => {
       generateBlogMetadata: jest.fn(),
     } as unknown as jest.Mocked<SeoService>;
 
-    controller = new PostController(postService, rssService, seoService);
+    blogTelosService = {
+      getProfileFacts: jest.fn(),
+    } as unknown as jest.Mocked<BlogTelosService>;
+
+    controller = new PostController(
+      postService,
+      rssService,
+      seoService,
+      blogTelosService
+    );
   });
 
   it('should be defined', () => {
@@ -126,6 +138,31 @@ describe('PostController', () => {
 
       expect(postService.findOne).toHaveBeenCalledWith('post-1');
       expect(result).toEqual(mockPost);
+    });
+  });
+
+  describe('getProfileTelosFacts', () => {
+    it('should return blogging facts for a profile', async () => {
+      blogTelosService.getProfileFacts.mockResolvedValue([
+        {
+          sourceType: 'blogging:summary',
+          sourceId: 'profile-1',
+          content: 'Blogging summary',
+        },
+      ]);
+
+      const result = await controller.getProfileTelosFacts('profile-1');
+
+      expect(blogTelosService.getProfileFacts).toHaveBeenCalledWith(
+        'profile-1'
+      );
+      expect(result).toEqual([
+        {
+          sourceType: 'blogging:summary',
+          sourceId: 'profile-1',
+          content: 'Blogging summary',
+        },
+      ]);
     });
   });
 

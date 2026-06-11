@@ -46,7 +46,6 @@ import { CommunityService } from '../../community.service';
 import { VoteService } from '../../vote.service';
 import { ReactionService } from '../../reaction.service';
 import { InfiniteScrollDirective } from '../../directives/infinite-scroll.directive';
-import { LazyLoadDirective } from '../../directives/lazy-load.directive';
 import { ActivityService } from '../../activity.service';
 import { PrivacyService } from '../../privacy.service';
 
@@ -59,7 +58,6 @@ import { PrivacyService } from '../../privacy.service';
     ComposeComponent,
     PostComponent,
     InfiniteScrollDirective,
-    LazyLoadDirective,
   ],
   providers: [
     ThemeService,

@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import {
   ClassifiedCommands,
+  ClassifiedTelosCommands,
   CommunityCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -29,6 +30,7 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 export interface CreateClassifiedAdDto {
   communityId?: string | null;
@@ -74,8 +76,22 @@ export class ClassifiedsController {
     @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
     private readonly classifiedsClient: ClientProxy,
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    private readonly telosRefresh: ProfileTelosRefreshService
   ) {}
+
+  private queueProfileTelosRefresh(profileId?: string | null): void {
+    if (!profileId) {
+      return;
+    }
+    this.telosRefresh.queueSourceRefresh({
+      profileId,
+      namespaceKey: 'classifieds',
+      sourceClient: this.classifiedsClient,
+      sourceCommand: ClassifiedTelosCommands.GET_PROFILE_FACTS,
+      logContext: `classifieds activity for profile ${profileId}`,
+    });
+  }
 
   private async resolveCommunitySlugToId(slug: string): Promise<string | null> {
     try {
@@ -187,7 +203,7 @@ export class ClassifiedsController {
       );
     }
 
-    return firstValueFrom(
+    const ad = await firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.CREATE },
         {
@@ -198,6 +214,8 @@ export class ClassifiedsController {
         }
       )
     );
+    this.queueProfileTelosRefresh(user.profileId);
+    return ad;
   }
 
   @Put(':id')
@@ -209,12 +227,14 @@ export class ClassifiedsController {
     @Body() dto: UpdateClassifiedAdDto,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
+    const ad = await firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.UPDATE },
         { id, dto, profileId: user.profileId, appScope }
       )
     );
+    this.queueProfileTelosRefresh(user.profileId);
+    return ad;
   }
 
   @Delete(':id')
@@ -225,12 +245,14 @@ export class ClassifiedsController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
+    const result = await firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.DELETE },
         { id, profileId: user.profileId, appScope }
       )
     );
+    this.queueProfileTelosRefresh(user.profileId);
+    return result;
   }
 
   @Post(':id/sold')
@@ -241,12 +263,14 @@ export class ClassifiedsController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
+    const ad = await firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.MARK_SOLD },
         { id, profileId: user.profileId, appScope }
       )
     );
+    this.queueProfileTelosRefresh(user.profileId);
+    return ad;
   }
 
   @Post(':id/feature')
@@ -260,7 +284,7 @@ export class ClassifiedsController {
     @Body() body: { durationDays: number },
     @AppScope() appScope: string
   ) {
-    return firstValueFrom(
+    const ad = await firstValueFrom(
       this.classifiedsClient.send(
         { cmd: ClassifiedCommands.FEATURE },
         {
@@ -271,6 +295,8 @@ export class ClassifiedsController {
         }
       )
     );
+    this.queueProfileTelosRefresh(user.profileId);
+    return ad;
   }
 
   @Get('profile/my-ads')

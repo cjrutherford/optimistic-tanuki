@@ -1,12 +1,15 @@
 import {
   GoalCommands,
+  ProfileTelosCommands,
   ProfileCommands,
   ProjectCommands,
   ServiceTokens,
+  SocialTelosCommands,
   TimelineCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CreateProfileDto,
+  ProfileTelosDto,
   ProfileDto,
   UpdateProfileDto,
   CreateTimelineDto,
@@ -27,16 +30,26 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { Reflector } from '@nestjs/core';
 import { ForbiddenException } from '@nestjs/common';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 describe('ProfileController', () => {
   let controller: ProfileController;
   let clientProxy: ClientProxy;
   let socialClient: ClientProxy;
+  let telosClient: ClientProxy;
   let roleInitService: { processNow: jest.Mock };
+  let telosRefresh: {
+    queueDirectUpsert: jest.Mock;
+    queueSourceRefresh: jest.Mock;
+  };
 
   beforeEach(async () => {
     roleInitService = {
       processNow: jest.fn().mockResolvedValue(undefined),
+    };
+    telosRefresh = {
+      queueDirectUpsert: jest.fn(),
+      queueSourceRefresh: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -89,6 +102,10 @@ describe('ProfileController', () => {
           provide: RoleInitService,
           useValue: roleInitService,
         },
+        {
+          provide: ProfileTelosRefreshService,
+          useValue: telosRefresh,
+        },
         Reflector,
         {
           provide: PermissionsCacheService,
@@ -113,6 +130,7 @@ describe('ProfileController', () => {
     controller = module.get<ProfileController>(ProfileController);
     clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
     socialClient = module.get<ClientProxy>(ServiceTokens.SOCIAL_SERVICE);
+    telosClient = module.get<ClientProxy>(ServiceTokens.TELOS_DOCS_SERVICE);
   });
 
   it('should be defined', () => {
@@ -215,14 +233,119 @@ describe('ProfileController', () => {
     };
     jest.spyOn(clientProxy, 'send').mockImplementation(() => of({}));
 
-    const updateResponse = await firstValueFrom(
-      controller.updateProfile(id, updateProfileDto)
-    );
+    const updateResponse = await controller.updateProfile(id, updateProfileDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.Update },
       { id, ...updateProfileDto }
     );
     expect(updateResponse).toEqual({});
+  });
+
+  it('should get a profile telos document by profile id', async () => {
+    jest.spyOn(clientProxy, 'send').mockImplementation(() =>
+      of({
+        id: '1',
+        profileName: 'Test Profile',
+        appScope: 'forgeofwill',
+      } as any)
+    );
+    jest
+      .spyOn(socialClient, 'send')
+      .mockImplementation(() =>
+        of([
+          { sourceType: 'social:summary', sourceId: '1', content: 'summary' },
+        ])
+      );
+    const telos = {
+      id: 'telos-1',
+      profileId: '1',
+      name: 'Test Profile',
+      description: 'desc',
+      goals: [],
+      skills: [],
+      interests: [],
+      limitations: [],
+      strengths: [],
+      objectives: [],
+      coreObjective: 'goal',
+      overallProfileSummary: 'summary',
+      generationStatus: 'ready',
+      sourceCount: 1,
+      characterSheet: {
+        classKey: 'scholar',
+        classLabel: 'Scholar',
+        archetypeSummary: 'Learns quickly',
+        level: 3,
+        stats: {
+          strength: 8,
+          dexterity: 10,
+          constitution: 10,
+          intelligence: 15,
+          wisdom: 13,
+          charisma: 12,
+        },
+        traits: ['curious'],
+      },
+    } as any as ProfileTelosDto;
+    jest.spyOn(telosClient, 'send').mockImplementation(() => of(telos));
+
+    const response = await controller.getProfileTelosByProfileId('1');
+
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: '1',
+        namespaceKey: 'social',
+      })
+    );
+    expect(telosClient.send).toHaveBeenCalledWith(
+      { cmd: ProfileTelosCommands.FIND_BY_PROFILE_ID },
+      { profileId: '1' }
+    );
+    expect(response).toEqual(telos);
+  });
+
+  it('should request profile telos regeneration', async () => {
+    jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
+
+    const response = await controller.regenerateProfileTelos('1');
+
+    expect(telosClient.send).toHaveBeenCalledWith(
+      { cmd: ProfileTelosCommands.REGENERATE },
+      { profileId: '1' }
+    );
+    expect(response).toEqual({ ok: true });
+  });
+
+  it('should request bulk profile telos regeneration', async () => {
+    jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
+
+    const response = await controller.regenerateProfileTelosBulk({
+      profileIds: ['1', '2'],
+    });
+
+    expect(telosClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: ProfileTelosCommands.REGENERATE },
+      { profileId: '1' }
+    );
+    expect(telosClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: ProfileTelosCommands.REGENERATE },
+      { profileId: '2' }
+    );
+    expect(response).toEqual([{ ok: true }, { ok: true }]);
+  });
+
+  it('should reset derived profile telos fields', async () => {
+    jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
+
+    const response = await controller.resetProfileTelos('1');
+
+    expect(telosClient.send).toHaveBeenCalledWith(
+      { cmd: ProfileTelosCommands.RESET_DERIVED },
+      { profileId: '1' }
+    );
+    expect(response).toEqual({ ok: true });
   });
 
   it('should delete a profile', async () => {
