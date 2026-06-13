@@ -110,4 +110,27 @@ describe('ClassifiedsController', () => {
       })
     );
   });
+
+  it('queues a TELOS refresh for the listing owner when featuring another profile’s ad', async () => {
+    classifiedsClient.send.mockReturnValueOnce(
+      of({
+        id: 'ad-2',
+        profileId: 'seller-profile',
+      })
+    );
+
+    await controller.feature(
+      { profileId: 'moderator-profile', userId: 'mod-1' } as any,
+      'ad-2',
+      { durationDays: 7 },
+      'local-hub'
+    );
+
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'seller-profile',
+        namespaceKey: 'classifieds',
+      })
+    );
+  });
 });

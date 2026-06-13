@@ -353,7 +353,7 @@ import { CharacterSheetComponent } from '@optimistic-tanuki/profile-ui';
                   }}
                 </p>
                 <span class="scope-chip">
-                  {{ assignment.appScope.name || assignment.appScopeId }}
+                  {{ resolveAssignmentScopeLabel(assignment) }}
                 </span>
               </div>
               <otui-button
@@ -1098,7 +1098,15 @@ export class UsersManagementComponent implements OnInit {
   }
 
   resolveRoleScopeLabel(role: RoleDto): string {
-    return role.appScope.name || 'Scope unavailable';
+    return (
+      role.appScope?.name || (role as any).appScopeId || 'Scope unavailable'
+    );
+  }
+
+  resolveAssignmentScopeLabel(assignment: UserRoleDto): string {
+    return (
+      assignment.appScope?.name || assignment.appScopeId || 'Scope unavailable'
+    );
   }
 
   regenerateTelos(): void {

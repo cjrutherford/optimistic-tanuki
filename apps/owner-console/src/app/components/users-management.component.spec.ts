@@ -23,7 +23,11 @@ describe('UsersManagementComponent', () => {
     regenerateProfileTelosBulk: jest.Mock;
     resetProfileTelos: jest.Mock;
   };
-  let messageService: { clearMessages: jest.Mock; addMessage: jest.Mock };
+  let messageService: {
+    clearMessages: jest.Mock;
+    addMessage: jest.Mock;
+    messages: jest.Mock;
+  };
   let router: { navigate: jest.Mock };
   let governanceAuditService: {
     getEntries: jest.Mock;
@@ -125,6 +129,7 @@ describe('UsersManagementComponent', () => {
     messageService = {
       clearMessages: jest.fn(),
       addMessage: jest.fn(),
+      messages: jest.fn().mockReturnValue([]),
     };
     router = {
       navigate: jest.fn(),
@@ -457,5 +462,38 @@ describe('UsersManagementComponent', () => {
         email: 'real.user@company.com',
       })
     ).toBe(false);
+  });
+
+  it('renders role management entries when app scope relations are missing', () => {
+    const fixture = TestBed.createComponent(UsersManagementComponent);
+    const component = fixture.componentInstance as any;
+
+    fixture.detectChanges();
+    component.showRoleModal = true;
+    component.roleManagementLoading = false;
+    component.selectedUser = { id: 'profile-1', profileName: 'Operator One' };
+    component.userRoles = [
+      {
+        id: 'assignment-1',
+        roleId: 'role-1',
+        appScopeId: 'scope-fallback',
+        role: { name: 'owner_console_owner', description: 'Owner' },
+      },
+    ];
+    component.availableRoles = [
+      {
+        id: 'role-2',
+        name: 'editor',
+        description: 'Editor role',
+      },
+    ];
+
+    fixture.detectChanges();
+    expect(component.resolveAssignmentScopeLabel(component.userRoles[0])).toBe(
+      'scope-fallback'
+    );
+    expect(component.resolveRoleScopeLabel(component.availableRoles[0])).toBe(
+      'Scope unavailable'
+    );
   });
 });

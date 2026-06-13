@@ -295,7 +295,7 @@ export class ClassifiedsController {
         }
       )
     );
-    this.queueProfileTelosRefresh(user.profileId);
+    this.queueProfileTelosRefresh(ad?.profileId || user.profileId);
     return ad;
   }
 

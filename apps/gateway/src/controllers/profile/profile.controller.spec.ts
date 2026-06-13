@@ -1,8 +1,10 @@
 import {
+  AppScopeCommands,
   GoalCommands,
   ProfileTelosCommands,
   ProfileCommands,
   ProjectCommands,
+  RoleCommands,
   ServiceTokens,
   SocialTelosCommands,
   TimelineCommands,
@@ -37,6 +39,7 @@ describe('ProfileController', () => {
   let clientProxy: ClientProxy;
   let socialClient: ClientProxy;
   let telosClient: ClientProxy;
+  let permissionsClient: ClientProxy;
   let roleInitService: { processNow: jest.Mock };
   let telosRefresh: {
     queueDirectUpsert: jest.Mock;
@@ -131,6 +134,9 @@ describe('ProfileController', () => {
     clientProxy = module.get<ClientProxy>(ServiceTokens.PROFILE_SERVICE);
     socialClient = module.get<ClientProxy>(ServiceTokens.SOCIAL_SERVICE);
     telosClient = module.get<ClientProxy>(ServiceTokens.TELOS_DOCS_SERVICE);
+    permissionsClient = module.get<ClientProxy>(
+      ServiceTokens.PERMISSIONS_SERVICE
+    );
   });
 
   it('should be defined', () => {
@@ -307,7 +313,9 @@ describe('ProfileController', () => {
   it('should request profile telos regeneration', async () => {
     jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
 
-    const response = await controller.regenerateProfileTelos('1');
+    const response = await controller.regenerateProfileTelos('1', {
+      profileId: '1',
+    } as any);
 
     expect(telosClient.send).toHaveBeenCalledWith(
       { cmd: ProfileTelosCommands.REGENERATE },
@@ -317,11 +325,20 @@ describe('ProfileController', () => {
   });
 
   it('should request bulk profile telos regeneration', async () => {
+    jest
+      .spyOn(permissionsClient, 'send')
+      .mockReturnValueOnce(of({ id: 'scope-global' }))
+      .mockReturnValueOnce(
+        of([{ role: { name: 'owner_console_owner' } }] as any)
+      );
     jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
 
-    const response = await controller.regenerateProfileTelosBulk({
-      profileIds: ['1', '2'],
-    });
+    const response = await controller.regenerateProfileTelosBulk(
+      {
+        profileIds: ['1', '2'],
+      },
+      { profileId: 'admin-profile' } as any
+    );
 
     expect(telosClient.send).toHaveBeenNthCalledWith(
       1,
@@ -339,7 +356,9 @@ describe('ProfileController', () => {
   it('should reset derived profile telos fields', async () => {
     jest.spyOn(telosClient, 'send').mockImplementation(() => of({ ok: true }));
 
-    const response = await controller.resetProfileTelos('1');
+    const response = await controller.resetProfileTelos('1', {
+      profileId: '1',
+    } as any);
 
     expect(telosClient.send).toHaveBeenCalledWith(
       { cmd: ProfileTelosCommands.RESET_DERIVED },
@@ -453,5 +472,63 @@ describe('ProfileController', () => {
       } as any)
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(socialClient.send).not.toHaveBeenCalled();
+  });
+
+  it('should reject telos regeneration for another profile without owner access', async () => {
+    jest
+      .spyOn(permissionsClient, 'send')
+      .mockReturnValueOnce(of({ id: 'scope-global' }))
+      .mockReturnValueOnce(of([]));
+
+    await expect(
+      controller.regenerateProfileTelos('profile-2', {
+        profileId: 'profile-1',
+      } as any)
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: AppScopeCommands.GetByName },
+      { name: 'global' }
+    );
+    expect(permissionsClient.send).toHaveBeenNthCalledWith(
+      2,
+      { cmd: RoleCommands.GetUserRoles },
+      { profileId: 'profile-1', appScopeId: 'scope-global' }
+    );
+    expect(telosClient.send).not.toHaveBeenCalled();
+  });
+
+  it('should allow telos regeneration for another profile with owner access', async () => {
+    jest
+      .spyOn(permissionsClient, 'send')
+      .mockReturnValueOnce(of({ id: 'scope-global' }))
+      .mockReturnValueOnce(of([{ role: { name: 'global_admin' } }] as any));
+    jest.spyOn(telosClient, 'send').mockReturnValue(of({ ok: true }));
+
+    await controller.regenerateProfileTelos('profile-2', {
+      profileId: 'profile-1',
+    } as any);
+
+    expect(telosClient.send).toHaveBeenCalledWith(
+      { cmd: ProfileTelosCommands.REGENERATE },
+      { profileId: 'profile-2' }
+    );
+  });
+
+  it('should reject bulk telos regeneration without owner access', async () => {
+    jest
+      .spyOn(permissionsClient, 'send')
+      .mockReturnValueOnce(of({ id: 'scope-global' }))
+      .mockReturnValueOnce(of([]));
+
+    await expect(
+      controller.regenerateProfileTelosBulk(
+        { profileIds: ['profile-1', 'profile-2'] },
+        { profileId: 'profile-1' } as any
+      )
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(telosClient.send).not.toHaveBeenCalled();
   });
 });

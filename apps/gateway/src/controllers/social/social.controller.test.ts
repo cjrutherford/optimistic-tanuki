@@ -380,6 +380,35 @@ describe('SocialController', () => {
     );
   });
 
+  it('queues a TELOS refresh for the existing post owner when update returns no profileId', async () => {
+    const id = 'post-1';
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of({ id, profileId: 'profile-2' }))
+      .mockReturnValueOnce(of(undefined));
+
+    await socialController.updatePost(
+      id,
+      {
+        ...mockUser,
+        profileId: 'profile-1',
+        userId: 'user-1',
+      } as any,
+      {}
+    );
+
+    expect(clientProxy.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: PostCommands.FIND },
+      { id }
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-2',
+        namespaceKey: 'social',
+      })
+    );
+  });
+
   it('should update a comment', async () => {
     const id = '1';
     const updateCommentDto: UpdateCommentDto = {
@@ -391,6 +420,32 @@ describe('SocialController', () => {
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.UPDATE },
       { id, data: updateCommentDto }
+    );
+  });
+
+  it('queues a TELOS refresh for the existing comment owner when update returns no profileId', async () => {
+    const id = 'comment-1';
+    const updateCommentDto: UpdateCommentDto = {
+      content: 'Updated comment',
+      userId: '1',
+      postId: 'post-1',
+    };
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of({ id, profileId: 'profile-3', postId: 'post-1' }))
+      .mockReturnValueOnce(of(undefined));
+
+    await socialController.updateComment(id, updateCommentDto);
+
+    expect(clientProxy.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: CommentCommands.FIND },
+      { id }
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-3',
+        namespaceKey: 'social',
+      })
     );
   });
 
@@ -424,12 +479,60 @@ describe('SocialController', () => {
     );
   });
 
+  it('queues a TELOS refresh for the existing post owner when delete returns no profileId', async () => {
+    const id = 'post-1';
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(of({ id, profileId: 'profile-4' }))
+      .mockReturnValueOnce(of({ success: true }));
+
+    await socialController.deletePost(id, {
+      ...mockUser,
+      profileId: 'profile-1',
+      userId: 'user-1',
+    } as any);
+
+    expect(clientProxy.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: PostCommands.FIND },
+      { id }
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-4',
+        namespaceKey: 'social',
+      })
+    );
+  });
+
   it('should delete a comment', async () => {
     const id = '1';
     await socialController.deleteComment(id);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: CommentCommands.DELETE },
       { id }
+    );
+  });
+
+  it('queues a TELOS refresh for the existing comment owner when delete returns no profileId', async () => {
+    const id = 'comment-1';
+    (clientProxy.send as jest.Mock)
+      .mockReturnValueOnce(
+        of({ id, profileId: 'profile-5', postId: 'post-1' } as any)
+      )
+      .mockReturnValueOnce(of({ success: true }));
+
+    await socialController.deleteComment(id);
+
+    expect(clientProxy.send).toHaveBeenNthCalledWith(
+      1,
+      { cmd: CommentCommands.FIND },
+      { id }
+    );
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-5',
+        namespaceKey: 'social',
+      })
     );
   });
 
