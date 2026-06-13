@@ -81,6 +81,25 @@ export class SocialController {
     });
   }
 
+  private async findPostProfileId(id: string): Promise<string | undefined> {
+    const post = await firstValueFrom(
+      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+    );
+    return post?.profileId;
+  }
+
+  private async findCommentContext(
+    id: string
+  ): Promise<{ profileId?: string; postId?: string }> {
+    const comment = await firstValueFrom(
+      this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
+    );
+    return {
+      profileId: comment?.profileId,
+      postId: comment?.postId,
+    };
+  }
+
   @UseGuards(AuthGuard)
   @ApiTags('post')
   @ApiOperation({ summary: 'Create a new post' })
@@ -496,6 +515,7 @@ export class SocialController {
     @User() user: UserDetails,
     @Body() updatePostDto: UpdatePostDto
   ): Promise<PostDto> {
+    const existingProfileId = await this.findPostProfileId(id);
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
@@ -508,8 +528,9 @@ export class SocialController {
       this.socialGateway.broadcastPostUpdated(result);
     }
 
-    if (result?.profileId) {
-      this.queueProfileTelosRefresh(result.profileId);
+    const profileId = result?.profileId || existingProfileId;
+    if (profileId) {
+      this.queueProfileTelosRefresh(profileId);
     }
 
     return result;
@@ -528,6 +549,7 @@ export class SocialController {
     @Param('id') id: string,
     @Body() updateCommentDto: UpdateCommentDto
   ): Promise<CommentDto> {
+    const existingComment = await this.findCommentContext(id);
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: CommentCommands.UPDATE },
@@ -540,8 +562,9 @@ export class SocialController {
       this.socialGateway.broadcastCommentUpdated(result);
     }
 
-    if (result?.profileId) {
-      this.queueProfileTelosRefresh(result.profileId);
+    const profileId = result?.profileId || existingComment.profileId;
+    if (profileId) {
+      this.queueProfileTelosRefresh(profileId);
     }
 
     return result;
@@ -580,6 +603,7 @@ export class SocialController {
     @Param('id') id: string,
     @User() user: UserDetails
   ): Promise<void> {
+    const existingProfileId = await this.findPostProfileId(id);
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.DELETE },
@@ -592,8 +616,9 @@ export class SocialController {
       this.socialGateway.broadcastPostDeleted(id);
     }
 
-    if ((result as any)?.profileId) {
-      this.queueProfileTelosRefresh((result as any).profileId);
+    const profileId = (result as any)?.profileId || existingProfileId;
+    if (profileId) {
+      this.queueProfileTelosRefresh(profileId);
     }
 
     return result;
@@ -617,12 +642,12 @@ export class SocialController {
   ): Promise<void> {
     // If postId not provided, fetch comment first to get postId for broadcast
     let commentPostId = postId;
+    let commentProfileId: string | undefined;
     if (!commentPostId) {
       try {
-        const comment = await firstValueFrom(
-          this.socialClient.send({ cmd: CommentCommands.FIND }, { id })
-        );
-        commentPostId = comment?.postId;
+        const comment = await this.findCommentContext(id);
+        commentPostId = comment.postId;
+        commentProfileId = comment.profileId;
       } catch (error) {
         // Comment not found or error, continue with deletion
         const errorMessage =
@@ -642,8 +667,9 @@ export class SocialController {
       this.socialGateway.broadcastCommentDeleted(id, commentPostId);
     }
 
-    if ((result as any)?.profileId) {
-      this.queueProfileTelosRefresh((result as any).profileId);
+    const profileId = (result as any)?.profileId || commentProfileId;
+    if (profileId) {
+      this.queueProfileTelosRefresh(profileId);
     }
 
     return result;

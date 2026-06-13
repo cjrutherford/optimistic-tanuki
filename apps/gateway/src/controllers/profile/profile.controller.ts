@@ -92,6 +92,35 @@ export class ProfileController {
     return authenticatedProfileId;
   }
 
+  private async assertCanManageProfileTelos(
+    targetProfileId: string,
+    user: UserDetails
+  ): Promise<void> {
+    const authenticatedProfileId = this.getAuthenticatedProfileId(user);
+    if (targetProfileId === authenticatedProfileId) {
+      return;
+    }
+
+    const hasOwnerAccess = await this.checkUserHasGlobalOwnerRoles(
+      authenticatedProfileId
+    );
+    if (!hasOwnerAccess) {
+      throw new ForbiddenException('Cannot modify another profile TELOS');
+    }
+  }
+
+  private async assertCanManageBulkProfileTelos(
+    user: UserDetails
+  ): Promise<void> {
+    const authenticatedProfileId = this.getAuthenticatedProfileId(user);
+    const hasOwnerAccess = await this.checkUserHasGlobalOwnerRoles(
+      authenticatedProfileId
+    );
+    if (!hasOwnerAccess) {
+      throw new ForbiddenException('Cannot bulk regenerate profile TELOS');
+    }
+  }
+
   private normalizeDelimitedValues(value?: string): string[] {
     if (!value) {
       return [];
@@ -477,8 +506,10 @@ export class ProfileController {
   })
   @Post('telos/regenerate-bulk')
   async regenerateProfileTelosBulk(
-    @Body() body: { profileIds?: string[] }
+    @Body() body: { profileIds?: string[] },
+    @User() user: UserDetails
   ): Promise<Array<ProfileTelosDto | null>> {
+    await this.assertCanManageBulkProfileTelos(user);
     const profileIds = (body.profileIds || []).filter(Boolean);
     return await Promise.all(
       profileIds.map((profileId) =>
@@ -499,7 +530,11 @@ export class ProfileController {
     description: 'The profile TELOS document regeneration has been requested.',
   })
   @Post(':id/telos/regenerate')
-  async regenerateProfileTelos(@Param('id') id: string) {
+  async regenerateProfileTelos(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
+    await this.assertCanManageProfileTelos(id, user);
     return await firstValueFrom(
       this.telosDocsClient.send(
         { cmd: ProfileTelosCommands.REGENERATE },
@@ -516,7 +551,8 @@ export class ProfileController {
       'The profile TELOS derived fields have been cleared while source facts remain available for rebuild.',
   })
   @Delete(':id/telos')
-  async resetProfileTelos(@Param('id') id: string) {
+  async resetProfileTelos(@Param('id') id: string, @User() user: UserDetails) {
+    await this.assertCanManageProfileTelos(id, user);
     return await firstValueFrom(
       this.telosDocsClient.send(
         { cmd: ProfileTelosCommands.RESET_DERIVED },
