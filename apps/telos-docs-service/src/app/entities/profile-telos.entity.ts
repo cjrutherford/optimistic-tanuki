@@ -10,7 +10,7 @@ export class ProfileTelos {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column({ type: 'uuid', unique: true })
   profileId: string;
 
   @Column({ nullable: true })

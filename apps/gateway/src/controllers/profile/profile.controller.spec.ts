@@ -295,7 +295,9 @@ describe('ProfileController', () => {
     } as any as ProfileTelosDto;
     jest.spyOn(telosClient, 'send').mockImplementation(() => of(telos));
 
-    const response = await controller.getProfileTelosByProfileId('1');
+    const response = await controller.getProfileTelosByProfileId('1', {
+      profileId: '1',
+    } as any);
 
     expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
       expect.objectContaining({
