@@ -21,6 +21,7 @@ import {
   SitemapService,
   SpamProtectionService,
   SanitizationService,
+  BlogTelosService,
 } from './services';
 import config from './config';
 import loadDatabase from './loadDatabase';
@@ -57,6 +58,7 @@ import { Contact, Event, Post, Blog, BlogComponent } from './entities';
     SitemapService,
     SpamProtectionService,
     SanitizationService,
+    BlogTelosService,
     {
       provide: getRepositoryToken(Post),
       useFactory: (ds: DataSource) => ds.getRepository(Post),

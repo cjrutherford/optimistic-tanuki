@@ -56,6 +56,7 @@ import { PostShare } from '../entities/post-share.entity';
 import { PostShareService } from './services/post-share.service';
 import { Event } from '../entities/event.entity';
 import { EventService } from './services/event.service';
+import { SocialTelosService } from './services/social-telos.service';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { EventService } from './services/event.service';
     PollService,
     PostShareService,
     EventService,
+    SocialTelosService,
     {
       provide: ServiceTokens.PROFILE_SERVICE,
       useFactory: (configService: ConfigService) => {

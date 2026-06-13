@@ -16,7 +16,11 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ClientProxy } from '@nestjs/microservices';
-import { BlogPostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  BlogPostCommands,
+  BlogTelosCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import {
   BlogPostQueryDto,
   CreateBlogPostDto,
@@ -29,6 +33,7 @@ import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { Public } from '../../decorators/public.decorator';
 import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 @UseGuards(AuthGuard, PermissionsGuard)
 @Controller('post')
@@ -36,6 +41,7 @@ export class PostController {
   constructor(
     @Inject(ServiceTokens.BLOG_SERVICE)
     private readonly postService: ClientProxy,
+    private readonly telosRefresh: ProfileTelosRefreshService,
     private readonly l: Logger,
     private readonly permissionsProxy: PermissionsProxyService
   ) {
@@ -61,6 +67,16 @@ export class PostController {
     return profileId;
   }
 
+  private queueProfileTelosRefresh(profileId: string): void {
+    this.telosRefresh.queueSourceRefresh({
+      profileId,
+      namespaceKey: 'blogging',
+      sourceClient: this.postService,
+      sourceCommand: BlogTelosCommands.GET_PROFILE_FACTS,
+      logContext: `blogging activity for profile ${profileId}`,
+    });
+  }
+
   @Post()
   @RequirePermissions('blog.post.create')
   async createPost(@Body() createPost: CreateBlogPostDto) {
@@ -68,6 +84,9 @@ export class PostController {
       const post = await firstValueFrom(
         this.postService.send({ cmd: BlogPostCommands.CREATE }, createPost)
       );
+      if (post?.authorId) {
+        this.queueProfileTelosRefresh(post.authorId);
+      }
       this.l.log('Post created successfully');
       return post;
     } catch (error) {
@@ -165,6 +184,9 @@ export class PostController {
       if (!publishedPost) {
         throw new HttpException('Post not found', 404);
       }
+      if (publishedPost.authorId) {
+        this.queueProfileTelosRefresh(publishedPost.authorId);
+      }
       this.l.log(`Post ${id} published successfully`);
       return publishedPost;
     } catch (error) {
@@ -252,6 +274,9 @@ export class PostController {
       if (!updatedPost) {
         throw new HttpException('Post not found', 404);
       }
+      if (updatedPost.authorId) {
+        this.queueProfileTelosRefresh(updatedPost.authorId);
+      }
       this.l.log(`Post ${id} updated successfully`);
       return updatedPost;
     } catch (error) {
@@ -274,9 +299,15 @@ export class PostController {
   @RequirePermissions('blog.post.delete')
   async deletePost(@Param('id') id: string) {
     try {
+      const existingPost = await firstValueFrom(
+        this.postService.send({ cmd: BlogPostCommands.FIND }, { id })
+      );
       await firstValueFrom(
         this.postService.send({ cmd: BlogPostCommands.DELETE }, { id })
       );
+      if (existingPost?.authorId) {
+        this.queueProfileTelosRefresh(existingPost.authorId);
+      }
       this.l.log(`Post ${id} deleted successfully`);
       return { message: 'Post deleted successfully' };
     } catch (error) {

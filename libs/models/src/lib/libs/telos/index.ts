@@ -6,9 +6,14 @@ export {
 } from './persona';
 export {
   ProfileTelosDto,
+  ProfileTelosStatsDto,
+  ProfileCharacterSheetDto,
   CreateProfileTelosDto,
   UpdateProfileTelosDto,
   QueryProfileTelosDto,
+  ProfileTelosSourceFactDto,
+  GetProfileTelosByProfileIdDto,
+  UpsertProfileTelosSourceDto,
 } from './profile';
 export {
   ProjectTelosDto,

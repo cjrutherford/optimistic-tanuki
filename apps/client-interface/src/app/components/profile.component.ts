@@ -7,6 +7,8 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   BannerComponent,
+  CharacterSheetComponent,
+  type CharacterSheetSkin,
   ProfileEditorComponent,
 } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
@@ -14,6 +16,7 @@ import {
   UpdateProfileDto,
   CreateProfileDto,
   ProfileDto,
+  ProfileTelosDto,
 } from '@optimistic-tanuki/ui-models';
 import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
 import { isPlatformBrowser } from '@angular/common';
@@ -33,6 +36,7 @@ import { PostDto } from '@optimistic-tanuki/social-ui';
     CardComponent,
     ButtonComponent,
     BannerComponent,
+    CharacterSheetComponent,
     ProfileEditorComponent,
   ],
   templateUrl: './profile.component.html',
@@ -57,6 +61,9 @@ export class ProfileComponent implements OnInit {
   isFollowing = signal(false);
   isBlocked = signal(false);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
+  profileTelos = signal<ProfileTelosDto | null>(null);
+  characterSheetEnabled = signal(false);
+  characterSheetSkin = signal<CharacterSheetSkin>('fantasy');
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
@@ -70,6 +77,8 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    void this.loadCharacterSheetConfig();
+
     this.route.paramMap.subscribe((params) => {
       const userId = params.get('userId');
       const currentProfile = this.profileService.getCurrentUserProfile();
@@ -105,6 +114,9 @@ export class ProfileComponent implements OnInit {
       this.loadUserCommunities(currentProfile.id);
       this.checkFollowStatus(currentProfile.id);
       this.checkBlockStatus(currentProfile.id, currentProfile.id);
+      void this.loadProfileTelos(currentProfile.id);
+    } else {
+      this.profileTelos.set(null);
     }
 
     this.profileService.getAllProfiles().then(() => {
@@ -143,9 +155,11 @@ export class ProfileComponent implements OnInit {
         if (currentProfile && currentProfile.id !== userId) {
           this.checkFollowStatus(userId);
           this.checkBlockStatus(currentProfile.id, userId);
+          this.profileTelos.set(null);
         } else {
           this.isFollowing.set(false);
           this.isBlocked.set(false);
+          void this.loadProfileTelos(userId);
         }
       },
       error: (err) => {
@@ -241,12 +255,40 @@ export class ProfileComponent implements OnInit {
     this.showProfileEditor = false;
   }
 
+  private async loadCharacterSheetConfig() {
+    const { enabled, skin } =
+      await this.profileService.loadCharacterSheetConfig();
+    this.characterSheetEnabled.set(enabled);
+    this.characterSheetSkin.set(skin);
+
+    if (!enabled) {
+      this.profileTelos.set(null);
+      return;
+    }
+
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (currentProfile && !this.isViewingOther) {
+      void this.loadProfileTelos(currentProfile.id);
+    }
+  }
+
+  private async loadProfileTelos(profileId: string) {
+    if (!this.characterSheetEnabled()) {
+      this.profileTelos.set(null);
+      return;
+    }
+
+    const telos = await this.profileService.getProfileTelos(profileId);
+    this.profileTelos.set(telos);
+  }
+
   updateProfile(profile: UpdateProfileDto) {
     const id = profile.id;
     this.profileService
       .updateProfile(id, { ...profile, bio: profile.bio ? profile.bio : '' })
       .then(() => {
         this.profileService.getProfileById(id);
+        void this.loadProfileTelos(id);
         this.showMessage('Profile updated and selected!', 'success');
         this.showProfileEditor = false;
       });
@@ -265,6 +307,10 @@ export class ProfileComponent implements OnInit {
   createProfile(newProfile: CreateProfileDto) {
     this.profileService.createProfile(newProfile).then(() => {
       this.profileService.getAllProfiles().then(() => {
+        const currentProfile = this.profileService.getCurrentUserProfile();
+        if (currentProfile) {
+          void this.loadProfileTelos(currentProfile.id);
+        }
         this.showMessage('Profile created and selected!', 'success');
         this.showProfileEditor = false;
       });

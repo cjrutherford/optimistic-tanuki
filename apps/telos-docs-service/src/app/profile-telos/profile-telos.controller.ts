@@ -4,8 +4,10 @@ import { MessagePattern } from '@nestjs/microservices';
 import { ProfileTelosCommands } from '@optimistic-tanuki/constants';
 import {
   CreateProfileTelosDto,
+  GetProfileTelosByProfileIdDto,
   QueryProfileTelosDto,
   UpdateProfileTelosDto,
+  UpsertProfileTelosSourceDto,
 } from '@optimistic-tanuki/models';
 
 @Controller('profile-telos')
@@ -32,8 +34,28 @@ export class ProfileTelosController {
     return await this.profileTelosService.findOne(data);
   }
 
+  @MessagePattern({ cmd: ProfileTelosCommands.FIND_BY_PROFILE_ID })
+  async findProfileByProfileId(data: GetProfileTelosByProfileIdDto) {
+    return await this.profileTelosService.findByProfileId(data.profileId);
+  }
+
   @MessagePattern({ cmd: ProfileTelosCommands.FIND })
   async findProfiles(data: QueryProfileTelosDto) {
     return await this.profileTelosService.findAll(data);
+  }
+
+  @MessagePattern({ cmd: ProfileTelosCommands.UPSERT_SOURCE })
+  async upsertProfileSource(data: UpsertProfileTelosSourceDto) {
+    return await this.profileTelosService.upsertSource(data);
+  }
+
+  @MessagePattern({ cmd: ProfileTelosCommands.REGENERATE })
+  async regenerateProfile(data: GetProfileTelosByProfileIdDto) {
+    return await this.profileTelosService.regenerate(data.profileId);
+  }
+
+  @MessagePattern({ cmd: ProfileTelosCommands.RESET_DERIVED })
+  async resetDerivedProfile(data: GetProfileTelosByProfileIdDto) {
+    return await this.profileTelosService.resetDerived(data.profileId);
   }
 }

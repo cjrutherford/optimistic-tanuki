@@ -55,7 +55,7 @@
           }
         </div>
 
-        @if (community.tags?.length) {
+        @if (community.tags.length) {
         <div class="tags">
           @for (tag of community.tags; track tag.id) {
           <span class="tag">{{ tag.name }}</span>
@@ -116,7 +116,7 @@
           </span>
         </div>
 
-        @if (community.tags?.length) {
+        @if (community.tags.length) {
         <div class="tags">
           @for (tag of community.tags; track tag.id) {
           <span class="tag">{{ tag.name }}</span>

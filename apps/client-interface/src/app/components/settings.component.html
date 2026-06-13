@@ -44,6 +44,14 @@
         <lib-theme-designer></lib-theme-designer>
       </div>
     </section>
+
+    <section class="settings-section">
+      <lib-character-sheet
+        [enabled]="characterSheetEnabled()"
+        [skin]="characterSheetSkin()"
+        [profileTelos]="profileTelos()"
+      ></lib-character-sheet>
+    </section>
   </div>
 
   <lib-profile-editor

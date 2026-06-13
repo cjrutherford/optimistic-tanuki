@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { BlogPostCommands } from '@optimistic-tanuki/constants';
+import {
+  BlogPostCommands,
+  BlogTelosCommands,
+} from '@optimistic-tanuki/constants';
 import { PostService, RssService, SeoService } from '../services';
+import { BlogTelosService } from '../services/blog-telos.service';
 import {
   CreateBlogPostDto,
   BlogPostDto,
@@ -14,7 +18,8 @@ export class PostController {
   constructor(
     private readonly postService: PostService,
     private readonly rssService: RssService,
-    private readonly seoService: SeoService
+    private readonly seoService: SeoService,
+    private readonly blogTelosService: BlogTelosService
   ) {
     console.log('PostController initialized');
   }
@@ -119,5 +124,10 @@ export class PostController {
     @Payload() query: { searchTerm: string }
   ): Promise<BlogPostDto[]> {
     return await this.postService.searchPosts(query.searchTerm);
+  }
+
+  @MessagePattern({ cmd: BlogTelosCommands.GET_PROFILE_FACTS })
+  async getProfileTelosFacts(@Payload('profileId') profileId: string) {
+    return await this.blogTelosService.getProfileFacts(profileId);
   }
 }

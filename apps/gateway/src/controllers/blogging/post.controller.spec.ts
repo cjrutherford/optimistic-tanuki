@@ -10,6 +10,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 
 import { PermissionsProxyService } from '../../auth/permissions-proxy.service';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 describe('PostController', () => {
   let controller: PostController;
@@ -18,6 +19,10 @@ describe('PostController', () => {
     connect: jest.Mock;
     close: jest.Mock;
   };
+  let mockProfileService: {
+    send: jest.Mock;
+  };
+  let telosRefresh: { queueSourceRefresh: jest.Mock };
 
   const mockUser = {
     email: 'test@example.com',
@@ -44,6 +49,8 @@ describe('PostController', () => {
     isDraft: false,
     publishedAt: new Date(),
   };
+  const flushPromises = async () =>
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
   beforeEach(async () => {
     mockBlogService = {
@@ -51,6 +58,16 @@ describe('PostController', () => {
       connect: jest.fn().mockResolvedValue(null),
       close: jest.fn(),
     };
+    mockProfileService = {
+      send: jest.fn().mockReturnValue(
+        of({
+          id: 'profile-1',
+          profileName: 'Test User',
+          appScope: 'digital-homestead',
+        })
+      ),
+    };
+    telosRefresh = { queueSourceRefresh: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PostController],
@@ -84,10 +101,9 @@ describe('PostController', () => {
         },
         {
           provide: ServiceTokens.PROFILE_SERVICE,
-          useValue: {
-            send: jest.fn().mockReturnValue(of([{ appScope: 'global' }])),
-          },
+          useValue: mockProfileService,
         },
+        { provide: ProfileTelosRefreshService, useValue: telosRefresh },
         {
           provide: PermissionsCacheService,
           useValue: {
@@ -233,5 +249,23 @@ describe('PostController', () => {
         controller.updatePost('post-1', updateData, userWithoutProfile)
       ).rejects.toThrow(HttpException);
     });
+  });
+
+  it('queues blog telos refresh after creating a post', async () => {
+    mockBlogService.send.mockReturnValueOnce(of(mockPost));
+
+    await controller.createPost({
+      title: 'New Post',
+      content: 'Test Content',
+      authorId: 'profile-1',
+    });
+    await flushPromises();
+
+    expect(telosRefresh.queueSourceRefresh).toHaveBeenCalledWith(
+      expect.objectContaining({
+        profileId: 'profile-1',
+        namespaceKey: 'blogging',
+      })
+    );
   });
 });

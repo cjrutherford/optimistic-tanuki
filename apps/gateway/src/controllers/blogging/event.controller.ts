@@ -14,6 +14,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import {
   BlogEventCommands as EventCommands,
+  BlogTelosCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import {
@@ -25,6 +26,7 @@ import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { AuthGuard } from '../../auth/auth.guard';
+import { ProfileTelosRefreshService } from '../../app/profile-telos-refresh.service';
 
 @Controller('event')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -32,6 +34,7 @@ export class EventController {
   constructor(
     @Inject(ServiceTokens.BLOG_SERVICE)
     private readonly eventService: ClientProxy,
+    private readonly telosRefresh: ProfileTelosRefreshService,
     private readonly l: Logger
   ) {
     this.l.log('EventController initialized');
@@ -44,6 +47,16 @@ export class EventController {
       .catch((e) => this.l.error('Error connecting to eventService', e));
   }
 
+  private queueProfileTelosRefresh(profileId: string): void {
+    this.telosRefresh.queueSourceRefresh({
+      profileId,
+      namespaceKey: 'blogging',
+      sourceClient: this.eventService,
+      sourceCommand: BlogTelosCommands.GET_PROFILE_FACTS,
+      logContext: `blogging events for profile ${profileId}`,
+    });
+  }
+
   @Post()
   @RequirePermissions('blog.post.create')
   async createEvent(@Body() createEvent: CreateEventDto) {
@@ -51,6 +64,9 @@ export class EventController {
       const event = await firstValueFrom(
         this.eventService.send({ cmd: EventCommands.CREATE }, createEvent)
       );
+      if (event?.organizerId) {
+        this.queueProfileTelosRefresh(event.organizerId);
+      }
       this.l.log('Event created successfully');
       return event;
     } catch (error) {
@@ -121,6 +137,9 @@ export class EventController {
       if (!updatedEvent) {
         throw new HttpException('Event not found', 404);
       }
+      if (updatedEvent.organizerId) {
+        this.queueProfileTelosRefresh(updatedEvent.organizerId);
+      }
       this.l.log(`Event ${id} updated successfully`);
       return updatedEvent;
     } catch (error) {
@@ -139,9 +158,15 @@ export class EventController {
   @RequirePermissions('blog.post.delete')
   async deleteEvent(@Param('id') id: string) {
     try {
+      const existingEvent = await firstValueFrom(
+        this.eventService.send({ cmd: EventCommands.FIND }, id)
+      );
       await firstValueFrom(
         this.eventService.send({ cmd: EventCommands.DELETE }, id)
       );
+      if (existingEvent?.organizerId) {
+        this.queueProfileTelosRefresh(existingEvent.organizerId);
+      }
       this.l.log(`Event ${id} deleted successfully`);
       return { message: 'Event deleted successfully' };
     } catch (error) {

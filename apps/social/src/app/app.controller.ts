@@ -30,6 +30,7 @@ import {
   PostShareCommands,
   SocialEventCommands as EventCommands,
   ScheduledPostCommands,
+  SocialTelosCommands,
   ServiceTokens,
   ProfileCommands,
 } from '@optimistic-tanuki/constants';
@@ -84,6 +85,7 @@ import { PollService } from './services/poll.service';
 import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { LinkService } from './services/link.service';
+import { SocialTelosService } from './services/social-telos.service';
 import { Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
@@ -118,6 +120,7 @@ export class AppController {
     private readonly postShareService: PostShareService,
     private readonly eventService: EventService,
     private readonly linkService: LinkService,
+    private readonly socialTelosService: SocialTelosService,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy
   ) {}
@@ -256,6 +259,11 @@ export class AppController {
   ) {
     const search = options ? postSearchDtoToFindManyOptions(options) : {};
     return await this.postService.findOne(id, search);
+  }
+
+  @MessagePattern({ cmd: SocialTelosCommands.GET_PROFILE_FACTS })
+  async getProfileTelosFacts(@Payload('profileId') profileId: string) {
+    return await this.socialTelosService.getProfileFacts(profileId);
   }
 
   @MessagePattern({ cmd: PostCommands.UPDATE })
