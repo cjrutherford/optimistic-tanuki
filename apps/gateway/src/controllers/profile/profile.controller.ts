@@ -398,7 +398,7 @@ export class ProfileController {
   @Get('me/telos')
   async getCurrentProfileTelos(@User() user: UserDetails) {
     const profileId = this.getAuthenticatedProfileId(user);
-    return this.getProfileTelosByProfileId(profileId);
+    return this.getProfileTelosByProfileId(profileId, user);
   }
 
   @UseGuards(AuthGuard)
@@ -482,7 +482,11 @@ export class ProfileController {
     description: 'The profile TELOS document has been successfully retrieved.',
   })
   @Get(':id/telos')
-  async getProfileTelosByProfileId(@Param('id') id: string) {
+  async getProfileTelosByProfileId(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
+    await this.assertCanManageProfileTelos(id, user);
     const profile = await firstValueFrom(
       this.client.send({ cmd: ProfileCommands.Get }, { id })
     );
