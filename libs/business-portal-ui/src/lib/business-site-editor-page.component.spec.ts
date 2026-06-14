@@ -26,10 +26,61 @@ describe('BusinessSiteEditorPageComponent', () => {
   const setPrimaryColor = jest.fn();
   const setPersonality = jest.fn().mockResolvedValue(undefined);
   const getTheme = jest.fn(() => 'light');
+  const getAnimationSettings = jest.fn(() => ({
+    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    duration: '300ms',
+  }));
+  const getButtonGradient = jest.fn(
+    () => 'linear-gradient(135deg, #1f7a63, #0f172a)'
+  );
+  const pair = (base: string): [string, string][] => [
+    ['0', base],
+    ['1', base],
+    ['2', base],
+    ['3', base],
+    ['4', base],
+    ['5', base],
+    ['6', base],
+  ];
   const themeColors$ = of({
     background: '#ffffff',
     foreground: '#0f172a',
     accent: '#1f7a63',
+    accentShades: pair('#1f7a63'),
+    accentGradients: {
+      light: 'linear-gradient(135deg, #34d399, #1f7a63)',
+      dark: 'linear-gradient(135deg, #1f7a63, #0f172a)',
+    },
+    complementary: '#d97706',
+    complementaryShades: pair('#d97706'),
+    tertiary: '#7c3aed',
+    tertiaryShades: pair('#7c3aed'),
+    success: '#15803d',
+    successShades: pair('#15803d'),
+    danger: '#dc2626',
+    dangerShades: pair('#dc2626'),
+    warning: '#f59e0b',
+    warningShades: pair('#f59e0b'),
+    complementaryGradients: {
+      light: 'linear-gradient(135deg, #d97706, #1f7a63)',
+      dark: 'linear-gradient(135deg, #f59e0b, #0f172a)',
+    },
+    tertiaryGradients: {
+      light: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+      dark: 'linear-gradient(135deg, #7c3aed, #0f172a)',
+    },
+    successGradients: {
+      light: 'linear-gradient(135deg, #4ade80, #15803d)',
+      dark: 'linear-gradient(135deg, #15803d, #0f172a)',
+    },
+    dangerGradients: {
+      light: 'linear-gradient(135deg, #f87171, #dc2626)',
+      dark: 'linear-gradient(135deg, #dc2626, #0f172a)',
+    },
+    warningGradients: {
+      light: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+      dark: 'linear-gradient(135deg, #f59e0b, #0f172a)',
+    },
   });
 
   function mockMobileViewport(matches: boolean) {
@@ -117,6 +168,8 @@ describe('BusinessSiteEditorPageComponent', () => {
             setTheme,
             setPrimaryColor,
             setPersonality,
+            getAnimationSettings,
+            getButtonGradient,
             themeColors$,
           },
         },
@@ -166,7 +219,8 @@ describe('BusinessSiteEditorPageComponent', () => {
       expect.objectContaining({
         serviceCatalog: { source: 'store' },
         services: [],
-      })
+      }),
+      null
     );
   });
 
@@ -216,6 +270,113 @@ describe('BusinessSiteEditorPageComponent', () => {
         content: '<p>Owner-authored hero copy.</p>',
       })
     );
+  });
+
+  it('starts the content editor with the existing body content from the selected section', async () => {
+    const { fixture, component } = createComponent();
+
+    component.draft.update((draft) => {
+      const about = draft.landingPage.sections.find(
+        (section) => section.id === 'about'
+      );
+      if (about) {
+        about.body = 'First line\n\nSecond line';
+      }
+      return draft;
+    });
+
+    component.selectSection('about');
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(component.selectedSectionComposeValue().content).toBe(
+      '<p>First line</p><p>Second line</p>'
+    );
+  });
+
+  it('loads existing richContent into the compose editor when the section is selected', async () => {
+    const { fixture, component } = createComponent();
+
+    component.draft.update((draft) => {
+      const about = draft.landingPage.sections.find(
+        (section) => section.id === 'about'
+      );
+      if (about) {
+        about.richContent = {
+          title: 'Custom About Title',
+          content: '<p>Custom overridden content here.</p>',
+          injectedComponents: [],
+          themeConfig: { theme: 'light', accentColor: '#ff0000' },
+        };
+      }
+      return draft;
+    });
+
+    component.selectSection('about');
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    expect(component.selectedSectionComposeValue().title).toBe(
+      'Custom About Title'
+    );
+    expect(component.selectedSectionComposeValue().content).toBe(
+      '<p>Custom overridden content here.</p>'
+    );
+  });
+
+  it('preserves paragraph breaks when rich text content is written back into the section body', () => {
+    const { component } = createComponent();
+
+    component.selectSection('about');
+    component.updateSelectedSectionRichContent({
+      title: 'About',
+      content: '<p>First line</p><p>Second line</p>',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: [],
+      themeConfig: {
+        theme: 'light',
+        accentColor: '#1f7a63',
+      },
+    });
+
+    expect(component.selectedSection()?.body).toBe('First line\nSecond line');
+  });
+
+  it('keeps the selected custom section compose model stable across repeated renders', () => {
+    const { fixture, component } = createComponent();
+
+    component.addCustomSection();
+    const customSection = component
+      .draft()
+      .landingPage.sections.find((section) => section.type === 'custom');
+    expect(customSection).toBeTruthy();
+
+    component.selectSection(customSection!.id);
+    fixture.detectChanges();
+
+    const firstValue = component.selectedSectionComposeValue();
+
+    fixture.detectChanges();
+
+    expect(component.selectedSectionComposeValue()).toBe(firstValue);
+
+    component.updateSelectedSectionRichContent({
+      title: 'Custom section',
+      content: '<p>Updated once.</p>',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: [],
+      themeConfig: {
+        theme: 'light',
+        accentColor: '#1f7a63',
+      },
+    });
+    fixture.detectChanges();
+
+    const updatedValue = component.selectedSectionComposeValue();
+    expect(updatedValue).not.toBe(firstValue);
+    expect(updatedValue.content).toBe('<p>Updated once.</p>');
   });
 
   it('saves edited feature flags with normalized landing section order', () => {
@@ -275,7 +436,8 @@ describe('BusinessSiteEditorPageComponent', () => {
             expect.objectContaining({ id: 'hero', order: 2 }),
           ],
         }),
-      })
+      }),
+      null
     );
   });
 
@@ -490,7 +652,8 @@ describe('BusinessSiteEditorPageComponent', () => {
             }),
           ]),
         }),
-      })
+      }),
+      null
     );
   });
 
@@ -548,7 +711,8 @@ describe('BusinessSiteEditorPageComponent', () => {
             }),
           ]),
         }),
-      })
+      }),
+      null
     );
   });
 
@@ -658,7 +822,8 @@ describe('BusinessSiteEditorPageComponent', () => {
             }),
           ]),
         }),
-      })
+      }),
+      null
     );
   });
 
@@ -695,6 +860,61 @@ describe('BusinessSiteEditorPageComponent', () => {
     );
   });
 
+  it('applies a picked asset to the contact section image', async () => {
+    const { component } = createComponent();
+
+    component.selectSection('contact');
+    component.toggleAssetPicker(component.selectedSectionIndex());
+    await Promise.resolve();
+
+    component.selectAsset(component.selectedSectionIndex(), null, {
+      id: 'asset-1',
+      name: 'Studio',
+      type: 'image',
+      profileId: 'profile-1',
+      url: '/api/asset/asset-1',
+    });
+
+    expect(component.selectedSection()?.image).toEqual(
+      expect.objectContaining({
+        sourceType: 'asset',
+        src: '/api/asset/asset-1',
+        alt: 'Studio',
+      })
+    );
+  });
+
+  it('updates selected section motion settings directly on the draft section', () => {
+    const { component } = createComponent();
+
+    component.selectSection('contact');
+    component.patchSelectedSectionField('motion.kind', 'signal-mesh');
+    component.patchSelectedSectionField('motion.density', '7');
+
+    expect(component.selectedSection()?.motion).toEqual(
+      expect.objectContaining({
+        kind: 'signal-mesh',
+        density: 7,
+      })
+    );
+  });
+
+  it('routes built-in section editing back to the owning editor panels', () => {
+    const { fixture, component } = createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    component.selectSection('contact');
+    fixture.detectChanges();
+
+    const selectedShell = host.querySelector('.selected-section-shell');
+
+    expect(component.selectedSection()?.type).toBe('contact');
+    expect(
+      selectedShell?.querySelector('app-schema-block-inspector')
+    ).toBeNull();
+    expect(selectedShell?.textContent).toContain('Contact Details');
+  });
+
   it('uploads an asset for a gallery item and applies the returned asset url', async () => {
     const { component } = createComponent();
     const file = new File(['binary'], 'proof.png', { type: 'image/png' });
@@ -709,7 +929,7 @@ describe('BusinessSiteEditorPageComponent', () => {
       '/api/asset',
       expect.objectContaining({
         profileId: 'profile-1',
-        name: 'proof',
+        name: 'proof.png',
         fileExtension: 'png',
       }),
       expect.objectContaining({
@@ -725,6 +945,42 @@ describe('BusinessSiteEditorPageComponent', () => {
         alt: 'proof',
       })
     );
+  });
+
+  it('blocks oversize image uploads before posting to the asset API', async () => {
+    const { component } = createComponent();
+    const file = new File(['binary'], 'too-large.png', { type: 'image/png' });
+    Object.defineProperty(file, 'size', { value: 20 * 1024 * 1024 + 1 });
+
+    component.addImageSection();
+    const sectionIndex = component.draft().landingPage.sections.length - 1;
+    const event = {
+      target: { files: [file], value: 'selected' },
+    } as unknown as Event;
+
+    await component.onAssetFileSelected(sectionIndex, null, event);
+
+    expect(httpPost).not.toHaveBeenCalled();
+    expect(component.assetLibraryError()).toBe(
+      'Images must be 20MB or smaller before uploading.'
+    );
+  });
+
+  it('allows image uploads up to 20MB before posting to the asset API', async () => {
+    const { component } = createComponent();
+    const file = new File(['binary'], 'large-ok.png', { type: 'image/png' });
+    Object.defineProperty(file, 'size', { value: 20 * 1024 * 1024 });
+
+    component.addImageSection();
+    const sectionIndex = component.draft().landingPage.sections.length - 1;
+    const event = {
+      target: { files: [file], value: '' },
+    } as unknown as Event;
+
+    await component.onAssetFileSelected(sectionIndex, null, event);
+
+    expect(httpPost).toHaveBeenCalled();
+    expect(component.assetLibraryError()).toBe('');
   });
 
   it('restores recommended landing section state from the editor controls', () => {
@@ -783,7 +1039,8 @@ describe('BusinessSiteEditorPageComponent', () => {
         brand: expect.objectContaining({
           tagline: 'Draft visible before save',
         }),
-      })
+      }),
+      null
     );
   });
 

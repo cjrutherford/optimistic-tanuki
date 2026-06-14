@@ -63,6 +63,8 @@ interface AssetUploadPayload {
   fileExtension: string;
 }
 
+const MAX_IMAGE_UPLOAD_BYTES = 20 * 1024 * 1024;
+
 type EditorMode = 'guided' | 'studio';
 type SupportedThemeFieldKey = keyof BusinessSiteConfig['theme'];
 
@@ -1037,6 +1039,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     </div>
                   </div>
 
+                  @if (selectedSectionUsesDedicatedPanel()) {
+                  <div class="section-help selected-section-help">
+                    <strong>{{ selectedSectionEditorPanelTitle() }}</strong>
+                    <p>{{ selectedSectionEditorPanelDescription() }}</p>
+                  </div>
+                  } @else {
                   <app-schema-block-inspector
                     [block]="selectedSectionBlock()"
                     [definition]="selectedSectionDefinition()"
@@ -1044,8 +1052,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                       patchSelectedSectionField($event.key, $event.value)
                     "
                   ></app-schema-block-inspector>
-
-                  @if (composeEditorVisible()) {
+                  } @if (composeEditorVisible()) {
                   <div class="media-editor custom-compose-editor">
                     <div class="media-editor-head">
                       <strong>Section composition</strong>
@@ -1061,14 +1068,24 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                       (ngModelChange)="updateSelectedSectionRichContent($event)"
                     ></lib-social-compose>
                   </div>
-                  } @if (section.type === 'image') {
+                  } @if (section.type === 'image' || section.type === 'contact')
+                  {
                   <div class="media-editor">
                     <div class="media-editor-head">
-                      <strong>Image asset workflow</strong>
-                      <small
-                        >Upload or choose an existing owner asset for the
-                        selected image block.</small
-                      >
+                      <strong>
+                        {{
+                          section.type === 'contact'
+                            ? 'Contact image'
+                            : 'Image asset workflow'
+                        }}
+                      </strong>
+                      <small>
+                        {{
+                          section.type === 'contact'
+                            ? 'Upload or choose an existing owner asset for the optional contact-section image.'
+                            : 'Upload or choose an existing owner asset for the selected image block.'
+                        }}
+                      </small>
                     </div>
                     <div class="media-actions">
                       <input
@@ -2917,6 +2934,7 @@ export class BusinessSiteEditorPageComponent {
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly themeService = inject(ThemeService);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
 
   loading = signal(true);
   saving = signal(false);
@@ -3076,6 +3094,17 @@ export class BusinessSiteEditorPageComponent {
   readonly selectedSectionId = signal<string | null>(
     this.draft().landingPage.sections[0]?.id ?? null
   );
+  private readonly selectedSectionComposeModel = signal<PostData>({
+    title: '',
+    content: '',
+    links: [],
+    attachments: [],
+    injectedComponentsNew: [],
+    themeConfig: {
+      theme: 'light',
+      accentColor: '#000000',
+    },
+  });
   readonly expandedPanels = signal<Record<EditorPanelId, boolean>>({
     design: true,
     'business-info': true,
@@ -3090,6 +3119,7 @@ export class BusinessSiteEditorPageComponent {
   readonly mobileSheetView = signal<'auto' | 'structure' | 'inspector'>('auto');
   readonly landingBlockFallbackTitle = (block: BlockInstance, index: number) =>
     this.blockFallbackTitle(block, index);
+  private selectedSectionComposeSignature = '';
 
   private applyDraftTheme(): void {
     const theme = this.draft().theme;
@@ -3165,6 +3195,12 @@ export class BusinessSiteEditorPageComponent {
       this.applyDraftTheme();
     });
 
+    effect(() => {
+      this.selectedSectionId();
+      this.draft();
+      this.syncSelectedSectionComposeModel();
+    });
+
     const initialMode = this.route?.snapshot.data['editorMode'];
     if (initialMode === 'guided' || initialMode === 'studio') {
       this.editorMode.set(initialMode);
@@ -3172,7 +3208,7 @@ export class BusinessSiteEditorPageComponent {
     }
     this.onboardingMode.set(!!this.route?.snapshot.data['onboardingMode']);
 
-    this.siteConfig.fetch().subscribe({
+    this.siteConfig.fetch(false, this.siteSlug).subscribe({
       next: (site) => {
         this.loading.set(false);
         this.configId = this.siteConfig.configId();
@@ -3242,6 +3278,7 @@ export class BusinessSiteEditorPageComponent {
     );
     this.richTextEditorOpen.set(nextSection?.type === 'custom');
     this.expandPanel('layout');
+    this.syncDedicatedEditorPanelForSelection(nextSection ?? null);
     if (this.isMobileViewport()) {
       this.openMobileSheet('inspector');
     }
@@ -3497,26 +3534,51 @@ export class BusinessSiteEditorPageComponent {
     );
   }
 
+  selectedSectionUsesDedicatedPanel(): boolean {
+    const type = this.selectedSection()?.type;
+    return !!type && this.panelIdForSectionType(type) !== null;
+  }
+
+  selectedSectionEditorPanelTitle(): string {
+    const panelId = this.panelIdForSectionType(this.selectedSection()?.type);
+    switch (panelId) {
+      case 'business-info':
+        return 'Brand & Identity';
+      case 'contact':
+        return 'Contact Details';
+      case 'offers':
+        return 'Offers';
+      case 'testimonials':
+        return 'Testimonials';
+      default:
+        return 'Section Editor';
+    }
+  }
+
+  selectedSectionEditorPanelDescription(): string {
+    const type = this.selectedSection()?.type;
+    switch (type) {
+      case 'hero':
+      case 'about':
+        return 'This section uses the Brand & Identity panel on the left so preview copy stays in sync with the business profile fields.';
+      case 'services':
+      case 'booking':
+        return 'This section uses the Offers panel on the left so service and call-to-action changes update the live preview from the primary data source.';
+      case 'testimonials':
+        return 'This section uses the Testimonials panel on the left so social proof stays aligned with the published testimonials collection.';
+      case 'contact':
+        return 'This section uses the Contact Details panel on the left for business contact info, with image and section styling controls kept here.';
+      default:
+        return 'Use the dedicated editor panel on the left for this section.';
+    }
+  }
+
   toggleRichTextEditor(): void {
     this.richTextEditorOpen.update((open) => !open);
   }
 
   selectedSectionComposeValue(): PostData {
-    const section = this.selectedSection();
-    const richContent = section?.richContent;
-    return {
-      title: richContent?.title ?? section?.title ?? '',
-      content: richContent?.content ?? this.defaultComposeContent(section),
-      links: [],
-      attachments: [],
-      injectedComponentsNew: richContent?.injectedComponents ?? [],
-      themeConfig: {
-        theme: richContent?.themeConfig?.theme ?? this.draft().theme.mode,
-        accentColor:
-          richContent?.themeConfig?.accentColor ??
-          this.draft().theme.primaryColor,
-      },
-    };
+    return this.selectedSectionComposeModel();
   }
 
   updateSelectedSectionRichContent(value: PostData): void {
@@ -3573,6 +3635,36 @@ export class BusinessSiteEditorPageComponent {
     return this.selectedSectionComposeValue();
   }
 
+  private syncSelectedSectionComposeModel(): void {
+    const nextValue = this.buildSelectedSectionComposeValue();
+    const nextSignature = JSON.stringify(nextValue);
+    if (nextSignature === this.selectedSectionComposeSignature) {
+      return;
+    }
+
+    this.selectedSectionComposeSignature = nextSignature;
+    this.selectedSectionComposeModel.set(nextValue);
+  }
+
+  private buildSelectedSectionComposeValue(): PostData {
+    const section = this.selectedSection();
+    const richContent = section?.richContent;
+
+    return {
+      title: richContent?.title ?? section?.title ?? '',
+      content: richContent?.content ?? this.defaultComposeContent(section),
+      links: [],
+      attachments: [],
+      injectedComponentsNew: richContent?.injectedComponents ?? [],
+      themeConfig: {
+        theme: richContent?.themeConfig?.theme ?? this.draft().theme.mode,
+        accentColor:
+          richContent?.themeConfig?.accentColor ??
+          this.draft().theme.primaryColor,
+      },
+    };
+  }
+
   updateSelectedCustomSectionRichContent(value: PostData): void {
     this.updateSelectedSectionRichContent(value);
   }
@@ -3582,6 +3674,10 @@ export class BusinessSiteEditorPageComponent {
   ): string {
     if (!section) {
       return '';
+    }
+
+    if (section.body?.trim()) {
+      return this.composeHtmlFromText(section.body);
     }
 
     switch (section.type) {
@@ -3605,7 +3701,7 @@ export class BusinessSiteEditorPageComponent {
       case 'booking':
         return '<p>Book the right starting point when you are ready.</p>';
       case 'custom':
-        return section.body ? `<p>${this.escapeHtml(section.body)}</p>` : '';
+        return section.body ? this.composeHtmlFromText(section.body) : '';
       default:
         return '';
     }
@@ -3624,6 +3720,18 @@ export class BusinessSiteEditorPageComponent {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  private composeHtmlFromText(value: string): string {
+    return value
+      .replace(/\r\n?/g, '\n')
+      .split(/\n{2,}/)
+      .filter((paragraph) => paragraph.trim().length > 0)
+      .map(
+        (paragraph) =>
+          `<p>${this.escapeHtml(paragraph).replace(/\n/g, '<br />')}</p>`
+      )
+      .join('');
   }
 
   private focusGuidedStep(): void {
@@ -3662,6 +3770,34 @@ export class BusinessSiteEditorPageComponent {
       );
     } finally {
       this.storeProductsLoading.set(false);
+    }
+  }
+
+  private syncDedicatedEditorPanelForSelection(
+    section: LandingSection | null
+  ): void {
+    const panelId = this.panelIdForSectionType(section?.type);
+    if (panelId) {
+      this.expandPanel(panelId);
+    }
+  }
+
+  private panelIdForSectionType(
+    type: LandingSection['type'] | undefined
+  ): EditorPanelId | null {
+    switch (type) {
+      case 'hero':
+      case 'about':
+        return 'business-info';
+      case 'contact':
+        return 'contact';
+      case 'services':
+      case 'booking':
+        return 'offers';
+      case 'testimonials':
+        return 'testimonials';
+      default:
+        return null;
     }
   }
 
@@ -3908,7 +4044,12 @@ export class BusinessSiteEditorPageComponent {
   ): void {
     this.draft.update((draft) => {
       if (itemIndex === null || itemIndex === undefined) {
-        const image = draft.landingPage.sections[sectionIndex].image;
+        const section = draft.landingPage.sections[sectionIndex];
+        if (!section.image && section.type === 'contact') {
+          section.image = this.createDefaultImage();
+          section.image.aspect = 'portrait';
+        }
+        const image = section.image;
         if (image) {
           image.sourceType = 'asset';
           image.src = asset.url;
@@ -3941,6 +4082,16 @@ export class BusinessSiteEditorPageComponent {
       return;
     }
 
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+      this.assetLibraryError.set(
+        'Images must be 20MB or smaller before uploading.'
+      );
+      if (input) {
+        input.value = '';
+      }
+      return;
+    }
+
     this.uploadingTargets.update((state) => ({ ...state, [targetKey]: true }));
     this.assetLibraryError.set('');
 
@@ -3948,7 +4099,12 @@ export class BusinessSiteEditorPageComponent {
       const assetUrl = await this.uploadAsset(file, profileId);
       this.draft.update((draft) => {
         if (itemIndex === null || itemIndex === undefined) {
-          const image = draft.landingPage.sections[sectionIndex].image;
+          const section = draft.landingPage.sections[sectionIndex];
+          if (!section.image && section.type === 'contact') {
+            section.image = this.createDefaultImage();
+            section.image.aspect = 'portrait';
+          }
+          const image = section.image;
           if (image) {
             image.sourceType = 'asset';
             image.src = assetUrl;
@@ -4579,7 +4735,7 @@ export class BusinessSiteEditorPageComponent {
     const content = await this.fileToBase64(file);
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'png';
     const payload: AssetUploadPayload = {
-      name: file.name.replace(/\.[^/.]+$/, ''),
+      name: file.name,
       profileId,
       type: 'image',
       content,
@@ -4607,15 +4763,33 @@ export class BusinessSiteEditorPageComponent {
       return '';
     }
 
+    const htmlWithLineBreaks = value
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|section|article|blockquote|li|h[1-6])>/gi, '\n')
+      .replace(/<(li)\b[^>]*>/gi, '\n');
+
     if (typeof DOMParser === 'undefined') {
-      return value
+      return htmlWithLineBreaks
         .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
         .trim();
     }
 
-    const parsed = new DOMParser().parseFromString(value, 'text/html');
-    return parsed.body.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    const parsed = new DOMParser().parseFromString(
+      htmlWithLineBreaks,
+      'text/html'
+    );
+    return (
+      parsed.body.textContent
+        ?.replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim() ?? ''
+    );
   }
 
   private sanitizedDraft(): BusinessSiteConfig {
@@ -4708,7 +4882,7 @@ export class BusinessSiteEditorPageComponent {
       payload.site.onboardingCompletedAt = new Date().toISOString();
     }
 
-    this.api.updateSiteConfig(this.configId, payload).subscribe({
+    this.api.updateSiteConfig(this.configId, payload, this.siteSlug).subscribe({
       next: (saved: any) => {
         this.saving.set(false);
         if (saved?.id && this.configId === null) {
