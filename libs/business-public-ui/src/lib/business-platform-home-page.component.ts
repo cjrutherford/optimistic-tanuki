@@ -137,7 +137,7 @@ export const businessPlatformHomePageStyles = `
       }
 
       .primary {
-        background: var(--platform-panel);
+        background: var(--surface, var(--background, #fff));
         color: var(--platform-panel-ink);
       }
 
@@ -152,8 +152,8 @@ export const businessPlatformHomePageStyles = `
         gap: 1rem;
         padding: 1.35rem;
         border-radius: 1.6rem;
-        background: var(--platform-panel);
-        color: var(--platform-panel-ink);
+        background: var(--surface, var(--background, #fff));
+        color: var(--foreground, var(--platform-ink));
         align-content: start;
       }
 
@@ -164,7 +164,7 @@ export const businessPlatformHomePageStyles = `
         border-radius: 1.15rem;
         background: color-mix(
           in srgb,
-          var(--platform-panel-ink) 8%,
+          var(--foreground, var(--platform-ink)) 8%,
           transparent
         );
       }
@@ -208,7 +208,7 @@ export const businessPlatformHomePageStyles = `
       .directory-copy h2,
       .directory-card h3 {
         margin: 0;
-        color: var(--platform-ink);
+        color: var(--foreground, var(--platform-ink));
         font: 600 1.6rem/1.1 'Fraunces', serif;
       }
 

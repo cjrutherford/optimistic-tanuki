@@ -207,7 +207,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
       'North Star Advisory helps service owners tighten intake, approvals, scheduling, and follow-through.',
     aboutTitle: 'Operations support for service teams',
     aboutBody:
-      'This sample tenant shows a higher-trust advisory business with booking, approvals, and client follow-up enabled.',
+      'This seeded business shows a higher-trust advisory business with booking, approvals, and client follow-up enabled.',
   }),
   createTenantPreset({
     configKey: 'tenant:steady-hand-contracting',
@@ -287,7 +287,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'Dependable contractor support for the jobs that pile up.',
     heroBody:
-      'Use this sample tenant to showcase estimate requests, repair scheduling, and homeowner communication.',
+      'Use this seeded example to showcase estimate requests, repair scheduling, and homeowner communication.',
     aboutTitle: 'Built for repeat repair and small-project work',
     aboutBody:
       'This setup fits a handyman or general contractor who needs a clean intake flow, not a complex enterprise CRM.',
@@ -375,7 +375,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'Make exterior cleaning easy to request and easy to repeat.',
     heroBody:
-      'This sample tenant highlights quick quote conversion for seasonal and repeat exterior cleaning work.',
+      'This preset highlights quick quote conversion for seasonal and repeat exterior cleaning work.',
     aboutTitle: 'A strong fit for route-based outdoor service businesses',
     aboutBody:
       'Pressure washing businesses need fast intake, prep reminders, and lightweight repeat booking support.',
@@ -462,7 +462,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'A sweeter custom-order workflow for home bakers.',
     heroBody:
-      'This sample tenant shows how a made-to-order bakery can capture event details, custom notes, and pickup timing cleanly.',
+      'This preset shows how a made-to-order bakery can capture event details, custom notes, and pickup timing cleanly.',
     aboutTitle: 'Designed for custom order businesses',
     aboutBody:
       'Bakers need more than a contact form. They need space for flavor notes, event timing, and client follow-up.',
@@ -555,7 +555,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     heroTitle:
       'Commission custom artwork without hiding the pieces already in stock.',
     heroBody:
-      'This sample tenant pairs bookable commission work with a store-backed inventory of originals, prints, and merch for independent artists.',
+      'This preset pairs bookable commission work with a store-backed inventory of originals, prints, and merch for independent artists.',
     aboutTitle:
       'Built for artists with both commissions and ready-to-ship work',
     aboutBody:
@@ -639,7 +639,7 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     ],
     heroTitle: 'A better intake flow for estimates, hazards, and cleanup work.',
     heroBody:
-      'This sample tenant fits tree services that need fast request capture and clear site-visit follow-up.',
+      'This preset fits tree services that need fast request capture and clear site-visit follow-up.',
     aboutTitle: 'Good for estimate-heavy outdoor crews',
     aboutBody:
       'Tree work mixes urgent requests with scheduled care, so the site needs to support both fast contact and organized follow-up.',
