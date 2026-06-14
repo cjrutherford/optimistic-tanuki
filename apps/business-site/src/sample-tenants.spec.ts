@@ -12,6 +12,46 @@ describe('DEV_BUSINESS_TENANT_PRESETS', () => {
     expect(ownerFacingText).not.toContain('tenant');
   });
 
+  it('includes an accountant POC preset with bookkeeping and tax advisory services', async () => {
+    const { DEV_BUSINESS_TENANT_PRESETS } = await import(
+      './sample-tenants.mjs'
+    );
+
+    const accountant = DEV_BUSINESS_TENANT_PRESETS.find(
+      (preset: { businessType: string; site: { slug: string } }) =>
+        preset.businessType === 'accounting' &&
+        preset.site.slug === 'ledgerline-accounting'
+    );
+
+    expect(accountant).toBeDefined();
+    expect(accountant.site.status).toBe('published');
+    expect(accountant.owner.email).toBe('owner-accountant@localbusiness.test');
+    expect(accountant.brand.businessName).toBe('Ledgerline Accounting');
+    expect(accountant.services).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: expect.stringMatching(/tax|bookkeeping/i),
+        }),
+        expect.objectContaining({
+          name: expect.stringMatching(/payroll|planning/i),
+        }),
+      ])
+    );
+    expect(accountant.brand.specializations).toEqual(
+      expect.arrayContaining([
+        'Bookkeeping cleanup',
+        'Tax planning',
+        'Payroll review',
+        'Advisory',
+      ])
+    );
+    expect(accountant.clientPortal.capabilities).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/deadline|document|review/i),
+      ])
+    );
+  });
+
   it('includes a seeded independent artist tenant with store-backed inventory and commission services', async () => {
     const { DEV_BUSINESS_TENANT_PRESETS } = await import(
       './sample-tenants.mjs'

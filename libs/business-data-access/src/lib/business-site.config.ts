@@ -164,7 +164,13 @@ export interface LandingSection {
 }
 
 export interface BusinessSiteConfig {
-  businessType: 'fitness' | 'consulting' | 'coaching' | 'wellness' | 'general';
+  businessType:
+    | 'fitness'
+    | 'consulting'
+    | 'coaching'
+    | 'wellness'
+    | 'general'
+    | 'accounting';
   site: BusinessSiteMetadata;
   leadContext: BusinessLeadContext;
   brand: {

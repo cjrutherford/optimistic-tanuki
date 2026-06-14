@@ -644,6 +644,103 @@ export const DEV_BUSINESS_TENANT_PRESETS = [
     aboutBody:
       'Tree work mixes urgent requests with scheduled care, so the site needs to support both fast contact and organized follow-up.',
   }),
+  createTenantPreset({
+    configKey: 'tenant:ledgerline-accounting',
+    owner: {
+      email: 'owner-accountant@localbusiness.test',
+      firstName: 'Priya',
+      lastName: 'Kapoor',
+      bio: 'CPA-focus accountant offering bookkeeping cleanup, quarterly tax planning, and payroll review for small-business owners.',
+      profileName: 'Priya Kapoor',
+    },
+    site: {
+      slug: 'ledgerline-accounting',
+      status: 'published',
+      onboardingCompletedAt: '2026-06-13T10:00:00.000Z',
+    },
+    businessType: 'accounting',
+    brand: {
+      businessName: 'Ledgerline Accounting',
+      ownerName: 'Priya Kapoor',
+      monogram: 'LA',
+      tagline: 'Bookkeeping cleanup, tax planning, and payroll review.',
+      intro: 'Keep financials clean, deadlines visible, and payroll accurate.',
+      longBio:
+        'Ledgerline Accounting helps small-business owners reconcile books, stay current on tax obligations, and keep payroll running without guesswork.',
+      credentials: ['Certified Public Accountant', 'QuickBooks ProAdvisor'],
+      specializations: [
+        'Bookkeeping cleanup',
+        'Tax planning',
+        'Payroll review',
+        'Advisory',
+      ],
+    },
+    contact: {
+      email: 'hello@ledgerline.local',
+      phone: '(555) 410-1700',
+      location: 'Remote-first advisory services.',
+      consultationLabel: 'Book a bookkeeping review',
+    },
+    theme: {
+      mode: 'light',
+      personalityId: 'professional',
+      primaryColor: '#1f5f8b',
+    },
+    services: [
+      {
+        id: 'bookkeeping-cleanup',
+        name: 'Bookkeeping cleanup',
+        description:
+          'Catch-up and reconciliation session to turn messy books into a clean ledger ready for tax time.',
+        duration: 90,
+        price: 275,
+        allowOnlineBooking: true,
+      },
+      {
+        id: 'quarterly-tax-planning',
+        name: 'Quarterly tax planning',
+        description:
+          'Proactive review of estimated payments, deductions, and entity-level planning ahead of each quarter.',
+        duration: 60,
+        price: 175,
+        allowOnlineBooking: true,
+      },
+      {
+        id: 'payroll-review',
+        name: 'Payroll review',
+        description:
+          'Audit of payroll runs, tax withholdings, and contractor classifications to reduce exposure.',
+        duration: 45,
+        price: 125,
+        allowOnlineBooking: true,
+      },
+    ],
+    clientPortal: {
+      headline:
+        'Track document deadlines, payroll windows, and advisory checklists.',
+      description:
+        'Clients can upload statements, review upcoming filing deadlines, and follow a checklist for each month-end close.',
+      capabilities: [
+        'Review upcoming tax and payroll deadlines',
+        'Upload supporting documents and receipts',
+        'Track month-end close checklist items',
+      ],
+    },
+    testimonials: [
+      {
+        quote:
+          'We finally stopped scrambling at quarter close because the ledger was already current.',
+        clientName: 'Dana Ruiz',
+        clientDetail: 'Retail business owner',
+      },
+    ],
+    heroTitle: 'Keep financials clean and tax seasons predictable.',
+    heroBody:
+      'Ledgerline Accounting brings the clarity of a dedicated small-business accounting practice into a hosted, review-ready portal.',
+    aboutTitle: 'Built for small businesses that need reliable bookkeeping',
+    aboutBody:
+      'This seeded business pairs clean intake forms with a checklist-driven portal so owners stay on top of books, deadlines, and payroll.',
+  }),
 ];
 
 const emberlineStudioPreset = DEV_BUSINESS_TENANT_PRESETS.find(
