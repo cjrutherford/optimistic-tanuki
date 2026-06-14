@@ -16,6 +16,9 @@ export class TrainerProgressCheckInEntity {
   @Column({ type: 'uuid' })
   assignmentId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  ownerId: string | null;
+
   @Column({ type: 'text' })
   notes: string;
 

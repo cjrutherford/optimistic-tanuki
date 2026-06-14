@@ -71,4 +71,5 @@ export type {
   BusinessClientBookingStatus,
   AcceptedBusinessClient,
   BusinessAssetLibraryItem,
+  PublicBusinessSiteSummary,
 } from './lib/business-api.service';

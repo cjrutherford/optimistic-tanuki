@@ -161,4 +161,23 @@ describe('business-site.config', () => {
       })
     );
   });
+
+  it('merges tenant site metadata for onboarding and publishing state', () => {
+    const merged = mergeBusinessSiteConfig({
+      site: {
+        slug: 'north-star-advisory',
+        ownerProfileId: 'profile-1',
+        status: 'published',
+        onboardingCompletedAt: '2026-06-13T10:00:00.000Z',
+      },
+    } as Partial<BusinessSiteConfig>);
+
+    expect(merged.site).toEqual({
+      slug: 'north-star-advisory',
+      ownerProfileId: 'profile-1',
+      ownerUserId: '',
+      status: 'published',
+      onboardingCompletedAt: '2026-06-13T10:00:00.000Z',
+    });
+  });
 });

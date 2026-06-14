@@ -152,6 +152,326 @@ describe('TrainerController', () => {
     ]);
   });
 
+  it('loads public offers from the slug-scoped hosted tenant config when a site slug is provided', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+          return of({
+            config: {
+              services: [
+                {
+                  id: 'service-1',
+                  name: 'Repair visit',
+                  description: 'Half-day repair support.',
+                  price: 325,
+                },
+              ],
+            },
+          });
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOffers('steady-hand-contracting')
+    ).resolves.toEqual([
+      {
+        id: 'service-1',
+        label: 'Repair visit',
+        description: 'Half-day repair support.',
+        serviceType: 'Repair visit',
+        startingRate: 325,
+      },
+    ]);
+  });
+
+  it('loads public availabilities for the owner linked to the selected hosted business slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+            },
+          });
+        }
+
+        if (command === AvailabilityCommands.FIND_OWNER_AVAILABILITIES) {
+          expect(payload).toBe('owner-user-handyman');
+          return of([
+            {
+              id: 'availability-1',
+              ownerId: 'owner-user-handyman',
+              serviceType: 'Repair visit',
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getAvailabilities('steady-hand-contracting')
+    ).resolves.toEqual([
+      {
+        id: 'availability-1',
+        ownerId: 'owner-user-handyman',
+        serviceType: 'Repair visit',
+      },
+    ]);
+  });
+
+  it('creates a public booking scoped to the selected hosted business slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.CREATE_APPOINTMENT) {
+          expect(payload).toEqual(
+            expect.objectContaining({
+              ownerId: 'owner-user-handyman',
+              userId: 'accepted-client-user',
+              title: 'Repair visit',
+            })
+          );
+
+          return of({ id: 'booking-1', ...payload });
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    jest
+      .spyOn(controller as any, 'requireAcceptedClient')
+      .mockResolvedValue({ id: 'lead-1', status: LeadStatus.WON });
+
+    await expect(
+      (
+        controller.createBooking as unknown as (
+          payload: Record<string, unknown>,
+          user: Record<string, unknown>,
+          slug: string
+        ) => Promise<unknown>
+      ).call(
+        controller,
+        {
+          title: 'Repair visit',
+          startTime: new Date('2026-06-20T14:00:00.000Z'),
+          endTime: new Date('2026-06-20T15:00:00.000Z'),
+        } as any,
+        {
+          userId: 'accepted-client-user',
+          email: 'client@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Accepted Client',
+          profileId: 'accepted-client-profile',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'booking-1',
+        ownerId: 'owner-user-handyman',
+      })
+    );
+  });
+
+  it('loads owner site config by authenticated profile when no slug is provided', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            profileId: 'owner-profile-handyman',
+            slug: undefined,
+          });
+
+          return of({
+            configId: 'cfg-handyman',
+            config: {
+              site: { slug: 'steady-hand-contracting', status: 'published' },
+              brand: { businessName: 'Steady Hand Contracting' },
+            },
+          });
+        }
+
+        return of(null);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getSiteConfig(undefined, {
+        userId: 'owner-user-handyman',
+        email: 'owner-handyman@localbusiness.test',
+        exp: 0,
+        iat: 0,
+        name: 'Luis Moreno',
+        profileId: 'owner-profile-handyman',
+      })
+    ).resolves.toEqual({
+      configId: 'cfg-handyman',
+      config: {
+        site: { slug: 'steady-hand-contracting', status: 'published' },
+        brand: { businessName: 'Steady Hand Contracting' },
+      },
+    });
+  });
+
+  it('loads client bookings scoped to the selected hosted business slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_USER_APPOINTMENTS) {
+          expect(payload).toEqual({
+            userId: 'accepted-client-user',
+            ownerId: 'owner-user-handyman',
+          });
+          return of([{ id: 'booking-1' }]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      (
+        controller.getClientBookings as unknown as (
+          user: Record<string, unknown>,
+          slug: string
+        ) => Promise<unknown>
+      ).call(
+        controller,
+        {
+          userId: 'accepted-client-user',
+          email: 'client@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Accepted Client',
+          profileId: 'accepted-client-profile',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual([{ id: 'booking-1' }]);
+  });
+
+  it('loads client booking status scoped to the selected hosted business slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+
+          return of({
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-handyman',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() =>
+        of([
+          {
+            id: 'lead-1',
+            userId: 'accepted-client-user',
+            status: LeadStatus.WON,
+          },
+        ])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      (
+        controller.getClientBookingStatus as unknown as (
+          user: Record<string, unknown>,
+          slug: string
+        ) => Promise<unknown>
+      ).call(
+        controller,
+        {
+          userId: 'accepted-client-user',
+          email: 'client@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Accepted Client',
+          profileId: 'accepted-client-profile',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual({
+      accepted: true,
+      leadId: 'lead-1',
+      leadStatus: LeadStatus.WON,
+    });
+  });
+
   it('maps active store service products into public business offers when no site services are configured', async () => {
     const storeClient = {
       send: jest.fn((command: any) => {
@@ -713,7 +1033,10 @@ describe('TrainerController', () => {
 
     expect(storeClient.send).toHaveBeenCalledWith(
       AppointmentCommands.FIND_USER_APPOINTMENTS,
-      'client-user-1'
+      {
+        userId: 'client-user-1',
+        ownerId: undefined,
+      }
     );
   });
 
@@ -995,5 +1318,40 @@ describe('TrainerController', () => {
     expect(Reflect.getMetadata(GUARDS_METADATA, createBooking)).toEqual([
       AuthGuard,
     ]);
+  });
+
+  it('passes tenant slug lookups through to the store-backed site config query', async () => {
+    const storeClient = {
+      send: jest.fn(() =>
+        of({
+          configId: 'cfg-1',
+          config: {
+            site: { slug: 'north-star-advisory' },
+            brand: { businessName: 'North Star Advisory' },
+          },
+        })
+      ),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getSiteConfig('north-star-advisory')
+    ).resolves.toEqual({
+      configId: 'cfg-1',
+      config: {
+        site: { slug: 'north-star-advisory' },
+        brand: { businessName: 'North Star Advisory' },
+      },
+    });
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.GET_CONFIG,
+      {
+        configKey: 'default',
+        slug: 'north-star-advisory',
+      }
+    );
   });
 });

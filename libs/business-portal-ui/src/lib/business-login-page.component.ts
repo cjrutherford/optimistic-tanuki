@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessApiService,
+  BusinessAuthService,
+  mergeBusinessSiteConfig,
+} from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
@@ -15,7 +19,28 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <div class="login-header">
           <span class="monogram">BO</span>
           <h1>Owner Login</h1>
-          <p>Sign in to access your owner workspace.</p>
+          <p>
+            Sign in to access your owner workspace, or switch to client mode.
+          </p>
+        </div>
+
+        <div class="mode-switch" role="tablist" aria-label="Auth mode">
+          <button
+            type="button"
+            data-auth-mode
+            [class.active]="mode() === 'owner'"
+            (click)="setMode('owner')"
+          >
+            Owner
+          </button>
+          <button
+            type="button"
+            data-auth-mode
+            [class.active]="mode() === 'client'"
+            (click)="setMode('client')"
+          >
+            Client
+          </button>
         </div>
 
         <form class="login-form" (ngSubmit)="onSubmit()">
@@ -107,6 +132,33 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 1.1rem;
       }
 
+      .mode-switch {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+        padding: 0.35rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, white);
+      }
+
+      .mode-switch button {
+        border: none;
+        background: transparent;
+        border-radius: 999px;
+        padding: 0.65rem 0.9rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        color: var(--muted, #6b7280);
+      }
+
+      .mode-switch button.active {
+        background: white;
+        color: var(--foreground, #0f172a);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      }
+
       label {
         display: grid;
         gap: 0.4rem;
@@ -176,22 +228,51 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
 })
 export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
+  private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
 
   email = '';
   password = '';
+  readonly mode = signal<'owner' | 'client'>('owner');
   loading = signal(false);
   errorMsg = signal('');
 
+  setMode(mode: 'owner' | 'client'): void {
+    this.mode.set(mode);
+    this.errorMsg.set('');
+
+    if (mode === 'client') {
+      void this.router.navigate(['/client/login']);
+    }
+  }
+
   onSubmit(): void {
     if (!this.email || !this.password) return;
+    if (this.mode() === 'client') {
+      void this.router.navigate(['/client/login']);
+      return;
+    }
+
     this.loading.set(true);
     this.errorMsg.set('');
 
     this.auth.loginAndExchange(this.email, this.password).subscribe({
       next: () => {
-        this.loading.set(false);
-        this.router.navigate(['/owner/dashboard']);
+        this.api.getSiteConfig().subscribe({
+          next: (response) => {
+            const config = mergeBusinessSiteConfig(response?.config);
+            this.loading.set(false);
+            void this.router.navigate([
+              config.site.onboardingCompletedAt
+                ? '/owner/dashboard'
+                : '/owner/onboarding',
+            ]);
+          },
+          error: () => {
+            this.loading.set(false);
+            void this.router.navigate(['/owner/onboarding']);
+          },
+        });
       },
       error: (err) => {
         this.loading.set(false);

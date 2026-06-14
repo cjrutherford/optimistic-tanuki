@@ -7,6 +7,7 @@ import { TrainerProgressCheckInEntity } from './entities/trainer-progress-check-
 
 type CreateRoutineAssignment = {
   clientId: string;
+  ownerId?: string | null;
   clientName: string;
   title: string;
   summary: string;
@@ -16,6 +17,7 @@ type CreateRoutineAssignment = {
 type CreateProgressCheckIn = {
   clientId: string;
   assignmentId: string;
+  ownerId?: string | null;
   notes: string;
   energy: number;
 };
@@ -43,39 +45,58 @@ export class TrainerRoutinesService {
   }
 
   async getClientRoutines(
-    clientId: string
+    clientId: string,
+    ownerId?: string | null
   ): Promise<TrainerRoutineAssignmentEntity[]> {
     return this.routineRepository.find({
-      where: { clientId },
+      where: ownerId
+        ? ({ clientId, ownerId } as never)
+        : ({ clientId } as never),
       order: { createdAt: 'DESC' },
     });
   }
 
   async completeRoutine(
-    id: string
+    id: string,
+    ownerId?: string | null
   ): Promise<TrainerRoutineAssignmentEntity | null> {
-    await this.routineRepository.update(id, {
+    const where = ownerId ? ({ id, ownerId } as never) : ({ id } as never);
+
+    await this.routineRepository.update(where, {
       status: 'completed',
       completedAt: new Date(),
     });
 
     return this.routineRepository.findOne({
-      where: { id },
+      where,
     });
   }
 
   async submitCheckIn(
     payload: CreateProgressCheckIn
   ): Promise<TrainerProgressCheckInEntity> {
+    if (payload.ownerId) {
+      await this.routineRepository.findOne({
+        where: {
+          id: payload.assignmentId,
+          clientId: payload.clientId,
+          ownerId: payload.ownerId,
+        } as never,
+      });
+    }
+
     const checkIn = this.checkInRepository.create(payload);
     return this.checkInRepository.save(checkIn);
   }
 
   async getClientCheckIns(
-    clientId: string
+    clientId: string,
+    ownerId?: string | null
   ): Promise<TrainerProgressCheckInEntity[]> {
     return this.checkInRepository.find({
-      where: { clientId },
+      where: ownerId
+        ? ({ clientId, ownerId } as never)
+        : ({ clientId } as never),
       order: { completedAt: 'DESC' },
     });
   }

@@ -1,10 +1,13 @@
 import { Component } from '@angular/core';
+import { convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, RouterLink, provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import {
   BusinessApiService,
+  BusinessSiteConfigStore,
   DEFAULT_BUSINESS_SITE_CONFIG,
   type BusinessSiteConfig,
   type BusinessOffer,
@@ -50,6 +53,15 @@ describe('BusinessLandingPageComponent', () => {
       providers: [
         provideRouter([]),
         {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => config ?? DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest
+              .fn()
+              .mockReturnValue(of(config ?? DEFAULT_BUSINESS_SITE_CONFIG)),
+          },
+        },
+        {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
@@ -65,6 +77,154 @@ describe('BusinessLandingPageComponent', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('requests offers using the hosted tenant slug from the route', async () => {
+    const getOffers = jest.fn().mockReturnValue(of(offers));
+
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers,
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(of({ configId: null, config: null })),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest.fn().mockReturnValue(of(DEFAULT_BUSINESS_SITE_CONFIG)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    expect(getOffers).toHaveBeenCalledWith('steady-hand-contracting');
+  });
+
+  it('keeps the hosted tenant slug in the booking call to action link', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/book'
+    );
+  });
+
+  it('keeps the hosted tenant slug in the client portal call to action link', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/client/login'
+    );
+  });
+
+  it('does not render a generic root booking link when there is no hosted tenant slug', async () => {
+    const fixture = await render(configWithServices);
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink).href);
+
+    expect(links).not.toContain('/book');
+  });
 
   it('uses business-facing fallback identity and copy', async () => {
     const fixture = await render(configWithServices);
@@ -96,6 +256,13 @@ describe('BusinessLandingPageComponent', () => {
       providers: [
         provideRouter([]),
         {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+        {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
@@ -122,6 +289,13 @@ describe('BusinessLandingPageComponent', () => {
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
       providers: [
         provideRouter([]),
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
         {
           provide: BusinessApiService,
           useValue: {
@@ -238,6 +412,38 @@ describe('BusinessLandingPageComponent', () => {
 
     expect(text).toContain('North Star Advisory');
     expect(text).toContain('Jordan Vale');
+  });
+
+  it('renders rich content for the hero section when configured', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'hero'
+              ? {
+                  ...section,
+                  richContent: {
+                    title: 'Hero story',
+                    content:
+                      '<p>Directly editable hero copy for the public landing page.</p>',
+                    injectedComponents: [],
+                    themeConfig: {
+                      theme: 'light',
+                      accentColor: '#1f7a63',
+                    },
+                  },
+                }
+              : section
+        ),
+      },
+    });
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain(
+      'Directly editable hero copy for the public landing page.'
+    );
   });
 
   it('applies the configured split layout and renders custom sections', async () => {

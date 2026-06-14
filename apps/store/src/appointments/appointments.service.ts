@@ -54,6 +54,7 @@ export class AppointmentsService {
 
     const overrides = await this.availabilityOverrideRepository.find({
       where: {
+        ownerId: createAppointmentDto.ownerId ?? null,
         isActive: true,
         startTime: LessThanOrEqual(end),
         endTime: MoreThanOrEqual(start),
@@ -78,6 +79,7 @@ export class AppointmentsService {
     const dayOfWeek = start.getDay();
     const matchingAvailabilities = await this.availabilityRepository.find({
       where: {
+        ownerId: createAppointmentDto.ownerId ?? null,
         dayOfWeek,
         isActive: true,
       },
@@ -98,6 +100,7 @@ export class AppointmentsService {
 
     const conflictingAppointments = await this.appointmentRepository.find({
       where: {
+        ownerId: createAppointmentDto.ownerId ?? null,
         startTime: LessThanOrEqual(end),
         endTime: MoreThanOrEqual(start),
       } as never,
@@ -127,26 +130,47 @@ export class AppointmentsService {
     return `${hours}:${minutes}:${seconds}`;
   }
 
-  async findAll(): Promise<AppointmentEntity[]> {
+  async findAll(ownerId?: string | null): Promise<AppointmentEntity[]> {
     return this.appointmentRepository.find({
+      where: ownerId ? ({ ownerId } as never) : undefined,
       relations: ['product', 'resource'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findUserAppointments(userId: string): Promise<AppointmentEntity[]> {
+  async findUserAppointments(
+    userId: string,
+    ownerId?: string | null
+  ): Promise<AppointmentEntity[]> {
     return this.appointmentRepository.find({
-      where: { userId },
+      where: ownerId ? ({ userId, ownerId } as never) : ({ userId } as never),
       relations: ['product', 'resource'],
       order: { createdAt: 'DESC' },
     });
   }
 
-  async findUserInvoices(userId: string): Promise<InvoiceEntity[]> {
-    return this.invoiceRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
+  async findUserInvoices(
+    userId: string,
+    ownerId?: string | null
+  ): Promise<InvoiceEntity[]> {
+    if (!ownerId) {
+      return this.invoiceRepository.find({
+        where: { userId },
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    return this.invoiceRepository
+      .createQueryBuilder('invoice')
+      .innerJoin(
+        AppointmentEntity,
+        'appointment',
+        'appointment.id = invoice.appointmentId'
+      )
+      .where('invoice.userId = :userId', { userId })
+      .andWhere('appointment.ownerId = :ownerId', { ownerId })
+      .orderBy('invoice.createdAt', 'DESC')
+      .getMany();
   }
 
   async findOne(id: string): Promise<AppointmentEntity> {

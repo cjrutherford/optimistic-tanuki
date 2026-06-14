@@ -48,6 +48,14 @@ export interface BusinessLeadContext {
   appScope: string;
 }
 
+export interface BusinessSiteMetadata {
+  slug: string;
+  ownerProfileId: string;
+  ownerUserId?: string;
+  status: 'draft' | 'published';
+  onboardingCompletedAt: string;
+}
+
 export type SplitLayoutSlot = 'primary' | 'secondary';
 export type GridLayoutSlot =
   | 'hero-wide'
@@ -157,6 +165,7 @@ export interface LandingSection {
 
 export interface BusinessSiteConfig {
   businessType: 'fitness' | 'consulting' | 'coaching' | 'wellness' | 'general';
+  site: BusinessSiteMetadata;
   leadContext: BusinessLeadContext;
   brand: {
     businessName: string;
@@ -319,6 +328,10 @@ export function mergeBusinessSiteConfig(
   return {
     ...DEFAULT_BUSINESS_SITE_CONFIG,
     ...(config ?? {}),
+    site: {
+      ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+      ...(config?.site ?? {}),
+    },
     brand: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
       ...(config?.brand ?? {}),
@@ -397,6 +410,13 @@ export function cloneBusinessSiteConfig(
 
 export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
   businessType: 'general',
+  site: {
+    slug: 'my-business',
+    ownerProfileId: '',
+    ownerUserId: '',
+    status: 'draft',
+    onboardingCompletedAt: '',
+  },
   leadContext: {
     profileId: '',
     appScope: 'business-site',

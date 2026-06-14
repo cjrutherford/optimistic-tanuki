@@ -16,6 +16,11 @@ export class CreateAppointmentDto {
   @IsUUID()
   userId!: string;
 
+  @ApiPropertyOptional({ description: 'Business owner user ID' })
+  @IsUUID()
+  @IsOptional()
+  ownerId?: string;
+
   @ApiPropertyOptional({ description: 'Associated product ID' })
   @IsUUID()
   @IsOptional()

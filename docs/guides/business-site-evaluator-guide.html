@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Business Site Evaluator Guide</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4efe6;
+        --surface: rgba(255, 253, 248, 0.9);
+        --surface-strong: #fffdf8;
+        --ink: #18241f;
+        --muted: #4d5d55;
+        --border: rgba(24, 36, 31, 0.12);
+        --accent: #b85c38;
+        --accent-strong: #13261f;
+        --accent-ink: #f7f1e7;
+        --code: rgba(19, 38, 31, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101714;
+          --surface: rgba(19, 27, 23, 0.9);
+          --surface-strong: #17211d;
+          --ink: #edf3ef;
+          --muted: #bac8c0;
+          --border: rgba(237, 243, 239, 0.12);
+          --accent: #d88862;
+          --accent-strong: #dfe9e3;
+          --accent-ink: #101714;
+          --code: rgba(223, 233, 227, 0.08);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem;
+        font: 16px/1.6 'Manrope', system-ui, sans-serif;
+        background: radial-gradient(
+            circle at top left,
+            rgba(184, 92, 56, 0.16),
+            transparent 24rem
+          ),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--bg) 88%, white) 0%,
+            var(--bg) 100%
+          );
+        color: var(--ink);
+      }
+
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .hero,
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(12px);
+      }
+
+      .hero {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: 'Fraunces', 'Source Serif 4', serif;
+      }
+
+      .lead {
+        color: var(--muted);
+        max-width: 70ch;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+      }
+
+      .stack {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .callout {
+        padding: 0.95rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      li + li {
+        margin-top: 0.35rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 0.75rem 0.8rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      code {
+        font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
+        font-size: 0.92em;
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.4rem;
+        background: var(--code);
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .route {
+        font-weight: 700;
+      }
+
+      @media (max-width: 820px) {
+        body {
+          padding: 1rem;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Business Site evaluator guide</p>
+        <h1>
+          Business owner onboarding, hosted tenant sites, and live editor
+          validation
+        </h1>
+        <p class="lead">
+          Use this guide when reviewing the multi-tenant business application
+          locally. It summarizes seeded users, where the hosted owner sites are
+          available, and the core owner/client flows that should work end to
+          end.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="panel stack">
+          <h2>Primary routes</h2>
+          <div class="callout">
+            <strong>Platform landing page:</strong>
+            <div class="route"><code>http://127.0.0.1:4303/</code></div>
+          </div>
+          <div class="callout">
+            <strong>Shared auth entry:</strong>
+            <div class="route"><code>http://127.0.0.1:4303/auth</code></div>
+          </div>
+          <div class="callout">
+            <strong>Owner onboarding/editor:</strong>
+            <div class="route">
+              <code>/owner/onboarding</code> and <code>/owner/site-editor</code>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>Hosted owner business sites:</strong>
+            <div class="route">
+              <code>http://127.0.0.1:4303/sites/&lt;tenant-slug&gt;</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel stack">
+          <h2>What to evaluate</h2>
+          <ol>
+            <li>
+              The platform landing page should explain owner and client
+              capabilities, not render a single tenant site.
+            </li>
+            <li>
+              Owner sign-in should support onboarding and then route into the
+              editor/workspace.
+            </li>
+            <li>
+              The live editor should update theme, personality, identity,
+              content, and preview state together.
+            </li>
+            <li>
+              Hosted tenant routes should show the seeded tenant’s own branding,
+              offers, and messaging.
+            </li>
+            <li>
+              Client-facing routes should still resolve from the hosted site
+              into booking, contact, and client portal workflows.
+            </li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="panel stack">
+        <h2>Seeded owner accounts and hosted site URLs</h2>
+        <p class="lead">
+          After the dev seed runs, these owner accounts are available. Their
+          public business sites are viewable directly at the hosted tenant
+          routes listed below.
+        </p>
+        <div class="callout">
+          <strong>Owner sign-in details:</strong>
+          <ul>
+            <li>
+              All owners sign in through
+              <code>http://127.0.0.1:4303/auth</code>.
+            </li>
+            <li>
+              Successful sign-in should route to the owner workspace and allow
+              access to <code>/owner/site</code>.
+            </li>
+            <li>
+              Use the seeded email and password for the matching hosted business
+              route below.
+            </li>
+          </ul>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Use case</th>
+              <th>Owner sign-in email</th>
+              <th>Password</th>
+              <th>Hosted site URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>North Star Advisory</td>
+              <td><code>owner@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/north-star-advisory</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Handyman / general contractor</td>
+              <td><code>owner-handyman@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/steady-hand-contracting</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Pressure washing services</td>
+              <td><code>owner-pressure@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code
+                  >http://127.0.0.1:4303/sites/clearcrest-pressure-washing</code
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Made-to-order home baker</td>
+              <td><code>owner-baker@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/ovenbird-bakeshop</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Tree service</td>
+              <td><code>owner-tree@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/canopy-tree-service</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="grid">
+        <article class="panel stack">
+          <h2>Seeded client accounts</h2>
+          <ul>
+            <li>
+              <code>client@localbusiness.test</code> /
+              <code>ClientPass123!</code> for approved-client flows
+            </li>
+            <li>
+              <code>pending-client@localbusiness.test</code> /
+              <code>PendingClientPass123!</code> for approval-queue flows
+            </li>
+          </ul>
+        </article>
+
+        <article class="panel stack">
+          <h2>Recommended evaluator path</h2>
+          <ol>
+            <li>
+              Open <code>/</code> and confirm the platform marketing page is
+              visible.
+            </li>
+            <li>
+              Visit one hosted site under
+              <code>/sites/&lt;tenant-slug&gt;</code> and confirm the tenant
+              branding is unique.
+            </li>
+            <li>
+              Sign in at <code>/auth</code> with an owner account and open the
+              site editor.
+            </li>
+            <li>
+              Change theme color, personality, monogram, and business title;
+              verify the preview and shell update immediately.
+            </li>
+            <li>
+              Confirm the same tenant route reflects saved owner updates after
+              refresh.
+            </li>
+          </ol>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

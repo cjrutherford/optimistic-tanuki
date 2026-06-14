@@ -40,6 +40,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 
 type BusinessLeadIntakeDto = {
+  siteSlug?: string;
   name: string;
   email?: string;
   phone?: string;
@@ -129,6 +130,27 @@ export class TrainerController {
     return this.getBusinessLeadContext(result?.config);
   }
 
+  private async loadSiteConfigBySlug(slug?: string) {
+    const normalizedSlug = slug?.trim();
+    const result = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+        slug: normalizedSlug || undefined,
+      })
+    )) as { config?: Record<string, any> } | null;
+
+    return result?.config ?? {};
+  }
+
+  private async loadOwnerUserIdForSlug(slug?: string): Promise<string | null> {
+    const config = await this.loadSiteConfigBySlug(slug);
+    const ownerUserId = config?.site?.ownerUserId;
+
+    return typeof ownerUserId === 'string' && ownerUserId.trim()
+      ? ownerUserId.trim()
+      : null;
+  }
+
   private async loadSiteConfig() {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
@@ -137,6 +159,16 @@ export class TrainerController {
     )) as { config?: Record<string, any> } | null;
 
     return result?.config ?? {};
+  }
+
+  @Get('sites')
+  async listPublishedSites() {
+    return firstValueFrom(
+      this.storeService.send(
+        TrainerConfigCommands.LIST_PUBLIC_SITE_SUMMARIES,
+        {}
+      )
+    );
   }
 
   private async loadActiveStoreServiceProducts() {
@@ -172,8 +204,10 @@ export class TrainerController {
     }
   }
 
-  private async loadBusinessLeads() {
-    const leadContext = await this.loadLeadContext();
+  private async loadBusinessLeads(slug?: string) {
+    const leadContext = slug
+      ? this.getBusinessLeadContext(await this.loadSiteConfigBySlug(slug))
+      : await this.loadLeadContext();
     const leads = (await firstValueFrom(
       this.leadService.send({ cmd: LeadCommands.FIND_ALL }, leadContext)
     )) as any[];
@@ -184,8 +218,8 @@ export class TrainerController {
     };
   }
 
-  private async requireAcceptedClient(user: UserDetails) {
-    const { leads } = await this.loadBusinessLeads();
+  private async requireAcceptedClient(user: UserDetails, slug?: string) {
+    const { leads } = await this.loadBusinessLeads(slug);
     const acceptedLead =
       leads.find(
         (lead) => lead?.userId === user.userId && this.isAcceptedLead(lead)
@@ -203,10 +237,11 @@ export class TrainerController {
   // ─── Public endpoints ────────────────────────────────────────────────────────
 
   @Get('offers')
-  async getOffers() {
+  async getOffers(@Query('slug') slug?: string) {
     const configResult = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
         configKey: 'default',
+        slug: slug?.trim() || undefined,
       })
     )) as { config?: Record<string, any> } | null;
     const serviceCatalogSource =
@@ -264,14 +299,36 @@ export class TrainerController {
   }
 
   @Get('availabilities')
-  getAvailabilities() {
+  async getAvailabilities(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
+    if (ownerUserId) {
+      return firstValueFrom(
+        this.storeService.send(
+          AvailabilityCommands.FIND_OWNER_AVAILABILITIES,
+          ownerUserId
+        )
+      );
+    }
+
     return firstValueFrom(
       this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITIES, {})
     );
   }
 
   @Get('availability-overrides')
-  getAvailabilityOverrides() {
+  async getAvailabilityOverrides(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
+    if (ownerUserId) {
+      return firstValueFrom(
+        this.storeService.send(
+          AvailabilityCommands.FIND_OWNER_AVAILABILITY_OVERRIDES,
+          ownerUserId
+        )
+      );
+    }
+
     return firstValueFrom(
       this.storeService.send(
         AvailabilityCommands.FIND_ALL_AVAILABILITY_OVERRIDES,
@@ -281,9 +338,13 @@ export class TrainerController {
   }
 
   @Get('busy-windows')
-  async getBusyWindows() {
+  async getBusyWindows(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
     const appointments = (await firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {})
+      this.storeService.send(
+        AppointmentCommands.FIND_ALL_APPOINTMENTS,
+        ownerUserId ? { ownerId: ownerUserId } : {}
+      )
     )) as Array<any>;
 
     return appointments
@@ -298,12 +359,19 @@ export class TrainerController {
       }));
   }
 
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('site-config')
-  async getSiteConfig() {
+  async getSiteConfig(
+    @Query('slug') slug?: string,
+    @User() user?: UserDetails | null
+  ) {
     try {
       const result = await firstValueFrom(
         this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
           configKey: 'default',
+          slug: slug?.trim() || undefined,
+          profileId: slug?.trim() ? undefined : user?.profileId || undefined,
         })
       );
       if (!result || !result.config) {
@@ -321,13 +389,18 @@ export class TrainerController {
   @Post('bookings')
   async createBooking(
     @Body() payload: Omit<CreateAppointmentDto, 'userId'>,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
-    await this.requireAcceptedClient(user);
+    await this.requireAcceptedClient(user, slug || (payload as any)?.siteSlug);
+    const ownerUserId = await this.loadOwnerUserIdForSlug(
+      slug || (payload as any)?.siteSlug
+    );
 
     return firstValueFrom(
       this.storeService.send(AppointmentCommands.CREATE_APPOINTMENT, {
         ...payload,
+        ownerId: ownerUserId || undefined,
         userId: user.userId,
       })
     );
@@ -343,6 +416,7 @@ export class TrainerController {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
         configKey: 'default',
+        slug: payload.siteSlug?.trim() || undefined,
       })
     )) as { config?: Record<string, any> } | null;
     const leadContext = this.getBusinessLeadContext(result?.config);
@@ -377,30 +451,46 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('bookings')
-  getClientBookings(@User() user: UserDetails) {
+  async getClientBookings(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send(
-        AppointmentCommands.FIND_USER_APPOINTMENTS,
-        user.userId
-      )
+      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, {
+        userId: user.userId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Get('client/invoices')
-  getClientInvoices(@User() user: UserDetails) {
+  async getClientInvoices(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send(
-        AppointmentCommands.FIND_USER_INVOICES,
-        user.userId
-      )
+      this.storeService.send(AppointmentCommands.FIND_USER_INVOICES, {
+        userId: user.userId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Post('client/invoices/:id/pay')
-  async payClientInvoice(@Param('id') id: string, @User() user: UserDetails) {
-    const config = await this.loadSiteConfig();
+  async payClientInvoice(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const config = slug
+      ? await this.loadSiteConfigBySlug(slug)
+      : await this.loadSiteConfig();
     if (config?.features?.booking?.allowOnlinePayment !== true) {
       throw new BadRequestException(
         'Online payment is disabled for this business.'
@@ -417,8 +507,11 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('client-status')
-  async getClientBookingStatus(@User() user: UserDetails) {
-    const { leads } = await this.loadBusinessLeads();
+  async getClientBookingStatus(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const { leads } = await this.loadBusinessLeads(slug);
     const lead = leads.find((entry) => entry?.userId === user.userId) ?? null;
 
     return {
@@ -756,9 +849,17 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('client/routines')
-  getClientRoutines(@Query('clientId') clientId: string) {
+  async getClientRoutines(
+    @Query('clientId') clientId: string,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.routines.find', { clientId })
+      this.storeService.send('trainer.client.routines.find', {
+        clientId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
@@ -766,36 +867,57 @@ export class TrainerController {
   @Post('client/routines/:id/complete')
   async completeClientRoutine(
     @Param('id') id: string,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
-    const config = await this.loadSiteConfig();
+    const config = slug
+      ? await this.loadSiteConfigBySlug(slug)
+      : await this.loadSiteConfig();
     if (config?.features?.clientTasks?.allowClientCompletion !== true) {
       throw new BadRequestException(
         'Client completion is disabled for this business.'
       );
     }
 
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
       this.storeService.send('trainer.client.routines.complete', {
         id,
         userId: user.userId,
+        ownerId: ownerUserId || undefined,
       })
     );
   }
 
   @UseGuards(AuthGuard)
   @Post('client/check-ins')
-  submitCheckIn(@Body() payload: Record<string, unknown>) {
+  async submitCheckIn(@Body() payload: Record<string, unknown>) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(
+      (payload as any)?.siteSlug
+    );
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.checkins.create', payload)
+      this.storeService.send('trainer.client.checkins.create', {
+        ...payload,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Get('client/check-ins')
-  getClientCheckIns(@Query('clientId') clientId: string) {
+  async getClientCheckIns(
+    @Query('clientId') clientId: string,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.checkins.find', { clientId })
+      this.storeService.send('trainer.client.checkins.find', {
+        clientId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 

@@ -2,7 +2,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 
-import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessApiService,
+  BusinessSiteConfigStore,
+} from '@optimistic-tanuki/business-data-access';
 
 import { BusinessPortalShellComponent } from './business-portal-shell.component';
 
@@ -10,8 +13,24 @@ describe('BusinessPortalShellComponent', () => {
   function createComponent(
     url: string,
     clientTasksEnabled = true,
-    invoicesEnabled = false
+    invoicesEnabled = false,
+    siteSlug: string | null = null
   ) {
+    const siteConfigStore = {
+      site: () => ({
+        features: {
+          clientTasks: {
+            enabled: clientTasksEnabled,
+            allowClientCompletion: false,
+          },
+          invoices: {
+            enabled: invoicesEnabled,
+          },
+        },
+      }),
+      fetch: jest.fn().mockReturnValue(of(null)),
+    };
+
     TestBed.configureTestingModule({
       imports: [BusinessPortalShellComponent],
       providers: [
@@ -23,6 +42,9 @@ describe('BusinessPortalShellComponent', () => {
                 portalLabel: 'Owner Workspace',
                 portalDescription: 'Manage clients, requests, and settings.',
               },
+              paramMap: {
+                get: (key: string) => (key === 'siteSlug' ? siteSlug : null),
+              },
             },
           },
         },
@@ -33,35 +55,22 @@ describe('BusinessPortalShellComponent', () => {
           },
         },
         {
-          provide: BusinessApiService,
-          useValue: {
-            getSiteConfig: jest.fn().mockReturnValue(
-              of({
-                configId: 'config-1',
-                config: {
-                  features: {
-                    clientTasks: {
-                      enabled: clientTasksEnabled,
-                      allowClientCompletion: false,
-                    },
-                    invoices: {
-                      enabled: invoicesEnabled,
-                    },
-                  },
-                },
-              })
-            ),
-          },
+          provide: BusinessSiteConfigStore,
+          useValue: siteConfigStore,
         },
       ],
     });
 
-    return TestBed.createComponent(BusinessPortalShellComponent)
-      .componentInstance;
+    const fixture = TestBed.createComponent(BusinessPortalShellComponent);
+
+    return {
+      component: fixture.componentInstance,
+      siteConfigStore,
+    };
   }
 
   it('uses owner workspace links for business owner routes', () => {
-    const component = createComponent('/owner/dashboard');
+    const { component } = createComponent('/owner/dashboard');
 
     expect(component.links()).toEqual([
       { path: '/owner/dashboard', label: 'Dashboard' },
@@ -73,7 +82,7 @@ describe('BusinessPortalShellComponent', () => {
   });
 
   it('shows owner finance links when invoices are enabled', () => {
-    const component = createComponent('/owner/dashboard', true, true);
+    const { component } = createComponent('/owner/dashboard', true, true);
 
     expect(component.links()).toEqual([
       { path: '/owner/dashboard', label: 'Dashboard' },
@@ -88,7 +97,7 @@ describe('BusinessPortalShellComponent', () => {
   });
 
   it('omits the routines link for client routes when client tasks are disabled', () => {
-    const component = createComponent('/client/dashboard', false);
+    const { component } = createComponent('/client/dashboard', false);
 
     expect(component.links()).toEqual([
       { path: '/client', label: 'Overview' },
@@ -97,12 +106,43 @@ describe('BusinessPortalShellComponent', () => {
   });
 
   it('shows the billing link when invoices are enabled', () => {
-    const component = createComponent('/client/dashboard', false, true);
+    const { component } = createComponent('/client/dashboard', false, true);
 
     expect(component.links()).toEqual([
       { path: '/client', label: 'Overview' },
       { path: '/client/dashboard', label: 'Dashboard' },
       { path: '/client/billing', label: 'Billing' },
     ]);
+  });
+
+  it('uses hosted client portal links when the current route is business-scoped', () => {
+    const { component } = createComponent(
+      '/sites/steady-hand-contracting/client/dashboard',
+      true,
+      true,
+      'steady-hand-contracting'
+    );
+
+    expect(component.links()).toEqual([
+      { path: '/sites/steady-hand-contracting/client', label: 'Overview' },
+      {
+        path: '/sites/steady-hand-contracting/client/dashboard',
+        label: 'Dashboard',
+      },
+      {
+        path: '/sites/steady-hand-contracting/client/routines',
+        label: 'Routines',
+      },
+      {
+        path: '/sites/steady-hand-contracting/client/billing',
+        label: 'Billing',
+      },
+    ]);
+  });
+
+  it('forces a site-config refresh when the portal shell is created', () => {
+    const { siteConfigStore } = createComponent('/owner/dashboard');
+
+    expect(siteConfigStore.fetch).toHaveBeenCalledWith(true, null);
   });
 });

@@ -7,7 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
@@ -139,16 +139,26 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           <div class="hero-content">
             <otui-card class="copy entrance" style="animation-delay: 0.1s">
               <p class="eyebrow">{{ site().brand.businessName }}</p>
+              @if (section.richContent?.content) {
+              <business-rich-content-renderer
+                [content]="section.richContent ?? null"
+              ></business-rich-content-renderer>
+              } @else {
               <h1>{{ site().brand.tagline }}</h1>
               <p class="lede">{{ site().brand.intro }}</p>
               <p class="body">{{ site().brand.longBio }}</p>
+              }
               <div class="actions">
-                @if (site().features.booking.enabled) {
-                <a class="cta-primary" routerLink="/book">{{
-                  site().contact.consultationLabel
-                }}</a>
+                @if (site().features.booking.enabled && siteSlug) {
+                <a
+                  class="cta-primary"
+                  [routerLink]="['/sites', siteSlug, 'book']"
+                  >{{ site().contact.consultationLabel }}</a
+                >
                 } @if (site().features.clientPortal.enabled) {
-                <a class="cta-secondary" routerLink="/client">Client Portal</a>
+                <a class="cta-secondary" [routerLink]="clientPortalRoute()"
+                  >Client Portal</a
+                >
                 }
               </div>
             </otui-card>
@@ -201,8 +211,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             <p class="eyebrow">{{ section.title }}</p>
             <h2>{{ site().brand.businessName }}</h2>
           </div>
+          @if (section.richContent?.content) {
+          <business-rich-content-renderer
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          } @else {
           <p class="body">{{ ownerName() }}</p>
           <p class="body">{{ site().brand.longBio }}</p>
+          }
         </otui-card>
       </div>
       } @case ('services') {
@@ -235,6 +251,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               there.
             </h2>
           </div>
+          @if (section.richContent?.content) {
+          <business-rich-content-renderer
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          }
           <div class="offer-stack">
             @for (offer of offers(); track offer.id; let i = $index) {
             <div
@@ -291,6 +312,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             <p class="eyebrow">{{ section.title }}</p>
             <h2>Services that fit real schedules and still move the needle.</h2>
           </div>
+          @if (section.richContent?.content) {
+          <business-rich-content-renderer
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          }
           <div class="testimonial-stack">
             @for (testimonial of site().testimonials; track
             testimonial.clientName; let i = $index) {
@@ -334,10 +360,19 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             <p class="eyebrow">{{ section.title }}</p>
             <h2>Book the right starting point when you are ready.</h2>
           </div>
+          @if (section.richContent?.content) {
+          <business-rich-content-renderer
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          }
           <div class="actions">
-            <a class="cta-primary" routerLink="/book">{{
-              site().contact.consultationLabel
-            }}</a>
+            @if (siteSlug) {
+            <a
+              class="cta-primary"
+              [routerLink]="['/sites', siteSlug, 'book']"
+              >{{ site().contact.consultationLabel }}</a
+            >
+            }
           </div>
         </otui-card>
       </div>
@@ -370,6 +405,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               Reach out when you are ready to talk goals, schedule, and fit.
             </h2>
           </div>
+          @if (section.richContent?.content) {
+          <business-rich-content-renderer
+            [content]="section.richContent ?? null"
+          ></business-rich-content-renderer>
+          }
           <div class="contact-grid">
             <div class="contact-info">
               <div class="contact-row">
@@ -391,7 +431,9 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 [buttonText]="
                   contactSubmitting
                     ? 'Sending...'
-                    : site().contact.consultationLabel
+                    : site().features.booking.enabled
+                    ? site().contact.consultationLabel
+                    : 'Send message'
                 "
                 [subjects]="contactSubjects"
                 (formSubmit)="submitContactForm($event)"
@@ -637,7 +679,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .landing-page-root.embedded-preview .section-shell:hover::after,
       .landing-page-root.embedded-preview
         .section-shell.preview-section-selected::after {
-        border-color: color-mix(in srgb, var(--primary, #1f7a63) 72%, white);
+        border-color: color-mix(
+          in srgb,
+          var(--primary, #1f7a63) 72%,
+          var(--surface, var(--background, #ffffff))
+        );
         background: color-mix(in srgb, var(--primary, #1f7a63) 8%, transparent);
       }
 
@@ -690,8 +736,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         z-index: 1;
         background: color-mix(
           in srgb,
-          var(--background, #ffffff) 90%,
-          transparent
+          var(--surface, var(--background, #ffffff)) 88%,
+          transparent 12%
         );
         backdrop-filter: blur(10px);
       }
@@ -699,8 +745,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .landing-page-root.embedded-preview .section-surface {
         background: color-mix(
           in srgb,
-          var(--background, #ffffff) 82%,
-          transparent
+          var(--surface, var(--background, #ffffff)) 82%,
+          transparent 18%
         );
       }
 
@@ -776,8 +822,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         align-content: start;
         background: color-mix(
           in srgb,
-          var(--background, #ffffff) 86%,
-          transparent
+          var(--surface, var(--background, #ffffff)) 84%,
+          transparent 16%
         );
         backdrop-filter: blur(12px);
       }
@@ -871,7 +917,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .cta-primary:hover {
         box-shadow: 0 10px 28px
           color-mix(in srgb, var(--primary) 32%, transparent);
-        background: color-mix(in srgb, var(--primary) 92%, black);
+        background: color-mix(
+          in srgb,
+          var(--primary) 88%,
+          var(--foreground, #0f172a)
+        );
       }
 
       .cta-secondary {
@@ -891,8 +941,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         align-content: start;
         background: color-mix(
           in srgb,
-          var(--background, #ffffff) 86%,
-          transparent
+          var(--surface, var(--background, #ffffff)) 84%,
+          transparent 16%
         );
         backdrop-filter: blur(12px);
       }
@@ -915,7 +965,11 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         background: linear-gradient(
           135deg,
           var(--primary, #1f7a63),
-          color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
+          color-mix(
+            in srgb,
+            var(--primary, #1f7a63) 55%,
+            var(--foreground, #0f172a)
+          )
         );
         box-shadow: 0 4px 12px
           color-mix(in srgb, var(--primary) 30%, transparent);
@@ -1109,8 +1163,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border: var(--personality-border-width, 1px) solid var(--border);
         background: color-mix(
           in srgb,
-          var(--surface, #fff) 84%,
-          var(--background, #fff)
+          var(--surface, var(--background, #ffffff)) 84%,
+          var(--background, #ffffff)
         );
       }
 
@@ -1214,13 +1268,17 @@ export class BusinessLandingPageComponent {
   @Output() sectionSelected = new EventEmitter<string>();
 
   private readonly api = inject(BusinessApiService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   readonly site = this.siteConfig.site;
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
   readonly activeLayout = computed(() => this.site().landingPage.layout);
   readonly layoutClass = computed(
     () => `layout-${this.site().landingPage.layout}`
   );
-  readonly offers = toSignal(this.api.getOffers(), { initialValue: [] });
+  readonly offers = toSignal(this.api.getOffers(this.siteSlug), {
+    initialValue: [],
+  });
   contactSubmitting = false;
   contactStatus: string | null = null;
   readonly contactSubjects = [
@@ -1242,6 +1300,12 @@ export class BusinessLandingPageComponent {
       .filter((section) => section.enabled)
       .filter((section) => this.isSectionEnabled(section.type))
   );
+
+  clientPortalRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'login']
+      : ['/client'];
+  }
 
   ownerName(): string {
     return (
@@ -1328,7 +1392,7 @@ export class BusinessLandingPageComponent {
   }
 
   constructor() {
-    this.siteConfig.fetch().subscribe();
+    this.siteConfig.fetch(false, this.siteSlug).subscribe();
   }
 
   submitContactForm(event: {

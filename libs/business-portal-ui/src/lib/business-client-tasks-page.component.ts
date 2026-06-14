@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { toSignal, toObservable } from '@angular/core/rxjs-interop';
-import { switchMap, of } from 'rxjs';
+import { ActivatedRoute } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
@@ -133,6 +132,8 @@ export class BusinessClientTasksPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
   private readonly clientId = computed(
     () => this.auth.clientUser()?.userId ?? ''
   );
@@ -152,10 +153,12 @@ export class BusinessClientTasksPageComponent {
         return;
       }
 
-      this.api.getClientRoutines(id).subscribe((routines) => {
+      this.api.getClientRoutines(id, this.siteSlug).subscribe((routines) => {
         this.routines.set(routines);
       });
     });
+
+    this.siteConfig.fetch(false, this.siteSlug).subscribe();
   }
 
   submitCheckIn(): void {
@@ -169,6 +172,7 @@ export class BusinessClientTasksPageComponent {
         assignmentId: this.assignmentId,
         notes: this.notes,
         energy: this.energy,
+        siteSlug: this.siteSlug ?? undefined,
       })
       .subscribe(() => {
         this.notes = 'Check-in saved.';
@@ -180,18 +184,20 @@ export class BusinessClientTasksPageComponent {
       return;
     }
 
-    this.api.completeClientRoutine(id).subscribe((updatedRoutine) => {
-      this.routines.update((routines) =>
-        routines.map((routine) =>
-          routine.id === id
-            ? {
-                ...routine,
-                ...updatedRoutine,
-                status: updatedRoutine?.status ?? 'completed',
-              }
-            : routine
-        )
-      );
-    });
+    this.api
+      .completeClientRoutine(id, this.siteSlug)
+      .subscribe((updatedRoutine) => {
+        this.routines.update((routines) =>
+          routines.map((routine) =>
+            routine.id === id
+              ? {
+                  ...routine,
+                  ...updatedRoutine,
+                  status: updatedRoutine?.status ?? 'completed',
+                }
+              : routine
+          )
+        );
+      });
   }
 }

@@ -105,6 +105,36 @@ async function bootstrap() {
         stock: 100,
         active: true,
       },
+      {
+        name: 'Emberline Studio Mini Print Set',
+        description:
+          'Set of three archival mini prints featuring Emberline Studio landscape and portrait studies, packaged for ready-to-ship collector orders.',
+        price: 36,
+        type: 'physical',
+        imageUrl: '/assets/products/emberline-mini-print-set.jpg',
+        stock: 18,
+        active: true,
+      },
+      {
+        name: 'Emberline Studio Sticker Sheet',
+        description:
+          'Illustrated vinyl sticker sheet with studio mascots, brush motifs, and signature Emberline color accents.',
+        price: 8,
+        type: 'physical',
+        imageUrl: '/assets/products/emberline-sticker-sheet.jpg',
+        stock: 42,
+        active: true,
+      },
+      {
+        name: 'Original Gouache Landscape',
+        description:
+          'One-of-a-kind gouache painting from the current Emberline Studio release, sealed and ready to ship with collector notes.',
+        price: 240,
+        type: 'physical',
+        imageUrl: '/assets/products/emberline-gouache-landscape.jpg',
+        stock: 4,
+        active: true,
+      },
     ];
 
     for (const productData of products) {

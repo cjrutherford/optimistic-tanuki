@@ -34,7 +34,13 @@ import {
   SplitLayoutSlot,
 } from '@optimistic-tanuki/business-data-access';
 import { BusinessLandingPageComponent } from '@optimistic-tanuki/business-public-ui';
-import { CardComponent } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CheckboxComponent,
+  SelectComponent,
+  TextAreaComponent,
+  TextInputComponent,
+} from '@optimistic-tanuki/form-ui';
 import {
   EditorBlockTreeComponent,
   EditorDesignSystemPanelComponent,
@@ -264,15 +270,20 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
     CommonModule,
     FormsModule,
     DragDropModule,
+    ButtonComponent,
     CardComponent,
     BusinessLandingPageComponent,
+    CheckboxComponent,
     EditorBlockTreeComponent,
     EditorDesignSystemPanelComponent,
+    SelectComponent,
     SchemaBlockInspectorComponent,
     SchemaCollectionPanelComponent,
     SchemaFormPanelComponent,
     SchemaStringListPanelComponent,
     ComposeComponent,
+    TextAreaComponent,
+    TextInputComponent,
   ],
   template: `
     <div class="editor-shell">
@@ -294,22 +305,24 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         </div>
         <div class="workspace-controls">
           <div class="mode-switch" data-editor-mode-switch>
-            <button
-              type="button"
+            <otui-button
               class="mode-switch-btn"
               [class.active]="editorMode() === 'guided'"
-              (click)="setEditorMode('guided')"
+              variant="text"
+              [useGradient]="false"
+              (action)="setEditorMode('guided')"
             >
               Guided Setup
-            </button>
-            <button
-              type="button"
+            </otui-button>
+            <otui-button
               class="mode-switch-btn"
               [class.active]="editorMode() === 'studio'"
-              (click)="setEditorMode('studio')"
+              variant="text"
+              [useGradient]="false"
+              (action)="setEditorMode('studio')"
             >
               Studio
-            </button>
+            </otui-button>
           </div>
         </div>
       </div>
@@ -322,44 +335,42 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         </div>
         <div class="guided-steps">
           @for (step of guidedSteps; track step.id; let i = $index) {
-          <button
-            type="button"
+          <otui-button
             class="guided-step-chip"
             [class.active]="guidedStep() === i"
-            (click)="setGuidedStep(i)"
+            variant="outlined"
+            [useGradient]="false"
+            (action)="setGuidedStep(i)"
           >
             <span>{{ i + 1 }}</span>
             {{ step.label }}
-          </button>
+          </otui-button>
           }
         </div>
         <div class="guided-actions">
-          <button
-            type="button"
+          <otui-button
             class="guided-nav-btn"
-            (click)="prevGuidedStep()"
             [disabled]="guidedStep() === 0"
+            variant="outlined"
+            [useGradient]="false"
+            (action)="prevGuidedStep()"
           >
             Back
-          </button>
-          <button
-            type="button"
+          </otui-button>
+          <otui-button
             class="guided-nav-btn primary"
-            (click)="nextGuidedStep()"
             [disabled]="guidedStep() === guidedSteps.length - 1"
+            variant="primary"
+            (action)="nextGuidedStep()"
           >
             Next
-          </button>
+          </otui-button>
         </div>
       </div>
       }
 
       <div class="workspace-layout">
-        <div
-          class="editor-pane"
-          (input)="refreshDraftSignalFromTemplate()"
-          (change)="refreshDraftSignalFromTemplate()"
-        >
+        <div class="editor-pane">
           @if (loading()) {
           <p class="status-msg entrance">Loading current site content…</p>
           } @else {
@@ -371,11 +382,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('design')"
             style="animation-delay: 0.06s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
               [attr.aria-expanded]="isPanelExpanded('design')"
-              (click)="togglePanel('design')"
+              variant="text"
+              [useGradient]="false"
+              (action)="togglePanel('design')"
             >
               <h2 class="section-title">
                 <span class="section-icon">🎨</span>
@@ -384,7 +396,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('design') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('design')) {
             <app-editor-design-system-panel
               [theme]="draft().theme"
@@ -402,11 +414,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('business-info')"
             style="animation-delay: 0.12s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
               [attr.aria-expanded]="isPanelExpanded('business-info')"
-              (click)="togglePanel('business-info')"
+              variant="text"
+              [useGradient]="false"
+              (action)="togglePanel('business-info')"
             >
               <h2 class="section-title">
                 <span class="section-icon">✦</span>
@@ -415,7 +428,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('business-info') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('business-info')) {
             <app-schema-form-panel
               [model]="draft()"
@@ -468,11 +481,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('contact')"
             style="animation-delay: 0.18s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
               [attr.aria-expanded]="isPanelExpanded('contact')"
-              (click)="togglePanel('contact')"
+              variant="text"
+              [useGradient]="false"
+              (action)="togglePanel('contact')"
             >
               <h2 class="section-title">
                 <span class="section-icon">✉</span>
@@ -481,7 +495,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('contact') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('contact')) {
             <app-schema-form-panel
               [model]="draft()"
@@ -497,11 +511,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('features')"
             style="animation-delay: 0.21s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
               [attr.aria-expanded]="isPanelExpanded('features')"
-              (click)="togglePanel('features')"
+              variant="text"
+              [useGradient]="false"
+              (action)="togglePanel('features')"
             >
               <h2 class="section-title">
                 <span class="section-icon">⚙</span>
@@ -510,7 +525,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('features') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('features')) {
             <div class="feature-row">
               <label class="toggle-card">
@@ -521,10 +536,10 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     landing content.</small
                   >
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.booking.enabled"
-                />
+                <lib-checkbox
+                  [value]="draft().features.booking.enabled"
+                  (changeEvent)="updateFeatureFlag('booking.enabled', $event)"
+                ></lib-checkbox>
               </label>
               <label
                 class="toggle-card dependent"
@@ -536,11 +551,13 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     >Allow online payment only when booking is enabled.</small
                   >
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.booking.allowOnlinePayment"
+                <lib-checkbox
+                  [value]="draft().features.booking.allowOnlinePayment || false"
                   [disabled]="!draft().features.booking.enabled"
-                />
+                  (changeEvent)="
+                    updateFeatureFlag('booking.allowOnlinePayment', $event)
+                  "
+                ></lib-checkbox>
               </label>
               <label class="toggle-card">
                 <span class="toggle-copy">
@@ -550,30 +567,34 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     site.</small
                   >
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.clientPortal.enabled"
-                />
+                <lib-checkbox
+                  [value]="draft().features.clientPortal.enabled"
+                  (changeEvent)="
+                    updateFeatureFlag('clientPortal.enabled', $event)
+                  "
+                ></lib-checkbox>
               </label>
               <label class="toggle-card">
                 <span class="toggle-copy">
                   <strong>Testimonials</strong>
                   <small>Render testimonials on the public landing page.</small>
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.testimonials.enabled"
-                />
+                <lib-checkbox
+                  [value]="draft().features.testimonials.enabled"
+                  (changeEvent)="
+                    updateFeatureFlag('testimonials.enabled', $event)
+                  "
+                ></lib-checkbox>
               </label>
               <label class="toggle-card">
                 <span class="toggle-copy">
                   <strong>Invoices</strong>
                   <small>Keep invoice-related portal features available.</small>
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.invoices.enabled"
-                />
+                <lib-checkbox
+                  [value]="draft().features.invoices.enabled"
+                  (changeEvent)="updateFeatureFlag('invoices.enabled', $event)"
+                ></lib-checkbox>
               </label>
               <label class="toggle-card">
                 <span class="toggle-copy">
@@ -583,10 +604,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     portal.</small
                   >
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="draft().features.clientTasks.enabled"
-                />
+                <lib-checkbox
+                  [value]="draft().features.clientTasks.enabled"
+                  (changeEvent)="
+                    updateFeatureFlag('clientTasks.enabled', $event)
+                  "
+                ></lib-checkbox>
               </label>
               <label
                 class="toggle-card dependent"
@@ -599,13 +622,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     enabled.</small
                   >
                 </span>
-                <input
-                  type="checkbox"
-                  [(ngModel)]="
-                    draft().features.clientTasks.allowClientCompletion
-                  "
+                <lib-checkbox
+                  [value]="draft().features.clientTasks.allowClientCompletion"
                   [disabled]="!draft().features.clientTasks.enabled"
-                />
+                  (changeEvent)="
+                    updateFeatureFlag(
+                      'clientTasks.allowClientCompletion',
+                      $event
+                    )
+                  "
+                ></lib-checkbox>
               </label>
             </div>
             }
@@ -617,11 +643,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('layout')"
             style="animation-delay: 0.225s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
               [attr.aria-expanded]="isPanelExpanded('layout')"
-              (click)="togglePanel('layout')"
+              variant="text"
+              [useGradient]="false"
+              (action)="togglePanel('layout')"
             >
               <h2 class="section-title">
                 <span class="section-icon">☰</span>
@@ -630,15 +657,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('layout') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('layout')) {
             <div class="layout-option-grid">
               @for (option of layoutOptions; track option.value) {
-              <button
-                type="button"
+              <otui-button
                 class="layout-option-card"
                 [class.selected]="draft().landingPage.layout === option.value"
-                (click)="setLandingLayout(option.value)"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="setLandingLayout(option.value)"
               >
                 <div
                   class="layout-option-preview"
@@ -652,38 +680,42 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                   <strong>{{ option.label }}</strong>
                   <small>{{ option.description }}</small>
                 </div>
-              </button>
+              </otui-button>
               }
             </div>
             <div class="layout-toolbar">
-              <button
-                type="button"
+              <otui-button
                 class="layout-toolbar-btn"
-                (click)="restoreRecommendedSectionState()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="restoreRecommendedSectionState()"
               >
                 Show recommended
-              </button>
-              <button
-                type="button"
+              </otui-button>
+              <otui-button
                 class="layout-toolbar-btn"
-                (click)="setAllSectionsEnabled(true)"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="setAllSectionsEnabled(true)"
               >
                 Enable all
-              </button>
-              <button
-                type="button"
+              </otui-button>
+              <otui-button
                 class="layout-toolbar-btn"
-                (click)="setAllSectionsEnabled(false)"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="setAllSectionsEnabled(false)"
               >
                 Disable all
-              </button>
-              <button
-                type="button"
+              </otui-button>
+              <otui-button
                 class="layout-toolbar-btn"
-                (click)="resetSectionOrder()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="resetSectionOrder()"
               >
                 Reset order
-              </button>
+              </otui-button>
             </div>
             <div class="layout-canvas-shell">
               @if (draft().landingPage.layout === 'single-column') {
@@ -726,13 +758,10 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     </div>
                     }
                     <label class="section-toggle">
-                      <input
-                        type="checkbox"
-                        [ngModel]="section.enabled"
-                        (ngModelChange)="
-                          toggleSectionEnabled(section.id, $event)
-                        "
-                      />
+                      <lib-checkbox
+                        [value]="section.enabled"
+                        (changeEvent)="toggleSectionEnabled(section.id, $event)"
+                      ></lib-checkbox>
                       <span>{{ section.title }}</span>
                     </label>
                     <p class="section-help">
@@ -808,13 +837,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                         </div>
                         }
                         <label class="section-toggle">
-                          <input
-                            type="checkbox"
-                            [ngModel]="section.enabled"
-                            (ngModelChange)="
+                          <lib-checkbox
+                            [value]="section.enabled"
+                            (changeEvent)="
                               toggleSectionEnabled(section.id, $event)
                             "
-                          />
+                          ></lib-checkbox>
                           <span>{{ section.title }}</span>
                         </label>
                         <p class="section-help">
@@ -896,13 +924,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                         </div>
                         }
                         <label class="section-toggle">
-                          <input
-                            type="checkbox"
-                            [ngModel]="section.enabled"
-                            (ngModelChange)="
+                          <lib-checkbox
+                            [value]="section.enabled"
+                            (changeEvent)="
                               toggleSectionEnabled(section.id, $event)
                             "
-                          />
+                          ></lib-checkbox>
                           <span>{{ section.title }}</span>
                         </label>
                         <p class="section-help">
@@ -960,34 +987,52 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                       <p>{{ sectionSummary(section) }}</p>
                     </div>
                     <div class="layout-actions">
-                      <button
-                        type="button"
+                      @if (selectedSectionSupportsCompose() && section.type !==
+                      'custom') {
+                      <otui-button
                         class="layout-btn"
-                        (click)="moveSectionUp(selectedSectionIndex())"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="toggleRichTextEditor()"
+                      >
+                        {{
+                          richTextEditorOpen()
+                            ? 'Hide content editor'
+                            : 'Open content editor'
+                        }}
+                      </otui-button>
+                      }
+                      <otui-button
+                        class="layout-btn"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="moveSectionUp(selectedSectionIndex())"
                         [disabled]="selectedSectionIndex() === 0"
                       >
                         Move up
-                      </button>
-                      <button
-                        type="button"
+                      </otui-button>
+                      <otui-button
                         class="layout-btn"
-                        (click)="moveSectionDown(selectedSectionIndex())"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="moveSectionDown(selectedSectionIndex())"
                         [disabled]="
                           selectedSectionIndex() ===
                           draft().landingPage.sections.length - 1
                         "
                       >
                         Move down
-                      </button>
+                      </otui-button>
                       @if (section.type === 'custom' || section.type === 'image'
                       || section.type === 'gallery') {
-                      <button
-                        type="button"
+                      <otui-button
                         class="layout-btn"
-                        (click)="removeSection(selectedSectionIndex())"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="removeSection(selectedSectionIndex())"
                       >
                         Remove
-                      </button>
+                      </otui-button>
                       }
                     </div>
                   </div>
@@ -1000,22 +1045,20 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     "
                   ></app-schema-block-inspector>
 
-                  @if (section.type === 'custom') {
+                  @if (composeEditorVisible()) {
                   <div class="media-editor custom-compose-editor">
                     <div class="media-editor-head">
-                      <strong>Custom section composition</strong>
+                      <strong>Section composition</strong>
                       <small
-                        >Use the shared compose runtime to author richer
-                        layouts, callouts, and galleries inside this
-                        section.</small
+                        >Use the shared compose runtime to author the public
+                        marketing copy directly inside the live section
+                        preview.</small
                       >
                     </div>
                     <lib-social-compose
                       [profileId]="ownerProfileId()"
-                      [ngModel]="selectedCustomSectionComposeValue()"
-                      (ngModelChange)="
-                        updateSelectedCustomSectionRichContent($event)
-                      "
+                      [ngModel]="selectedSectionComposeValue()"
+                      (ngModelChange)="updateSelectedSectionRichContent($event)"
                     ></lib-social-compose>
                   </div>
                   } @if (section.type === 'image') {
@@ -1041,35 +1084,38 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                           )
                         "
                       />
-                      <button
-                        type="button"
+                      <otui-button
                         class="layout-btn"
-                        (click)="imageUploadInput.click()"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="imageUploadInput.click()"
                       >
                         {{
                           isUploading(assetTargetKey(selectedSectionIndex()))
                             ? 'Uploading…'
                             : 'Upload image'
                         }}
-                      </button>
-                      <button
-                        type="button"
+                      </otui-button>
+                      <otui-button
                         class="layout-btn"
-                        (click)="toggleAssetPicker(selectedSectionIndex())"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="toggleAssetPicker(selectedSectionIndex())"
                       >
                         {{
                           isAssetPickerOpen(selectedSectionIndex())
                             ? 'Hide asset library'
                             : 'Choose existing asset'
                         }}
-                      </button>
-                      <button
-                        type="button"
+                      </otui-button>
+                      <otui-button
                         class="layout-btn"
-                        (click)="loadOwnerAssets(true)"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="loadOwnerAssets(true)"
                       >
                         Refresh assets
-                      </button>
+                      </otui-button>
                     </div>
                     @if (isAssetPickerOpen(selectedSectionIndex())) {
                     <div class="asset-picker">
@@ -1087,16 +1133,17 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                       } @else if (assetLibrary().length) {
                       <div class="asset-grid">
                         @for (asset of assetLibrary(); track asset.id) {
-                        <button
-                          type="button"
+                        <otui-button
                           class="asset-tile"
-                          (click)="
+                          variant="text"
+                          [useGradient]="false"
+                          (action)="
                             selectAsset(selectedSectionIndex(), null, asset)
                           "
                         >
                           <img [src]="asset.url" [alt]="asset.name" />
                           <span>{{ asset.name }}</span>
-                        </button>
+                        </otui-button>
                         }
                       </div>
                       } @else {
@@ -1122,27 +1169,34 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                           <span class="testimonial-number"
                             >Image #{{ $index + 1 }}</span
                           >
-                          <button
-                            type="button"
+                          <otui-button
                             class="tag-remove"
-                            (click)="
+                            variant="text"
+                            [useGradient]="false"
+                            (action)="
                               removeGalleryItem(selectedSectionIndex(), $index)
                             "
                           >
                             Remove
-                          </button>
+                          </otui-button>
                         </div>
                         <div class="field-grid">
                           <label>
                             Source Type
-                            <select
-                              [(ngModel)]="
+                            <lib-select
+                              [ngModel]="
                                 section.gallery!.items[$index].sourceType
                               "
-                            >
-                              <option value="url">External URL</option>
-                              <option value="asset">Asset path</option>
-                            </select>
+                              [options]="mediaSourceOptions"
+                              (ngModelChange)="
+                                updateGalleryItemField(
+                                  selectedSectionIndex(),
+                                  $index,
+                                  'sourceType',
+                                  $event
+                                )
+                              "
+                            ></lib-select>
                           </label>
                           <label class="full">
                             {{
@@ -1151,23 +1205,47 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                                 ? 'Asset path'
                                 : 'Image URL'
                             }}
-                            <input
-                              [(ngModel)]="section.gallery!.items[$index].src"
-                            />
+                            <lib-text-input
+                              [ngModel]="section.gallery!.items[$index].src"
+                              (ngModelChange)="
+                                updateGalleryItemField(
+                                  selectedSectionIndex(),
+                                  $index,
+                                  'src',
+                                  $event
+                                )
+                              "
+                            ></lib-text-input>
                           </label>
                           <label>
                             Alt Text
-                            <input
-                              [(ngModel)]="section.gallery!.items[$index].alt"
-                            />
+                            <lib-text-input
+                              [ngModel]="section.gallery!.items[$index].alt"
+                              (ngModelChange)="
+                                updateGalleryItemField(
+                                  selectedSectionIndex(),
+                                  $index,
+                                  'alt',
+                                  $event
+                                )
+                              "
+                            ></lib-text-input>
                           </label>
                           <label>
                             Caption
-                            <input
-                              [(ngModel)]="
-                                section.gallery!.items[$index].caption
+                            <lib-text-input
+                              [ngModel]="
+                                section.gallery!.items[$index].caption || ''
                               "
-                            />
+                              (ngModelChange)="
+                                updateGalleryItemField(
+                                  selectedSectionIndex(),
+                                  $index,
+                                  'caption',
+                                  $event
+                                )
+                              "
+                            ></lib-text-input>
                           </label>
                         </div>
                         <div class="media-actions">
@@ -1184,10 +1262,11 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                               )
                             "
                           />
-                          <button
-                            type="button"
+                          <otui-button
                             class="layout-btn"
-                            (click)="galleryUploadInput.click()"
+                            variant="outlined"
+                            [useGradient]="false"
+                            (action)="galleryUploadInput.click()"
                           >
                             {{
                               isUploading(
@@ -1196,11 +1275,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                                 ? 'Uploading…'
                                 : 'Upload image'
                             }}
-                          </button>
-                          <button
-                            type="button"
+                          </otui-button>
+                          <otui-button
                             class="layout-btn"
-                            (click)="
+                            variant="outlined"
+                            [useGradient]="false"
+                            (action)="
                               toggleAssetPicker(selectedSectionIndex(), $index)
                             "
                           >
@@ -1209,7 +1289,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                                 ? 'Hide asset library'
                                 : 'Choose existing asset'
                             }}
-                          </button>
+                          </otui-button>
                         </div>
                         @if (isAssetPickerOpen(selectedSectionIndex(), $index))
                         {
@@ -1230,10 +1310,11 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                           } @else if (assetLibrary().length) {
                           <div class="asset-grid">
                             @for (asset of assetLibrary(); track asset.id) {
-                            <button
-                              type="button"
+                            <otui-button
                               class="asset-tile"
-                              (click)="
+                              variant="text"
+                              [useGradient]="false"
+                              (action)="
                                 selectAsset(
                                   selectedSectionIndex(),
                                   $index,
@@ -1243,7 +1324,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                             >
                               <img [src]="asset.url" [alt]="asset.name" />
                               <span>{{ asset.name }}</span>
-                            </button>
+                            </otui-button>
                             }
                           </div>
                           } @else {
@@ -1255,13 +1336,14 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                         }
                       </div>
                       }
-                      <button
-                        type="button"
+                      <otui-button
                         class="tag-add"
-                        (click)="addGalleryItem(selectedSectionIndex())"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="addGalleryItem(selectedSectionIndex())"
                       >
                         + Add gallery image
-                      </button>
+                      </otui-button>
                     </div>
                   </div>
                   } } @else {
@@ -1274,23 +1356,30 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               </div>
             </div>
             <div class="layout-footer">
-              <button
-                type="button"
+              <otui-button
                 class="tag-add"
-                (click)="addCustomSection()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addCustomSection()"
               >
                 + Add custom section
-              </button>
-              <button type="button" class="tag-add" (click)="addImageSection()">
-                + Add image block
-              </button>
-              <button
-                type="button"
+              </otui-button>
+              <otui-button
                 class="tag-add"
-                (click)="addGallerySection()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addImageSection()"
+              >
+                + Add image block
+              </otui-button>
+              <otui-button
+                class="tag-add"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addGallerySection()"
               >
                 + Add gallery block
-              </button>
+              </otui-button>
             </div>
             }
           </otui-card>
@@ -1300,11 +1389,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('offers')"
             style="animation-delay: 0.235s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
+              variant="text"
+              [useGradient]="false"
               [attr.aria-expanded]="isPanelExpanded('offers')"
-              (click)="togglePanel('offers')"
+              (action)="togglePanel('offers')"
             >
               <h2 class="section-title">
                 <span class="section-icon">◫</span>
@@ -1313,15 +1403,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('offers') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('offers')) {
             <div class="service-list">
               <label class="full">
                 Offer source
-                <select [(ngModel)]="draft().serviceCatalog.source">
-                  <option value="manual">Manual business-site offers</option>
-                  <option value="store">Store service catalog</option>
-                </select>
+                <lib-select
+                  [ngModel]="draft().serviceCatalog.source"
+                  [options]="serviceCatalogSourceOptions"
+                  (ngModelChange)="updateServiceCatalogSource($event)"
+                ></lib-select>
               </label>
 
               @if (draft().serviceCatalog.source === 'store') {
@@ -1336,13 +1427,14 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               } @if (storeProductsError()) {
               <p class="status-msg error">{{ storeProductsError() }}</p>
               }
-              <button
-                type="button"
+              <otui-button
                 class="tag-add"
-                (click)="loadStoreProducts()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="loadStoreProducts()"
               >
                 Refresh store services
-              </button>
+              </otui-button>
               @for (product of storeServiceProducts(); track product.id) {
               <div class="service-card">
                 <div class="testimonial-header">
@@ -1352,19 +1444,25 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                 <div class="field-grid">
                   <label>
                     Product type
-                    <input [ngModel]="product.type" disabled />
+                    <lib-text-input
+                      [ngModel]="product.type"
+                      [disabled]="true"
+                    ></lib-text-input>
                   </label>
                   <label>
                     Price
-                    <input [ngModel]="product.price" disabled />
+                    <lib-text-input
+                      [ngModel]="'' + product.price"
+                      [disabled]="true"
+                    ></lib-text-input>
                   </label>
                   <label class="full">
                     Description
-                    <textarea
-                      rows="3"
+                    <lib-text-area
+                      [rows]="3"
                       [ngModel]="product.description || ''"
-                      disabled
-                    ></textarea>
+                      [disabled]="true"
+                    ></lib-text-area>
                   </label>
                 </div>
               </div>
@@ -1395,9 +1493,14 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                 can describe what you sell.
               </p>
               }
-              <button type="button" class="tag-add" (click)="addService()">
+              <otui-button
+                class="tag-add"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addService()"
+              >
                 + Add offer
-              </button>
+              </otui-button>
               }
             </div>
             }
@@ -1410,11 +1513,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('review')"
             style="animation-delay: 0.24s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
+              variant="text"
+              [useGradient]="false"
               [attr.aria-expanded]="isPanelExpanded('review')"
-              (click)="togglePanel('review')"
+              (action)="togglePanel('review')"
             >
               <h2 class="section-title">
                 <span class="section-icon">◈</span>
@@ -1423,7 +1527,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('review') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('review')) {
             <app-schema-form-panel
               [model]="draft()"
@@ -1456,11 +1560,12 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             [class.collapsed]="!isPanelExpanded('testimonials')"
             style="animation-delay: 0.3s"
           >
-            <button
-              type="button"
+            <otui-button
               class="section-toggle-header"
+              variant="text"
+              [useGradient]="false"
               [attr.aria-expanded]="isPanelExpanded('testimonials')"
-              (click)="togglePanel('testimonials')"
+              (action)="togglePanel('testimonials')"
             >
               <h2 class="section-title">
                 <span class="section-icon">❝</span>
@@ -1469,7 +1574,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               <span class="section-toggle-indicator">{{
                 isPanelExpanded('testimonials') ? 'Hide' : 'Show'
               }}</span>
-            </button>
+            </otui-button>
             @if (isPanelExpanded('testimonials')) {
             <app-schema-collection-panel
               title="Client Testimonials"
@@ -1497,16 +1602,20 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           }
 
           <div class="actions entrance" style="animation-delay: 0.36s">
-            <button
-              class="otui-btn primary"
+            <otui-button
+              variant="primary"
               [disabled]="saving()"
-              (click)="save()"
+              (action)="save()"
             >
               @if (saving()) { Saving… } @else { Save Changes }
-            </button>
-            <button class="otui-btn ghost" (click)="reset()">
+            </otui-button>
+            <otui-button
+              variant="outlined"
+              [useGradient]="false"
+              (action)="reset()"
+            >
               Reset to Defaults
-            </button>
+            </otui-button>
           </div>
           }
         </div>
@@ -1521,10 +1630,10 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             </p>
           </div>
           <div class="mobile-preview-actions">
-            <button
-              type="button"
+            <otui-button
               class="mobile-preview-btn primary"
-              (click)="
+              variant="primary"
+              (action)="
                 openMobileSheet(selectedSection() ? 'inspector' : 'structure')
               "
             >
@@ -1533,15 +1642,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                   ? 'Edit Selected Section'
                   : 'Edit Page Structure'
               }}
-            </button>
+            </otui-button>
             @if (selectedSection()) {
-            <button
-              type="button"
+            <otui-button
               class="mobile-preview-btn"
-              (click)="openMobileSheet('structure')"
+              variant="outlined"
+              [useGradient]="false"
+              (action)="openMobileSheet('structure')"
             >
               Structure
-            </button>
+            </otui-button>
             }
           </div>
           @if (loading()) {
@@ -1557,12 +1667,13 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
       </div>
 
       @if (mobileSheetOpen()) {
-      <button
-        type="button"
+      <otui-button
         class="mobile-sheet-backdrop"
+        variant="text"
+        [useGradient]="false"
         aria-label="Close editor sheet"
-        (click)="closeMobileSheet()"
-      ></button>
+        (action)="closeMobileSheet()"
+      ></otui-button>
       }
 
       <div
@@ -1580,33 +1691,36 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             </p>
             <h3>{{ mobileSheetTitle() }}</h3>
           </div>
-          <button
-            type="button"
+          <otui-button
             class="mobile-sheet-close"
-            (click)="closeMobileSheet()"
+            variant="text"
+            [useGradient]="false"
+            (action)="closeMobileSheet()"
           >
             Close
-          </button>
+          </otui-button>
         </div>
 
         <div class="mobile-sheet-tabs">
-          <button
-            type="button"
+          <otui-button
             class="mobile-sheet-tab"
+            variant="text"
+            [useGradient]="false"
             [class.active]="mobileSheetMode() === 'structure'"
-            (click)="openMobileSheet('structure')"
+            (action)="openMobileSheet('structure')"
           >
             Structure
-          </button>
+          </otui-button>
           @if (selectedSection()) {
-          <button
-            type="button"
+          <otui-button
             class="mobile-sheet-tab"
+            variant="text"
+            [useGradient]="false"
             [class.active]="mobileSheetMode() === 'inspector'"
-            (click)="openMobileSheet('inspector')"
+            (action)="openMobileSheet('inspector')"
           >
             Inspector
-          </button>
+          </otui-button>
           }
         </div>
 
@@ -1620,23 +1734,30 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               (blockSelected)="selectSection($event)"
             ></app-editor-block-tree>
             <div class="mobile-sheet-structure-actions">
-              <button
-                type="button"
+              <otui-button
                 class="tag-add"
-                (click)="addCustomSection()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addCustomSection()"
               >
                 + Add custom section
-              </button>
-              <button type="button" class="tag-add" (click)="addImageSection()">
-                + Add image block
-              </button>
-              <button
-                type="button"
+              </otui-button>
+              <otui-button
                 class="tag-add"
-                (click)="addGallerySection()"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addImageSection()"
+              >
+                + Add image block
+              </otui-button>
+              <otui-button
+                class="tag-add"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addGallerySection()"
               >
                 + Add gallery block
-              </button>
+              </otui-button>
             </div>
           </div>
           } @else {
@@ -1674,6 +1795,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         display: grid;
         gap: 1rem;
         min-width: 0;
+        align-content: start;
       }
 
       .preview-pane {
@@ -1696,6 +1818,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           var(--background, #fff) 100%
         );
         box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        align-content: start;
       }
 
       .mobile-preview-actions,
@@ -2634,6 +2757,15 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           color-mix(in srgb, var(--danger) 30%, transparent);
       }
 
+      @media (min-width: 641px) {
+        .editor-pane,
+        .preview-pane {
+          max-height: calc(100vh - 6.5rem);
+          overflow: auto;
+          scrollbar-gutter: stable;
+        }
+      }
+
       @media (max-width: 640px) {
         .workspace-layout {
           grid-template-columns: 1fr;
@@ -2799,8 +2931,12 @@ export class BusinessSiteEditorPageComponent {
   activeAssetPicker = signal<string | null>(null);
   uploadingTargets = signal<Record<string, boolean>>({});
   private configId: string | null = null;
+  private pendingDraftRefresh = false;
+  private lastAppliedThemeSignature: string | null = null;
   private readonly draftPreviewReady = signal(false);
   readonly editorMode = signal<EditorMode>('studio');
+  readonly onboardingMode = signal(false);
+  readonly richTextEditorOpen = signal(false);
   readonly guidedStep = signal(0);
   readonly personalities = PREDEFINED_PERSONALITIES;
   readonly guidedSteps: GuidedStepDefinition[] = [
@@ -2921,12 +3057,22 @@ export class BusinessSiteEditorPageComponent {
     { value: 'topographic-drift', label: 'Topographic Drift' },
     { value: 'shimmer-beam', label: 'Shimmer Beam' },
   ];
+  readonly mediaSourceOptions = [
+    { value: 'url', label: 'External URL' },
+    { value: 'asset', label: 'Asset path' },
+  ];
+  readonly serviceCatalogSourceOptions = [
+    { value: 'manual', label: 'Manual business-site offers' },
+    { value: 'store', label: 'Store service catalog' },
+  ];
   readonly brandIdentityFields = BRAND_IDENTITY_FIELDS;
   readonly contactFields = CONTACT_FIELDS;
   readonly clientPortalFields = CLIENT_PORTAL_FIELDS;
   readonly serviceFields = SERVICE_FIELDS;
   readonly testimonialFields = TESTIMONIAL_FIELDS;
-  draft = signal<BusinessSiteConfig>(cloneBusinessSiteConfig());
+  draft = signal<BusinessSiteConfig>(cloneBusinessSiteConfig(), {
+    equal: () => false,
+  });
   readonly selectedSectionId = signal<string | null>(
     this.draft().landingPage.sections[0]?.id ?? null
   );
@@ -2947,6 +3093,12 @@ export class BusinessSiteEditorPageComponent {
 
   private applyDraftTheme(): void {
     const theme = this.draft().theme;
+    const signature = JSON.stringify(theme);
+    if (signature === this.lastAppliedThemeSignature) {
+      return;
+    }
+
+    this.lastAppliedThemeSignature = signature;
     this.themeService.setTheme(theme.mode);
     this.themeService.setPrimaryColor(theme.primaryColor);
     void this.themeService.setPersonality(theme.personalityId);
@@ -3018,6 +3170,7 @@ export class BusinessSiteEditorPageComponent {
       this.editorMode.set(initialMode);
       this.syncPanelsForEditorMode();
     }
+    this.onboardingMode.set(!!this.route?.snapshot.data['onboardingMode']);
 
     this.siteConfig.fetch().subscribe({
       next: (site) => {
@@ -3039,11 +3192,15 @@ export class BusinessSiteEditorPageComponent {
   }
 
   refreshDraftSignalFromTemplate(): void {
-    if (!this.draftPreviewReady()) {
+    if (!this.draftPreviewReady() || this.pendingDraftRefresh) {
       return;
     }
 
-    this.draft.set(cloneBusinessSiteConfig(this.draft()));
+    this.pendingDraftRefresh = true;
+    queueMicrotask(() => {
+      this.pendingDraftRefresh = false;
+      this.draft.set(cloneBusinessSiteConfig(this.draft()));
+    });
   }
 
   landingPageBlocks(): BlockInstance[] {
@@ -3080,6 +3237,10 @@ export class BusinessSiteEditorPageComponent {
 
   selectSection(sectionId: string): void {
     this.selectedSectionId.set(sectionId);
+    const nextSection = this.draft().landingPage.sections.find(
+      (section) => section.id === sectionId
+    );
+    this.richTextEditorOpen.set(nextSection?.type === 'custom');
     this.expandPanel('layout');
     if (this.isMobileViewport()) {
       this.openMobileSheet('inspector');
@@ -3123,6 +3284,21 @@ export class BusinessSiteEditorPageComponent {
 
     this.draft.update((draft) => {
       this.writeRootPath(draft, fieldKey, nextValue);
+      return draft;
+    });
+  }
+
+  updateFeatureFlag(path: string, enabled: boolean): void {
+    this.patchDraftField(`features.${path}`, enabled);
+  }
+
+  updateServiceCatalogSource(value: string): void {
+    if (value !== 'manual' && value !== 'store') {
+      return;
+    }
+
+    this.draft.update((draft) => {
+      draft.serviceCatalog.source = value;
       return draft;
     });
   }
@@ -3301,12 +3477,36 @@ export class BusinessSiteEditorPageComponent {
     }));
   }
 
-  selectedCustomSectionComposeValue(): PostData {
+  selectedSectionSupportsCompose(): boolean {
+    const type = this.selectedSection()?.type;
+
+    return (
+      type === 'hero' ||
+      type === 'about' ||
+      type === 'services' ||
+      type === 'testimonials' ||
+      type === 'contact' ||
+      type === 'booking' ||
+      type === 'custom'
+    );
+  }
+
+  composeEditorVisible(): boolean {
+    return (
+      this.selectedSection()?.type === 'custom' || this.richTextEditorOpen()
+    );
+  }
+
+  toggleRichTextEditor(): void {
+    this.richTextEditorOpen.update((open) => !open);
+  }
+
+  selectedSectionComposeValue(): PostData {
     const section = this.selectedSection();
     const richContent = section?.richContent;
     return {
       title: richContent?.title ?? section?.title ?? '',
-      content: richContent?.content ?? '',
+      content: richContent?.content ?? this.defaultComposeContent(section),
       links: [],
       attachments: [],
       injectedComponentsNew: richContent?.injectedComponents ?? [],
@@ -3319,9 +3519,9 @@ export class BusinessSiteEditorPageComponent {
     };
   }
 
-  updateSelectedCustomSectionRichContent(value: PostData): void {
+  updateSelectedSectionRichContent(value: PostData): void {
     const section = this.selectedSection();
-    if (!section || section.type !== 'custom') {
+    if (!section || !this.selectedSectionSupportsCompose()) {
       return;
     }
 
@@ -3329,7 +3529,7 @@ export class BusinessSiteEditorPageComponent {
       const target = draft.landingPage.sections.find(
         (candidate) => candidate.id === section.id
       );
-      if (!target || target.type !== 'custom') {
+      if (!target) {
         return draft;
       }
 
@@ -3345,6 +3545,85 @@ export class BusinessSiteEditorPageComponent {
       target.body = this.plainTextFromHtml(value.content ?? '');
       return draft;
     });
+  }
+
+  updateGalleryItemField(
+    sectionIndex: number,
+    itemIndex: number,
+    field: keyof LandingSectionMediaItem,
+    value: string
+  ): void {
+    this.draft.update((draft) => {
+      const item =
+        draft.landingPage.sections[sectionIndex].gallery?.items[itemIndex];
+      if (!item) {
+        return draft;
+      }
+
+      if (field === 'sourceType') {
+        item.sourceType = value === 'asset' ? 'asset' : 'url';
+      } else if (field === 'src' || field === 'alt' || field === 'caption') {
+        item[field] = value;
+      }
+      return draft;
+    });
+  }
+
+  selectedCustomSectionComposeValue(): PostData {
+    return this.selectedSectionComposeValue();
+  }
+
+  updateSelectedCustomSectionRichContent(value: PostData): void {
+    this.updateSelectedSectionRichContent(value);
+  }
+
+  private defaultComposeContent(
+    section: LandingSection | null | undefined
+  ): string {
+    if (!section) {
+      return '';
+    }
+
+    switch (section.type) {
+      case 'hero':
+        return [
+          `<h1>${this.escapeHtml(this.draft().brand.tagline)}</h1>`,
+          `<p>${this.escapeHtml(this.draft().brand.intro)}</p>`,
+          `<p>${this.escapeHtml(this.draft().brand.longBio)}</p>`,
+        ].join('');
+      case 'about':
+        return [
+          `<p>${this.escapeHtml(this.ownerNamePreview())}</p>`,
+          `<p>${this.escapeHtml(this.draft().brand.longBio)}</p>`,
+        ].join('');
+      case 'services':
+        return '<p>Choose a starting point, then build the right engagement from there.</p>';
+      case 'testimonials':
+        return '<p>Services that fit real schedules and still move the needle.</p>';
+      case 'contact':
+        return '<p>Reach out when you are ready to talk goals, schedule, and fit.</p>';
+      case 'booking':
+        return '<p>Book the right starting point when you are ready.</p>';
+      case 'custom':
+        return section.body ? `<p>${this.escapeHtml(section.body)}</p>` : '';
+      default:
+        return '';
+    }
+  }
+
+  private ownerNamePreview(): string {
+    return (
+      this.draft().brand.ownerName ||
+      this.draft().brand.trainerName ||
+      'Business Owner'
+    );
+  }
+
+  private escapeHtml(value: string | undefined): string {
+    return (value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   private focusGuidedStep(): void {
@@ -4425,6 +4704,9 @@ export class BusinessSiteEditorPageComponent {
     this.successMsg.set('');
     this.errorMsg.set('');
     const payload = this.sanitizedDraft();
+    if (this.onboardingMode()) {
+      payload.site.onboardingCompletedAt = new Date().toISOString();
+    }
 
     this.api.updateSiteConfig(this.configId, payload).subscribe({
       next: (saved: any) => {

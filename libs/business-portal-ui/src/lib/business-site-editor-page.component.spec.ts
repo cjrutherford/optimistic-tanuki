@@ -11,6 +11,7 @@ import {
   DEFAULT_BUSINESS_SITE_CONFIG,
 } from '@optimistic-tanuki/business-data-access';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 import { BusinessSiteEditorPageComponent } from './business-site-editor-page.component';
 
@@ -119,6 +120,10 @@ describe('BusinessSiteEditorPageComponent', () => {
             themeColors$,
           },
         },
+        {
+          provide: API_BASE_URL,
+          useValue: 'http://localhost:3000',
+        },
       ],
     });
 
@@ -184,6 +189,33 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(
       component.draft().landingPage.sections.map((section) => section.order)
     ).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it('exposes hero copy through the compose editor and writes changes back into rich content', () => {
+    const { component } = createComponent();
+
+    component.selectSection('hero');
+
+    expect(component.selectedSectionComposeValue().title).toBe('Welcome');
+
+    component.updateSelectedSectionRichContent({
+      title: 'Hero',
+      content: '<p>Owner-authored hero copy.</p>',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: [],
+      themeConfig: {
+        theme: 'light',
+        accentColor: '#1f7a63',
+      },
+    });
+
+    expect(component.selectedSection()?.richContent).toEqual(
+      expect.objectContaining({
+        title: 'Hero',
+        content: '<p>Owner-authored hero copy.</p>',
+      })
+    );
   });
 
   it('saves edited feature flags with normalized landing section order', () => {
@@ -296,7 +328,7 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(host.querySelector('business-landing-page')).toBeTruthy();
   });
 
-  it('pushes unsaved draft changes into the shared preview store and theme service', () => {
+  it('pushes unsaved draft changes into the shared preview store and theme service', async () => {
     const { fixture, component } = createComponent();
     const store = TestBed.inject(BusinessSiteConfigStore);
     const setSiteSpy = jest.spyOn(store, 'setSite');
@@ -307,6 +339,7 @@ describe('BusinessSiteEditorPageComponent', () => {
     component.draft().theme.personalityId = 'bold';
 
     component.refreshDraftSignalFromTemplate();
+    await Promise.resolve();
     fixture.detectChanges();
 
     expect(setSiteSpy).toHaveBeenLastCalledWith(
@@ -345,6 +378,17 @@ describe('BusinessSiteEditorPageComponent', () => {
         'secondaryColor'
       ]
     ).toBeUndefined();
+  });
+
+  it('applies personality changes immediately without requiring a manual draft refresh', async () => {
+    const { fixture, component } = createComponent();
+
+    component.updateDraftThemeField('personalityId', 'bold');
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(component.draft().theme.personalityId).toBe('bold');
+    expect(setPersonality).toHaveBeenLastCalledWith('bold');
   });
 
   it('lets the rendered business preview drive section selection', () => {

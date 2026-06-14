@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -15,10 +15,12 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <h2>{{ site().clientPortal.headline }}</h2>
         <p>{{ site().clientPortal.description }}</p>
         <div class="actions">
-          <a class="cta-primary" routerLink="/client/dashboard"
+          <a class="cta-primary" [routerLink]="dashboardRoute()"
             >Open dashboard</a
           >
-          <a class="cta-secondary" routerLink="/book">Request coaching</a>
+          <a class="cta-secondary" [routerLink]="bookingRoute()"
+            >Request coaching</a
+          >
         </div>
       </otui-card>
 
@@ -95,9 +97,21 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
 })
 export class BusinessClientPortalHomePageComponent {
   private readonly siteConfig = inject(BusinessSiteConfigStore);
+  private readonly route = inject(ActivatedRoute, { optional: true });
   readonly site = this.siteConfig.site;
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  dashboardRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+      : ['/client/dashboard'];
+  }
+
+  bookingRoute(): string[] {
+    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : ['/'];
+  }
 
   constructor() {
-    this.siteConfig.fetch().subscribe();
+    this.siteConfig.fetch(false, this.siteSlug).subscribe();
   }
 }
