@@ -221,6 +221,12 @@ export class BusinessApiService {
     return this.http.get<BusinessStoreProduct[]>('/api/store/products');
   }
 
+  getOwnerProducts(ownerId: string): Observable<BusinessStoreProduct[]> {
+    return this.http.get<BusinessStoreProduct[]>(
+      `/api/store/products/owner/${ownerId}`
+    );
+  }
+
   getSiteConfig(): Observable<SiteConfigResponse> {
     return this.getSiteConfigForSlug();
   }

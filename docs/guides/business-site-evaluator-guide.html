@@ -343,6 +343,22 @@
                 <code>http://127.0.0.1:4303/sites/canopy-tree-service</code>
               </td>
             </tr>
+            <tr>
+              <td>Accounting / bookkeeping</td>
+              <td><code>owner-accountant@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/ledgerline-accounting</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Artist / studio</td>
+              <td><code>owner-artist@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/emberline-studio</code>
+              </td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -852,6 +868,80 @@
               owner workspace without needing a separate seeded owner account.
             </p>
           </article>
+
+          <article class="script-step">
+            <h3 class="step-title">19. Validate the accountant workflow</h3>
+            <ol>
+              <li>
+                Sign in as <code>owner-accountant@localbusiness.test</code> and
+                open <code>/owner/dashboard</code>.
+              </li>
+              <li>
+                Confirm the dashboard surfaces bookkeeping, tax, and payroll
+                service metrics.
+              </li>
+              <li>
+                Open <code>/owner/availability</code> and add a bookkeeping
+                review slot and a quarterly tax planning slot.
+              </li>
+              <li>
+                Sign in as <code>client@localbusiness.test</code> and book a
+                bookkeeping review at
+                <code>/sites/ledgerline-accounting/book</code>.
+              </li>
+              <li>
+                Approve and complete the booking from the owner requests queue,
+                then generate an invoice.
+              </li>
+              <li>
+                Open the client portal and confirm the client can see upcoming
+                deadlines and bookkeeping context.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the accountant preset supports advisory services,
+              intake, availability, portal context, and invoicing like other
+              service businesses.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">
+              20. Validate the artist commission and storefront workflow
+            </h3>
+            <ol>
+              <li>
+                Sign in as <code>owner-artist@localbusiness.test</code> and open
+                <code>/owner/dashboard</code>.
+              </li>
+              <li>
+                Confirm the owner site uses the Emberline Studio dark theme and
+                commission-focused content.
+              </li>
+              <li>
+                Open <code>/owner/site</code> and confirm the landing page
+                includes a storefront section and commission booking CTA.
+              </li>
+              <li>
+                Sign in as <code>client@localbusiness.test</code> and book a
+                portrait commission consult at
+                <code>/sites/emberline-studio/book</code>.
+              </li>
+              <li>
+                Approve the booking from the owner queue and confirm the owner
+                can track commission details in the client portal.
+              </li>
+              <li>
+                If store products are enabled, confirm the storefront section
+                renders available work and the client can view the product list.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the artist preset supports commission bookings, client
+              portal handholding, and visible store inventory without breaking
+              the existing service flow.
+            </p>
+          </article>
         </div>
       </section>
 
@@ -892,6 +982,20 @@
               display, edit, and remove actions.
             </li>
             <li>Finance navigation is visible when invoices are enabled.</li>
+            <li>
+              Seeded owner accounts span North Star Advisory, Steady Hand
+              Contracting, Clearcrest Pressure Washing, Ovenbird Bakeshop,
+              Canopy Tree Service, Ledgerline Accounting, and Emberline Studio.
+            </li>
+            <li>
+              Accountant and artist owners can complete intake, scheduling,
+              approval, invoicing, and client portal workflows like other
+              service tenants.
+            </li>
+            <li>
+              The artist storefront preset shows commission booking and store
+              section rendering without breaking the site editor.
+            </li>
           </ul>
         </article>
 
@@ -931,6 +1035,11 @@
             <li>
               Client billing shows invoices and completed session history when
               invoices are enabled.
+            </li>
+            <li>
+              All seeded owner types—consulting, contracting, pressure washing,
+              bakery, tree service, accounting, and artist—support the same
+              client booking and approval flows.
             </li>
           </ul>
         </article>

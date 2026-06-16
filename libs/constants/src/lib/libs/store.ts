@@ -2,6 +2,7 @@ const ProductCommands = {
   CREATE_PRODUCT: 'createProduct',
   FIND_ALL_PRODUCTS: 'findAllProducts',
   FIND_ONE_PRODUCT: 'findOneProduct',
+  FIND_OWNER_PRODUCTS: 'findOwnerProducts',
   UPDATE_PRODUCT: 'updateProduct',
   REMOVE_PRODUCT: 'removeProduct',
 };

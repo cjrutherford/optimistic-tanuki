@@ -63,6 +63,13 @@ const ownerChildren: Route[] = [
       ),
   },
   {
+    path: 'products',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerProductsPageComponent
+      ),
+  },
+  {
     path: 'finance',
     canActivate: [ownerFinanceFeatureGuard],
     providers: [

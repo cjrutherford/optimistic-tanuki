@@ -17,6 +17,11 @@ export class ProductsController {
     return this.productsService.findAll();
   }
 
+  @MessagePattern({ cmd: 'findOwnerProducts' })
+  findOwnerProducts(@Payload() ownerId: string) {
+    return this.productsService.findOwnerProducts(ownerId);
+  }
+
   @MessagePattern({ cmd: 'findOneProduct' })
   findOne(@Payload() id: string) {
     return this.productsService.findOne(id);
