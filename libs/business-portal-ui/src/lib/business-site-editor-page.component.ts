@@ -8,7 +8,7 @@ import {
   transferArrayItem,
 } from '@angular/cdk/drag-drop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   type BlockFieldDefinition,
   type BlockDefinition,
@@ -272,6 +272,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
     CommonModule,
     FormsModule,
     DragDropModule,
+    RouterLink,
     ButtonComponent,
     CardComponent,
     BusinessLandingPageComponent,
@@ -1561,6 +1562,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                 <code>service</code>. Manage pricing and activation from the
                 store workspace.
               </p>
+              <a class="store-workspace-link" [routerLink]="ownerProductsLink()"
+                >Manage products in workspace</a
+              >
               @if (storeProductsLoading()) {
               <p class="status-msg">Loading active store service products…</p>
               } @if (storeProductsError()) {
@@ -2795,6 +2799,18 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 1rem;
       }
 
+      .store-workspace-link {
+        justify-self: start;
+        color: var(--primary, #1f7a63);
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      .store-workspace-link:hover {
+        text-decoration: underline;
+      }
+
       .service-card {
         display: grid;
         gap: 0.75rem;
@@ -3083,6 +3099,12 @@ export class BusinessSiteEditorPageComponent {
   private readonly themeService = inject(ThemeService);
   private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
+
+  ownerProductsLink(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', 'products']
+      : ['/owner/products'];
+  }
 
   loading = signal(true);
   saving = signal(false);
@@ -4056,7 +4078,12 @@ export class BusinessSiteEditorPageComponent {
     this.storeProductsError.set('');
 
     try {
-      const products = await firstValueFrom(this.api.getStoreProducts());
+      const ownerId = this.auth.user()?.userId;
+      const products = await firstValueFrom(
+        ownerId
+          ? this.api.getOwnerProducts(ownerId)
+          : this.api.getStoreProducts()
+      );
       this.storeServiceProducts.set(
         products.filter(
           (product) => product.active !== false && product.type === 'service'

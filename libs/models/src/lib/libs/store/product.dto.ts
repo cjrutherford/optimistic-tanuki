@@ -6,6 +6,7 @@ import {
   IsNumber,
   IsOptional,
   IsBoolean,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -48,6 +49,14 @@ export class CreateProductDto {
   })
   @IsBoolean()
   active?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Owner user id for owner-scoped store products',
+    example: '2d3f1f90-3ac6-4d2e-9d5e-0e4f0c9d8a11',
+  })
+  @IsUUID()
+  @IsOptional()
+  ownerId?: string;
 }
 
 export class UpdateProductDto {

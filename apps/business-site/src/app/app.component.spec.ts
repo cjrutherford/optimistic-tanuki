@@ -307,7 +307,65 @@ describe('AppComponent', () => {
     expect(clientLoginLink).toBeTruthy();
   });
 
-  it('uses router fragment navigation for landing-page section links', () => {
+  it('renders business-scoped owner auth links on hosted business routes', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'steady-hand-contracting',
+      },
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Steady Hand Contracting',
+      },
+      features: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.features,
+        clientPortal: {
+          enabled: true,
+        },
+      },
+    });
+    const trainerAuthService = {
+      isAuthenticated: jest.fn(() => false),
+      isClientAuthenticated: jest.fn(() => false),
+      clientUser: jest.fn(() => null),
+      logout: jest.fn(),
+      logoutClient: jest.fn(),
+    };
+    const themeService = createThemeService();
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        { provide: BusinessAuthService, useValue: trainerAuthService },
+        { provide: ThemeService, useValue: themeService },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/sites/steady-hand-contracting');
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/owner/login'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'Steady Hand Contracting'
+    );
+  });
+
+  it('uses effective platform routes for top-level navigation on the platform home', () => {
     localStorage.clear();
     const store = createStore();
     const trainerAuthService = {
@@ -338,12 +396,13 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     fixture.detectChanges();
 
-    const contactLink = fixture.debugElement
+    const links = fixture.debugElement
       .queryAll(By.directive(RouterLink))
-      .map((element) => element.injector.get(RouterLink))
-      .find((link) => link.fragment === 'contact');
+      .map((element) => element.injector.get(RouterLink));
 
-    expect(contactLink?.href).toBe('/#contact');
+    expect(links.map((link) => link.href)).toEqual(
+      expect.arrayContaining(['/', '/auth', '/client/login'])
+    );
   });
 
   it('updates the browser title from the loaded business config', () => {

@@ -11,6 +11,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
+  CreateProductDto,
   CreateProfileDto,
   EnableMultiFactorRequest,
   LoginRequest,
@@ -22,6 +23,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import {
   AuthCommands,
+  ProductCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -42,11 +44,35 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
+  private static readonly BUSINESS_OWNER_STARTER_PRODUCTS: CreateProductDto[] =
+    [
+      {
+        name: 'Discovery Session',
+        description:
+          'Starter consultation offer to help new owners publish a store-backed service catalog immediately.',
+        price: 95,
+        type: 'service',
+        stock: 0,
+        active: true,
+      },
+      {
+        name: 'Signature Service',
+        description:
+          'Publish-ready starter service product you can rename, reprice, and tailor to your workflow.',
+        price: 250,
+        type: 'service',
+        stock: 0,
+        active: true,
+      },
+    ];
+
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.STORE_SERVICE)
+    private readonly storeClient: ClientProxy,
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly loginBootstrap: LoginAccountBootstrapService,
@@ -210,6 +236,11 @@ export class AuthenticationController {
           .addOwnerScopeDefaults()
           .addAssetOwnerPermissions()
           .build()
+      );
+
+      await this.seedBusinessOwnerProductsIfNeeded(
+        user.userId,
+        effectiveAppScope
       );
 
       return {
@@ -435,5 +466,36 @@ export class AuthenticationController {
 
     await this.roleInit.processNow(roleInitOptions);
     return createdProfile;
+  }
+
+  private async seedBusinessOwnerProductsIfNeeded(
+    ownerId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'business-site') {
+      return;
+    }
+
+    const existingProducts =
+      ((await firstValueFrom(
+        this.storeClient.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+      )) as Array<{ ownerId?: string | null }>) ?? [];
+
+    const hasOwnedProducts = existingProducts.some(
+      (product) => product?.ownerId === ownerId
+    );
+
+    if (hasOwnedProducts) {
+      return;
+    }
+
+    for (const product of AuthenticationController.BUSINESS_OWNER_STARTER_PRODUCTS) {
+      await firstValueFrom(
+        this.storeClient.send(ProductCommands.CREATE_PRODUCT, {
+          ...product,
+          ownerId,
+        })
+      );
+    }
   }
 }

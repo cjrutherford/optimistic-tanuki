@@ -77,6 +77,7 @@ describe('BusinessPortalShellComponent', () => {
       { path: '/owner/requests', label: 'Requests' },
       { path: '/owner/clients', label: 'Clients' },
       { path: '/owner/availability', label: 'Availability' },
+      { path: '/owner/products', label: 'Products' },
       { path: '/owner/site', label: 'Site Editor' },
     ]);
   });
@@ -89,10 +90,47 @@ describe('BusinessPortalShellComponent', () => {
       { path: '/owner/requests', label: 'Requests' },
       { path: '/owner/clients', label: 'Clients' },
       { path: '/owner/availability', label: 'Availability' },
+      { path: '/owner/products', label: 'Products' },
       { path: '/owner/finance/business/invoices', label: 'Invoices' },
       { path: '/owner/finance/business/checkout', label: 'Checkout' },
       { path: '/owner/finance/business/payments', label: 'Payments' },
       { path: '/owner/site', label: 'Site Editor' },
+    ]);
+  });
+
+  it('uses hosted owner product links when the current owner route is business-scoped', () => {
+    const { component } = createComponent(
+      '/sites/steady-hand-contracting/owner/dashboard',
+      true,
+      false,
+      'steady-hand-contracting'
+    );
+
+    expect(component.links()).toEqual([
+      {
+        path: '/sites/steady-hand-contracting/owner/dashboard',
+        label: 'Dashboard',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/requests',
+        label: 'Requests',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/clients',
+        label: 'Clients',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/availability',
+        label: 'Availability',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/products',
+        label: 'Products',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/site',
+        label: 'Site Editor',
+      },
     ]);
   });
 

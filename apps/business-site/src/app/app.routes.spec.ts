@@ -16,6 +16,8 @@ describe('appRoutes', () => {
         'sites/:siteSlug/client',
         'sites/:siteSlug/client/login',
         'sites/:siteSlug/client/register',
+        'sites/:siteSlug/owner/login',
+        'sites/:siteSlug/owner/register',
         'sites/:siteSlug/owner',
         'client',
         'auth',
@@ -157,6 +159,18 @@ describe('appRoutes', () => {
       editorMode: 'guided',
       onboardingMode: true,
     });
+  });
+
+  it('adds hosted owner auth routes for business-scoped login and registration', () => {
+    const hostedOwnerLoginRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner/login'
+    );
+    const hostedOwnerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner/register'
+    );
+
+    expect(hostedOwnerLoginRoute?.title).toBe('Owner Login');
+    expect(hostedOwnerRegisterRoute?.title).toBe('Owner Registration');
   });
 
   it('mounts the shared finance utilities under the owner workspace', () => {

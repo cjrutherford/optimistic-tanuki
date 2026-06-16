@@ -7,7 +7,11 @@ import {
 } from '@optimistic-tanuki/models';
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  ProductCommands,
+  ProfileCommands,
+} from '@optimistic-tanuki/constants';
 import { AuthenticationController } from './authentication.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
@@ -23,6 +27,7 @@ describe('AuthenticationController', () => {
   let controller: AuthenticationController;
   let clientProxy: ClientProxy;
   let profileService: ClientProxy;
+  let storeService: ClientProxy;
   let roleInitService: { processNow: jest.Mock };
   let loginBootstrap: { login: jest.Mock };
   let registerBootstrap: { register: jest.Mock };
@@ -37,6 +42,11 @@ describe('AuthenticationController', () => {
       send: jest
         .fn()
         .mockReturnValue(of([{ id: 'profile-1', appScope: 'test' }])),
+      connect: jest.fn().mockResolvedValue({}),
+    } as unknown as jest.Mocked<ClientProxy>;
+
+    storeService = {
+      send: jest.fn().mockReturnValue(of([])),
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
 
@@ -64,6 +74,10 @@ describe('AuthenticationController', () => {
         {
           provide: 'PROFILE_SERVICE',
           useValue: profileService,
+        },
+        {
+          provide: 'STORE_SERVICE',
+          useValue: storeService,
         },
         {
           provide: RoleInitService,
@@ -244,6 +258,61 @@ describe('AuthenticationController', () => {
           expect.objectContaining({ roleName: 'business_site_owner' }),
         ]),
       })
+    );
+    expect(storeService.send).toHaveBeenCalledWith(
+      ProductCommands.FIND_OWNER_PRODUCTS,
+      'user-1'
+    );
+    expect(storeService.send).toHaveBeenCalledWith(
+      ProductCommands.CREATE_PRODUCT,
+      expect.objectContaining({
+        ownerId: 'user-1',
+        type: 'service',
+        active: true,
+      })
+    );
+  });
+
+  it('does not seed starter products when the owner already has products', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([
+        {
+          id: 'profile-1',
+          userId: 'user-1',
+          appScope: 'business-site',
+        },
+      ])
+    );
+    (storeService.send as jest.Mock).mockImplementation((command: any) => {
+      if (command === ProductCommands.FIND_OWNER_PRODUCTS) {
+        return of([
+          {
+            id: 'product-1',
+            ownerId: 'user-1',
+            type: 'service',
+          },
+        ]);
+      }
+
+      return of({});
+    });
+
+    await controller.claimOwnerAccess(
+      {
+        userId: 'user-1',
+        email: 'owner@example.com',
+        profileId: 'profile-1',
+      } as any,
+      'business-site'
+    );
+
+    expect(storeService.send).toHaveBeenCalledWith(
+      ProductCommands.FIND_OWNER_PRODUCTS,
+      'user-1'
+    );
+    expect(storeService.send).not.toHaveBeenCalledWith(
+      ProductCommands.CREATE_PRODUCT,
+      expect.anything()
     );
   });
 

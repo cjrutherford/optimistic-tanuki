@@ -1,5 +1,10 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+  Router,
+} from '@angular/router';
 import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
@@ -64,7 +69,7 @@ describe('BusinessLoginPageComponent', () => {
       'owner@example.com',
       'secret'
     );
-    expect(navigate).toHaveBeenCalledWith(['/owner/dashboard']);
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'dashboard']);
   });
 
   it('routes a seeded non-default owner using that owner profile config', () => {
@@ -109,7 +114,7 @@ describe('BusinessLoginPageComponent', () => {
     fixture.componentInstance.onSubmit();
 
     expect(getSiteConfig).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/owner/dashboard']);
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'dashboard']);
   });
 
   it('routes a first-time owner to onboarding after login', () => {
@@ -149,7 +154,7 @@ describe('BusinessLoginPageComponent', () => {
 
     fixture.componentInstance.onSubmit();
 
-    expect(navigate).toHaveBeenCalledWith(['/owner/onboarding']);
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'onboarding']);
   });
 
   it('shows an owner-client mode toggle and sends client mode to the client login route', () => {
@@ -239,5 +244,76 @@ describe('BusinessLoginPageComponent', () => {
       .queryAll(By.directive(RouterLink))
       .map((element) => element.injector.get(RouterLink));
     expect(links.map((link) => link.href)).toContain('/client/register');
+  });
+
+  it('keeps hosted owner auth routes tenant-scoped for links and redirects', () => {
+    const loginAndExchange = jest.fn().mockReturnValue(of({}));
+    const getSiteConfig = jest.fn().mockReturnValue(
+      of({
+        configId: 'config-hosted',
+        config: {
+          site: {
+            onboardingCompletedAt: '2026-06-15T12:00:00.000Z',
+          },
+        },
+      })
+    );
+
+    TestBed.configureTestingModule({
+      imports: [BusinessLoginPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: { loginAndExchange },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: { getSiteConfig },
+        },
+      ],
+    });
+
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BusinessLoginPageComponent);
+    fixture.componentInstance.email = 'owner@example.com';
+    fixture.componentInstance.password = 'secret';
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/owner/register'
+    );
+
+    fixture.componentInstance.setMode('client');
+    expect(navigate).toHaveBeenCalledWith([
+      '/sites',
+      'steady-hand-contracting',
+      'client',
+      'login',
+    ]);
+
+    fixture.componentInstance.setMode('owner');
+    fixture.componentInstance.onSubmit();
+
+    expect(navigate).toHaveBeenCalledWith([
+      '/sites',
+      'steady-hand-contracting',
+      'owner',
+      'dashboard',
+    ]);
   });
 });

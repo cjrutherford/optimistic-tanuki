@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
   BusinessStoreProduct,
@@ -14,6 +14,7 @@ import {
   TextInputComponent,
 } from '@optimistic-tanuki/form-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { switchMap } from 'rxjs';
 
 type ProductForm = {
   id?: string;
@@ -345,14 +346,18 @@ type ProductForm = {
 export class BusinessOwnerProductsPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
-  readonly ownerProducts = computed<BusinessStoreProduct[]>(() => {
-    const ownerId = this.auth.user()?.userId;
-    const payload = ownerId
-      ? this.api.getOwnerProducts(ownerId)
-      : this.api.getStoreProducts();
-    const initial = ownerId ? [] : [];
-    return toSignal(payload, { initialValue: initial })() ?? [];
-  });
+  private readonly ownerId = computed(() => this.auth.user()?.userId ?? null);
+  private readonly ownerProductsSignal = toSignal(
+    toObservable(this.ownerId).pipe(
+      switchMap((ownerId) =>
+        ownerId
+          ? this.api.getOwnerProducts(ownerId)
+          : this.api.getStoreProducts()
+      )
+    ),
+    { initialValue: [] as BusinessStoreProduct[] }
+  );
+  readonly ownerProducts = computed(() => this.ownerProductsSignal() ?? []);
   readonly visibleProducts = computed(() => this.ownerProducts());
   readonly editingId = signal<string | null>(null);
   readonly form = signal<ProductForm>(emptyForm());

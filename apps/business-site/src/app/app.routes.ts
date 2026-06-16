@@ -159,6 +159,22 @@ export const appRoutes: Route[] = [
     title: 'Client Registration',
   },
   {
+    path: 'sites/:siteSlug/owner/login',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessLoginPageComponent
+      ),
+    title: 'Owner Login',
+  },
+  {
+    path: 'sites/:siteSlug/owner/register',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerRegisterPageComponent
+      ),
+    title: 'Owner Registration',
+  },
+  {
     path: 'sites/:siteSlug/client',
     loadComponent: () =>
       import('@optimistic-tanuki/business-portal-ui').then(

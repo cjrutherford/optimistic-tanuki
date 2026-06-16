@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
@@ -244,30 +244,53 @@ export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   email = '';
   password = '';
   readonly mode = signal<'owner' | 'client'>('owner');
   loading = signal(false);
   errorMsg = signal('');
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  private clientLoginRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'login']
+      : ['/client/login'];
+  }
+
+  private ownerPostLoginRoute(onboardingCompletedAt?: string | null): string[] {
+    const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', route]
+      : ['/owner', route];
+  }
 
   setMode(mode: 'owner' | 'client'): void {
     this.mode.set(mode);
     this.errorMsg.set('');
 
     if (mode === 'client') {
-      void this.router.navigate(['/client/login']);
+      void this.router.navigate(this.clientLoginRoute());
     }
   }
 
   registerRoute(): string[] {
-    return this.mode() === 'owner' ? ['/owner/register'] : ['/client/register'];
+    if (this.mode() === 'owner') {
+      return this.siteSlug
+        ? ['/sites', this.siteSlug, 'owner', 'register']
+        : ['/owner/register'];
+    }
+
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'register']
+      : ['/client/register'];
   }
 
   onSubmit(): void {
     if (!this.email || !this.password) return;
     if (this.mode() === 'client') {
-      void this.router.navigate(['/client/login']);
+      void this.router.navigate(this.clientLoginRoute());
       return;
     }
 
@@ -280,15 +303,13 @@ export class BusinessLoginPageComponent {
           next: (response) => {
             const config = mergeBusinessSiteConfig(response?.config);
             this.loading.set(false);
-            void this.router.navigate([
-              config.site.onboardingCompletedAt
-                ? '/owner/dashboard'
-                : '/owner/onboarding',
-            ]);
+            void this.router.navigate(
+              this.ownerPostLoginRoute(config.site.onboardingCompletedAt)
+            );
           },
           error: () => {
             this.loading.set(false);
-            void this.router.navigate(['/owner/onboarding']);
+            void this.router.navigate(this.ownerPostLoginRoute(null));
           },
         });
       },

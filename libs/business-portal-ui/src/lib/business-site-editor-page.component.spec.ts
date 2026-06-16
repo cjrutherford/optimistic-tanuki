@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
+import { provideRouter, RouterLink } from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -20,6 +21,7 @@ describe('BusinessSiteEditorPageComponent', () => {
   const updateSiteConfig = jest.fn();
   const listAssets = jest.fn();
   const getStoreProducts = jest.fn();
+  const getOwnerProducts = jest.fn();
   const getOffers = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
@@ -120,6 +122,20 @@ describe('BusinessSiteEditorPageComponent', () => {
         },
       ])
     );
+    getOwnerProducts.mockReturnValue(
+      of([
+        {
+          id: 'owner-product-1',
+          name: 'Owner Strategy Sprint',
+          description: 'Owner-scoped store-backed service offer.',
+          price: 225,
+          type: 'service',
+          active: true,
+          stock: 0,
+          ownerId: 'owner-user-1',
+        },
+      ])
+    );
     getOffers.mockReturnValue(of([]));
     listAssets.mockReturnValue(
       of([
@@ -144,6 +160,7 @@ describe('BusinessSiteEditorPageComponent', () => {
             getSiteConfig,
             updateSiteConfig,
             getStoreProducts,
+            getOwnerProducts,
             getOffers,
             listAssets,
           },
@@ -157,7 +174,7 @@ describe('BusinessSiteEditorPageComponent', () => {
         {
           provide: BusinessAuthService,
           useValue: {
-            user: signal({ profileId: 'profile-1' }),
+            user: signal({ profileId: 'profile-1', userId: 'owner-user-1' }),
             getAuthHeaders: () => ({ Authorization: 'Bearer owner-token' }),
           },
         },
@@ -221,6 +238,32 @@ describe('BusinessSiteEditorPageComponent', () => {
         services: [],
       }),
       null
+    );
+  });
+
+  it('loads owner-scoped store products for store-backed offers', () => {
+    createComponent();
+
+    expect(getOwnerProducts).toHaveBeenCalledWith('owner-user-1');
+  });
+
+  it('links store-backed offer editing to the owner products workspace', () => {
+    const { fixture, component } = createComponent();
+
+    component.draft.update((draft) => {
+      draft.serviceCatalog.source = 'store';
+      return draft;
+    });
+    component.togglePanel('offers');
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain('/owner/products');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Manage products in workspace'
     );
   });
 

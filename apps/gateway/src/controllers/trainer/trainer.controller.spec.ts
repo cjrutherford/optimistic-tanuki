@@ -483,7 +483,7 @@ describe('TrainerController', () => {
           return of({ config: {} });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_ALL_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',
@@ -544,7 +544,7 @@ describe('TrainerController', () => {
           });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_ALL_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',
@@ -576,6 +576,68 @@ describe('TrainerController', () => {
     ]);
   });
 
+  it('uses owner-scoped store products for hosted store-backed business offers', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+          return of({
+            config: {
+              site: {
+                ownerUserId: 'owner-user-handyman',
+              },
+              serviceCatalog: { source: 'store' },
+            },
+          });
+        }
+
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
+          expect(payload).toBe('owner-user-handyman');
+          return of([
+            {
+              id: 'product-1',
+              name: 'On-site Repair Visit',
+              description: 'Owner-scoped repair service.',
+              price: 325,
+              type: 'service',
+              active: true,
+              ownerId: 'owner-user-handyman',
+            },
+            {
+              id: 'product-2',
+              name: 'Shared Physical Item',
+              description: 'Should be ignored for offers.',
+              price: 25,
+              type: 'physical',
+              active: true,
+              ownerId: null,
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOffers('steady-hand-contracting')
+    ).resolves.toEqual([
+      {
+        id: 'product-1',
+        label: 'On-site Repair Visit',
+        description: 'Owner-scoped repair service.',
+        serviceType: 'service',
+        startingRate: 325,
+        allowOnlineBooking: true,
+      },
+    ]);
+  });
+
   it('falls back to availability-derived offers when neither site services nor service products exist', async () => {
     const storeClient = {
       send: jest.fn((command: any) => {
@@ -583,7 +645,7 @@ describe('TrainerController', () => {
           return of({ config: {} });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-2',
@@ -746,7 +808,7 @@ describe('TrainerController', () => {
           });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',
@@ -815,7 +877,7 @@ describe('TrainerController', () => {
           });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',
@@ -966,7 +1028,7 @@ describe('TrainerController', () => {
 
     it('accepts catalog-source updates through the business route with bearer-token identity', async () => {
       storeClient.send.mockImplementation((command: any) => {
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',
@@ -1042,8 +1104,62 @@ describe('TrainerController', () => {
           });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([]);
+        }
+
+        return of({ id: 'cfg-1' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.updateCatalogSource(
+        {
+          configId: 'cfg-1',
+          source: 'store',
+        },
+        {
+          userId: 'owner-user-1',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'owner-profile-1',
+        }
+      )
+    ).rejects.toThrow('At least one active store service product is required');
+  });
+
+  it('rejects store mode when the current owner has no owner-scoped products', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              brand: { businessName: 'North Star Coaching' },
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
+          expect(payload).toBe('owner-user-1');
+          return of([]);
+        }
+
+        if (command?.cmd === ProductCommands.FIND_ALL_PRODUCTS.cmd) {
+          return of([
+            {
+              id: 'global-product-1',
+              name: 'Someone Else Service',
+              description: 'Global service product.',
+              price: 120,
+              type: 'service',
+              active: true,
+            },
+          ]);
         }
 
         return of({ id: 'cfg-1' });
@@ -1082,7 +1198,7 @@ describe('TrainerController', () => {
           });
         }
 
-        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+        if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
             {
               id: 'product-1',

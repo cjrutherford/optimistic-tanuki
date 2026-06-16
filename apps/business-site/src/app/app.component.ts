@@ -5,7 +5,6 @@ import {
   NavigationEnd,
   Router,
   RouterLink,
-  RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -25,13 +24,19 @@ type StoredThemeConfig = {
   version?: string;
 };
 
+type TopNavLink = {
+  label: string;
+  route: string[];
+  fragment?: string;
+};
+
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink],
   template: `
     <div class="app-shell">
       <header class="topbar entrance">
-        <a class="brand" routerLink="/">
+        <a class="brand" [routerLink]="brandHomeLink()">
           <span class="brand-mark">{{ brandMark() }}</span>
           <span class="brand-copy">
             <strong>{{ brandTitle() }}</strong>
@@ -40,14 +45,10 @@ type StoredThemeConfig = {
         </a>
 
         <nav class="topnav">
-          <a routerLink="/" fragment="about">Platform</a>
-          <a routerLink="/" fragment="results">Owners</a>
-          <a routerLink="/" fragment="contact">Clients</a>
-          @if (site().features.clientPortal.enabled && !auth.isAuthenticated())
-          {
-          <a [routerLink]="clientPortalEntryLink()" routerLinkActive="active"
-            >Client Portal</a
-          >
+          @for (link of topNavLinks(); track link.label) {
+          <a [routerLink]="link.route" [fragment]="link.fragment">{{
+            link.label
+          }}</a>
           }
         </nav>
 
@@ -107,10 +108,12 @@ type StoredThemeConfig = {
             >Client Login</a
           >
           } } @if (auth.isAuthenticated()) {
-          <a class="ghost" routerLink="/owner/dashboard">Workspace</a>
+          <a class="ghost" [routerLink]="ownerDashboardLink()">Workspace</a>
           <button class="solid" (click)="logout()">Sign Out</button>
           } @else if (!isClientAuthenticated()) {
-          <a class="solid" routerLink="/auth">Owner Login</a>
+          <a class="solid" [routerLink]="hostedOwnerAuthLink('login')"
+            >Owner Login</a
+          >
           }
         </div>
       </header>
@@ -387,6 +390,11 @@ export class AppComponent {
     return match?.[1] ?? null;
   }
 
+  private hostedSiteBaseRoute(): string[] | null {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug ? ['/sites', siteSlug] : null;
+  }
+
   private syncHostedRouteConfig(): void {
     const siteSlug = this.currentHostedSiteSlug();
     if (siteSlug) {
@@ -547,24 +555,61 @@ export class AppComponent {
   }
 
   brandTitle(): string {
-    return this.currentUrl() === '/'
-      ? 'Business Site Platform'
-      : this.site().brand.businessName;
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.businessName
+      : 'Business Site Platform';
   }
 
   brandSubtitle(): string {
-    return this.currentUrl() === '/'
-      ? 'Hosted onboarding, editing, and client connection flows.'
-      : this.site().brand.tagline;
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.tagline
+      : 'Hosted onboarding, editing, and client connection flows.';
   }
 
   brandMark(): string {
-    return this.currentUrl() === '/' ? 'BS' : this.site().brand.monogram;
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.monogram
+      : 'BS';
+  }
+
+  brandHomeLink(): string[] {
+    return this.hostedSiteBaseRoute() ?? ['/'];
+  }
+
+  topNavLinks(): TopNavLink[] {
+    const hostedBaseRoute = this.hostedSiteBaseRoute();
+    if (hostedBaseRoute) {
+      const hostedLinks: TopNavLink[] = [
+        { label: 'Overview', route: hostedBaseRoute, fragment: 'about' },
+        { label: 'Results', route: hostedBaseRoute, fragment: 'results' },
+        { label: 'Contact', route: hostedBaseRoute, fragment: 'contact' },
+      ];
+
+      if (this.site().features.booking.enabled) {
+        hostedLinks.push({
+          label: 'Book',
+          route: [...hostedBaseRoute, 'book'],
+        });
+      }
+
+      return hostedLinks;
+    }
+
+    return [
+      { label: 'Home', route: ['/'] },
+      { label: 'Owners', route: ['/auth'] },
+      { label: 'Clients', route: ['/client/login'] },
+    ];
   }
 
   hostedClientAuthLink(mode: 'login' | 'register'): string[] {
     const siteSlug = this.currentHostedSiteSlug();
     return siteSlug ? ['/sites', siteSlug, 'client', mode] : ['/client', mode];
+  }
+
+  hostedOwnerAuthLink(mode: 'login' | 'register'): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', mode] : ['/owner', mode];
   }
 
   clientPortalEntryLink(): string[] {
@@ -576,5 +621,12 @@ export class AppComponent {
     return siteSlug
       ? ['/sites', siteSlug, 'client', 'dashboard']
       : ['/client/dashboard'];
+  }
+
+  ownerDashboardLink(): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', 'dashboard']
+      : ['/owner/dashboard'];
   }
 }

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
@@ -75,7 +75,7 @@ import { EMPTY, catchError, switchMap } from 'rxjs';
           <otui-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Opening workspace…' : 'Create owner account' }}
           </otui-button>
-          <a routerLink="/auth">Already have an account? Sign in</a>
+          <a [routerLink]="loginRoute()">Already have an account? Sign in</a>
         </form>
       </otui-card>
     </section>
@@ -135,6 +135,7 @@ export class BusinessOwnerRegisterPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   fn = '';
   ln = '';
@@ -145,6 +146,20 @@ export class BusinessOwnerRegisterPageComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly message = signal('');
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  loginRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', 'login']
+      : ['/auth'];
+  }
+
+  private ownerDestination(onboardingCompletedAt?: string | null): string[] {
+    const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', route]
+      : ['/owner', route];
+  }
 
   register(): void {
     this.loading.set(true);
@@ -183,9 +198,7 @@ export class BusinessOwnerRegisterPageComponent {
         this.message.set('Owner workspace ready. Redirecting…');
         const onboardingCompletedAt =
           siteConfig.config?.site?.onboardingCompletedAt;
-        void this.router.navigate(
-          onboardingCompletedAt ? ['/owner/dashboard'] : ['/owner/onboarding']
-        );
+        void this.router.navigate(this.ownerDestination(onboardingCompletedAt));
       });
   }
 

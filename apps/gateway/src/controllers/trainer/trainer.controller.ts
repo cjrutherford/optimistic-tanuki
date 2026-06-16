@@ -382,18 +382,24 @@ export class TrainerController {
     );
   }
 
-  private async loadActiveStoreServiceProducts() {
+  private async loadActiveStoreServiceProducts(ownerId?: string | null) {
     const products = (await firstValueFrom(
-      this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
+      ownerId
+        ? this.storeService.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+        : this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
     )) as Array<any>;
+
+    if (!Array.isArray(products)) {
+      return [];
+    }
 
     return products.filter(
       (product) => product?.active !== false && product?.type === 'service'
     );
   }
 
-  private async assertStoreCatalogPublishReady() {
-    const serviceProducts = await this.loadActiveStoreServiceProducts();
+  private async assertStoreCatalogPublishReady(ownerId?: string | null) {
+    const serviceProducts = await this.loadActiveStoreServiceProducts(ownerId);
 
     if (!serviceProducts.length) {
       throw new BadRequestException(
@@ -478,6 +484,11 @@ export class TrainerController {
     const configuredServices = Array.isArray(configResult?.config?.services)
       ? configResult?.config?.services
       : [];
+    const ownerUserId =
+      typeof configResult?.config?.site?.ownerUserId === 'string' &&
+      configResult.config.site.ownerUserId.trim()
+        ? configResult.config.site.ownerUserId.trim()
+        : null;
 
     if (serviceCatalogSource === 'manual' && configuredServices.length) {
       return configuredServices.map((service: any) => ({
@@ -489,7 +500,9 @@ export class TrainerController {
       }));
     }
 
-    const serviceProducts = await this.loadActiveStoreServiceProducts();
+    const serviceProducts = await this.loadActiveStoreServiceProducts(
+      ownerUserId
+    );
 
     if (serviceProducts.length) {
       return serviceProducts.map((product) => ({
@@ -1082,11 +1095,15 @@ export class TrainerController {
     @User() user: UserDetails,
     @Query('slug') slug?: string
   ) {
+    const normalizedSlug = slug?.trim();
+    const catalogOwnerId = normalizedSlug
+      ? (await this.loadOwnerUserIdForSlug(normalizedSlug)) || user.userId
+      : user.userId;
+
     if (payload.source === 'store') {
-      await this.assertStoreCatalogPublishReady();
+      await this.assertStoreCatalogPublishReady(catalogOwnerId);
     }
 
-    const normalizedSlug = slug?.trim();
     const existingConfig = normalizedSlug
       ? await this.loadSiteConfigBySlug(normalizedSlug)
       : await this.loadSiteConfig();

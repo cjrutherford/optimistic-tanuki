@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+  Router,
+} from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { of, throwError } from 'rxjs';
+import { RouterLink } from '@angular/router';
 
 import {
   BusinessApiService,
@@ -65,7 +72,7 @@ describe('BusinessOwnerRegisterPageComponent', () => {
       'secret'
     );
     expect(claimOwnerAccess).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/owner/onboarding']);
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'onboarding']);
   });
 
   it('lets an existing account become an owner with the same login', () => {
@@ -119,6 +126,75 @@ describe('BusinessOwnerRegisterPageComponent', () => {
       'secret'
     );
     expect(claimOwnerAccess).toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(['/owner/dashboard']);
+    expect(navigate).toHaveBeenCalledWith(['/owner', 'dashboard']);
+  });
+
+  it('keeps hosted owner registration links and redirects tenant-scoped', () => {
+    const registerOwner = jest.fn().mockReturnValue(of({}));
+    const loginAndExchange = jest.fn().mockReturnValue(of({}));
+    const claimOwnerAccess = jest.fn().mockReturnValue(of({}));
+    const getSiteConfig = jest.fn().mockReturnValue(
+      of({
+        configId: 'config-hosted',
+        config: {
+          site: {
+            onboardingCompletedAt: '2026-06-15T12:00:00.000Z',
+          },
+        },
+      })
+    );
+
+    TestBed.configureTestingModule({
+      imports: [BusinessOwnerRegisterPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: { registerOwner, loginAndExchange, claimOwnerAccess },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: { getSiteConfig },
+        },
+      ],
+    });
+
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BusinessOwnerRegisterPageComponent);
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/owner/login'
+    );
+
+    fixture.componentInstance.fn = 'Jordan';
+    fixture.componentInstance.ln = 'Vale';
+    fixture.componentInstance.email = 'owner@example.com';
+    fixture.componentInstance.password = 'secret';
+    fixture.componentInstance.confirm = 'secret';
+    fixture.componentInstance.bio = 'Running a new advisory business.';
+
+    fixture.componentInstance.register();
+
+    expect(navigate).toHaveBeenCalledWith([
+      '/sites',
+      'steady-hand-contracting',
+      'owner',
+      'dashboard',
+    ]);
   });
 });
