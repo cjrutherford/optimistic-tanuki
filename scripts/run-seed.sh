@@ -24,7 +24,8 @@ normalize_seed_choice() {
         3|telos-docs|telos-docs-service) echo "telos-docs" ;;
         4|store) echo "store" ;;
         5|app-configurator) echo "app-configurator" ;;
-        6|all) echo "all" ;;
+        6|business-site) echo "business-site" ;;
+        7|all) echo "all" ;;
         *) echo "" ;;
     esac
 }
@@ -98,9 +99,10 @@ main() {
         echo "3) telos-docs - Seed personas"
         echo "4) store - Seed store data"
         echo "5) app-configurator - Seed app configurator data"
-        echo "6) all - Run all seed scripts"
+        echo "6) business-site - Seed business-site users, hosted tenants, and client workflows"
+        echo "7) all - Run all seed scripts"
         echo ""
-        read -r -p "Enter choice [1-6]: " seed_input
+        read -r -p "Enter choice [1-7]: " seed_input
         seed_choice=$(normalize_seed_choice "$seed_input")
     fi
 
@@ -118,12 +120,14 @@ main() {
                 telos-docs) run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_k8s "store" "node /usr/src/app/seed-store.js" ;;
                 app-configurator) run_seed_k8s "app-configurator" "node seed-data/seed-script.js" ;;
+                business-site) run_seed_k8s "business-site" "GATEWAY_URL=http://gateway:3000/api node /usr/src/app/apps/business-site/src/seed-trainer.mjs" ;;
                 all)
                     run_seed_k8s "permissions" "node /usr/src/app/seed-permissions.js"
                     run_seed_k8s "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_k8s "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_k8s "store" "node /usr/src/app/seed-store.js"
                     run_seed_k8s "app-configurator" "node seed-data/seed-script.js"
+                    run_seed_k8s "business-site" "GATEWAY_URL=http://gateway:3000/api node /usr/src/app/apps/business-site/src/seed-trainer.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;
             esac
@@ -136,12 +140,14 @@ main() {
                 telos-docs) run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js" ;;
                 store) run_seed_docker "store" "node /usr/src/app/seed-store.js" ;;
                 app-configurator) run_seed_docker "app-configurator" "node seed-data/seed-script.js" ;;
+                business-site) run_seed_docker "business-site" "GATEWAY_URL=http://gateway:3000/api node /usr/src/app/apps/business-site/src/seed-trainer.mjs" ;;
                 all)
                     run_seed_docker "permissions" "node /usr/src/app/seed-permissions.js"
                     run_seed_docker "social" "node /usr/src/app/seed-local-communities.js"
                     run_seed_docker "telos-docs-service" "node /usr/src/app/seed-persona.js"
                     run_seed_docker "store" "node /usr/src/app/seed-store.js"
                     run_seed_docker "app-configurator" "node seed-data/seed-script.js"
+                    run_seed_docker "business-site" "GATEWAY_URL=http://gateway:3000/api node /usr/src/app/apps/business-site/src/seed-trainer.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;
             esac
@@ -154,12 +160,14 @@ main() {
                 telos-docs) run_seed_local "telos-docs-service" "node src/app/seed-persona.js" ;;
                 store) run_seed_local "store" "node src/seed-store.js" ;;
                 app-configurator) run_seed_local "app-configurator" "node src/seed-data/seed-script.js" ;;
+                business-site) run_seed_local "business-site" "GATEWAY_URL=http://gateway:3000/api node src/seed-trainer.mjs" ;;
                 all)
                     run_seed_local "permissions" "node src/app/seed-permissions.js"
                     run_seed_local "social" "node src/seed-social.js"
                     run_seed_local "telos-docs-service" "node src/app/seed-persona.js"
                     run_seed_local "store" "node src/seed-store.js"
                     run_seed_local "app-configurator" "node src/seed-data/seed-script.js"
+                    run_seed_local "business-site" "GATEWAY_URL=http://gateway:3000/api node src/seed-trainer.mjs"
                     ;;
                 *) echo "Invalid seed choice"; exit 1 ;;
             esac

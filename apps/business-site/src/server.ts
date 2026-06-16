@@ -6,11 +6,16 @@ import {
 } from '@angular/ssr/node';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import express from 'express';
+import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
+const evaluatorGuidePath = resolve(
+  process.env['EVALUATOR_GUIDE_PATH'] ||
+    '/app/docs/guides/business-site-evaluator-guide.html'
+);
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
@@ -65,6 +70,15 @@ app.use(
     redirect: false,
   })
 );
+
+app.get(['/eval', '/eval/'], async (req, res, next) => {
+  try {
+    const guide = await readFile(evaluatorGuidePath, 'utf8');
+    res.type('html').send(guide);
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.use(express.json({ limit: '1mb' }));
 

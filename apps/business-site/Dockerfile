@@ -11,6 +11,7 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/business-site ./apps/business-site
+COPY docs/guides/business-site-evaluator-guide.html ./docs/guides/business-site-evaluator-guide.html
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build business-site --configuration=production
@@ -25,6 +26,8 @@ ARG GIT_SHA=unknown
 ENV NODE_ENV=production
 ENV PORT=4000
 ENV GIT_SHA=${GIT_SHA}
+ENV EVALUATOR_GUIDE_PATH=/app/docs/guides/business-site-evaluator-guide.html
+ENV RUN_BUSINESS_SITE_SEED_ON_STARTUP=false
 
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
@@ -34,12 +37,21 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 
 COPY --from=builder /usr/src/app/dist/apps/business-site ./dist/apps/business-site
 
+RUN mkdir -p /app/docs/guides /app/apps/business-site/src && \
+    cp /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html && \
+    cp /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs && \
+    cp /usr/src/app/apps/business-site/src/seed-business.mjs /app/apps/business-site/src/seed-business.mjs && \
+    cp /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/apps/business-site/src/sample-tenants.mjs
+
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'if [ "$NODE_ENV" = "development" ]; then' >> /docker-entrypoint.sh && \
     echo '  STARTUP_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")' >> /docker-entrypoint.sh && \
     echo '  for f in $(find /app/dist/apps/business-site/browser -name "index.html"); do' >> /docker-entrypoint.sh && \
     echo '    sed -i "s|<head>|<head><script>window.__env__ = { GIT_SHA: \"$GIT_SHA\", STARTUP_TIME: \"$STARTUP_TIME\", NODE_ENV: \"$NODE_ENV\" };</script>|g" "$f"' >> /docker-entrypoint.sh && \
     echo '  done' >> /docker-entrypoint.sh && \
+    echo 'fi' >> /docker-entrypoint.sh && \
+    echo 'if [ "$RUN_BUSINESS_SITE_SEED_ON_STARTUP" = "true" ]; then' >> /docker-entrypoint.sh && \
+    echo '  node /app/apps/business-site/src/seed-trainer.mjs' >> /docker-entrypoint.sh && \
     echo 'fi' >> /docker-entrypoint.sh && \
     echo 'exec "$@"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh

@@ -165,6 +165,8 @@ services:
       - NODE_ENV=production
       - PORT=4000
       - GATEWAY_URL=http://gateway:3000
+      - EVALUATOR_GUIDE_PATH=/app/docs/guides/business-site-evaluator-guide.html
+      - RUN_BUSINESS_SITE_SEED_ON_STARTUP=false
     depends_on:
       - gateway
 
