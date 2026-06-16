@@ -1073,7 +1073,12 @@ export class TrainerController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('site-config/catalog-source')
   async updateCatalogSource(
-    @Body() payload: { configId?: string | null; source: 'manual' | 'store' },
+    @Body()
+    payload: {
+      configId?: string | null;
+      source: 'manual' | 'store';
+      storeEnabled?: boolean;
+    },
     @User() user: UserDetails,
     @Query('slug') slug?: string
   ) {
@@ -1090,6 +1095,13 @@ export class TrainerController {
       leadContext: {
         profileId: user.profileId,
         appScope: 'business-site',
+      },
+      features: {
+        ...(existingConfig?.features ?? {}),
+        store: {
+          ...(existingConfig?.features?.store ?? {}),
+          enabled: payload.storeEnabled ?? false,
+        },
       },
       serviceCatalog: {
         ...(existingConfig?.serviceCatalog ?? {}),

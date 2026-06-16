@@ -748,9 +748,82 @@ const emberlineStudioPreset = DEV_BUSINESS_TENANT_PRESETS.find(
 );
 
 if (emberlineStudioPreset) {
+  emberlineStudioPreset.features.store = {
+    enabled: true,
+  };
   emberlineStudioPreset.serviceCatalog = {
     source: 'store',
   };
+  emberlineStudioPreset.landingPage.sections = [
+    {
+      id: 'hero',
+      type: 'hero',
+      title: 'Welcome',
+      enabled: true,
+      order: 0,
+      richContent: {
+        title: 'Commission custom artwork and shop the current release.',
+        content:
+          '<p>Emberline Studio keeps collector-ready originals, prints, and merch visible while still offering commission consults for custom portrait work.</p>',
+      },
+      ctaLabel: 'Shop current work',
+      ctaHref: '#storefront',
+    },
+    {
+      id: 'about',
+      type: 'about',
+      title: 'About',
+      enabled: true,
+      order: 1,
+      richContent: {
+        title: 'Built for artists balancing commissions and ready-to-ship work',
+        content:
+          '<p>Independent artists need a storefront for in-stock pieces without losing the relationship-driven workflow that custom commissions require.</p>',
+      },
+    },
+    {
+      id: 'storefront',
+      type: 'store',
+      title: 'Shop the current release',
+      enabled: true,
+      order: 2,
+      body: 'Browse available originals, print sets, and small-batch studio merch.',
+      ctaLabel: 'Book a commission consult',
+      ctaHref: '/book',
+    },
+    {
+      id: 'services',
+      type: 'services',
+      title: 'Commission Services',
+      enabled: true,
+      order: 3,
+      body: 'Start with a consult, then move into the right commission scope.',
+    },
+    {
+      id: 'testimonials',
+      type: 'testimonials',
+      title: 'Collector Notes',
+      enabled: true,
+      order: 4,
+    },
+    {
+      id: 'contact',
+      type: 'contact',
+      title: 'Contact',
+      enabled: true,
+      order: 5,
+      body: 'Reach out about commission timing, collector questions, or pickup arrangements.',
+    },
+    {
+      id: 'booking',
+      type: 'booking',
+      title: 'Commission Consults',
+      enabled: true,
+      order: 6,
+      ctaLabel: 'Book a commission consult',
+      ctaHref: '/book',
+    },
+  ];
 }
 
 export const WORKFLOW_CLIENT_USERS = [

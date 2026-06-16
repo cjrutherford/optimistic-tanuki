@@ -5,6 +5,41 @@ import {
 } from './business-site.config';
 
 describe('business-site.config', () => {
+  it('defaults the storefront feature off and preserves store sections during merge', () => {
+    const merged = mergeBusinessSiteConfig({
+      features: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.features,
+        store: { enabled: true },
+      },
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections,
+          {
+            id: 'storefront',
+            type: 'store',
+            title: 'Storefront',
+            enabled: true,
+            order: 6,
+            body: 'Collector-ready artwork and merch.',
+            ctaLabel: 'Shop now',
+            ctaHref: '/shop',
+          },
+        ],
+      },
+    } as Partial<BusinessSiteConfig>);
+
+    expect(DEFAULT_BUSINESS_SITE_CONFIG.features.store.enabled).toBe(false);
+    expect(merged.features.store.enabled).toBe(true);
+    expect(merged.landingPage.sections.at(-1)).toEqual(
+      expect.objectContaining({
+        id: 'storefront',
+        type: 'store',
+        ctaLabel: 'Shop now',
+      })
+    );
+  });
+
   it('preserves landing layout, custom sections, business type, and client capabilities during merge', () => {
     const merged = mergeBusinessSiteConfig({
       businessType: 'consulting',

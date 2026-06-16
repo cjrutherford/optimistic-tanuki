@@ -65,6 +65,7 @@ describe('DEV_BUSINESS_TENANT_PRESETS', () => {
     expect(tenant).toBeDefined();
     expect(tenant.site.status).toBe('published');
     expect(tenant.owner.email).toBe('owner-artist@localbusiness.test');
+    expect(tenant.features.store).toEqual({ enabled: true });
     expect(tenant.serviceCatalog).toEqual({ source: 'store' });
     expect(tenant.services).toEqual(
       expect.arrayContaining([
@@ -85,5 +86,10 @@ describe('DEV_BUSINESS_TENANT_PRESETS', () => {
         'Ready-to-ship originals',
       ])
     );
+    expect(
+      tenant.landingPage.sections.some(
+        (section: { type: string }) => section.type === 'store'
+      )
+    ).toBe(true);
   });
 });

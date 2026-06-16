@@ -786,6 +786,11 @@ describe('TrainerController', () => {
         id: 'cfg-1',
         config: {
           brand: { businessName: 'North Star Coaching' },
+          features: {
+            store: {
+              enabled: false,
+            },
+          },
           leadContext: {
             profileId: 'owner-profile-1',
             appScope: 'business-site',
@@ -849,6 +854,11 @@ describe('TrainerController', () => {
       TrainerConfigCommands.CREATE_CONFIG,
       {
         configKey: 'business-site:steady-hand-contracting',
+        features: {
+          store: {
+            enabled: false,
+          },
+        },
         serviceCatalog: { source: 'store' },
         leadContext: {
           profileId: 'owner-profile-1',
@@ -893,6 +903,11 @@ describe('TrainerController', () => {
       TrainerConfigCommands.CREATE_CONFIG,
       {
         configKey: 'business-site:owner-profile-1',
+        features: {
+          store: {
+            enabled: false,
+          },
+        },
         leadContext: {
           profileId: 'owner-profile-1',
           appScope: 'business-site',
@@ -997,6 +1012,11 @@ describe('TrainerController', () => {
           id: 'cfg-1',
           config: {
             brand: { businessName: 'North Star Coaching' },
+            features: {
+              store: {
+                enabled: false,
+              },
+            },
             leadContext: {
               profileId: 'owner-profile-1',
               appScope: 'business-site',

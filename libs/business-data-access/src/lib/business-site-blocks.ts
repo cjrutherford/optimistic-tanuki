@@ -145,6 +145,14 @@ export const BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS: Record<
     renderContexts: ['landing-page'],
     fields: [...COMMON_SECTION_FIELDS, ...MOTION_SECTION_FIELDS],
   },
+  store: {
+    type: 'store',
+    name: 'Storefront',
+    category: 'Commerce',
+    description: 'Embedded storefront section powered by store products.',
+    renderContexts: ['landing-page'],
+    fields: [...COMMON_SECTION_FIELDS, ...MOTION_SECTION_FIELDS],
+  },
   testimonials: {
     type: 'testimonials',
     name: 'Testimonials',

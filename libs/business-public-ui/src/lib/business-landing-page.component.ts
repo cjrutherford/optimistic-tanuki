@@ -15,6 +15,7 @@ import {
   LandingSection,
   LandingSectionMediaItem,
   LandingSectionMotionConfig,
+  BusinessStoreProduct,
 } from '@optimistic-tanuki/business-data-access';
 import {
   AuroraRibbonComponent,
@@ -27,6 +28,7 @@ import {
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
+import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 import { BusinessRichContentRendererComponent } from './business-rich-content-renderer.component';
 
 @Component({
@@ -44,6 +46,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
     TopographicDriftComponent,
     ShimmerBeamComponent,
     ContactFormComponent,
+    ProductCardComponent,
     BusinessRichContentRendererComponent,
   ],
   template: `
@@ -148,12 +151,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               <p class="body">{{ site().brand.longBio }}</p>
               }
               <div class="actions">
-                @if (site().features.booking.enabled && siteSlug) {
-                <a
-                  class="cta-primary"
-                  [routerLink]="['/sites', siteSlug, 'book']"
-                  >{{ site().contact.consultationLabel }}</a
-                >
+                @if (section.ctaHref?.startsWith('#')) {
+                <a class="cta-primary" [href]="section.ctaHref">{{
+                  section.ctaLabel || 'Explore now'
+                }}</a>
+                } @else if (site().features.booking.enabled && siteSlug) {
+                <a class="cta-primary" [routerLink]="bookingRoute()">{{
+                  site().contact.consultationLabel
+                }}</a>
                 } @if (site().features.clientPortal.enabled) {
                 <a class="cta-secondary" [routerLink]="clientPortalRoute()"
                   >Client Portal</a
@@ -284,6 +289,61 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 schedule is published.
               </p>
             </div>
+            }
+          </div>
+        </section>
+      </div>
+      } @case ('store') {
+      <div
+        class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
+        [class.preview-section-selected]="
+          embeddedPreview && selectedSectionId === section.id
+        "
+        [attr.data-section-id]="section.id"
+        [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
+        (click)="onPreviewSectionClick($event, section.id)"
+      >
+        @if (motion(section)) {
+        <div class="section-motion">
+          <ng-container
+            [ngTemplateOutlet]="renderMotion"
+            [ngTemplateOutletContext]="{ $implicit: section }"
+          ></ng-container>
+        </div>
+        }
+        <section
+          class="store-section entrance section-surface"
+          id="storefront"
+          style="animation-delay: 0.22s"
+        >
+          <div class="section-head">
+            <p class="eyebrow">{{ section.title }}</p>
+            <h2>{{ section.title }}</h2>
+          </div>
+          @if (section.body) {
+          <p class="body">{{ section.body }}</p>
+          }
+          <div class="store-product-grid">
+            @for (product of storefrontProducts(); track product.id) {
+            <store-product-card
+              [product]="storefrontProductCard(product)"
+              [showAddToCart]="false"
+            ></store-product-card>
+            } @empty {
+            <div class="offer">
+              <h3>No storefront inventory is live yet.</h3>
+              <p>
+                Activate physical or digital products in the store workspace.
+              </p>
+            </div>
+            }
+          </div>
+          <div class="actions">
+            @if (site().features.booking.enabled && bookingRoute()) {
+            <a class="cta-secondary" [routerLink]="bookingRoute()">{{
+              section.ctaLabel || site().contact.consultationLabel
+            }}</a>
             }
           </div>
         </section>
@@ -1171,6 +1231,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         font-weight: 500;
       }
 
+      .store-product-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+      }
+
       .contact {
         display: grid;
         gap: 1.5rem;
@@ -1364,6 +1430,14 @@ export class BusinessLandingPageComponent {
   readonly offers = toSignal(this.api.getOffers(this.siteSlug), {
     initialValue: [],
   });
+  readonly storeProducts = toSignal(this.api.getStoreProducts(), {
+    initialValue: [],
+  });
+  readonly storefrontProducts = computed(() =>
+    this.storeProducts().filter(
+      (product) => product.active && product.type !== 'service'
+    )
+  );
   contactSubmitting = false;
   contactStatus: string | null = null;
   readonly contactSubjects = [
@@ -1390,6 +1464,10 @@ export class BusinessLandingPageComponent {
     return this.siteSlug
       ? ['/sites', this.siteSlug, 'client', 'login']
       : ['/client'];
+  }
+
+  bookingRoute(): string[] | null {
+    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : null;
   }
 
   ownerName(): string {
@@ -1437,6 +1515,10 @@ export class BusinessLandingPageComponent {
   }
 
   private isSectionEnabled(type: string): boolean {
+    if (type === 'store') {
+      return this.site().features.store.enabled;
+    }
+
     if (type === 'booking') {
       return this.site().features.booking.enabled;
     }
@@ -1474,6 +1556,18 @@ export class BusinessLandingPageComponent {
     event.preventDefault();
     event.stopPropagation();
     this.sectionSelected.emit(sectionId);
+  }
+
+  storefrontProductCard(product: BusinessStoreProduct) {
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: Number(product.price),
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      type: product.type,
+    };
   }
 
   constructor() {

@@ -466,6 +466,7 @@ describe('BusinessSiteEditorPageComponent', () => {
       draft.features.clientPortal.enabled = false;
       draft.features.clientTasks.enabled = true;
       draft.features.clientTasks.allowClientCompletion = true;
+      draft.features.store.enabled = true;
       draft.services = [
         {
           id: 'service-1',
@@ -497,6 +498,7 @@ describe('BusinessSiteEditorPageComponent', () => {
           booking: { enabled: false, allowOnlinePayment: false },
           clientPortal: { enabled: false },
           clientTasks: { enabled: true, allowClientCompletion: true },
+          store: { enabled: true },
         }),
         services: [
           expect.objectContaining({
@@ -528,6 +530,21 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(featureRow.querySelectorAll('.toggle-card').length).toBeGreaterThan(
       1
     );
+  });
+
+  it('shows storefront controls only when the store feature is enabled', () => {
+    const { fixture, component } = createComponent();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.textContent).not.toContain('Add storefront block');
+
+    component.draft.update((draft) => {
+      draft.features.store.enabled = true;
+      return draft;
+    });
+    fixture.detectChanges();
+
+    expect(host.textContent).toContain('Add storefront block');
   });
 
   it('renders a persistent guided and studio mode switch', () => {

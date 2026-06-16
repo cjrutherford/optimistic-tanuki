@@ -532,6 +532,19 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
             <div class="feature-row">
               <label class="toggle-card">
                 <span class="toggle-copy">
+                  <strong>Storefront</strong>
+                  <small
+                    >Expose store-powered merchandising on the public site and
+                    in the landing-page editor.</small
+                  >
+                </span>
+                <lib-checkbox
+                  [value]="draft().features.store.enabled"
+                  (changeEvent)="updateFeatureFlag('store.enabled', $event)"
+                ></lib-checkbox>
+              </label>
+              <label class="toggle-card">
+                <span class="toggle-copy">
                   <strong>Booking</strong>
                   <small
                     >Show public booking entry points and booking-related
@@ -1496,6 +1509,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               >
                 + Add gallery block
               </otui-button>
+              @if (draft().features.store.enabled) {
+              <otui-button
+                class="tag-add"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addStoreSection()"
+              >
+                + Add storefront block
+              </otui-button>
+              }
             </div>
             }
           </otui-card>
@@ -1874,6 +1897,16 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               >
                 + Add gallery block
               </otui-button>
+              @if (draft().features.store.enabled) {
+              <otui-button
+                class="tag-add"
+                variant="outlined"
+                [useGradient]="false"
+                (action)="addStoreSection()"
+              >
+                + Add storefront block
+              </otui-button>
+              }
             </div>
           </div>
           } @else {
@@ -3374,19 +3407,25 @@ export class BusinessSiteEditorPageComponent {
   }
 
   landingPageBlocks(): BlockInstance[] {
-    return businessSiteConfigToConfigDocument(this.draft()).blocks;
+    const config = cloneBusinessSiteConfig(this.draft());
+    if (!config.features.store.enabled) {
+      config.landingPage.sections = config.landingPage.sections.filter(
+        (section) => section.type !== 'store'
+      );
+    }
+    return businessSiteConfigToConfigDocument(config).blocks;
   }
 
   selectedSection(): LandingSection | null {
     return (
-      this.draft().landingPage.sections.find(
+      this.editableSections().find(
         (section) => section.id === this.selectedSectionId()
       ) ?? null
     );
   }
 
   selectedSectionIndex(): number {
-    const index = this.draft().landingPage.sections.findIndex(
+    const index = this.editableSections().findIndex(
       (section) => section.id === this.selectedSectionId()
     );
     return index === -1 ? 0 : index;
@@ -3549,6 +3588,13 @@ export class BusinessSiteEditorPageComponent {
 
   updateFeatureFlag(path: string, enabled: boolean): void {
     this.patchDraftField(`features.${path}`, enabled);
+    if (
+      path === 'store.enabled' &&
+      !enabled &&
+      this.selectedSection()?.type === 'store'
+    ) {
+      this.selectedSectionId.set(this.editableSections()[0]?.id ?? null);
+    }
   }
 
   updateServiceCatalogSource(value: string): void {
@@ -3743,6 +3789,7 @@ export class BusinessSiteEditorPageComponent {
       type === 'hero' ||
       type === 'about' ||
       type === 'services' ||
+      type === 'store' ||
       type === 'testimonials' ||
       type === 'contact' ||
       type === 'booking' ||
@@ -3784,6 +3831,7 @@ export class BusinessSiteEditorPageComponent {
       case 'about':
         return 'This section uses the Brand & Identity panel on the left so preview copy stays in sync with the business profile fields.';
       case 'services':
+      case 'store':
       case 'booking':
         return 'This section uses the Offers panel on the left so service and call-to-action changes update the live preview from the primary data source.';
       case 'testimonials':
@@ -3944,6 +3992,8 @@ export class BusinessSiteEditorPageComponent {
         ].join('');
       case 'services':
         return '<p>Choose a starting point, then build the right engagement from there.</p>';
+      case 'store':
+        return '<p>Browse available originals, print sets, and small-batch studio merch.</p>';
       case 'testimonials':
         return '<p>Services that fit real schedules and still move the needle.</p>';
       case 'contact':
@@ -4042,6 +4092,7 @@ export class BusinessSiteEditorPageComponent {
       case 'contact':
         return 'contact';
       case 'services':
+      case 'store':
       case 'booking':
         return 'offers';
       case 'testimonials':
@@ -4202,6 +4253,35 @@ export class BusinessSiteEditorPageComponent {
           columns: 3,
           items: [this.createDefaultImage()],
         },
+        motion: this.createDefaultMotion(),
+      });
+      draft.landingPage.sections = normalizeLandingSections(
+        draft.landingPage.sections
+      );
+      return draft;
+    });
+    this.selectedSectionId.set(nextSectionId);
+  }
+
+  addStoreSection(): void {
+    if (!this.draft().features.store.enabled) {
+      return;
+    }
+
+    let nextSectionId = '';
+    this.draft.update((draft) => {
+      nextSectionId = `store-${Date.now()}-${
+        draft.landingPage.sections.length + 1
+      }`;
+      draft.landingPage.sections.push({
+        id: nextSectionId,
+        type: 'store',
+        title: 'Storefront',
+        enabled: true,
+        order: draft.landingPage.sections.length,
+        body: 'Highlight available inventory from the store workspace.',
+        ctaLabel: draft.contact.consultationLabel,
+        ctaHref: '/book',
         motion: this.createDefaultMotion(),
       });
       draft.landingPage.sections = normalizeLandingSections(
@@ -4795,6 +4875,13 @@ export class BusinessSiteEditorPageComponent {
       fit: 'cover',
       focalPoint: 'center',
     };
+  }
+
+  private editableSections(): LandingSection[] {
+    return this.draft().landingPage.sections.filter(
+      (section) =>
+        this.draft().features.store.enabled || section.type !== 'store'
+    );
   }
 
   private createDefaultMotion() {

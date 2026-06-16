@@ -11,6 +11,9 @@ export interface BusinessTestimonial {
 }
 
 export interface BusinessFeatures {
+  store: {
+    enabled: boolean;
+  };
   booking: {
     enabled: boolean;
     allowOnlinePayment?: boolean;
@@ -68,6 +71,7 @@ export type LandingSectionType =
   | 'hero'
   | 'about'
   | 'services'
+  | 'store'
   | 'testimonials'
   | 'contact'
   | 'booking'
@@ -355,6 +359,10 @@ export function mergeBusinessSiteConfig(
       ...(config?.contact ?? {}),
     },
     features: {
+      store: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.features.store,
+        ...(config?.features?.store ?? {}),
+      },
       booking: {
         ...DEFAULT_BUSINESS_SITE_CONFIG.features.booking,
         ...(config?.features?.booking ?? {}),
@@ -444,6 +452,7 @@ export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
     consultationLabel: 'Book a consultation',
   },
   features: {
+    store: { enabled: false },
     booking: { enabled: true, allowOnlinePayment: false },
     clientTasks: { enabled: false, allowClientCompletion: false },
     clientPortal: { enabled: true },

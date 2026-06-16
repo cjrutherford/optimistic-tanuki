@@ -49,6 +49,21 @@ describe('BusinessLandingPageComponent', () => {
   };
 
   async function render(config: BusinessSiteConfig | null = null) {
+    const getStoreProducts = jest.fn().mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          name: 'Collector Print',
+          description: 'Archival print release.',
+          price: 48,
+          type: 'physical',
+          active: true,
+          stock: 6,
+          imageUrl: '/assets/collector-print.jpg',
+        },
+      ])
+    );
+
     await TestBed.configureTestingModule({
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
       providers: [
@@ -66,6 +81,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts,
             getSiteConfig: jest
               .fn()
               .mockReturnValue(of({ configId: null, config })),
@@ -100,6 +116,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers,
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(of({ configId: null, config: null })),
@@ -140,6 +157,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -188,6 +206,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -267,6 +286,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -301,6 +321,7 @@ describe('BusinessLandingPageComponent', () => {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -370,6 +391,59 @@ describe('BusinessLandingPageComponent', () => {
     ).toBeLessThan(text.indexOf(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline));
   });
 
+  it('renders storefront inventory only when the store feature is enabled', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      features: {
+        ...configWithServices.features,
+        store: { enabled: true },
+      },
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'storefront',
+            type: 'store',
+            title: 'Shop the current release',
+            enabled: true,
+            order: 6,
+          },
+        ],
+      },
+    });
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Shop the current release'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Collector Print');
+  });
+
+  it('hides storefront inventory when the store feature is disabled', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      features: {
+        ...configWithServices.features,
+        store: { enabled: false },
+      },
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'storefront',
+            type: 'store',
+            title: 'Shop the current release',
+            enabled: true,
+            order: 6,
+          },
+        ],
+      },
+    });
+
+    expect(fixture.nativeElement.textContent).not.toContain('Collector Print');
+  });
+
   it('hides booking, testimonials, and client portal entry points when their features are disabled', async () => {
     const fixture = await render({
       ...DEFAULT_BUSINESS_SITE_CONFIG,
@@ -378,6 +452,7 @@ describe('BusinessLandingPageComponent', () => {
         consultationLabel: 'Book strategy session',
       },
       features: {
+        store: { enabled: false },
         booking: { enabled: false, allowOnlinePayment: false },
         clientPortal: { enabled: false },
         clientTasks: { enabled: false, allowClientCompletion: false },

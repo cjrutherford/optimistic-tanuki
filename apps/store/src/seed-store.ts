@@ -135,6 +135,24 @@ async function bootstrap() {
         stock: 4,
         active: true,
       },
+      {
+        name: 'Emberline Commission Planning Session',
+        description:
+          'A paid planning consult for collector goals, portrait references, medium selection, and turnaround before a commission slot is reserved.',
+        price: 45,
+        type: 'service',
+        stock: 999,
+        active: true,
+      },
+      {
+        name: 'Emberline Custom Pet Portrait Commission',
+        description:
+          'Store-backed commission slot for a custom pet portrait with concept review and delivery timeline.',
+        price: 320,
+        type: 'service',
+        stock: 24,
+        active: true,
+      },
     ];
 
     for (const productData of products) {
