@@ -14,7 +14,7 @@ export class TrainerSiteConfigEntity {
   @Column({ type: 'varchar', length: 255, unique: true, default: 'default' })
   configKey: string;
 
-  @Column({ type: 'varchar', length: 64, nullable: true, default: 'general' })
+  @Column({ type: 'varchar', length: 64, default: 'general' })
   businessType: string;
 
   @Column({ type: 'jsonb', nullable: true })

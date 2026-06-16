@@ -384,7 +384,7 @@ export class AppComponent {
 
   private currentHostedSiteSlug(): string | null {
     const match = this.currentUrl().match(/^\/sites\/([^/]+)/);
-    return match?.[1] ?? this.site().site.slug ?? null;
+    return match?.[1] ?? null;
   }
 
   private syncHostedRouteConfig(): void {

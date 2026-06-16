@@ -57,7 +57,7 @@ describe('BusinessClientRegisterPageComponent', () => {
     );
   });
 
-  it('routes a hosted business client to the matching sign-in page after registration', () => {
+  it('routes a hosted business client to the client dashboard after registration', () => {
     const navigate = jest.fn();
     const registerClient = jest.fn().mockReturnValue(of({}));
     const loginClient = jest.fn().mockReturnValue(

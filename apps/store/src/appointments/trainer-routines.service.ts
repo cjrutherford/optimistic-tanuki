@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -76,13 +76,18 @@ export class TrainerRoutinesService {
     payload: CreateProgressCheckIn
   ): Promise<TrainerProgressCheckInEntity> {
     if (payload.ownerId) {
-      await this.routineRepository.findOne({
+      const routine = await this.routineRepository.findOne({
         where: {
           id: payload.assignmentId,
           clientId: payload.clientId,
           ownerId: payload.ownerId,
         } as never,
       });
+      if (!routine) {
+        throw new NotFoundException(
+          `Routine assignment not found for the given owner, client, and assignment.`
+        );
+      }
     }
 
     const checkIn = this.checkInRepository.create(payload);
