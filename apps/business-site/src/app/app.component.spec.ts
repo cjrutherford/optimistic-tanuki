@@ -457,6 +457,9 @@ describe('AppComponent', () => {
     expect(component.pageTitleForUrl('/owner/login')).toBe(
       'Owner Login | North Star Advisory'
     );
+    expect(component.pageTitleForUrl('/owner/register')).toBe(
+      'Owner Registration | North Star Advisory'
+    );
     expect(component.pageTitleForUrl('/owner/dashboard')).toBe(
       'Owner Workspace | North Star Advisory'
     );

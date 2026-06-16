@@ -56,6 +56,21 @@ describe('BusinessApiService site config requests', () => {
     request.flush({ configId: 'cfg-2', config: null });
   });
 
+  it('adds the tenant slug when updating a hosted business site config', () => {
+    service
+      .updateSiteConfig('cfg-2', {} as any, 'north-star-advisory')
+      .subscribe();
+
+    const request = httpMock.expectOne(
+      (candidate) =>
+        candidate.url === '/api/business/site-config' &&
+        candidate.params.get('slug') === 'north-star-advisory'
+    );
+
+    expect(request.request.method).toBe('PUT');
+    request.flush({ id: 'cfg-2' });
+  });
+
   it('adds the tenant slug when loading hosted business offers', () => {
     service.getOffers('steady-hand-contracting').subscribe();
 
@@ -168,6 +183,34 @@ describe('BusinessApiService site config requests', () => {
       isActive: true,
     });
     request.flush({ id: 'availability-1' });
+  });
+
+  it('sends owner workflow requests with optional tenant slug', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'owner-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        email: 'owner@example.com',
+      })
+    );
+    localStorage.setItem('business-site:token', 'owner-token');
+    initTestingModule();
+
+    service.getOwnerWorkflow('steady-hand-contracting').subscribe();
+
+    const request = httpMock.expectOne(
+      (candidate) =>
+        candidate.url === '/api/business/owner/workflow' &&
+        candidate.params.get('slug') === 'steady-hand-contracting'
+    );
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer owner-token'
+    );
+    request.flush([]);
   });
 
   it('approves owner bookings with the default hourly rate and workspace note', () => {

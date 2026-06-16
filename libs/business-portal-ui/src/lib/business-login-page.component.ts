@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
@@ -12,7 +12,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
 @Component({
   selector: 'business-login-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CardComponent],
   template: `
     <div class="login-outer">
       <otui-card class="login-card">
@@ -76,6 +76,11 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
             @if (loading()) { Signing in… } @else { Sign In }
           </button>
         </form>
+
+        <a class="register-link" [routerLink]="registerRoute()">
+          @if (mode() === 'owner') { Need an owner account? Register } @else {
+          Need a client account? Register }
+        </a>
       </otui-card>
     </div>
   `,
@@ -223,6 +228,15 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         opacity: 0.55;
         cursor: not-allowed;
       }
+
+      .register-link {
+        display: block;
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--primary, #1f7a63);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
     `,
   ],
 })
@@ -244,6 +258,10 @@ export class BusinessLoginPageComponent {
     if (mode === 'client') {
       void this.router.navigate(['/client/login']);
     }
+  }
+
+  registerRoute(): string[] {
+    return this.mode() === 'owner' ? ['/owner/register'] : ['/client/register'];
   }
 
   onSubmit(): void {

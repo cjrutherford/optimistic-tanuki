@@ -134,10 +134,33 @@ export interface BusinessLeadIntakeRecord {
   accountStatus: 'No account' | 'Registered' | 'Linked client';
 }
 
+export type BusinessRelationshipStage =
+  | 'new_lead'
+  | 'lead_under_review'
+  | 'accepted_client'
+  | 'booking_requested'
+  | 'booking_confirmed'
+  | 'session_completed'
+  | 'invoice_due';
+
+export type BusinessRelationshipPrimaryAction =
+  | 'request_consultation'
+  | 'await_review'
+  | 'book_session'
+  | 'accept_client'
+  | 'approve_booking'
+  | 'complete_booking'
+  | 'generate_invoice'
+  | 'none';
+
 export interface BusinessClientBookingStatus {
   accepted: boolean;
   leadId?: string | null;
   leadStatus?: LeadStatus | string | null;
+  hasAccount: boolean;
+  stage: BusinessRelationshipStage;
+  nextAction: string;
+  primaryAction: BusinessRelationshipPrimaryAction;
 }
 
 export interface AcceptedBusinessClient {
@@ -155,6 +178,29 @@ export interface BusinessAssetLibraryItem {
   type: string;
   profileId: string;
   url: string;
+}
+
+export type BusinessOwnerWorkflowBucket =
+  | 'needs_response'
+  | 'ready_to_schedule'
+  | 'needs_invoicing'
+  | 'active_clients';
+
+export interface BusinessOwnerWorkflowRecord {
+  id: string;
+  leadId?: string;
+  bookingId?: string;
+  title: string;
+  subtitle?: string;
+  statusLabel: string;
+  stage: BusinessRelationshipStage;
+  bucket: BusinessOwnerWorkflowBucket;
+  nextAction: string;
+  details: string[];
+  primaryAction: Exclude<
+    BusinessRelationshipPrimaryAction,
+    'request_consultation' | 'await_review' | 'book_session'
+  >;
 }
 
 @Injectable({
@@ -193,12 +239,16 @@ export class BusinessApiService {
 
   updateSiteConfig(
     configId: string | null,
-    config: BusinessSiteConfig
+    config: BusinessSiteConfig,
+    siteSlug?: string | null
   ): Observable<unknown> {
     return this.http.put(
       `${this.baseUrl}/site-config`,
       { configId, config },
-      { headers: this.authHeaders() }
+      {
+        headers: this.authHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
     );
   }
 
@@ -283,6 +333,18 @@ export class BusinessApiService {
       `${this.baseUrl}/client-status`,
       {
         headers: this.clientAuthHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
+    );
+  }
+
+  getOwnerWorkflow(
+    siteSlug?: string | null
+  ): Observable<BusinessOwnerWorkflowRecord[]> {
+    return this.http.get<BusinessOwnerWorkflowRecord[]>(
+      `${this.baseUrl}/owner/workflow`,
+      {
+        headers: this.authHeaders(),
         params: siteSlug ? { slug: siteSlug } : undefined,
       }
     );

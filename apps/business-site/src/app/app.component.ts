@@ -531,6 +531,10 @@ export class AppComponent {
       return `Client Portal | ${brandTitle}`;
     }
 
+    if (url.startsWith('/owner/register')) {
+      return `Owner Registration | ${brandTitle}`;
+    }
+
     if (url.startsWith('/auth') || url.startsWith('/owner/login')) {
       return `Owner Login | ${brandTitle}`;
     }

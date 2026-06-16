@@ -11,6 +11,7 @@ import {
   DEFAULT_BUSINESS_SITE_CONFIG,
   type BusinessSiteConfig,
   type BusinessOffer,
+  type LandingSectionMotionConfig,
 } from '@optimistic-tanuki/business-data-access';
 
 import { BusinessLandingPageComponent } from './business-landing-page.component';
@@ -609,18 +610,27 @@ describe('BusinessLandingPageComponent', () => {
     );
   });
 
-  it('marks specialty chips as theme-aware in the owner profile block', async () => {
+  it('folds credentials and specialties into the about section instead of rendering a separate hero owner panel', async () => {
     const fixture = await render({
       ...configWithServices,
       brand: {
         ...configWithServices.brand,
+        ownerName: 'Jordan Vale',
+        credentials: ['ISA Certified Arborist', 'Fully insured crew'],
         specializations: ['Complex scheduling', 'Operational reset'],
       },
     });
+    const host = fixture.nativeElement as HTMLElement;
+    const heroSection = host.querySelector('[data-section-id="hero"]');
+    const aboutSection = host.querySelector('[data-section-id="about"]');
     const chips = Array.from(
-      fixture.nativeElement.querySelectorAll('.specialties span')
+      aboutSection?.querySelectorAll('.specialties span') ?? []
     ) as HTMLElement[];
 
+    expect(heroSection?.querySelector('.profile')).toBeFalsy();
+    expect(aboutSection?.textContent).toContain('Jordan Vale');
+    expect(aboutSection?.textContent).toContain('ISA Certified Arborist');
+    expect(aboutSection?.textContent).toContain('Fully insured crew');
     expect(chips.length).toBeGreaterThan(0);
     expect(chips.every((chip) => chip.dataset['themeAware'] === 'true')).toBe(
       true
@@ -702,5 +712,135 @@ describe('BusinessLandingPageComponent', () => {
     expect(
       host.querySelector('[data-motion-kind="shimmer-beam"]')
     ).toBeTruthy();
+  });
+
+  it('renders motion as a background layer for non-hero sections and does not drop section content', async () => {
+    const aboutMotion: LandingSectionMotionConfig = {
+      kind: 'aurora-ribbon',
+      intensity: 0.5,
+    };
+
+    const servicesMotion: LandingSectionMotionConfig = {
+      kind: 'pulse-rings',
+      ringCount: 2,
+      reducedMotion: true,
+    };
+
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Ledgerline',
+        longBio: 'About Ledgerline business copy.',
+      },
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'about-motion',
+            type: 'about',
+            title: 'About Ledgerline',
+            enabled: true,
+            order: 0,
+            motion: aboutMotion,
+          },
+          {
+            id: 'services-motion',
+            type: 'services',
+            title: 'Our Services',
+            enabled: true,
+            order: 1,
+            motion: servicesMotion,
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('About Ledgerline');
+    expect(host.textContent).toContain('Ledgerline');
+    expect(host.textContent).toContain('About Ledgerline business copy.');
+
+    const aboutShell = host.querySelector('[data-section-id="about-motion"]');
+    const servicesShell = host.querySelector(
+      '[data-section-id="services-motion"]'
+    );
+
+    expect(aboutShell?.getAttribute('data-motion-kind')).toBe('aurora-ribbon');
+    expect(aboutShell?.querySelector('.section-motion')).toBeTruthy();
+
+    expect(servicesShell?.getAttribute('data-motion-kind')).toBe('pulse-rings');
+    expect(servicesShell?.querySelector('.section-motion')).toBeTruthy();
+  });
+
+  it('stretches motion surfaces to fill the entire section shell', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'about-motion',
+            type: 'about',
+            title: 'About',
+            enabled: true,
+            order: 0,
+            motion: {
+              kind: 'aurora-ribbon',
+            },
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    const motionSurface = host.querySelector(
+      '[data-section-id="about-motion"] .section-motion .aurora-ribbon'
+    ) as HTMLElement | null;
+
+    expect(motionSurface).toBeTruthy();
+    expect(motionSurface?.style.height).toBe('100%');
+  });
+
+  it('renders an optional contact-section image with the cleaned two-column layout', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'contact'
+              ? {
+                  ...section,
+                  image: {
+                    sourceType: 'asset',
+                    src: '/assets/business/contact.jpg',
+                    alt: 'Studio portrait',
+                    caption: 'Meet in person or remotely.',
+                    aspect: 'portrait',
+                    fit: 'cover',
+                    focalPoint: 'center',
+                  },
+                }
+              : section
+        ),
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    const contactSection = host.querySelector('[data-section-id="contact"]');
+    const contactImage = contactSection?.querySelector(
+      '.contact-media img'
+    ) as HTMLImageElement | null;
+    const contactGrid = contactSection?.querySelector('.contact-grid');
+
+    expect(contactGrid?.classList.contains('contact-grid-with-image')).toBe(
+      true
+    );
+    expect(contactImage?.src).toContain('/assets/business/contact.jpg');
+    expect(contactImage?.alt).toBe('Studio portrait');
+    expect(contactSection?.textContent).toContain(
+      'Meet in person or remotely.'
+    );
   });
 });

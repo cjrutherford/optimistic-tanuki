@@ -186,6 +186,12 @@ export class BusinessPortalShellComponent {
   private readonly siteSlug =
     this.route.snapshot.paramMap?.get('siteSlug') ?? null;
 
+  private ownerPath(path?: string): string {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', path].filter(Boolean).join('/')
+      : ['/owner', path].filter(Boolean).join('/');
+  }
+
   private clientPath(path?: string): string {
     return this.siteSlug
       ? ['/sites', this.siteSlug, 'client', path].filter(Boolean).join('/')
@@ -205,27 +211,27 @@ export class BusinessPortalShellComponent {
             : []),
         ]
       : [
-          { path: '/owner/dashboard', label: 'Dashboard' },
-          { path: '/owner/requests', label: 'Requests' },
-          { path: '/owner/clients', label: 'Clients' },
-          { path: '/owner/availability', label: 'Availability' },
+          { path: this.ownerPath('dashboard'), label: 'Dashboard' },
+          { path: this.ownerPath('requests'), label: 'Requests' },
+          { path: this.ownerPath('clients'), label: 'Clients' },
+          { path: this.ownerPath('availability'), label: 'Availability' },
           ...(this.siteConfig.site().features.invoices.enabled
             ? [
                 {
-                  path: '/owner/finance/business/invoices',
+                  path: this.ownerPath('finance/business/invoices'),
                   label: 'Invoices',
                 },
                 {
-                  path: '/owner/finance/business/checkout',
+                  path: this.ownerPath('finance/business/checkout'),
                   label: 'Checkout',
                 },
                 {
-                  path: '/owner/finance/business/payments',
+                  path: this.ownerPath('finance/business/payments'),
                   label: 'Payments',
                 },
               ]
             : []),
-          { path: '/owner/site', label: 'Site Editor' },
+          { path: this.ownerPath('site'), label: 'Site Editor' },
         ]
   );
 

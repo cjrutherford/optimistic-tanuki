@@ -1,10 +1,22 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   BusinessApiService,
-  BusinessLeadIntakeRecord,
+  BusinessOwnerWorkflowRecord,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+
+type WorkflowSection = {
+  key:
+    | 'needs_response'
+    | 'ready_to_schedule'
+    | 'needs_invoicing'
+    | 'active_clients';
+  eyebrow: string;
+  heading: string;
+  items: BusinessOwnerWorkflowRecord[];
+};
 
 @Component({
   selector: 'business-owner-requests-page',
@@ -17,117 +29,100 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <p class="eyebrow">Owner Queue</p>
           <h1>Review new relationships and move active work forward.</h1>
           <p class="hero-body">
-            Prospects need a response first. Bookings need a scheduling decision
-            next. This workspace separates those jobs clearly.
+            Intake, scheduling, and billing now share one operating view so the
+            next owner action is always visible.
           </p>
         </div>
         <div class="hero-metrics">
           <div class="hero-metric">
             <span>Needs response</span>
-            <strong>{{ prospects().length }}</strong>
+            <strong>{{ needsResponse().length }}</strong>
           </div>
           <div class="hero-metric">
-            <span>Scheduling pipeline</span>
-            <strong>{{ bookings().length }}</strong>
+            <span>Ready to schedule</span>
+            <strong>{{ readyToSchedule().length }}</strong>
+          </div>
+          <div class="hero-metric">
+            <span>Needs invoicing</span>
+            <strong>{{ needsInvoicing().length }}</strong>
+          </div>
+          <div class="hero-metric">
+            <span>Active clients</span>
+            <strong>{{ activeClients().length }}</strong>
           </div>
         </div>
       </otui-card>
 
       <div class="queue-grid">
+        @for (section of sections(); track section.key) {
         <otui-card class="queue-card">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Needs response</p>
-              <h2>Prospects</h2>
+              <p class="eyebrow">{{ section.eyebrow }}</p>
+              <h2>{{ section.heading }}</h2>
             </div>
-            <span class="section-count">{{ prospects().length }}</span>
+            <span class="section-count">{{ section.items.length }}</span>
           </div>
+
           <div class="rows">
-            @for (prospect of prospects(); track prospect.id) {
-            <article class="queue-row prospect-row">
+            @for (item of section.items; track item.id) {
+            <article class="queue-row">
               <div class="queue-main">
                 <div class="row-topline">
-                  <strong>{{ prospect.name }}</strong>
-                  <span class="status-pill">{{ prospect.status }}</span>
+                  <strong>{{ item.title }}</strong>
+                  <span class="status-pill">{{ item.statusLabel }}</span>
                 </div>
-                <p class="meta-line">
-                  {{ prospect.email || 'No email' }} ·
-                  {{ prospect.phone || 'No phone' }}
-                </p>
-                <p class="meta-line">
-                  {{ prospect.accountStatus }} · {{ prospect.source }}
-                </p>
-                <p class="note-block">
-                  {{ prospect.notes || 'No intake notes provided.' }}
-                </p>
+                @if (item.subtitle) {
+                <p class="meta-line">{{ item.subtitle }}</p>
+                } @for (detail of item.details; track detail) {
+                <p class="meta-line">{{ detail }}</p>
+                }
+                <p class="note-block">{{ item.nextAction }}</p>
               </div>
               <div class="actions stack-actions">
+                @switch (item.primaryAction) { @case ('accept_client') {
                 <otui-button
                   variant="primary"
-                  (action)="approveProspect(prospect.id)"
+                  (action)="approveProspect(item.leadId ?? '')"
                 >
                   Accept client
                 </otui-button>
                 <otui-button
                   variant="outlined"
-                  (action)="markProspectContacted(prospect.id)"
+                  (action)="markProspectContacted(item.leadId ?? '')"
                 >
                   Mark contacted
                 </otui-button>
+                } @case ('approve_booking') {
+                <otui-button
+                  variant="outlined"
+                  (action)="approve(item.bookingId ?? '')"
+                >
+                  Approve booking
+                </otui-button>
+                } @case ('complete_booking') {
+                <otui-button
+                  variant="outlined"
+                  (action)="complete(item.bookingId ?? '')"
+                >
+                  Mark complete
+                </otui-button>
+                } @case ('generate_invoice') {
+                <otui-button
+                  variant="outlined"
+                  (action)="invoice(item.bookingId ?? '')"
+                >
+                  Generate invoice
+                </otui-button>
+                } }
               </div>
             </article>
             } @empty {
-            <p class="empty">No prospects are waiting.</p>
+            <p class="empty">No items are waiting in this section.</p>
             }
           </div>
         </otui-card>
-
-        <otui-card class="queue-card">
-          <div class="section-head">
-            <div>
-              <p class="eyebrow">Scheduling pipeline</p>
-              <h2>Bookings</h2>
-            </div>
-            <span class="section-count">{{ bookings().length }}</span>
-          </div>
-          <div class="rows">
-            @for (booking of bookings(); track booking.id) {
-            <article class="queue-row booking-row">
-              <div class="queue-main">
-                <div class="row-topline">
-                  <strong>{{ booking.title }}</strong>
-                  <span class="status-pill">{{ booking.status }}</span>
-                </div>
-                <p class="meta-line">
-                  {{ formatWindow(booking.startTime, booking.endTime) }}
-                </p>
-                <p class="meta-line">{{ booking.userId }}</p>
-                <p class="note-block">
-                  {{ booking.description || 'No client context provided.' }}
-                </p>
-                @if (booking.totalCost) {
-                <p class="invoice-line">
-                  {{ invoiceTotalLabel(booking.totalCost) }}
-                </p>
-                }
-              </div>
-              <div class="actions stack-actions">
-                <otui-button variant="outlined" (action)="approve(booking.id)"
-                  >Approve</otui-button
-                >
-                <otui-button variant="outlined" (action)="complete(booking.id)"
-                  >Complete</otui-button
-                >
-                <otui-button variant="outlined" (action)="invoice(booking.id)"
-                  >Invoice</otui-button
-                >
-              </div>
-            </article>
-            } @empty {
-            <p class="empty">No session requests are waiting.</p>
-            }
-          </div>
-        </otui-card>
+        }
       </div>
     </section>
   `,
@@ -140,7 +135,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 1rem;
       }
       .queue-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
       .queue-hero,
       .queue-card {
@@ -174,7 +169,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       }
       .hero-metrics {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 0.75rem;
       }
       .hero-metric,
@@ -237,11 +232,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
       p {
         margin: 0;
       }
-      .invoice-line {
-        font-weight: 700;
-        color: var(--primary, #1f7a63);
-      }
-      @media (max-width: 980px) {
+      @media (max-width: 1100px) {
         .queue-grid,
         .hero-metrics {
           grid-template-columns: 1fr;
@@ -252,75 +243,105 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 })
 export class BusinessOwnerRequestsPageComponent {
   private readonly api = inject(BusinessApiService);
-  readonly prospects = signal<BusinessLeadIntakeRecord[]>([]);
-  readonly bookings = signal<any[]>([]);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly workflow = signal<BusinessOwnerWorkflowRecord[]>([]);
+  readonly needsResponse = computed(() =>
+    this.workflow().filter((item) => item.bucket === 'needs_response')
+  );
+  readonly readyToSchedule = computed(() =>
+    this.workflow().filter((item) => item.bucket === 'ready_to_schedule')
+  );
+  readonly needsInvoicing = computed(() =>
+    this.workflow().filter((item) => item.bucket === 'needs_invoicing')
+  );
+  readonly activeClients = computed(() =>
+    this.workflow().filter((item) => item.bucket === 'active_clients')
+  );
+  readonly sections = computed<WorkflowSection[]>(() => [
+    {
+      key: 'needs_response',
+      eyebrow: 'Needs response',
+      heading: 'Needs response',
+      items: this.needsResponse(),
+    },
+    {
+      key: 'ready_to_schedule',
+      eyebrow: 'Ready to schedule',
+      heading: 'Ready to schedule',
+      items: this.readyToSchedule(),
+    },
+    {
+      key: 'needs_invoicing',
+      eyebrow: 'Needs invoicing',
+      heading: 'Needs invoicing',
+      items: this.needsInvoicing(),
+    },
+    {
+      key: 'active_clients',
+      eyebrow: 'Active clients',
+      heading: 'Active clients',
+      items: this.activeClients(),
+    },
+  ]);
 
   constructor() {
-    this.loadProspects();
-    this.loadBookings();
+    this.loadWorkflow();
   }
 
   approve(id: string): void {
+    if (!id) {
+      return;
+    }
+
     this.api.approveBooking(id).subscribe(() => {
-      this.loadBookings();
+      this.loadWorkflow();
     });
   }
 
   complete(id: string): void {
+    if (!id) {
+      return;
+    }
+
     this.api.completeBooking(id).subscribe(() => {
-      this.loadBookings();
+      this.loadWorkflow();
     });
   }
 
   invoice(id: string): void {
+    if (!id) {
+      return;
+    }
+
     this.api.generateInvoice(id).subscribe(() => {
-      this.loadBookings();
+      this.loadWorkflow();
     });
   }
 
   markProspectContacted(id: string): void {
+    if (!id) {
+      return;
+    }
+
     this.api.markProspectContacted(id).subscribe(() => {
-      this.loadProspects();
+      this.loadWorkflow();
     });
   }
 
   approveProspect(id: string): void {
+    if (!id) {
+      return;
+    }
+
     this.api.approveProspect(id).subscribe(() => {
-      this.loadProspects();
+      this.loadWorkflow();
     });
   }
 
-  private loadProspects(): void {
-    this.api.getOwnerProspects().subscribe((prospects) => {
-      this.prospects.set(prospects);
+  private loadWorkflow(): void {
+    const siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+    this.api.getOwnerWorkflow(siteSlug).subscribe((workflow) => {
+      this.workflow.set(workflow);
     });
-  }
-
-  private loadBookings(): void {
-    this.api.getOwnerBookings().subscribe((bookings) => {
-      this.bookings.set(bookings);
-    });
-  }
-
-  formatWindow(
-    startTime: string | Date | undefined,
-    endTime: string | Date | undefined
-  ): string {
-    if (!startTime || !endTime) {
-      return 'Schedule pending';
-    }
-
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return 'Schedule pending';
-    }
-
-    return `${start.toLocaleString()} - ${end.toLocaleString()}`;
-  }
-
-  invoiceTotalLabel(totalCost: number | undefined): string {
-    return `Invoice total: $${totalCost ?? 0}`;
   }
 }

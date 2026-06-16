@@ -210,6 +210,14 @@ export const appRoutes: Route[] = [
     pathMatch: 'full',
   },
   {
+    path: 'owner/register',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerRegisterPageComponent
+      ),
+    title: 'Owner Registration',
+  },
+  {
     path: 'owner/onboarding',
     canActivate: [businessAuthGuard],
     data: {
@@ -221,6 +229,19 @@ export const appRoutes: Route[] = [
         (m) => m.BusinessSiteEditorPageComponent
       ),
     title: 'Owner Onboarding',
+  },
+  {
+    path: 'sites/:siteSlug/owner',
+    canActivate: [businessAuthGuard],
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessPortalShellComponent
+      ),
+    data: {
+      portalLabel: 'Owner Workspace',
+      portalDescription: 'Manage clients, requests, and settings.',
+    },
+    children: ownerChildren,
   },
   {
     path: 'owner',

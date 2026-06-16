@@ -212,6 +212,41 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('claims owner access for the current app-scoped profile', async () => {
+    (profileService.send as jest.Mock).mockReturnValueOnce(
+      of([
+        {
+          id: 'profile-1',
+          userId: 'user-1',
+          appScope: 'business-site',
+        },
+      ])
+    );
+
+    const user = {
+      userId: 'user-1',
+      email: 'owner@example.com',
+      profileId: 'profile-1',
+    } as any;
+
+    await expect(
+      controller.claimOwnerAccess(user, 'business-site')
+    ).resolves.toEqual({
+      profileId: 'profile-1',
+      appScope: 'business-site',
+      ownerAccess: true,
+    });
+
+    expect(roleInitService.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'business-site',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'business_site_owner' }),
+        ]),
+      })
+    );
+  });
+
   it('provisions solo finance permissions during fin-commander registration', async () => {
     const registerRequest: RegisterRequest = {
       fn: 'Finance',

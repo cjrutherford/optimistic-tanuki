@@ -9,6 +9,7 @@ import {
   BusinessApiService,
   BusinessAuthService,
   BusinessBusyWindow,
+  BusinessClientBookingStatus,
   BusinessSiteConfigStore,
 } from '@optimistic-tanuki/business-data-access';
 import {
@@ -249,30 +250,36 @@ type BookableSlot = {
     <section class="layout">
       <div class="copy">
         <p class="eyebrow">Relationship Setup</p>
-        <h1>{{ site().contact.consultationLabel }}</h1>
+        <h1>{{ pageTitle() }}</h1>
         <div class="copy-stack">
-          <p>
-            Tell us what you need and when you would like to get started. We
-            review every request before confirming a schedule.
-          </p>
+          <p>{{ introCopy() }}</p>
           <p class="support-copy">
-            Pick a published hour block if one is available, then share enough
-            context for the business to review fit quickly.
+            {{ nextActionCopy() }}
           </p>
         </div>
         <div class="booking-highlights">
           <strong>What happens next</strong>
           <ul>
-            <li>Submit the request with your preferred timing.</li>
-            <li>The business reviews scope and confirms fit.</li>
-            <li>Accepted clients can manage future bookings faster.</li>
+            @if (isAcceptedClient()) {
+            <li>Choose a published time and submit the booking request.</li>
+            <li>The business confirms fit and approves the schedule.</li>
+            <li>
+              Your client workspace keeps the next session and billing visible.
+            </li>
+            } @else {
+            <li>Share your goals and preferred timing.</li>
+            <li>The business reviews scope before booking opens.</li>
+            <li>Create or use your client account to track next steps.</li>
+            }
           </ul>
         </div>
+        @if (!auth.clientUser()) {
         <p class="support-copy">
           Create an account to track your request and access the client
           workspace.
         </p>
         <a class="cta-link" [routerLink]="registerRoute()">Create account</a>
+        }
       </div>
 
       <otui-card class="form-shell">
@@ -335,9 +342,9 @@ type BookableSlot = {
               <textarea [(ngModel)]="form.context" name="context"></textarea>
             </label>
           </div>
-          <otui-button type="submit" variant="primary"
-            >Send request</otui-button
-          >
+          <otui-button type="submit" variant="primary">{{
+            submitLabel()
+          }}</otui-button>
           @if (message()) {
           <p class="message">{{ message() }}</p>
           }
@@ -349,7 +356,7 @@ type BookableSlot = {
 })
 export class BusinessBookingPageComponent {
   private readonly api = inject(BusinessApiService);
-  private readonly auth = inject(BusinessAuthService);
+  protected readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
@@ -359,6 +366,7 @@ export class BusinessBookingPageComponent {
   readonly message = signal('');
   readonly isClientAuthenticated = this.auth.isClientAuthenticated;
   readonly isAcceptedClient = signal(false);
+  readonly clientStatus = signal<BusinessClientBookingStatus | null>(null);
   readonly offers = signal<BusinessOffer[]>([]);
   readonly availabilities = signal<Availability[]>([]);
   readonly availabilityOverrides = signal<AvailabilityOverride[]>([]);
@@ -380,6 +388,22 @@ export class BusinessBookingPageComponent {
     this.siteSlug
       ? ['/sites', this.siteSlug, 'client', 'register']
       : ['/client/register']
+  );
+  readonly pageTitle = computed(() =>
+    this.isAcceptedClient() ? 'Book session' : 'Request consultation'
+  );
+  readonly introCopy = computed(() =>
+    this.isAcceptedClient()
+      ? 'Choose the right published time for your next session and send it in for approval.'
+      : 'Tell us what you need and when you would like to get started. We review every request before confirming a schedule.'
+  );
+  readonly nextActionCopy = computed(
+    () =>
+      this.clientStatus()?.nextAction ||
+      'Share your goals to request a consultation and start the review process.'
+  );
+  readonly submitLabel = computed(() =>
+    this.isAcceptedClient() ? 'Book session' : 'Request consultation'
   );
   readonly form = {
     name: '',
@@ -454,14 +478,16 @@ export class BusinessBookingPageComponent {
       }
 
       this.api
-        .getClientBookingStatus()
+        .getClientBookingStatus(this.siteSlug)
         .pipe(
           catchError(() => {
             this.isAcceptedClient.set(false);
+            this.clientStatus.set(null);
             return EMPTY;
           })
         )
         .subscribe((status) => {
+          this.clientStatus.set(status);
           this.isAcceptedClient.set(!!status.accepted);
         });
     });

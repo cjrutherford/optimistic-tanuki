@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import {
@@ -8,10 +9,10 @@ import {
 } from '@optimistic-tanuki/business-data-access';
 
 import { BusinessLoginPageComponent } from './business-login-page.component';
+import { RouterLink } from '@angular/router';
 
 describe('BusinessLoginPageComponent', () => {
   it('routes a completed owner to the owner dashboard after login', () => {
-    const navigate = jest.fn();
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
@@ -27,6 +28,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: BusinessAuthService,
           useValue: { loginAndExchange },
@@ -35,13 +37,11 @@ describe('BusinessLoginPageComponent', () => {
           provide: BusinessApiService,
           useValue: { getSiteConfig },
         },
-        {
-          provide: Router,
-          useValue: { navigate },
-        },
       ],
     });
 
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BusinessLoginPageComponent);
     fixture.componentInstance.email = 'owner@example.com';
     fixture.componentInstance.password = 'secret';
@@ -68,7 +68,6 @@ describe('BusinessLoginPageComponent', () => {
   });
 
   it('routes a seeded non-default owner using that owner profile config', () => {
-    const navigate = jest.fn();
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
@@ -88,6 +87,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: BusinessAuthService,
           useValue: { loginAndExchange },
@@ -96,13 +96,11 @@ describe('BusinessLoginPageComponent', () => {
           provide: BusinessApiService,
           useValue: { getSiteConfig },
         },
-        {
-          provide: Router,
-          useValue: { navigate },
-        },
       ],
     });
 
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BusinessLoginPageComponent);
     fixture.componentInstance.email = 'owner-handyman@localbusiness.test';
     fixture.componentInstance.password = 'secret';
@@ -115,7 +113,6 @@ describe('BusinessLoginPageComponent', () => {
   });
 
   it('routes a first-time owner to onboarding after login', () => {
-    const navigate = jest.fn();
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
@@ -131,6 +128,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: BusinessAuthService,
           useValue: { loginAndExchange },
@@ -139,13 +137,11 @@ describe('BusinessLoginPageComponent', () => {
           provide: BusinessApiService,
           useValue: { getSiteConfig },
         },
-        {
-          provide: Router,
-          useValue: { navigate },
-        },
       ],
     });
 
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BusinessLoginPageComponent);
     fixture.componentInstance.email = 'owner@example.com';
     fixture.componentInstance.password = 'secret';
@@ -157,7 +153,6 @@ describe('BusinessLoginPageComponent', () => {
   });
 
   it('shows an owner-client mode toggle and sends client mode to the client login route', () => {
-    const navigate = jest.fn();
     const loginAndExchange = jest.fn().mockReturnValue(of({}));
     const getSiteConfig = jest.fn().mockReturnValue(
       of({
@@ -169,6 +164,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        provideRouter([]),
         {
           provide: BusinessAuthService,
           useValue: { loginAndExchange },
@@ -177,13 +173,11 @@ describe('BusinessLoginPageComponent', () => {
           provide: BusinessApiService,
           useValue: { getSiteConfig },
         },
-        {
-          provide: Router,
-          useValue: { navigate },
-        },
       ],
     });
 
+    const router = TestBed.inject(Router);
+    const navigate = jest.spyOn(router, 'navigate').mockResolvedValue(true);
     const fixture = TestBed.createComponent(BusinessLoginPageComponent);
     fixture.detectChanges();
 
@@ -202,5 +196,48 @@ describe('BusinessLoginPageComponent', () => {
 
     expect(navigate).toHaveBeenCalledWith(['/client/login']);
     expect(loginAndExchange).not.toHaveBeenCalled();
+  });
+
+  it('links owner and client registration paths from the shared auth page', () => {
+    const loginAndExchange = jest.fn().mockReturnValue(of({}));
+    const getSiteConfig = jest.fn().mockReturnValue(
+      of({
+        configId: 'config-1',
+        config: {},
+      })
+    );
+
+    TestBed.configureTestingModule({
+      imports: [BusinessLoginPageComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: BusinessAuthService,
+          useValue: { loginAndExchange },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: { getSiteConfig },
+        },
+      ],
+    });
+
+    const router = TestBed.inject(Router);
+    jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    const fixture = TestBed.createComponent(BusinessLoginPageComponent);
+    fixture.detectChanges();
+
+    let links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+    expect(links.map((link) => link.href)).toContain('/owner/register');
+
+    fixture.componentInstance.setMode('client');
+    fixture.detectChanges();
+
+    links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+    expect(links.map((link) => link.href)).toContain('/client/register');
   });
 });

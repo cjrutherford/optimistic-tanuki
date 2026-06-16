@@ -1,7 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
+import { EMPTY, catchError } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import {
+  BusinessApiService,
+  BusinessAuthService,
+  BusinessClientBookingStatus,
+  BusinessSiteConfigStore,
+} from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
@@ -13,14 +27,14 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       <otui-card class="copy">
         <p class="eyebrow">Client Portal</p>
         <h2>{{ site().clientPortal.headline }}</h2>
-        <p>{{ site().clientPortal.description }}</p>
+        <p>{{ nextActionCopy() }}</p>
         <div class="actions">
           <a class="cta-primary" [routerLink]="dashboardRoute()"
             >Open dashboard</a
           >
-          <a class="cta-secondary" [routerLink]="bookingRoute()"
-            >Request coaching</a
-          >
+          <a class="cta-secondary" [routerLink]="bookingRoute()">{{
+            consultationCtaLabel()
+          }}</a>
         </div>
       </otui-card>
 
@@ -96,10 +110,21 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
   ],
 })
 export class BusinessClientPortalHomePageComponent {
+  private readonly api = inject(BusinessApiService);
+  private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly destroyRef = inject(DestroyRef);
   readonly site = this.siteConfig.site;
   readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly clientStatus = signal<BusinessClientBookingStatus | null>(null);
+  readonly consultationCtaLabel = computed(() =>
+    this.clientStatus()?.accepted ? 'Book session' : 'Request consultation'
+  );
+  readonly nextActionCopy = computed(
+    () =>
+      this.clientStatus()?.nextAction || this.site().clientPortal.description
+  );
 
   dashboardRoute(): string[] {
     return this.siteSlug
@@ -113,5 +138,25 @@ export class BusinessClientPortalHomePageComponent {
 
   constructor() {
     this.siteConfig.fetch(false, this.siteSlug).subscribe();
+
+    effect(() => {
+      if (!this.auth.clientUser()) {
+        this.clientStatus.set(null);
+        return;
+      }
+
+      this.api
+        .getClientBookingStatus(this.siteSlug)
+        .pipe(
+          catchError(() => {
+            this.clientStatus.set(null);
+            return EMPTY;
+          }),
+          takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe((status) => {
+          this.clientStatus.set(status);
+        });
+    });
   }
 }

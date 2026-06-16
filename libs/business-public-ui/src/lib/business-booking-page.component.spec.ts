@@ -22,20 +22,40 @@ import {
 
 describe('BusinessBookingPageComponent', () => {
   async function render(
-    offers: Array<{
-      id: string;
-      label: string;
-      allowOnlineBooking?: boolean;
-    }> = []
+    options: {
+      offers?: Array<{
+        id: string;
+        label: string;
+        allowOnlineBooking?: boolean;
+      }>;
+      isAuthenticated?: boolean;
+      clientUser?: {
+        userId: string;
+        profileId: string;
+        email: string;
+        name?: string;
+      } | null;
+      status?: Record<string, unknown>;
+    } = {}
   ) {
+    const offers = options.offers ?? [];
     const api = {
       getOffers: jest.fn().mockReturnValue(of(offers)),
       getAvailabilities: jest.fn().mockReturnValue(of([])),
       getAvailabilityOverrides: jest.fn().mockReturnValue(of([])),
       getBusyWindows: jest.fn().mockReturnValue(of([])),
-      getClientBookingStatus: jest
-        .fn()
-        .mockReturnValue(of({ accepted: false })),
+      getClientBookingStatus: jest.fn().mockReturnValue(
+        of(
+          options.status ?? {
+            accepted: false,
+            hasAccount: false,
+            stage: 'new_lead',
+            nextAction:
+              'Share your goals to request a consultation and start the review process.',
+            primaryAction: 'request_consultation',
+          }
+        )
+      ),
       createBooking: jest.fn(),
       createLeadIntake: jest.fn(),
     };
@@ -61,8 +81,10 @@ describe('BusinessBookingPageComponent', () => {
         {
           provide: BusinessAuthService,
           useValue: {
-            isClientAuthenticated: jest.fn(() => false),
-            clientUser: jest.fn(() => null),
+            isClientAuthenticated: jest.fn(
+              () => options.isAuthenticated ?? false
+            ),
+            clientUser: jest.fn(() => options.clientUser ?? null),
           },
         },
         {
@@ -94,7 +116,7 @@ describe('BusinessBookingPageComponent', () => {
   });
 
   it('hides the requested offer selector when the business has no offers', async () => {
-    const { fixture } = await render([]);
+    const { fixture } = await render();
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).not.toContain('Requested offer');
@@ -112,7 +134,7 @@ describe('BusinessBookingPageComponent', () => {
   });
 
   it('keeps the hosted tenant slug in the create-account link', async () => {
-    const { fixture } = await render([]);
+    const { fixture } = await render();
 
     const links = fixture.debugElement
       .queryAll(By.directive(RouterLink))
@@ -124,5 +146,42 @@ describe('BusinessBookingPageComponent', () => {
     expect(createAccountLink?.href).toBe(
       '/sites/steady-hand-contracting/client/register'
     );
+  });
+
+  it('shows consultation request messaging for new visitors who are not accepted clients', async () => {
+    const { fixture } = await render();
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(text).toContain('Request consultation');
+    expect(text).toContain('Share your goals to request a consultation');
+    expect(text).toContain('Create account');
+    expect(text).not.toContain('Book session');
+  });
+
+  it('shows booking messaging for accepted clients and removes the create-account prompt', async () => {
+    const { fixture, api } = await render({
+      isAuthenticated: true,
+      clientUser: {
+        userId: 'client-user-1',
+        profileId: 'client-profile-1',
+        email: 'client@example.com',
+        name: 'Client Example',
+      },
+      status: {
+        accepted: true,
+        hasAccount: true,
+        stage: 'accepted_client',
+        nextAction: 'Choose a published time to request your next session.',
+        primaryAction: 'book_session',
+      },
+    });
+    const text = fixture.nativeElement.textContent as string;
+
+    expect(api.getClientBookingStatus).toHaveBeenCalled();
+    expect(text).toContain('Book session');
+    expect(text).toContain(
+      'Choose a published time to request your next session.'
+    );
+    expect(text).not.toContain('Create account');
   });
 });

@@ -1,5 +1,6 @@
 export { BusinessPortalShellComponent } from './lib/business-portal-shell.component';
 export { BusinessLoginPageComponent } from './lib/business-login-page.component';
+export { BusinessOwnerRegisterPageComponent } from './lib/business-owner-register-page.component';
 export { BusinessSiteEditorPageComponent } from './lib/business-site-editor-page.component';
 export { BusinessClientPortalHomePageComponent } from './lib/business-client-portal-home-page.component';
 export { BusinessClientDashboardPageComponent } from './lib/business-client-dashboard-page.component';

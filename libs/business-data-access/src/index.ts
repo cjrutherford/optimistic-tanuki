@@ -69,7 +69,11 @@ export type {
   BusinessStoreProduct,
   BusinessBusyWindow,
   BusinessClientBookingStatus,
+  BusinessRelationshipStage,
+  BusinessRelationshipPrimaryAction,
   AcceptedBusinessClient,
   BusinessAssetLibraryItem,
   PublicBusinessSiteSummary,
+  BusinessOwnerWorkflowBucket,
+  BusinessOwnerWorkflowRecord,
 } from './lib/business-api.service';

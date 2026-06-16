@@ -63,6 +63,9 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
+      "options": {
+        "allowedHosts": ["*"]
+      },
       "configurations": {
         "production": {
           "buildTarget": "business-site:build:production"

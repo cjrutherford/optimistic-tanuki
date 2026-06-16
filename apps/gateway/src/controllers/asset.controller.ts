@@ -1,8 +1,10 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
+  HttpException,
   Inject,
   Param,
   Post,
@@ -30,6 +32,29 @@ export class AssetController {
     private readonly assetService: ClientProxy
   ) {}
 
+  private toHttpException(
+    error: unknown,
+    fallbackMessage: string
+  ): HttpException {
+    const messageSource = error as {
+      message?: string;
+      error?: { message?: string; statusCode?: number; errors?: string[] };
+      statusCode?: number;
+      errors?: string[];
+    };
+    const nestedError = messageSource?.error;
+    const statusCode =
+      nestedError?.statusCode ?? messageSource?.statusCode ?? 500;
+    const message =
+      nestedError?.message ?? messageSource?.message ?? fallbackMessage;
+    const errors = nestedError?.errors ?? messageSource?.errors;
+
+    return new HttpException(
+      errors ? { message, errors } : { message },
+      statusCode
+    );
+  }
+
   @RequirePermissions('asset.create')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('/')
@@ -39,7 +64,7 @@ export class AssetController {
         this.assetService.send({ cmd: AssetCommands.CREATE }, asset)
       );
     } catch (error) {
-      throw new Error(`Failed to create asset: ${error.message || error}`);
+      throw this.toHttpException(error, 'Failed to create asset');
     }
   }
 
@@ -52,7 +77,7 @@ export class AssetController {
         this.assetService.send({ cmd: AssetCommands.REMOVE }, { id })
       );
     } catch (error) {
-      throw new Error(`Failed to delete asset: ${error.message || error}`);
+      throw this.toHttpException(error, 'Failed to delete asset');
     }
   }
 
@@ -62,7 +87,6 @@ export class AssetController {
       const value = await firstValueFrom(
         this.assetService.send({ cmd: AssetCommands.READ }, { id })
       );
-      console.log('🚀 ~ AssetController ~ getAssetById ~ value:', value.length);
       const matches = value.match(/^data:(.*?);base64,(.*)$/);
       if (matches) {
         const mimeType = matches[1];
@@ -74,8 +98,18 @@ export class AssetController {
         res.status(400).send('Invalid asset format');
       }
     } catch (error) {
-      res.status(500).send(`Failed to get asset: ${error.message || error}`);
+      res.status(500).send(`Failed to get asset: ${this.errorMessage(error)}`);
     }
+  }
+
+  private errorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as { message: unknown }).message);
+    }
+    return 'Unknown asset error';
   }
 
   @RequirePermissions('asset.read')

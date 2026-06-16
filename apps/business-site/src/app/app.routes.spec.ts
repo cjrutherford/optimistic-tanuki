@@ -16,9 +16,11 @@ describe('appRoutes', () => {
         'sites/:siteSlug/client',
         'sites/:siteSlug/client/login',
         'sites/:siteSlug/client/register',
+        'sites/:siteSlug/owner',
         'client',
         'auth',
         'owner/login',
+        'owner/register',
         'owner/onboarding',
         'owner',
         '**',
@@ -104,6 +106,25 @@ describe('appRoutes', () => {
     );
   });
 
+  it('registers hosted owner workspace child routes for business-scoped access', () => {
+    const hostedOwnerRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner'
+    );
+
+    expect(
+      (hostedOwnerRoute?.children ?? []).map((route) => route.path)
+    ).toEqual(
+      expect.arrayContaining([
+        'dashboard',
+        'site',
+        'requests',
+        'clients',
+        'availability',
+        'finance',
+      ])
+    );
+  });
+
   it('adds a tenant-scoped public route for hosted business sites', () => {
     const tenantRoute = appRoutes.find(
       (route) => route.path === 'sites/:siteSlug'
@@ -117,6 +138,9 @@ describe('appRoutes', () => {
     const ownerLoginRoute = appRoutes.find(
       (route) => route.path === 'owner/login'
     );
+    const ownerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'owner/register'
+    );
     const onboardingRoute = appRoutes.find(
       (route) => route.path === 'owner/onboarding'
     );
@@ -128,6 +152,7 @@ describe('appRoutes', () => {
         pathMatch: 'full',
       })
     );
+    expect(ownerRegisterRoute?.title).toBe('Owner Registration');
     expect(onboardingRoute?.data).toEqual({
       editorMode: 'guided',
       onboardingMode: true,
@@ -182,6 +207,9 @@ describe('appRoutes', () => {
       (route) => route.path === 'sites/:siteSlug'
     );
     const authRoute = appRoutes.find((route) => route.path === 'auth');
+    const ownerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'owner/register'
+    );
     const onboardingRoute = appRoutes.find(
       (route) => route.path === 'owner/onboarding'
     );
@@ -197,6 +225,10 @@ describe('appRoutes', () => {
     await expect(authRoute?.loadComponent?.()).resolves.toHaveProperty(
       'name',
       'BusinessLoginPageComponent'
+    );
+    await expect(ownerRegisterRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessOwnerRegisterPageComponent'
     );
     await expect(onboardingRoute?.loadComponent?.()).resolves.toHaveProperty(
       'name',

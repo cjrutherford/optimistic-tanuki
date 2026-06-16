@@ -245,6 +245,28 @@ describe('BusinessSiteEditorPageComponent', () => {
     ).toEqual([0, 1, 2, 3, 4, 5]);
   });
 
+  it('syncs section motion edits into the live preview store', async () => {
+    const { fixture, component } = createComponent();
+    const store = TestBed.inject(BusinessSiteConfigStore);
+
+    component.selectSection('about');
+    component.updateSectionMotion('aurora-ribbon');
+    component.updateSectionMotionParameter('intensity', '0.45');
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const previewSection = store
+      .site()
+      .landingPage.sections.find((section) => section.id === 'about');
+
+    expect(previewSection?.motion).toEqual(
+      expect.objectContaining({
+        kind: 'aurora-ribbon',
+        intensity: 0.45,
+      })
+    );
+  });
+
   it('exposes hero copy through the compose editor and writes changes back into rich content', () => {
     const { component } = createComponent();
 
@@ -321,6 +343,60 @@ describe('BusinessSiteEditorPageComponent', () => {
     );
     expect(component.selectedSectionComposeValue().content).toBe(
       '<p>Custom overridden content here.</p>'
+    );
+  });
+
+  it('recomputes the compose content key when switching between sections', () => {
+    const { component } = createComponent();
+    const readSectionContentKey = (
+      component as unknown as { sectionContentKey: () => string }
+    ).sectionContentKey;
+
+    const heroKey = readSectionContentKey();
+
+    component.selectSection('about');
+
+    expect(readSectionContentKey()).not.toBe(heroKey);
+  });
+
+  it('resets custom rich content back to fallback body content', () => {
+    const { component } = createComponent();
+
+    component.addCustomSection();
+    const customId = component
+      .draft()
+      .landingPage.sections.find((section) => section.type === 'custom')!.id;
+    component.draft.update((draft) => {
+      const section = draft.landingPage.sections.find(
+        (candidate) => candidate.id === customId
+      );
+      if (section) {
+        section.body = 'Fallback custom copy.';
+      }
+      return draft;
+    });
+    component.selectSection(customId);
+    component.updateSelectedSectionRichContent({
+      title: 'Custom section',
+      content: '<p>Custom rich content.</p>',
+      links: [],
+      attachments: [],
+      injectedComponentsNew: [],
+      themeConfig: {
+        theme: 'light',
+        accentColor: '#1f7a63',
+      },
+    });
+
+    component.resetSelectedSectionRichContent();
+
+    const section = component
+      .draft()
+      .landingPage.sections.find((candidate) => candidate.id === customId);
+    expect(section?.richContent).toBeUndefined();
+    expect(section?.body).toBe('Fallback custom copy.');
+    expect(component.selectedSectionComposeValue().content).toBe(
+      '<p>Fallback custom copy.</p>'
     );
   });
 
@@ -884,6 +960,46 @@ describe('BusinessSiteEditorPageComponent', () => {
     );
   });
 
+  it('renders contact image metadata fields and writes edits to the selected image', () => {
+    const { fixture, component } = createComponent();
+
+    component.selectSection('contact');
+    component.draft.update((draft) => {
+      const contact = draft.landingPage.sections.find(
+        (section) => section.id === 'contact'
+      );
+      if (contact) {
+        contact.image = {
+          sourceType: 'url',
+          src: '/assets/business/studio.jpg',
+          alt: 'Old studio image',
+          caption: 'Old caption',
+          aspect: 'portrait',
+        };
+      }
+      return draft;
+    });
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('Alt Text');
+    expect(host.textContent).toContain('Caption');
+    expect(host.textContent).toContain('Aspect');
+
+    const altInput = host.querySelector(
+      '[data-contact-image-field="alt"] input'
+    ) as HTMLInputElement;
+    altInput.value = 'Studio portrait';
+    altInput.dispatchEvent(new Event('input', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(component.selectedSection()?.image).toEqual(
+      expect.objectContaining({
+        alt: 'Studio portrait',
+      })
+    );
+  });
+
   it('updates selected section motion settings directly on the draft section', () => {
     const { component } = createComponent();
 
@@ -895,6 +1011,31 @@ describe('BusinessSiteEditorPageComponent', () => {
       expect.objectContaining({
         kind: 'signal-mesh',
         density: 7,
+      })
+    );
+  });
+
+  it('renders a motion selector and writes the selected motion kind to the draft', () => {
+    const { fixture, component } = createComponent();
+
+    component.selectSection('contact');
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const motionSelect = host.querySelector(
+      '.motion-editor select'
+    ) as HTMLSelectElement;
+
+    expect(motionSelect).toBeTruthy();
+    expect(motionSelect?.textContent).toContain('None');
+
+    motionSelect.value = 'signal-mesh';
+    motionSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(component.selectedSection()?.motion).toEqual(
+      expect.objectContaining({
+        kind: 'signal-mesh',
       })
     );
   });

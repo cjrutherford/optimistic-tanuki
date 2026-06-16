@@ -469,6 +469,10 @@ describe('TrainerController', () => {
       accepted: true,
       leadId: 'lead-1',
       leadStatus: LeadStatus.WON,
+      hasAccount: true,
+      stage: 'accepted_client',
+      nextAction: 'Choose a published time to request your next session.',
+      primaryAction: 'book_session',
     });
   });
 
@@ -658,6 +662,77 @@ describe('TrainerController', () => {
     );
   });
 
+  it('creates slug-scoped site config when a hosted tenant slug is provided', async () => {
+    const storeClient = {
+      send: jest.fn(() => of({ id: 'cfg-slug' })),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.updateSiteConfig(
+      {
+        configId: null,
+        config: { brand: { businessName: 'Steady Hand Contracting' } },
+      },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      },
+      'steady-hand-contracting'
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.CREATE_CONFIG,
+      {
+        configKey: 'business-site:steady-hand-contracting',
+        brand: { businessName: 'Steady Hand Contracting' },
+        leadContext: {
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+      }
+    );
+  });
+
+  it('creates a first-time owner site config with an owner-scoped config key', async () => {
+    const storeClient = {
+      send: jest.fn(() => of({ id: 'cfg-new' })),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.updateSiteConfig(
+      {
+        configId: null,
+        config: { brand: { businessName: 'Harbor Light Studio' } },
+      },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      }
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.CREATE_CONFIG,
+      {
+        configKey: 'business-site:owner-profile-1',
+        brand: { businessName: 'Harbor Light Studio' },
+        leadContext: {
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+      }
+    );
+  });
+
   it('updates catalog source through a dedicated permission-scoped business-site endpoint', async () => {
     const storeClient = {
       send: jest.fn((command: any) => {
@@ -718,6 +793,112 @@ describe('TrainerController', () => {
           serviceCatalog: {
             source: 'store',
           },
+        },
+      }
+    );
+  });
+
+  it('creates slug-scoped catalog config when a hosted tenant slug is provided', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: null,
+            config: {
+              serviceCatalog: { source: 'manual' },
+            },
+          });
+        }
+
+        if (command === ProductCommands.FIND_ALL_PRODUCTS) {
+          return of([
+            {
+              id: 'product-1',
+              name: 'Store Strategy Sprint',
+              description: 'Store-managed service offer.',
+              price: 210,
+              type: 'service',
+              active: true,
+            },
+          ]);
+        }
+
+        return of({ id: 'cfg-slug' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.updateCatalogSource(
+      {
+        configId: null,
+        source: 'store',
+      },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      },
+      'steady-hand-contracting'
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.CREATE_CONFIG,
+      {
+        configKey: 'business-site:steady-hand-contracting',
+        serviceCatalog: { source: 'store' },
+        leadContext: {
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+      }
+    );
+  });
+
+  it('creates a first-time owner catalog config with an owner-scoped config key', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: null,
+            config: null,
+          });
+        }
+
+        return of({ id: 'cfg-new' });
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.updateCatalogSource(
+      {
+        configId: null,
+        source: 'manual',
+      },
+      {
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      }
+    );
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      TrainerConfigCommands.CREATE_CONFIG,
+      {
+        configKey: 'business-site:owner-profile-1',
+        leadContext: {
+          profileId: 'owner-profile-1',
+          appScope: 'business-site',
+        },
+        serviceCatalog: {
+          source: 'manual',
         },
       }
     );
@@ -1040,6 +1221,61 @@ describe('TrainerController', () => {
     );
   });
 
+  it('returns richer lifecycle status for authenticated clients who are still under review', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_USER_APPOINTMENTS) {
+          return of([]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() =>
+        of([
+          {
+            id: 'lead-1',
+            userId: 'client-user-1',
+            status: LeadStatus.CONTACTED,
+          },
+        ])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getClientBookingStatus({
+        userId: 'client-user-1',
+        email: 'client@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Client Example',
+        profileId: 'client-profile-1',
+      })
+    ).resolves.toEqual({
+      accepted: false,
+      leadId: 'lead-1',
+      leadStatus: LeadStatus.CONTACTED,
+      hasAccount: true,
+      stage: 'lead_under_review',
+      nextAction:
+        'Your request is under review. The business will follow up before booking opens.',
+      primaryAction: 'await_review',
+    });
+  });
+
   it('only creates real bookings for accepted clients', async () => {
     const storeClient = {
       send: jest.fn((command: any) => {
@@ -1235,6 +1471,190 @@ describe('TrainerController', () => {
         status: LeadStatus.WON,
       })
     );
+  });
+
+  it('scopes owner booking operations to the authenticated owner', async () => {
+    const storeClient = {
+      send: jest.fn(() => of([{ id: 'booking-1' }])),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerBookings({
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      })
+    ).resolves.toEqual([{ id: 'booking-1' }]);
+
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.FIND_ALL_APPOINTMENTS,
+      {
+        ownerId: 'owner-user-1',
+      }
+    );
+  });
+
+  it('derives owner workflow cards from leads and bookings', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_ALL_APPOINTMENTS) {
+          expect(payload).toEqual({ ownerId: 'owner-user-1' });
+          return of([
+            {
+              id: 'booking-1',
+              userId: 'accepted-client-user',
+              title: 'Strategy session',
+              status: 'pending',
+              startTime: '2026-05-10T14:00:00.000Z',
+              endTime: '2026-05-10T15:00:00.000Z',
+            },
+            {
+              id: 'booking-2',
+              userId: 'accepted-client-user',
+              title: 'Completed audit',
+              status: 'completed',
+              startTime: '2026-05-11T14:00:00.000Z',
+              endTime: '2026-05-11T15:00:00.000Z',
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() =>
+        of([
+          {
+            id: 'lead-1',
+            name: 'Jordan Prospect',
+            email: 'jordan@example.com',
+            phone: '(555) 100-2000',
+            status: LeadStatus.NEW,
+            source: 'other',
+            notes: 'Goal: Build consistency',
+          },
+          {
+            id: 'lead-2',
+            userId: 'accepted-client-user',
+            name: 'Avery Client',
+            email: 'avery@example.com',
+            phone: '(555) 222-3333',
+            status: LeadStatus.WON,
+            source: 'other',
+            notes: 'Accepted',
+          },
+        ])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerWorkflow({
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      })
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'lead:lead-1',
+          bucket: 'needs_response',
+          stage: 'new_lead',
+          title: 'Jordan Prospect',
+          primaryAction: 'accept_client',
+        }),
+        expect.objectContaining({
+          id: 'booking:booking-1',
+          bucket: 'ready_to_schedule',
+          stage: 'booking_requested',
+          title: 'Avery Client',
+          primaryAction: 'approve_booking',
+        }),
+        expect.objectContaining({
+          id: 'booking:booking-2',
+          bucket: 'needs_invoicing',
+          stage: 'session_completed',
+          title: 'Avery Client',
+          primaryAction: 'generate_invoice',
+        }),
+      ])
+    );
+  });
+
+  it('loads owner workflow from the hosted tenant slug when provided', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+              leadContext: {
+                profileId: 'handyman-profile',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_ALL_APPOINTMENTS) {
+          expect(payload).toEqual({ ownerId: 'owner-user-handyman' });
+          return of([]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn((command: any, payload: any) => {
+        expect(payload).toEqual({
+          profileId: 'handyman-profile',
+          appScope: 'business-site',
+        });
+        return of([]);
+      }),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerWorkflow(
+        {
+          userId: 'owner-user-1',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'owner-profile-1',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual([]);
   });
 
   it('protects owner prospect listing with business auth', () => {

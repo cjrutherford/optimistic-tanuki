@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Component, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import {
   CdkDragDrop,
   DragDropModule,
@@ -1003,6 +1003,15 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                             : 'Open content editor'
                         }}
                       </otui-button>
+                      } @if (selectedSectionSupportsCompose()) {
+                      <otui-button
+                        class="layout-btn"
+                        variant="outlined"
+                        [useGradient]="false"
+                        (action)="resetSelectedSectionRichContent()"
+                      >
+                        Reset to default
+                      </otui-button>
                       }
                       <otui-button
                         class="layout-btn"
@@ -1039,6 +1048,63 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     </div>
                   </div>
 
+                  <div class="motion-editor">
+                    <div class="media-editor-head">
+                      <strong>Motion background</strong>
+                      <small>
+                        Choose an optional animated background for the selected
+                        section.
+                      </small>
+                    </div>
+                    <label>
+                      Motion style
+                      <lib-select
+                        [ngModel]="section.motion?.kind ?? 'none'"
+                        [options]="motionOptions"
+                        (ngModelChange)="updateSectionMotion($event)"
+                      ></lib-select>
+                    </label>
+                    @if (section.motion?.kind && section.motion?.kind !==
+                    'none') {
+                    <div class="motion-controls">
+                      <label>
+                        Density
+                        <lib-text-input
+                          type="text"
+                          [ngModel]="
+                            section.motion?.density?.toString() ?? '18'
+                          "
+                          (ngModelChange)="
+                            updateSectionMotionParameter('density', $event)
+                          "
+                        ></lib-text-input>
+                      </label>
+                      <label>
+                        Speed
+                        <lib-text-input
+                          type="text"
+                          [ngModel]="section.motion?.speed?.toString() ?? '1'"
+                          (ngModelChange)="
+                            updateSectionMotionParameter('speed', $event)
+                          "
+                        ></lib-text-input>
+                      </label>
+                      <label>
+                        Intensity
+                        <lib-text-input
+                          type="text"
+                          [ngModel]="
+                            (section.motion?.intensity ?? 0.65).toString()
+                          "
+                          (ngModelChange)="
+                            updateSectionMotionParameter('intensity', $event)
+                          "
+                        ></lib-text-input>
+                      </label>
+                    </div>
+                    }
+                  </div>
+
                   @if (selectedSectionUsesDedicatedPanel()) {
                   <div class="section-help selected-section-help">
                     <strong>{{ selectedSectionEditorPanelTitle() }}</strong>
@@ -1064,6 +1130,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                     </div>
                     <lib-social-compose
                       [profileId]="ownerProfileId()"
+                      [sectionKey]="sectionContentKey()"
+                      [submitLabel]="'Save'"
                       [ngModel]="selectedSectionComposeValue()"
                       (ngModelChange)="updateSelectedSectionRichContent($event)"
                     ></lib-social-compose>
@@ -1134,7 +1202,38 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                         Refresh assets
                       </otui-button>
                     </div>
-                    @if (isAssetPickerOpen(selectedSectionIndex())) {
+                    @if (section.image) {
+                    <div class="contact-image-fields">
+                      <label data-contact-image-field="alt">
+                        Alt Text
+                        <lib-text-input
+                          [ngModel]="section.image.alt || ''"
+                          (ngModelChange)="
+                            updateContactImageField('alt', $event)
+                          "
+                        ></lib-text-input>
+                      </label>
+                      <label data-contact-image-field="caption">
+                        Caption
+                        <lib-text-input
+                          [ngModel]="section.image.caption || ''"
+                          (ngModelChange)="
+                            updateContactImageField('caption', $event)
+                          "
+                        ></lib-text-input>
+                      </label>
+                      <label data-contact-image-field="aspect">
+                        Aspect
+                        <lib-select
+                          [ngModel]="section.image.aspect ?? 'landscape'"
+                          [options]="contactImageAspectOptions"
+                          (ngModelChange)="
+                            updateContactImageField('aspect', $event)
+                          "
+                        ></lib-select>
+                      </label>
+                    </div>
+                    } @if (isAssetPickerOpen(selectedSectionIndex())) {
                     <div class="asset-picker">
                       <div class="asset-picker-head">
                         <strong>Asset library</strong>
@@ -2515,6 +2614,22 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         gap: 0.6rem;
       }
 
+      .motion-controls,
+      .contact-image-fields {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+      }
+
+      .motion-editor label,
+      .contact-image-fields label {
+        display: grid;
+        gap: 0.35rem;
+        color: var(--muted, #6b7280);
+        font-size: 0.82rem;
+        font-weight: 600;
+      }
+
       .visually-hidden {
         position: absolute;
         width: 1px;
@@ -3079,6 +3194,12 @@ export class BusinessSiteEditorPageComponent {
     { value: 'url', label: 'External URL' },
     { value: 'asset', label: 'Asset path' },
   ];
+  readonly contactImageAspectOptions = [
+    { value: 'landscape', label: 'Landscape' },
+    { value: 'portrait', label: 'Portrait' },
+    { value: 'square', label: 'Square' },
+    { value: 'auto', label: 'Auto' },
+  ];
   readonly serviceCatalogSourceOptions = [
     { value: 'manual', label: 'Manual business-site offers' },
     { value: 'store', label: 'Store service catalog' },
@@ -3119,7 +3240,20 @@ export class BusinessSiteEditorPageComponent {
   readonly mobileSheetView = signal<'auto' | 'structure' | 'inspector'>('auto');
   readonly landingBlockFallbackTitle = (block: BlockInstance, index: number) =>
     this.blockFallbackTitle(block, index);
+  readonly sectionContentKey = computed(() => {
+    const section = this.selectedSection();
+    const richContent = section?.richContent;
+    return JSON.stringify({
+      id: section?.id,
+      title: richContent?.title ?? section?.title ?? '',
+      body: section?.body ?? '',
+      content: richContent?.content ?? '',
+      theme: richContent?.themeConfig ?? null,
+      injectedComponents: richContent?.injectedComponents ?? [],
+    });
+  });
   private selectedSectionComposeSignature = '';
+  private readonly customSectionBodyFallbacks = new Map<string, string>();
 
   private applyDraftTheme(): void {
     const theme = this.draft().theme;
@@ -3309,6 +3443,94 @@ export class BusinessSiteEditorPageComponent {
       }
 
       this.writeSectionPath(target, fieldKey, nextValue);
+      return draft;
+    });
+  }
+
+  updateSectionMotion(kind: LandingSectionMotionKind): void {
+    const section = this.selectedSection();
+    if (!section) {
+      return;
+    }
+
+    const sectionId = section.id;
+    this.draft.update((draft) => {
+      const nextDraft = cloneBusinessSiteConfig(draft);
+      const target = nextDraft.landingPage.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      if (!target) {
+        return draft;
+      }
+
+      if (kind === 'none') {
+        target.motion = undefined;
+        return nextDraft;
+      }
+
+      target.motion = {
+        ...(target.motion ?? this.createDefaultMotion()),
+        kind,
+      };
+      return nextDraft;
+    });
+  }
+
+  updateSectionMotionParameter(
+    key: 'density' | 'speed' | 'intensity',
+    rawValue: string
+  ): void {
+    const section = this.selectedSection();
+    if (!section) {
+      return;
+    }
+
+    const parsed =
+      key === 'intensity'
+        ? Number.parseFloat(rawValue)
+        : Number.parseInt(rawValue, 10);
+    const value = Number.isFinite(parsed) ? parsed : undefined;
+    const sectionId = section.id;
+
+    this.draft.update((draft) => {
+      const nextDraft = cloneBusinessSiteConfig(draft);
+      const target = nextDraft.landingPage.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      if (!target) {
+        return draft;
+      }
+
+      target.motion = {
+        ...(target.motion ?? this.createDefaultMotion()),
+        [key]: value,
+      };
+      return nextDraft;
+    });
+  }
+
+  updateContactImageField(
+    field: keyof LandingSectionMediaItem,
+    value: string
+  ): void {
+    const section = this.selectedSection();
+    if (!section?.image) {
+      return;
+    }
+
+    const sectionId = section.id;
+    this.draft.update((draft) => {
+      const target = draft.landingPage.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      const image = target?.image;
+      if (!image) {
+        return draft;
+      }
+
+      if (field === 'alt' || field === 'caption' || field === 'aspect') {
+        image[field] = value as never;
+      }
       return draft;
     });
   }
@@ -3604,9 +3826,37 @@ export class BusinessSiteEditorPageComponent {
           accentColor: value.themeConfig?.accentColor,
         },
       } satisfies LandingSectionRichContent;
+      if (target.type === 'custom' && target.body?.trim()) {
+        this.customSectionBodyFallbacks.set(target.id, target.body);
+      }
       target.body = this.plainTextFromHtml(value.content ?? '');
       return draft;
     });
+  }
+
+  resetSelectedSectionRichContent(): void {
+    const section = this.selectedSection();
+    if (!section || !this.selectedSectionSupportsCompose()) {
+      return;
+    }
+
+    const sectionId = section.id;
+    this.draft.update((draft) => {
+      const target = draft.landingPage.sections.find(
+        (candidate) => candidate.id === sectionId
+      );
+      if (!target) {
+        return draft;
+      }
+
+      target.richContent = undefined;
+      if (target.type === 'custom') {
+        target.body = this.customSectionBodyFallbacks.get(target.id) ?? '';
+      }
+      return draft;
+    });
+    this.customSectionBodyFallbacks.delete(sectionId);
+    this.syncSelectedSectionComposeModel();
   }
 
   updateGalleryItemField(

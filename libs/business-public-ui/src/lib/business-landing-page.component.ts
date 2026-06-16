@@ -16,7 +16,6 @@ import {
   LandingSectionMediaItem,
   LandingSectionMotionConfig,
 } from '@optimistic-tanuki/business-data-access';
-import { CardComponent } from '@optimistic-tanuki/common-ui';
 import {
   AuroraRibbonComponent,
   GlassFogComponent,
@@ -36,7 +35,6 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
   imports: [
     CommonModule,
     RouterLink,
-    CardComponent,
     ParticleVeilComponent,
     ParallaxGridWarpComponent,
     AuroraRibbonComponent,
@@ -122,6 +120,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       @switch (section.type) { @case ('hero') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -129,7 +128,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         [attr.data-motion-kind]="section.motion?.kind ?? 'none'"
         (click)="onPreviewSectionClick($event, section.id)"
       >
-        <section class="hero" id="about">
+        <section class="hero" [class.has-motion]="!!motion(section)" id="hero">
           <div class="hero-motion">
             <ng-container
               [ngTemplateOutlet]="renderMotion"
@@ -137,7 +136,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             ></ng-container>
           </div>
           <div class="hero-content">
-            <otui-card class="copy entrance" style="animation-delay: 0.1s">
+            <div class="copy hero-panel entrance" style="animation-delay: 0.1s">
               <p class="eyebrow">{{ site().brand.businessName }}</p>
               @if (section.richContent?.content) {
               <business-rich-content-renderer
@@ -161,33 +160,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 >
                 }
               </div>
-            </otui-card>
-            <otui-card class="profile entrance" style="animation-delay: 0.25s">
-              <div class="profile-header">
-                <span class="avatar-mark">{{ site().brand.monogram }}</span>
-                <div>
-                  <p class="eyebrow">Owner</p>
-                  <h2>{{ ownerName() }}</h2>
-                </div>
-              </div>
-              <ul class="credential-list">
-                @for (credential of site().brand.credentials; track credential)
-                {
-                <li>{{ credential }}</li>
-                }
-              </ul>
-              <div class="specialties">
-                @for (item of site().brand.specializations; track item) {
-                <span data-theme-aware="true">{{ item }}</span>
-                }
-              </div>
-            </otui-card>
+            </div>
           </div>
         </section>
       </div>
       } @case ('about') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -203,8 +183,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
-          class="contact entrance section-surface"
+        <section
+          class="about-section entrance section-surface"
           style="animation-delay: 0.18s"
         >
           <div class="section-head">
@@ -216,14 +196,36 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             [content]="section.richContent ?? null"
           ></business-rich-content-renderer>
           } @else {
-          <p class="body">{{ ownerName() }}</p>
           <p class="body">{{ site().brand.longBio }}</p>
           }
-        </otui-card>
+          <div class="about-owner-block">
+            <div class="profile-header">
+              <span class="avatar-mark">{{ site().brand.monogram }}</span>
+              <div>
+                <p class="eyebrow">Owner</p>
+                <h3>{{ ownerName() }}</h3>
+              </div>
+            </div>
+            @if (site().brand.credentials.length) {
+            <ul class="credential-list">
+              @for (credential of site().brand.credentials; track credential) {
+              <li>{{ credential }}</li>
+              }
+            </ul>
+            } @if (site().brand.specializations.length) {
+            <div class="specialties">
+              @for (item of site().brand.specializations; track item) {
+              <span data-theme-aware="true">{{ item }}</span>
+              }
+            </div>
+            }
+          </div>
+        </section>
       </div>
       } @case ('services') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -239,7 +241,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="entrance section-surface"
           id="results"
           style="animation-delay: 0.2s"
@@ -284,11 +286,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             </div>
             }
           </div>
-        </otui-card>
+        </section>
       </div>
       } @case ('testimonials') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -304,7 +307,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="entrance section-surface"
           style="animation-delay: 0.15s"
         >
@@ -332,11 +335,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             </blockquote>
             }
           </div>
-        </otui-card>
+        </section>
       </div>
       } @case ('booking') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -352,7 +356,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="contact entrance section-surface"
           style="animation-delay: 0.24s"
         >
@@ -374,11 +378,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             >
             }
           </div>
-        </otui-card>
+        </section>
       </div>
       } @case ('contact') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -394,7 +399,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="contact entrance section-surface"
           id="contact"
           style="animation-delay: 0.3s"
@@ -410,22 +415,45 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             [content]="section.richContent ?? null"
           ></business-rich-content-renderer>
           }
-          <div class="contact-grid">
-            <div class="contact-info">
-              <div class="contact-row">
-                <span class="contact-label">Email</span>
-                <strong>{{ site().contact.email }}</strong>
-              </div>
-              <div class="contact-row">
-                <span class="contact-label">Phone</span>
-                <span>{{ site().contact.phone }}</span>
-              </div>
-              <div class="contact-row">
-                <span class="contact-label">Location</span>
-                <span>{{ site().contact.location }}</span>
+          <div
+            class="contact-grid"
+            [class.contact-grid-with-image]="!!section.image?.src"
+          >
+            <div class="contact-column contact-column-primary">
+              @if (section.image?.src) {
+              <figure
+                class="media-figure contact-media"
+                [class]="'aspect-' + (section.image?.aspect ?? 'portrait')"
+              >
+                <img
+                  [src]="section.image?.src"
+                  [alt]="section.image?.alt || section.title"
+                  [style.object-fit]="section.image?.fit ?? 'cover'"
+                  [style.object-position]="mediaObjectPosition(section.image)"
+                />
+                @if (section.image?.caption) {
+                <figcaption>{{ section.image?.caption }}</figcaption>
+                }
+              </figure>
+              }
+              <div class="contact-info-card">
+                <div class="contact-info">
+                  <div class="contact-row">
+                    <span class="contact-label">Email</span>
+                    <strong>{{ site().contact.email }}</strong>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Phone</span>
+                    <span>{{ site().contact.phone }}</span>
+                  </div>
+                  <div class="contact-row">
+                    <span class="contact-label">Location</span>
+                    <span>{{ site().contact.location }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="contact-form-panel">
+            <div class="contact-column contact-form-panel">
               <lib-contact-form
                 [title]="'Contact ' + site().brand.businessName"
                 [buttonText]="
@@ -443,11 +471,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               }
             </div>
           </div>
-        </otui-card>
+        </section>
       </div>
       } @case ('custom') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -463,7 +492,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="custom-section entrance section-surface"
           [attr.data-section-id]="section.id"
           style="animation-delay: 0.22s"
@@ -485,11 +514,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             }}</a>
           </div>
           }
-        </otui-card>
+        </section>
       </div>
       } @case ('image') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -505,7 +535,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="image-section entrance section-surface"
           style="animation-delay: 0.22s"
         >
@@ -529,11 +559,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             }
           </figure>
           }
-        </otui-card>
+        </section>
       </div>
       } @case ('gallery') {
       <div
         class="layout-item section-shell"
+        [class.has-motion]="!!motion(section)"
         [class.preview-section-selected]="
           embeddedPreview && selectedSectionId === section.id
         "
@@ -549,7 +580,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <otui-card
+        <section
           class="gallery-section entrance section-surface"
           style="animation-delay: 0.22s"
         >
@@ -582,7 +613,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             </figure>
             } }
           </div>
-        </otui-card>
+        </section>
       </div>
       } }
     </ng-template>
@@ -718,6 +749,13 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         filter: saturate(1.08);
       }
 
+      .section-motion > *,
+      .hero-motion > * {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
       .section-motion ::ng-deep .particle-veil,
       .section-motion ::ng-deep .parallax-grid-warp,
       .section-motion ::ng-deep .aurora-ribbon,
@@ -734,20 +772,35 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .section-surface {
         position: relative;
         z-index: 1;
+        display: grid;
+        gap: 1rem;
+        padding: var(--personality-card-padding, 1.35rem);
+        border-radius: var(--personality-card-radius, 1.5rem);
+        border: var(--personality-border-width, 1px) solid var(--border);
+        box-shadow: var(
+          --personality-card-shadow,
+          0 18px 44px rgba(15, 23, 42, 0.06)
+        );
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 88%,
-          transparent 12%
+          var(--surface, var(--background, #ffffff)) 92%,
+          transparent 8%
         );
-        backdrop-filter: blur(10px);
+        backdrop-filter: blur(8px);
       }
 
       .landing-page-root.embedded-preview .section-surface {
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 82%,
-          transparent 18%
+          var(--surface, var(--background, #ffffff)) 86%,
+          transparent 14%
         );
+      }
+
+      .section-shell.has-motion .section-surface,
+      .hero.has-motion .hero-panel {
+        background: transparent;
+        backdrop-filter: none;
       }
 
       .layout-split {
@@ -811,7 +864,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         position: relative;
         z-index: 1;
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+        grid-template-columns: minmax(0, 1fr);
         gap: 1.25rem;
         padding: 2rem;
       }
@@ -820,12 +873,18 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         display: grid;
         gap: 1rem;
         align-content: start;
-        background: color-mix(
-          in srgb,
-          var(--surface, var(--background, #ffffff)) 84%,
-          transparent 16%
+      }
+
+      .hero-panel {
+        position: relative;
+        z-index: 1;
+        padding: var(--personality-card-padding, 1.35rem);
+        border-radius: var(--personality-card-radius, 1.5rem);
+        border: var(--personality-border-width, 1px) solid var(--border);
+        box-shadow: var(
+          --personality-card-shadow,
+          0 18px 44px rgba(15, 23, 42, 0.06)
         );
-        backdrop-filter: blur(12px);
       }
 
       .eyebrow,
@@ -935,18 +994,6 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border-color: var(--primary);
       }
 
-      .profile {
-        display: grid;
-        gap: 1rem;
-        align-content: start;
-        background: color-mix(
-          in srgb,
-          var(--surface, var(--background, #ffffff)) 84%,
-          transparent 16%
-        );
-        backdrop-filter: blur(12px);
-      }
-
       .profile-header {
         display: flex;
         align-items: center;
@@ -981,6 +1028,16 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
         font-size: 0.92rem;
         line-height: 1.7;
+      }
+
+      .about-section {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .about-owner-block {
+        display: grid;
+        gap: 1rem;
       }
 
       .specialties {
@@ -1210,14 +1267,42 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .contact-grid {
         display: grid;
-        grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
         align-items: start;
         gap: 1.5rem;
+      }
+
+      .contact-grid-with-image {
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      }
+
+      .contact-column {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .contact-column-primary {
+        align-content: start;
       }
 
       .contact-info {
         display: grid;
         gap: 0.75rem;
+      }
+
+      .contact-info-card {
+        padding: 1rem 1.1rem;
+        border-radius: 1.1rem;
+        border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          transparent
+        );
+      }
+
+      .contact-media {
+        margin: 0;
       }
 
       .contact-form-panel {

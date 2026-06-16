@@ -28,7 +28,7 @@ export class FileValidationService {
         'image/svg+xml',
       ],
       allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'],
-      maxSizeBytes: 10 * 1024 * 1024, // 10MB
+      maxSizeBytes: 20 * 1024 * 1024, // 20MB
     },
     document: {
       allowedMimeTypes: [

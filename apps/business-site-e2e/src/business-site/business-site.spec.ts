@@ -1,4 +1,4 @@
-import { expect, Page, test } from '@playwright/test';
+import { expect, Locator, Page, test } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
 const OWNER_EMAIL = 'owner@localbusiness.test';
@@ -67,6 +67,53 @@ test.describe.configure({ mode: 'serial' });
 
 function uniqueLabel(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+}
+
+function svgDataUrl(label: string, fill: string) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="${fill}"/><text x="60" y="120" fill="#ffffff" font-size="64" font-family="Arial, sans-serif">${label}</text></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+async function openSiteEditor(page: Page) {
+  await page.getByRole('link', { name: 'Site Editor' }).click();
+  await expect(page).toHaveURL(/\/owner\/site$/);
+  await expect(
+    page.getByRole('heading', { name: 'Site Content Editor' })
+  ).toBeVisible();
+}
+
+async function switchToStudio(page: Page) {
+  await page
+    .locator('[data-editor-mode-switch]')
+    .getByRole('button', {
+      name: 'Studio',
+    })
+    .click();
+  await expect(page.locator('.page-header .workspace-kicker')).toContainText(
+    'Studio workspace'
+  );
+}
+
+function businessNameInput(page: Page) {
+  return page
+    .locator('#guided-business-info app-schema-form-panel input')
+    .first();
+}
+
+function schemaFieldControl(scope: Locator, key: string) {
+  return scope
+    .locator(`[id="field-${key}"]`)
+    .locator('input, textarea, select')
+    .first();
+}
+
+async function replaceComposeContent(page: Page, scope: Locator, text: string) {
+  const editor = scope.locator('.ProseMirror').first();
+  await expect(editor).toBeVisible();
+  await editor.click();
+  await editor.press(process.platform === 'darwin' ? 'Meta+A' : 'Control+A');
+  await editor.press('Backspace');
+  await page.keyboard.insertText(text);
 }
 
 async function loginClient(
@@ -192,6 +239,28 @@ async function loginOwnerWithCredentials(
   await page.getByRole('button', { name: /sign in/i }).click();
 }
 
+async function registerOwner(
+  page: Page,
+  input: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    bio?: string;
+  }
+) {
+  await page.goto('/owner/register');
+  await page.getByLabel('First name').fill(input.firstName);
+  await page.getByLabel('Last name').fill(input.lastName);
+  await page.getByLabel('Email').fill(input.email);
+  await page.locator('input[name="password"]').fill(input.password);
+  await page.locator('input[name="confirm"]').fill(input.password);
+  await page
+    .getByLabel('What are you building?')
+    .fill(input.bio ?? 'Launching a new business site.');
+  await page.getByRole('button', { name: /create owner account/i }).click();
+}
+
 async function loginOwnerApi(page: Page) {
   const response = await page.request.post('/api/authentication/login', {
     headers: {
@@ -247,7 +316,7 @@ async function createLeadRequest(
       response.request().method() === 'POST'
     );
   });
-  await page.getByRole('button', { name: /send request/i }).click();
+  await page.getByRole('button', { name: /request consultation/i }).click();
 
   const response = await intakeRequest;
   expect(response.ok()).toBeTruthy();
@@ -277,7 +346,7 @@ async function createAcceptedClientBooking(
       response.request().method() === 'POST'
     );
   });
-  await page.getByRole('button', { name: /send request/i }).click();
+  await page.getByRole('button', { name: /request consultation/i }).click();
 
   const response = await bookingRequest;
   expect(response.ok()).toBeTruthy();
@@ -545,9 +614,7 @@ test.describe('Business site user stories', () => {
       await expect(
         page.getByRole('heading', { name: 'Site Content Editor' })
       ).toBeVisible();
-      await expect(
-        page.locator('#guided-business-info').getByLabel('Business Name')
-      ).toHaveValue(owner.publicHeading);
+      await expect(businessNameInput(page)).toHaveValue(owner.publicHeading);
       await expect(
         page.getByRole('button', { name: 'Save Changes' })
       ).toBeVisible();
@@ -556,6 +623,145 @@ test.describe('Business site user stories', () => {
       await expect(page.locator('body')).toContainText(owner.publicHeading);
     });
   }
+
+  test('applies on-change studio updates for hero, custom, image, and gallery sections', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+
+    const ownerToken = await loginOwnerApi(page);
+    const original = await fetchSiteConfig(page);
+    const originalConfig = JSON.parse(
+      JSON.stringify(original.config ?? {})
+    ) as Record<string, any>;
+
+    const updatedBusinessName = uniqueLabel('North Star Studio');
+    const heroCopy =
+      'Studio mode should reflect live hero updates before saving changes.';
+    const customTitle = uniqueLabel('Delivery Process');
+    const customCopy =
+      'Discovery first, shared plan second, weekly review third.';
+    const imageTitle = uniqueLabel('Field Notes');
+    const imageCaption = uniqueLabel(
+      'Behind the scenes with the advisory team'
+    );
+    const galleryTitle = uniqueLabel('Proof Gallery');
+    const galleryCaptionOne = uniqueLabel('Workshop whiteboard');
+    const galleryCaptionTwo = uniqueLabel('Client delivery snapshot');
+    const imageSource = svgDataUrl('field-notes', '#1f7a63');
+    const gallerySourceOne = svgDataUrl('gallery-one', '#2563eb');
+    const gallerySourceTwo = svgDataUrl('gallery-two', '#be185d');
+
+    const preview = page.locator('[data-live-preview]');
+    const selectedSectionShell = page.locator('.selected-section-shell');
+
+    try {
+      await loginOwnerWithCredentials(page, OWNER_EMAIL, OWNER_PASSWORD);
+      await expect(page).toHaveURL(/\/owner\/dashboard$/);
+
+      await openSiteEditor(page);
+      await switchToStudio(page);
+
+      await businessNameInput(page).fill(updatedBusinessName);
+      await expect(preview).toContainText(updatedBusinessName);
+
+      await page
+        .locator('[data-block-tree]')
+        .getByRole('button', { name: /Welcome/i })
+        .click();
+      await selectedSectionShell
+        .getByRole('button', { name: 'Open content editor' })
+        .click();
+      await replaceComposeContent(page, selectedSectionShell, heroCopy);
+      await expect(preview).toContainText(heroCopy);
+
+      await page.getByRole('button', { name: '+ Add custom section' }).click();
+      await schemaFieldControl(selectedSectionShell, 'title').fill(customTitle);
+      await expect(preview).toContainText(customTitle);
+      await replaceComposeContent(page, selectedSectionShell, customCopy);
+      await expect(preview).toContainText(customCopy);
+
+      await page.getByRole('button', { name: '+ Add image block' }).click();
+      await schemaFieldControl(selectedSectionShell, 'title').fill(imageTitle);
+      await schemaFieldControl(selectedSectionShell, 'image.src').fill(
+        imageSource
+      );
+      await schemaFieldControl(selectedSectionShell, 'image.alt').fill(
+        'Field notes alt'
+      );
+      await schemaFieldControl(selectedSectionShell, 'image.caption').fill(
+        imageCaption
+      );
+      await expect(preview).toContainText(imageTitle);
+      await expect(preview).toContainText(imageCaption);
+      await expect(preview.locator(`img[src="${imageSource}"]`)).toBeVisible();
+
+      await page.getByRole('button', { name: '+ Add gallery block' }).click();
+      await schemaFieldControl(selectedSectionShell, 'title').fill(
+        galleryTitle
+      );
+      await schemaFieldControl(
+        selectedSectionShell,
+        'gallery.style'
+      ).selectOption('masonry');
+      await schemaFieldControl(
+        selectedSectionShell,
+        'gallery.columns'
+      ).selectOption('2');
+
+      const firstGalleryItem = selectedSectionShell
+        .locator('.gallery-item-editor')
+        .nth(0);
+      await firstGalleryItem.getByLabel('Image URL').fill(gallerySourceOne);
+      await firstGalleryItem.getByLabel('Alt Text').fill('Gallery one alt');
+      await firstGalleryItem.getByLabel('Caption').fill(galleryCaptionOne);
+
+      await selectedSectionShell
+        .getByRole('button', { name: '+ Add gallery image' })
+        .click();
+      const secondGalleryItem = selectedSectionShell
+        .locator('.gallery-item-editor')
+        .nth(1);
+      await secondGalleryItem.getByLabel('Image URL').fill(gallerySourceTwo);
+      await secondGalleryItem.getByLabel('Alt Text').fill('Gallery two alt');
+      await secondGalleryItem.getByLabel('Caption').fill(galleryCaptionTwo);
+
+      await expect(preview).toContainText(galleryTitle);
+      await expect(preview).toContainText(galleryCaptionOne);
+      await expect(preview).toContainText(galleryCaptionTwo);
+      await expect(
+        preview.locator(`img[src="${gallerySourceOne}"]`)
+      ).toBeVisible();
+      await expect(
+        preview.locator(`img[src="${gallerySourceTwo}"]`)
+      ).toBeVisible();
+
+      await page.getByRole('button', { name: 'Save Changes' }).click();
+      await expect(
+        page.getByText('Site content saved successfully.')
+      ).toBeVisible();
+
+      await page.goto('/sites/north-star-advisory');
+      await expect(page.locator('body')).toContainText(updatedBusinessName);
+      await expect(page.locator('body')).toContainText(heroCopy);
+      await expect(page.locator('body')).toContainText(customTitle);
+      await expect(page.locator('body')).toContainText(customCopy);
+      await expect(page.locator('body')).toContainText(imageTitle);
+      await expect(page.locator('body')).toContainText(imageCaption);
+      await expect(page.locator('body')).toContainText(galleryTitle);
+      await expect(page.locator('body')).toContainText(galleryCaptionOne);
+      await expect(page.locator('body')).toContainText(galleryCaptionTwo);
+      await expect(page.locator(`img[src="${imageSource}"]`)).toBeVisible();
+      await expect(
+        page.locator(`img[src="${gallerySourceOne}"]`)
+      ).toBeVisible();
+      await expect(
+        page.locator(`img[src="${gallerySourceTwo}"]`)
+      ).toBeVisible();
+    } finally {
+      await updateSiteConfig(page, ownerToken, () => originalConfig);
+    }
+  });
 
   for (const tenant of SEEDED_SAMPLE_TENANTS) {
     test(`serves seeded sample tenant ${tenant.slug} with distinct public content`, async ({
@@ -632,6 +838,52 @@ test.describe('Business site user stories', () => {
     }));
   });
 
+  test('registers a new owner, completes onboarding, and re-enters on the owner dashboard', async ({
+    page,
+  }) => {
+    const email = `owner-${Date.now()}@example.test`;
+    const password = `OwnerPass!${Date.now()}`;
+    const businessName = uniqueLabel('Harbor Light Studio');
+
+    await registerOwner(page, {
+      firstName: 'Harbor',
+      lastName: 'Owner',
+      email,
+      password,
+      bio: 'A new owner using the business-site onboarding flow.',
+    });
+
+    await expect(page).toHaveURL(/\/owner\/onboarding$/);
+    await expect(page.locator('body')).toContainText('Guided Setup');
+
+    await businessNameInput(page).fill(businessName);
+    await page.getByRole('button', { name: 'Save Changes' }).click();
+    await expect(
+      page.getByText('Site content saved successfully.')
+    ).toBeVisible();
+
+    await page.getByRole('button', { name: 'Sign Out' }).click();
+    await expect(page).toHaveURL(/\/$/);
+
+    await loginOwnerWithCredentials(page, email, password);
+    await expect(page).toHaveURL(/\/owner\/dashboard$/);
+  });
+
+  test('lets an existing business client add owner access with the same login', async ({
+    page,
+  }) => {
+    await registerOwner(page, {
+      firstName: 'Taylor',
+      lastName: 'Client',
+      email: CLIENT_EMAIL,
+      password: CLIENT_PASSWORD,
+      bio: 'Already a client, now claiming owner access too.',
+    });
+
+    await expect(page).toHaveURL(/\/owner\/onboarding$/);
+    await expect(page.locator('body')).toContainText('Guided Setup');
+  });
+
   test('covers the public landing page and booking flow through the SSR proxy', async ({
     page,
   }) => {
@@ -701,14 +953,14 @@ test.describe('Business site user stories', () => {
       .poll(
         async () =>
           page
-            .locator('article.queue-row.booking-row')
+            .locator('article.queue-row')
             .filter({ hasText: bookingTitle })
             .count(),
         { timeout: 15000 }
       )
       .toBe(1);
     let bookingRow = page
-      .locator('article.queue-row.booking-row')
+      .locator('article.queue-row')
       .filter({ hasText: bookingTitle })
       .first();
     await expect(bookingRow).toBeVisible({ timeout: 15000 });
@@ -760,23 +1012,23 @@ test.describe('Business site user stories', () => {
       .poll(
         async () =>
           page
-            .locator('article.queue-row.booking-row')
+            .locator('article.queue-row')
             .filter({ hasText: bookingTitle })
             .count(),
         { timeout: 15000 }
       )
       .toBe(1);
     bookingRow = page
-      .locator('article.queue-row.booking-row')
+      .locator('article.queue-row')
       .filter({ hasText: bookingTitle })
       .first();
     await expect(bookingRow).toBeVisible({ timeout: 15000 });
 
-    await bookingRow.getByRole('button', { name: 'Approve' }).click();
+    await bookingRow.getByRole('button', { name: 'Approve booking' }).click();
     await expect(bookingRow).toContainText('approved');
-    await bookingRow.getByRole('button', { name: 'Complete' }).click();
+    await bookingRow.getByRole('button', { name: 'Mark complete' }).click();
     await expect(bookingRow).toContainText('completed');
-    await bookingRow.getByRole('button', { name: 'Invoice' }).click();
+    await bookingRow.getByRole('button', { name: 'Generate invoice' }).click();
 
     await expect
       .poll(async () => {

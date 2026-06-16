@@ -112,8 +112,12 @@ export class AppService {
     }
 
     const mimeType = this.getMimeTypeFromExtension(data.fileExtension || 'png');
-    const validation = this.fileValidationService.validateFile(
+    const validationFilename = this.buildPersistedFilename(
       data.name,
+      data.fileExtension
+    );
+    const validation = this.fileValidationService.validateFile(
+      validationFilename,
       mimeType,
       contentBuffer.length,
       data.type
@@ -130,7 +134,7 @@ export class AppService {
 
     const scanResult = await this.virusScanService.scanFile(
       contentBuffer,
-      data.name
+      validationFilename
     );
 
     return {
