@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -87,11 +87,19 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 export class BusinessClientLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   email = '';
   password = '';
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  private dashboardRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+      : ['/client/dashboard'];
+  }
 
   login(): void {
     this.loading.set(true);
@@ -99,7 +107,7 @@ export class BusinessClientLoginPageComponent {
     this.auth.loginClient(this.email, this.password).subscribe({
       next: () => {
         this.loading.set(false);
-        void this.router.navigate(['/client/dashboard']);
+        void this.router.navigate(this.dashboardRoute());
       },
       error: (err) => {
         this.loading.set(false);

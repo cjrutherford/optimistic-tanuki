@@ -20,13 +20,21 @@ export class TrainerRoutinesController {
   }
 
   @MessagePattern('trainer.client.routines.find')
-  getClientRoutines(@Payload() payload: { clientId: string }) {
-    return this.trainerRoutinesService.getClientRoutines(payload.clientId);
+  getClientRoutines(
+    @Payload() payload: { clientId: string; ownerId?: string | null }
+  ) {
+    return this.trainerRoutinesService.getClientRoutines(
+      payload.clientId,
+      payload.ownerId ?? null
+    );
   }
 
   @MessagePattern('trainer.client.routines.complete')
-  completeRoutine(@Payload() payload: { id: string }) {
-    return this.trainerRoutinesService.completeRoutine(payload.id);
+  completeRoutine(@Payload() payload: { id: string; ownerId?: string | null }) {
+    return this.trainerRoutinesService.completeRoutine(
+      payload.id,
+      payload.ownerId ?? null
+    );
   }
 
   @MessagePattern('trainer.client.checkins.create')
@@ -35,8 +43,13 @@ export class TrainerRoutinesController {
   }
 
   @MessagePattern('trainer.client.checkins.find')
-  getClientCheckIns(@Payload() payload: { clientId: string }) {
-    return this.trainerRoutinesService.getClientCheckIns(payload.clientId);
+  getClientCheckIns(
+    @Payload() payload: { clientId: string; ownerId?: string | null }
+  ) {
+    return this.trainerRoutinesService.getClientCheckIns(
+      payload.clientId,
+      payload.ownerId ?? null
+    );
   }
 
   @MessagePattern('trainer.owner.checkins.findAll')

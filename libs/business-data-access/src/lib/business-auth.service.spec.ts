@@ -59,7 +59,7 @@ describe('BusinessAuthService', () => {
     );
     exchangeRequest.flush({ token: 'business-token', profileId: 'profile-1' });
 
-    expect(storedToken).toBe('base-token');
+    expect(storedToken).toBe('business-token');
     expect(localStorage.getItem('business-site:token')).toBe('business-token');
   });
 
@@ -89,6 +89,98 @@ describe('BusinessAuthService', () => {
       bio: 'Looking for structured support.',
     });
     registerRequest.flush({ ok: true });
+  });
+
+  it('registers owner accounts in the business-site app scope', () => {
+    service
+      .registerOwner({
+        fn: 'Jordan',
+        ln: 'Owner',
+        email: 'owner@example.com',
+        password: 'supersecret',
+        confirm: 'supersecret',
+        bio: 'Launching a business site.',
+      })
+      .subscribe();
+
+    const registerRequest = httpMock.expectOne('/api/authentication/register');
+    expect(registerRequest.request.method).toBe('POST');
+    expect(registerRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
+    expect(registerRequest.request.body).toEqual({
+      fn: 'Jordan',
+      ln: 'Owner',
+      email: 'owner@example.com',
+      password: 'supersecret',
+      confirm: 'supersecret',
+      bio: 'Launching a business site.',
+    });
+    registerRequest.flush({ ok: true });
+  });
+
+  it('claims owner access in the business-site app scope with the active token', () => {
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'business-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        email: 'owner@example.com',
+      })
+    );
+
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessAuthService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+
+    service = TestBed.inject(BusinessAuthService);
+    httpMock = TestBed.inject(HttpTestingController);
+
+    service.claimOwnerAccess().subscribe();
+
+    const claimRequest = httpMock.expectOne('/api/authentication/owner-access');
+    expect(claimRequest.request.method).toBe('POST');
+    expect(claimRequest.request.headers.get('x-ot-appscope')).toBe(
+      'business-site'
+    );
+    expect(claimRequest.request.headers.get('Authorization')).toBe(
+      'Bearer business-token'
+    );
+    claimRequest.flush({ ownerAccess: true });
+  });
+
+  it('waits for the app-scope exchange before emitting client login success', () => {
+    let emittedToken = '';
+
+    service.loginClient('client@example.com', 'secret').subscribe((user) => {
+      emittedToken = user.token;
+    });
+
+    const loginRequest = httpMock.expectOne('/api/authentication/login');
+    loginRequest.flush({
+      token: 'base-token-without-user-claims',
+      userId: 'client-user-1',
+      email: 'client@example.com',
+    });
+
+    expect(emittedToken).toBe('');
+
+    const exchangeRequest = httpMock.expectOne('/api/authentication/exchange');
+    exchangeRequest.flush({
+      token: 'business-token',
+      profileId: 'client-profile-1',
+    });
+
+    expect(emittedToken).toBe('business-token');
+    expect(localStorage.getItem('business-site:client-token')).toBe(
+      'business-token'
+    );
   });
 
   it('persists the client userId from the login response when token claims do not include it', () => {

@@ -81,7 +81,16 @@ export interface SiteConfigResponse {
   config: BusinessSiteConfig | null;
 }
 
+export interface PublicBusinessSiteSummary {
+  slug: string;
+  businessName: string;
+  tagline: string;
+  location: string;
+  businessType: string;
+}
+
 export interface CreateBusinessBookingRequest {
+  siteSlug?: string;
   resourceId?: string;
   title: string;
   description?: string;
@@ -92,6 +101,7 @@ export interface CreateBusinessBookingRequest {
 }
 
 export interface BusinessLeadIntake {
+  siteSlug?: string;
   name: string;
   email?: string;
   phone?: string;
@@ -124,10 +134,33 @@ export interface BusinessLeadIntakeRecord {
   accountStatus: 'No account' | 'Registered' | 'Linked client';
 }
 
+export type BusinessRelationshipStage =
+  | 'new_lead'
+  | 'lead_under_review'
+  | 'accepted_client'
+  | 'booking_requested'
+  | 'booking_confirmed'
+  | 'session_completed'
+  | 'invoice_due';
+
+export type BusinessRelationshipPrimaryAction =
+  | 'request_consultation'
+  | 'await_review'
+  | 'book_session'
+  | 'accept_client'
+  | 'approve_booking'
+  | 'complete_booking'
+  | 'generate_invoice'
+  | 'none';
+
 export interface BusinessClientBookingStatus {
   accepted: boolean;
   leadId?: string | null;
   leadStatus?: LeadStatus | string | null;
+  hasAccount: boolean;
+  stage: BusinessRelationshipStage;
+  nextAction: string;
+  primaryAction: BusinessRelationshipPrimaryAction;
 }
 
 export interface AcceptedBusinessClient {
@@ -147,6 +180,29 @@ export interface BusinessAssetLibraryItem {
   url: string;
 }
 
+export type BusinessOwnerWorkflowBucket =
+  | 'needs_response'
+  | 'ready_to_schedule'
+  | 'needs_invoicing'
+  | 'active_clients';
+
+export interface BusinessOwnerWorkflowRecord {
+  id: string;
+  leadId?: string;
+  bookingId?: string;
+  title: string;
+  subtitle?: string;
+  statusLabel: string;
+  stage: BusinessRelationshipStage;
+  bucket: BusinessOwnerWorkflowBucket;
+  nextAction: string;
+  details: string[];
+  primaryAction: Exclude<
+    BusinessRelationshipPrimaryAction,
+    'request_consultation' | 'await_review' | 'book_session'
+  >;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -155,26 +211,50 @@ export class BusinessApiService {
   private readonly auth = inject(BusinessAuthService);
   private readonly baseUrl = '/api/business';
 
-  getOffers(): Observable<BusinessOffer[]> {
-    return this.http.get<BusinessOffer[]>(`${this.baseUrl}/offers`);
+  getOffers(siteSlug?: string | null): Observable<BusinessOffer[]> {
+    return this.http.get<BusinessOffer[]>(`${this.baseUrl}/offers`, {
+      params: siteSlug ? { slug: siteSlug } : undefined,
+    });
   }
 
   getStoreProducts(): Observable<BusinessStoreProduct[]> {
     return this.http.get<BusinessStoreProduct[]>('/api/store/products');
   }
 
+  getOwnerProducts(ownerId: string): Observable<BusinessStoreProduct[]> {
+    return this.http.get<BusinessStoreProduct[]>(
+      `/api/store/products/owner/${ownerId}`
+    );
+  }
+
   getSiteConfig(): Observable<SiteConfigResponse> {
-    return this.http.get<SiteConfigResponse>(`${this.baseUrl}/site-config`);
+    return this.getSiteConfigForSlug();
+  }
+
+  getSiteConfigForSlug(
+    siteSlug?: string | null
+  ): Observable<SiteConfigResponse> {
+    return this.http.get<SiteConfigResponse>(`${this.baseUrl}/site-config`, {
+      params: siteSlug ? { slug: siteSlug } : undefined,
+    });
+  }
+
+  listPublishedSites(): Observable<PublicBusinessSiteSummary[]> {
+    return this.http.get<PublicBusinessSiteSummary[]>(`${this.baseUrl}/sites`);
   }
 
   updateSiteConfig(
     configId: string | null,
-    config: BusinessSiteConfig
+    config: BusinessSiteConfig,
+    siteSlug?: string | null
   ): Observable<unknown> {
     return this.http.put(
       `${this.baseUrl}/site-config`,
       { configId, config },
-      { headers: this.authHeaders() }
+      {
+        headers: this.authHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
     );
   }
 
@@ -186,18 +266,27 @@ export class BusinessApiService {
     return this.auth.getClientAuthHeaders();
   }
 
-  getAvailabilities(): Observable<Availability[]> {
-    return this.http.get<Availability[]>(`${this.baseUrl}/availabilities`);
+  getAvailabilities(siteSlug?: string | null): Observable<Availability[]> {
+    return this.http.get<Availability[]>(`${this.baseUrl}/availabilities`, {
+      params: siteSlug ? { slug: siteSlug } : undefined,
+    });
   }
 
-  getAvailabilityOverrides(): Observable<AvailabilityOverride[]> {
+  getAvailabilityOverrides(
+    siteSlug?: string | null
+  ): Observable<AvailabilityOverride[]> {
     return this.http.get<AvailabilityOverride[]>(
-      `${this.baseUrl}/availability-overrides`
+      `${this.baseUrl}/availability-overrides`,
+      {
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
     );
   }
 
-  getBusyWindows(): Observable<BusinessBusyWindow[]> {
-    return this.http.get<BusinessBusyWindow[]>(`${this.baseUrl}/busy-windows`);
+  getBusyWindows(siteSlug?: string | null): Observable<BusinessBusyWindow[]> {
+    return this.http.get<BusinessBusyWindow[]>(`${this.baseUrl}/busy-windows`, {
+      params: siteSlug ? { slug: siteSlug } : undefined,
+    });
   }
 
   createBooking(
@@ -236,17 +325,33 @@ export class BusinessApiService {
     );
   }
 
-  getClientBookings(): Observable<Appointment[]> {
+  getClientBookings(siteSlug?: string | null): Observable<Appointment[]> {
     return this.http.get<Appointment[]>(`${this.baseUrl}/bookings`, {
       headers: this.clientAuthHeaders(),
+      params: siteSlug ? { slug: siteSlug } : undefined,
     });
   }
 
-  getClientBookingStatus(): Observable<BusinessClientBookingStatus> {
+  getClientBookingStatus(
+    siteSlug?: string | null
+  ): Observable<BusinessClientBookingStatus> {
     return this.http.get<BusinessClientBookingStatus>(
       `${this.baseUrl}/client-status`,
       {
         headers: this.clientAuthHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
+    );
+  }
+
+  getOwnerWorkflow(
+    siteSlug?: string | null
+  ): Observable<BusinessOwnerWorkflowRecord[]> {
+    return this.http.get<BusinessOwnerWorkflowRecord[]>(
+      `${this.baseUrl}/owner/workflow`,
+      {
+        headers: this.authHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
       }
     );
   }
@@ -362,18 +467,27 @@ export class BusinessApiService {
     );
   }
 
-  getClientRoutines(clientId: string): Observable<RoutineAssignment[]> {
+  getClientRoutines(
+    clientId: string,
+    siteSlug?: string | null
+  ): Observable<RoutineAssignment[]> {
     return this.http.get<RoutineAssignment[]>(
       `${this.baseUrl}/client/routines`,
-      { params: { clientId } }
+      { params: siteSlug ? { clientId, slug: siteSlug } : { clientId } }
     );
   }
 
-  completeClientRoutine(id: string): Observable<RoutineAssignment> {
+  completeClientRoutine(
+    id: string,
+    siteSlug?: string | null
+  ): Observable<RoutineAssignment> {
     return this.http.post<RoutineAssignment>(
       `${this.baseUrl}/client/routines/${id}/complete`,
       {},
-      { headers: this.clientAuthHeaders() }
+      {
+        headers: this.clientAuthHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
     );
   }
 
@@ -390,10 +504,13 @@ export class BusinessApiService {
     );
   }
 
-  getClientCheckIns(clientId: string): Observable<ProgressCheckIn[]> {
+  getClientCheckIns(
+    clientId: string,
+    siteSlug?: string | null
+  ): Observable<ProgressCheckIn[]> {
     return this.http.get<ProgressCheckIn[]>(
       `${this.baseUrl}/client/check-ins`,
-      { params: { clientId } }
+      { params: siteSlug ? { clientId, slug: siteSlug } : { clientId } }
     );
   }
 
@@ -401,24 +518,30 @@ export class BusinessApiService {
     return this.http.get<ProgressCheckIn[]>(`${this.baseUrl}/owner/check-ins`);
   }
 
-  submitCheckIn(payload: CreateProgressCheckIn): Observable<ProgressCheckIn> {
+  submitCheckIn(
+    payload: CreateProgressCheckIn & { siteSlug?: string }
+  ): Observable<ProgressCheckIn> {
     return this.http.post<ProgressCheckIn>(
       `${this.baseUrl}/client/check-ins`,
       payload
     );
   }
 
-  getClientInvoices(): Observable<Invoice[]> {
+  getClientInvoices(siteSlug?: string | null): Observable<Invoice[]> {
     return this.http.get<Invoice[]>(`${this.baseUrl}/client/invoices`, {
       headers: this.clientAuthHeaders(),
+      params: siteSlug ? { slug: siteSlug } : undefined,
     });
   }
 
-  payClientInvoice(id: string): Observable<Invoice> {
+  payClientInvoice(id: string, siteSlug?: string | null): Observable<Invoice> {
     return this.http.post<Invoice>(
       `${this.baseUrl}/client/invoices/${id}/pay`,
       {},
-      { headers: this.clientAuthHeaders() }
+      {
+        headers: this.clientAuthHeaders(),
+        params: siteSlug ? { slug: siteSlug } : undefined,
+      }
     );
   }
 

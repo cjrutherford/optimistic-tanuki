@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
   SelectComponent,
   TextAreaComponent,
@@ -30,6 +31,7 @@ export interface EditorThemeFieldChange {
   imports: [
     CommonModule,
     FormsModule,
+    ButtonComponent,
     SelectComponent,
     TextInputComponent,
     TextAreaComponent,
@@ -51,15 +53,16 @@ export interface EditorThemeFieldChange {
           <label>Personality</label>
           <div class="theme-personality-grid">
             @for (personality of personalities; track personality.id) {
-            <button
-              type="button"
+            <otui-button
               class="theme-personality-chip"
               [class.selected]="theme.personalityId === personality.id"
-              (click)="emitField('personalityId', personality.id)"
+              variant="outlined"
+              [useGradient]="false"
+              (action)="emitField('personalityId', personality.id)"
             >
               <span>{{ personality.name }}</span>
               <small>{{ personality.category }}</small>
-            </button>
+            </otui-button>
             }
           </div>
         </div>

@@ -6,8 +6,10 @@ import {
   ViewChild,
   ElementRef,
   OnDestroy,
-  inject,
   AfterViewInit,
+  OnChanges,
+  SimpleChanges,
+  inject,
   ViewContainerRef,
   ComponentRef,
   forwardRef,
@@ -116,6 +118,7 @@ export class ComposeComponent
   implements
     OnDestroy,
     AfterViewInit,
+    OnChanges,
     ComponentInjectionAPI,
     ControlValueAccessor
 {
@@ -124,6 +127,8 @@ export class ComposeComponent
   @Input() attachments: CreateAttachmentDto[] = [];
   @Input() links: { url: string }[] = [];
   @Input() imageUploadCallback?: ImageUploadCallback;
+  @Input() submitLabel = 'Post';
+  @Input() sectionKey = '';
   @Output() postSubmitted = new EventEmitter<PostData>();
 
   @ViewChild('editorContent') editorContent!: ElementRef;
@@ -187,6 +192,19 @@ export class ComposeComponent
 
   constructor() {
     super();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!changes['sectionKey'] || changes['sectionKey'].firstChange) {
+      return;
+    }
+
+    this.activeComponents.clear();
+
+    if (this.editor) {
+      this.editor.commands.setContent(this._content, { emitUpdate: false });
+      this.cdr.detectChanges();
+    }
   }
 
   private sanitize(input: string): string {
@@ -903,21 +921,24 @@ export class ComposeComponent
 
   writeValue(value: any): void {
     if (value && typeof value === 'object') {
-      let componentsToRestore = value.injectedComponents;
+      let componentsToRestore =
+        value.injectedComponents ?? value.injectedComponentsNew;
+      let nextContent = '';
 
       // Normalize content coming back from DB
       if (value.content && typeof value.content === 'string') {
         const extracted = this.stripInjectedComponentsMeta(value.content);
-        this._content = extracted.html;
+        nextContent = extracted.html;
 
         // Use components from meta if available
         if (extracted.injectedComponents) {
           componentsToRestore = extracted.injectedComponents;
         }
       } else {
-        this._content = value.content || '';
+        nextContent = value.content || '';
       }
 
+      this._content = nextContent;
       this._title = value.title || '';
       this.title = this._title; // Update the input property
       this.links = value.links || [];
@@ -932,7 +953,10 @@ export class ComposeComponent
 
       // Update editor content if editor is available, otherwise queue it
       if (this.editor) {
-        this.editor.commands.setContent(this._content);
+        const currentContent = this.editor.getHTML();
+        if (currentContent !== this._content) {
+          this.editor.commands.setContent(this._content, { emitUpdate: false });
+        }
         this.pendingContent = null;
         if (componentsToRestore) {
           this.restoreInjectedComponentData(componentsToRestore);

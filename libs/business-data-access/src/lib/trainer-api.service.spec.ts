@@ -160,6 +160,45 @@ describe('BusinessApiService', () => {
     expect(request.request.headers.get('Authorization')).toBe(
       'Bearer client-token'
     );
-    request.flush({ accepted: true });
+    request.flush({
+      accepted: true,
+      hasAccount: true,
+      stage: 'accepted_client',
+      nextAction: 'Choose a published time to request your next session.',
+      primaryAction: 'book_session',
+    });
+  });
+
+  it('requests owner workflow cards from the business API', () => {
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'business-site-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        email: 'business@example.com',
+      })
+    );
+    localStorage.setItem('business-site:token', 'business-site-token');
+
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessApiService,
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+
+    service = TestBed.inject(BusinessApiService);
+    httpMock = TestBed.inject(HttpTestingController);
+
+    service.getOwnerWorkflow().subscribe();
+
+    const request = httpMock.expectOne('/api/business/owner/workflow');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer business-site-token'
+    );
+    request.flush([]);
   });
 });

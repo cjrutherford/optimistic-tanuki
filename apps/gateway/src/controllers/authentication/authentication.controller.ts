@@ -11,6 +11,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import {
+  CreateProductDto,
   CreateProfileDto,
   EnableMultiFactorRequest,
   LoginRequest,
@@ -22,6 +23,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import {
   AuthCommands,
+  ProductCommands,
   ProfileCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
@@ -42,11 +44,35 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
+  private static readonly BUSINESS_OWNER_STARTER_PRODUCTS: CreateProductDto[] =
+    [
+      {
+        name: 'Discovery Session',
+        description:
+          'Starter consultation offer to help new owners publish a store-backed service catalog immediately.',
+        price: 95,
+        type: 'service',
+        stock: 0,
+        active: true,
+      },
+      {
+        name: 'Signature Service',
+        description:
+          'Publish-ready starter service product you can rename, reprice, and tailor to your workflow.',
+        price: 250,
+        type: 'service',
+        stock: 0,
+        active: true,
+      },
+    ];
+
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.STORE_SERVICE)
+    private readonly storeClient: ClientProxy,
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly loginBootstrap: LoginAccountBootstrapService,
@@ -71,7 +97,7 @@ export class AuthenticationController {
     } catch (error) {
       this.logger.error('Error in loginUser:', error?.message || error);
       throw new HttpException(
-        `Login failed: ${error.message}`,
+        `Login failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -99,7 +125,7 @@ export class AuthenticationController {
         error?.message || error
       );
       throw new HttpException(
-        `Token issue failed: ${error.message}`,
+        `Token issue failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -151,7 +177,7 @@ export class AuthenticationController {
         error?.message || error
       );
       throw new HttpException(
-        `Token exchange failed: ${error.message}`,
+        `Token exchange failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -176,7 +202,59 @@ export class AuthenticationController {
         error?.message || JSON.stringify(error)
       );
       throw new HttpException(
-        `Registration failed: ${error.message}`,
+        `Registration failed: ${this.errorMessage(error)}`,
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
+    }
+  }
+
+  @Post('owner-access')
+  @UseGuards(AuthGuard)
+  @ApiOperation({
+    summary: 'Grant owner access for the current user in the active app scope',
+  })
+  @ApiResponse({ status: 201, description: 'Owner access granted.' })
+  @ApiResponse({ status: 500, description: 'Internal server error.' })
+  async claimOwnerAccess(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    const effectiveAppScope =
+      appScope === 'owner-console' ? 'global' : appScope;
+
+    try {
+      const profile = await this.getOrCreateAppScopedProfile(
+        user,
+        effectiveAppScope
+      );
+
+      await this.roleInit.processNow(
+        new RoleInitBuilder()
+          .setScopeName(effectiveAppScope)
+          .setProfile(profile.id)
+          .addDefaultProfileOwner(profile.id, effectiveAppScope)
+          .addOwnerScopeDefaults()
+          .addAssetOwnerPermissions()
+          .build()
+      );
+
+      await this.seedBusinessOwnerProductsIfNeeded(
+        user.userId,
+        effectiveAppScope
+      );
+
+      return {
+        profileId: profile.id,
+        appScope: effectiveAppScope,
+        ownerAccess: true,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Error in claimOwnerAccess:',
+        error?.message || JSON.stringify(error)
+      );
+      throw new HttpException(
+        `Owner access failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -194,7 +272,7 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in resetPassword:', error);
       throw new HttpException(
-        `Password reset failed: ${error.message}`,
+        `Password reset failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -212,7 +290,7 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in enableMfa:', error);
       throw new HttpException(
-        `Enable MFA failed: ${error.message}`,
+        `Enable MFA failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -230,7 +308,7 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in validateToken:', error);
       throw new HttpException(
-        `Token validation failed: ${error.message}`,
+        `Token validation failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -251,7 +329,7 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in validateMfa:', error);
       throw new HttpException(
-        `MFA validation failed: ${error.message}`,
+        `MFA validation failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -269,7 +347,7 @@ export class AuthenticationController {
     } catch (error) {
       this.logger.error('Error in sendMfaSetupEmail:', error?.message || error);
       throw new HttpException(
-        `Send MFA setup email failed: ${error.message}`,
+        `Send MFA setup email failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -295,7 +373,7 @@ export class AuthenticationController {
         error?.message || error
       );
       throw new HttpException(
-        `Send MFA verification email failed: ${error.message}`,
+        `Send MFA verification email failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
@@ -314,10 +392,20 @@ export class AuthenticationController {
     } catch (error) {
       console.error('Error in logoutUser:', error);
       throw new HttpException(
-        `Logout failed: ${error.message}`,
+        `Logout failed: ${this.errorMessage(error)}`,
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  private errorMessage(error: unknown): string {
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as { message: unknown }).message);
+    }
+    return 'Unknown authentication error';
   }
 
   private async getOrCreateAppScopedProfile(
@@ -378,5 +466,36 @@ export class AuthenticationController {
 
     await this.roleInit.processNow(roleInitOptions);
     return createdProfile;
+  }
+
+  private async seedBusinessOwnerProductsIfNeeded(
+    ownerId: string,
+    appScope: string
+  ): Promise<void> {
+    if (appScope !== 'business-site') {
+      return;
+    }
+
+    const existingProducts =
+      ((await firstValueFrom(
+        this.storeClient.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+      )) as Array<{ ownerId?: string | null }>) ?? [];
+
+    const hasOwnedProducts = existingProducts.some(
+      (product) => product?.ownerId === ownerId
+    );
+
+    if (hasOwnedProducts) {
+      return;
+    }
+
+    for (const product of AuthenticationController.BUSINESS_OWNER_STARTER_PRODUCTS) {
+      await firstValueFrom(
+        this.storeClient.send(ProductCommands.CREATE_PRODUCT, {
+          ...product,
+          ownerId,
+        })
+      );
+    }
   }
 }

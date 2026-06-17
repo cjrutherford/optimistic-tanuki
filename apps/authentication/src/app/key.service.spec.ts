@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 import { Test, TestingModule } from '@nestjs/testing';
 
@@ -12,6 +14,7 @@ jest.mock('fs');
 describe('KeyService', () => {
   let service: KeyService;
   let asymmetricService: AsymmetricService;
+  const originalAuthKeyCacheDir = process.env['AUTH_KEY_CACHE_DIR'];
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -44,6 +47,16 @@ describe('KeyService', () => {
       console.log('Mocked mkdirSync called');
     });
     (fsPromises.writeFile as jest.Mock).mockResolvedValue(undefined);
+    delete process.env['AUTH_KEY_CACHE_DIR'];
+  });
+
+  afterAll(() => {
+    if (originalAuthKeyCacheDir === undefined) {
+      delete process.env['AUTH_KEY_CACHE_DIR'];
+      return;
+    }
+
+    process.env['AUTH_KEY_CACHE_DIR'] = originalAuthKeyCacheDir;
   });
 
   it('should be defined', () => {
@@ -53,20 +66,23 @@ describe('KeyService', () => {
   it('should generate user keys', async () => {
     const userId = 'test-user';
     const hash = 'test-hash';
+    const expectedCacheDir = join(tmpdir(), 'ot-auth-keys');
 
     const result = await service.generateUserKeys(userId, hash);
 
     expect(asymmetricService.generateKeyPair).toHaveBeenCalledWith(hash);
-    expect(fs.existsSync).toHaveBeenCalled();
-    expect(fs.mkdirSync).toHaveBeenCalled();
+    expect(fs.existsSync).toHaveBeenCalledWith(expectedCacheDir);
+    expect(fs.mkdirSync).toHaveBeenCalledWith(expectedCacheDir, {
+      recursive: true,
+    });
     expect(fsPromises.writeFile).toHaveBeenCalledWith(
-      expect.any(String),
+      join(expectedCacheDir, `${userId}.priv`),
       'privateKey',
       'utf-8'
     );
     expect(result).toEqual({
       pubKey: 'publicKey',
-      privLocation: expect.any(String),
+      privLocation: join(expectedCacheDir, `${userId}.priv`),
     });
   });
 
@@ -78,8 +94,26 @@ describe('KeyService', () => {
 
     await service.generateUserKeys(userId, hash);
 
-    expect(fs.existsSync).toHaveBeenCalled();
+    expect(fs.existsSync).toHaveBeenCalledWith(join(tmpdir(), 'ot-auth-keys'));
     expect(fs.mkdirSync).not.toHaveBeenCalled();
+  });
+
+  it('should use an explicit cache directory when configured', async () => {
+    const userId = 'test-user';
+    const hash = 'test-hash';
+    process.env['AUTH_KEY_CACHE_DIR'] = '/tmp/custom-auth-key-cache';
+
+    await service.generateUserKeys(userId, hash);
+
+    expect(fs.existsSync).toHaveBeenCalledWith('/tmp/custom-auth-key-cache');
+    expect(fs.mkdirSync).toHaveBeenCalledWith('/tmp/custom-auth-key-cache', {
+      recursive: true,
+    });
+    expect(fsPromises.writeFile).toHaveBeenCalledWith(
+      '/tmp/custom-auth-key-cache/test-user.priv',
+      'privateKey',
+      'utf-8'
+    );
   });
 
   it('should throw an error if key generation fails', async () => {

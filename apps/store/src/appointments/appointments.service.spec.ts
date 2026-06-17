@@ -157,4 +157,62 @@ describe('AppointmentsService', () => {
       })
     ).rejects.toThrow(BadRequestException);
   });
+
+  it('ignores availability and appointment records owned by a different business owner', async () => {
+    availabilityOverrideRepository.find.mockResolvedValue([]);
+    availabilityRepository.find.mockResolvedValue([
+      {
+        id: 'availability-1',
+        ownerId: 'owner-user-handyman',
+        dayOfWeek: 0,
+        startTime: '09:00:00',
+        endTime: '17:00:00',
+        hourlyRate: 120,
+        isActive: true,
+      },
+    ] as AvailabilityEntity[]);
+    appointmentRepository.find.mockImplementation(async (query?: any) => {
+      const appointments = [
+        {
+          id: 'booking-other-owner',
+          ownerId: 'owner-user-consulting',
+          userId: 'client-2',
+          productId: null,
+          resourceId: null,
+          title: 'Other owner booking',
+          description: null,
+          startTime: new Date('2026-05-10T14:30:00'),
+          endTime: new Date('2026-05-10T15:30:00'),
+          status: 'approved',
+          isFreeConsultation: true,
+          hourlyRate: null,
+          totalCost: null,
+          notes: null,
+          denialReason: null,
+          createdAt: new Date('2026-05-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-05-01T00:00:00.000Z'),
+        },
+      ] as AppointmentEntity[];
+
+      const ownerId = query?.where?.ownerId;
+      return appointments.filter(
+        (appointment) => appointment.ownerId === ownerId
+      );
+    });
+
+    await expect(
+      service.create({
+        userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
+        ownerId: 'owner-user-handyman' as never,
+        title: 'Consultation',
+        startTime: new Date('2026-05-10T14:00:00'),
+        endTime: new Date('2026-05-10T15:00:00'),
+      } as any)
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'pending',
+      })
+    );
+  });
 });

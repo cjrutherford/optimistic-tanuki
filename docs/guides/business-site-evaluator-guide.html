@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Business Site Evaluator Guide</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4efe6;
+        --surface: rgba(255, 253, 248, 0.9);
+        --surface-strong: #fffdf8;
+        --ink: #18241f;
+        --muted: #4d5d55;
+        --border: rgba(24, 36, 31, 0.12);
+        --accent: #b85c38;
+        --accent-strong: #13261f;
+        --accent-ink: #f7f1e7;
+        --code: rgba(19, 38, 31, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101714;
+          --surface: rgba(19, 27, 23, 0.9);
+          --surface-strong: #17211d;
+          --ink: #edf3ef;
+          --muted: #bac8c0;
+          --border: rgba(237, 243, 239, 0.12);
+          --accent: #d88862;
+          --accent-strong: #dfe9e3;
+          --accent-ink: #101714;
+          --code: rgba(223, 233, 227, 0.08);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem;
+        font: 16px/1.6 'Manrope', system-ui, sans-serif;
+        background: radial-gradient(
+            circle at top left,
+            rgba(184, 92, 56, 0.16),
+            transparent 24rem
+          ),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--bg) 88%, white) 0%,
+            var(--bg) 100%
+          );
+        color: var(--ink);
+      }
+
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: grid;
+        gap: 1.25rem;
+      }
+
+      .hero,
+      .panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 1.5rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(12px);
+      }
+
+      .hero {
+        display: grid;
+        gap: 0.9rem;
+      }
+
+      .eyebrow {
+        margin: 0;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin: 0;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: 'Fraunces', 'Source Serif 4', serif;
+      }
+
+      .lead {
+        color: var(--muted);
+        max-width: 70ch;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.25rem;
+      }
+
+      .stack {
+        display: grid;
+        gap: 0.75rem;
+      }
+
+      .callout {
+        padding: 0.95rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border);
+        background: var(--surface-strong);
+      }
+
+      ul,
+      ol {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      li + li {
+        margin-top: 0.35rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+      }
+
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 0.75rem 0.8rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      th {
+        font-size: 0.78rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      code {
+        font-family: 'JetBrains Mono', 'SFMono-Regular', monospace;
+        font-size: 0.92em;
+        padding: 0.15rem 0.4rem;
+        border-radius: 0.4rem;
+        background: var(--code);
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .route {
+        font-weight: 700;
+      }
+
+      .expected {
+        color: var(--muted);
+      }
+
+      .script-list {
+        display: grid;
+        gap: 1rem;
+      }
+
+      .script-step {
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+        background: var(--surface-strong);
+        padding: 1rem;
+      }
+
+      .step-title {
+        margin-bottom: 0.35rem;
+      }
+
+      @media (max-width: 820px) {
+        body {
+          padding: 1rem;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">Business Site evaluator guide</p>
+        <h1>
+          Business owner onboarding, hosted tenant sites, and live editor
+          validation
+        </h1>
+        <p class="lead">
+          Use this guide when reviewing the multi-tenant business application
+          locally. It summarizes seeded users, where the hosted owner sites are
+          available, and the core owner/client flows that should work end to
+          end.
+        </p>
+      </section>
+
+      <section class="grid">
+        <article class="panel stack">
+          <h2>Primary routes</h2>
+          <div class="callout">
+            <strong>Platform landing page:</strong>
+            <div class="route"><code>http://127.0.0.1:4303/</code></div>
+          </div>
+          <div class="callout">
+            <strong>Shared auth entry:</strong>
+            <div class="route"><code>http://127.0.0.1:4303/auth</code></div>
+          </div>
+          <div class="callout">
+            <strong>Owner onboarding/editor:</strong>
+            <div class="route">
+              <code>/owner/onboarding</code> and <code>/owner/site-editor</code>
+            </div>
+          </div>
+          <div class="callout">
+            <strong>Hosted owner business sites:</strong>
+            <div class="route">
+              <code>http://127.0.0.1:4303/sites/&lt;tenant-slug&gt;</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel stack">
+          <h2>What to evaluate</h2>
+          <ol>
+            <li>
+              The platform landing page should explain owner and client
+              capabilities, not render a single tenant site.
+            </li>
+            <li>
+              Owner sign-in should support onboarding and then route into the
+              editor/workspace.
+            </li>
+            <li>
+              The live editor should update theme, personality, identity,
+              content, and preview state together.
+            </li>
+            <li>
+              Hosted tenant routes should show the seeded tenant’s own branding,
+              offers, and messaging.
+            </li>
+            <li>
+              Client-facing routes should still resolve from the hosted site
+              into booking, contact, and client portal workflows.
+            </li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="panel stack">
+        <h2>Seeded owner accounts and hosted site URLs</h2>
+        <p class="lead">
+          After the dev seed runs, these owner accounts are available. Their
+          public business sites are viewable directly at the hosted tenant
+          routes listed below.
+        </p>
+        <div class="callout">
+          <strong>Owner sign-in details:</strong>
+          <ul>
+            <li>
+              All owners sign in through
+              <code>http://127.0.0.1:4303/auth</code>.
+            </li>
+            <li>
+              Successful sign-in should route to the owner workspace and allow
+              access to <code>/owner/site</code>.
+            </li>
+            <li>
+              Use the seeded email and password for the matching hosted business
+              route below.
+            </li>
+          </ul>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Use case</th>
+              <th>Owner sign-in email</th>
+              <th>Password</th>
+              <th>Hosted site URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>North Star Advisory</td>
+              <td><code>owner@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/north-star-advisory</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Handyman / general contractor</td>
+              <td><code>owner-handyman@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/steady-hand-contracting</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Pressure washing services</td>
+              <td><code>owner-pressure@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code
+                  >http://127.0.0.1:4303/sites/clearcrest-pressure-washing</code
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Made-to-order home baker</td>
+              <td><code>owner-baker@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/ovenbird-bakeshop</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Tree service</td>
+              <td><code>owner-tree@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/canopy-tree-service</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Accounting / bookkeeping</td>
+              <td><code>owner-accountant@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/ledgerline-accounting</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Artist / studio</td>
+              <td><code>owner-artist@localbusiness.test</code></td>
+              <td><code>BusinessOwnerPass123!</code></td>
+              <td>
+                <code>http://127.0.0.1:4303/sites/emberline-studio</code>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="grid">
+        <article class="panel stack">
+          <h2>Seeded client accounts</h2>
+          <ul>
+            <li>
+              <code>client@localbusiness.test</code> /
+              <code>ClientPass123!</code> for approved-client flows
+            </li>
+            <li>
+              <code>pending-client@localbusiness.test</code> /
+              <code>PendingClientPass123!</code> for approval-queue flows
+            </li>
+          </ul>
+        </article>
+
+        <article class="panel stack">
+          <h2>Recommended evaluator path</h2>
+          <ol>
+            <li>
+              Open <code>/</code> and confirm the platform marketing page is
+              visible, including the owner CTA and the directory of published
+              businesses.
+            </li>
+            <li>
+              Visit <code>/sites/north-star-advisory</code> and confirm the
+              hosted tenant route shows tenant-specific branding, offers, and
+              client portal entry points.
+            </li>
+            <li>
+              Sign in at <code>/auth</code> with
+              <code>owner@localbusiness.test</code> and confirm the owner is
+              routed to <code>/owner/dashboard</code>.
+            </li>
+            <li>
+              Open the site editor from the owner workspace, update theme color,
+              personality, monogram, business title, and at least one content
+              section.
+            </li>
+            <li>
+              Save the site, open the hosted tenant route again, and confirm the
+              saved owner updates render on the public site.
+            </li>
+            <li>
+              Use the client credentials listed below to complete the public
+              booking, owner approval, client portal, routine, and billing loop.
+            </li>
+          </ol>
+        </article>
+      </section>
+
+      <section class="panel stack">
+        <h2>Step-by-step testing script</h2>
+        <p class="lead">
+          Use this script for manual evaluation. Start with a clean browser
+          context when switching between owner and client accounts so each flow
+          is tested with the expected authentication state.
+        </p>
+
+        <div class="script-list">
+          <article class="script-step">
+            <h3 class="step-title">1. Validate the platform entry point</h3>
+            <ol>
+              <li>Open <code>http://127.0.0.1:4303/</code>.</li>
+              <li>
+                Confirm the page is the platform marketing page, not a single
+                tenant business site.
+              </li>
+              <li>
+                Verify the page includes owner-facing copy, client-facing copy,
+                and links to the seeded published businesses.
+              </li>
+              <li>
+                Click <strong>Start as an owner</strong> and confirm it routes
+                to <code>/auth</code>.
+              </li>
+              <li>
+                Switch the auth mode to <strong>Client</strong> and confirm it
+                routes to <code>/client/login</code>.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the root route explains the platform, exposes both owner
+              and client entry points, and lists the seeded business sites.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">2. Validate hosted tenant routing</h3>
+            <ol>
+              <li>Open <code>/sites/north-star-advisory</code>.</li>
+              <li>
+                Confirm the page shows <strong>North Star Advisory</strong>,
+                tenant-specific hero copy, offers, testimonials, and contact
+                details.
+              </li>
+              <li>
+                Confirm the primary CTA links to
+                <code>/sites/north-star-advisory/book</code>.
+              </li>
+              <li>
+                Confirm the secondary CTA links to the tenant-scoped client
+                portal.
+              </li>
+              <li>
+                Repeat for at least two other seeded tenants, such as
+                <code>/sites/steady-hand-contracting</code> and
+                <code>/sites/ovenbird-bakeshop</code>.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: each tenant route renders distinct branding, offers,
+              copy, and calls to action without requiring owner login.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">3. Register a new owner</h3>
+            <ol>
+              <li>Open <code>/owner/register</code>.</li>
+              <li>
+                Fill first name, last name, a unique email, password, password
+                confirmation, and the business-building prompt.
+              </li>
+              <li>Click <strong>Create owner account</strong>.</li>
+              <li>
+                Confirm the new owner is routed to
+                <code>/owner/onboarding</code>.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: owner registration creates the account, signs the owner
+              in, and routes directly into guided onboarding.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">4. Complete guided onboarding</h3>
+            <ol>
+              <li>
+                In <code>/owner/onboarding</code>, confirm the guided setup rail
+                is visible.
+              </li>
+              <li>
+                Update the business name, monogram, tagline, short intro, long
+                bio, credentials, and specializations.
+              </li>
+              <li>
+                Update theme color, personality, card radius, and button style
+                from the theme panel.
+              </li>
+              <li>Confirm the live preview updates as fields change.</li>
+              <li>Click <strong>Save Changes</strong>.</li>
+              <li>
+                Confirm the success message appears and the owner can navigate
+                to the owner dashboard.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: onboarding creates or updates the site configuration and
+              saves the owner into a published or ready-to-publish state.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">5. Test the site editor in studio mode</h3>
+            <ol>
+              <li>
+                Sign in as <code>owner@localbusiness.test</code> and open
+                <code>/owner/site</code>.
+              </li>
+              <li>
+                Switch from <strong>Guided Setup</strong> to
+                <strong>Studio</strong>.
+              </li>
+              <li>Select the hero section and edit the rich content.</li>
+              <li>Add a custom section, image block, and gallery block.</li>
+              <li>
+                Confirm each new block appears in the live preview before save.
+              </li>
+              <li>
+                Reorder sections with drag and drop and confirm the preview
+                order changes.
+              </li>
+              <li>Save changes.</li>
+              <li>
+                Open <code>/sites/north-star-advisory</code> and confirm the
+                saved changes render on the public site.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: studio mode supports live preview, rich content editing,
+              section creation, image and gallery editing, reordering, and saved
+              public rendering.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">6. Test the owner workspace dashboard</h3>
+            <ol>
+              <li>
+                Sign in as <code>owner@localbusiness.test</code> and open
+                <code>/owner/dashboard</code>.
+              </li>
+              <li>
+                Confirm the dashboard shows prospects, pending bookings,
+                completed bookings, and any enabled routine/check-in metrics.
+              </li>
+              <li>
+                Navigate through the workspace subnav to Requests, Clients,
+                Availability, Invoices, Checkout, Payments, and Site Editor when
+                those features are enabled.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the owner workspace keeps operational summaries and
+              navigation scoped to the active business site.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">7. Publish availability</h3>
+            <ol>
+              <li>Open <code>/owner/availability</code>.</li>
+              <li>
+                Add a weekly availability slot with day, start time, end time,
+                hourly rate, and service type.
+              </li>
+              <li>
+                Add a date-specific override in either blocked or available
+                mode.
+              </li>
+              <li>
+                Confirm the calendar displays weekly availability and overrides.
+              </li>
+              <li>Edit and remove one availability entry.</li>
+              <li>Edit and remove one override entry.</li>
+            </ol>
+            <p class="expected">
+              Expected: owner availability controls which published time slots
+              are offered to clients, and overrides can block or open specific
+              dates.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">8. Submit a public consultation request</h3>
+            <ol>
+              <li>Open a private or clean browser context.</li>
+              <li>Open <code>/sites/north-star-advisory</code>.</li>
+              <li>Click the primary booking CTA.</li>
+              <li>
+                Fill name, email, phone, requested offer, available hour block,
+                primary goal, and context.
+              </li>
+              <li>Click <strong>Request consultation</strong>.</li>
+              <li>
+                Confirm the page shows the in-review confirmation for a
+                non-accepted client.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: a public or non-accepted client creates a lead/intake
+              record and is not allowed to book directly as an accepted client.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">9. Approve the lead from the owner queue</h3>
+            <ol>
+              <li>
+                Return to the owner context and open
+                <code>/owner/requests</code>.
+              </li>
+              <li>
+                Find the new prospect in the <strong>Needs response</strong>
+                section.
+              </li>
+              <li>Click <strong>Accept client</strong>.</li>
+              <li>
+                Confirm the prospect moves out of the needs-response section or
+                is marked as accepted.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: owner approval converts the lead into an accepted client
+              who can request bookings against published availability.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">10. Register and sign in a client</h3>
+            <ol>
+              <li>
+                In a client context, open
+                <code>/sites/north-star-advisory/client/register</code>.
+              </li>
+              <li>
+                Create an account with first name, last name, email, password,
+                password confirmation, and bio.
+              </li>
+              <li>
+                Confirm registration signs the client in and opens the
+                tenant-scoped dashboard.
+              </li>
+              <li>
+                Sign out, then sign in again at
+                <code>/sites/north-star-advisory/client/login</code>.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: client registration links the new account to the hosted
+              site relationship and the client login routes into the client
+              portal.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">11. Book as an accepted client</h3>
+            <ol>
+              <li>
+                Sign in as <code>client@localbusiness.test</code> or the newly
+                accepted client account.
+              </li>
+              <li>Open <code>/sites/north-star-advisory/book</code>.</li>
+              <li>
+                Confirm the page title and submit button say
+                <strong>Book session</strong>.
+              </li>
+              <li>Select an offer, published time slot, goal, and context.</li>
+              <li>Click <strong>Book session</strong>.</li>
+              <li>Confirm the booking confirmation appears.</li>
+            </ol>
+            <p class="expected">
+              Expected: accepted clients create bookings instead of new intake
+              leads, and the booking is visible in the client dashboard.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">
+              12. Approve, complete, and invoice a booking
+            </h3>
+            <ol>
+              <li>
+                Sign in as the owner and open
+                <code>/owner/requests</code>.
+              </li>
+              <li>
+                Find the accepted-client booking in
+                <strong>Ready to schedule</strong>.
+              </li>
+              <li>Click <strong>Approve booking</strong>.</li>
+              <li>Click <strong>Mark complete</strong>.</li>
+              <li>Click <strong>Generate invoice</strong>.</li>
+              <li>
+                Confirm the row shows the completed status and generated invoice
+                total.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the owner queue moves the booking through approved,
+              completed, and invoice-due states.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">13. Manage approved clients and routines</h3>
+            <ol>
+              <li>Open <code>/owner/clients</code>.</li>
+              <li>Select an approved client from the roster.</li>
+              <li>
+                Confirm the client detail shows contact context, bookings, and
+                routine status.
+              </li>
+              <li>Assign a routine with title and summary.</li>
+              <li>
+                Confirm the routine appears in the selected client detail and in
+                the shared routines board.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the owner client studio surfaces approved relationships,
+              bookings, routines, and the next owner action.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">
+              14. Use the client portal home and dashboard
+            </h3>
+            <ol>
+              <li>
+                Sign in as the accepted client and open
+                <code>/sites/north-star-advisory/client</code>.
+              </li>
+              <li>
+                Confirm the portal home shows the client-specific next action,
+                dashboard CTA, and booking CTA.
+              </li>
+              <li>
+                Open <code>/sites/north-star-advisory/client/dashboard</code>.
+              </li>
+              <li>
+                Confirm the dashboard shows the current business, upcoming
+                sessions, routines when enabled, check-ins when enabled, and
+                other published businesses.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the client portal is tenant-scoped and reflects the
+              client’s current relationship stage.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">
+              15. Complete client routines and check-ins
+            </h3>
+            <ol>
+              <li>
+                Open <code>/sites/north-star-advisory/client/routines</code>.
+              </li>
+              <li>Confirm assigned routines are listed.</li>
+              <li>If client completion is enabled, mark a routine complete.</li>
+              <li>
+                Select a routine, fill energy and notes, and submit a check-in.
+              </li>
+              <li>
+                Confirm the check-in is saved and visible in the client tasks
+                view.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: client routines and check-ins keep the active client
+              relationship moving after booking approval.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">16. Review client billing</h3>
+            <ol>
+              <li>
+                Open <code>/sites/north-star-advisory/client/billing</code>.
+              </li>
+              <li>
+                Confirm the billing page lists invoices after a completed
+                session has been invoiced.
+              </li>
+              <li>
+                Confirm session history includes the approved and completed
+                booking.
+              </li>
+              <li>
+                If online payment is enabled, click <strong>Pay now</strong> on
+                an unpaid invoice.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: client billing shows invoices and booking history for
+              completed work.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">17. Test the pending-client path</h3>
+            <ol>
+              <li>
+                Sign in as
+                <code>pending-client@localbusiness.test</code>.
+              </li>
+              <li>Open <code>/sites/north-star-advisory/book</code>.</li>
+              <li>
+                Confirm the page still asks for consultation details instead of
+                direct booking.
+              </li>
+              <li>Submit a consultation request.</li>
+              <li>
+                Open the owner requests queue and confirm the request appears as
+                a prospect awaiting approval.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: non-accepted signed-in clients create reviewable leads
+              and cannot bypass owner approval.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">18. Test same-login owner access</h3>
+            <ol>
+              <li>
+                Use a client account that should also own a business, such as
+                <code>client@localbusiness.test</code>.
+              </li>
+              <li>Register or sign in through the owner registration path.</li>
+              <li>
+                Confirm the user can enter the owner onboarding/workspace path
+                with the same login.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: an existing client can claim owner access and reach the
+              owner workspace without needing a separate seeded owner account.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">19. Validate the accountant workflow</h3>
+            <ol>
+              <li>
+                Sign in as <code>owner-accountant@localbusiness.test</code> and
+                open <code>/owner/dashboard</code>.
+              </li>
+              <li>
+                Confirm the dashboard surfaces bookkeeping, tax, and payroll
+                service metrics.
+              </li>
+              <li>
+                Open <code>/owner/availability</code> and add a bookkeeping
+                review slot and a quarterly tax planning slot.
+              </li>
+              <li>
+                Sign in as <code>client@localbusiness.test</code> and book a
+                bookkeeping review at
+                <code>/sites/ledgerline-accounting/book</code>.
+              </li>
+              <li>
+                Approve and complete the booking from the owner requests queue,
+                then generate an invoice.
+              </li>
+              <li>
+                Open the client portal and confirm the client can see upcoming
+                deadlines and bookkeeping context.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the accountant preset supports advisory services,
+              intake, availability, portal context, and invoicing like other
+              service businesses.
+            </p>
+          </article>
+
+          <article class="script-step">
+            <h3 class="step-title">
+              20. Validate the artist commission and storefront workflow
+            </h3>
+            <ol>
+              <li>
+                Sign in as <code>owner-artist@localbusiness.test</code> and open
+                <code>/owner/dashboard</code>.
+              </li>
+              <li>
+                Confirm the owner site uses the Emberline Studio dark theme and
+                commission-focused content.
+              </li>
+              <li>
+                Open <code>/owner/site</code> and confirm the landing page
+                includes a storefront section and commission booking CTA.
+              </li>
+              <li>
+                Sign in as <code>client@localbusiness.test</code> and book a
+                portrait commission consult at
+                <code>/sites/emberline-studio/book</code>.
+              </li>
+              <li>
+                Approve the booking from the owner queue and confirm the owner
+                can track commission details in the client portal.
+              </li>
+              <li>
+                If store products are enabled, confirm the storefront section
+                renders available work and the client can view the product list.
+              </li>
+            </ol>
+            <p class="expected">
+              Expected: the artist preset supports commission bookings, client
+              portal handholding, and visible store inventory without breaking
+              the existing service flow.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="panel stack">
+          <h2>Owner flow checklist</h2>
+          <ul>
+            <li>
+              Platform root renders as marketing content, not a tenant site.
+            </li>
+            <li>Owner registration routes to guided onboarding.</li>
+            <li>
+              Owner login routes to dashboard or onboarding based on completion
+              state.
+            </li>
+            <li>
+              Guided onboarding updates brand, identity, content, and theme.
+            </li>
+            <li>
+              Studio mode supports live preview, section editing, images,
+              galleries, and reordering.
+            </li>
+            <li>Saved site changes render on the hosted tenant route.</li>
+            <li>
+              Owner dashboard summarizes prospects, pending bookings, completed
+              bookings, routines, and check-ins.
+            </li>
+            <li>
+              Requests queue supports accepting prospects, approving bookings,
+              completing bookings, and generating invoices.
+            </li>
+            <li>
+              Clients page supports approved-client roster, booking detail,
+              routine assignment, and shared routine review.
+            </li>
+            <li>
+              Availability page supports weekly slots, date overrides, calendar
+              display, edit, and remove actions.
+            </li>
+            <li>Finance navigation is visible when invoices are enabled.</li>
+            <li>
+              Seeded owner accounts span North Star Advisory, Steady Hand
+              Contracting, Clearcrest Pressure Washing, Ovenbird Bakeshop,
+              Canopy Tree Service, Ledgerline Accounting, and Emberline Studio.
+            </li>
+            <li>
+              Accountant and artist owners can complete intake, scheduling,
+              approval, invoicing, and client portal workflows like other
+              service tenants.
+            </li>
+            <li>
+              The artist storefront preset shows commission booking and store
+              section rendering without breaking the site editor.
+            </li>
+          </ul>
+        </article>
+
+        <article class="panel stack">
+          <h2>Client flow checklist</h2>
+          <ul>
+            <li>
+              Public tenant site renders unique branding, offers, testimonials,
+              and contact information.
+            </li>
+            <li>
+              Public booking CTA routes to the tenant-scoped booking page.
+            </li>
+            <li>
+              Client registration creates an account and links it to the hosted
+              site.
+            </li>
+            <li>Client login routes to the tenant-scoped dashboard.</li>
+            <li>
+              Non-accepted clients create consultation requests for owner
+              review.
+            </li>
+            <li>
+              Accepted clients can request bookings from published availability.
+            </li>
+            <li>
+              Client portal home shows relationship-specific next action copy.
+            </li>
+            <li>
+              Client dashboard shows current business, sessions, routines,
+              check-ins, and other published businesses.
+            </li>
+            <li>
+              Client routines support assigned work, completion when allowed,
+              and check-in submission.
+            </li>
+            <li>
+              Client billing shows invoices and completed session history when
+              invoices are enabled.
+            </li>
+            <li>
+              All seeded owner types—consulting, contracting, pressure washing,
+              bakery, tree service, accounting, and artist—support the same
+              client booking and approval flows.
+            </li>
+          </ul>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

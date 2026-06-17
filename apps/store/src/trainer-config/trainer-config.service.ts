@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { TrainerSiteConfigEntity } from './entities/trainer-site-config.entity';
 
 export interface TrainerSiteConfigDto {
+  businessType?: string;
+  site?: Record<string, unknown>;
   leadContext?: {
     profileId?: string;
     appScope?: string;
@@ -11,11 +13,20 @@ export interface TrainerSiteConfigDto {
   brand?: Record<string, unknown>;
   contact?: Record<string, unknown>;
   features?: Record<string, unknown>;
+  serviceCatalog?: Record<string, unknown>;
   services?: Record<string, unknown>[];
   landingPage?: Record<string, unknown>;
   clientPortal?: Record<string, unknown>;
   testimonials?: Record<string, unknown>[];
   theme?: Record<string, unknown>;
+}
+
+export interface PublicTrainerSiteSummary {
+  slug: string;
+  businessName: string;
+  tagline: string;
+  location: string;
+  businessType: string;
 }
 
 @Injectable()
@@ -38,6 +49,54 @@ export class TrainerConfigService {
     return config || null;
   }
 
+  async getConfigBySiteSlug(
+    slug: string
+  ): Promise<TrainerSiteConfigEntity | null> {
+    this.logger.log(
+      `[TrainerConfigService] Fetching config for site slug: ${slug}`
+    );
+    const config = await this.configRepository
+      .createQueryBuilder('config')
+      .where(`config.site ->> 'slug' = :slug`, { slug })
+      .getOne();
+
+    return config || null;
+  }
+
+  async getConfigByOwnerProfileId(
+    profileId: string
+  ): Promise<TrainerSiteConfigEntity | null> {
+    this.logger.log(
+      `[TrainerConfigService] Fetching config for owner profile: ${profileId}`
+    );
+
+    const config = await this.configRepository
+      .createQueryBuilder('config')
+      .where(`config.leadContext ->> 'profileId' = :profileId`, { profileId })
+      .getOne();
+
+    return config || null;
+  }
+
+  async listPublicSiteSummaries(): Promise<PublicTrainerSiteSummary[]> {
+    this.logger.log('[TrainerConfigService] Listing public site summaries');
+
+    const configs = await this.configRepository
+      .createQueryBuilder('config')
+      .where(`config.site ->> 'status' = :status`, { status: 'published' })
+      .andWhere(`coalesce(config.site ->> 'slug', '') <> ''`)
+      .orderBy(`config.brand ->> 'businessName'`, 'ASC')
+      .getMany();
+
+    return configs.map((config) => ({
+      slug: String(config.site?.['slug'] ?? ''),
+      businessName: String(config.brand?.['businessName'] ?? ''),
+      tagline: String(config.brand?.['tagline'] ?? ''),
+      location: String(config.contact?.['location'] ?? ''),
+      businessType: String(config.businessType ?? 'general'),
+    }));
+  }
+
   async createConfig(
     dto: TrainerSiteConfigDto,
     configKey = 'default'
@@ -47,6 +106,8 @@ export class TrainerConfigService {
     );
     const entity = new TrainerSiteConfigEntity();
     entity.configKey = configKey;
+    entity.businessType = dto.businessType || 'general';
+    entity.site = dto.site || {};
     entity.leadContext = dto.leadContext || {
       profileId: '',
       appScope: 'business-site',
@@ -54,6 +115,7 @@ export class TrainerConfigService {
     entity.brand = dto.brand || {};
     entity.contact = dto.contact || {};
     entity.features = dto.features || {};
+    entity.serviceCatalog = dto.serviceCatalog || {};
     entity.services = dto.services || [];
     entity.landingPage = dto.landingPage || {};
     entity.clientPortal = dto.clientPortal || {};
@@ -74,10 +136,15 @@ export class TrainerConfigService {
       );
     }
 
+    if (dto.businessType !== undefined) config.businessType = dto.businessType;
+    if (dto.site !== undefined) config.site = dto.site;
     if (dto.leadContext !== undefined) config.leadContext = dto.leadContext;
     if (dto.brand !== undefined) config.brand = dto.brand;
     if (dto.contact !== undefined) config.contact = dto.contact;
     if (dto.features !== undefined) config.features = dto.features;
+    if (dto.serviceCatalog !== undefined) {
+      config.serviceCatalog = dto.serviceCatalog;
+    }
     if (dto.services !== undefined) config.services = dto.services;
     if (dto.landingPage !== undefined) config.landingPage = dto.landingPage;
     if (dto.clientPortal !== undefined) config.clientPortal = dto.clientPortal;

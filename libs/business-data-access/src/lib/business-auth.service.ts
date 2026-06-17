@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, throwError } from 'rxjs';
+import { Observable, tap, catchError, throwError, map, of } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { RegisterRequest } from '@optimistic-tanuki/models';
 
@@ -97,6 +97,36 @@ export class BusinessAuthService {
     };
   }
 
+  private exchangeAppToken(
+    baseToken: string,
+    loginResult: { email?: string; userId?: string },
+    storeUser: (user: BusinessAuthUser) => void
+  ): Observable<BusinessAuthUser> {
+    const baseUser = this.buildClientUser(baseToken, loginResult);
+
+    return this.http
+      .post<{ token?: string; newToken?: string; profileId?: string }>(
+        '/api/authentication/exchange',
+        { targetAppId: 'business-site' },
+        this.authRequestOptions(baseToken)
+      )
+      .pipe(
+        map((exchangeResult) => {
+          const exchangedUser = this.buildClientUser(
+            baseToken,
+            loginResult,
+            exchangeResult
+          );
+          storeUser(exchangedUser);
+          return exchangedUser;
+        }),
+        catchError(() => {
+          storeUser(baseUser);
+          return of(baseUser);
+        })
+      );
+  }
+
   private authRequestOptions(baseToken?: string) {
     return {
       headers: {
@@ -121,36 +151,21 @@ export class BusinessAuthService {
               observer.error(new Error('Login did not return a token'));
               return;
             }
-            const authUser = this.buildClientUser(baseToken, {
-              email: loginResult.email ?? email,
-              userId: loginResult.userId,
-            });
-            this.storeClientUser(authUser);
-            observer.next(authUser);
-            observer.complete();
 
-            this.http
-              .post<{ token: string; profileId: string }>(
-                '/api/authentication/exchange',
-                { targetAppId: 'business-site' },
-                this.authRequestOptions(baseToken)
-              )
-              .subscribe({
-                next: (exchangeResult) => {
-                  const exchangedUser = this.buildClientUser(
-                    baseToken,
-                    {
-                      email: loginResult.email ?? email,
-                      userId: loginResult.userId,
-                    },
-                    exchangeResult
-                  );
-                  if (exchangedUser.token) {
-                    this.storeClientUser(exchangedUser);
-                  }
-                },
-                error: () => undefined,
-              });
+            this.exchangeAppToken(
+              baseToken,
+              {
+                email: loginResult.email ?? email,
+                userId: loginResult.userId,
+              },
+              (user) => this.storeClientUser(user)
+            ).subscribe({
+              next: (user) => {
+                observer.next(user);
+                observer.complete();
+              },
+              error: (err) => observer.error(err),
+            });
           },
           error: (err) => observer.error(err),
         });
@@ -166,6 +181,22 @@ export class BusinessAuthService {
       '/api/authentication/register',
       payload,
       this.authRequestOptions()
+    );
+  }
+
+  registerOwner(payload: RegisterRequest): Observable<unknown> {
+    return this.http.post(
+      '/api/authentication/register',
+      payload,
+      this.authRequestOptions()
+    );
+  }
+
+  claimOwnerAccess(): Observable<unknown> {
+    return this.http.post(
+      '/api/authentication/owner-access',
+      {},
+      this.authRequestOptions(this.token() ?? undefined)
     );
   }
 
@@ -185,7 +216,7 @@ export class BusinessAuthService {
         tap((result) => {
           const token = this.extractToken(result);
           if (token) {
-            this.exchangeForAppScope(token);
+            this.exchangeForAppScope(token).subscribe();
           }
         }),
         catchError((err) => throwError(() => err))
@@ -232,37 +263,21 @@ export class BusinessAuthService {
               observer.error(new Error('Login did not return a token'));
               return;
             }
-            const authUser = this.buildClientUser(baseToken, {
-              email: loginResult.email ?? email,
-              userId: loginResult.userId,
+
+            this.exchangeAppToken(
+              baseToken,
+              {
+                email: loginResult.email ?? email,
+                userId: loginResult.userId,
+              },
+              (user) => this.storeUser(user)
+            ).subscribe({
+              next: (user) => {
+                observer.next(user);
+                observer.complete();
+              },
+              error: (err) => observer.error(err),
             });
-
-            this.storeUser(authUser);
-            observer.next(authUser);
-            observer.complete();
-
-            this.http
-              .post<{ token: string; profileId: string }>(
-                '/api/authentication/exchange',
-                { targetAppId: 'business-site' },
-                this.authRequestOptions(baseToken)
-              )
-              .subscribe({
-                next: (exchangeResult) => {
-                  const exchangedUser = this.buildClientUser(
-                    baseToken,
-                    {
-                      email: loginResult.email ?? email,
-                      userId: loginResult.userId,
-                    },
-                    exchangeResult
-                  );
-                  if (exchangedUser.token) {
-                    this.storeUser(exchangedUser);
-                  }
-                },
-                error: () => undefined,
-              });
           },
           error: (err) => observer.error(err),
         });

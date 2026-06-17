@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -16,31 +17,42 @@ describe('BusinessClientBillingPageComponent', () => {
     const payClientInvoice = jest
       .fn()
       .mockReturnValue(of({ id: 'invoice-1', status: 'paid' }));
+    const api = {
+      getClientBookings: jest.fn().mockReturnValue(of([])),
+      getClientInvoices: jest.fn().mockReturnValue(
+        of([
+          {
+            id: 'invoice-1',
+            appointmentId: 'booking-1',
+            userId: 'client-1',
+            invoiceNumber: 'INV-100',
+            amount: 180,
+            currency: 'USD',
+            status: 'unpaid',
+            createdAt: '2026-05-07T00:00:00.000Z',
+            updatedAt: '2026-05-07T00:00:00.000Z',
+          },
+        ])
+      ),
+      payClientInvoice,
+    };
 
     await TestBed.configureTestingModule({
       imports: [BusinessClientBillingPageComponent],
       providers: [
         {
-          provide: BusinessApiService,
+          provide: ActivatedRoute,
           useValue: {
-            getClientBookings: jest.fn().mockReturnValue(of([])),
-            getClientInvoices: jest.fn().mockReturnValue(
-              of([
-                {
-                  id: 'invoice-1',
-                  appointmentId: 'booking-1',
-                  userId: 'client-1',
-                  invoiceNumber: 'INV-100',
-                  amount: 180,
-                  currency: 'USD',
-                  status: 'unpaid',
-                  createdAt: '2026-05-07T00:00:00.000Z',
-                  updatedAt: '2026-05-07T00:00:00.000Z',
-                },
-              ])
-            ),
-            payClientInvoice,
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
           },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: api,
         },
         {
           provide: BusinessAuthService,
@@ -75,7 +87,7 @@ describe('BusinessClientBillingPageComponent', () => {
     const fixture = TestBed.createComponent(BusinessClientBillingPageComponent);
     fixture.detectChanges();
 
-    return { fixture, payClientInvoice };
+    return { fixture, payClientInvoice, api };
   }
 
   it('shows a pay action only when online payment is enabled', async () => {
@@ -86,5 +98,23 @@ describe('BusinessClientBillingPageComponent', () => {
   it('hides the pay action when online payment is disabled', async () => {
     const { fixture } = await render(false);
     expect(fixture.nativeElement.textContent).not.toContain('Pay now');
+  });
+
+  it('uses the hosted tenant slug for bookings, invoices, and payments', async () => {
+    const { fixture, api, payClientInvoice } = await render(true);
+    const component = fixture.componentInstance;
+
+    component.payInvoice('invoice-1');
+
+    expect(api.getClientBookings).toHaveBeenCalledWith(
+      'steady-hand-contracting'
+    );
+    expect(api.getClientInvoices).toHaveBeenCalledWith(
+      'steady-hand-contracting'
+    );
+    expect(payClientInvoice).toHaveBeenCalledWith(
+      'invoice-1',
+      'steady-hand-contracting'
+    );
   });
 });

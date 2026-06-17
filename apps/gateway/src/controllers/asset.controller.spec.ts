@@ -3,7 +3,7 @@ import { AssetController } from './asset.controller';
 import { of } from 'rxjs';
 import { ServiceTokens, AssetCommands } from '@optimistic-tanuki/constants';
 import { JwtService } from '@nestjs/jwt';
-import { Logger } from '@nestjs/common';
+import { HttpException, Logger } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
@@ -74,6 +74,30 @@ describe('AssetController', () => {
     expect(assetService.send).toHaveBeenCalledWith(
       { cmd: AssetCommands.CREATE },
       createDto
+    );
+  });
+
+  it('maps structured asset creation failures to an http exception with status code', async () => {
+    assetService.send.mockImplementation(() => {
+      throw {
+        error: {
+          statusCode: 400,
+          message: 'File validation failed',
+          errors: ['File extension .exe not allowed'],
+        },
+      };
+    });
+
+    await expect(
+      controller.createAsset({ name: 'bad' } as any)
+    ).rejects.toEqual(
+      expect.objectContaining({
+        status: 400,
+        response: {
+          message: 'File validation failed',
+          errors: ['File extension .exe not allowed'],
+        },
+      })
     );
   });
 

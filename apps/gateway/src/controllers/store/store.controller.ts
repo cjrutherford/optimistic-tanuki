@@ -65,6 +65,15 @@ export class StoreController {
     );
   }
 
+  @RequirePermissions('store.product.view')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('products/owner/:ownerId')
+  async findOwnerProducts(@Param('ownerId') ownerId: string) {
+    return await firstValueFrom(
+      this.storeService.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+    );
+  }
+
   @Get('products/:id')
   async findOneProduct(@Param('id') id: string) {
     return await firstValueFrom(

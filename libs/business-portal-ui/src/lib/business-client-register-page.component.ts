@@ -1,9 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  BusinessApiService,
+  BusinessAuthService,
+} from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { of, switchMap } from 'rxjs';
 
 @Component({
   selector: 'business-client-register-page',
@@ -67,9 +71,7 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <otui-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Creating account…' : 'Create account' }}
           </otui-button>
-          <a [routerLink]="['/client/login']"
-            >Already have an account? Sign in</a
-          >
+          <a [routerLink]="loginRoute()">Already have an account? Sign in</a>
         </form>
       </otui-card>
     </section>
@@ -123,7 +125,9 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 })
 export class BusinessClientRegisterPageComponent {
   private readonly auth = inject(BusinessAuthService);
+  private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   fn = '';
   ln = '';
@@ -134,6 +138,19 @@ export class BusinessClientRegisterPageComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly message = signal('');
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  loginRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'login']
+      : ['/client/login'];
+  }
+
+  dashboardRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+      : ['/client/dashboard'];
+  }
 
   register(): void {
     this.loading.set(true);
@@ -149,11 +166,27 @@ export class BusinessClientRegisterPageComponent {
         confirm: this.confirm,
         bio: this.bio,
       })
+      .pipe(
+        switchMap(() => this.auth.loginClient(this.email, this.password)),
+        switchMap((clientUser) =>
+          this.siteSlug
+            ? this.api.createLeadIntake({
+                siteSlug: this.siteSlug,
+                userId: clientUser.userId,
+                profileId: clientUser.profileId,
+                name: `${this.fn} ${this.ln}`.trim(),
+                email: this.email,
+                goal: this.bio || 'New client registration',
+                context: 'Hosted business registration',
+              })
+            : of(clientUser)
+        )
+      )
       .subscribe({
         next: () => {
           this.loading.set(false);
-          this.message.set('Account created. Sign in to continue.');
-          void this.router.navigate(['/client/login']);
+          this.message.set('Account created and linked. Opening your portal…');
+          void this.router.navigate(this.dashboardRoute());
         },
         error: (err) => {
           this.loading.set(false);

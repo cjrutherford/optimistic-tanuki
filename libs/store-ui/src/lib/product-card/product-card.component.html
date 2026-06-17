@@ -16,6 +16,13 @@
         {{ product.stock > 0 ? product.stock + ' in stock' : 'Out of stock' }}
       </span>
     </div>
+    <a
+      *ngIf="viewProductHref"
+      class="view-product-link"
+      [href]="viewProductHref"
+    >
+      View product
+    </a>
     <button
       *ngIf="showAddToCart"
       class="add-to-cart-btn"

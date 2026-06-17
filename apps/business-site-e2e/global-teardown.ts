@@ -1,6 +1,7 @@
 import { FullConfig } from '@playwright/test';
 import { spawn } from 'child_process';
 import { join } from 'node:path';
+import { getComposeArgs } from './global-setup';
 
 function run(command: string, args: string[], cwd: string) {
   return new Promise<void>((resolve, reject) => {
@@ -32,11 +33,16 @@ async function globalTeardown(_config: FullConfig) {
   }
 
   const workspaceRoot = join(__dirname, '../../');
+  const composeArgs = getComposeArgs();
 
   console.log(
     '\n[Playwright Global Teardown] Stopping business-site stack via docker:dev:down'
   );
-  await run('pnpm', ['run', 'docker:dev:down'], workspaceRoot);
+  await run(
+    'docker',
+    [...composeArgs, 'down', '-v', '--remove-orphans'],
+    workspaceRoot
+  );
 }
 
 export default globalTeardown;

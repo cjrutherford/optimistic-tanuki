@@ -11,9 +11,19 @@ describe('appRoutes', () => {
     expect(appRoutes.map((route) => route.path)).toEqual(
       expect.arrayContaining([
         '',
-        'book',
+        'sites/:siteSlug',
+        'sites/:siteSlug/book',
+        'sites/:siteSlug/client',
+        'sites/:siteSlug/client/login',
+        'sites/:siteSlug/client/register',
+        'sites/:siteSlug/owner/login',
+        'sites/:siteSlug/owner/register',
+        'sites/:siteSlug/owner',
         'client',
+        'auth',
         'owner/login',
+        'owner/register',
+        'owner/onboarding',
         'owner',
         '**',
       ])
@@ -48,6 +58,30 @@ describe('appRoutes', () => {
     ).toEqual([invoicesFeatureGuard]);
   });
 
+  it('registers hosted client portal child routes for business-scoped access', () => {
+    const hostedClientRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/client'
+    );
+
+    expect(
+      (hostedClientRoute?.children ?? []).map((route) => route.path)
+    ).toEqual(expect.arrayContaining(['', 'dashboard', 'routines', 'billing']));
+    expect(hostedClientRoute?.canActivate).toEqual([
+      clientAuthGuard,
+      clientPortalFeatureGuard,
+    ]);
+    expect(
+      (hostedClientRoute?.children ?? []).find(
+        (route) => route.path === 'routines'
+      )?.canActivate
+    ).toEqual([clientTasksFeatureGuard]);
+    expect(
+      (hostedClientRoute?.children ?? []).find(
+        (route) => route.path === 'billing'
+      )?.canActivate
+    ).toEqual([invoicesFeatureGuard]);
+  });
+
   it('uses a full-match default route so client child pages can resolve', () => {
     const clientRoute = appRoutes.find((route) => route.path === 'client');
     const portalShellRoute = (clientRoute?.children ?? []).find(
@@ -74,6 +108,82 @@ describe('appRoutes', () => {
     );
   });
 
+  it('registers hosted owner workspace child routes for business-scoped access', () => {
+    const hostedOwnerRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner'
+    );
+
+    expect(
+      (hostedOwnerRoute?.children ?? []).map((route) => route.path)
+    ).toEqual(
+      expect.arrayContaining([
+        'dashboard',
+        'site',
+        'requests',
+        'clients',
+        'availability',
+        'finance',
+      ])
+    );
+  });
+
+  it('adds a tenant-scoped public route for hosted business sites', () => {
+    const tenantRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug'
+    );
+
+    expect(tenantRoute?.title).toBe('Business Site');
+  });
+
+  it('adds public product detail routes for hosted and root business sites', () => {
+    expect(
+      appRoutes.find((route) => route.path === 'products/:productId')
+    ).toBeTruthy();
+    expect(
+      appRoutes.find(
+        (route) => route.path === 'sites/:siteSlug/products/:productId'
+      )
+    ).toBeTruthy();
+  });
+
+  it('configures the shared auth and owner onboarding routes for the new owner workflow', () => {
+    const authRoute = appRoutes.find((route) => route.path === 'auth');
+    const ownerLoginRoute = appRoutes.find(
+      (route) => route.path === 'owner/login'
+    );
+    const ownerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'owner/register'
+    );
+    const onboardingRoute = appRoutes.find(
+      (route) => route.path === 'owner/onboarding'
+    );
+
+    expect(authRoute?.title).toBe('Sign In');
+    expect(ownerLoginRoute).toEqual(
+      expect.objectContaining({
+        redirectTo: 'auth',
+        pathMatch: 'full',
+      })
+    );
+    expect(ownerRegisterRoute?.title).toBe('Owner Registration');
+    expect(onboardingRoute?.data).toEqual({
+      editorMode: 'guided',
+      onboardingMode: true,
+    });
+  });
+
+  it('adds hosted owner auth routes for business-scoped login and registration', () => {
+    const hostedOwnerLoginRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner/login'
+    );
+    const hostedOwnerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/owner/register'
+    );
+
+    expect(hostedOwnerLoginRoute?.title).toBe('Owner Login');
+    expect(hostedOwnerRegisterRoute?.title).toBe('Owner Registration');
+  });
+
   it('mounts the shared finance utilities under the owner workspace', () => {
     const ownerRoute = appRoutes.find((route) => route.path === 'owner');
     const financeRoute = (ownerRoute?.children ?? []).find(
@@ -97,7 +207,57 @@ describe('appRoutes', () => {
   });
 
   it('protects the booking route behind the booking feature flag', () => {
-    const bookingRoute = appRoutes.find((route) => route.path === 'book');
-    expect(bookingRoute?.canActivate).toEqual([bookingFeatureGuard]);
+    const tenantBookingRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug/book'
+    );
+
+    expect(appRoutes.find((route) => route.path === 'book')).toBeUndefined();
+    expect(tenantBookingRoute?.canActivate).toEqual([bookingFeatureGuard]);
+  });
+
+  it('adds hosted client auth routes for business-scoped login and registration', () => {
+    expect(
+      appRoutes.find((route) => route.path === 'sites/:siteSlug/client/login')
+    ).toBeTruthy();
+    expect(
+      appRoutes.find(
+        (route) => route.path === 'sites/:siteSlug/client/register'
+      )
+    ).toBeTruthy();
+  });
+
+  it('lazy loads the platform home, tenant site, auth page, and onboarding editor components', async () => {
+    const platformRoute = appRoutes.find((route) => route.path === '');
+    const tenantRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug'
+    );
+    const authRoute = appRoutes.find((route) => route.path === 'auth');
+    const ownerRegisterRoute = appRoutes.find(
+      (route) => route.path === 'owner/register'
+    );
+    const onboardingRoute = appRoutes.find(
+      (route) => route.path === 'owner/onboarding'
+    );
+
+    await expect(platformRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessPlatformHomePageComponent'
+    );
+    await expect(tenantRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessLandingPageComponent'
+    );
+    await expect(authRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessLoginPageComponent'
+    );
+    await expect(ownerRegisterRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessOwnerRegisterPageComponent'
+    );
+    await expect(onboardingRoute?.loadComponent?.()).resolves.toHaveProperty(
+      'name',
+      'BusinessSiteEditorPageComponent'
+    );
   });
 });

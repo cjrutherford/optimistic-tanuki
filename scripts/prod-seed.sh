@@ -31,6 +31,17 @@ run_seed() {
   compose_cmd exec -T -w "${workdir}" "$service" "$@"
 }
 
+run_seed_with_env() {
+  service="$1"
+  workdir="$2"
+  env_key="$3"
+  env_value="$4"
+  shift 4
+
+  echo "Seeding ${service}..."
+  compose_cmd exec -T -e "${env_key}=${env_value}" -w "${workdir}" "$service" "$@"
+}
+
 restart_service() {
   service="$1"
 
@@ -77,6 +88,7 @@ fi
 echo "Restarting services before seeding..."
 restart_service permissions
 restart_service gateway
+wait_for_gateway
 sleep 5
 
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
@@ -84,6 +96,9 @@ run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 
 echo "Seeding social service (including local communities)..."
 run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
+
+echo "Seeding business-site service (including seeded businesses and client workflows)..."
+run_seed_with_env business-site "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./apps/business-site/src/seed-trainer.mjs
 
 echo ""
 echo "=========================================="

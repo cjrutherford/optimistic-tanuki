@@ -11,6 +11,9 @@ export interface BusinessTestimonial {
 }
 
 export interface BusinessFeatures {
+  store: {
+    enabled: boolean;
+  };
   booking: {
     enabled: boolean;
     allowOnlinePayment?: boolean;
@@ -48,6 +51,14 @@ export interface BusinessLeadContext {
   appScope: string;
 }
 
+export interface BusinessSiteMetadata {
+  slug: string;
+  ownerProfileId: string;
+  ownerUserId?: string;
+  status: 'draft' | 'published';
+  onboardingCompletedAt: string;
+}
+
 export type SplitLayoutSlot = 'primary' | 'secondary';
 export type GridLayoutSlot =
   | 'hero-wide'
@@ -60,6 +71,7 @@ export type LandingSectionType =
   | 'hero'
   | 'about'
   | 'services'
+  | 'store'
   | 'testimonials'
   | 'contact'
   | 'booking'
@@ -156,7 +168,14 @@ export interface LandingSection {
 }
 
 export interface BusinessSiteConfig {
-  businessType: 'fitness' | 'consulting' | 'coaching' | 'wellness' | 'general';
+  businessType:
+    | 'fitness'
+    | 'consulting'
+    | 'coaching'
+    | 'wellness'
+    | 'general'
+    | 'accounting';
+  site: BusinessSiteMetadata;
   leadContext: BusinessLeadContext;
   brand: {
     businessName: string;
@@ -319,6 +338,10 @@ export function mergeBusinessSiteConfig(
   return {
     ...DEFAULT_BUSINESS_SITE_CONFIG,
     ...(config ?? {}),
+    site: {
+      ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+      ...(config?.site ?? {}),
+    },
     brand: {
       ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
       ...(config?.brand ?? {}),
@@ -336,6 +359,10 @@ export function mergeBusinessSiteConfig(
       ...(config?.contact ?? {}),
     },
     features: {
+      store: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.features.store,
+        ...(config?.features?.store ?? {}),
+      },
       booking: {
         ...DEFAULT_BUSINESS_SITE_CONFIG.features.booking,
         ...(config?.features?.booking ?? {}),
@@ -397,6 +424,13 @@ export function cloneBusinessSiteConfig(
 
 export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
   businessType: 'general',
+  site: {
+    slug: 'my-business',
+    ownerProfileId: '',
+    ownerUserId: '',
+    status: 'draft',
+    onboardingCompletedAt: '',
+  },
   leadContext: {
     profileId: '',
     appScope: 'business-site',
@@ -418,6 +452,7 @@ export const DEFAULT_BUSINESS_SITE_CONFIG: BusinessSiteConfig = {
     consultationLabel: 'Book a consultation',
   },
   features: {
+    store: { enabled: false },
     booking: { enabled: true, allowOnlinePayment: false },
     clientTasks: { enabled: false, allowClientCompletion: false },
     clientPortal: { enabled: true },

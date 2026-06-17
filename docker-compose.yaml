@@ -239,6 +239,8 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000
+      EVALUATOR_GUIDE_PATH: /app/docs/guides/business-site-evaluator-guide.html
+      RUN_BUSINESS_SITE_SEED_ON_STARTUP: ${RUN_BUSINESS_SITE_SEED_ON_STARTUP:-false}
       <<: *gateway_client_env
     depends_on:
       - gateway

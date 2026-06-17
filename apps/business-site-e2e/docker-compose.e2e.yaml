@@ -1,0 +1,6 @@
+services:
+  gateway:
+    environment:
+      - GATEWAY_COMPOSITION_PATH=/usr/src/app/config/gateway-composition.yaml
+    volumes:
+      - ./apps/business-site-e2e/gateway-composition.yaml:/usr/src/app/config/gateway-composition.yaml:ro
