@@ -293,8 +293,6 @@ services:
     environment:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
-      - NODE_ENV=development
-      - GATEWAY_URL=http://gateway:3000
 
   crdn-client-interface:
     container_name: crdn_client_interface # Added

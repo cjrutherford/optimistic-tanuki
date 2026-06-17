@@ -3,7 +3,7 @@
   "apps": {
     "business-configurator": 0,
     "business-site": 0,
-    "christopherrutherford-net": 0,
+    "christopherrutherford-net": 8,
     "client-interface": 0,
     "configurable-client": 0,
     "d6": 0,
@@ -13,7 +13,7 @@
     "forgeofwill": 0,
     "hai": 0,
     "leads-app": 0,
-    "local-hub": 0,
+    "local-hub": 1,
     "marketing-generator": 0,
     "owner-console": 0,
     "store-client": 0,

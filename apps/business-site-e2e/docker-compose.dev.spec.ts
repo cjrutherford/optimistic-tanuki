@@ -15,7 +15,7 @@ describe('business-site dev compose wiring', () => {
     );
 
     expect(businessSiteSection).toContain(
-      'dockerfile: ./apps/business-site/Dockerfile.dev'
+      'dockerfile: ./docker/dev/ssr-runtime.Dockerfile'
     );
   });
 
