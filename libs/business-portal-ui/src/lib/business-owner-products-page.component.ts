@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
@@ -39,6 +40,7 @@ type ProductForm = {
     TextAreaComponent,
     SelectComponent,
     CheckboxComponent,
+    RouterLink,
   ],
   template: `
     <section class="products-studio">
@@ -165,6 +167,12 @@ type ProductForm = {
                 >
               </div>
               <div class="row-actions">
+                <a
+                  class="row-view-link"
+                  [routerLink]="productViewHref(product)"
+                >
+                  View
+                </a>
                 <otui-button variant="outlined" (action)="startEdit(product)">
                   Edit
                 </otui-button>
@@ -331,6 +339,19 @@ type ProductForm = {
         gap: 0.5rem;
         flex-wrap: wrap;
       }
+
+      .row-view-link {
+        align-self: center;
+        color: var(--primary, #1f7a63);
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .row-view-link:hover {
+        text-decoration: underline;
+      }
+
       .empty {
         margin: 0;
         color: var(--muted, #6b7280);
@@ -346,6 +367,8 @@ type ProductForm = {
 export class BusinessOwnerProductsPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
   private readonly ownerId = computed(() => this.auth.user()?.userId ?? null);
   private readonly ownerProductsSignal = toSignal(
     toObservable(this.ownerId).pipe(
@@ -389,6 +412,12 @@ export class BusinessOwnerProductsPageComponent {
       stock: product.stock,
       active: product.active,
     });
+  }
+
+  productViewHref(product: BusinessStoreProduct): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'products', product.id]
+      : ['/products', product.id];
   }
 
   removeProduct(product: BusinessStoreProduct): void {

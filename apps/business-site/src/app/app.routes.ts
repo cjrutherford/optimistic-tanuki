@@ -126,12 +126,28 @@ export const appRoutes: Route[] = [
     title: 'Business Platform',
   },
   {
+    path: 'products/:productId',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessProductDetailComponent
+      ),
+    title: 'View Product',
+  },
+  {
     path: 'sites/:siteSlug',
     loadComponent: () =>
       import('@optimistic-tanuki/business-public-ui').then(
         (m) => m.BusinessLandingPageComponent
       ),
     title: 'Business Site',
+  },
+  {
+    path: 'sites/:siteSlug/products/:productId',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessProductDetailComponent
+      ),
+    title: 'View Product',
   },
   {
     path: 'sites/:siteSlug/book',

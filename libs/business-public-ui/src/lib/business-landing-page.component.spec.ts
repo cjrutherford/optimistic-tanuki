@@ -187,6 +187,34 @@ describe('BusinessLandingPageComponent', () => {
     );
   });
 
+  it('renders section navigation CTAs as hash anchors without route prefixing', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'custom-store-link',
+            type: 'custom',
+            title: 'Browse products',
+            enabled: true,
+            order: 7,
+            ctaLabel: 'View storefront',
+            ctaHref: 'storefront',
+          },
+        ],
+      },
+    });
+
+    const anchor = fixture.nativeElement.querySelector(
+      '.custom-section a.cta-primary'
+    ) as HTMLAnchorElement;
+
+    expect(anchor.href.endsWith('#storefront')).toBe(true);
+    expect(anchor.textContent).toContain('View storefront');
+  });
+
   it('keeps the hosted tenant slug in the client portal call to action link', async () => {
     await TestBed.configureTestingModule({
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],

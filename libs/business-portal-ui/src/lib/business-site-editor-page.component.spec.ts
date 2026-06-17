@@ -744,6 +744,42 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(component.isPanelExpanded('offers')).toBe(true);
   });
 
+  it('normalizes section navigation links to page hash anchors before saving', () => {
+    const { component } = createComponent();
+
+    component.draft.update((draft) => {
+      draft.landingPage.sections.push({
+        id: 'custom-store-link',
+        type: 'custom',
+        title: 'Browse products',
+        enabled: true,
+        order: draft.landingPage.sections.length,
+        body: 'Explore the storefront.',
+        ctaLabel: 'View storefront',
+        ctaHref: 'storefront',
+      });
+      return draft;
+    });
+
+    component.save();
+
+    expect(updateSiteConfig).toHaveBeenCalledWith(
+      'config-1',
+      expect.objectContaining({
+        landingPage: expect.objectContaining({
+          sections: expect.arrayContaining([
+            expect.objectContaining({
+              id: 'custom-store-link',
+              ctaLabel: 'View storefront',
+              ctaHref: '#storefront',
+            }),
+          ]),
+        }),
+      }),
+      null
+    );
+  });
+
   it('saves business type, portal capabilities, layout, and custom sections', () => {
     const { component } = createComponent();
 

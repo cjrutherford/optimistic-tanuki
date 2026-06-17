@@ -5156,6 +5156,45 @@ export class BusinessSiteEditorPageComponent {
     );
   }
 
+  private normalizeSectionCtaHref(
+    section: LandingSection,
+    sections: LandingSection[]
+  ): string | undefined {
+    const rawHref = section.ctaHref?.trim();
+    if (!rawHref) {
+      return undefined;
+    }
+
+    if (
+      rawHref.startsWith('#') ||
+      rawHref.startsWith('/') ||
+      rawHref.startsWith('http://') ||
+      rawHref.startsWith('https://') ||
+      rawHref.startsWith('mailto:') ||
+      rawHref.startsWith('tel:')
+    ) {
+      return rawHref;
+    }
+
+    const matchedSection = sections.find(
+      (candidate) =>
+        candidate.id === rawHref ||
+        this.slugify(candidate.title) === this.slugify(rawHref)
+    );
+
+    return matchedSection
+      ? `#${matchedSection.id}`
+      : `#${this.slugify(rawHref)}`;
+  }
+
+  private slugify(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
   private sanitizedDraft(): BusinessSiteConfig {
     const draft = cloneBusinessSiteConfig(this.draft());
 
@@ -5193,7 +5232,10 @@ export class BusinessSiteEditorPageComponent {
           title: section.title.trim() || 'Untitled section',
           body: section.body?.trim(),
           ctaLabel: section.ctaLabel?.trim(),
-          ctaHref: section.ctaHref?.trim(),
+          ctaHref: this.normalizeSectionCtaHref(
+            section,
+            draft.landingPage.sections
+          ),
           image: section.image
             ? {
                 ...section.image,

@@ -135,6 +135,17 @@ describe('appRoutes', () => {
     expect(tenantRoute?.title).toBe('Business Site');
   });
 
+  it('adds public product detail routes for hosted and root business sites', () => {
+    expect(
+      appRoutes.find((route) => route.path === 'products/:productId')
+    ).toBeTruthy();
+    expect(
+      appRoutes.find(
+        (route) => route.path === 'sites/:siteSlug/products/:productId'
+      )
+    ).toBeTruthy();
+  });
+
   it('configures the shared auth and owner onboarding routes for the new owner workflow', () => {
     const authRoute = appRoutes.find((route) => route.path === 'auth');
     const ownerLoginRoute = appRoutes.find(

@@ -329,6 +329,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             <store-product-card
               [product]="storefrontProductCard(product)"
               [showAddToCart]="false"
+              [viewProductHref]="productViewHref(product)"
             ></store-product-card>
             } @empty {
             <div class="offer">
@@ -567,9 +568,9 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></business-rich-content-renderer>
           } @else if (section.body) {
           <p class="body">{{ section.body }}</p>
-          } @if (section.ctaLabel && section.ctaHref) {
+          } @if (section.ctaLabel && sectionCtaHref(section)) {
           <div class="actions">
-            <a class="cta-primary" [routerLink]="section.ctaHref">{{
+            <a class="cta-primary" [href]="sectionCtaHref(section)">{{
               section.ctaLabel
             }}</a>
           </div>
@@ -1470,6 +1471,43 @@ export class BusinessLandingPageComponent {
     return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : null;
   }
 
+  productViewHref(product: BusinessStoreProduct): string {
+    return this.siteSlug
+      ? `/sites/${this.siteSlug}/products/${product.id}`
+      : `/products/${product.id}`;
+  }
+
+  sectionCtaHref(section: LandingSection): string | null {
+    const rawHref = section.ctaHref?.trim();
+    if (!rawHref) {
+      return null;
+    }
+
+    if (rawHref.startsWith('#')) {
+      return rawHref;
+    }
+
+    if (
+      rawHref.startsWith('/') ||
+      rawHref.startsWith('http://') ||
+      rawHref.startsWith('https://') ||
+      rawHref.startsWith('mailto:') ||
+      rawHref.startsWith('tel:')
+    ) {
+      return rawHref;
+    }
+
+    const matchedSection = this.site().landingPage.sections.find(
+      (candidate) =>
+        candidate.id === rawHref ||
+        this.slugify(candidate.title) === this.slugify(rawHref)
+    );
+
+    return matchedSection
+      ? `#${matchedSection.id}`
+      : `#${this.slugify(rawHref)}`;
+  }
+
   ownerName(): string {
     return (
       this.site().brand.ownerName ||
@@ -1512,6 +1550,14 @@ export class BusinessLandingPageComponent {
         left: 'left center',
       }[item.focalPoint ?? 'center'] ?? 'center center'
     );
+  }
+
+  private slugify(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
   }
 
   private isSectionEnabled(type: string): boolean {

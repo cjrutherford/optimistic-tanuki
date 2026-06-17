@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -47,6 +48,7 @@ describe('BusinessOwnerProductsPageComponent', () => {
             user: signal({ userId: 'owner-user-1', profileId: 'profile-1' }),
           },
         },
+        provideRouter([]),
       ],
     });
   });
@@ -58,5 +60,49 @@ describe('BusinessOwnerProductsPageComponent', () => {
     expect(getOwnerProducts).toHaveBeenCalledWith('owner-user-1');
     expect(getStoreProducts).not.toHaveBeenCalled();
     expect(fixture.nativeElement.textContent).toContain('Discovery Session');
+  });
+
+  it('links each owner product to its public view route', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [BusinessOwnerProductsPageComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: {
+                get: (key: string) =>
+                  key === 'siteSlug' ? 'steady-hand-contracting' : null,
+              },
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOwnerProducts,
+            getStoreProducts,
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            user: signal({ userId: 'owner-user-1', profileId: 'profile-1' }),
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(BusinessOwnerProductsPageComponent);
+    fixture.detectChanges();
+    const anchor = fixture.nativeElement.querySelector(
+      '.product-row a[href]'
+    ) as HTMLAnchorElement;
+
+    expect(anchor.href).toContain(
+      '/sites/steady-hand-contracting/products/product-1'
+    );
+    expect(anchor.textContent).toContain('View');
   });
 });
