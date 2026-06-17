@@ -37,11 +37,10 @@ RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install -
 
 COPY --from=builder /usr/src/app/dist/apps/business-site ./dist/apps/business-site
 
-RUN mkdir -p /app/docs/guides /app/apps/business-site/src && \
-    cp /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html && \
-    cp /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs && \
-    cp /usr/src/app/apps/business-site/src/seed-business.mjs /app/apps/business-site/src/seed-business.mjs && \
-    cp /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/apps/business-site/src/sample-tenants.mjs
+COPY --from=builder /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html
+COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs
+COPY --from=builder /usr/src/app/apps/business-site/src/seed-business.mjs /app/apps/business-site/src/seed-business.mjs
+COPY --from=builder /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/apps/business-site/src/sample-tenants.mjs
 
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'if [ "$NODE_ENV" = "development" ]; then' >> /docker-entrypoint.sh && \
