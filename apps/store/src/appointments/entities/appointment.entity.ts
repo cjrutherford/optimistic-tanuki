@@ -19,6 +19,9 @@ export class AppointmentEntity {
   userId: string;
 
   @Column({ type: 'uuid', nullable: true })
+  ownerId: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
   productId: string;
 
   @ManyToOne(() => ProductEntity, { nullable: true })

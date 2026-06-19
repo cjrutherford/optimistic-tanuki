@@ -1,6 +1,7 @@
 export interface Appointment {
   id: string;
   userId: string;
+  ownerId?: string;
   productId?: string;
   product?: any;
   resourceId?: string;
@@ -21,6 +22,7 @@ export interface Appointment {
 
 export interface CreateAppointmentDto {
   userId: string;
+  ownerId?: string;
   productId?: string;
   resourceId?: string;
   title: string;

@@ -5,6 +5,10 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateGeneratedWorkspace } from './lib/deployment-workspace-validation.mjs';
+import {
+  validateComposeImageNames,
+  validateDockerWorkflowMatrix,
+} from './lib/deployment-inventory-validation.mjs';
 
 const repoRoot = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
@@ -73,18 +77,10 @@ function parseNxProjectsScript(script) {
 const buildPush = readYaml(
   path.join(repoRoot, '.github/workflows/build-push.yml')
 );
-const matrixApps = buildPush.jobs['build-and-push'].strategy.matrix.include
-  .map((entry) => entry.app)
-  .sort();
 
 const dockerPublish = readYaml(
   path.join(repoRoot, '.github/workflows/docker-publish.yml')
 );
-const dockerPublishApps = dockerPublish.jobs[
-  'build_and_push'
-].strategy.matrix.include
-  .map((entry) => entry.app)
-  .sort();
 
 const baseKustomization = readYaml(
   path.join(repoRoot, 'k8s/base/kustomization.yaml')
@@ -108,8 +104,20 @@ const overlayFiles = [
 const expectedImageNames = inventory.apps.map((app) => app.ImageName).sort();
 
 const errors = [
-  ...compareList('build-push matrix apps', expectedApps, matrixApps),
-  ...compareList('docker-publish matrix apps', expectedApps, dockerPublishApps),
+  ...validateDockerWorkflowMatrix(
+    'build-push',
+    buildPush,
+    'determine-changes',
+    'build-and-push',
+    expectedApps
+  ),
+  ...validateDockerWorkflowMatrix(
+    'docker-publish',
+    dockerPublish,
+    'determine_changes',
+    'build_and_push',
+    expectedApps
+  ),
   ...compareList(
     'base kustomization resources',
     expectedResources,
@@ -144,8 +152,7 @@ const expectedComposeServices = inventory.apps
   .sort();
 
 errors.push(
-  ...compareList(
-    'docker-compose image names',
+  ...validateComposeImageNames(
     expectedComposeImageNames,
     uniqueComposeImageNames
   )

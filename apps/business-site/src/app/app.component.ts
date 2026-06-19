@@ -5,40 +5,50 @@ import {
   NavigationEnd,
   Router,
   RouterLink,
-  RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { filter } from 'rxjs';
 import {
   DEFAULT_TRAINER_SITE_CONFIG,
-  BusinessApiService,
   BusinessAuthService,
   BusinessSiteConfig,
+  BusinessSiteConfigStore,
   mergeBusinessSiteConfig,
 } from '@optimistic-tanuki/business-data-access';
 
+type StoredThemeConfig = {
+  personalityId: string;
+  primaryColor: string;
+  mode: 'light' | 'dark';
+  version?: string;
+};
+
+type TopNavLink = {
+  label: string;
+  route: string[];
+  fragment?: string;
+};
+
 @Component({
   selector: 'app-root',
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink],
   template: `
     <div class="app-shell">
       <header class="topbar entrance">
-        <a class="brand" routerLink="/">
-          <span class="brand-mark">{{ site().brand.monogram }}</span>
+        <a class="brand" [routerLink]="brandHomeLink()">
+          <span class="brand-mark">{{ brandMark() }}</span>
           <span class="brand-copy">
-            <strong>{{ site().brand.businessName }}</strong>
-            <small>{{ site().brand.tagline }}</small>
+            <strong>{{ brandTitle() }}</strong>
+            <small>{{ brandSubtitle() }}</small>
           </span>
         </a>
 
         <nav class="topnav">
-          <a routerLink="/" fragment="about">About</a>
-          <a routerLink="/" fragment="results">Results</a>
-          <a routerLink="/" fragment="contact">Contact</a>
-          @if (site().features.clientPortal.enabled && !auth.isAuthenticated())
-          {
-          <a routerLink="/client" routerLinkActive="active">Client Portal</a>
+          @for (link of topNavLinks(); track link.label) {
+          <a [routerLink]="link.route" [fragment]="link.fragment">{{
+            link.label
+          }}</a>
           }
         </nav>
 
@@ -87,17 +97,23 @@ import {
 
           @if (isClientAuthenticated()) { @if
           (site().features.clientPortal.enabled) {
-          <a class="ghost" routerLink="/client/dashboard">Client Portal</a>
+          <a class="ghost" [routerLink]="clientDashboardLink()"
+            >Client Portal</a
+          >
           }
           <button class="ghost" (click)="signOutClient()">Sign Out</button>
           } @else if (!auth.isAuthenticated()) { @if
           (site().features.clientPortal.enabled) {
-          <a class="ghost" routerLink="/client/login">Client Login</a>
+          <a class="ghost" [routerLink]="hostedClientAuthLink('login')"
+            >Client Login</a
+          >
           } } @if (auth.isAuthenticated()) {
-          <a class="ghost" routerLink="/owner/dashboard">Workspace</a>
+          <a class="ghost" [routerLink]="ownerDashboardLink()">Workspace</a>
           <button class="solid" (click)="logout()">Sign Out</button>
           } @else if (!isClientAuthenticated()) {
-          <a class="solid" routerLink="/owner/login">Owner Login</a>
+          <a class="solid" [routerLink]="hostedOwnerAuthLink('login')"
+            >Owner Login</a
+          >
           }
         </div>
       </header>
@@ -340,23 +356,125 @@ export class AppComponent {
   readonly auth = inject(BusinessAuthService);
   readonly isClientAuthenticated = this.auth.isClientAuthenticated;
   readonly clientUser = this.auth.clientUser;
-  private readonly api = inject(BusinessApiService);
+  private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly themeService = inject(ThemeService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
   private readonly title = inject(Title);
   private readonly currentUrl = signal(this.router.url || '/');
+  private lastAppliedThemeSignature: string | null = null;
+  private readonly personalityThemeStorageKey =
+    'optimistic-tanuki-personality-theme';
+  private userThemeBeforeHostedRoute: StoredThemeConfig | null | undefined =
+    undefined;
 
   private applySiteTheme(theme: BusinessSiteConfig['theme']): void {
+    const signature = JSON.stringify(theme);
+    if (signature === this.lastAppliedThemeSignature) {
+      return;
+    }
+
+    this.lastAppliedThemeSignature = signature;
     this.themeService.setTheme(theme.mode);
     void this.themeService.setPersonality(theme.personalityId);
     this.themeService.setPrimaryColor(theme.primaryColor);
     this.currentTheme.set(theme.mode);
   }
 
+  private isHostedBusinessRoute(url: string): boolean {
+    return url.startsWith('/sites/');
+  }
+
+  private currentHostedSiteSlug(): string | null {
+    const match = this.currentUrl().match(/^\/sites\/([^/]+)/);
+    return match?.[1] ?? null;
+  }
+
+  private hostedSiteBaseRoute(): string[] | null {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug ? ['/sites', siteSlug] : null;
+  }
+
+  private syncHostedRouteConfig(): void {
+    const siteSlug = this.currentHostedSiteSlug();
+    if (siteSlug) {
+      this.siteConfig.fetch(false, siteSlug).subscribe();
+    }
+  }
+
+  private readStoredTheme(): StoredThemeConfig | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    try {
+      const raw = localStorage.getItem(this.personalityThemeStorageKey);
+      if (!raw) {
+        return null;
+      }
+
+      return JSON.parse(raw) as StoredThemeConfig;
+    } catch {
+      return null;
+    }
+  }
+
+  private applyStoredUserTheme(): void {
+    const storedTheme =
+      this.userThemeBeforeHostedRoute ?? this.readStoredTheme();
+    if (!storedTheme) {
+      this.applySiteTheme(this.site().theme);
+      return;
+    }
+
+    this.lastAppliedThemeSignature = JSON.stringify(storedTheme);
+    this.themeService.setTheme(storedTheme.mode);
+    void this.themeService.setPersonality(storedTheme.personalityId);
+    this.themeService.setPrimaryColor(storedTheme.primaryColor);
+    this.currentTheme.set(storedTheme.mode);
+  }
+
+  private syncRouteTheme(site: BusinessSiteConfig): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const onHostedRoute = this.isHostedBusinessRoute(this.currentUrl());
+
+    if (onHostedRoute) {
+      if (this.userThemeBeforeHostedRoute === undefined) {
+        this.userThemeBeforeHostedRoute = this.readStoredTheme();
+      }
+      this.applySiteTheme(site.theme);
+      return;
+    }
+
+    if (this.userThemeBeforeHostedRoute !== undefined) {
+      this.applyStoredUserTheme();
+      this.userThemeBeforeHostedRoute = undefined;
+      return;
+    }
+
+    if (!this.readStoredTheme()) {
+      this.applySiteTheme(site.theme);
+    }
+  }
+
   constructor() {
     effect(() => {
       this.title.setTitle(this.pageTitleForUrl(this.currentUrl()));
+    });
+
+    effect(() => {
+      const site = mergeBusinessSiteConfig(this.siteConfig.site());
+      this.site.set(site);
+      this.configId.set(this.siteConfig.configId());
+      this.syncRouteTheme(site);
+    });
+
+    effect(() => {
+      this.currentUrl();
+      this.syncHostedRouteConfig();
     });
 
     this.router.events
@@ -369,28 +487,8 @@ export class AppComponent {
         this.currentUrl.set(event.urlAfterRedirects || event.url || '/');
       });
 
-    this.api.getSiteConfig().subscribe({
-      next: (res) => {
-        this.configId.set(res.configId ?? null);
-        const merged = mergeBusinessSiteConfig(
-          res.config ?? DEFAULT_TRAINER_SITE_CONFIG
-        );
-        this.site.set(merged);
-
-        if (
-          isPlatformBrowser(this.platformId) &&
-          !localStorage.getItem('optimistic-tanuki-personality-theme')
-        ) {
-          this.applySiteTheme(merged.theme);
-        }
-      },
-      error: () => this.site.set(DEFAULT_TRAINER_SITE_CONFIG),
-    });
-
     if (isPlatformBrowser(this.platformId)) {
-      const hasStoredPersonalityTheme = !!localStorage.getItem(
-        'optimistic-tanuki-personality-theme'
-      );
+      const hasStoredPersonalityTheme = !!this.readStoredTheme();
 
       if (!hasStoredPersonalityTheme) {
         this.applySiteTheme(this.site().theme);
@@ -422,15 +520,18 @@ export class AppComponent {
     const tagline = this.site().brand.tagline?.trim();
     const brandTitle = businessName || 'Business';
 
-    if (url.startsWith('/book')) {
+    if (url.startsWith('/sites/') && url.includes('/book')) {
       return `${this.site().contact.consultationLabel} | ${brandTitle}`;
     }
 
-    if (url.startsWith('/client/login')) {
+    if (url.startsWith('/client/login') || url.includes('/client/login')) {
       return `Client Login | ${brandTitle}`;
     }
 
-    if (url.startsWith('/client/register')) {
+    if (
+      url.startsWith('/client/register') ||
+      url.includes('/client/register')
+    ) {
       return `Client Registration | ${brandTitle}`;
     }
 
@@ -438,7 +539,11 @@ export class AppComponent {
       return `Client Portal | ${brandTitle}`;
     }
 
-    if (url.startsWith('/owner/login')) {
+    if (url.startsWith('/owner/register')) {
+      return `Owner Registration | ${brandTitle}`;
+    }
+
+    if (url.startsWith('/auth') || url.startsWith('/owner/login')) {
       return `Owner Login | ${brandTitle}`;
     }
 
@@ -447,5 +552,81 @@ export class AppComponent {
     }
 
     return tagline ? `${brandTitle} | ${tagline}` : brandTitle;
+  }
+
+  brandTitle(): string {
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.businessName
+      : 'Business Site Platform';
+  }
+
+  brandSubtitle(): string {
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.tagline
+      : 'Hosted onboarding, editing, and client connection flows.';
+  }
+
+  brandMark(): string {
+    return this.isHostedBusinessRoute(this.currentUrl())
+      ? this.site().brand.monogram
+      : 'BS';
+  }
+
+  brandHomeLink(): string[] {
+    return this.hostedSiteBaseRoute() ?? ['/'];
+  }
+
+  topNavLinks(): TopNavLink[] {
+    const hostedBaseRoute = this.hostedSiteBaseRoute();
+    if (hostedBaseRoute) {
+      const hostedLinks: TopNavLink[] = [
+        { label: 'Overview', route: hostedBaseRoute, fragment: 'about' },
+        { label: 'Results', route: hostedBaseRoute, fragment: 'results' },
+        { label: 'Contact', route: hostedBaseRoute, fragment: 'contact' },
+      ];
+
+      if (this.site().features.booking.enabled) {
+        hostedLinks.push({
+          label: 'Book',
+          route: [...hostedBaseRoute, 'book'],
+        });
+      }
+
+      return hostedLinks;
+    }
+
+    return [
+      { label: 'Home', route: ['/'] },
+      { label: 'Owners', route: ['/auth'] },
+      { label: 'Clients', route: ['/client/login'] },
+    ];
+  }
+
+  hostedClientAuthLink(mode: 'login' | 'register'): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'client', mode] : ['/client', mode];
+  }
+
+  hostedOwnerAuthLink(mode: 'login' | 'register'): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', mode] : ['/owner', mode];
+  }
+
+  clientPortalEntryLink(): string[] {
+    return this.hostedClientAuthLink('login');
+  }
+
+  clientDashboardLink(): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'dashboard']
+      : ['/client/dashboard'];
+  }
+
+  ownerDashboardLink(): string[] {
+    const siteSlug = this.currentHostedSiteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', 'dashboard']
+      : ['/owner/dashboard'];
   }
 }

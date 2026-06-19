@@ -14,13 +14,16 @@ export class BusinessSiteAdminService {
     return this.http.get<SiteConfigResponse>('/api/business/site-config');
   }
 
-  updateCatalogSource(
+  updateCommerceSettings(
     configId: string | null,
-    source: 'manual' | 'store'
+    payload: {
+      source: 'manual' | 'store';
+      storeEnabled: boolean;
+    }
   ): Observable<unknown> {
     return this.http.put('/api/business/site-config/catalog-source', {
       configId,
-      source,
+      ...payload,
     });
   }
 }

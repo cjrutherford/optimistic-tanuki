@@ -13,6 +13,9 @@ export class TrainerRoutineAssignmentEntity {
   @Column({ type: 'uuid' })
   clientId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  ownerId: string | null;
+
   @Column({ type: 'varchar', length: 255 })
   clientName: string;
 

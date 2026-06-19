@@ -20,6 +20,12 @@ export class ProductsService {
     return this.productRepository.find({ where: { active: true } });
   }
 
+  async findOwnerProducts(ownerId: string): Promise<ProductEntity[]> {
+    return this.productRepository.find({
+      where: [{ ownerId }, { ownerId: null }],
+    });
+  }
+
   async findOne(id: string): Promise<ProductEntity> {
     return this.productRepository.findOne({ where: { id } });
   }

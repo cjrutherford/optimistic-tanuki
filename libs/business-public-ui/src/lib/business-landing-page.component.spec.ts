@@ -1,13 +1,17 @@
 import { Component } from '@angular/core';
+import { convertToParamMap } from '@angular/router';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, RouterLink, provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { of } from 'rxjs';
 
 import {
   BusinessApiService,
+  BusinessSiteConfigStore,
   DEFAULT_BUSINESS_SITE_CONFIG,
   type BusinessSiteConfig,
   type BusinessOffer,
+  type LandingSectionMotionConfig,
 } from '@optimistic-tanuki/business-data-access';
 
 import { BusinessLandingPageComponent } from './business-landing-page.component';
@@ -45,14 +49,39 @@ describe('BusinessLandingPageComponent', () => {
   };
 
   async function render(config: BusinessSiteConfig | null = null) {
+    const getStoreProducts = jest.fn().mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          name: 'Collector Print',
+          description: 'Archival print release.',
+          price: 48,
+          type: 'physical',
+          active: true,
+          stock: 6,
+          imageUrl: '/assets/collector-print.jpg',
+        },
+      ])
+    );
+
     await TestBed.configureTestingModule({
       imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
       providers: [
         provideRouter([]),
         {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => config ?? DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest
+              .fn()
+              .mockReturnValue(of(config ?? DEFAULT_BUSINESS_SITE_CONFIG)),
+          },
+        },
+        {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts,
             getSiteConfig: jest
               .fn()
               .mockReturnValue(of({ configId: null, config })),
@@ -65,6 +94,185 @@ describe('BusinessLandingPageComponent', () => {
     fixture.detectChanges();
     return fixture;
   }
+
+  it('requests offers using the hosted tenant slug from the route', async () => {
+    const getOffers = jest.fn().mockReturnValue(of(offers));
+
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers,
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(of({ configId: null, config: null })),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => DEFAULT_BUSINESS_SITE_CONFIG),
+            fetch: jest.fn().mockReturnValue(of(DEFAULT_BUSINESS_SITE_CONFIG)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    expect(getOffers).toHaveBeenCalledWith('steady-hand-contracting');
+  });
+
+  it('keeps the hosted tenant slug in the booking call to action link', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/book'
+    );
+  });
+
+  it('renders section navigation CTAs as hash anchors without route prefixing', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'custom-store-link',
+            type: 'custom',
+            title: 'Browse products',
+            enabled: true,
+            order: 7,
+            ctaLabel: 'View storefront',
+            ctaHref: 'storefront',
+          },
+        ],
+      },
+    });
+
+    const anchor = fixture.nativeElement.querySelector(
+      '.custom-section a.cta-primary'
+    ) as HTMLAnchorElement;
+
+    expect(anchor.href.endsWith('#storefront')).toBe(true);
+    expect(anchor.textContent).toContain('View storefront');
+  });
+
+  it('keeps the hosted tenant slug in the client portal call to action link', async () => {
+    await TestBed.configureTestingModule({
+      imports: [BusinessLandingPageComponent, MockParticleVeilComponent],
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({
+                siteSlug: 'steady-hand-contracting',
+              }),
+            },
+          },
+        },
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
+            getSiteConfig: jest
+              .fn()
+              .mockReturnValue(
+                of({ configId: null, config: configWithServices })
+              ),
+          },
+        },
+        {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+      ],
+    }).compileComponents();
+
+    const fixture = TestBed.createComponent(BusinessLandingPageComponent);
+    fixture.detectChanges();
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink));
+
+    expect(links.map((link) => link.href)).toContain(
+      '/sites/steady-hand-contracting/client/login'
+    );
+  });
+
+  it('does not render a generic root booking link when there is no hosted tenant slug', async () => {
+    const fixture = await render(configWithServices);
+
+    const links = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink).href);
+
+    expect(links).not.toContain('/book');
+  });
 
   it('uses business-facing fallback identity and copy', async () => {
     const fixture = await render(configWithServices);
@@ -96,9 +304,17 @@ describe('BusinessLandingPageComponent', () => {
       providers: [
         provideRouter([]),
         {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+        {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -123,9 +339,17 @@ describe('BusinessLandingPageComponent', () => {
       providers: [
         provideRouter([]),
         {
+          provide: BusinessSiteConfigStore,
+          useValue: {
+            site: jest.fn(() => configWithServices),
+            fetch: jest.fn().mockReturnValue(of(configWithServices)),
+          },
+        },
+        {
           provide: BusinessApiService,
           useValue: {
             getOffers: jest.fn().mockReturnValue(of(offers)),
+            getStoreProducts: jest.fn().mockReturnValue(of([])),
             getSiteConfig: jest
               .fn()
               .mockReturnValue(
@@ -195,6 +419,59 @@ describe('BusinessLandingPageComponent', () => {
     ).toBeLessThan(text.indexOf(DEFAULT_BUSINESS_SITE_CONFIG.brand.tagline));
   });
 
+  it('renders storefront inventory only when the store feature is enabled', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      features: {
+        ...configWithServices.features,
+        store: { enabled: true },
+      },
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'storefront',
+            type: 'store',
+            title: 'Shop the current release',
+            enabled: true,
+            order: 6,
+          },
+        ],
+      },
+    });
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Shop the current release'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Collector Print');
+  });
+
+  it('hides storefront inventory when the store feature is disabled', async () => {
+    const fixture = await render({
+      ...configWithServices,
+      features: {
+        ...configWithServices.features,
+        store: { enabled: false },
+      },
+      landingPage: {
+        ...configWithServices.landingPage,
+        sections: [
+          ...configWithServices.landingPage.sections,
+          {
+            id: 'storefront',
+            type: 'store',
+            title: 'Shop the current release',
+            enabled: true,
+            order: 6,
+          },
+        ],
+      },
+    });
+
+    expect(fixture.nativeElement.textContent).not.toContain('Collector Print');
+  });
+
   it('hides booking, testimonials, and client portal entry points when their features are disabled', async () => {
     const fixture = await render({
       ...DEFAULT_BUSINESS_SITE_CONFIG,
@@ -203,6 +480,7 @@ describe('BusinessLandingPageComponent', () => {
         consultationLabel: 'Book strategy session',
       },
       features: {
+        store: { enabled: false },
         booking: { enabled: false, allowOnlinePayment: false },
         clientPortal: { enabled: false },
         clientTasks: { enabled: false, allowClientCompletion: false },
@@ -238,6 +516,38 @@ describe('BusinessLandingPageComponent', () => {
 
     expect(text).toContain('North Star Advisory');
     expect(text).toContain('Jordan Vale');
+  });
+
+  it('renders rich content for the hero section when configured', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'hero'
+              ? {
+                  ...section,
+                  richContent: {
+                    title: 'Hero story',
+                    content:
+                      '<p>Directly editable hero copy for the public landing page.</p>',
+                    injectedComponents: [],
+                    themeConfig: {
+                      theme: 'light',
+                      accentColor: '#1f7a63',
+                    },
+                  },
+                }
+              : section
+        ),
+      },
+    });
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain(
+      'Directly editable hero copy for the public landing page.'
+    );
   });
 
   it('applies the configured split layout and renders custom sections', async () => {
@@ -403,18 +713,27 @@ describe('BusinessLandingPageComponent', () => {
     );
   });
 
-  it('marks specialty chips as theme-aware in the owner profile block', async () => {
+  it('folds credentials and specialties into the about section instead of rendering a separate hero owner panel', async () => {
     const fixture = await render({
       ...configWithServices,
       brand: {
         ...configWithServices.brand,
+        ownerName: 'Jordan Vale',
+        credentials: ['ISA Certified Arborist', 'Fully insured crew'],
         specializations: ['Complex scheduling', 'Operational reset'],
       },
     });
+    const host = fixture.nativeElement as HTMLElement;
+    const heroSection = host.querySelector('[data-section-id="hero"]');
+    const aboutSection = host.querySelector('[data-section-id="about"]');
     const chips = Array.from(
-      fixture.nativeElement.querySelectorAll('.specialties span')
+      aboutSection?.querySelectorAll('.specialties span') ?? []
     ) as HTMLElement[];
 
+    expect(heroSection?.querySelector('.profile')).toBeFalsy();
+    expect(aboutSection?.textContent).toContain('Jordan Vale');
+    expect(aboutSection?.textContent).toContain('ISA Certified Arborist');
+    expect(aboutSection?.textContent).toContain('Fully insured crew');
     expect(chips.length).toBeGreaterThan(0);
     expect(chips.every((chip) => chip.dataset['themeAware'] === 'true')).toBe(
       true
@@ -496,5 +815,135 @@ describe('BusinessLandingPageComponent', () => {
     expect(
       host.querySelector('[data-motion-kind="shimmer-beam"]')
     ).toBeTruthy();
+  });
+
+  it('renders motion as a background layer for non-hero sections and does not drop section content', async () => {
+    const aboutMotion: LandingSectionMotionConfig = {
+      kind: 'aurora-ribbon',
+      intensity: 0.5,
+    };
+
+    const servicesMotion: LandingSectionMotionConfig = {
+      kind: 'pulse-rings',
+      ringCount: 2,
+      reducedMotion: true,
+    };
+
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      brand: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.brand,
+        businessName: 'Ledgerline',
+        longBio: 'About Ledgerline business copy.',
+      },
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'about-motion',
+            type: 'about',
+            title: 'About Ledgerline',
+            enabled: true,
+            order: 0,
+            motion: aboutMotion,
+          },
+          {
+            id: 'services-motion',
+            type: 'services',
+            title: 'Our Services',
+            enabled: true,
+            order: 1,
+            motion: servicesMotion,
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.textContent).toContain('About Ledgerline');
+    expect(host.textContent).toContain('Ledgerline');
+    expect(host.textContent).toContain('About Ledgerline business copy.');
+
+    const aboutShell = host.querySelector('[data-section-id="about-motion"]');
+    const servicesShell = host.querySelector(
+      '[data-section-id="services-motion"]'
+    );
+
+    expect(aboutShell?.getAttribute('data-motion-kind')).toBe('aurora-ribbon');
+    expect(aboutShell?.querySelector('.section-motion')).toBeTruthy();
+
+    expect(servicesShell?.getAttribute('data-motion-kind')).toBe('pulse-rings');
+    expect(servicesShell?.querySelector('.section-motion')).toBeTruthy();
+  });
+
+  it('stretches motion surfaces to fill the entire section shell', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: [
+          {
+            id: 'about-motion',
+            type: 'about',
+            title: 'About',
+            enabled: true,
+            order: 0,
+            motion: {
+              kind: 'aurora-ribbon',
+            },
+          },
+        ],
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    const motionSurface = host.querySelector(
+      '[data-section-id="about-motion"] .section-motion .aurora-ribbon'
+    ) as HTMLElement | null;
+
+    expect(motionSurface).toBeTruthy();
+    expect(motionSurface?.style.height).toBe('100%');
+  });
+
+  it('renders an optional contact-section image with the cleaned two-column layout', async () => {
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        layout: 'single-column',
+        sections: DEFAULT_BUSINESS_SITE_CONFIG.landingPage.sections.map(
+          (section) =>
+            section.id === 'contact'
+              ? {
+                  ...section,
+                  image: {
+                    sourceType: 'asset',
+                    src: '/assets/business/contact.jpg',
+                    alt: 'Studio portrait',
+                    caption: 'Meet in person or remotely.',
+                    aspect: 'portrait',
+                    fit: 'cover',
+                    focalPoint: 'center',
+                  },
+                }
+              : section
+        ),
+      },
+    } as BusinessSiteConfig);
+
+    const host = fixture.nativeElement as HTMLElement;
+    const contactSection = host.querySelector('[data-section-id="contact"]');
+    const contactImage = contactSection?.querySelector(
+      '.contact-media img'
+    ) as HTMLImageElement | null;
+    const contactGrid = contactSection?.querySelector('.contact-grid');
+
+    expect(contactGrid?.classList.contains('contact-grid-with-image')).toBe(
+      true
+    );
+    expect(contactImage?.src).toContain('/assets/business/contact.jpg');
+    expect(contactImage?.alt).toBe('Studio portrait');
+    expect(contactSection?.textContent).toContain(
+      'Meet in person or remotely.'
+    );
   });
 });

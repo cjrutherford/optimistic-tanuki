@@ -40,6 +40,7 @@ import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 
 type BusinessLeadIntakeDto = {
+  siteSlug?: string;
   name: string;
   email?: string;
   phone?: string;
@@ -119,6 +120,217 @@ export class TrainerController {
     return lead?.status === LeadStatus.WON;
   }
 
+  private async loadOwnerAppointments(ownerId: string) {
+    return (await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {
+        ownerId,
+      })
+    )) as any[];
+  }
+
+  private latestBooking(bookings: any[]): any | null {
+    return (
+      [...bookings]
+        .sort((a, b) => {
+          const aTime = new Date(a?.startTime ?? a?.updatedAt ?? 0).getTime();
+          const bTime = new Date(b?.startTime ?? b?.updatedAt ?? 0).getTime();
+          return bTime - aTime;
+        })
+        .at(0) ?? null
+    );
+  }
+
+  private buildClientLifecycleStatus(
+    lead: any | null,
+    bookings: any[]
+  ): {
+    stage:
+      | 'new_lead'
+      | 'lead_under_review'
+      | 'accepted_client'
+      | 'booking_requested'
+      | 'booking_confirmed'
+      | 'session_completed'
+      | 'invoice_due';
+    nextAction: string;
+    primaryAction: 'request_consultation' | 'await_review' | 'book_session';
+  } {
+    if (!lead) {
+      return {
+        stage: 'new_lead',
+        nextAction:
+          'Share your goals to request a consultation and start the review process.',
+        primaryAction: 'request_consultation',
+      };
+    }
+
+    if (!this.isAcceptedLead(lead)) {
+      return {
+        stage: 'lead_under_review',
+        nextAction:
+          'Your request is under review. The business will follow up before booking opens.',
+        primaryAction: 'await_review',
+      };
+    }
+
+    const latestBooking = this.latestBooking(bookings);
+
+    if (!latestBooking) {
+      return {
+        stage: 'accepted_client',
+        nextAction: 'Choose a published time to request your next session.',
+        primaryAction: 'book_session',
+      };
+    }
+
+    if (latestBooking.status === 'pending') {
+      return {
+        stage: 'booking_requested',
+        nextAction: 'Your booking request is pending business confirmation.',
+        primaryAction: 'book_session',
+      };
+    }
+
+    if (latestBooking.status === 'approved') {
+      return {
+        stage: 'booking_confirmed',
+        nextAction:
+          'Your booking is scheduled. Review the details in your client workspace.',
+        primaryAction: 'book_session',
+      };
+    }
+
+    if (
+      latestBooking.status === 'completed' &&
+      Number(latestBooking.totalCost)
+    ) {
+      return {
+        stage: 'invoice_due',
+        nextAction:
+          'Your session is complete. Pay the invoice in your client workspace.',
+        primaryAction: 'book_session',
+      };
+    }
+
+    return {
+      stage: 'session_completed',
+      nextAction:
+        'Your session is complete. Watch for follow-up and billing details.',
+      primaryAction: 'book_session',
+    };
+  }
+
+  private buildOwnerWorkflow(leads: any[], bookings: any[]) {
+    const leadByUserId = new Map(
+      leads
+        .filter((lead) => typeof lead?.userId === 'string' && lead.userId)
+        .map((lead) => [lead.userId, lead])
+    );
+
+    const workflow: Array<Record<string, unknown>> = leads
+      .filter((lead) => !this.isAcceptedLead(lead))
+      .map((lead) => ({
+        id: `lead:${lead.id}`,
+        leadId: lead.id,
+        title: lead.name || lead.email || 'New lead',
+        subtitle: lead.email || lead.phone || lead.source || '',
+        statusLabel: String(lead.status || 'new'),
+        stage:
+          lead.status === LeadStatus.CONTACTED
+            ? ('lead_under_review' as const)
+            : ('new_lead' as const),
+        bucket: 'needs_response' as const,
+        nextAction: 'Accept the client or follow up before booking.',
+        details: [
+          lead?.userId && lead.userId !== 'anonymous-business-site'
+            ? 'Linked client account'
+            : 'No account',
+          lead.notes || 'No intake notes provided.',
+        ],
+        primaryAction: 'accept_client' as const,
+      }));
+
+    for (const booking of bookings) {
+      const lead = leadByUserId.get(booking.userId);
+      const title = lead?.name || booking.title || 'Client booking';
+      const subtitle =
+        lead?.email ||
+        lead?.phone ||
+        this.formatWindow(booking.startTime, booking.endTime);
+
+      if (booking.status === 'pending') {
+        workflow.push({
+          id: `booking:${booking.id}`,
+          bookingId: booking.id,
+          title,
+          subtitle,
+          statusLabel: 'pending',
+          stage: 'booking_requested',
+          bucket: 'ready_to_schedule',
+          nextAction: 'Review the request and confirm the schedule.',
+          details: [
+            booking.description || 'No client context provided.',
+            this.formatWindow(booking.startTime, booking.endTime),
+          ],
+          primaryAction: 'approve_booking',
+        });
+        continue;
+      }
+
+      if (booking.status === 'approved') {
+        workflow.push({
+          id: `booking:${booking.id}`,
+          bookingId: booking.id,
+          title,
+          subtitle,
+          statusLabel: 'approved',
+          stage: 'booking_confirmed',
+          bucket: 'active_clients',
+          nextAction: 'Complete the session when delivery is finished.',
+          details: [this.formatWindow(booking.startTime, booking.endTime)],
+          primaryAction: 'complete_booking',
+        });
+        continue;
+      }
+
+      if (booking.status === 'completed' && !Number(booking.totalCost)) {
+        workflow.push({
+          id: `booking:${booking.id}`,
+          bookingId: booking.id,
+          title,
+          subtitle,
+          statusLabel: 'completed',
+          stage: 'session_completed',
+          bucket: 'needs_invoicing',
+          nextAction: 'Generate the invoice for the completed session.',
+          details: [this.formatWindow(booking.startTime, booking.endTime)],
+          primaryAction: 'generate_invoice',
+        });
+        continue;
+      }
+
+      if (booking.status === 'completed' && Number(booking.totalCost)) {
+        workflow.push({
+          id: `booking:${booking.id}`,
+          bookingId: booking.id,
+          title,
+          subtitle,
+          statusLabel: 'invoice due',
+          stage: 'invoice_due',
+          bucket: 'active_clients',
+          nextAction: 'Payment is still outstanding for this completed work.',
+          details: [
+            this.formatWindow(booking.startTime, booking.endTime),
+            `Invoice total: $${booking.totalCost}`,
+          ],
+          primaryAction: 'none',
+        });
+      }
+    }
+
+    return workflow;
+  }
+
   private async loadLeadContext() {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
@@ -127,6 +339,27 @@ export class TrainerController {
     )) as { config?: Record<string, any> } | null;
 
     return this.getBusinessLeadContext(result?.config);
+  }
+
+  private async loadSiteConfigBySlug(slug?: string) {
+    const normalizedSlug = slug?.trim();
+    const result = (await firstValueFrom(
+      this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
+        configKey: 'default',
+        slug: normalizedSlug || undefined,
+      })
+    )) as { config?: Record<string, any> } | null;
+
+    return result?.config ?? {};
+  }
+
+  private async loadOwnerUserIdForSlug(slug?: string): Promise<string | null> {
+    const config = await this.loadSiteConfigBySlug(slug);
+    const ownerUserId = config?.site?.ownerUserId;
+
+    return typeof ownerUserId === 'string' && ownerUserId.trim()
+      ? ownerUserId.trim()
+      : null;
   }
 
   private async loadSiteConfig() {
@@ -139,18 +372,34 @@ export class TrainerController {
     return result?.config ?? {};
   }
 
-  private async loadActiveStoreServiceProducts() {
+  @Get('sites')
+  async listPublishedSites() {
+    return firstValueFrom(
+      this.storeService.send(
+        TrainerConfigCommands.LIST_PUBLIC_SITE_SUMMARIES,
+        {}
+      )
+    );
+  }
+
+  private async loadActiveStoreServiceProducts(ownerId?: string | null) {
     const products = (await firstValueFrom(
-      this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
+      ownerId
+        ? this.storeService.send(ProductCommands.FIND_OWNER_PRODUCTS, ownerId)
+        : this.storeService.send(ProductCommands.FIND_ALL_PRODUCTS, {})
     )) as Array<any>;
+
+    if (!Array.isArray(products)) {
+      return [];
+    }
 
     return products.filter(
       (product) => product?.active !== false && product?.type === 'service'
     );
   }
 
-  private async assertStoreCatalogPublishReady() {
-    const serviceProducts = await this.loadActiveStoreServiceProducts();
+  private async assertStoreCatalogPublishReady(ownerId?: string | null) {
+    const serviceProducts = await this.loadActiveStoreServiceProducts(ownerId);
 
     if (!serviceProducts.length) {
       throw new BadRequestException(
@@ -172,8 +421,10 @@ export class TrainerController {
     }
   }
 
-  private async loadBusinessLeads() {
-    const leadContext = await this.loadLeadContext();
+  private async loadBusinessLeads(slug?: string) {
+    const leadContext = slug
+      ? this.getBusinessLeadContext(await this.loadSiteConfigBySlug(slug))
+      : await this.loadLeadContext();
     const leads = (await firstValueFrom(
       this.leadService.send({ cmd: LeadCommands.FIND_ALL }, leadContext)
     )) as any[];
@@ -184,8 +435,26 @@ export class TrainerController {
     };
   }
 
-  private async requireAcceptedClient(user: UserDetails) {
-    const { leads } = await this.loadBusinessLeads();
+  private formatWindow(
+    startTime: string | Date | undefined,
+    endTime: string | Date | undefined
+  ): string {
+    if (!startTime || !endTime) {
+      return 'Schedule pending';
+    }
+
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return 'Schedule pending';
+    }
+
+    return `${start.toLocaleString()} - ${end.toLocaleString()}`;
+  }
+
+  private async requireAcceptedClient(user: UserDetails, slug?: string) {
+    const { leads } = await this.loadBusinessLeads(slug);
     const acceptedLead =
       leads.find(
         (lead) => lead?.userId === user.userId && this.isAcceptedLead(lead)
@@ -203,10 +472,11 @@ export class TrainerController {
   // ─── Public endpoints ────────────────────────────────────────────────────────
 
   @Get('offers')
-  async getOffers() {
+  async getOffers(@Query('slug') slug?: string) {
     const configResult = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
         configKey: 'default',
+        slug: slug?.trim() || undefined,
       })
     )) as { config?: Record<string, any> } | null;
     const serviceCatalogSource =
@@ -214,6 +484,11 @@ export class TrainerController {
     const configuredServices = Array.isArray(configResult?.config?.services)
       ? configResult?.config?.services
       : [];
+    const ownerUserId =
+      typeof configResult?.config?.site?.ownerUserId === 'string' &&
+      configResult.config.site.ownerUserId.trim()
+        ? configResult.config.site.ownerUserId.trim()
+        : null;
 
     if (serviceCatalogSource === 'manual' && configuredServices.length) {
       return configuredServices.map((service: any) => ({
@@ -225,7 +500,9 @@ export class TrainerController {
       }));
     }
 
-    const serviceProducts = await this.loadActiveStoreServiceProducts();
+    const serviceProducts = await this.loadActiveStoreServiceProducts(
+      ownerUserId
+    );
 
     if (serviceProducts.length) {
       return serviceProducts.map((product) => ({
@@ -264,14 +541,36 @@ export class TrainerController {
   }
 
   @Get('availabilities')
-  getAvailabilities() {
+  async getAvailabilities(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
+    if (ownerUserId) {
+      return firstValueFrom(
+        this.storeService.send(
+          AvailabilityCommands.FIND_OWNER_AVAILABILITIES,
+          ownerUserId
+        )
+      );
+    }
+
     return firstValueFrom(
       this.storeService.send(AvailabilityCommands.FIND_ALL_AVAILABILITIES, {})
     );
   }
 
   @Get('availability-overrides')
-  getAvailabilityOverrides() {
+  async getAvailabilityOverrides(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
+    if (ownerUserId) {
+      return firstValueFrom(
+        this.storeService.send(
+          AvailabilityCommands.FIND_OWNER_AVAILABILITY_OVERRIDES,
+          ownerUserId
+        )
+      );
+    }
+
     return firstValueFrom(
       this.storeService.send(
         AvailabilityCommands.FIND_ALL_AVAILABILITY_OVERRIDES,
@@ -281,9 +580,13 @@ export class TrainerController {
   }
 
   @Get('busy-windows')
-  async getBusyWindows() {
+  async getBusyWindows(@Query('slug') slug?: string) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
     const appointments = (await firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {})
+      this.storeService.send(
+        AppointmentCommands.FIND_ALL_APPOINTMENTS,
+        ownerUserId ? { ownerId: ownerUserId } : {}
+      )
     )) as Array<any>;
 
     return appointments
@@ -298,12 +601,19 @@ export class TrainerController {
       }));
   }
 
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('site-config')
-  async getSiteConfig() {
+  async getSiteConfig(
+    @Query('slug') slug?: string,
+    @User() user?: UserDetails | null
+  ) {
     try {
       const result = await firstValueFrom(
         this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
           configKey: 'default',
+          slug: slug?.trim() || undefined,
+          profileId: slug?.trim() ? undefined : user?.profileId || undefined,
         })
       );
       if (!result || !result.config) {
@@ -321,13 +631,18 @@ export class TrainerController {
   @Post('bookings')
   async createBooking(
     @Body() payload: Omit<CreateAppointmentDto, 'userId'>,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
-    await this.requireAcceptedClient(user);
+    await this.requireAcceptedClient(user, slug || (payload as any)?.siteSlug);
+    const ownerUserId = await this.loadOwnerUserIdForSlug(
+      slug || (payload as any)?.siteSlug
+    );
 
     return firstValueFrom(
       this.storeService.send(AppointmentCommands.CREATE_APPOINTMENT, {
         ...payload,
+        ownerId: ownerUserId || undefined,
         userId: user.userId,
       })
     );
@@ -343,6 +658,7 @@ export class TrainerController {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
         configKey: 'default',
+        slug: payload.siteSlug?.trim() || undefined,
       })
     )) as { config?: Record<string, any> } | null;
     const leadContext = this.getBusinessLeadContext(result?.config);
@@ -377,30 +693,46 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('bookings')
-  getClientBookings(@User() user: UserDetails) {
+  async getClientBookings(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send(
-        AppointmentCommands.FIND_USER_APPOINTMENTS,
-        user.userId
-      )
+      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, {
+        userId: user.userId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Get('client/invoices')
-  getClientInvoices(@User() user: UserDetails) {
+  async getClientInvoices(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send(
-        AppointmentCommands.FIND_USER_INVOICES,
-        user.userId
-      )
+      this.storeService.send(AppointmentCommands.FIND_USER_INVOICES, {
+        userId: user.userId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Post('client/invoices/:id/pay')
-  async payClientInvoice(@Param('id') id: string, @User() user: UserDetails) {
-    const config = await this.loadSiteConfig();
+  async payClientInvoice(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const config = slug
+      ? await this.loadSiteConfigBySlug(slug)
+      : await this.loadSiteConfig();
     if (config?.features?.booking?.allowOnlinePayment !== true) {
       throw new BadRequestException(
         'Online payment is disabled for this business.'
@@ -417,14 +749,29 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('client-status')
-  async getClientBookingStatus(@User() user: UserDetails) {
-    const { leads } = await this.loadBusinessLeads();
+  async getClientBookingStatus(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const { leads } = await this.loadBusinessLeads(slug);
     const lead = leads.find((entry) => entry?.userId === user.userId) ?? null;
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+    const bookings = (await firstValueFrom(
+      this.storeService.send(AppointmentCommands.FIND_USER_APPOINTMENTS, {
+        userId: user.userId,
+        ownerId: ownerUserId || undefined,
+      })
+    )) as any[];
+    const lifecycle = this.buildClientLifecycleStatus(lead, bookings);
 
     return {
       accepted: !!lead && this.isAcceptedLead(lead),
       leadId: lead?.id ?? null,
       leadStatus: lead?.status ?? null,
+      hasAccount: true,
+      stage: lifecycle.stage,
+      nextAction: lifecycle.nextAction,
+      primaryAction: lifecycle.primaryAction,
     };
   }
 
@@ -433,10 +780,30 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Get('owner/bookings')
-  getOwnerBookings() {
+  getOwnerBookings(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {})
+      this.storeService.send(AppointmentCommands.FIND_ALL_APPOINTMENTS, {
+        ownerId: user.userId,
+      })
     );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('owner/workflow')
+  async getOwnerWorkflow(
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
+  ) {
+    const normalizedSlug = slug?.trim();
+    const slugOwnerUserId = normalizedSlug
+      ? await this.loadOwnerUserIdForSlug(normalizedSlug)
+      : null;
+    const ownerId = slugOwnerUserId || user.userId;
+    const leads = (await this.loadBusinessLeads(normalizedSlug)).leads;
+    const bookings = await this.loadOwnerAppointments(ownerId);
+
+    return this.buildOwnerWorkflow(leads, bookings);
   }
 
   @RequirePermissions('app-config.update')
@@ -685,8 +1052,10 @@ export class TrainerController {
   async updateSiteConfig(
     @Body()
     payload: { configId?: string | null; config: Record<string, unknown> },
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
+    const normalizedSlug = slug?.trim();
     const config = {
       ...(payload.config ?? {}),
       leadContext: {
@@ -698,7 +1067,9 @@ export class TrainerController {
     if (!payload.configId) {
       return firstValueFrom(
         this.storeService.send(TrainerConfigCommands.CREATE_CONFIG, {
-          configKey: 'default',
+          configKey: normalizedSlug
+            ? `business-site:${normalizedSlug}`
+            : this.businessSiteConfigKey(user.profileId),
           ...config,
         })
       );
@@ -715,19 +1086,39 @@ export class TrainerController {
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('site-config/catalog-source')
   async updateCatalogSource(
-    @Body() payload: { configId?: string | null; source: 'manual' | 'store' },
-    @User() user: UserDetails
+    @Body()
+    payload: {
+      configId?: string | null;
+      source: 'manual' | 'store';
+      storeEnabled?: boolean;
+    },
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
+    const normalizedSlug = slug?.trim();
+    const catalogOwnerId = normalizedSlug
+      ? (await this.loadOwnerUserIdForSlug(normalizedSlug)) || user.userId
+      : user.userId;
+
     if (payload.source === 'store') {
-      await this.assertStoreCatalogPublishReady();
+      await this.assertStoreCatalogPublishReady(catalogOwnerId);
     }
 
-    const existingConfig = await this.loadSiteConfig();
+    const existingConfig = normalizedSlug
+      ? await this.loadSiteConfigBySlug(normalizedSlug)
+      : await this.loadSiteConfig();
     const nextConfig = {
       ...existingConfig,
       leadContext: {
         profileId: user.profileId,
         appScope: 'business-site',
+      },
+      features: {
+        ...(existingConfig?.features ?? {}),
+        store: {
+          ...(existingConfig?.features?.store ?? {}),
+          enabled: payload.storeEnabled ?? false,
+        },
       },
       serviceCatalog: {
         ...(existingConfig?.serviceCatalog ?? {}),
@@ -738,7 +1129,9 @@ export class TrainerController {
     if (!payload.configId) {
       return firstValueFrom(
         this.storeService.send(TrainerConfigCommands.CREATE_CONFIG, {
-          configKey: 'default',
+          configKey: normalizedSlug
+            ? `business-site:${normalizedSlug}`
+            : this.businessSiteConfigKey(user.profileId),
           ...nextConfig,
         })
       );
@@ -756,9 +1149,17 @@ export class TrainerController {
 
   @UseGuards(AuthGuard)
   @Get('client/routines')
-  getClientRoutines(@Query('clientId') clientId: string) {
+  async getClientRoutines(
+    @Query('clientId') clientId: string,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.routines.find', { clientId })
+      this.storeService.send('trainer.client.routines.find', {
+        clientId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
@@ -766,36 +1167,57 @@ export class TrainerController {
   @Post('client/routines/:id/complete')
   async completeClientRoutine(
     @Param('id') id: string,
-    @User() user: UserDetails
+    @User() user: UserDetails,
+    @Query('slug') slug?: string
   ) {
-    const config = await this.loadSiteConfig();
+    const config = slug
+      ? await this.loadSiteConfigBySlug(slug)
+      : await this.loadSiteConfig();
     if (config?.features?.clientTasks?.allowClientCompletion !== true) {
       throw new BadRequestException(
         'Client completion is disabled for this business.'
       );
     }
 
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
       this.storeService.send('trainer.client.routines.complete', {
         id,
         userId: user.userId,
+        ownerId: ownerUserId || undefined,
       })
     );
   }
 
   @UseGuards(AuthGuard)
   @Post('client/check-ins')
-  submitCheckIn(@Body() payload: Record<string, unknown>) {
+  async submitCheckIn(@Body() payload: Record<string, unknown>) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(
+      (payload as any)?.siteSlug
+    );
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.checkins.create', payload)
+      this.storeService.send('trainer.client.checkins.create', {
+        ...payload,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
   @UseGuards(AuthGuard)
   @Get('client/check-ins')
-  getClientCheckIns(@Query('clientId') clientId: string) {
+  async getClientCheckIns(
+    @Query('clientId') clientId: string,
+    @Query('slug') slug?: string
+  ) {
+    const ownerUserId = await this.loadOwnerUserIdForSlug(slug);
+
     return firstValueFrom(
-      this.storeService.send('trainer.client.checkins.find', { clientId })
+      this.storeService.send('trainer.client.checkins.find', {
+        clientId,
+        ownerId: ownerUserId || undefined,
+      })
     );
   }
 
@@ -826,5 +1248,9 @@ export class TrainerController {
     return firstValueFrom(
       this.storeService.send('trainer.owner.routines.assign', payload)
     );
+  }
+
+  private businessSiteConfigKey(profileId: string): string {
+    return `business-site:${profileId}`;
   }
 }

@@ -1,5 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { DonationCommands } from '@optimistic-tanuki/constants';
 import { DonationsService } from './donations.service';
 import { CreateDonationDto } from '@optimistic-tanuki/models';
 
@@ -7,22 +8,22 @@ import { CreateDonationDto } from '@optimistic-tanuki/models';
 export class DonationsController {
   constructor(private readonly donationsService: DonationsService) {}
 
-  @MessagePattern({ cmd: 'createDonation' })
+  @MessagePattern(DonationCommands.CREATE_DONATION)
   create(@Payload() createDonationDto: CreateDonationDto) {
     return this.donationsService.create(createDonationDto);
   }
 
-  @MessagePattern({ cmd: 'findAllDonations' })
+  @MessagePattern(DonationCommands.FIND_ALL_DONATIONS)
   findAll() {
     return this.donationsService.findAll();
   }
 
-  @MessagePattern({ cmd: 'findUserDonations' })
+  @MessagePattern(DonationCommands.FIND_USER_DONATIONS)
   findUserDonations(@Payload() userId: string) {
     return this.donationsService.findByUser(userId);
   }
 
-  @MessagePattern({ cmd: 'findOneDonation' })
+  @MessagePattern(DonationCommands.FIND_ONE_DONATION)
   findOne(@Payload() id: string) {
     return this.donationsService.findOne(id);
   }

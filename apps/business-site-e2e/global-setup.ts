@@ -10,6 +10,48 @@ type SetupCommand = {
   env?: NodeJS.ProcessEnv;
 };
 
+const BUSINESS_SITE_E2E_BUILD_PROJECTS = [
+  'authentication',
+  'profile',
+  'permissions',
+  'store',
+  'lead-tracker',
+  'gateway',
+  'business-site',
+].join(',');
+
+export function getComposeArgs() {
+  return [
+    'compose',
+    '-f',
+    'docker-compose.yaml',
+    '-f',
+    'docker-compose.dev.yaml',
+    '-f',
+    'apps/business-site-e2e/docker-compose.e2e.yaml',
+  ];
+}
+
+export function getBuildCommand(workspaceRoot: string): SetupCommand {
+  return {
+    command: 'pnpm',
+    args: [
+      'exec',
+      'nx',
+      'run-many',
+      '--target=build',
+      `--projects=${BUSINESS_SITE_E2E_BUILD_PROJECTS}`,
+      '--configuration=development',
+      '--skip-nx-cache',
+    ],
+    cwd: workspaceRoot,
+    env: {
+      NX_DAEMON: 'false',
+      NX_ISOLATE_PLUGINS: 'false',
+    },
+  };
+}
+
 function run(
   command: string,
   args: string[],
@@ -96,7 +138,7 @@ export function getSetupSeedCommands(workspaceRoot: string): SetupCommand[] {
   return [
     {
       command: 'sh',
-      args: [join(workspaceRoot, 'seed-permissions.sh')],
+      args: [join(workspaceRoot, 'scripts/seed-permissions.sh')],
       env: {
         POSTGRES_HOST: '127.0.0.1',
         POSTGRES_DB: 'ot_permissions',
@@ -116,19 +158,48 @@ export function getSetupSeedCommands(workspaceRoot: string): SetupCommand[] {
 }
 
 export function getStackStartupCommands(workspaceRoot: string): SetupCommand[] {
+  const composeArgs = getComposeArgs();
+
   return [
     {
-      command: 'pnpm',
-      args: ['run', 'docker:dev:down'],
+      command: 'docker',
+      args: [...composeArgs, 'down', '-v', '--remove-orphans'],
       cwd: workspaceRoot,
     },
     {
-      command: 'bash',
+      command: 'docker',
+      args: [...composeArgs, 'up', '-d', 'postgres', 'redis'],
+      cwd: workspaceRoot,
+    },
+    {
+      command: 'docker',
+      args: [...composeArgs, 'up', '-d', 'db-setup'],
+      cwd: workspaceRoot,
+    },
+    {
+      command: 'docker',
+      args: [...composeArgs, 'wait', 'db-setup'],
+      cwd: workspaceRoot,
+    },
+    {
+      command: 'docker',
       args: [
-        './scripts/docker-start-phased.sh',
-        'docker-compose.dev.yaml',
-        '5',
+        ...composeArgs,
+        'up',
+        '-d',
+        '--no-deps',
+        'authentication',
+        'profile',
+        'permissions',
+        'store',
+        'lead-tracker',
+        'gateway',
       ],
+      cwd: workspaceRoot,
+    },
+    {
+      command: 'docker',
+      args: [...composeArgs, 'up', '-d', '--no-deps', 'business-site'],
       cwd: workspaceRoot,
     },
   ];
@@ -143,11 +214,17 @@ async function globalSetup(_config: FullConfig) {
   }
 
   const workspaceRoot = join(__dirname, '../../');
+  const buildCommand = getBuildCommand(workspaceRoot);
 
   console.log(
     '\n[Playwright Global Setup] Building business-site stack artifacts...'
   );
-  await run('pnpm', ['run', 'build:docker:dev'], workspaceRoot);
+  await run(
+    buildCommand.command,
+    buildCommand.args,
+    buildCommand.cwd ?? workspaceRoot,
+    buildCommand.env
+  );
 
   console.log(
     '\n[Playwright Global Setup] Starting business-site stack via phased docker startup...'

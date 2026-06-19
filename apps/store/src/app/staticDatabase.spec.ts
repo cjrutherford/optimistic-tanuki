@@ -77,5 +77,11 @@ describe('store static datasource', () => {
     expect(migrationFiles).toContain(
       '1770000005000-add-trainer-site-config-sections.ts'
     );
+    expect(migrationFiles).toContain(
+      '1770000007000-add-trainer-site-metadata.ts'
+    );
+    expect(migrationFiles).toContain(
+      '1770000008000-add-trainer-site-business-type.ts'
+    );
   });
 });

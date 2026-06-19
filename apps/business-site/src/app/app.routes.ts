@@ -63,6 +63,13 @@ const ownerChildren: Route[] = [
       ),
   },
   {
+    path: 'products',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerProductsPageComponent
+      ),
+  },
+  {
     path: 'finance',
     canActivate: [ownerFinanceFeatureGuard],
     providers: [
@@ -75,23 +82,126 @@ const ownerChildren: Route[] = [
   },
 ];
 
+const clientChildren: Route[] = [
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientPortalHomePageComponent
+      ),
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientDashboardPageComponent
+      ),
+  },
+  {
+    path: 'routines',
+    canActivate: [clientTasksFeatureGuard],
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientTasksPageComponent
+      ),
+  },
+  {
+    path: 'billing',
+    canActivate: [invoicesFeatureGuard],
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientBillingPageComponent
+      ),
+  },
+];
+
 export const appRoutes: Route[] = [
   {
     path: '',
     loadComponent: () =>
       import('@optimistic-tanuki/business-public-ui').then(
-        (m) => m.BusinessLandingPageComponent
+        (m) => m.BusinessPlatformHomePageComponent
       ),
-    title: 'Business',
+    title: 'Business Platform',
   },
   {
-    path: 'book',
+    path: 'products/:productId',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessProductDetailComponent
+      ),
+    title: 'View Product',
+  },
+  {
+    path: 'sites/:siteSlug',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessLandingPageComponent
+      ),
+    title: 'Business Site',
+  },
+  {
+    path: 'sites/:siteSlug/products/:productId',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-public-ui').then(
+        (m) => m.BusinessProductDetailComponent
+      ),
+    title: 'View Product',
+  },
+  {
+    path: 'sites/:siteSlug/book',
     canActivate: [bookingFeatureGuard],
     loadComponent: () =>
       import('@optimistic-tanuki/business-public-ui').then(
         (m) => m.BusinessBookingPageComponent
       ),
     title: 'Book Now',
+  },
+  {
+    path: 'sites/:siteSlug/client/login',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientLoginPageComponent
+      ),
+    title: 'Client Login',
+  },
+  {
+    path: 'sites/:siteSlug/client/register',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessClientRegisterPageComponent
+      ),
+    title: 'Client Registration',
+  },
+  {
+    path: 'sites/:siteSlug/owner/login',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessLoginPageComponent
+      ),
+    title: 'Owner Login',
+  },
+  {
+    path: 'sites/:siteSlug/owner/register',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerRegisterPageComponent
+      ),
+    title: 'Owner Registration',
+  },
+  {
+    path: 'sites/:siteSlug/client',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessPortalShellComponent
+      ),
+    canActivate: [clientAuthGuard, clientPortalFeatureGuard],
+    data: {
+      portalLabel: 'Client Portal',
+      portalDescription: 'Your plan, sessions, and progress in one place.',
+    },
+    children: clientChildren,
   },
   {
     path: 'client',
@@ -121,49 +231,56 @@ export const appRoutes: Route[] = [
           portalLabel: 'Client Portal',
           portalDescription: 'Your plan, sessions, and progress in one place.',
         },
-        children: [
-          {
-            path: '',
-            pathMatch: 'full',
-            loadComponent: () =>
-              import('@optimistic-tanuki/business-portal-ui').then(
-                (m) => m.BusinessClientPortalHomePageComponent
-              ),
-          },
-          {
-            path: 'dashboard',
-            loadComponent: () =>
-              import('@optimistic-tanuki/business-portal-ui').then(
-                (m) => m.BusinessClientDashboardPageComponent
-              ),
-          },
-          {
-            path: 'routines',
-            canActivate: [clientTasksFeatureGuard],
-            loadComponent: () =>
-              import('@optimistic-tanuki/business-portal-ui').then(
-                (m) => m.BusinessClientTasksPageComponent
-              ),
-          },
-          {
-            path: 'billing',
-            canActivate: [invoicesFeatureGuard],
-            loadComponent: () =>
-              import('@optimistic-tanuki/business-portal-ui').then(
-                (m) => m.BusinessClientBillingPageComponent
-              ),
-          },
-        ],
+        children: clientChildren,
       },
     ],
   },
   {
-    path: 'owner/login',
+    path: 'auth',
     loadComponent: () =>
       import('@optimistic-tanuki/business-portal-ui').then(
         (m) => m.BusinessLoginPageComponent
       ),
-    title: 'Owner Login',
+    title: 'Sign In',
+  },
+  {
+    path: 'owner/login',
+    redirectTo: 'auth',
+    pathMatch: 'full',
+  },
+  {
+    path: 'owner/register',
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessOwnerRegisterPageComponent
+      ),
+    title: 'Owner Registration',
+  },
+  {
+    path: 'owner/onboarding',
+    canActivate: [businessAuthGuard],
+    data: {
+      editorMode: 'guided',
+      onboardingMode: true,
+    },
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessSiteEditorPageComponent
+      ),
+    title: 'Owner Onboarding',
+  },
+  {
+    path: 'sites/:siteSlug/owner',
+    canActivate: [businessAuthGuard],
+    loadComponent: () =>
+      import('@optimistic-tanuki/business-portal-ui').then(
+        (m) => m.BusinessPortalShellComponent
+      ),
+    data: {
+      portalLabel: 'Owner Workspace',
+      portalDescription: 'Manage clients, requests, and settings.',
+    },
+    children: ownerChildren,
   },
   {
     path: 'owner',

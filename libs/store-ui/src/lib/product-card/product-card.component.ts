@@ -27,6 +27,7 @@ export interface Product {
 export class ProductCardComponent extends Themeable {
   @Input() product!: Product;
   @Input() showAddToCart = true;
+  @Input() viewProductHref: string | null = null;
   @Output() addToCart = new EventEmitter<Product>();
 
   onAddToCart(): void {

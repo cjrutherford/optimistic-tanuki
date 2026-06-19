@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { switchMap, of } from 'rxjs';
 import {
   BusinessApiService,
@@ -96,6 +97,8 @@ export class BusinessClientBillingPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
+  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
   private readonly clientId = computed(
     () => this.auth.clientUser()?.userId ?? ''
   );
@@ -104,22 +107,30 @@ export class BusinessClientBillingPageComponent {
   );
   readonly bookings = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap((id) => (id ? this.api.getClientBookings() : of([])))
+      switchMap((id) =>
+        id ? this.api.getClientBookings(this.siteSlug) : of([])
+      )
     ),
     { initialValue: [] }
   );
   readonly invoices = toSignal(
     toObservable(this.clientId).pipe(
-      switchMap((id) => (id ? this.api.getClientInvoices() : of([])))
+      switchMap((id) =>
+        id ? this.api.getClientInvoices(this.siteSlug) : of([])
+      )
     ),
     { initialValue: [] }
   );
+
+  constructor() {
+    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+  }
 
   payInvoice(id: string): void {
     if (!this.allowOnlinePayment()) {
       return;
     }
 
-    this.api.payClientInvoice(id).subscribe();
+    this.api.payClientInvoice(id, this.siteSlug).subscribe();
   }
 }

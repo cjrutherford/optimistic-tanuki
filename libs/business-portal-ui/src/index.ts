@@ -1,5 +1,6 @@
 export { BusinessPortalShellComponent } from './lib/business-portal-shell.component';
 export { BusinessLoginPageComponent } from './lib/business-login-page.component';
+export { BusinessOwnerRegisterPageComponent } from './lib/business-owner-register-page.component';
 export { BusinessSiteEditorPageComponent } from './lib/business-site-editor-page.component';
 export { BusinessClientPortalHomePageComponent } from './lib/business-client-portal-home-page.component';
 export { BusinessClientDashboardPageComponent } from './lib/business-client-dashboard-page.component';
@@ -11,3 +12,4 @@ export { BusinessOwnerClientsPageComponent } from './lib/business-owner-clients-
 export { BusinessOwnerAvailabilityPageComponent } from './lib/business-owner-availability-page.component';
 export { BusinessClientLoginPageComponent } from './lib/business-client-login-page.component';
 export { BusinessClientRegisterPageComponent } from './lib/business-client-register-page.component';
+export { BusinessOwnerProductsPageComponent } from './lib/business-owner-products-page.component';

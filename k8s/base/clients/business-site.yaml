@@ -26,6 +26,10 @@ spec:
               value: '4000'
             - name: GATEWAY_URL
               value: 'http://gateway:3000'
+            - name: EVALUATOR_GUIDE_PATH
+              value: '/app/docs/guides/business-site-evaluator-guide.html'
+            - name: RUN_BUSINESS_SITE_SEED_ON_STARTUP
+              value: 'false'
           resources:
             requests:
               memory: '64Mi'

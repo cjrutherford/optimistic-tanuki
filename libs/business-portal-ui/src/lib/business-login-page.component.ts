@@ -1,21 +1,46 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  BusinessApiService,
+  BusinessAuthService,
+  mergeBusinessSiteConfig,
+} from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'business-login-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, CardComponent],
+  imports: [CommonModule, FormsModule, RouterLink, CardComponent],
   template: `
     <div class="login-outer">
       <otui-card class="login-card">
         <div class="login-header">
           <span class="monogram">BO</span>
           <h1>Owner Login</h1>
-          <p>Sign in to access your owner workspace.</p>
+          <p>
+            Sign in to access your owner workspace, or switch to client mode.
+          </p>
+        </div>
+
+        <div class="mode-switch" role="tablist" aria-label="Auth mode">
+          <button
+            type="button"
+            data-auth-mode
+            [class.active]="mode() === 'owner'"
+            (click)="setMode('owner')"
+          >
+            Owner
+          </button>
+          <button
+            type="button"
+            data-auth-mode
+            [class.active]="mode() === 'client'"
+            (click)="setMode('client')"
+          >
+            Client
+          </button>
         </div>
 
         <form class="login-form" (ngSubmit)="onSubmit()">
@@ -51,6 +76,11 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
             @if (loading()) { Signing in… } @else { Sign In }
           </button>
         </form>
+
+        <a class="register-link" [routerLink]="registerRoute()">
+          @if (mode() === 'owner') { Need an owner account? Register } @else {
+          Need a client account? Register }
+        </a>
       </otui-card>
     </div>
   `,
@@ -105,6 +135,33 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       .login-form {
         display: grid;
         gap: 1.1rem;
+      }
+
+      .mode-switch {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.45rem;
+        margin-bottom: 1rem;
+        padding: 0.35rem;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, white);
+      }
+
+      .mode-switch button {
+        border: none;
+        background: transparent;
+        border-radius: 999px;
+        padding: 0.65rem 0.9rem;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+        color: var(--muted, #6b7280);
+      }
+
+      .mode-switch button.active {
+        background: white;
+        color: var(--foreground, #0f172a);
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
       }
 
       label {
@@ -171,27 +228,90 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         opacity: 0.55;
         cursor: not-allowed;
       }
+
+      .register-link {
+        display: block;
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--primary, #1f7a63);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
     `,
   ],
 })
 export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
+  private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute, { optional: true });
 
   email = '';
   password = '';
+  readonly mode = signal<'owner' | 'client'>('owner');
   loading = signal(false);
   errorMsg = signal('');
+  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  private clientLoginRoute(): string[] {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'login']
+      : ['/client/login'];
+  }
+
+  private ownerPostLoginRoute(onboardingCompletedAt?: string | null): string[] {
+    const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', route]
+      : ['/owner', route];
+  }
+
+  setMode(mode: 'owner' | 'client'): void {
+    this.mode.set(mode);
+    this.errorMsg.set('');
+
+    if (mode === 'client') {
+      void this.router.navigate(this.clientLoginRoute());
+    }
+  }
+
+  registerRoute(): string[] {
+    if (this.mode() === 'owner') {
+      return this.siteSlug
+        ? ['/sites', this.siteSlug, 'owner', 'register']
+        : ['/owner/register'];
+    }
+
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', 'register']
+      : ['/client/register'];
+  }
 
   onSubmit(): void {
     if (!this.email || !this.password) return;
+    if (this.mode() === 'client') {
+      void this.router.navigate(this.clientLoginRoute());
+      return;
+    }
+
     this.loading.set(true);
     this.errorMsg.set('');
 
     this.auth.loginAndExchange(this.email, this.password).subscribe({
       next: () => {
-        this.loading.set(false);
-        this.router.navigate(['/owner/dashboard']);
+        this.api.getSiteConfig().subscribe({
+          next: (response) => {
+            const config = mergeBusinessSiteConfig(response?.config);
+            this.loading.set(false);
+            void this.router.navigate(
+              this.ownerPostLoginRoute(config.site.onboardingCompletedAt)
+            );
+          },
+          error: () => {
+            this.loading.set(false);
+            void this.router.navigate(this.ownerPostLoginRoute(null));
+          },
+        });
       },
       error: (err) => {
         this.loading.set(false);

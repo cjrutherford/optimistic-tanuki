@@ -43,6 +43,17 @@ describe('ProductCardComponent', () => {
     );
   });
 
+  it('should render a view product link when configured', () => {
+    component.viewProductHref = '/products/1';
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector('.view-product-link');
+
+    expect(link).toBeTruthy();
+    expect(link.href).toContain('/products/1');
+    expect(link.textContent).toContain('View product');
+  });
+
   it('should emit addToCart event when button is clicked', () => {
     jest.spyOn(component.addToCart, 'emit');
     const button = fixture.nativeElement.querySelector('.add-to-cart-btn');

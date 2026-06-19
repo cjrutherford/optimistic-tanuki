@@ -18,18 +18,28 @@ export class AppointmentsController {
   }
 
   @MessagePattern({ cmd: 'findAllAppointments' })
-  findAll() {
-    return this.appointmentsService.findAll();
+  findAll(@Payload() payload?: { ownerId?: string | null }) {
+    return this.appointmentsService.findAll(payload?.ownerId ?? null);
   }
 
   @MessagePattern({ cmd: 'findUserAppointments' })
-  findUserAppointments(@Payload() userId: string) {
-    return this.appointmentsService.findUserAppointments(userId);
+  findUserAppointments(
+    @Payload() payload: { userId: string; ownerId?: string | null }
+  ) {
+    return this.appointmentsService.findUserAppointments(
+      payload.userId,
+      payload.ownerId ?? null
+    );
   }
 
   @MessagePattern({ cmd: 'findUserInvoices' })
-  findUserInvoices(@Payload() userId: string) {
-    return this.appointmentsService.findUserInvoices(userId);
+  findUserInvoices(
+    @Payload() payload: { userId: string; ownerId?: string | null }
+  ) {
+    return this.appointmentsService.findUserInvoices(
+      payload.userId,
+      payload.ownerId ?? null
+    );
   }
 
   @MessagePattern({ cmd: 'findOneAppointment' })

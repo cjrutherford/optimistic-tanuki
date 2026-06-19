@@ -185,7 +185,7 @@ describe('AppService', () => {
       const result = await appService.createAsset(dto);
 
       expect(fileValidationService.validateFile).toHaveBeenCalledWith(
-        'test',
+        'test.jpg',
         'image/jpeg',
         expect.any(Number),
         'image'
@@ -352,7 +352,7 @@ describe('AppService', () => {
 
       await appService.createAsset(dto);
       expect(fileValidationService.validateFile).toHaveBeenCalledWith(
-        'test',
+        'test.pdf',
         'application/pdf',
         4,
         'image'
@@ -373,7 +373,7 @@ describe('AppService', () => {
 
       await appService.createAsset(dto);
       expect(fileValidationService.validateFile).toHaveBeenCalledWith(
-        'test',
+        'test.unknown',
         'application/octet-stream',
         expect.any(Number),
         'image'

@@ -1,5 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { SubscriptionCommands } from '@optimistic-tanuki/constants';
 import { SubscriptionsService } from './subscriptions.service';
 import {
   CreateSubscriptionDto,
@@ -10,27 +11,27 @@ import {
 export class SubscriptionsController {
   constructor(private readonly subscriptionsService: SubscriptionsService) {}
 
-  @MessagePattern({ cmd: 'createSubscription' })
+  @MessagePattern(SubscriptionCommands.CREATE_SUBSCRIPTION)
   create(@Payload() createSubscriptionDto: CreateSubscriptionDto) {
     return this.subscriptionsService.create(createSubscriptionDto);
   }
 
-  @MessagePattern({ cmd: 'findAllSubscriptions' })
+  @MessagePattern(SubscriptionCommands.FIND_ALL_SUBSCRIPTIONS)
   findAll() {
     return this.subscriptionsService.findAll();
   }
 
-  @MessagePattern({ cmd: 'findUserSubscriptions' })
+  @MessagePattern(SubscriptionCommands.FIND_USER_SUBSCRIPTIONS)
   findUserSubscriptions(@Payload() userId: string) {
     return this.subscriptionsService.findByUser(userId);
   }
 
-  @MessagePattern({ cmd: 'findOneSubscription' })
+  @MessagePattern(SubscriptionCommands.FIND_ONE_SUBSCRIPTION)
   findOne(@Payload() id: string) {
     return this.subscriptionsService.findOne(id);
   }
 
-  @MessagePattern({ cmd: 'updateSubscription' })
+  @MessagePattern(SubscriptionCommands.UPDATE_SUBSCRIPTION)
   update(
     @Payload()
     data: {
@@ -44,7 +45,7 @@ export class SubscriptionsController {
     );
   }
 
-  @MessagePattern({ cmd: 'cancelSubscription' })
+  @MessagePattern(SubscriptionCommands.CANCEL_SUBSCRIPTION)
   cancel(@Payload() id: string) {
     return this.subscriptionsService.cancel(id);
   }

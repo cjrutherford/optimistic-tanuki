@@ -82,6 +82,22 @@ const REQUIRED_SCOPE = 'business-site';
           </label>
         </div>
 
+        <label class="storefront-toggle">
+          <span>
+            <strong>Storefront feature</strong>
+            <small
+              >Explicitly control whether the public business site and page
+              editor expose storefront rendering.</small
+            >
+          </span>
+          <input
+            type="checkbox"
+            [checked]="businessSiteConfig().features.store.enabled"
+            (change)="setStorefrontEnabled($any($event.target).checked)"
+            [disabled]="!canManageCatalog()"
+          />
+        </label>
+
         @if (accessMessage()) {
         <p class="status-msg">{{ accessMessage() }}</p>
         }
@@ -264,6 +280,28 @@ const REQUIRED_SCOPE = 'business-site';
 
       .mode-card input {
         margin: 0;
+      }
+
+      .storefront-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 18px 0;
+        padding: 18px;
+        border-radius: 18px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .storefront-toggle span {
+        display: grid;
+        gap: 6px;
+      }
+
+      .storefront-toggle small {
+        color: #4b5563;
+        line-height: 1.5;
       }
 
       .summary-label {
@@ -481,6 +519,20 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     }));
   }
 
+  setStorefrontEnabled(enabled: boolean): void {
+    if (!this.canManageCatalog()) {
+      return;
+    }
+
+    this.businessSiteConfig.update((config) => ({
+      ...config,
+      features: {
+        ...config.features,
+        store: { enabled },
+      },
+    }));
+  }
+
   isPublishReady(product: BusinessStoreProduct): boolean {
     return !!product.description?.trim() && Number(product.price) > 0;
   }
@@ -509,7 +561,10 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
     this.errorMessage.set('');
 
     this.businessSiteAdminService
-      .updateCatalogSource(this.configId, config.serviceCatalog.source)
+      .updateCommerceSettings(this.configId, {
+        source: config.serviceCatalog.source,
+        storeEnabled: config.features.store.enabled,
+      })
       .subscribe({
         next: () => {
           this.saving.set(false);

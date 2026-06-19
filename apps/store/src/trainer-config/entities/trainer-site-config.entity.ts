@@ -14,11 +14,17 @@ export class TrainerSiteConfigEntity {
   @Column({ type: 'varchar', length: 255, unique: true, default: 'default' })
   configKey: string;
 
+  @Column({ type: 'varchar', length: 64, default: 'general' })
+  businessType: string;
+
   @Column({ type: 'jsonb', nullable: true })
   leadContext: {
     profileId?: string;
     appScope?: string;
   };
+
+  @Column({ type: 'jsonb', nullable: true })
+  site: Record<string, unknown>;
 
   // Brand configuration (stored as JSON)
   @Column({ type: 'jsonb', nullable: true })
@@ -30,6 +36,9 @@ export class TrainerSiteConfigEntity {
 
   @Column({ type: 'jsonb', nullable: true })
   features: Record<string, unknown>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  serviceCatalog: Record<string, unknown>;
 
   @Column({ type: 'jsonb', nullable: true })
   services: Record<string, unknown>[];

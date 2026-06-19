@@ -243,6 +243,8 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      EVALUATOR_GUIDE_PATH: /app/docs/guides/business-site-evaluator-guide.html
+      RUN_BUSINESS_SITE_SEED_ON_STARTUP: ${RUN_BUSINESS_SITE_SEED_ON_STARTUP:-false}
       <<: *gateway_client_env
       POSTGRES_DB: ot_permissions
       PERMISSIONS_DB: ot_permissions

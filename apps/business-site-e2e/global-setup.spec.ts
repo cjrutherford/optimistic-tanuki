@@ -1,23 +1,151 @@
 import { join } from 'node:path';
 
-import { getSetupSeedCommands, getStackStartupCommands } from './global-setup';
+import {
+  getBuildCommand,
+  getComposeArgs,
+  getSetupSeedCommands,
+  getStackStartupCommands,
+} from './global-setup';
 
 describe('business-site e2e global setup', () => {
-  it('starts the stack with the dev compose override so gateway uses fresh dist output', () => {
+  it('builds only the business-site workflow apps without replaying nx cache outputs', () => {
+    const workspaceRoot = '/workspace';
+
+    expect(getBuildCommand(workspaceRoot)).toEqual({
+      command: 'pnpm',
+      args: [
+        'exec',
+        'nx',
+        'run-many',
+        '--target=build',
+        '--projects=authentication,profile,permissions,store,lead-tracker,gateway,business-site',
+        '--configuration=development',
+        '--skip-nx-cache',
+      ],
+      cwd: workspaceRoot,
+      env: {
+        NX_DAEMON: 'false',
+        NX_ISOLATE_PLUGINS: 'false',
+      },
+    });
+  });
+
+  it('uses the business-site e2e compose overlay for a minimal gateway composition', () => {
+    expect(getComposeArgs()).toEqual([
+      'compose',
+      '-f',
+      'docker-compose.yaml',
+      '-f',
+      'docker-compose.dev.yaml',
+      '-f',
+      'apps/business-site-e2e/docker-compose.e2e.yaml',
+    ]);
+  });
+
+  it('starts only the services needed for the business-site workflow stack', () => {
     const workspaceRoot = '/workspace';
 
     expect(getStackStartupCommands(workspaceRoot)).toEqual([
       {
-        command: 'pnpm',
-        args: ['run', 'docker:dev:down'],
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
+          'docker-compose.dev.yaml',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'down',
+          '-v',
+          '--remove-orphans',
+        ],
         cwd: workspaceRoot,
       },
       {
-        command: 'bash',
+        command: 'docker',
         args: [
-          './scripts/docker-start-phased.sh',
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
           'docker-compose.dev.yaml',
-          '5',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'up',
+          '-d',
+          'postgres',
+          'redis',
+        ],
+        cwd: workspaceRoot,
+      },
+      {
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
+          'docker-compose.dev.yaml',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'up',
+          '-d',
+          'db-setup',
+        ],
+        cwd: workspaceRoot,
+      },
+      {
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
+          'docker-compose.dev.yaml',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'wait',
+          'db-setup',
+        ],
+        cwd: workspaceRoot,
+      },
+      {
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
+          'docker-compose.dev.yaml',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'up',
+          '-d',
+          '--no-deps',
+          'authentication',
+          'profile',
+          'permissions',
+          'store',
+          'lead-tracker',
+          'gateway',
+        ],
+        cwd: workspaceRoot,
+      },
+      {
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          'docker-compose.yaml',
+          '-f',
+          'docker-compose.dev.yaml',
+          '-f',
+          'apps/business-site-e2e/docker-compose.e2e.yaml',
+          'up',
+          '-d',
+          '--no-deps',
+          'business-site',
         ],
         cwd: workspaceRoot,
       },
@@ -31,7 +159,7 @@ describe('business-site e2e global setup', () => {
     expect(commands).toEqual([
       {
         command: 'sh',
-        args: [join(workspaceRoot, 'seed-permissions.sh')],
+        args: [join(workspaceRoot, 'scripts/seed-permissions.sh')],
         env: {
           POSTGRES_HOST: '127.0.0.1',
           POSTGRES_DB: 'ot_permissions',

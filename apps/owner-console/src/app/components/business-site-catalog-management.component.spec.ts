@@ -10,7 +10,7 @@ import { StoreService } from '../services/store.service';
 describe('BusinessSiteCatalogManagementComponent', () => {
   const businessSiteAdminService = {
     getSiteConfig: jest.fn(),
-    updateCatalogSource: jest.fn(),
+    updateCommerceSettings: jest.fn(),
   };
 
   const storeService = {
@@ -79,12 +79,13 @@ describe('BusinessSiteCatalogManagementComponent', () => {
       of({
         configId: 'cfg-1',
         config: {
+          features: { store: { enabled: false } },
           serviceCatalog: { source: 'manual' },
           services: [],
         },
       })
     );
-    businessSiteAdminService.updateCatalogSource.mockReturnValue(
+    businessSiteAdminService.updateCommerceSettings.mockReturnValue(
       of({ id: 'cfg-1' })
     );
     storeService.getProducts.mockReturnValue(
@@ -162,10 +163,12 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     component.setCatalogMode('store');
     component.save();
 
-    expect(businessSiteAdminService.updateCatalogSource).toHaveBeenCalledWith(
-      'cfg-1',
-      'store'
-    );
+    expect(
+      businessSiteAdminService.updateCommerceSettings
+    ).toHaveBeenCalledWith('cfg-1', {
+      source: 'store',
+      storeEnabled: false,
+    });
     expect(component.successMessage()).toBe(
       'Business-site catalog mode updated.'
     );
@@ -177,7 +180,9 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     component.setCatalogMode('store');
     component.save();
 
-    expect(businessSiteAdminService.updateCatalogSource).not.toHaveBeenCalled();
+    expect(
+      businessSiteAdminService.updateCommerceSettings
+    ).not.toHaveBeenCalled();
     expect(component.errorMessage()).toContain(
       'Resolve store service-product readiness issues'
     );
@@ -199,7 +204,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
         },
       ])
     );
-    businessSiteAdminService.updateCatalogSource.mockReturnValue(
+    businessSiteAdminService.updateCommerceSettings.mockReturnValue(
       throwError(() => ({
         error: {
           message:
@@ -262,8 +267,51 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     component.setCatalogMode('store');
     component.save();
 
-    expect(businessSiteAdminService.updateCatalogSource).not.toHaveBeenCalled();
+    expect(
+      businessSiteAdminService.updateCommerceSettings
+    ).not.toHaveBeenCalled();
     expect(component.errorMessage()).toContain('read-only');
+  });
+
+  it('persists the storefront feature flag alongside catalog governance settings', () => {
+    storeService.getProducts.mockReturnValue(
+      of([
+        {
+          id: 'product-1',
+          name: 'Service Sprint',
+          description: 'Publish-ready service',
+          price: 120,
+          type: 'service',
+          stock: 0,
+          active: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ])
+    );
+
+    const fixture = createComponent();
+    const component = fixture.componentInstance;
+
+    component.businessSiteConfig.update((config) => ({
+      ...config,
+      features: {
+        ...config.features,
+        store: { enabled: true },
+      },
+      serviceCatalog: {
+        ...config.serviceCatalog,
+        source: 'store',
+      },
+    }));
+    component.save();
+
+    expect(
+      businessSiteAdminService.updateCommerceSettings
+    ).toHaveBeenCalledWith('cfg-1', {
+      source: 'store',
+      storeEnabled: true,
+    });
   });
 
   it('accepts JWT payloads that need base64url padding before decoding', () => {

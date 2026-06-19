@@ -183,44 +183,60 @@ export class BusinessPortalShellComponent {
   readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
+  private readonly siteSlug =
+    this.route.snapshot.paramMap?.get('siteSlug') ?? null;
+
+  private ownerPath(path?: string): string {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'owner', path].filter(Boolean).join('/')
+      : ['/owner', path].filter(Boolean).join('/');
+  }
+
+  private clientPath(path?: string): string {
+    return this.siteSlug
+      ? ['/sites', this.siteSlug, 'client', path].filter(Boolean).join('/')
+      : ['/client', path].filter(Boolean).join('/');
+  }
+
   readonly links = computed(() =>
-    this.router.url.startsWith('/client')
+    this.router.url.includes('/client') && !this.router.url.startsWith('/owner')
       ? [
-          { path: '/client', label: 'Overview' },
-          { path: '/client/dashboard', label: 'Dashboard' },
+          { path: this.clientPath(), label: 'Overview' },
+          { path: this.clientPath('dashboard'), label: 'Dashboard' },
           ...(this.siteConfig.site().features.clientTasks.enabled
-            ? [{ path: '/client/routines', label: 'Routines' }]
+            ? [{ path: this.clientPath('routines'), label: 'Routines' }]
             : []),
           ...(this.siteConfig.site().features.invoices.enabled
-            ? [{ path: '/client/billing', label: 'Billing' }]
+            ? [{ path: this.clientPath('billing'), label: 'Billing' }]
             : []),
         ]
       : [
-          { path: '/owner/dashboard', label: 'Dashboard' },
-          { path: '/owner/requests', label: 'Requests' },
-          { path: '/owner/clients', label: 'Clients' },
-          { path: '/owner/availability', label: 'Availability' },
+          { path: this.ownerPath('dashboard'), label: 'Dashboard' },
+          { path: this.ownerPath('requests'), label: 'Requests' },
+          { path: this.ownerPath('clients'), label: 'Clients' },
+          { path: this.ownerPath('availability'), label: 'Availability' },
+          { path: this.ownerPath('products'), label: 'Products' },
           ...(this.siteConfig.site().features.invoices.enabled
             ? [
                 {
-                  path: '/owner/finance/business/invoices',
+                  path: this.ownerPath('finance/business/invoices'),
                   label: 'Invoices',
                 },
                 {
-                  path: '/owner/finance/business/checkout',
+                  path: this.ownerPath('finance/business/checkout'),
                   label: 'Checkout',
                 },
                 {
-                  path: '/owner/finance/business/payments',
+                  path: this.ownerPath('finance/business/payments'),
                   label: 'Payments',
                 },
               ]
             : []),
-          { path: '/owner/site', label: 'Site Editor' },
+          { path: this.ownerPath('site'), label: 'Site Editor' },
         ]
   );
 
   constructor() {
-    this.siteConfig.fetch().subscribe();
+    this.siteConfig.fetch(true, this.siteSlug).subscribe();
   }
 }

@@ -57,6 +57,7 @@ export class BusinessConfigStateService {
         consultationLabel: 'Book a consultation',
       },
       features: {
+        store: { enabled: false },
         booking: { enabled: true, allowOnlinePayment: false },
         clientTasks: { enabled: false, allowClientCompletion: false },
         clientPortal: { enabled: true },

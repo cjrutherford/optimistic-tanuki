@@ -79,6 +79,7 @@ const ALL_OWNER_ROLES: { [key: string]: string[] } = {
   'owner-console': ['owner_console_owner', 'forum_moderator'],
   store: ['store_manager'],
   finance: ['finance_member'],
+  'business-site': ['business_site_owner'],
 };
 
 const ALL_USER_ROLES: { [key: string]: string[] } = {

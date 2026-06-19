@@ -8,30 +8,55 @@ import { BusinessOwnerRequestsPageComponent } from './business-owner-requests-pa
 describe('BusinessOwnerRequestsPageComponent', () => {
   async function render() {
     const api = {
-      getOwnerProspects: jest.fn().mockReturnValue(
+      getOwnerWorkflow: jest.fn().mockReturnValue(
         of([
           {
-            id: 'lead-1',
-            name: 'Jordan Prospect',
-            email: 'jordan@example.com',
-            phone: '(555) 100-2000',
-            status: 'new',
-            source: 'other',
-            notes: 'Goal: Build a consistent routine',
-            accountStatus: 'No account',
+            id: 'lead:lead-1',
+            leadId: 'lead-1',
+            title: 'Jordan Prospect',
+            subtitle: 'jordan@example.com',
+            statusLabel: 'new',
+            stage: 'new_lead',
+            bucket: 'needs_response',
+            nextAction: 'Accept the client or follow up before booking.',
+            details: ['No account', 'Goal: Build a consistent routine'],
+            primaryAction: 'accept_client',
           },
-        ])
-      ),
-      getOwnerBookings: jest.fn().mockReturnValue(
-        of([
           {
-            id: 'booking-1',
+            id: 'booking:booking-1',
+            bookingId: 'booking-1',
             title: 'Consultation follow-up',
-            userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
-            status: 'pending',
-            description: 'Needs a 60 minute consult.',
-            startTime: '2026-05-05T14:00:00.000Z',
-            endTime: '2026-05-05T15:00:00.000Z',
+            subtitle: 'Avery Client',
+            statusLabel: 'pending',
+            stage: 'booking_requested',
+            bucket: 'ready_to_schedule',
+            nextAction: 'Review the request and confirm the schedule.',
+            details: ['Needs a 60 minute consult.'],
+            primaryAction: 'approve_booking',
+          },
+          {
+            id: 'booking:booking-3',
+            bookingId: 'booking-3',
+            title: 'Avery Client',
+            subtitle: 'Strategy session',
+            statusLabel: 'approved',
+            stage: 'booking_confirmed',
+            bucket: 'active_clients',
+            nextAction: 'Complete the session when delivery is finished.',
+            details: ['Scheduled for Friday'],
+            primaryAction: 'complete_booking',
+          },
+          {
+            id: 'booking:booking-4',
+            bookingId: 'booking-4',
+            title: 'Completed audit',
+            subtitle: 'Avery Client',
+            statusLabel: 'completed',
+            stage: 'session_completed',
+            bucket: 'needs_invoicing',
+            nextAction: 'Generate the invoice for the completed session.',
+            details: ['Completed Friday'],
+            primaryAction: 'generate_invoice',
           },
         ])
       ),
@@ -57,19 +82,22 @@ describe('BusinessOwnerRequestsPageComponent', () => {
     const { fixture } = await render();
     const text = fixture.nativeElement.textContent;
 
-    expect(text).toContain('Prospects');
-    expect(text).toContain('Bookings');
+    expect(text).toContain('Needs response');
+    expect(text).toContain('Ready to schedule');
+    expect(text).toContain('Needs invoicing');
+    expect(text).toContain('Active clients');
     expect(text).toContain('Jordan Prospect');
-    expect(text).toContain('No account');
     expect(text).toContain('Consultation follow-up');
+    expect(text).toContain('Completed audit');
   });
 
-  it('renders hierarchy cues for intake and booking triage', async () => {
+  it('renders lifecycle guidance for owner operations', async () => {
     const { fixture } = await render();
     const text = fixture.nativeElement.textContent;
 
-    expect(text).toContain('Needs response');
-    expect(text).toContain('Scheduling pipeline');
+    expect(text).toContain('Accept the client or follow up before booking.');
+    expect(text).toContain('Review the request and confirm the schedule.');
+    expect(text).toContain('Generate the invoice for the completed session.');
   });
 
   it('marks a prospect as contacted and refreshes the list', async () => {
@@ -78,7 +106,7 @@ describe('BusinessOwnerRequestsPageComponent', () => {
     component.markProspectContacted('lead-1');
 
     expect(api.markProspectContacted).toHaveBeenCalledWith('lead-1');
-    expect(api.getOwnerProspects).toHaveBeenCalledTimes(2);
+    expect(api.getOwnerWorkflow).toHaveBeenCalledTimes(2);
   });
 
   it('approves a prospect and refreshes the list', async () => {
@@ -87,6 +115,6 @@ describe('BusinessOwnerRequestsPageComponent', () => {
     component.approveProspect('lead-1');
 
     expect(api.approveProspect).toHaveBeenCalledWith('lead-1');
-    expect(api.getOwnerProspects).toHaveBeenCalledTimes(2);
+    expect(api.getOwnerWorkflow).toHaveBeenCalledTimes(2);
   });
 });

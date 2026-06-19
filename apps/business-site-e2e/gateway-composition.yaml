@@ -1,0 +1,6 @@
+enabledServices:
+  - authentication
+  - lead-tracker
+  - permissions
+  - profile
+  - store
