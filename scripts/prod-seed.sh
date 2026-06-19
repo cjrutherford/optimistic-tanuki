@@ -85,6 +85,10 @@ run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 echo "Seeding social service (including local communities)..."
 run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 
+wait_for_gateway
+echo "Seeding business-site tenants..."
+compose_cmd exec -T -e "GATEWAY_URL=${GATEWAY_API_URL}" -w "/app" business-site node ./seed-business.mjs
+
 echo ""
 echo "=========================================="
 echo "Production seeding complete!"

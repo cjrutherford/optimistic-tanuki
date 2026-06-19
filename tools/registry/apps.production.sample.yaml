@@ -40,12 +40,14 @@ apps:
     appType: client
     visibility: public
     description: Planning and execution workspace for goals, tasks, and projects.
+    iconUrl: https://forgeofwill.com/favicon.ico
     sortOrder: 4
 
   - appId: client-interface
     name: Optimistic Tanuki
     domain: optimistic-tanuki.com
     apiBaseUrl: https://optimistic-tanuki.com/api
+    iconUrl: https://optimistic-tanuki.com/favicon.ico
     appType: client
     visibility: public
     description: Client-facing social and community interface for the broader platform.
@@ -77,7 +79,7 @@ apps:
     domain: experiments.christopherrutherford.net
     subdomain: fin-commander
     uiBaseUrl: https://fin-commander.experiments.christopherrutherford.net
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://fin-commander.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
     description: Guided personal finance workflows for accounts, plans, and scenarios.
@@ -87,13 +89,13 @@ apps:
   - appId: opportunity-compass
     name: Opportunity Compass
     domain: experiments.christopherrutherford.net
-    subdomain: leads-app
-    uiBaseUrl: https://leads-app.experiments.christopherrutherford.net
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    subdomain: lead-tracker
+    uiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net
+    apiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
     description: Opportunity discovery from interests, locality, and skills.
-    iconUrl: https://leads-app.experiments.christopherrutherford.net/favicon.ico
+    iconUrl: https://lead-tracker.experiments.christopherrutherford.net/favicon.ico
     sortOrder: 9
 
   - appId: christopherrutherford-net
@@ -114,16 +116,6 @@ apps:
     visibility: public
     description: Public publishing and homestead-oriented content experience.
     sortOrder: 51
-
-  - appId: fin-commander
-    name: Fin Commander
-    domain: christopherrutherford.net
-    subdomain: fin-commander.experiments
-    apiBaseUrl: https://fin-commander.experiments.christopherrutherford.net/api
-    appType: client
-    visibility: public
-    description: A Sharp financial planning tool.
-    sortOrder: 52
 
   - appId: d6
     name: Daily 6
