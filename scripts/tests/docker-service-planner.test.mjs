@@ -242,3 +242,20 @@ test('dev-seed.sh refreshes videos before seeding it', () => {
     'expected videos refresh to happen before videos seed'
   );
 });
+
+test('prod and generic seed scripts use the business-site seed entrypoint', () => {
+  const prodScript = fs.readFileSync(
+    path.join(repoRoot, 'scripts', 'prod-seed.sh'),
+    'utf8'
+  );
+  const genericScript = fs.readFileSync(
+    path.join(repoRoot, 'scripts', 'run-seed.sh'),
+    'utf8'
+  );
+
+  assert.match(prodScript, /node \.\/seed-business\.mjs/);
+  assert.doesNotMatch(prodScript, /seed-trainer\.mjs/);
+
+  assert.match(genericScript, /node \/app\/seed-business\.mjs/);
+  assert.doesNotMatch(genericScript, /business-site.*seed-trainer\.mjs/);
+});

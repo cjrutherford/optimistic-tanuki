@@ -7,6 +7,7 @@ GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
 APP_RUNTIME_DIR="/usr/src/app"
+BUSINESS_SITE_RUNTIME_DIR="/app"
 
 compose_cmd() {
   if [ -n "$COMPOSE_ENV_FILE" ]; then
@@ -98,7 +99,7 @@ echo "Seeding social service (including local communities)..."
 run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 
 echo "Seeding business-site service (including seeded businesses and client workflows)..."
-run_seed_with_env business-site "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./apps/business-site/src/seed-trainer.mjs
+run_seed_with_env business-site "${BUSINESS_SITE_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-business.mjs
 
 echo ""
 echo "=========================================="
