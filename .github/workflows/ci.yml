@@ -41,7 +41,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Derive SHAs for nx affected
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       - name: Generate Docker change plan
         run: |
@@ -107,7 +107,7 @@ jobs:
         run: pnpm exec playwright install --with-deps
 
       - name: Derive SHAs for nx affected
-        uses: nrwl/nx-set-shas@v4
+        uses: nrwl/nx-set-shas@v5
 
       - name: Run affected ${{ matrix.target }}
         run: |
