@@ -30,7 +30,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_DIR:-postgres_data}:/var/lib/postgresql/data
     healthcheck:
       test:
         [
@@ -239,11 +239,18 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       EVALUATOR_GUIDE_PATH: /app/docs/guides/business-site-evaluator-guide.html
       RUN_BUSINESS_SITE_SEED_ON_STARTUP: ${RUN_BUSINESS_SITE_SEED_ON_STARTUP:-false}
       <<: *gateway_client_env
+      POSTGRES_DB: ot_permissions
+      PERMISSIONS_DB: ot_permissions
     depends_on:
       - gateway
+      - permissions
 
   crdn-client-interface:
     container_name: crdn_client_interface # Added

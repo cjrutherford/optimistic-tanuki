@@ -36,6 +36,8 @@ COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --frozen-lockfile
 
 COPY --from=builder /usr/src/app/dist/apps/business-site ./dist/apps/business-site
+COPY --from=builder /usr/src/app/apps/business-site/src/seed-business.mjs /app/seed-business.mjs
+COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/seed-trainer.mjs
 
 COPY --from=builder /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs
