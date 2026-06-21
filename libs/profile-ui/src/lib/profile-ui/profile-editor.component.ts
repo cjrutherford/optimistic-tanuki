@@ -48,6 +48,8 @@ export class ProfileEditorComponent implements OnChanges {
   @Output() closeEditor = new EventEmitter<void>();
 
   profileForm!: FormGroup;
+  isSaving = false;
+  private pendingSave = false;
 
   constructor(private fb: FormBuilder) {
     this.profileForm = this.fb.group({
@@ -63,8 +65,15 @@ export class ProfileEditorComponent implements OnChanges {
     if (changes['open'] && this.open) {
       this.loadProfileIntoForm();
     }
-    if (changes['profile'] && this.open) {
-      this.loadProfileIntoForm();
+    if (changes['profile']) {
+      if (this.open) {
+        this.loadProfileIntoForm();
+      }
+      if (this.pendingSave) {
+        this.pendingSave = false;
+        this.isSaving = false;
+        this.close();
+      }
     }
   }
 
@@ -96,6 +105,8 @@ export class ProfileEditorComponent implements OnChanges {
 
   save() {
     if (this.profileForm.valid) {
+      this.isSaving = true;
+      this.pendingSave = true;
       const v = this.profileForm.value;
       if (this.profile) {
         const payload: UpdateProfileDto = {
@@ -122,11 +133,12 @@ export class ProfileEditorComponent implements OnChanges {
         } as any;
         this.createProfile.emit(payload);
       }
-      this.close();
     }
   }
 
   close() {
+    this.pendingSave = false;
+    this.isSaving = false;
     this.closeEditor.emit();
   }
 }

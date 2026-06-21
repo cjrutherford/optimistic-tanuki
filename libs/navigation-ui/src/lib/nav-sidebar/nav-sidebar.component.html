@@ -9,7 +9,12 @@
         [class.group]="!!item.children?.length"
         (click)="onNavItemClick(item)"
       >
-        <span>{{ item.label }}</span>
+        <span class="nav-link-copy">
+          <span>{{ item.label }}</span>
+          @if (item.description) {
+          <small>{{ item.description }}</small>
+          }
+        </span>
       </button>
       @if (item.children?.length) {
       <ng-container

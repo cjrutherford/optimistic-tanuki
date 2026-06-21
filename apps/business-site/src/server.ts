@@ -19,6 +19,8 @@ const evaluatorGuidePath = resolve(
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+const gatewayOrigin = new URL(gatewayUrl).origin;
+const gatewayHost = new URL(gatewayUrl).host;
 
 const applyPublicAppSecurityHeaders: express.RequestHandler = (
   req,
@@ -89,7 +91,13 @@ app.use(
     ws: true,
     changeOrigin: true,
     on: {
-      proxyReq: fixRequestBody,
+      proxyReq: (proxyReq, req) => {
+        fixRequestBody(proxyReq, req);
+        proxyReq.setHeader('host', gatewayHost);
+        if (req.headers.origin) {
+          proxyReq.setHeader('origin', gatewayOrigin);
+        }
+      },
     },
   })
 );

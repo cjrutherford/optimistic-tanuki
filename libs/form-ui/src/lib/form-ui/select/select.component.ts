@@ -21,6 +21,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   styleUrl: './select.component.scss',
   standalone: true,
   host: {
+    '[attr.id]': 'id',
     // Using standardized local variables with fallbacks
     '[style.--local-background]': 'background',
     '[style.--local-foreground]': 'foreground',
@@ -32,6 +33,7 @@ import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
   },
 })
 export class SelectComponent extends Themeable implements ControlValueAccessor {
+  @Input() id = '';
   @Input() options: Array<{ value: string; label: string }> = [
     { value: '', label: 'Please select' },
     { value: 'option1', label: 'Option 1' },

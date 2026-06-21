@@ -8,6 +8,7 @@ import {
 
 export interface NavItem {
   label: string;
+  description?: string;
   action?: () => void; // Optional action function
   children?: NavItem[];
   variant?:

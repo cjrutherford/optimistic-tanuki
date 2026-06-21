@@ -4,10 +4,7 @@ import {
   ThemeDesignerComponent,
   PersonalitySelectorComponent,
 } from '@optimistic-tanuki/theme-ui';
-import {
-  BannerComponent,
-  ProfileEditorComponent,
-} from '@optimistic-tanuki/profile-ui';
+import { SettingsShellComponent } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../../profile/profile.service';
 import { AuthStateService } from '../../auth-state.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
@@ -24,8 +21,7 @@ import { ThemeService, Personality } from '@optimistic-tanuki/theme-lib';
     CommonModule,
     ThemeDesignerComponent,
     PersonalitySelectorComponent,
-    BannerComponent,
-    ProfileEditorComponent,
+    SettingsShellComponent,
     ButtonComponent,
   ],
   templateUrl: './settings.component.html',
@@ -33,9 +29,10 @@ import { ThemeService, Personality } from '@optimistic-tanuki/theme-lib';
 })
 export class SettingsComponent implements OnInit {
   title = 'Settings';
+  description =
+    'Keep your working identity sharp, tune the forge personality, and make the workspace feel intentional before you drop back into projects.';
 
   showThemeDesigner = false;
-  showProfileEditor = false;
 
   profileName = '';
   profileImage = '';
@@ -78,6 +75,13 @@ export class SettingsComponent implements OnInit {
     this.profile.set(p);
   }
 
+  private syncProfileFromService(): void {
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (currentProfile) {
+      this.setProfileFromDto(currentProfile);
+    }
+  }
+
   toggleThemeDesigner() {
     this.showThemeDesigner = !this.showThemeDesigner;
   }
@@ -86,27 +90,13 @@ export class SettingsComponent implements OnInit {
     this.currentPersonalityId.set(personality.id);
   }
 
-  openProfileEditor() {
-    this.showProfileEditor = true;
-  }
-
-  onProfileEditorClose() {
-    this.showProfileEditor = false;
-  }
-
   async onCreateProfile(dto: CreateProfileDto) {
     await this.profileService.createProfile(dto);
-    this.profileService.getAllProfiles().then(() => {
-      const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p);
-    });
+    this.syncProfileFromService();
   }
 
   async onUpdateProfile(dto: UpdateProfileDto) {
     await this.profileService.updateProfile(dto.id, dto);
-    this.profileService.getProfileById(dto.id).then(() => {
-      const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p);
-    });
+    this.syncProfileFromService();
   }
 }

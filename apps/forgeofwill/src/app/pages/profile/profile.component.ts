@@ -56,7 +56,11 @@ export class ProfileComponent implements OnInit {
       const profiles = this.profileService.currentUserProfiles();
       this.availableProfiles.set(profiles);
       if (profiles.length) {
-        this.selectedProfile.set(profiles[0]);
+        this.selectedProfile.set(
+          this.profileService.getEffectiveProfile() ||
+            this.profileService.getCurrentUserProfile() ||
+            profiles[0]
+        );
       }
     });
   }

@@ -15,6 +15,9 @@ import { AvailabilityOverrideEntity } from './entities/availability-override.ent
 
 @Injectable()
 export class AppointmentsService {
+  private readonly bookingTimeZone =
+    process.env['BUSINESS_TIME_ZONE'] || 'America/New_York';
+
   constructor(
     @InjectRepository(AppointmentEntity)
     private readonly appointmentRepository: Repository<AppointmentEntity>,
@@ -76,7 +79,7 @@ export class AppointmentsService {
       return;
     }
 
-    const dayOfWeek = start.getDay();
+    const dayOfWeek = this.getDayOfWeekInBookingTimeZone(start);
     const matchingAvailabilities = await this.availabilityRepository.find({
       where: {
         ownerId: createAppointmentDto.ownerId ?? null,
@@ -86,8 +89,8 @@ export class AppointmentsService {
       order: { startTime: 'ASC' },
     });
 
-    const startClock = this.toTimeString(start);
-    const endClock = this.toTimeString(end);
+    const startClock = this.toTimeStringInBookingTimeZone(start);
+    const endClock = this.toTimeStringInBookingTimeZone(end);
     const match = matchingAvailabilities.find(
       (entry) => entry.startTime <= startClock && entry.endTime >= endClock
     );
@@ -123,10 +126,46 @@ export class AppointmentsService {
     }
   }
 
-  private toTimeString(date: Date): string {
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
+  private getZonedDateParts(date: Date): {
+    weekday: number;
+    hours: string;
+    minutes: string;
+    seconds: string;
+  } {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: this.bookingTimeZone,
+      hour12: false,
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    const parts = formatter.formatToParts(date);
+    const partMap = new Map(parts.map((part) => [part.type, part.value]));
+    const weekdayMap: Record<string, number> = {
+      Sun: 0,
+      Mon: 1,
+      Tue: 2,
+      Wed: 3,
+      Thu: 4,
+      Fri: 5,
+      Sat: 6,
+    };
+
+    return {
+      weekday: weekdayMap[partMap.get('weekday') ?? 'Sun'] ?? 0,
+      hours: partMap.get('hour') ?? '00',
+      minutes: partMap.get('minute') ?? '00',
+      seconds: partMap.get('second') ?? '00',
+    };
+  }
+
+  private getDayOfWeekInBookingTimeZone(date: Date): number {
+    return this.getZonedDateParts(date).weekday;
+  }
+
+  private toTimeStringInBookingTimeZone(date: Date): string {
+    const { hours, minutes, seconds } = this.getZonedDateParts(date);
     return `${hours}:${minutes}:${seconds}`;
   }
 

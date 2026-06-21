@@ -36,6 +36,8 @@ describe('ProfileComponent', () => {
     const profileServiceMock = {
       getAllProfiles: jest.fn().mockResolvedValue(undefined),
       currentUserProfiles: jest.fn(),
+      getEffectiveProfile: jest.fn(),
+      getCurrentUserProfile: jest.fn(),
       selectProfile: jest.fn(),
       createProfile: jest.fn().mockResolvedValue(undefined),
       updateProfile: jest.fn().mockResolvedValue(undefined),
@@ -65,6 +67,9 @@ describe('ProfileComponent', () => {
       jest
         .spyOn(profileService, 'currentUserProfiles')
         .mockReturnValue([mockProfile]);
+      jest
+        .spyOn(profileService, 'getEffectiveProfile')
+        .mockReturnValue(mockProfile);
 
       component.ngOnInit();
       tick();
@@ -72,6 +77,34 @@ describe('ProfileComponent', () => {
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(component.availableProfiles()).toEqual([mockProfile]);
       expect(component.selectedProfile()).toEqual(mockProfile);
+    }));
+
+    it('should prefer effective profile over first profile when available', fakeAsync(() => {
+      const globalProfile = {
+        ...mockProfile,
+        id: 'global',
+        profileName: 'Global Profile',
+        appScope: 'global',
+      } as ProfileDto;
+      const localProfile = {
+        ...mockProfile,
+        id: 'local',
+        profileName: 'Local Profile',
+        appScope: 'forgeofwill',
+      } as ProfileDto;
+
+      jest.spyOn(profileService, 'getAllProfiles').mockResolvedValue(undefined);
+      jest
+        .spyOn(profileService, 'currentUserProfiles')
+        .mockReturnValue([globalProfile, localProfile]);
+      jest
+        .spyOn(profileService, 'getEffectiveProfile')
+        .mockReturnValue(localProfile);
+
+      component.ngOnInit();
+      tick();
+
+      expect(component.selectedProfile()).toEqual(localProfile);
     }));
 
     it('should not set selected profile if no profiles are available', fakeAsync(() => {

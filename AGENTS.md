@@ -31,3 +31,17 @@ This is a large project and needs to be handled with care or there will be a lon
 We want to have the quickest turnaround on changes, so please use the most efficient script (preferably with pnpm) to apply the changes to the local stack.
 
 New components and UX should either try to use existing component elements or build new libraries to allow for reusability. The defining goal in the architecture is that the platform provides, apps shouldn't have to create their own elements unless it's for structure or unique to that specific application.
+
+## E2E Check Process
+
+- Treat the three primary UX validation targets as `client-interface`, `forgeofwill`, and `business-site` unless the user narrows scope.
+- Default all Nx-driven verification to `NX_DAEMON=false` and `NX_ISOLATE_PLUGINS=false`.
+- Prefer running the checked-in Nx e2e target first. If the suite is intended to validate against an already-running Docker stack, set the suite-specific skip flags so global setup does not rebuild or restart infrastructure.
+- When validating against the live Docker stack, confirm the expected app ports are already up before rerunning tests:
+  - `client-interface` at `http://127.0.0.1:8080`
+  - `forgeofwill` at `http://127.0.0.1:8081`
+  - `business-site` at `http://127.0.0.1:8094`
+- Prefer the system Chrome channel for Playwright-based e2e runs in this repo. If Playwright-managed browser installation is missing or unsupported on the host, do not stop at the install failure; rerun with the checked-in config that targets Chrome.
+- For `SKIP_SETUP=true` or other live-stack runs, teardown must not bring down shared Docker services. Respect the existing environment flags before stopping compose stacks.
+- When an e2e failure appears after a UX refactor, inspect shared libraries first for DRY fixes before patching multiple app suites independently.
+- After changes, rerun the smallest failing e2e slice first, then rerun the affected app suite, and only then rerun broader cross-app validation.

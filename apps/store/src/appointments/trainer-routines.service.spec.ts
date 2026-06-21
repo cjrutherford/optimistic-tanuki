@@ -101,4 +101,25 @@ describe('TrainerRoutinesService', () => {
       expect.objectContaining({ ownerId: 'owner-user-handyman' })
     );
   });
+
+  it('filters owner routine and check-in queries by owner scope', async () => {
+    routineRepository.find.mockResolvedValue([]);
+    checkInRepository.find.mockResolvedValue([]);
+
+    await service.getAllRoutines('owner-user-handyman');
+    await service.getAllCheckIns('owner-user-handyman');
+
+    expect(routineRepository.find).toHaveBeenCalledWith({
+      where: {
+        ownerId: 'owner-user-handyman',
+      },
+      order: { createdAt: 'DESC' },
+    });
+    expect(checkInRepository.find).toHaveBeenCalledWith({
+      where: {
+        ownerId: 'owner-user-handyman',
+      },
+      order: { completedAt: 'DESC' },
+    });
+  });
 });

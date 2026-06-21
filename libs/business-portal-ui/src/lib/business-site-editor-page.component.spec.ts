@@ -601,6 +601,14 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(modeSwitch?.textContent).toContain('Studio');
   });
 
+  it('explains that preview updates immediately while visitors only see saved changes', () => {
+    const fixture = createComponent();
+    const text = hostText(fixture.fixture);
+
+    expect(text).toContain('preview updates immediately');
+    expect(text).toContain('visitors only see changes after save');
+  });
+
   it('renders the editor beside a live business landing-page preview', () => {
     const { fixture, component } = createComponent();
     component.togglePanel('contact');
@@ -926,6 +934,20 @@ describe('BusinessSiteEditorPageComponent', () => {
         }),
       })
     );
+  });
+
+  it('routes new section creation through the shared selection workflow', () => {
+    const { component } = createComponent();
+    const selectSectionSpy = jest.spyOn(component, 'selectSection');
+
+    component.addCustomSection();
+    component.addImageSection();
+    component.addGallerySection();
+
+    expect(selectSectionSpy).toHaveBeenCalledTimes(3);
+    expect(selectSectionSpy.mock.calls[0][0]).toMatch(/^custom-/);
+    expect(selectSectionSpy.mock.calls[1][0]).toMatch(/^image-/);
+    expect(selectSectionSpy.mock.calls[2][0]).toMatch(/^gallery-/);
   });
 
   it('saves image and gallery section media with motion configuration', () => {

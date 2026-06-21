@@ -52,6 +52,7 @@ import {
           ></lib-text-area>
           } @case ('select') {
           <lib-select
+            [id]="'field-' + field.key"
             [ngModel]="fieldValue(field.key)"
             (ngModelChange)="
               fieldChanged.emit({ key: field.key, value: $event })

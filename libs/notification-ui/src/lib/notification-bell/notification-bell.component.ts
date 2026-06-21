@@ -143,7 +143,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         position: absolute;
         top: 100%;
         right: 0;
-        width: 360px;
+        width: min(360px, calc(100vw - 48px));
         max-height: 480px;
         background: var(--surface, white);
         border: 1px solid var(--border, #e0e0e0);
@@ -176,7 +176,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
       .notification-list {
         max-height: 400px;
         overflow-y: auto;
-        min-width: 320px;
+        min-width: 280px;
       }
       .notification-item {
         display: flex;

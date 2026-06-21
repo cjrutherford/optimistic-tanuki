@@ -20,6 +20,10 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <p class="eyebrow">Current business</p>
         <h2>{{ siteConfig.site().brand.businessName }}</h2>
         <p class="support-copy">{{ siteConfig.site().brand.tagline }}</p>
+        <p class="support-copy">
+          Start here when you need the next scheduled touchpoint, assigned work,
+          or a fast route back into booking.
+        </p>
         <div class="actions">
           <a class="cta-primary" [routerLink]="bookingRoute()"
             >Request coaching</a

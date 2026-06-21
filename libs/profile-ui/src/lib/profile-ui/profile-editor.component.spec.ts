@@ -170,7 +170,8 @@ describe('ProfileEditorComponent', () => {
           coverPic: 'data:image/png;base64,cover',
         })
       );
-      expect(component.close).toHaveBeenCalled();
+      expect(component.close).not.toHaveBeenCalled();
+      expect(component.isSaving).toBe(true);
     });
 
     it('should emit updateProfile event when updating existing profile', () => {
@@ -198,7 +199,8 @@ describe('ProfileEditorComponent', () => {
           coverPic: 'data:image/png;base64,newcover',
         })
       );
-      expect(component.close).toHaveBeenCalled();
+      expect(component.close).not.toHaveBeenCalled();
+      expect(component.isSaving).toBe(true);
     });
 
     it('should not emit events when form is invalid', () => {
@@ -221,10 +223,41 @@ describe('ProfileEditorComponent', () => {
   describe('close', () => {
     it('should emit closeEditor event', () => {
       jest.spyOn(component.closeEditor, 'emit');
+      component.isSaving = true;
 
       component.close();
 
       expect(component.closeEditor.emit).toHaveBeenCalled();
+      expect(component.isSaving).toBe(false);
+    });
+  });
+
+  describe('async save lifecycle', () => {
+    it('should close after a profile refresh arrives for a pending update', () => {
+      jest.spyOn(component, 'close');
+      component.open = true;
+      component.profile = mockProfileDto;
+
+      component.profileForm.patchValue({
+        profileName: 'Updated User',
+        bio: 'Updated bio',
+      });
+
+      component.save();
+
+      const refreshedProfile = {
+        ...mockProfileDto,
+        profileName: 'Updated User',
+        bio: 'Updated bio',
+      };
+      component.profile = refreshedProfile;
+
+      component.ngOnChanges({
+        profile: new SimpleChange(mockProfileDto, refreshedProfile, false),
+      });
+
+      expect(component.close).toHaveBeenCalled();
+      expect(component.isSaving).toBe(false);
     });
   });
 

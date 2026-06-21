@@ -12,6 +12,19 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
   standalone: true,
   imports: [CommonModule, CardComponent],
   template: `
+    <section class="summary">
+      <otui-card class="next-step">
+        <span class="kicker">Owner workspace</span>
+        <strong
+          >Start with requests, then tune the site and client flow.</strong
+        >
+        <p>
+          Use the dashboard to see pipeline pressure first, then move into the
+          editor or client operations with context.
+        </p>
+      </otui-card>
+    </section>
+
     <section class="grid">
       <otui-card class="stat">
         <span>Prospects</span>
@@ -39,6 +52,24 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
   `,
   styles: [
     `
+      .summary {
+        margin-bottom: 1rem;
+      }
+      .next-step {
+        display: grid;
+        gap: 0.45rem;
+      }
+      .kicker {
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 0.72rem;
+        font-weight: 800;
+        color: var(--primary, #1f7a63);
+      }
+      .next-step p {
+        margin: 0;
+        color: var(--muted);
+      }
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

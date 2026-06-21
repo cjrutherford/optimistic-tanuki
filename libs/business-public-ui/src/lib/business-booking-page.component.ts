@@ -522,8 +522,8 @@ export class BusinessBookingPageComponent {
         .createBooking({
           siteSlug: this.siteSlug ?? undefined,
           title:
-            this.selectedOffer()?.label ||
             this.form.goal ||
+            this.selectedOffer()?.label ||
             this.site().contact.consultationLabel,
           description: this.bookingDescription(),
           startTime: slot.start,
@@ -637,6 +637,7 @@ export class BusinessBookingPageComponent {
   ): BookableSlot[] {
     const now = new Date();
     const slots: BookableSlot[] = [];
+    const seenKeys = new Set<string>();
 
     for (let dayOffset = 0; dayOffset < 14; dayOffset += 1) {
       const date = new Date(now);
@@ -649,46 +650,98 @@ export class BusinessBookingPageComponent {
 
         const start = this.combineDateAndTime(date, availability.startTime);
         const end = this.combineDateAndTime(date, availability.endTime);
-        if (start <= now || end <= start) {
+        if (end <= start) {
           continue;
         }
 
-        let slotStart = new Date(start);
-        while (slotStart.getTime() + 60 * 60 * 1000 <= end.getTime()) {
-          const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
-          if (
-            slotStart > now &&
-            !this.isBlockedByOverride(
-              slotStart,
-              slotEnd,
-              availabilityOverrides
-            ) &&
-            !this.overlapsBusyWindow(slotStart, slotEnd, busyWindows)
-          ) {
-            slots.push({
-              key: `${availability.id}:${slotStart.toISOString()}`,
-              availabilityId: availability.id,
-              serviceType: availability.serviceType || 'Consultation',
-              start: new Date(slotStart),
-              end: slotEnd,
-              label: `${slotStart.toLocaleDateString()} · ${slotStart.toLocaleTimeString(
-                [],
-                {
-                  hour: 'numeric',
-                  minute: '2-digit',
-                }
-              )} - ${slotEnd.toLocaleTimeString([], {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}`,
-            });
-          }
-          slotStart = slotEnd;
-        }
+        this.appendHourlySlots(
+          slots,
+          seenKeys,
+          {
+            availabilityId: availability.id,
+            serviceType: availability.serviceType || 'Consultation',
+            start,
+            end,
+          },
+          availabilityOverrides,
+          busyWindows,
+          now
+        );
       }
     }
 
+    for (const override of availabilityOverrides) {
+      if (override.mode !== 'available') {
+        continue;
+      }
+
+      this.appendHourlySlots(
+        slots,
+        seenKeys,
+        {
+          availabilityId: override.id,
+          serviceType: override.serviceType || 'Consultation',
+          start: new Date(override.startTime),
+          end: new Date(override.endTime),
+        },
+        availabilityOverrides,
+        busyWindows,
+        now
+      );
+    }
+
     return slots.sort((a, b) => a.start.getTime() - b.start.getTime());
+  }
+
+  private appendHourlySlots(
+    slots: BookableSlot[],
+    seenKeys: Set<string>,
+    window: {
+      availabilityId: string;
+      serviceType: string;
+      start: Date;
+      end: Date;
+    },
+    availabilityOverrides: AvailabilityOverride[],
+    busyWindows: BusinessBusyWindow[],
+    now: Date
+  ): void {
+    if (window.start <= now || window.end <= window.start) {
+      return;
+    }
+
+    let slotStart = new Date(window.start);
+    while (slotStart.getTime() + 60 * 60 * 1000 <= window.end.getTime()) {
+      const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+      const key = `${window.availabilityId}:${slotStart.toISOString()}`;
+
+      if (
+        !seenKeys.has(key) &&
+        !this.isBlockedByOverride(slotStart, slotEnd, availabilityOverrides) &&
+        !this.overlapsBusyWindow(slotStart, slotEnd, busyWindows)
+      ) {
+        seenKeys.add(key);
+        slots.push({
+          key,
+          availabilityId: window.availabilityId,
+          serviceType: window.serviceType,
+          start: new Date(slotStart),
+          end: slotEnd,
+          label: `${slotStart.toLocaleDateString()} · ${slotStart.toLocaleTimeString(
+            [],
+            {
+              hour: 'numeric',
+              minute: '2-digit',
+            }
+          )} - ${slotEnd.toLocaleTimeString([], {
+            hour: 'numeric',
+            minute: '2-digit',
+          })}`,
+        });
+      }
+
+      slotStart = slotEnd;
+    }
   }
 
   private combineDateAndTime(date: Date, time: string): Date {

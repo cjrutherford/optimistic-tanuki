@@ -10,6 +10,9 @@
 button {
   @include flex-center;
   width: 100%;
+  min-height: 44px;
+  height: 44px;
+  box-sizing: border-box;
   padding: var(
     --personality-button-padding,
     var(--spacing-md, 12px) var(--spacing-lg, 24px)

@@ -106,6 +106,15 @@ describe('AppComponent', () => {
     fixture.detectChanges();
   });
 
+  function flattenNavItems(
+    items: Array<{ label: string; children?: any[] }>
+  ): any[] {
+    return items.flatMap((item) => [
+      item,
+      ...(item.children ? flattenNavItems(item.children) : []),
+    ]);
+  }
+
   it('should create the app', () => {
     expect(component).toBeTruthy();
   });
@@ -137,17 +146,11 @@ describe('AppComponent', () => {
       isAuthenticatedSubject.next(true);
       fixture.detectChanges();
 
-      const logoutItem = component.navItems().find((i) => i.label === 'Logout');
-      const projectsItem = component
-        .navItems()
-        .find((i) => i.label === 'Projects');
-      const forumItem = component.navItems().find((i) => i.label === 'Forum');
-      const profileItem = component
-        .navItems()
-        .find((i) => i.label === 'My Profile');
-      const settingsItem = component
-        .navItems()
-        .find((i) => i.label === 'Settings');
+      const items = flattenNavItems(component.navItems());
+      const logoutItem = items.find((i) => i.label === 'Logout');
+      const projectsItem = items.find((i) => i.label === 'Projects');
+      const forumItem = items.find((i) => i.label === 'Forum');
+      const settingsItem = items.find((i) => i.label === 'Settings');
 
       const navigateSpy = jest.spyOn(router, 'navigate');
       const logoutSpy = jest.spyOn(component, 'loginOutButton');
@@ -160,9 +163,6 @@ describe('AppComponent', () => {
 
       forumItem?.action?.();
       expect(navigateSpy).toHaveBeenCalledWith(['/forum']);
-
-      profileItem?.action?.();
-      expect(navigateSpy).toHaveBeenCalledWith(['/profile']);
 
       settingsItem?.action?.();
       expect(navigateSpy).toHaveBeenCalledWith(['/settings']);

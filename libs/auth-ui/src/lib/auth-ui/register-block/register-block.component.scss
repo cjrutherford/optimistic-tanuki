@@ -24,7 +24,7 @@
   background: var(--background);
   border-radius: 8px; // Adjusted from 8px to match inner radius expectation
   box-shadow: 0 4px 8px var(--complement); // Consider removing if outer provides shadow
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     flex-direction: column; // Ensure mobile responsiveness like login
   }
   .hero {
@@ -36,7 +36,7 @@
     margin-top: 20px;
     margin-bottom: 20px;
     padding: 20px 60px;
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       padding: 5px; // Reduced padding for mobile
       margin: 0; // Remove margin for better fit on small screens
     }
@@ -64,5 +64,20 @@
       gap: 1rem;
       margin-top: 20px; // Adjusted margin-top
     }
+  }
+}
+
+.hero img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 480px) {
+  .card-inner {
+    padding: 12px;
+  }
+  .form {
+    margin: 12px;
+    padding: 12px;
   }
 }

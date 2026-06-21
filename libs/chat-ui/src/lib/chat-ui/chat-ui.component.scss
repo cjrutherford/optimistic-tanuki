@@ -5,12 +5,20 @@
 }
 
 .messenger-sidebar {
-  width: 300px;
+  width: min(300px, 100%);
   background: var(--background);
   border-right: var(--border-width, 1px) solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .messenger-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: var(--border-width, 1px) solid var(--border);
+  }
 }
 
 .messenger-header {

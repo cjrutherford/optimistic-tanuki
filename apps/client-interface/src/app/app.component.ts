@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Component,
+  computed,
   inject,
   signal,
   OnInit,
@@ -20,6 +21,7 @@ import { ProfileContext } from './profile.context';
 import { TitleService } from './title.service';
 import {
   AppBarComponent,
+  buildAppShellNavItems,
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
@@ -50,6 +52,68 @@ import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { MessageComponent } from '@optimistic-tanuki/message-ui';
 import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
+
+const AUTH_NAV_LINKS = [
+  {
+    label: 'Workspace',
+    description: 'Core social workflow',
+    children: [
+      {
+        label: 'Feed',
+        route: '/feed',
+        description: 'Latest updates from your network',
+        exact: true,
+      },
+      {
+        label: 'Explore',
+        route: '/explore',
+        description: 'Find people, posts, and topics',
+      },
+      {
+        label: 'Activity',
+        route: '/activity',
+        description: 'Review recent actions and progress',
+      },
+    ],
+  },
+  {
+    label: 'Connection spaces',
+    description: 'Scoped collaboration and discussion',
+    children: [
+      {
+        label: 'Communities',
+        route: '/communities',
+        description: 'Member spaces and shared permissions',
+      },
+      {
+        label: 'Forum',
+        route: '/forum',
+        description: 'Threaded discussions and longer-form topics',
+      },
+      {
+        label: 'Messages',
+        route: '/messages',
+        description: 'Direct conversations and follow-up',
+      },
+    ],
+  },
+  {
+    label: 'Account',
+    description: 'Identity, alerts, and appearance',
+    children: [
+      {
+        label: 'Notifications',
+        route: '/notifications',
+        description: 'Unread alerts and attention items',
+      },
+      {
+        label: 'Settings',
+        route: '/settings',
+        description: 'Profile, privacy, and appearance',
+      },
+    ],
+  },
+] as const;
 
 @Component({
   selector: 'app-root',
@@ -108,6 +172,7 @@ export class AppComponent implements OnInit, OnDestroy {
   isAuthenticated = signal(false);
   selectedProfile = signal<ProfileDto | null>(null);
   navItems = signal<NavItem[]>([]);
+  currentPath = signal('/');
 
   chatContacts: ChatContact[] = [];
   chatConversations: ChatConversation[] = [];
@@ -116,6 +181,51 @@ export class AppComponent implements OnInit, OnDestroy {
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal(0);
+  workspaceSummary = computed(() => {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+
+    const url = this.currentPath();
+    if (url.startsWith('/communities')) {
+      return {
+        eyebrow: 'Communities',
+        title: 'Work inside scoped member spaces',
+        description:
+          'Use communities for audience-specific posting, permissions, and group context.',
+      };
+    }
+    if (url.startsWith('/forum')) {
+      return {
+        eyebrow: 'Forum',
+        title: 'Thread conversations that need more structure',
+        description:
+          'Use the forum for deeper discussions, durable topics, and referenceable decisions.',
+      };
+    }
+    if (url.startsWith('/messages')) {
+      return {
+        eyebrow: 'Messages',
+        title: 'Handle direct follow-up without leaving the workspace',
+        description:
+          'Use messages for one-to-one or small-group coordination after discovery happens elsewhere.',
+      };
+    }
+    if (url.startsWith('/settings') || url.startsWith('/notifications')) {
+      return {
+        eyebrow: 'Account',
+        title: 'Keep identity and alerts in shape',
+        description:
+          'Profile, privacy, theme, and notifications stay together so account maintenance feels deliberate instead of scattered.',
+      };
+    }
+    return {
+      eyebrow: 'Feed',
+      title: 'Start with the live network pulse',
+      description:
+        'The feed is the fastest way to catch up, then branch into communities, forum threads, or direct follow-up.',
+    };
+  });
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -149,6 +259,7 @@ export class AppComponent implements OnInit, OnDestroy {
       map((event: NavigationEnd) => event.urlAfterRedirects),
       startWith(this.router.url)
     );
+    this.currentPath.set(this.router.url);
 
     this.authState.isAuthenticated$.subscribe({
       next: (isAuthenticated) => {
@@ -163,6 +274,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     // Subscribe to currentUrl$ to update active state
     this.currentUrl$.subscribe((url) => {
+      this.currentPath.set(url);
       this.updateNavItems();
     });
   }
@@ -174,67 +286,23 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   updateNavItems() {
-    const currentUrl = this.router.url;
-    if (this.isAuthenticated()) {
-      this.navItems.set([
-        {
-          label: 'Logout',
-          action: () => this.loginOutButton(),
-        },
-        {
-          label: 'Profile',
-          action: () => this.navigateTo('/settings'),
-          isActive: currentUrl === '/settings',
-        },
-        {
-          label: 'Feed',
-          action: () => this.navigateTo('/feed'),
-          isActive: currentUrl === '/feed',
-        },
-        {
-          label: 'Explore',
-          action: () => this.navigateTo('/explore'),
-          isActive: currentUrl === '/explore',
-        },
-        {
-          label: 'Messages',
-          action: () => this.navigateTo('/messages'),
-          isActive: currentUrl === '/messages',
-        },
-        {
-          label: 'Communities',
-          action: () => this.navigateTo('/communities'),
-          isActive: currentUrl.startsWith('/communities'),
-        },
-        {
-          label: 'Forum',
-          action: () => this.navigateTo('/forum'),
-          isActive: currentUrl.startsWith('/forum'),
-        },
-        {
-          label: 'Activity',
-          action: () => this.navigateTo('/activity'),
-          isActive: currentUrl === '/activity',
-        },
-        {
-          label: 'Settings',
-          action: () => this.navigateTo('/settings'),
-          isActive: currentUrl === '/settings',
-        },
-      ]);
-    } else {
-      this.navItems.set([
-        {
-          label: 'Login',
-          action: () => this.loginOutButton(),
-        },
-        {
-          label: 'Register',
-          action: () => this.navigateTo('/register'),
-          isActive: currentUrl === '/register',
-        },
-      ]);
-    }
+    this.navItems.set(
+      buildAppShellNavItems({
+        isAuthenticated: this.isAuthenticated(),
+        currentUrl: this.currentPath(),
+        navigate: (route) => this.navigateTo(route),
+        authAction: () => this.loginOutButton(),
+        links: [...AUTH_NAV_LINKS],
+        guestLinks: [
+          {
+            label: 'Register',
+            route: '/register',
+            description: 'Create your network and profile',
+            exact: true,
+          },
+        ],
+      })
+    );
   }
 
   toggleNav() {

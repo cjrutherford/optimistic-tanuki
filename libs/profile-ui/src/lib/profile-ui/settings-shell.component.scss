@@ -1,0 +1,84 @@
+.settings-shell {
+  width: 100%;
+  min-height: 100%;
+  display: grid;
+  gap: 2rem;
+}
+
+.settings-header,
+.settings-section {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.settings-kicker {
+  margin: 0 0 0.4rem;
+  color: var(--primary, var(--accent));
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.settings-header h1,
+.section-heading h2 {
+  margin: 0;
+  color: var(--foreground);
+}
+
+.settings-description,
+.section-heading p {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  max-width: 70ch;
+}
+
+.section-heading {
+  margin-bottom: 1rem;
+}
+
+.profile-card {
+  position: relative;
+  cursor: pointer;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-card:hover,
+.profile-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px color-mix(in srgb, var(--foreground) 10%, transparent);
+  outline: none;
+}
+
+.profile-card:hover .profile-overlay,
+.profile-card:focus-visible .profile-overlay {
+  opacity: 1;
+}
+
+.profile-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--foreground) 38%, transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.profile-hint {
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary, var(--accent)) 88%, black 12%);
+}
+
+@media (max-width: 640px) {
+  .settings-shell {
+    gap: 1.5rem;
+  }
+}

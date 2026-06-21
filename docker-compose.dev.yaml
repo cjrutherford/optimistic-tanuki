@@ -843,6 +843,7 @@ services:
       - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
       - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
       - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
+      - /usr/src/app/node_modules
     command:
       [
         'dumb-init',
