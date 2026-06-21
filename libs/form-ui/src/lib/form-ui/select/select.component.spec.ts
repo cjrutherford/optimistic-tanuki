@@ -24,9 +24,8 @@ describe('SelectComponent', () => {
     fixture.detectChanges();
 
     const host = fixture.nativeElement as HTMLElement;
-    const select = host.querySelector('select');
+    const select = host.querySelector('select') as HTMLSelectElement | null;
 
-    expect(host.id).toBe('field-gallery.style');
-    expect(select).toBeTruthy();
+    expect(select?.id).toBe('field-gallery.style');
   });
 });
