@@ -39,6 +39,7 @@ import { ProfileEditorComponent } from './profile-editor.component';
           tabindex="0"
           role="button"
           [attr.aria-label]="profileHint"
+        >
           <lib-banner
             [profileName]="profileName"
             [profileImage]="profileImage"
