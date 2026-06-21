@@ -28,9 +28,11 @@ function matchesRoute(
     return false;
   }
 
+  const path = currentUrl.split(/[?#]/)[0] ?? currentUrl;
+
   return exact
-    ? currentUrl === route
-    : currentUrl === route || currentUrl.startsWith(`${route}/`);
+    ? path === route
+    : path === route || path.startsWith(`${route}/`);
 }
 
 function mapLink(
