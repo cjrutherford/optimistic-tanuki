@@ -706,7 +706,7 @@ export class BusinessBookingPageComponent {
     busyWindows: BusinessBusyWindow[],
     now: Date
   ): void {
-    if (window.start <= now || window.end <= window.start) {
+    if (window.end <= window.start) {
       return;
     }
 
@@ -716,6 +716,7 @@ export class BusinessBookingPageComponent {
       const key = `${window.availabilityId}:${slotStart.toISOString()}`;
 
       if (
+        slotStart > now &&
         !seenKeys.has(key) &&
         !this.isBlockedByOverride(slotStart, slotEnd, availabilityOverrides) &&
         !this.overlapsBusyWindow(slotStart, slotEnd, busyWindows)
