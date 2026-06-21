@@ -34,11 +34,11 @@ import { ProfileEditorComponent } from './profile-editor.component';
           class="profile-card"
           data-profile-editor-trigger
           (click)="openProfileEditor()"
-          (keyup.enter)="openProfileEditor()"
+          (keydown.enter)="openProfileEditor()"
+          (keydown.space)="openProfileEditor(); $event.preventDefault()"
           tabindex="0"
           role="button"
           [attr.aria-label]="profileHint"
-        >
           <lib-banner
             [profileName]="profileName"
             [profileImage]="profileImage"
