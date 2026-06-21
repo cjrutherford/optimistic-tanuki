@@ -55,8 +55,12 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'profile',
-    redirectTo: 'settings',
-    pathMatch: 'full',
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then(
+        (m) => m.ProfileComponent
+      ),
+    title: 'Profile',
+    canActivate: [AuthenticationGuard, ProfileGuard],
   },
   {
     path: 'settings',

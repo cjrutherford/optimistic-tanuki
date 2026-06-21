@@ -390,8 +390,25 @@ export class AppComponent {
     return match?.[1] ?? null;
   }
 
+  private shouldPreserveConfiguredSiteSlug(): boolean {
+    return /^\/(owner|client)(\/|$)/.test(this.currentUrl());
+  }
+
+  private activeSiteSlug(): string | null {
+    const hostedSiteSlug = this.currentHostedSiteSlug();
+    if (hostedSiteSlug) {
+      return hostedSiteSlug;
+    }
+
+    if (this.shouldPreserveConfiguredSiteSlug()) {
+      return this.site().site.slug || null;
+    }
+
+    return null;
+  }
+
   private hostedSiteBaseRoute(): string[] | null {
-    const siteSlug = this.currentHostedSiteSlug();
+    const siteSlug = this.activeSiteSlug();
     return siteSlug ? ['/sites', siteSlug] : null;
   }
 
@@ -603,12 +620,12 @@ export class AppComponent {
   }
 
   hostedClientAuthLink(mode: 'login' | 'register'): string[] {
-    const siteSlug = this.currentHostedSiteSlug();
+    const siteSlug = this.activeSiteSlug();
     return siteSlug ? ['/sites', siteSlug, 'client', mode] : ['/client', mode];
   }
 
   hostedOwnerAuthLink(mode: 'login' | 'register'): string[] {
-    const siteSlug = this.currentHostedSiteSlug();
+    const siteSlug = this.activeSiteSlug();
     return siteSlug ? ['/sites', siteSlug, 'owner', mode] : ['/owner', mode];
   }
 
@@ -617,14 +634,14 @@ export class AppComponent {
   }
 
   clientDashboardLink(): string[] {
-    const siteSlug = this.currentHostedSiteSlug();
+    const siteSlug = this.activeSiteSlug();
     return siteSlug
       ? ['/sites', siteSlug, 'client', 'dashboard']
       : ['/client/dashboard'];
   }
 
   ownerDashboardLink(): string[] {
-    const siteSlug = this.currentHostedSiteSlug();
+    const siteSlug = this.activeSiteSlug();
     return siteSlug
       ? ['/sites', siteSlug, 'owner', 'dashboard']
       : ['/owner/dashboard'];

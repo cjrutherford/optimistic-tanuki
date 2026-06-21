@@ -15,8 +15,8 @@ export class TrainerRoutinesController {
   }
 
   @MessagePattern('trainer.owner.routines.findAll')
-  getAllRoutines() {
-    return this.trainerRoutinesService.getAllRoutines();
+  getAllRoutines(@Payload() payload?: { ownerId?: string | null }) {
+    return this.trainerRoutinesService.getAllRoutines(payload?.ownerId ?? null);
   }
 
   @MessagePattern('trainer.client.routines.find')
@@ -53,7 +53,7 @@ export class TrainerRoutinesController {
   }
 
   @MessagePattern('trainer.owner.checkins.findAll')
-  getAllCheckIns() {
-    return this.trainerRoutinesService.getAllCheckIns();
+  getAllCheckIns(@Payload() payload?: { ownerId?: string | null }) {
+    return this.trainerRoutinesService.getAllCheckIns(payload?.ownerId ?? null);
   }
 }

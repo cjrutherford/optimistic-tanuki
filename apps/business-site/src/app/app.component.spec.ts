@@ -700,4 +700,55 @@ describe('AppComponent', () => {
     expect(logout).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith(['/']);
   });
+
+  it('keeps the active hosted site slug in the client portal link from generic workspace routes', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'steady-hand-contracting',
+      },
+    });
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        {
+          provide: BusinessAuthService,
+          useValue: {
+            isAuthenticated: jest.fn(() => false),
+            isClientAuthenticated: jest.fn(() => true),
+            clientUser: jest.fn(() => ({ userId: 'client-1' })),
+            logout: jest.fn(),
+            logoutClient: jest.fn(),
+          },
+        },
+        {
+          provide: ThemeService,
+          useValue: createThemeService(),
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    component.currentUrl.set('/owner/requests');
+    fixture.detectChanges();
+
+    const portalLink = fixture.debugElement
+      .queryAll(By.directive(RouterLink))
+      .map((element) => element.injector.get(RouterLink))
+      .find(
+        (link) =>
+          link.href === '/sites/steady-hand-contracting/client/dashboard'
+      );
+
+    expect(portalLink).toBeTruthy();
+  });
 });

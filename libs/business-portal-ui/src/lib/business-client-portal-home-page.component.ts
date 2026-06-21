@@ -28,6 +28,10 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         <p class="eyebrow">Client Portal</p>
         <h2>{{ site().clientPortal.headline }}</h2>
         <p>{{ nextActionCopy() }}</p>
+        <p class="portal-note">
+          Use the portal as the single place for sessions, assigned routines,
+          and the next action your business expects from you.
+        </p>
         <div class="actions">
           <a class="cta-primary" [routerLink]="dashboardRoute()"
             >Open dashboard</a
@@ -86,6 +90,9 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 0.8rem;
         flex-wrap: wrap;
         margin-top: 1rem;
+      }
+      .portal-note {
+        margin-top: 0.35rem;
       }
       .cta-primary,
       .cta-secondary {

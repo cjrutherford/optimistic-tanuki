@@ -18,4 +18,14 @@ describe('SelectComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('applies the provided id to the native select element', () => {
+    component.id = 'field-gallery.style';
+    fixture.detectChanges();
+
+    const host = fixture.nativeElement as HTMLElement;
+    const select = host.querySelector('select') as HTMLSelectElement | null;
+
+    expect(select?.id).toBe('field-gallery.style');
+  });
 });

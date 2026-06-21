@@ -15,7 +15,8 @@
     "e2e": {
       "executor": "@nx/playwright:playwright",
       "options": {
-        "config": "apps/business-site-e2e/playwright.config.ts"
+        "config": "apps/business-site-e2e/playwright.config.ts",
+        "skipInstall": true
       }
     }
   },

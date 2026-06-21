@@ -32,10 +32,14 @@
         variant="success"
         type="submit"
         (click)="save()"
-        [disabled]="profileForm.invalid"
-        >Submit</otui-button
+        [disabled]="profileForm.invalid || isSaving"
+        >{{ isSaving ? 'Saving...' : 'Submit' }}</otui-button
       >
-      <otui-button variant="warning" type="button" (click)="close()"
+      <otui-button
+        variant="warning"
+        type="button"
+        (click)="close()"
+        [disabled]="isSaving"
         >Cancel</otui-button
       >
     </div>

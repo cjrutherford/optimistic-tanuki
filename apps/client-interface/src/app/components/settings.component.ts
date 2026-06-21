@@ -1,22 +1,22 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ThemeDesignerComponent } from '@optimistic-tanuki/theme-ui';
-import {
-  BannerComponent,
-  ProfileEditorComponent,
-} from '@optimistic-tanuki/profile-ui';
+import { SettingsShellComponent } from '@optimistic-tanuki/profile-ui';
 import { ProfileService } from '../profile.service';
 import { AuthStateService } from '../state/auth-state.service';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  CreateProfileDto,
+  ProfileDto,
+  UpdateProfileDto,
+} from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-settings',
   imports: [
     CommonModule,
     ThemeDesignerComponent,
-    BannerComponent,
-    ProfileEditorComponent,
+    SettingsShellComponent,
     ButtonComponent,
   ],
   templateUrl: './settings.component.html',
@@ -24,9 +24,10 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 })
 export class SettingsComponent {
   title = 'Settings';
+  description =
+    'Keep your profile current, shape the visual identity of your space, and make the next step obvious for people who visit it.';
 
   showThemeDesigner = false;
-  showProfileEditor = false;
 
   // current selected profile values
   profileName = '';
@@ -65,32 +66,24 @@ export class SettingsComponent {
     this.profile.set(p);
   }
 
+  private syncProfileFromService() {
+    const currentProfile = this.profileService.getCurrentUserProfile();
+    if (currentProfile) {
+      this.setProfileFromDto(currentProfile);
+    }
+  }
+
   toggleThemeDesigner() {
     this.showThemeDesigner = !this.showThemeDesigner;
   }
 
-  openProfileEditor() {
-    this.showProfileEditor = true;
-  }
-
-  onProfileEditorClose() {
-    this.showProfileEditor = false;
-  }
-
-  async onCreateProfile(dto: any) {
+  async onCreateProfile(dto: CreateProfileDto) {
     await this.profileService.createProfile(dto);
-    // refresh and set current
-    this.profileService.getAllProfiles().then(() => {
-      const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p as any);
-    });
+    this.syncProfileFromService();
   }
 
-  async onUpdateProfile(dto: any) {
+  async onUpdateProfile(dto: UpdateProfileDto) {
     await this.profileService.updateProfile(dto.id, dto);
-    this.profileService.getProfileById(dto.id).then(() => {
-      const p = this.profileService.getCurrentUserProfile();
-      if (p) this.setProfileFromDto(p as any);
-    });
+    this.syncProfileFromService();
   }
 }

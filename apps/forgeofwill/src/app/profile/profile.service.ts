@@ -30,6 +30,10 @@ export class ProfileService {
   /** The app scope identifier for this application */
   private readonly appScope = 'forgeofwill';
 
+  private hasStorage(): boolean {
+    return typeof localStorage !== 'undefined';
+  }
+
   constructor(
     private readonly http: HttpClient,
     private readonly authState: AuthStateService
@@ -127,22 +131,29 @@ export class ProfileService {
     const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
     if (profile) {
       this.currentUserProfile.set(profile);
-      localStorage.setItem('selectedProfile', JSON.stringify(profile));
+      if (this.hasStorage()) {
+        localStorage.setItem('selectedProfile', JSON.stringify(profile));
+      }
     } else {
       console.warn('New Profile being added to the list');
       this.currentUserProfiles.update((profiles) => [...profiles, _p]);
       this.currentUserProfile.set(_p);
-      localStorage.setItem('selectedProfile', JSON.stringify(_p));
-      localStorage.setItem(
-        'profiles',
-        JSON.stringify(this.currentUserProfiles())
-      );
+      if (this.hasStorage()) {
+        localStorage.setItem('selectedProfile', JSON.stringify(_p));
+        localStorage.setItem(
+          'profiles',
+          JSON.stringify(this.currentUserProfiles())
+        );
+      }
     }
   }
 
   getCurrentUserProfiles() {
     let currentProfiles = this.currentUserProfiles();
-    if (!currentProfiles || currentProfiles.length === 0) {
+    if (
+      (!currentProfiles || currentProfiles.length === 0) &&
+      this.hasStorage()
+    ) {
       // fallback to local storage if no profiles are selected
       const storedProfiles = localStorage.getItem('profiles');
       if (storedProfiles) {
@@ -158,7 +169,9 @@ export class ProfileService {
     let currentProfile = this.currentUserProfile();
     if (!currentProfile) {
       // Try to restore from localStorage
-      const storedProfile = localStorage.getItem('selectedProfile');
+      const storedProfile = this.hasStorage()
+        ? localStorage.getItem('selectedProfile')
+        : null;
       if (storedProfile) {
         currentProfile = JSON.parse(storedProfile) as ProfileDto;
         this.currentUserProfile.set(currentProfile);
@@ -169,10 +182,12 @@ export class ProfileService {
           currentProfile = profiles[0];
           this.currentUserProfile.set(currentProfile);
           this.selectProfile(currentProfile);
-          localStorage.setItem(
-            'selectedProfile',
-            JSON.stringify(currentProfile)
-          );
+          if (this.hasStorage()) {
+            localStorage.setItem(
+              'selectedProfile',
+              JSON.stringify(currentProfile)
+            );
+          }
         }
       }
     }
@@ -191,7 +206,9 @@ export class ProfileService {
         (this.isGlobalProfile(p) || this.isLocalProfile(p))
     );
     this.currentUserProfiles.set(userProfiles);
-    localStorage.setItem('profiles', JSON.stringify(userProfiles));
+    if (this.hasStorage()) {
+      localStorage.setItem('profiles', JSON.stringify(userProfiles));
+    }
   }
 
   async getProfileById(id: string) {
@@ -199,7 +216,9 @@ export class ProfileService {
       this.http.get<ProfileDto>(`/api/profile/${id}`)
     );
     this.currentUserProfile.set(profile);
-    localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    if (this.hasStorage()) {
+      localStorage.setItem('selectedProfile', JSON.stringify(profile));
+    }
   }
 
   getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {
@@ -336,10 +355,12 @@ export class ProfileService {
     }
 
     this.currentUserProfiles.update((profiles) => [...profiles, newProfile]);
-    localStorage.setItem(
-      'profiles',
-      JSON.stringify(this.currentUserProfiles())
-    );
+    if (this.hasStorage()) {
+      localStorage.setItem(
+        'profiles',
+        JSON.stringify(this.currentUserProfiles())
+      );
+    }
   }
 
   /**
@@ -450,13 +471,17 @@ export class ProfileService {
     this.currentUserProfiles.update((profiles) =>
       profiles.map((p) => (p.id === id ? updatedProfile : p))
     );
-    localStorage.setItem(
-      'profiles',
-      JSON.stringify(this.currentUserProfiles())
-    );
+    if (this.hasStorage()) {
+      localStorage.setItem(
+        'profiles',
+        JSON.stringify(this.currentUserProfiles())
+      );
+    }
     if (this.currentUserProfile()?.id === id) {
       this.currentUserProfile.set(updatedProfile);
-      localStorage.setItem('selectedProfile', JSON.stringify(updatedProfile));
+      if (this.hasStorage()) {
+        localStorage.setItem('selectedProfile', JSON.stringify(updatedProfile));
+      }
     }
   }
 
@@ -465,17 +490,24 @@ export class ProfileService {
     this.currentUserProfiles.update((profiles) =>
       profiles.filter((p) => p.id !== id)
     );
-    localStorage.setItem(
-      'profiles',
-      JSON.stringify(this.currentUserProfiles())
-    );
+    if (this.hasStorage()) {
+      localStorage.setItem(
+        'profiles',
+        JSON.stringify(this.currentUserProfiles())
+      );
+    }
     if (this.currentUserProfile()?.id === id) {
       this.currentUserProfile.set(null);
-      localStorage.removeItem('selectedProfile');
+      if (this.hasStorage()) {
+        localStorage.removeItem('selectedProfile');
+      }
     }
   }
 
   loadProfilesFromLocalStorage() {
+    if (!this.hasStorage()) {
+      return;
+    }
     const profiles = localStorage.getItem('profiles');
     if (profiles) {
       this.currentUserProfiles.set(JSON.parse(profiles));
@@ -488,6 +520,9 @@ export class ProfileService {
   }
 
   persistProfilesToLocalStorage() {
+    if (!this.hasStorage()) {
+      return;
+    }
     localStorage.setItem(
       'profiles',
       JSON.stringify(this.currentUserProfiles())

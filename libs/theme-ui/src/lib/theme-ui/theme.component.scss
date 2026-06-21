@@ -46,7 +46,7 @@
   animation: pulse-halo 4s infinite ease-in-out;
   position: relative;
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     width: 100%;
     padding: 12px;
     margin: 0 auto;
@@ -60,7 +60,7 @@
   align-items: center;
   gap: 12px;
 
-  @media (max-width: 600px) {
+  @media (max-width: 640px) {
     flex-direction: column;
     align-items: center;
     width: 100%;
@@ -82,7 +82,7 @@
     justify-content: center;
     gap: 12px;
 
-    @media (max-width: 600px) {
+    @media (max-width: 640px) {
       flex-direction: column;
       align-items: center;
     }
@@ -99,7 +99,7 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
 
-      @media (max-width: 600px) {
+      @media (max-width: 640px) {
         font-size: 0.6875rem;
       }
     }
@@ -110,8 +110,10 @@ input[type='color'] {
   border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--border));
   border-radius: var(--border-radius-sm, 3px);
   padding: 0;
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
   background: var(--background);
   transition: all var(--animation-duration-fast) var(--animation-easing);
@@ -127,7 +129,7 @@ input[type='color'] {
   position: relative;
   display: inline-block;
   width: 48px;
-  height: 26px;
+  min-height: 44px;
   margin-bottom: 0;
 }
 
@@ -142,10 +144,11 @@ input[type='color'] {
 .slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
+  top: 50%;
   left: 0;
   right: 0;
-  bottom: 0;
+  transform: translateY(-50%);
+  height: 26px;
   background-color: var(--border);
   transition: all var(--animation-duration-fast) var(--animation-easing);
 }
@@ -193,7 +196,10 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  min-height: 44px;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 10px 14px;
   background: var(--primary);
   color: var(--primary-foreground, #fff);
   border: 1px solid var(--primary);

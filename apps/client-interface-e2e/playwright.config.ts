@@ -41,38 +41,23 @@ export default defineConfig({
         },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-
-    // {
-    //   name: 'webkit',
-    //   use: { ...devices['Desktop Safari'] },
-    // },
-
-    // Uncomment for mobile browsers support
-    /* {
-      name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'] },
-    },
-    {
-      name: 'Mobile Safari',
-      use: { ...devices['iPhone 12'] },
-    }, */
-
-    // Uncomment for branded browsers
-    /* {
-      name: 'Microsoft Edge',
-      use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    },
-    {
-      name: 'Google Chrome',
+      name: 'chromium-desktop',
       use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    } */
+    },
+    {
+      name: 'mobile-chrome',
+      use: {
+        ...devices['Pixel 5'],
+        channel: 'chrome',
+      },
+    },
+    {
+      name: 'tablet-chrome',
+      use: {
+        ...devices['iPad (gen 7)'],
+        browserName: 'chromium',
+        channel: 'chrome',
+      },
+    },
   ],
 });

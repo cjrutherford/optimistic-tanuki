@@ -378,6 +378,12 @@
 // Phase 5.3: Responsive Breakpoint Mixins
 // ============================================
 
+@mixin mobile-xs {
+  @media (max-width: 480px) {
+    @content;
+  }
+}
+
 @mixin mobile {
   @media (max-width: 640px) {
     @content;
@@ -403,7 +409,7 @@
 }
 
 @mixin large-desktop {
-  @media (min-width: 1440px) {
+  @media (min-width: 1536px) {
     @content;
   }
 }

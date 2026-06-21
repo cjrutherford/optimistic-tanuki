@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import {
+  openAppNavigation,
+  sidebarNavButton,
+} from '../../e2e/support/workspace-ui';
 
 test.describe('Personality Rendering - Forge of Will', () => {
   const personalities = [
@@ -231,24 +235,23 @@ test.describe('Modal Interactions - Forge of Will', () => {
   });
 
   test('should have accessible modal attributes', async ({ page }) => {
-    await page.goto('/settings');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const modal = page.locator(
-      '[role="dialog"], lib-modal, otui-modal, .modal'
-    );
-    const count = await modal.count();
+    await openAppNavigation(page);
+    const modal = page.locator('.modal-dialog[aria-modal="true"]').first();
+    await expect(modal).toBeVisible();
+    const role = await modal.getAttribute('role');
+    console.log(`Modal role: ${role}`);
+    expect(['dialog', 'alertdialog']).toContain(role);
 
-    if (count > 0) {
-      const hasRole = await modal.first().getAttribute('role');
-      console.log(`Modal role: ${hasRole}`);
+    const ariaLabel = await modal.getAttribute('aria-label');
+    console.log(`Modal aria-label: ${ariaLabel}`);
+    expect(ariaLabel).toContain('Navigation');
 
-      const ariaLabel = await modal.first().getAttribute('aria-label');
-      console.log(`Modal aria-label: ${ariaLabel}`);
-
-      const ariaModal = await modal.first().getAttribute('aria-modal');
-      console.log(`Modal aria-modal: ${ariaModal}`);
-    }
+    const ariaModal = await modal.getAttribute('aria-modal');
+    console.log(`Modal aria-modal: ${ariaModal}`);
+    expect(ariaModal).toBe('true');
   });
 
   test('should trap focus within modal', async ({ page }) => {
@@ -287,23 +290,9 @@ test.describe('Sidebar Interactions - Forge of Will', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const sidebarSelectors = [
-      'lib-nav-sidebar',
-      '[class*="sidebar"]',
-      'aside',
-      '.nav-sidebar',
-      '[class*="nav"]',
-    ];
-
-    for (const selector of sidebarSelectors) {
-      const sidebar = page.locator(selector);
-      const count = await sidebar.count();
-      if (count > 0) {
-        console.log(`Found sidebar: ${selector}`);
-        await expect(sidebar.first()).toBeVisible();
-        break;
-      }
-    }
+    const sidebar = await openAppNavigation(page);
+    console.log('Found sidebar: .nav-sidebar-card:visible');
+    await expect(sidebar).toBeVisible();
   });
 
   test('should toggle sidebar visibility', async ({ page }) => {
@@ -334,38 +323,20 @@ test.describe('Sidebar Interactions - Forge of Will', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const navItemSelectors = [
-      '[class*="nav-item"]',
-      '[class*="nav-link"]',
-      'a[href]',
-      'nav a',
-    ];
-
-    for (const selector of navItemSelectors) {
-      const navItems = page.locator(selector);
-      const count = await navItems.count();
-      if (count > 0) {
-        console.log(`Found ${count} navigation items`);
-        break;
-      }
-    }
+    const sidebar = await openAppNavigation(page);
+    const navItems = sidebar.locator('.nav-link');
+    const count = await navItems.count();
+    console.log(`Found ${count} navigation items`);
+    expect(count).toBeGreaterThan(0);
   });
 
   test('should navigate when clicking sidebar items', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const navLink = page.locator('a[href]').first();
-    const href = await navLink.getAttribute('href');
-
-    if (href && !href.startsWith('http')) {
-      console.log(`Clicking nav link: ${href}`);
-      await navLink.click();
-      await page.waitForTimeout(1000);
-
-      const currentUrl = page.url();
-      console.log(`Current URL: ${currentUrl}`);
-    }
+    const registerButton = await sidebarNavButton(page, /register/i);
+    await registerButton.click();
+    await expect(page).toHaveURL(/\/register$/);
   });
 
   test('should show active state on current route', async ({ page }) => {

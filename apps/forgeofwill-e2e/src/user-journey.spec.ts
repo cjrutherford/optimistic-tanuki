@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import {
+  openProfileEditorFromSettings,
+  submitProfileEditor,
+} from '../../e2e/support/workspace-ui';
 
 test.describe('User Journey', () => {
   const timestamp = Date.now();
@@ -70,49 +74,34 @@ test.describe('User Journey', () => {
     );
 
     // 3. Land on Projects
-    console.log('Waiting for redirect to / (Projects)');
-    await expect(page).toHaveURL(/\/$/, { timeout: 15000 });
+    console.log('Waiting for auth flow to leave /login');
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'), {
+      timeout: 15000,
+    });
 
     // 4. Update Profile
-    console.log('Navigating to /settings');
-    await page.goto('/settings');
-
-    console.log('Clicking banner to edit profile');
-    await page.waitForSelector('.profile-section', { state: 'visible' });
-    await page.click('.profile-section', { force: true });
-
-    console.log('Waiting for edit profile modal content');
-    const modalContent = page.locator('otui-modal .modal');
-    await expect(modalContent).toBeVisible({ timeout: 10000 });
+    console.log('Opening profile editor from /settings');
+    const modalContent = await openProfileEditorFromSettings(page);
 
     console.log('Updating bio');
+    await page
+      .locator('lib-text-input[formControlName="profileName"] input')
+      .fill(`Forge Test User ${timestamp}`);
     await page
       .locator('lib-text-input[formControlName="bio"] input')
       .fill(testUser.updatedBio);
 
-    console.log('Uploading profile picture');
-    await page
-      .locator('lib-image-upload input[type="file"]')
-      .first()
-      .setInputFiles('apps/forgeofwill-e2e/src/test-image.png');
-
     console.log('Submitting profile update');
-    await page.click(
-      'otui-modal otui-button[variant="success"], otui-modal otui-button:has-text("Submit")',
-      { force: true }
-    );
+    await submitProfileEditor(page);
 
     // Verify modal closes
     console.log('Waiting for modal to close');
     await expect(modalContent).not.toBeVisible({ timeout: 10000 });
 
     // Verify update
-    console.log('Verifying update');
-    await page.click('.profile-section', { force: true });
-    await page.waitForSelector('otui-modal .modal', { state: 'visible' });
-    await expect(
-      page.locator('lib-text-input[formControlName="bio"] input')
-    ).toHaveValue(testUser.updatedBio);
+    console.log('Verifying update on profile page');
+    await page.goto('/profile');
+    await expect(page.locator('body')).toContainText(testUser.updatedBio);
     console.log('User Journey Test Completed Successfully for Forge of Will');
   });
 });

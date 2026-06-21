@@ -299,11 +299,19 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <h1>Site Content Editor</h1>
           <p>
             Edit your public landing-page copy, brand identity, and visual
-            theme. Changes take effect after saving.
+            theme. The preview updates immediately, but visitors only see
+            changes after save.
           </p>
           <p class="workspace-theme-note">
             Active personality:
             <strong>{{ currentPersonalityLabel() }}</strong>
+          </p>
+          <p class="workspace-theme-note">
+            {{
+              editorMode() === 'guided'
+                ? 'Guided Setup keeps the next required decision visible so onboarding stays linear.'
+                : 'Studio mode is for freeform editing, review, and preview-driven adjustments.'
+            }}
           </p>
         </div>
         <div class="workspace-controls">
@@ -4237,7 +4245,7 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
-    this.selectedSectionId.set(nextSectionId);
+    this.selectSection(nextSectionId);
   }
 
   addImageSection(): void {
@@ -4260,7 +4268,7 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
-    this.selectedSectionId.set(nextSectionId);
+    this.selectSection(nextSectionId);
   }
 
   addGallerySection(): void {
@@ -4287,7 +4295,7 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
-    this.selectedSectionId.set(nextSectionId);
+    this.selectSection(nextSectionId);
   }
 
   addStoreSection(): void {
@@ -4316,7 +4324,7 @@ export class BusinessSiteEditorPageComponent {
       );
       return draft;
     });
-    this.selectedSectionId.set(nextSectionId);
+    this.selectSection(nextSectionId);
   }
 
   addGalleryItem(sectionIndex: number): void {

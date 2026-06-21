@@ -38,8 +38,11 @@ export class TrainerRoutinesService {
     return this.routineRepository.save(routine);
   }
 
-  async getAllRoutines(): Promise<TrainerRoutineAssignmentEntity[]> {
+  async getAllRoutines(
+    ownerId?: string | null
+  ): Promise<TrainerRoutineAssignmentEntity[]> {
     return this.routineRepository.find({
+      where: ownerId ? ({ ownerId } as never) : undefined,
       order: { createdAt: 'DESC' },
     });
   }
@@ -106,8 +109,11 @@ export class TrainerRoutinesService {
     });
   }
 
-  async getAllCheckIns(): Promise<TrainerProgressCheckInEntity[]> {
+  async getAllCheckIns(
+    ownerId?: string | null
+  ): Promise<TrainerProgressCheckInEntity[]> {
     return this.checkInRepository.find({
+      where: ownerId ? ({ ownerId } as never) : undefined,
       order: { completedAt: 'DESC' },
     });
   }

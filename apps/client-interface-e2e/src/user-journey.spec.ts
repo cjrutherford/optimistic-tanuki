@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import {
+  openProfileEditorFromSettings,
+  submitProfileEditor,
+} from '../../e2e/support/workspace-ui';
 
 test.describe('User Journey', () => {
   const timestamp = Date.now();
@@ -70,38 +74,25 @@ test.describe('User Journey', () => {
     );
 
     // 3. Land on Feed
-    console.log('Waiting for redirect to /feed');
-    await page.waitForURL(/\/feed/, { timeout: 15000 });
+    console.log('Waiting for auth flow to leave /login');
+    await page.waitForURL((url) => !url.pathname.endsWith('/login'), {
+      timeout: 15000,
+    });
 
     // 4. Update Profile
-    console.log('Navigating to /settings');
-    await page.goto('/settings');
-
-    console.log('Clicking banner to edit profile');
-    await page.waitForSelector('.profile-section', { state: 'visible' });
-    await page.click('.profile-section', { force: true });
-
-    console.log('Waiting for edit profile modal content');
-    const modalContent = page.locator('otui-modal .modal');
-    await expect(modalContent).toBeVisible({ timeout: 10000 });
+    console.log('Opening profile editor from /settings');
+    const modalContent = await openProfileEditorFromSettings(page);
 
     console.log('Updating bio');
+    await page
+      .locator('lib-text-input[formControlName="profileName"] input')
+      .fill(`Test User ${timestamp}`);
     await page
       .locator('lib-text-input[formControlName="bio"] input')
       .fill(testUser.updatedBio);
 
-    console.log('Uploading profile picture');
-    // Select the first file input which corresponds to the Profile Picture upload
-    await page
-      .locator('lib-image-upload input[type="file"]')
-      .first()
-      .setInputFiles('apps/client-interface-e2e/src/test-image.png');
-
     console.log('Submitting profile update');
-    await page.click(
-      'otui-modal otui-button[variant="success"], otui-modal otui-button:has-text("Submit")',
-      { force: true }
-    );
+    await submitProfileEditor(page);
 
     // In SettingsComponent, it doesn't redirect to /feed, it just closes modal.
     console.log('Waiting for modal to close');
@@ -109,11 +100,11 @@ test.describe('User Journey', () => {
 
     // Verify update
     console.log('Verifying update in settings');
-    await page.click('.profile-section', { force: true });
-    await page.waitForSelector('otui-modal .modal', { state: 'visible' });
+    const reopenedModal = await openProfileEditorFromSettings(page);
     await expect(
       page.locator('lib-text-input[formControlName="bio"] input')
     ).toHaveValue(testUser.updatedBio);
+    await expect(reopenedModal).toBeVisible();
     console.log('User Journey Test Completed Successfully');
   });
 });

@@ -215,4 +215,35 @@ describe('AppointmentsService', () => {
       })
     );
   });
+
+  it('matches published availability using the configured business timezone instead of the container timezone', async () => {
+    availabilityOverrideRepository.find.mockResolvedValue([]);
+    availabilityRepository.find.mockResolvedValue([
+      {
+        id: 'availability-1',
+        ownerId: 'owner-user-consulting',
+        dayOfWeek: 0,
+        startTime: '09:00:00',
+        endTime: '17:00:00',
+        hourlyRate: 120,
+        isActive: true,
+      },
+    ] as AvailabilityEntity[]);
+    appointmentRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.create({
+        userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
+        ownerId: 'owner-user-consulting' as never,
+        title: 'Afternoon consultation',
+        startTime: new Date('2026-06-28T17:00:00.000Z'),
+        endTime: new Date('2026-06-28T18:00:00.000Z'),
+      } as any)
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'booking-1',
+        status: 'pending',
+      })
+    );
+  });
 });

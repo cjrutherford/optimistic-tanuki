@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   effect,
   signal,
   OnInit,
@@ -22,6 +23,7 @@ import { ProfileDto, PersonaTelosDto } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from './profile/profile.service';
 import {
   AppBarComponent,
+  buildAppShellNavItems,
   NavSidebarComponent,
   NavItem,
 } from '@optimistic-tanuki/navigation-ui';
@@ -31,6 +33,36 @@ import { ChatMessage } from '@optimistic-tanuki/chat-ui';
 import { DevInfoComponent } from '@optimistic-tanuki/common-ui';
 import { HaiAboutTagComponent } from '@optimistic-tanuki/hai-ui';
 import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
+
+const FORGE_AUTH_NAV_LINKS = [
+  {
+    label: 'Execution workspace',
+    description: 'Project-first planning and execution',
+    children: [
+      {
+        label: 'Projects',
+        route: '/projects',
+        description: 'Tasks, risks, changes, and journals',
+      },
+      {
+        label: 'Forum',
+        route: '/forum',
+        description: 'Longer-form discussion and decisions',
+      },
+    ],
+  },
+  {
+    label: 'Account',
+    description: 'Identity and workspace preferences',
+    children: [
+      {
+        label: 'Settings',
+        route: '/settings',
+        description: 'Profile, personality, and theme controls',
+      },
+    ],
+  },
+] as const;
 
 @Component({
   imports: [
@@ -61,7 +93,37 @@ export class AppComponent implements OnInit {
   isModalOpen = signal<boolean>(false);
   messages = signal<MessageType[]>([]);
   navItems = signal<NavItem[]>([]);
+  currentPath = signal('/');
   newPersonaMessages = signal<Partial<ChatMessage>[]>([]);
+  workspaceSummary = computed(() => {
+    if (!this.isAuthenticated()) {
+      return null;
+    }
+
+    const url = this.currentPath();
+    if (url.startsWith('/settings')) {
+      return {
+        eyebrow: 'Settings',
+        title: 'Keep the forge recognizable before you return to work',
+        description:
+          'Profile and personality controls live together so workspace maintenance does not interrupt execution.',
+      };
+    }
+    if (url.startsWith('/forum')) {
+      return {
+        eyebrow: 'Forum',
+        title: 'Use the forum for durable discussion',
+        description:
+          'Keep project execution in the main workspace and move broader discussion here when it needs structure.',
+      };
+    }
+    return {
+      eyebrow: 'Projects',
+      title: 'Projects are the primary operating surface',
+      description:
+        'Pick a project, review its current load, then choose the work mode that matches the next decision or action.',
+    };
+  });
 
   @ViewChild(ChatComponent) chatComponent?: ChatComponent;
 
@@ -120,8 +182,10 @@ export class AppComponent implements OnInit {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
+        this.currentPath.set(this.router.url);
         this.updateNavItems();
       });
+    this.currentPath.set(this.router.url);
 
     // Initialize theme - only in browser to avoid SSR issues
     if (isPlatformBrowser(this.platformId)) {
@@ -135,56 +199,28 @@ export class AppComponent implements OnInit {
   }
 
   updateNavItems() {
-    const currentUrl = this.router.url;
-    if (this.isAuthenticated()) {
-      this.navItems.set([
-        {
-          label: 'Home',
-          action: () => this.navigateTo('/'),
-          isActive: currentUrl === '/',
-        },
-        {
-          label: 'Projects',
-          action: () => this.navigateTo('/projects'),
-          isActive: currentUrl === '/projects',
-        },
-        {
-          label: 'Forum',
-          action: () => this.navigateTo('/forum'),
-          isActive: currentUrl.startsWith('/forum'),
-        },
-        {
-          label: 'My Profile',
-          action: () => this.navigateTo('/profile'),
-          isActive: currentUrl === '/profile',
-        },
-        {
-          label: 'Settings',
-          action: () => this.navigateTo('/settings'),
-          isActive: currentUrl === '/settings',
-        },
-        {
-          label: 'Logout',
-          action: () => this.loginOutButton(),
-        },
-      ]);
-    } else {
-      this.navItems.set([
-        {
-          label: 'Home',
-          action: () => this.navigateTo('/'),
-          isActive: currentUrl === '/',
-        },
-        {
-          label: 'Login',
-          action: () => this.loginOutButton(),
-        },
-        {
-          label: 'Register',
-          action: () => this.navigateTo('/register'),
-        },
-      ]);
-    }
+    this.navItems.set(
+      buildAppShellNavItems({
+        isAuthenticated: this.isAuthenticated(),
+        currentUrl: this.currentPath(),
+        navigate: (route) => this.navigateTo(route),
+        authAction: () => this.loginOutButton(),
+        links: [...FORGE_AUTH_NAV_LINKS],
+        guestLinks: [
+          {
+            label: 'Home',
+            route: '/',
+            description: 'Product overview and entry point',
+            exact: true,
+          },
+          {
+            label: 'Register',
+            route: '/register',
+            description: 'Create your forge workspace',
+          },
+        ],
+      })
+    );
   }
 
   showModal() {

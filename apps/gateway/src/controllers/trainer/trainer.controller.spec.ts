@@ -1723,14 +1723,14 @@ describe('TrainerController', () => {
           id: 'booking:booking-1',
           bucket: 'ready_to_schedule',
           stage: 'booking_requested',
-          title: 'Avery Client',
+          title: 'Strategy session',
           primaryAction: 'approve_booking',
         }),
         expect.objectContaining({
           id: 'booking:booking-2',
           bucket: 'needs_invoicing',
           stage: 'session_completed',
-          title: 'Avery Client',
+          title: 'Completed audit',
           primaryAction: 'generate_invoice',
         }),
       ])
@@ -1791,6 +1791,75 @@ describe('TrainerController', () => {
         'steady-hand-contracting'
       )
     ).resolves.toEqual([]);
+  });
+
+  it('treats completed free consultations as active clients instead of invoice work', async () => {
+    const storeClient = {
+      send: jest.fn((command: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        if (command === AppointmentCommands.FIND_ALL_APPOINTMENTS) {
+          return of([
+            {
+              id: 'booking-free',
+              userId: 'accepted-client-user',
+              title: 'Complimentary session',
+              status: 'completed',
+              isFreeConsultation: true,
+              totalCost: '0.00',
+              startTime: '2026-05-11T14:00:00.000Z',
+              endTime: '2026-05-11T15:00:00.000Z',
+            },
+          ]);
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() =>
+        of([
+          {
+            id: 'lead-2',
+            userId: 'accepted-client-user',
+            name: 'Avery Client',
+            email: 'avery@example.com',
+            status: LeadStatus.WON,
+          },
+        ])
+      ),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerWorkflow({
+        userId: 'owner-user-1',
+        email: 'owner@example.com',
+        exp: 0,
+        iat: 0,
+        name: 'Owner Example',
+        profileId: 'owner-profile-1',
+      })
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'booking:booking-free',
+          bucket: 'active_clients',
+          stage: 'session_completed',
+          title: 'Complimentary session',
+          primaryAction: 'none',
+        }),
+      ])
+    );
   });
 
   it('protects owner prospect listing with business auth', () => {
@@ -1908,6 +1977,56 @@ describe('TrainerController', () => {
         configKey: 'default',
         slug: 'north-star-advisory',
       }
+    );
+  });
+
+  it('scopes owner routine and check-in calls to the authenticated owner', async () => {
+    const storeClient = {
+      send: jest.fn(() => of([])),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-handyman',
+      profileId: 'profile-1',
+      email: 'owner@localbusiness.test',
+      name: 'Owner User',
+    } as any;
+
+    await controller.getOwnerRoutines(owner);
+    await controller.getOwnerCheckIns(owner);
+    await controller.assignRoutine(
+      {
+        clientId: 'client-1',
+        clientName: 'Client One',
+        title: 'Strength reset',
+        summary: 'Three weekly sessions.',
+        focusAreas: ['Strength'],
+      },
+      owner
+    );
+
+    expect(storeClient.send).toHaveBeenNthCalledWith(
+      1,
+      'trainer.owner.routines.findAll',
+      {
+        ownerId: 'owner-user-handyman',
+      }
+    );
+    expect(storeClient.send).toHaveBeenNthCalledWith(
+      2,
+      'trainer.owner.checkins.findAll',
+      {
+        ownerId: 'owner-user-handyman',
+      }
+    );
+    expect(storeClient.send).toHaveBeenNthCalledWith(
+      3,
+      'trainer.owner.routines.assign',
+      expect.objectContaining({
+        ownerId: 'owner-user-handyman',
+        clientId: 'client-1',
+      })
     );
   });
 });

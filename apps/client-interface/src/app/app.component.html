@@ -31,6 +31,13 @@
     </otui-nav-sidebar>
 
     <main class="content">
+      @if (workspaceSummary(); as summary) {
+      <section class="workflow-summary">
+        <p class="workflow-kicker">{{ summary.eyebrow }}</p>
+        <h1>{{ summary.title }}</h1>
+        <p>{{ summary.description }}</p>
+      </section>
+      }
       <router-outlet></router-outlet>
     </main>
 

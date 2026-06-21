@@ -4,7 +4,10 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
   Inject,
+  InternalServerErrorException,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -12,7 +15,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, throwError } from 'rxjs';
 import {
   AppointmentCommands,
   AvailabilityCommands,
@@ -252,11 +255,8 @@ export class TrainerController {
 
     for (const booking of bookings) {
       const lead = leadByUserId.get(booking.userId);
-      const title = lead?.name || booking.title || 'Client booking';
-      const subtitle =
-        lead?.email ||
-        lead?.phone ||
-        this.formatWindow(booking.startTime, booking.endTime);
+      const title = booking.title || lead?.name || 'Client booking';
+      const subtitle = this.buildOwnerWorkflowSubtitle(lead, booking);
 
       if (booking.status === 'pending') {
         workflow.push({
@@ -289,6 +289,27 @@ export class TrainerController {
           nextAction: 'Complete the session when delivery is finished.',
           details: [this.formatWindow(booking.startTime, booking.endTime)],
           primaryAction: 'complete_booking',
+        });
+        continue;
+      }
+
+      if (
+        booking.status === 'completed' &&
+        !Number(booking.totalCost) &&
+        booking.isFreeConsultation
+      ) {
+        workflow.push({
+          id: `booking:${booking.id}`,
+          bookingId: booking.id,
+          title,
+          subtitle,
+          statusLabel: 'completed',
+          stage: 'session_completed',
+          bucket: 'active_clients',
+          nextAction:
+            'This complimentary session is complete. Follow up with the client if more work is needed.',
+          details: [this.formatWindow(booking.startTime, booking.endTime)],
+          primaryAction: 'none',
         });
         continue;
       }
@@ -329,6 +350,20 @@ export class TrainerController {
     }
 
     return workflow;
+  }
+
+  private buildOwnerWorkflowSubtitle(lead: any, booking: any): string {
+    const identityParts = [lead?.name, lead?.email || lead?.phone].filter(
+      (value): value is string => typeof value === 'string' && value.length > 0
+    );
+
+    if (identityParts.length > 0) {
+      return identityParts.join(' · ');
+    }
+
+    return (
+      booking.userId || this.formatWindow(booking.startTime, booking.endTime)
+    );
   }
 
   private async loadLeadContext() {
@@ -467,6 +502,50 @@ export class TrainerController {
     }
 
     return acceptedLead;
+  }
+
+  private mapStoreRpcError(error: unknown): never {
+    if (error instanceof HttpException) {
+      throw error;
+    }
+
+    const statusCode =
+      typeof error === 'object' && error !== null && 'statusCode' in error
+        ? Number((error as { statusCode?: unknown }).statusCode)
+        : undefined;
+    const message =
+      typeof error === 'object' && error !== null && 'message' in error
+        ? (error as { message?: unknown }).message
+        : undefined;
+    const normalizedMessage = Array.isArray(message)
+      ? message.join(', ')
+      : typeof message === 'string'
+      ? message
+      : error instanceof Error
+      ? error.message
+      : 'Business service request failed';
+
+    switch (statusCode) {
+      case 400:
+        throw new BadRequestException(normalizedMessage);
+      case 404:
+        throw new NotFoundException(normalizedMessage);
+      default:
+        throw new InternalServerErrorException(normalizedMessage);
+    }
+  }
+
+  private async sendStoreCommand<T>(
+    pattern: { cmd: string },
+    payload: unknown
+  ): Promise<T> {
+    return await firstValueFrom(
+      this.storeService
+        .send<T>(pattern, payload)
+        .pipe(
+          catchError((error) => throwError(() => this.mapStoreRpcError(error)))
+        )
+    );
   }
 
   // ─── Public endpoints ────────────────────────────────────────────────────────
@@ -639,13 +718,11 @@ export class TrainerController {
       slug || (payload as any)?.siteSlug
     );
 
-    return firstValueFrom(
-      this.storeService.send(AppointmentCommands.CREATE_APPOINTMENT, {
-        ...payload,
-        ownerId: ownerUserId || undefined,
-        userId: user.userId,
-      })
-    );
+    return this.sendStoreCommand(AppointmentCommands.CREATE_APPOINTMENT, {
+      ...payload,
+      ownerId: ownerUserId || undefined,
+      userId: user.userId,
+    });
   }
 
   @Public()
@@ -1226,27 +1303,37 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Get('owner/routines')
-  getOwnerRoutines() {
+  getOwnerRoutines(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send('trainer.owner.routines.findAll', {})
+      this.storeService.send('trainer.owner.routines.findAll', {
+        ownerId: user.userId,
+      })
     );
   }
 
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Get('owner/check-ins')
-  getOwnerCheckIns() {
+  getOwnerCheckIns(@User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send('trainer.owner.checkins.findAll', {})
+      this.storeService.send('trainer.owner.checkins.findAll', {
+        ownerId: user.userId,
+      })
     );
   }
 
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('owner/routines')
-  assignRoutine(@Body() payload: Record<string, unknown>) {
+  assignRoutine(
+    @Body() payload: Record<string, unknown>,
+    @User() user: UserDetails
+  ) {
     return firstValueFrom(
-      this.storeService.send('trainer.owner.routines.assign', payload)
+      this.storeService.send('trainer.owner.routines.assign', {
+        ...payload,
+        ownerId: (payload?.['ownerId'] as string | undefined) || user.userId,
+      })
     );
   }
 

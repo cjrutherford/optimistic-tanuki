@@ -59,8 +59,10 @@ export const isAllowedOrigin = (
 
 export const getRequestOrigin = (request: Request): string => {
   const forwardedProto = request.get('x-forwarded-proto');
+  const forwardedHost = request.get('x-forwarded-host');
   const proto = forwardedProto?.split(',')[0]?.trim() || request.protocol;
-  return `${proto}://${request.get('host')}`;
+  const host = forwardedHost?.split(',')[0]?.trim() || request.get('host');
+  return `${proto}://${host}`;
 };
 
 export const shouldRejectBrowserMutation = (

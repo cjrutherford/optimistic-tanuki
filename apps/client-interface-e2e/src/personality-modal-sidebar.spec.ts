@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import {
+  openAppNavigation,
+  openProfileEditorFromSettings,
+  sidebarNavButton,
+} from '../../e2e/support/workspace-ui';
 
 test.describe('Personality Rendering', () => {
   const personalities = [
@@ -196,37 +201,33 @@ test.describe('Modal Interactions', () => {
   });
 
   test('should close modal on backdrop click', async ({ page }) => {
-    await page.goto('/settings');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const modalOverlay = page.locator(
-      '[class*="backdrop"], [class*="overlay"]'
-    );
-    const count = await modalOverlay.count();
+    const sidebar = await openAppNavigation(page);
+    const modalOverlay = page.locator('.modal-overlay').first();
 
-    if (count > 0) {
-      console.log('Found modal backdrop, clicking...');
-      await modalOverlay.first().click({ position: { x: 10, y: 10 } });
-      await page.waitForTimeout(500);
-    }
+    console.log('Found modal backdrop, clicking...');
+    const viewport = page.viewportSize();
+    await page.mouse.click((viewport?.width ?? 1280) - 8, 24);
+    await expect(sidebar).not.toBeVisible();
   });
 
   test('should have accessible modal attributes', async ({ page }) => {
-    await page.goto('/settings');
+    await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const modal = page.locator(
-      '[role="dialog"], lib-modal, otui-modal, .modal'
-    );
-    const count = await modal.count();
+    await openAppNavigation(page);
+    const modal = page.locator('.modal-dialog[aria-modal="true"]').first();
+    await expect(modal).toBeVisible();
 
-    if (count > 0) {
-      const hasRole = await modal.first().getAttribute('role');
-      console.log(`Modal role: ${hasRole}`);
+    const role = await modal.getAttribute('role');
+    console.log(`Modal role: ${role}`);
+    expect(['dialog', 'alertdialog']).toContain(role);
 
-      const ariaLabel = await modal.first().getAttribute('aria-label');
-      console.log(`Modal aria-label: ${ariaLabel}`);
-    }
+    const ariaLabel = await modal.getAttribute('aria-label');
+    console.log(`Modal aria-label: ${ariaLabel}`);
+    expect(ariaLabel).toContain('Navigation');
   });
 });
 
@@ -247,22 +248,9 @@ test.describe('Sidebar Interactions', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const sidebarSelectors = [
-      'lib-nav-sidebar',
-      '[class*="sidebar"]',
-      'aside',
-      '.nav-sidebar',
-    ];
-
-    for (const selector of sidebarSelectors) {
-      const sidebar = page.locator(selector);
-      const count = await sidebar.count();
-      if (count > 0) {
-        console.log(`Found sidebar: ${selector}`);
-        await expect(sidebar.first()).toBeVisible();
-        break;
-      }
-    }
+    const sidebar = await openAppNavigation(page);
+    console.log('Found sidebar: .nav-sidebar-card:visible');
+    await expect(sidebar).toBeVisible();
   });
 
   test('should toggle sidebar visibility', async ({ page }) => {
@@ -292,38 +280,20 @@ test.describe('Sidebar Interactions', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const navItemSelectors = [
-      '[class*="nav-item"]',
-      '[class*="nav-link"]',
-      'a[href]',
-      'nav a',
-    ];
-
-    for (const selector of navItemSelectors) {
-      const navItems = page.locator(selector);
-      const count = await navItems.count();
-      if (count > 0) {
-        console.log(`Found ${count} navigation items`);
-        break;
-      }
-    }
+    const sidebar = await openAppNavigation(page);
+    const navItems = sidebar.locator('.nav-link');
+    const count = await navItems.count();
+    console.log(`Found ${count} navigation items`);
+    expect(count).toBeGreaterThan(0);
   });
 
   test('should navigate when clicking sidebar items', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    const navLink = page.locator('a[href]').first();
-    const href = await navLink.getAttribute('href');
-
-    if (href && !href.startsWith('http')) {
-      console.log(`Clicking nav link: ${href}`);
-      await navLink.click();
-      await page.waitForTimeout(1000);
-
-      const currentUrl = page.url();
-      console.log(`Current URL: ${currentUrl}`);
-    }
+    const registerButton = await sidebarNavButton(page, /register/i);
+    await registerButton.click();
+    await expect(page).toHaveURL(/\/register$/);
   });
 
   test('should show active state on current route', async ({ page }) => {

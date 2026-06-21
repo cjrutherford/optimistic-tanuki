@@ -246,7 +246,9 @@ export class ProfileComponent implements OnInit {
     this.profileService
       .updateProfile(id, { ...profile, bio: profile.bio ? profile.bio : '' })
       .then(() => {
-        this.profileService.getProfileById(id);
+        this.viewingUserProfile.set(
+          this.profileService.getCurrentUserProfile() ?? null
+        );
         this.showMessage('Profile updated and selected!', 'success');
         this.showProfileEditor = false;
       });

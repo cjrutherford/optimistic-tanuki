@@ -4,7 +4,7 @@ test.describe('Client Interface E2E Tests', () => {
   test.describe('Homepage', () => {
     test('should load the homepage', async ({ page }) => {
       await page.goto('/');
-      await expect(page).toHaveTitle(/Client Interface/i);
+      await expect(page).toHaveTitle(/Optimistic Tanuki/i);
     });
 
     test('should display main navigation', async ({ page }) => {
@@ -44,38 +44,6 @@ test.describe('Client Interface E2E Tests', () => {
 
       // Test basic navigation works
       expect(page.url()).toBeTruthy();
-    });
-  });
-
-  test.describe('Responsive Design', () => {
-    test('should work on mobile viewport', async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 667 });
-      await page.goto('/');
-      await page.waitForLoadState('domcontentloaded');
-
-      // Verify page loads in mobile view
-      const body = page.locator('body');
-      await expect(body).toBeVisible();
-    });
-
-    test('should work on tablet viewport', async ({ page }) => {
-      await page.setViewportSize({ width: 768, height: 1024 });
-      await page.goto('/');
-      await page.waitForLoadState('domcontentloaded');
-
-      // Verify page loads in tablet view
-      const body = page.locator('body');
-      await expect(body).toBeVisible();
-    });
-
-    test('should work on desktop viewport', async ({ page }) => {
-      await page.setViewportSize({ width: 1920, height: 1080 });
-      await page.goto('/');
-      await page.waitForLoadState('domcontentloaded');
-
-      // Verify page loads in desktop view
-      const body = page.locator('body');
-      await expect(body).toBeVisible();
     });
   });
 
