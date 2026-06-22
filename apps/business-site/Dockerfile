@@ -42,6 +42,7 @@ COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/se
 COPY --from=builder /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-business.mjs /app/apps/business-site/src/seed-business.mjs
+COPY --from=builder /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/sample-tenants.mjs
 COPY --from=builder /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/apps/business-site/src/sample-tenants.mjs
 
 RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \

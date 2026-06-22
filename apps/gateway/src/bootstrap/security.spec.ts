@@ -3,6 +3,7 @@ import {
   applyGatewaySecurityHeaders,
   enforceTrustedBrowserOrigins,
   isAllowedOrigin,
+  isProxiedRequest,
   shouldRejectBrowserMutation,
 } from './security';
 
@@ -86,6 +87,34 @@ describe('gateway security helpers', () => {
       "default-src 'none'"
     );
     expect(next).toHaveBeenCalled();
+  });
+
+  it('allows proxied browser mutations regardless of origin', () => {
+    expect(
+      shouldRejectBrowserMutation(
+        createRequest({
+          headers: {
+            origin: 'https://client.example.com',
+            'x-forwarded-host': 'client.example.com',
+            'x-forwarded-proto': 'https',
+            'sec-fetch-site': 'cross-site',
+          },
+        })
+      )
+    ).toBe(false);
+  });
+
+  it('identifies proxied requests', () => {
+    expect(
+      isProxiedRequest(
+        createRequest({
+          headers: {
+            'x-forwarded-host': 'client.example.com',
+            'x-forwarded-proto': 'https',
+          },
+        })
+      )
+    ).toBe(true);
   });
 
   it('blocks rejected browser mutations', () => {
