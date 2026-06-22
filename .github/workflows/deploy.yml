@@ -1,21 +1,14 @@
-name: Deploy
+name: Deploy Production
 
 on:
-  push:
-    branches:
-      - main
-      - mvp-polish
-    paths-ignore:
-      - 'k8s/overlays/production/**'
   workflow_dispatch:
     inputs:
       environment:
         description: Environment to deploy to
         required: true
-        default: staging
+        default: production
         type: choice
         options:
-          - staging
           - production
 
 permissions:
@@ -26,66 +19,11 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-24.04
-    environment: staging
-    if: (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')) && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
-    timeout-minutes: 30
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup kubectl
-        uses: azure/k8s-set-context@v4
-        with:
-          kubeconfig: ${{ secrets.KUBECONFIG }}
-
-      - name: Install ArgoCD CLI
-        run: |
-          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x /usr/local/bin/argocd
-
-      - name: Login to ArgoCD
-        run: argocd login argocd.${{ secrets.DOMAIN }} --username admin --password ${{ secrets.ARGOCD_PASSWORD }} --insecure
-
-      - name: Resolve staging deployment workspace context
-        run: |
-          DEPLOYMENT_NAME=staging ARGO_ENV=staging node scripts/lib/deployment-workspace-context.mjs > /tmp/staging-workspace-context.json
-          echo "ARGOCD_APP_FILE=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/staging-workspace-context.json','utf8')); process.stdout.write(context.argocdAppFile)")" >> "$GITHUB_ENV"
-          echo "ARGOCD_APP_NAME=$(node -e "const fs=require('fs'); const context=JSON.parse(fs.readFileSync('/tmp/staging-workspace-context.json','utf8')); process.stdout.write(context.appName)")" >> "$GITHUB_ENV"
-
-      - name: Apply ArgoCD Application for staging
-        run: |
-          if grep -q 'dist/admin-env/staging/k8s' "$ARGOCD_APP_FILE"; then
-            kubectl apply -f "$ARGOCD_APP_FILE"
-          else
-            sed \
-              -e "s|\${ARGO_APP_NAME:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-              -e "s|\${ARGO_NAMESPACE:-optimistic-tanuki}|optimistic-tanuki-staging|g" \
-              -e "s|\${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}|https://github.com/cjrutherford/optimistic-tanuki.git|g" \
-              -e "s|\${ARGO_TARGET_REVISION:-main}|${GITHUB_REF_NAME}|g" \
-              -e "s|\${ARGO_ENV:-production}|staging|g" \
-              "$ARGOCD_APP_FILE" | kubectl apply -f -
-          fi
-
-      - name: Sync staging application
-        run: argocd app sync "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
-
-      - name: Wait for staging deployment
-        run: argocd app wait "$ARGOCD_APP_NAME" --server argocd.${{ secrets.DOMAIN }} --insecure --timeout 600
-
-      - name: Run staging smoke test
-        run: |
-          sleep 30
-          curl -f "https://staging.${{ secrets.DOMAIN }}/api/mcp/sse"
-
   deploy-production:
     name: Promote and Deploy Production
     runs-on: ubuntu-24.04
     environment: production
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
+    if: github.event.inputs.environment == 'production' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
     timeout-minutes: 40
 
     steps:
@@ -116,8 +54,9 @@ jobs:
 
       - name: Update production overlay images
         run: |
+          IMAGE_TAG="sha-${GITHUB_SHA::7}"
           DEPLOYMENT_INVENTORY_FILE=/tmp/deployment-inventory.json \
-          node scripts/update-k8s-overlay-images.mjs k8s/overlays/production/kustomization.yaml sha-${{ github.sha }}
+          node scripts/update-k8s-overlay-images.mjs k8s/overlays/production/kustomization.yaml "$IMAGE_TAG"
 
       - name: Commit production overlay update
         run: |
@@ -127,7 +66,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No production overlay changes to commit"
           else
-            git commit -m "ci: promote production image tags to sha-${{ github.sha }}"
+            git commit -m "ci: promote production image tags to sha-${GITHUB_SHA::7}"
             git push origin ${{ github.ref_name }}
           fi
 
@@ -178,7 +117,7 @@ jobs:
   notify:
     name: Notify
     runs-on: ubuntu-24.04
-    needs: [deploy-staging, deploy-production]
+    needs: [deploy-production]
     if: always()
     steps:
       - name: Send notification on failure

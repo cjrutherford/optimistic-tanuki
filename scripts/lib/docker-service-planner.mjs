@@ -326,14 +326,23 @@ function serviceMatchesChangedFiles(serviceInputs, changedFilesSet) {
   });
 }
 
-function eligibleBuildServices(services) {
+function eligibleBuildServices(services, selectedServices = null) {
+  const selectedSet =
+    selectedServices && selectedServices.length > 0
+      ? new Set(selectedServices)
+      : null;
+
   return Object.entries(services)
     .filter(([serviceName, serviceConfig]) => {
       if (!serviceConfig.build) {
         return false;
       }
 
-      return serviceName !== 'db-setup' && !serviceName.endsWith('-seed');
+      if (serviceName === 'db-setup' || serviceName.endsWith('-seed')) {
+        return false;
+      }
+
+      return selectedSet ? selectedSet.has(serviceName) : true;
     })
     .sort(([left], [right]) => left.localeCompare(right));
 }
@@ -357,6 +366,7 @@ export async function createComposeBuildPlan({
   previousState = null,
   changedFiles = null,
   forceAll = false,
+  selectedServices = null,
 } = {}) {
   const resolvedWorkspaceRoot = path.resolve(workspaceRoot || process.cwd());
   const composeFilePath = path.resolve(resolvedWorkspaceRoot, composeFile);
@@ -369,7 +379,7 @@ export async function createComposeBuildPlan({
   );
   const memo = new Map();
 
-  const serviceEntries = eligibleBuildServices(services).map(
+  const serviceEntries = eligibleBuildServices(services, selectedServices).map(
     ([serviceName, serviceConfig]) => {
       const serviceInputs = collectServiceInputs({
         workspaceRoot: resolvedWorkspaceRoot,

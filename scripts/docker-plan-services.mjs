@@ -21,6 +21,7 @@ function parseArgs(argv) {
     headRef: '',
     saveState: false,
     forceAll: false,
+    selectedServices: [],
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -52,6 +53,17 @@ function parseArgs(argv) {
         break;
       case '--force-all':
         args.forceAll = true;
+        break;
+      case '--services':
+        args.selectedServices.push(
+          ...argv[++index]
+            .split(',')
+            .map((service) => service.trim())
+            .filter(Boolean)
+        );
+        break;
+      case '--service':
+        args.selectedServices.push(argv[++index]);
         break;
       default:
         throw new Error(`Unknown argument: ${value}`);
@@ -114,6 +126,7 @@ const plan = await createComposeBuildPlan({
   previousState,
   changedFiles,
   forceAll: args.forceAll,
+  selectedServices: args.selectedServices,
 });
 
 if (args.planFile) {

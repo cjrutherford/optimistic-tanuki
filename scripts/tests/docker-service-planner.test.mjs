@@ -160,6 +160,20 @@ test('createComposeBuildPlan builds all services on first run, then only changed
   ]);
 });
 
+test('createComposeBuildPlan respects selected service filters', async () => {
+  const workspaceRoot = makeComposeFixture();
+
+  const plan = await createComposeBuildPlan({
+    workspaceRoot,
+    composeFile: 'docker-compose.yaml',
+    selectedServices: ['authentication', 'gateway'],
+  });
+
+  assert.deepEqual(plan.buildServices, ['authentication', 'gateway']);
+  assert.deepEqual(plan.buildApps, ['authentication', 'gateway']);
+  assert.ok(!('client-interface' in plan.services));
+});
+
 test('docker-build-batched.sh defaults to batch size 10', () => {
   const bakeFile = path.join(os.tmpdir(), `docker-bake-${process.pid}.json`);
   fs.writeFileSync(
@@ -188,6 +202,49 @@ test('docker-build-batched.sh defaults to batch size 10', () => {
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Batch size: 10/);
+});
+
+test('docker-build-batched.sh accepts explicit service filters', () => {
+  const bakeFile = path.join(
+    os.tmpdir(),
+    `docker-bake-services-${process.pid}.json`
+  );
+  fs.writeFileSync(
+    bakeFile,
+    JSON.stringify({
+      target: {
+        authentication: {},
+        gateway: {},
+        'client-interface': {},
+      },
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    [
+      'scripts/docker-build-batched.sh',
+      '--dry-run',
+      '--service',
+      'authentication',
+      '--service',
+      'gateway',
+    ],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_BAKE_FILE: bakeFile,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Found 2 services to build/);
+  assert.match(result.stdout, /authentication/);
+  assert.match(result.stdout, /gateway/);
+  assert.doesNotMatch(result.stdout, /client-interface/);
 });
 
 test('docker-start-phased.sh dry run still executes the full phased startup path without a plan file', () => {

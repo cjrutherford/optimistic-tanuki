@@ -5,6 +5,7 @@ DRY_RUN=0
 FORCE_ALL=0
 BATCH_SIZE=${DOCKER_BATCH_SIZE:-10}
 COMPOSE_FILE="docker-compose.yaml"
+SELECTED_SERVICES=()
 
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -15,6 +16,19 @@ while [ "$#" -gt 0 ]; do
         --full-rebuild)
             FORCE_ALL=1
             shift
+            ;;
+        --services)
+            IFS=',' read -r -a PARSED_SERVICES <<< "$2"
+            for service in "${PARSED_SERVICES[@]}"; do
+                if [ -n "$service" ]; then
+                    SELECTED_SERVICES+=("$service")
+                fi
+            done
+            shift 2
+            ;;
+        --service)
+            SELECTED_SERVICES+=("$2")
+            shift 2
             ;;
         -*)
             echo "Unknown option: $1" >&2
@@ -79,6 +93,10 @@ PLAN_ARGS=(
 if [ "$FORCE_ALL" -eq 1 ]; then
     PLAN_ARGS+=(--force-all)
 fi
+
+for service in "${SELECTED_SERVICES[@]}"; do
+    PLAN_ARGS+=(--service "$service")
+done
 
 node "${PLAN_ARGS[@]}" >/dev/null
 

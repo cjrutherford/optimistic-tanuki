@@ -1,5 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
+import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 const clientBaseURL =
   process.env['CLIENT_INTERFACE_BASE_URL'] || 'http://localhost:8080';
@@ -11,11 +12,12 @@ const ownerConsoleBaseURL =
   process.env['OWNER_CONSOLE_BASE_URL'] || 'http://localhost:8084';
 
 const isCI = !!process.env['CI'];
+const headless = resolvePlaywrightHeadless(isCI);
 
 export default defineConfig({
   ...nxE2EPreset(__filename, { testDir: './src' }),
   use: {
-    headless: isCI,
+    headless,
     trace: isCI ? 'on-first-retry' : 'on',
   },
   retries: isCI ? 1 : 0,

@@ -40,6 +40,12 @@ assert.equal(
 );
 
 assert.equal(
+  packageJson.scripts['docker:dev:plan'],
+  './scripts/docker-build-batched.sh --dry-run docker-compose.dev.yaml && ./scripts/docker-start-phased.sh --dry-run docker-compose.dev.yaml 5',
+  'docker:dev:plan must report the incremental docker build and restart plan without mutating local services'
+);
+
+assert.equal(
   packageJson.scripts['docker:dev:bootstrap'],
   'pnpm run build:docker:dev && pnpm run docker:build:dev && pnpm run docker:dev:up && pnpm run docker:dev:seed',
   'docker:dev:bootstrap must do the full build, startup, and seed flow'
@@ -55,6 +61,12 @@ assert.equal(
   packageJson.scripts['docker:dev:watch'],
   'pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev',
   'docker:dev:watch must use the docker-specific development build set'
+);
+
+assert.equal(
+  packageJson.scripts['docker:prod:bootstrap'],
+  './scripts/docker-compose-deploy.sh',
+  'docker:prod:bootstrap must use the explicit compose deploy entrypoint'
 );
 
 assert.match(
@@ -100,8 +112,8 @@ for (const [, command] of dockerScripts) {
 assert.deepEqual([...referencedScripts].sort(), [
   './scripts/dev-seed.sh',
   './scripts/docker-build-batched.sh',
+  './scripts/docker-compose-deploy.sh',
   './scripts/docker-dev-refresh.sh',
-  './scripts/docker-prod-bootstrap.sh',
   './scripts/docker-start-phased.sh',
   './scripts/prod-seed.sh',
 ]);
@@ -315,6 +327,12 @@ assert.match(
 );
 assert.match(startupOutput, /Extra flags: --force-recreate/);
 if (/No changed services require restart/.test(startupOutput)) {
+  assert.match(startupOutput, /DRY RUN: docker compose .* ps/);
+} else if (/=== Incremental restart ===/.test(startupOutput)) {
+  assert.match(
+    startupOutput,
+    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*gateway/
+  );
   assert.match(startupOutput, /DRY RUN: docker compose .* ps/);
 } else {
   assert.match(
