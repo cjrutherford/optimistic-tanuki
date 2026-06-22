@@ -97,7 +97,8 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix: ${{ fromJson(needs.determine_changes.outputs.matrix) }}
+      matrix:
+        app: ${{ fromJson(needs.determine_changes.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -139,11 +140,11 @@ jobs:
     name: Retag unchanged apps on main
     runs-on: ubuntu-24.04
     needs: [determine_changes]
-    if: ${{ needs.determine-changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main' }}
+    if: ${{ needs.determine_changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main' }}
     strategy:
       fail-fast: false
       matrix:
-        app: ${{ fromJson(needs.determine-changes.outputs.unchanged_apps) }}
+        app: ${{ fromJson(needs.determine_changes.outputs.unchanged_apps) }}
     steps:
       - uses: actions/checkout@v6
 
