@@ -42,6 +42,30 @@ if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     COMPOSE_FLAGS=("-f" "docker-compose.yaml" "-f" "docker-compose.dev.yaml")
 fi
 
+PHASE_3_SERVICES=(authentication)
+PHASE_4_SERVICES=(profile social permissions app-configurator system-configurator-api)
+PHASE_5_SERVICES=(
+    finance payments store assets project-planning chat-collector prompt-proxy
+    telos-docs-service blogging forum wellness classifieds
+)
+PHASE_6_SERVICES=(ai-orchestration lead-tracker video-transcoder-worker videos)
+PHASE_7_SERVICES=(gateway)
+PHASE_9_SERVICES=(
+    ot-client-interface forgeofwill-client-interface digital-homestead-client-interface
+    hai-client-interface local-hub-client-interface crdn-client-interface leads-app
+    store-client configurable-client fin-commander marketing-generator business-site owner-console d6 system-configurator
+    video-client
+)
+REQUIRED_RUNNING_SERVICES=(
+    postgres redis
+    "${PHASE_3_SERVICES[@]}"
+    "${PHASE_4_SERVICES[@]}"
+    "${PHASE_5_SERVICES[@]}"
+    "${PHASE_6_SERVICES[@]}"
+    "${PHASE_7_SERVICES[@]}"
+    "${PHASE_9_SERVICES[@]}"
+)
+
 echo "=== Phased Docker Startup ==="
 echo "Phase delay: ${PHASE_DELAY}s"
 echo "Compose file: $COMPOSE_FILE"
@@ -55,6 +79,86 @@ run_compose() {
     else
         docker compose "${COMPOSE_FLAGS[@]}" "$@"
     fi
+}
+
+wait_for_service() {
+    local service="$1"
+    local attempts="${2:-60}"
+    local delay_seconds="${3:-2}"
+
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "DRY RUN: wait for services: $service"
+        return 0
+    fi
+
+    echo "Waiting for ${service} to be running..."
+
+    while [ "$attempts" -gt 0 ]; do
+        local container_id
+        container_id=$(docker compose "${COMPOSE_FLAGS[@]}" ps -q "$service" 2>/dev/null || true)
+
+        if [ -n "$container_id" ]; then
+            local status
+            local health
+            status=$(docker inspect -f '{{.State.Status}}' "$container_id" 2>/dev/null || true)
+            health=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id" 2>/dev/null || true)
+
+            if [ "$status" = "running" ] && { [ "$health" = "healthy" ] || [ "$health" = "none" ]; }; then
+                echo "${service} is ready."
+                return 0
+            fi
+        fi
+
+        attempts=$((attempts - 1))
+        sleep "$delay_seconds"
+    done
+
+    echo "${service} did not become ready in time." >&2
+    return 1
+}
+
+wait_for_services() {
+    if [ "$#" -eq 0 ]; then
+        return 0
+    fi
+
+    for service in "$@"; do
+        wait_for_service "$service"
+    done
+}
+
+list_running_services() {
+    if [ "$DRY_RUN" -eq 1 ]; then
+        return 0
+    fi
+
+    docker compose "${COMPOSE_FLAGS[@]}" ps --services --filter status=running
+}
+
+ensure_required_services_running() {
+    local running_services="$1"
+    local missing_services=()
+    local service
+
+    for service in "${REQUIRED_RUNNING_SERVICES[@]}"; do
+        if printf '%s\n' "$running_services" | grep -Fx -- "$service" >/dev/null 2>&1; then
+            continue
+        fi
+        missing_services+=("$service")
+    done
+
+    if [ "${#missing_services[@]}" -eq 0 ]; then
+        return 0
+    fi
+
+    if [ "$DRY_RUN" -eq 1 ]; then
+        echo "DRY RUN: ensure required services are running: ${missing_services[*]}"
+    else
+        echo "Ensuring required services are running: ${missing_services[*]}"
+    fi
+
+    run_compose up -d "${EXTRA_FLAGS[@]}" "${missing_services[@]}"
+    wait_for_services "${missing_services[@]}"
 }
 
 STATE_DIR=${DOCKER_BUILD_STATE_DIR:-tmp/docker-compose-state}
@@ -75,18 +179,15 @@ for (const service of plan.restartServices || []) {
 ' "$PLAN_FILE")
 
     local running_services
-    if [ "$DRY_RUN" -eq 1 ]; then
-        running_services="placeholder"
-    else
-        running_services=$(docker compose "${COMPOSE_FLAGS[@]}" ps --services --filter status=running)
-    fi
+    running_services=$(list_running_services)
 
-    if [ -z "$running_services" ]; then
+    if [ "$DRY_RUN" -eq 0 ] && [ -z "$running_services" ]; then
         return 1
     fi
 
     if [ -z "$restart_services" ]; then
         echo "No changed services require restart"
+        ensure_required_services_running "$running_services"
         run_compose ps
         rm -f "$PLAN_FILE"
         exit 0
@@ -95,6 +196,9 @@ for (const service of plan.restartServices || []) {
     mapfile -t RESTART_ARRAY <<< "$restart_services"
     echo "=== Incremental restart ==="
     run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
+    wait_for_services "${RESTART_ARRAY[@]}"
+    running_services=$(list_running_services)
+    ensure_required_services_running "$running_services"
     echo ""
     run_compose ps
     rm -f "$PLAN_FILE"
@@ -116,6 +220,7 @@ run_phase() {
     if [ "$DRY_RUN" -eq 0 ] && [ "$phase_delay" -gt 0 ]; then
         sleep "$phase_delay"
     fi
+    wait_for_services "${services[@]}"
     echo ""
 }
 
@@ -142,26 +247,18 @@ run_compose up -d "${EXTRA_FLAGS[@]}" db-setup
 run_compose wait db-setup
 echo ""
 
-run_phase "Phase 3: Core services" "$PHASE_DELAY" authentication
-run_phase "Phase 4: Essential APIs" "$PHASE_DELAY" \
-    profile social permissions app-configurator system-configurator-api
-run_phase "Phase 5: Feature services" "$PHASE_DELAY" \
-    finance payments store assets project-planning chat-collector prompt-proxy \
-    telos-docs-service blogging forum wellness classifieds
-run_phase "Phase 6: Heavy services" "$PHASE_DELAY" \
-    ai-orchestration lead-tracker video-transcoder-worker videos
-run_phase "Phase 7: Gateway" "$PHASE_DELAY" gateway
+run_phase "Phase 3: Core services" "$PHASE_DELAY" "${PHASE_3_SERVICES[@]}"
+run_phase "Phase 4: Essential APIs" "$PHASE_DELAY" "${PHASE_4_SERVICES[@]}"
+run_phase "Phase 5: Feature services" "$PHASE_DELAY" "${PHASE_5_SERVICES[@]}"
+run_phase "Phase 6: Heavy services" "$PHASE_DELAY" "${PHASE_6_SERVICES[@]}"
+run_phase "Phase 7: Gateway" "$PHASE_DELAY" "${PHASE_7_SERVICES[@]}"
 
 echo "=== Phase 8: Seed jobs ==="
 run_compose up -d "${EXTRA_FLAGS[@]}" app-configurator-seed
 run_compose wait app-configurator-seed
 echo ""
 
-run_phase "Phase 9: Client interfaces" 0 \
-    ot-client-interface forgeofwill-client-interface digital-homestead-client-interface \
-    hai-client-interface local-hub-client-interface crdn-client-interface leads-app \
-    store-client configurable-client fin-commander marketing-generator business-site owner-console d6 system-configurator \
-    video-client
+run_phase "Phase 9: Client interfaces" 0 "${PHASE_9_SERVICES[@]}"
 
 echo "=== Startup complete ==="
 run_compose ps

@@ -7,7 +7,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "mkdir -p ../../dist/apps/video-transcoder-worker && GOCACHE=/tmp/go-build go build -o ../../dist/apps/video-transcoder-worker/video-transcoder-worker .",
+        "command": "mkdir -p ../../dist/apps/video-transcoder-worker && CGO_ENABLED=0 GOOS=linux GOCACHE=/tmp/go-build go build -o ../../dist/apps/video-transcoder-worker/video-transcoder-worker .",
         "cwd": "apps/video-transcoder-worker"
       }
     },

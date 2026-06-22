@@ -15,12 +15,40 @@ else
   HOST_GATEWAY_READY_URL="${HOST_GATEWAY_BASE_URL}/api-docs"
 fi
 
+wait_for_service() {
+  service="$1"
+  attempts="${2:-60}"
+  delay_seconds="${3:-2}"
+
+  echo "Waiting for ${service} to be running..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    container_id="$(docker compose ${COMPOSE_FILES} ps -q "${service}" 2>/dev/null || true)"
+
+    if [ -n "${container_id}" ]; then
+      status="$(docker inspect -f '{{.State.Status}}' "${container_id}" 2>/dev/null || true)"
+
+      if [ "${status}" = "running" ]; then
+        echo "${service} is running."
+        return 0
+      fi
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "${service} did not become ready in time." >&2
+  return 1
+}
+
 run_seed() {
   service="$1"
   workdir="$2"
   shift 2
 
   echo "Seeding ${service}..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
     workdir="$1"
     shift
@@ -35,6 +63,7 @@ run_seed_with_run() {
   shift 2
 
   echo "Seeding ${service}..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
     workdir="$1"
     shift
@@ -51,6 +80,7 @@ run_seed_with_env() {
   shift 4
 
   echo "Seeding ${service}..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
     workdir="$1"
     shift
@@ -67,6 +97,7 @@ run_seed_with_run_env() {
   shift 4
 
   echo "Seeding ${service}..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
     workdir="$1"
     shift
@@ -81,6 +112,7 @@ run_seed_from_workspace() {
   shift 2
 
   echo "Seeding ${service} from workspace mount..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T "$service" sh -lc '
     workdir="$1"
     shift
@@ -97,6 +129,7 @@ run_seed_from_workspace_env() {
   shift 4
 
   echo "Seeding ${service} from workspace mount..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T -e "${env_key}=${env_value}" "$service" sh -lc '
     workdir="$1"
     shift
@@ -188,6 +221,8 @@ run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" n
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./dist/apps/classifieds/seed-classifieds.js
 refresh_service payments
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
+refresh_service business-site
+wait_for_service "business-site"
 run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
 run_seed_with_media_volume() {
@@ -196,6 +231,7 @@ run_seed_with_media_volume() {
   shift 2
 
   echo "Seeding ${service} inside running container..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T -e "ASSETS_HOST=assets" "$service" sh -lc '
     workdir="$1"
     shift
@@ -210,6 +246,7 @@ run_seed_with_media_volume_from_image() {
   shift 2
 
   echo "Seeding ${service} inside running container..."
+  wait_for_service "${service}"
   docker compose ${COMPOSE_FILES} exec -T -e "ASSETS_HOST=assets" "$service" sh -lc '
     workdir="$1"
     shift

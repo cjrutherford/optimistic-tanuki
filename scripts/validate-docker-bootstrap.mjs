@@ -314,8 +314,15 @@ assert.match(
   /Compose flags: -f docker-compose\.yaml -f docker-compose\.dev\.yaml/
 );
 assert.match(startupOutput, /Extra flags: --force-recreate/);
+assert.match(startupOutput, /DRY RUN: wait for services: authentication/);
 if (/No changed services require restart/.test(startupOutput)) {
   assert.match(startupOutput, /DRY RUN: docker compose .* ps/);
+} else if (/=== Incremental restart ===/.test(startupOutput)) {
+  assert.match(
+    startupOutput,
+    /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*authentication/
+  );
+  assert.match(startupOutput, /DRY RUN: wait for services: gateway/);
 } else {
   assert.match(
     startupOutput,
@@ -331,6 +338,45 @@ if (/No changed services require restart/.test(startupOutput)) {
     /DRY RUN: docker compose .* up -d --no-deps --force-recreate .*video-transcoder-worker .*videos/
   );
 }
+
+const emptyPlanFile = join(tempDir, 'empty-plan.json');
+writeFileSync(
+  emptyPlanFile,
+  JSON.stringify({
+    buildServices: [],
+    buildApps: [],
+    restartServices: [],
+    reasons: {},
+    state: { version: 1, composeFile: 'docker-compose.dev.yaml', services: {} },
+  })
+);
+
+const missingServiceRecoveryOutput = execForOutput(
+  'bash',
+  [
+    './scripts/docker-start-phased.sh',
+    '--dry-run',
+    'docker-compose.dev.yaml',
+    '0',
+  ],
+  {
+    cwd: root,
+    env: {
+      ...process.env,
+      DOCKER_BUILD_PLAN_FILE: emptyPlanFile,
+    },
+    encoding: 'utf8',
+  }
+);
+
+assert.match(
+  missingServiceRecoveryOutput,
+  /DRY RUN: ensure required services are running: .*video-transcoder-worker/
+);
+assert.match(
+  missingServiceRecoveryOutput,
+  /DRY RUN: docker compose .* up -d .*video-transcoder-worker/
+);
 
 const seedRuntimeEntries = [
   {
@@ -374,6 +420,20 @@ const devSeedScript = readFileSync(
   new URL('scripts/dev-seed.sh', root),
   'utf8'
 );
+const dockerDevRefreshScript = readFileSync(
+  new URL('scripts/docker-dev-refresh.sh', root),
+  'utf8'
+);
+const dockerStartPhasedScript = readFileSync(
+  new URL('scripts/docker-start-phased.sh', root),
+  'utf8'
+);
+const videoTranscoderWorkerProject = JSON.parse(
+  readFileSync(
+    new URL('apps/video-transcoder-worker/project.json', root),
+    'utf8'
+  )
+);
 const dockerComposeDev = readFileSync(
   new URL('docker-compose.dev.yaml', root),
   'utf8'
@@ -398,6 +458,26 @@ const assetsDevBlockMatch = dockerComposeDev.match(
 );
 const videosDevBlockMatch = dockerComposeDev.match(
   /\n  videos:\n[\s\S]*?\n  video-transcoder-worker:\n/
+);
+assert.equal(
+  dockerDevRefreshScript.includes('pnpm run docker:dev:up'),
+  true,
+  'docker:dev refresh script must still flow through phased startup readiness checks'
+);
+assert.equal(
+  dockerStartPhasedScript.includes('wait_for_services'),
+  true,
+  'phased startup must wait for services to be running before finishing'
+);
+assert.equal(
+  devSeedScript.includes('wait_for_service "business-site"'),
+  true,
+  'dev seed script must wait for business-site to be running before seeding it'
+);
+assert.match(
+  videoTranscoderWorkerProject.targets.build.options.command,
+  /CGO_ENABLED=0 GOOS=linux .*go build/,
+  'video-transcoder-worker dev build must emit a static Linux binary for the Alpine runtime'
 );
 assert.notEqual(
   classifiedsDevBlockMatch,
