@@ -15,6 +15,12 @@ jobs:
   determine_changes:
     name: Determine Changed Images
     runs-on: ubuntu-24.04
+    on:
+      workflow_dispatch:
+        inputs:
+          force-all:
+            type: boolean
+            default: false
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_changes: ${{ steps.matrix.outputs.has_changes }}
