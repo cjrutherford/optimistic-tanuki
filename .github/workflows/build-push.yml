@@ -74,6 +74,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_changes: ${{ steps.matrix.outputs.has_changes }}
+      unchanged_apps: ${{ steps.matrix.outputs.unchanged_apps }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -126,10 +127,9 @@ jobs:
       - name: Resolve changed app matrix
         id: matrix
         run: |
-          MATRIX=$(node --input-type=module -e "import fs from 'node:fs'; import { resolveDockerBuildMatrix } from './scripts/lib/docker-build-matrix.mjs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write(JSON.stringify(resolveDockerBuildMatrix({ buildApps: plan.buildApps || [] })));")
-          HAS_CHANGES=$(node --input-type=module -e "import fs from 'node:fs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write((plan.buildApps || []).length > 0 ? 'true' : 'false');")
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-          echo "has_changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
+          node scripts/resolve-docker-changes.mjs \
+            --plan-file tmp/docker-workflow/services.plan.json \
+            --compose-file docker-compose.yaml
 
       - name: Upload Docker plan artifact
         uses: actions/upload-artifact@v6

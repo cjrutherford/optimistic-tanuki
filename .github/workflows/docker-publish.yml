@@ -18,6 +18,7 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
       has_changes: ${{ steps.matrix.outputs.has_changes }}
+      unchanged_apps: ${{ steps.matrix.outputs.unchanged_apps }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -72,10 +73,9 @@ jobs:
       - name: Resolve changed app matrix
         id: matrix
         run: |
-          MATRIX=$(node --input-type=module -e "import fs from 'node:fs'; import { resolveDockerBuildMatrix } from './scripts/lib/docker-build-matrix.mjs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write(JSON.stringify(resolveDockerBuildMatrix({ buildApps: plan.buildApps || [] })));")
-          HAS_CHANGES=$(node --input-type=module -e "import fs from 'node:fs'; const plan = JSON.parse(fs.readFileSync('tmp/docker-workflow/services.plan.json', 'utf8')); process.stdout.write((plan.buildApps || []).length > 0 ? 'true' : 'false');")
-          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-          echo "has_changes=$HAS_CHANGES" >> "$GITHUB_OUTPUT"
+          node scripts/resolve-docker-changes.mjs \
+            --plan-file tmp/docker-workflow/services.plan.json \
+            --compose-file docker-compose.yaml
 
       - name: Save Docker plan cache
         if: steps.restore-plan.outputs.cache-hit != 'true'
@@ -130,4 +130,52 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+  retag-unchanged:
+    name: Retag unchanged apps on main
+    runs-on: ubuntu-24.04
+    needs: [determine-changes, build-and-push]
+    if: ${{ needs.determine-changes.outputs.has_changes == 'true' && github.ref == 'refs/heads/main' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.determine-changes.outputs.unchanged_apps) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Get previous successful workflow run
+        id: prev-run
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'docker-publish.yml',
+              branch: 'main',
+              status: 'success',
+              per_page: 2
+            });
+            const currentSha = context.sha;
+            const prev = runs.find(r => r.head_sha !== currentSha);
+            if (prev) {
+              core.setOutput('sha', prev.head_sha);
+            } else {
+              core.setOutput('sha', '');
+            }
+
+      - name: Retag ${{ matrix.app }} to current SHA
+        if: steps.prev-run.outputs.sha != ''
+        run: |
+          docker pull cjrutherford/optimistic_tanuki_${{ matrix.app }}:sha-${{ steps.prev-run.outputs.sha }}
+          docker tag cjrutherford/optimistic_tanuki_${{ matrix.app }}:sha-${{ steps.prev-run.outputs.sha }} \
+                 cjrutherford/optimistic_tanuki_${{ matrix.app }}:sha-${{ github.sha }}
+          docker push cjrutherford/optimistic_tanuki_${{ matrix.app }}:sha-${{ github.sha }}
