@@ -65,10 +65,20 @@ export const getRequestOrigin = (request: Request): string => {
   return `${proto}://${host}`;
 };
 
+export const isProxiedRequest = (request: Request): boolean => {
+  return !!(
+    request.get('x-forwarded-host') || request.get('x-forwarded-proto')
+  );
+};
+
 export const shouldRejectBrowserMutation = (
   request: Request,
   configuredOrigins = parseConfiguredOrigins()
 ): boolean => {
+  if (isProxiedRequest(request)) {
+    return false;
+  }
+
   if (!UNSAFE_HTTP_METHODS.has(request.method.toUpperCase())) {
     return false;
   }
