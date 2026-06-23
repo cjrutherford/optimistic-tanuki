@@ -1,0 +1,294 @@
+:root {
+  --font-heading: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua',
+    'URW Palladio L', Georgia, serif;
+  --font-body: 'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --background: #f7f2ea;
+  --background-deep: #e8dfd2;
+  --surface: rgba(255, 252, 247, 0.88);
+  --surface-strong: #fffaf3;
+  --foreground: #2c2416;
+  --foreground-soft: #665848;
+  --primary: #2d5a4a;
+  --secondary: #c9a66b;
+  --accent: #d4724a;
+  --border: rgba(100, 77, 44, 0.16);
+  --shadow-lg: 0 18px 48px rgba(44, 36, 22, 0.14);
+  --shadow-md: 0 8px 24px rgba(44, 36, 22, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--foreground);
+  background: radial-gradient(
+      circle at top left,
+      rgba(212, 114, 74, 0.15),
+      transparent 28%
+    ),
+    radial-gradient(circle at 85% 20%, rgba(45, 90, 74, 0.18), transparent 24%),
+    linear-gradient(180deg, var(--background) 0%, #f2eadf 100%);
+  line-height: 1.55;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background-image: linear-gradient(rgba(45, 90, 74, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 90, 74, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at center, black 45%, transparent 85%);
+}
+
+body::after {
+  background: radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.35),
+      transparent 55%
+    ),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='rgba(44,36,22,0.05)' stroke-width='1'%3E%3Cpath d='M18 38c24-12 48-12 72 0s48 12 72 0'/%3E%3Cpath d='M18 90c24-12 48-12 72 0s48 12 72 0'/%3E%3Cpath d='M18 142c24-12 48-12 72 0s48 12 72 0'/%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.85;
+}
+
+.shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  position: relative;
+  z-index: 1;
+}
+
+.card {
+  width: min(980px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.main {
+  padding: 48px 44px;
+  position: relative;
+}
+
+.rail {
+  padding: 48px 36px;
+  background: linear-gradient(
+      180deg,
+      rgba(45, 90, 74, 0.94),
+      rgba(31, 63, 52, 0.98)
+    ),
+    linear-gradient(135deg, rgba(201, 166, 107, 0.2), transparent);
+  color: #f6efe5;
+  position: relative;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--foreground-soft);
+}
+
+.eyebrow::before {
+  content: '';
+  width: 42px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--secondary), transparent);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: clamp(2.7rem, 5vw, 4.6rem);
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  max-width: 9ch;
+}
+
+.lede {
+  margin: 22px 0 0;
+  max-width: 60ch;
+  font-size: 1.04rem;
+  color: var(--foreground-soft);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 30px;
+}
+
+.button,
+.button:visited {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease,
+    color 160ms ease;
+  cursor: pointer;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button-primary {
+  background: var(--primary);
+  color: #fffdf8;
+  box-shadow: var(--shadow-md);
+}
+
+.button-secondary {
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--foreground);
+  border: 1px solid rgba(100, 77, 44, 0.14);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(100, 77, 44, 0.12);
+  color: var(--foreground-soft);
+  font-size: 0.92rem;
+}
+
+.status-mark {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--secondary));
+  box-shadow: 0 0 0 4px rgba(212, 114, 74, 0.12);
+}
+
+.code-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 98px;
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-family: var(--font-heading);
+  font-size: 2.2rem;
+  letter-spacing: -0.04em;
+}
+
+.rail h2 {
+  margin: 20px 0 10px;
+  font-family: var(--font-heading);
+  font-size: 1.85rem;
+  line-height: 1.05;
+}
+
+.rail p {
+  margin: 0 0 18px;
+  color: rgba(246, 239, 229, 0.8);
+}
+
+.checklist {
+  display: grid;
+  gap: 12px;
+  margin: 28px 0 0;
+}
+
+.checklist-item {
+  padding: 14px 14px 14px 44px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+.checklist-item::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 19px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f6d7a6, #d4724a);
+}
+
+.checklist-item strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.checklist-item span {
+  display: block;
+  margin-top: 4px;
+  color: rgba(246, 239, 229, 0.74);
+  font-size: 0.92rem;
+}
+
+.footer-note {
+  margin-top: 30px;
+  font-size: 0.85rem;
+  color: rgba(246, 239, 229, 0.68);
+}
+
+@media (max-width: 860px) {
+  .card {
+    grid-template-columns: 1fr;
+  }
+
+  .main,
+  .rail {
+    padding: 34px 26px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+
+  .button:hover {
+    transform: none;
+  }
+}

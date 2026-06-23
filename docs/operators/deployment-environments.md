@@ -132,6 +132,7 @@ Use the `Kubernetes` document in `admin-env-wizard` to manage:
 
 - [Runbooks](./runbooks.md)
 - [Troubleshooting](./troubleshooting.md)
+- [Multi-Domain Deployments](./multi-domain-deployments.md)
 - [Deployment Workspace Workflow](../devops/deployment-workspace-workflow.md)
 - [Deployment Generation](../devops/deployment-generation.md)
 - [ArgoCD](../devops/argocd.md)

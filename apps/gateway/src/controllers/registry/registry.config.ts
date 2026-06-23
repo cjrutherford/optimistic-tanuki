@@ -14,9 +14,13 @@ export function loadConfiguredRegistry(path?: string): AppRegistry {
     return registry;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.warn(
-      `Failed to load app registry from "${path}". Falling back to default app registry. ${errorMessage}`
-    );
+    const message = `Failed to load app registry from "${path}". ${errorMessage}`;
+
+    if (process.env['NODE_ENV'] === 'production') {
+      throw new Error(message);
+    }
+
+    console.warn(`${message} Falling back to default app registry.`);
     return DEFAULT_APP_REGISTRY;
   }
 }

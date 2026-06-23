@@ -1,11 +1,17 @@
-# Public multi-domain ingress for nginx-based cluster deployments.
+# Sample public multi-domain ingress for the Optimistic Tanuki platform.
 #
-# This ingress models the same public host inventory as the operator nginx
-# examples. Keep this file aligned with:
-# - k8s/base/config/app-registry.json
-# - docs/operators/nginx/*.conf
-# - the real public DNS and TLS certificates
+# This is a production-oriented example, not a replacement for k8s/base/ingress.yaml.
+# Keep the host list aligned with the runtime app registry mounted into gateway.
 #
+# Recommended model:
+# - route / to the host's frontend service
+# - route /api to gateway:3000
+# - route /ws to the gateway websocket port required by that host
+# - terminate TLS at ingress
+#
+# Adjust tls.secretName values to match your certificate strategy.
+#
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:

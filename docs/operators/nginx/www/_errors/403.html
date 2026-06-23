@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>403 Forbidden</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">This route is intentionally locked.</h1>
+          <p class="lede">
+            The request was understood, but the current session or origin is not
+            permitted to complete it.
+          </p>
+          <div class="actions">
+            <a class="button button-primary" href="/">Return Home</a>
+            <button
+              class="button button-secondary"
+              type="button"
+              onclick="history.back()"
+            >
+              Go Back
+            </button>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 403</div>
+            <div class="pill">
+              Permission or trusted-origin policy blocked the request
+            </div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">403</div>
+          <h2>Policy denied</h2>
+          <p>
+            This commonly points to missing permissions, governance rules, or a
+            rejected cross-site mutation request.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Verify host alignment</strong>
+              <span
+                >The public host, nginx forwarding headers, and gateway registry
+                must match.</span
+              >
+            </div>
+            <div class="checklist-item">
+              <strong>Verify role access</strong>
+              <span
+                >Operator and client flows may require app-specific
+                permissions.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            403 is expected when a request is well-formed but violates trust or
+            authorization rules.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

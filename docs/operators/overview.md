@@ -28,6 +28,7 @@ This section is for operators working in either of these environments:
 
 - [Local Stack Operations](./local-stack.md) for bootstrap, health checks, logs, and local recovery
 - [Deployment Environments](./deployment-environments.md) for generated workspaces, validation, and apply flow
+- [Multi-Domain Deployments](./multi-domain-deployments.md) for keeping nginx, ingress, registry, TLS, and websocket routing aligned across public domains
 - [Runbooks](./runbooks.md) for common operator procedures
 - [Troubleshooting](./troubleshooting.md) for failure-mode recovery
 - [Operator Reference](./reference.md) for high-frequency commands and file locations

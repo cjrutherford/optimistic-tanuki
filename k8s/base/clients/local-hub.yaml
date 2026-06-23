@@ -58,4 +58,4 @@ spec:
   ports:
     - port: 8087
       targetPort: 4000
-  type: LoadBalancer
+  type: ClusterIP

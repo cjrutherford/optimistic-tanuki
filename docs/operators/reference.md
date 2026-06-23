@@ -48,6 +48,8 @@ kubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml
 - local stack workflow: `docs/devops/docker-compose.md`
 - deployment workflow: `docs/devops/deployment-workspace-workflow.md`
 - deployment generation mechanics: `docs/devops/deployment-generation.md`
+- multi-domain routing guide: `docs/operators/multi-domain-deployments.md`
+- sample public ingress map: `docs/operators/k8s/multi-domain-ingress.sample.yaml`
 - ArgoCD workflow: `docs/devops/argocd.md`
 - generated deployment workspaces: `dist/admin-env/<deployment>/`
 - deployment tooling: `tools/admin-env-wizard/`

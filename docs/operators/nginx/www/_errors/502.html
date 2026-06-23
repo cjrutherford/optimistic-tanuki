@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>502 Bad Gateway</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">The edge reached a bad upstream response.</h1>
+          <p class="lede">
+            Nginx accepted the request, but the target service responded in a
+            way the proxy could not use.
+          </p>
+          <div class="actions">
+            <button
+              class="button button-primary"
+              type="button"
+              onclick="window.location.reload()"
+            >
+              Try Again
+            </button>
+            <a class="button button-secondary" href="/">Return Home</a>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 502</div>
+            <div class="pill">Proxy-to-upstream handoff failed</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">502</div>
+          <h2>Gateway mismatch</h2>
+          <p>
+            This points to an unhealthy upstream, wrong upstream port, or a
+            response shape nginx could not consume.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Check upstream health</strong>
+              <span
+                >Verify the mapped app port is listening and returning valid
+                HTTP.</span
+              >
+            </div>
+            <div class="checklist-item">
+              <strong>Check nginx mapping</strong>
+              <span
+                >Make sure this host still targets the correct compose service
+                and port.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            A 502 is usually edge-to-app wiring, not browser-side behavior.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

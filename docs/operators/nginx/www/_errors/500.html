@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>500 Internal Server Error</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">The platform hit an internal fault.</h1>
+          <p class="lede">
+            The request reached the application stack, but the upstream service
+            failed while processing it.
+          </p>
+          <div class="actions">
+            <button
+              class="button button-primary"
+              type="button"
+              onclick="window.location.reload()"
+            >
+              Try Again
+            </button>
+            <a class="button button-secondary" href="/">Return Home</a>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 500</div>
+            <div class="pill">Application error after request acceptance</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">500</div>
+          <h2>Upstream fault</h2>
+          <p>
+            Expect the root cause in the application logs rather than the edge
+            configuration.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Check service logs</strong>
+              <span
+                >Start with the target app or gateway container for this
+                hostname.</span
+              >
+            </div>
+            <div class="checklist-item">
+              <strong>Check recent deploys</strong>
+              <span
+                >Schema drift, runtime config changes, or seed mismatches often
+                surface here first.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            Retrying may succeed if the error was transient, but repeated 500s
+            indicate an app-side defect.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>
