@@ -174,6 +174,62 @@ test('createComposeBuildPlan respects selected service filters', async () => {
   assert.ok(!('client-interface' in plan.services));
 });
 
+test('resolve-docker-changes excludes non-buildable compose services from unchanged apps', () => {
+  const planFile = path.join(
+    os.tmpdir(),
+    `docker-plan-resolve-${process.pid}.json`
+  );
+  const outputFile = path.join(
+    os.tmpdir(),
+    `docker-plan-resolve-output-${process.pid}.txt`
+  );
+  fs.writeFileSync(outputFile, '');
+  fs.writeFileSync(
+    planFile,
+    JSON.stringify({
+      buildApps: ['authentication'],
+      services: {
+        authentication: { appId: 'authentication' },
+        gateway: { appId: 'gateway' },
+        'client-interface': { appId: 'client-interface' },
+      },
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    [
+      '-lc',
+      `node scripts/resolve-docker-changes.mjs --plan-file "${planFile}" --compose-file docker-compose.yaml`,
+    ],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: outputFile,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const outputs = fs.readFileSync(outputFile, 'utf8');
+  assert.match(outputs, /matrix=\["authentication"\]/);
+  assert.match(outputs, /unchanged_apps=\["client-interface","gateway"\]/);
+  assert.doesNotMatch(outputs, /postgres/);
+  assert.doesNotMatch(outputs, /redis/);
+});
+
+test('resolve-docker-changes includes workflow logging for changed and unchanged apps', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts/resolve-docker-changes.mjs'),
+    'utf8'
+  );
+
+  assert.match(script, /Changed apps:/);
+  assert.match(script, /Unchanged apps:/);
+});
+
 test('docker-build-batched.sh defaults to batch size 10', () => {
   const bakeFile = path.join(os.tmpdir(), `docker-bake-${process.pid}.json`);
   fs.writeFileSync(

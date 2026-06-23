@@ -46,17 +46,44 @@ function resolveComposeServices(composeFile) {
   return services;
 }
 
+function resolvePlanApps(plan, composeFile) {
+  const planApps = [
+    ...new Set(
+      Object.values(plan.services || {})
+        .map((service) => service?.appId)
+        .filter(Boolean)
+    ),
+  ].sort();
+
+  if (planApps.length > 0) {
+    return planApps;
+  }
+
+  return resolveComposeServices(composeFile);
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   const plan = JSON.parse(fs.readFileSync(args.planFile, 'utf8'));
   const changedApps = [...new Set(plan.buildApps || [])].sort();
-  const allApps = resolveComposeServices(args.composeFile);
+  const allApps = resolvePlanApps(plan, args.composeFile);
   const changedSet = new Set(changedApps);
   const unchangedApps = allApps.filter((app) => !changedSet.has(app));
 
   const matrix = JSON.stringify(changedApps);
   const hasChanges = changedApps.length > 0 ? 'true' : 'false';
   const unchangedAppSet = JSON.stringify(unchangedApps);
+
+  console.log(
+    `Changed apps: ${
+      changedApps.length > 0 ? changedApps.join(', ') : '(none)'
+    }`
+  );
+  console.log(
+    `Unchanged apps: ${
+      unchangedApps.length > 0 ? unchangedApps.join(', ') : '(none)'
+    }`
+  );
 
   const outputFile = process.env.GITHUB_OUTPUT;
   if (outputFile) {
