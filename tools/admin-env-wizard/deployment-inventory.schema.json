@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Deployment Inventory",
+  "description": "Canonical list of all deployable applications in the optimistic-tanuki monorepo",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON schema reference"
+    },
+    "version": {
+      "type": "string",
+      "description": "Schema version"
+    },
+    "apps": {
+      "type": "array",
+      "description": "Deployable applications and services",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "category",
+          "composeServiceName",
+          "dockerfile",
+          "imageName",
+          "k8sManifestPath"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique identifier for the app/service"
+          },
+          "buildAppId": {
+            "type": "string",
+            "description": "Build system app ID derived from Dockerfile path"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["service", "client"],
+            "description": "Whether this is a backend service or frontend client"
+          },
+          "composeServiceName": {
+            "type": "string",
+            "description": "Docker Compose service name"
+          },
+          "dockerfile": {
+            "type": "string",
+            "description": "Path to Dockerfile relative to repo root"
+          },
+          "imageName": {
+            "type": "string",
+            "description": "Docker image name"
+          },
+          "k8sManifestPath": {
+            "type": "string",
+            "description": "Path to Kubernetes manifest relative to repo root"
+          }
+        }
+      }
+    }
+  },
+  "required": ["version", "apps"]
+}

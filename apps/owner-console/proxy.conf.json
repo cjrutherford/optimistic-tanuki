@@ -2,6 +2,14 @@
   "/api": {
     "target": "http://localhost:3000",
     "secure": false,
+    "changeOrigin": true,
+    "headers": {
+      "x-ot-appscope": "owner-console"
+    }
+  },
+  "/admin-api": {
+    "target": "http://localhost:8098",
+    "secure": false,
     "changeOrigin": true
   },
   "/socket.io": {

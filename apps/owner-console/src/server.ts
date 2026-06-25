@@ -17,6 +17,10 @@ const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const adminApiUrl =
+  process.env['ADMIN_API_URL'] ||
+  process.env['ADMIN_ENV_API_URL'] ||
+  'http://admin-api:8098';
 
 app.use(
   '/socket.io',
@@ -40,6 +44,17 @@ app.use(
   '/api',
   createProxyMiddleware({
     target: `${gatewayUrl}/api`,
+    changeOrigin: true,
+    headers: {
+      'x-ot-appscope': 'owner-console',
+    },
+  })
+);
+
+app.use(
+  '/admin-api',
+  createProxyMiddleware({
+    target: adminApiUrl,
     changeOrigin: true,
   })
 );

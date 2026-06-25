@@ -1,0 +1,990 @@
+<div class="bootstrap-onboarding">
+  @if (!apiOnline) {
+  <div class="reconnect-overlay">
+    <otui-spinner></otui-spinner>
+    <p>Reconnecting to setup server...</p>
+  </div>
+  }
+  <header class="onboarding-header">
+    <otui-heading
+      [text]="'Platform Setup'"
+      [color]="'#111827'"
+      [size]="'2rem'"
+    ></otui-heading>
+    <p>
+      Configure your platform. After setup you will be redirected to the owner
+      console.
+    </p>
+    <div class="progress-bar">
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 0"
+        [class.completed]="currentStep > 0"
+      >
+        1
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 0"></div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 1"
+        [class.completed]="currentStep > 1"
+      >
+        2
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 1"></div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 2"
+        [class.completed]="currentStep > 2"
+      >
+        3
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 2"></div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 3"
+        [class.completed]="currentStep > 3"
+      >
+        4
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 3"></div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 4"
+        [class.completed]="currentStep > 4"
+      >
+        5
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 4"></div>
+      <div class="progress-step" [class.active]="currentStep === 5">6</div>
+    </div>
+  </header>
+
+  @if (error) {
+  <otui-state-message [kind]="'error'" [headline]="error"></otui-state-message>
+  } @if (loading) {
+  <otui-spinner></otui-spinner>
+  }
+
+  <main class="onboarding-content">
+    @if (currentStep === 0) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'Environment & Platform Identity'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>
+        Select the environment you are editing, then define the deployment
+        identity for this stack.
+      </p>
+
+      <div class="identity-layout">
+        <div class="identity-main">
+          <section class="identity-section">
+            <div class="settings-card-header">
+              <div>
+                <strong>Environment Workspace</strong>
+                <p>
+                  Choose an existing environment or create a new isolated
+                  configuration set for a parallel stack.
+                </p>
+              </div>
+            </div>
+
+            <div class="identity-grid">
+              <div class="form-group">
+                <label for="environmentSelector">Environment</label>
+                <select
+                  id="environmentSelector"
+                  [ngModel]="activeEnvironment"
+                  (ngModelChange)="selectEnvironment($event)"
+                >
+                  @for (environment of availableEnvironments; track environment)
+                  {
+                  <option [value]="environment">{{ environment }}</option>
+                  }
+                </select>
+                <p class="field-hint">
+                  Changing the environment loads that stack's services, secrets,
+                  and deployment settings.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label for="newEnvironmentName">Create Environment</label>
+                <div class="inline-actions inline-actions-stacked">
+                  <lib-text-input
+                    [(ngModel)]="newEnvironmentName"
+                    [placeholder]="'staging'"
+                    [label]="'New environment name'"
+                  />
+                  <otui-button variant="secondary" (click)="createEnvironment()"
+                    >Create</otui-button
+                  >
+                </div>
+                <p class="field-hint">
+                  Use a short name such as `staging`, `preview`, or
+                  `customer-a`.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="identity-section">
+            <div class="settings-card-header">
+              <div>
+                <strong>Deployment Identity</strong>
+                <p>
+                  Name this deployment and choose how the platform should be
+                  launched for this environment.
+                </p>
+              </div>
+            </div>
+
+            <div class="identity-grid">
+              <div class="form-group">
+                <lib-text-input
+                  [(ngModel)]="config.environment.name"
+                  [label]="'Deployment Name'"
+                />
+                <p class="field-hint">
+                  This is the human-readable environment name shown throughout
+                  the setup and rollout workflow.
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label for="deploymentTarget">Launch Target</label>
+                <select
+                  id="deploymentTarget"
+                  [(ngModel)]="config.environment.targets[0]"
+                >
+                  <option value="compose">Docker Compose</option>
+                  <option value="k8s">Kubernetes</option>
+                </select>
+                <p class="field-hint">
+                  Pick the runtime target first. Later steps will adapt build,
+                  image, and rollout options to match.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="identity-sidebar">
+          <otui-card class="identity-summary">
+            <div class="settings-card-header">
+              <div>
+                <strong>Current Context</strong>
+                <p>
+                  The setup wizard is editing the following environment scope.
+                </p>
+              </div>
+            </div>
+
+            <div class="summary-stat">
+              <span>Active environment</span>
+              <strong>{{ activeEnvironment }}</strong>
+            </div>
+            <div class="summary-stat">
+              <span>Namespace</span>
+              <strong>{{ config.environment.namespace }}</strong>
+            </div>
+            <div class="summary-stat">
+              <span>Provider</span>
+              <strong>{{ config.environment.provider }}</strong>
+            </div>
+            <div class="summary-stat">
+              <span>Deploy mode</span>
+              <strong>{{ config.environment.composeMode }}</strong>
+            </div>
+          </otui-card>
+        </aside>
+      </div>
+
+      <div class="form-actions">
+        <otui-button variant="primary" (click)="saveConfig()"
+          >Continue</otui-button
+        >
+      </div>
+    </otui-card>
+    } @if (currentStep === 1) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'Service Selection'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>Choose which services and applications to enable.</p>
+
+      <otui-heading
+        [text]="'Core Infrastructure'"
+        [color]="'#111827'"
+        [size]="'1.125rem'"
+      ></otui-heading>
+      <div class="service-list">
+        @for (id of coreServiceIds; track id) {
+        <label class="service-item">
+          <lib-checkbox [value]="true" [disabled]="true"></lib-checkbox>
+          <span>{{ getServiceName(id) }}</span>
+          <otui-badge variant="primary">Required</otui-badge>
+        </label>
+        }
+      </div>
+
+      @if (clientApps.length > 0) {
+      <div class="section-header">
+        <otui-heading
+          [text]="'Applications'"
+          [color]="'#111827'"
+          [size]="'1.125rem'"
+        ></otui-heading>
+        <a class="select-all-toggle" (click)="toggleAllClientApps()">{{
+          allClientAppsSelected ? 'Deselect All' : 'Select All'
+        }}</a>
+      </div>
+      <div class="service-list">
+        @for (app of clientApps; track app.appId) {
+        <label class="service-item">
+          <lib-checkbox
+            [value]="isAppSelected(app.appId)"
+            (changeEvent)="setAppSelection(app.appId, $event)"
+          ></lib-checkbox>
+          <span>{{ app.name }}</span>
+        </label>
+        }
+      </div>
+      }
+
+      <div class="section-header">
+        <otui-heading
+          [text]="'Backend Services'"
+          [color]="'#111827'"
+          [size]="'1.125rem'"
+        ></otui-heading>
+        <a class="select-all-toggle" (click)="toggleAllBackends()">{{
+          allBackendsSelected ? 'Deselect All' : 'Select All'
+        }}</a>
+      </div>
+      <div class="service-list">
+        @for (id of nonCoreBackendServiceIds; track id) {
+        <label class="service-item">
+          <lib-checkbox
+            [value]="isBackendSelected(id)"
+            (changeEvent)="setBackendSelection(id, $event)"
+          ></lib-checkbox>
+          <span>{{ getServiceName(id) }}</span>
+        </label>
+        }
+      </div>
+
+      @if (adminApps.length > 0) {
+      <div class="section-header">
+        <otui-heading
+          [text]="'Administration'"
+          [color]="'#111827'"
+          [size]="'1.125rem'"
+        ></otui-heading>
+        <a class="select-all-toggle" (click)="toggleAllAdminApps()">{{
+          allAdminAppsSelected ? 'Deselect All' : 'Select All'
+        }}</a>
+      </div>
+      <div class="service-list">
+        @for (app of adminApps; track app.appId) {
+        <label class="service-item">
+          <lib-checkbox
+            [value]="isAppSelected(app.appId)"
+            (changeEvent)="setAppSelection(app.appId, $event)"
+          ></lib-checkbox>
+          <span>{{ app.name }}</span>
+        </label>
+        }
+      </div>
+      }
+
+      <div class="form-actions">
+        <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        <otui-button variant="primary" (click)="saveConfig()"
+          >Continue</otui-button
+        >
+      </div>
+    </otui-card>
+    } @if (currentStep === 2) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'OAuth Providers'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>Configure identity providers for your platform.</p>
+      <div class="oauth-list">
+        @for (provider of oauthProviders; track provider.name) {
+        <otui-card class="oauth-provider">
+          <div class="oauth-header">
+            <span class="provider-name">{{ provider.name }}</span>
+            <otui-badge
+              [variant]="
+                provider.status === 'configured'
+                  ? 'success'
+                  : provider.status === 'error'
+                  ? 'error'
+                  : 'warning'
+              "
+              >{{ provider.status }}</otui-badge
+            >
+          </div>
+          <div class="form-group">
+            <lib-checkbox
+              [(ngModel)]="oauthProviderValues[provider.name].enabled"
+              [label]="'Enable ' + provider.name"
+            ></lib-checkbox>
+          </div>
+          @if (oauthProviderValues[provider.name].enabled) {
+          <div class="form-group">
+            <label>Client ID</label>
+            <lib-text-input
+              [(ngModel)]="oauthProviderValues[provider.name].clientId"
+            />
+          </div>
+          <div class="form-group">
+            <label>Client Secret</label>
+            <lib-text-input
+              type="password"
+              [(ngModel)]="oauthProviderValues[provider.name].clientSecret"
+            />
+          </div>
+          <div class="form-group">
+            <label>Redirect URI</label>
+            <lib-text-input
+              [(ngModel)]="oauthProviderValues[provider.name].redirectUri"
+              [placeholder]="'https://your-domain.com/auth/callback'"
+            />
+          </div>
+          <otui-button
+            variant="secondary"
+            (click)="testProvider(provider.name)"
+            [disabled]="testingProvider === provider.name"
+          >
+            {{
+              testingProvider === provider.name
+                ? 'Testing...'
+                : 'Test Connection'
+            }}
+          </otui-button>
+          }
+        </otui-card>
+        }
+      </div>
+      <div class="form-actions">
+        <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        <otui-button variant="primary" (click)="saveOAuthConfig()"
+          >Continue</otui-button
+        >
+      </div>
+    </otui-card>
+    } @if (currentStep === 3) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'Operator Account'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>
+        Enter the platform owner details. The account will be created when the
+        stack deploys in the final step.
+      </p>
+      <div class="form-group">
+        <label for="operatorName">Full Name</label>
+        <lib-text-input id="operatorName" [(ngModel)]="operatorName" />
+      </div>
+      <div class="form-group">
+        <label for="operatorEmail">Email</label>
+        <lib-text-input
+          id="operatorEmail"
+          type="text"
+          [(ngModel)]="operatorEmail"
+        />
+      </div>
+      <div class="form-group">
+        <label for="operatorPassword">Password</label>
+        <lib-text-input
+          id="operatorPassword"
+          type="password"
+          [(ngModel)]="operatorPassword"
+        />
+      </div>
+      <div class="form-group">
+        <label for="operatorPasswordConfirm">Confirm Password</label>
+        <lib-text-input
+          id="operatorPasswordConfirm"
+          type="password"
+          [(ngModel)]="operatorPasswordConfirm"
+        />
+      </div>
+      @if (operatorPassword && operatorPasswordConfirm && operatorPassword !==
+      operatorPasswordConfirm) {
+      <otui-state-message
+        [kind]="'error'"
+        [headline]="'Passwords do not match'"
+      ></otui-state-message>
+      }
+      <div class="form-actions">
+        <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        <otui-button
+          variant="primary"
+          (click)="saveOperator()"
+          [disabled]="
+            !operatorName ||
+            !operatorEmail ||
+            !operatorPassword ||
+            operatorPassword !== operatorPasswordConfirm ||
+            operatorPassword.length < 8
+          "
+        >
+          Save &amp; Continue
+        </otui-button>
+      </div>
+    </otui-card>
+    } @if (currentStep === 4) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'Environment Settings & Secrets'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>
+        Configure this environment in layers: reusable connections, shared
+        defaults, target-specific overrides, and secrets.
+      </p>
+
+      <div class="step-toolbar">
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'targets'"
+          (click)="setSettingsSection('targets')"
+        >
+          Targets
+        </button>
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'connections'"
+          (click)="setSettingsSection('connections')"
+        >
+          Connections
+        </button>
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'global'"
+          (click)="setSettingsSection('global')"
+        >
+          Global
+        </button>
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'groups'"
+          (click)="setSettingsSection('groups')"
+        >
+          Groups
+        </button>
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'secrets'"
+          (click)="setSettingsSection('secrets')"
+        >
+          Secrets
+        </button>
+        <button
+          type="button"
+          class="target-chip"
+          [class.active]="settingsSection === 'overview'"
+          (click)="setSettingsSection('overview')"
+        >
+          Overview
+        </button>
+      </div>
+
+      <otui-card class="settings-stage">
+        <div class="settings-card-header">
+          <div>
+            <strong>{{ settingsSectionTitle }}</strong>
+            <p>{{ settingsSectionDescription }}</p>
+          </div>
+        </div>
+
+        <div class="settings-panel">
+          @if (settingsSection === 'overview') {
+          <div class="overview-grid">
+            <otui-card class="summary-card">
+              <otui-heading
+                [text]="'Summary'"
+                [color]="'#111827'"
+                [size]="'1.125rem'"
+              ></otui-heading>
+              <div class="summary-stat">
+                <span>Connections</span>
+                <strong>{{ connectionSlots.length }}</strong>
+              </div>
+              <div class="summary-stat">
+                <span>Targets</span>
+                <strong>{{ settingsCatalog.targets.length }}</strong>
+              </div>
+              <div class="summary-stat">
+                <span>Recommended Secrets</span>
+                <strong>{{ discoveredSecrets.length }}</strong>
+              </div>
+            </otui-card>
+
+            <otui-card class="summary-card">
+              <otui-heading
+                [text]="'Groups'"
+                [color]="'#111827'"
+                [size]="'1.125rem'"
+              ></otui-heading>
+              @for (group of settingsGroups; track group.id) {
+              <div class="summary-group">
+                <strong>{{ group.label }}</strong>
+                <span>{{ group.description }}</span>
+              </div>
+              }
+            </otui-card>
+          </div>
+          } @if (settingsSection === 'connections') {
+          <div class="section-toolbar">
+            <otui-button
+              variant="secondary"
+              (click)="addConnectionSlot('postgres')"
+              >Add Postgres</otui-button
+            >
+            <otui-button
+              variant="secondary"
+              (click)="addConnectionSlot('redis')"
+              >Add Redis</otui-button
+            >
+          </div>
+          <div class="settings-card-stack">
+            @for (slot of connectionSlots; track slot.id) {
+            <otui-card class="settings-card">
+              <div class="settings-card-header">
+                <div>
+                  <strong>{{ slot.id }}</strong>
+                  <p>{{ slot.infra | titlecase }} connection</p>
+                </div>
+                <otui-button
+                  variant="secondary"
+                  (click)="removeConnectionSlot(slot.id)"
+                  >Remove</otui-button
+                >
+              </div>
+              <div class="settings-grid">
+                <div class="form-group">
+                  <label>Slot ID</label>
+                  <lib-text-input [(ngModel)]="slot.id" />
+                </div>
+                <div class="form-group">
+                  <label>Provision Mode</label>
+                  <select [(ngModel)]="slot.provisionMode">
+                    <option value="managed">Managed</option>
+                    <option value="external">External</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Host</label>
+                  <lib-text-input [(ngModel)]="slot.host" />
+                </div>
+                <div class="form-group">
+                  <label>Port</label>
+                  <lib-text-input [(ngModel)]="slot.port" />
+                </div>
+                <div class="form-group">
+                  <label>Database / Index</label>
+                  <lib-text-input [(ngModel)]="slot.databaseName" />
+                </div>
+                <div class="form-group">
+                  <label>Username</label>
+                  <lib-text-input [(ngModel)]="slot.username" />
+                </div>
+                <div class="form-group">
+                  <label>Password Secret Key</label>
+                  <lib-text-input [(ngModel)]="slot.passwordKey" />
+                </div>
+              </div>
+            </otui-card>
+            }
+          </div>
+          } @if (settingsSection === 'global') {
+          <div class="settings-card-stack">
+            @for (field of getGlobalFields(); track field.id) {
+            <otui-card class="settings-card">
+              <label>{{ field.label }}</label>
+              <lib-text-input
+                [ngModel]="globalValue(field)"
+                (ngModelChange)="updateGlobalValue(field, $event)"
+                [placeholder]="field.placeholder || ''"
+              />
+            </otui-card>
+            }
+          </div>
+          } @if (settingsSection === 'groups') {
+          <div class="target-toolbar">
+            @for (group of settingsGroups; track group.id) {
+            <button
+              type="button"
+              class="target-chip"
+              [class.active]="selectedSettingsGroupId === group.id"
+              (click)="selectSettingsGroup(group.id)"
+            >
+              {{ group.label }}
+            </button>
+            }
+          </div>
+          @if (selectedSettingsGroup) {
+          <p class="section-copy">{{ selectedSettingsGroup.description }}</p>
+          }
+          <div class="settings-card-stack">
+            @for (field of getGroupFields(selectedSettingsGroupId); track
+            field.id) {
+            <otui-card class="settings-card">
+              <label>{{ field.label }}</label>
+              <lib-text-input
+                [ngModel]="groupValue(selectedSettingsGroupId, field)"
+                (ngModelChange)="
+                  updateGroupValue(selectedSettingsGroupId, field, $event)
+                "
+                [placeholder]="field.placeholder || ''"
+              />
+            </otui-card>
+            }
+          </div>
+          } @if (settingsSection === 'targets') {
+          <div class="target-toolbar">
+            @for (target of settingsCatalog.targets; track target.id) {
+            <button
+              type="button"
+              class="target-chip"
+              [class.active]="selectedSettingsTargetId === target.id"
+              (click)="selectSettingsTarget(target.id)"
+            >
+              {{ target.label }}
+            </button>
+            }
+          </div>
+
+          @if (selectedSettingsTarget) {
+          <otui-card class="settings-card">
+            <div class="settings-card-header">
+              <div>
+                <strong>{{ selectedSettingsTarget.label }}</strong>
+                <p>
+                  {{ selectedSettingsTarget.targetKind | titlecase }} settings
+                </p>
+              </div>
+              <otui-badge variant="primary">{{
+                selectedSettingsTarget.groupId
+              }}</otui-badge>
+            </div>
+
+            @if (selectedSettingsTarget.connections.length > 0) {
+            <div class="settings-card-stack compact">
+              @for (connection of selectedSettingsTarget.connections; track
+              connection.fieldId) {
+              <div class="form-group">
+                <label>{{ connection.label }}</label>
+                <select
+                  [ngModel]="
+                    selectedConnectionId(
+                      selectedSettingsTarget,
+                      connection.infra
+                    )
+                  "
+                  (ngModelChange)="
+                    updateConnectionSelection(
+                      selectedSettingsTarget,
+                      connection.infra,
+                      $event
+                    )
+                  "
+                >
+                  <option value="">Select a connection</option>
+                  @for (slot of connectionOptions(connection.infra); track
+                  slot.id) {
+                  <option [value]="slot.id">
+                    {{ slot.id }} ({{ slot.host }}:{{ slot.port }})
+                  </option>
+                  }
+                </select>
+              </div>
+              }
+            </div>
+            }
+
+            <div class="settings-card-stack">
+              @for (field of selectedSettingsTarget.fields; track field.id) {
+              <div class="settings-card field-card">
+                <div class="field-card-header">
+                  <label>{{ field.label }}</label>
+                  @if (targetOwnValue(selectedSettingsTarget, field)) {
+                  <otui-button
+                    variant="secondary"
+                    (click)="clearTargetOverride(selectedSettingsTarget, field)"
+                    >Clear Override</otui-button
+                  >
+                  }
+                </div>
+                <lib-text-input
+                  [ngModel]="
+                    targetOwnValue(selectedSettingsTarget, field) ||
+                    targetValue(selectedSettingsTarget, field)
+                  "
+                  (ngModelChange)="
+                    updateTargetValue(selectedSettingsTarget, field, $event)
+                  "
+                  [placeholder]="field.placeholder || ''"
+                />
+                <p class="field-hint">
+                  Effective value:
+                  {{ targetValue(selectedSettingsTarget, field) || 'Not set' }}
+                </p>
+              </div>
+              }
+            </div>
+          </otui-card>
+          } } @if (settingsSection === 'secrets') {
+          <div class="settings-card-stack">
+            @for (secret of discoveredSecrets; track secret.id) {
+            <otui-card class="settings-card">
+              <div class="settings-card-header">
+                <div>
+                  <strong>{{ secret.label }}</strong>
+                  <p>{{ secret.targetLabel || secret.targetId }}</p>
+                </div>
+                <otui-badge variant="warning">{{ secret.envKey }}</otui-badge>
+              </div>
+              <lib-text-input
+                type="password"
+                [ngModel]="secretValue(secret)"
+                (ngModelChange)="updateSecretValue(secret, $event)"
+                [placeholder]="'secret value'"
+              />
+            </otui-card>
+            }
+
+            <otui-card class="settings-card">
+              <otui-heading
+                [text]="'Additional Secrets'"
+                [color]="'#111827'"
+                [size]="'1.125rem'"
+              ></otui-heading>
+              <div class="secret-list">
+                @for (entry of secretEntries; track $index) {
+                <div class="secret-row">
+                  <lib-text-input
+                    [(ngModel)]="entry.key"
+                    [placeholder]="'JWT_SECRET'"
+                  />
+                  <lib-text-input
+                    [(ngModel)]="entry.value"
+                    type="password"
+                    [placeholder]="'secret value'"
+                  />
+                  <otui-button
+                    variant="secondary"
+                    (click)="removeSecretEntry($index)"
+                    >Remove</otui-button
+                  >
+                </div>
+                }
+              </div>
+              <otui-button variant="secondary" (click)="addSecretEntry()"
+                >Add Secret</otui-button
+              >
+            </otui-card>
+          </div>
+          }
+        </div>
+      </otui-card>
+
+      <div class="form-actions">
+        <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        <otui-button variant="primary" (click)="saveEnvironmentSettings()"
+          >Continue</otui-button
+        >
+      </div>
+    </otui-card>
+    } @if (currentStep === 5) {
+    <otui-card class="step">
+      <otui-heading
+        [text]="'Finalize & Deploy'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>
+        Deploy your platform services and activate the setup. This will
+        provision infrastructure and start all services.
+      </p>
+      <div class="deploy-pipeline">
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'building'"
+          [class.done]="deployPhaseDone('building')"
+          [class.errored]="deployPhase === 'error' && deployStep === 'building'"
+        >
+          <span class="phase-icon">{{
+            deployPhaseDone('building')
+              ? '✓'
+              : deployPhase === 'building'
+              ? '⟳'
+              : '○'
+          }}</span>
+          <span>Build artifacts</span>
+          <span class="phase-status">{{
+            deployPhase === 'building'
+              ? 'running...'
+              : deployPhaseDone('building')
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'infra'"
+          [class.done]="deployPhaseDone('infra')"
+          [class.errored]="deployPhase === 'error' && deployStep === 'infra'"
+        >
+          <span class="phase-icon">{{
+            deployPhaseDone('infra') ? '✓' : deployPhase === 'infra' ? '⟳' : '○'
+          }}</span>
+          <span>Provision infrastructure</span>
+          <span class="phase-status">{{
+            deployPhase === 'infra'
+              ? 'running...'
+              : deployPhaseDone('infra')
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'db'"
+          [class.done]="deployPhaseDone('db')"
+          [class.errored]="deployPhase === 'error' && deployStep === 'db'"
+        >
+          <span class="phase-icon">{{
+            deployPhaseDone('db') ? '✓' : deployPhase === 'db' ? '⟳' : '○'
+          }}</span>
+          <span>Initialize databases</span>
+          <span class="phase-status">{{
+            deployPhase === 'db'
+              ? 'running...'
+              : deployPhaseDone('db')
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'deploying'"
+          [class.done]="deployPhaseDone('deploying')"
+          [class.errored]="
+            deployPhase === 'error' && deployStep === 'deploying'
+          "
+        >
+          <span class="phase-icon">{{
+            deployPhaseDone('deploying')
+              ? '✓'
+              : deployPhase === 'deploying'
+              ? '⟳'
+              : '○'
+          }}</span>
+          <span>Deploy services</span>
+          <span class="phase-status">{{
+            deployPhase === 'deploying'
+              ? 'running...'
+              : deployPhaseDone('deploying')
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'activating'"
+          [class.done]="deployPhaseDone('activating')"
+          [class.errored]="
+            deployPhase === 'error' && deployStep === 'activating'
+          "
+        >
+          <span class="phase-icon">{{
+            deployPhaseDone('activating')
+              ? '✓'
+              : deployPhase === 'activating'
+              ? '⟳'
+              : '○'
+          }}</span>
+          <span>Create owner account</span>
+          <span class="phase-status">{{
+            deployPhase === 'activating'
+              ? 'running...'
+              : deployPhaseDone('activating')
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+        <div
+          class="deploy-phase"
+          [class.active]="deployPhase === 'rebooting'"
+          [class.done]="deployPhase === 'done'"
+          [class.errored]="
+            deployPhase === 'error' && deployStep === 'rebooting'
+          "
+        >
+          <span class="phase-icon">{{
+            deployPhase === 'done'
+              ? '✓'
+              : deployPhase === 'rebooting'
+              ? '⟳'
+              : '○'
+          }}</span>
+          <span>Finalize setup</span>
+          <span class="phase-status">{{
+            deployPhase === 'rebooting'
+              ? 'redirecting...'
+              : deployPhase === 'done'
+              ? 'done'
+              : ''
+          }}</span>
+        </div>
+      </div>
+      @if (deployMessage) {
+      <p class="deploy-message">{{ deployMessage }}</p>
+      } @if (deployError) {
+      <otui-state-message
+        [kind]="'error'"
+        [headline]="deployError"
+      ></otui-state-message>
+      }
+      <div class="form-actions">
+        <otui-button
+          variant="secondary"
+          (click)="prevStep()"
+          [disabled]="deployPhase !== 'idle'"
+          >Back</otui-button
+        >
+        @if (deployPhase === 'idle') {
+        <otui-button variant="primary" (click)="runDeployPipeline()"
+          >Deploy &amp; Launch Platform</otui-button
+        >
+        } @if (deployPhase === 'error') {
+        <otui-button variant="primary" (click)="runDeployPipeline()"
+          >Retry</otui-button
+        >
+        }
+      </div>
+    </otui-card>
+    }
+  </main>
+</div>

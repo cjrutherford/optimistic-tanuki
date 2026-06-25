@@ -48,6 +48,10 @@ This module provides:
 - `cmd/admin-env`
 - `cmd/deployment-inventory`
 
+The repo now also carries a checked-in production preset at
+`ops/deployments/production.yaml`. The new service mode reads that file as the
+operator source of truth for the first control-center slice.
+
 ## Build
 
 ```bash
@@ -144,7 +148,58 @@ Useful keys:
 - `space`: toggle the active service from the `Services` document
 - `s`: save deployment/secrets files
 - `g`: regenerate the workspace artifacts
+- `p`: open the deploy dialog from `Apply`
 - `r`: refresh diagnostics
+
+Rollout behavior:
+
+- the local TUI can trigger a real deployment from the host machine
+- Compose deploys reuse the existing production script:
+  - `pnpm run docker:prod:bootstrap`
+  - `scripts/docker-compose-deploy.sh`
+- the selected immutable tag is passed through as `PRODUCTION_IMAGE_TAG`
+- rollout state is written to `tmp/admin-env/rollouts/<deployment>.json`
+- Kubernetes deploys continue to apply the generated `dist/admin-env/<env>/k8s`
+  output
+
+### Service mode
+
+```bash
+cd tools/admin-env-wizard
+GOCACHE=/tmp/go-build go run ./cmd/admin-env serve \
+  -deployment ../../ops/deployments/production.yaml \
+  -address :8098
+```
+
+Environment variable equivalents:
+
+- `ADMIN_ENV_DEPLOYMENT_PATH`
+- `ADMIN_ENV_SECRETS_PATH`
+- `ADMIN_ENV_ADDRESS`
+- `ADMIN_ENV_WORKSPACE_ROOT`
+- `ADMIN_ENV_COMPOSE_ENV_FILE`
+
+Current endpoints:
+
+- `/healthz`
+- `/api/status/public`
+- `/api/rollouts/preview?tag=<image-tag>`
+- `/api/rollouts/latest`
+- `/api/rollouts/start`
+- `/api/oauth/inspect`
+
+### Compose service mode
+
+The containerized service can also trigger host-side Compose deployments when it
+has:
+
+- the repo mounted at `ADMIN_ENV_WORKSPACE_ROOT`
+- access to `/var/run/docker.sock`
+- an optional Compose env file through `ADMIN_ENV_COMPOSE_ENV_FILE`
+
+The checked-in `docker-compose*.yaml` files now wire those mounts for
+`admin-env` so the owner console and the service mode reuse the same deployment
+path as production.
 
 ## Generator Model
 
@@ -229,6 +284,33 @@ If both targets exist, the default action applies both in order.
 ```bash
 docker compose -f dist/admin-env/<env>/compose/docker-compose.yaml up -d
 ```
+
+### Compose rollout using the production pipeline
+
+For production-style Compose updates, use the existing repo deployment entrypoint
+instead of invoking `docker compose pull` and `up` by hand:
+
+```bash
+PRODUCTION_IMAGE_TAG=sha-abcdef0 pnpm run docker:prod:bootstrap
+```
+
+That script:
+
+- validates the image tag shape
+- batches pulls with `DOCKER_PULL_BATCH_SIZE`
+- recreates containers with `docker compose up -d --no-build --force-recreate`
+- runs `pnpm run docker:prod:seed`
+- cleans up old images while preserving the active and optional rollback tags
+
+Optional environment variables:
+
+- `COMPOSE_ENV_FILE=/path/to/production.env`
+- `DOCKER_PULL_BATCH_SIZE=4`
+- `ROLLBACK_IMAGE_TAG=sha-previous`
+
+The admin TUI and admin API both reuse this script for Compose rollouts so local
+operator actions and automated service-triggered deployments follow the same
+path.
 
 ### Kubernetes
 

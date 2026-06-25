@@ -273,6 +273,32 @@ services:
     image: cjrutherford/optimistic_tanuki_owner-console:${PRODUCTION_IMAGE_TAG:-latest}
     environment:
       <<: *gateway_client_env
+      ADMIN_API_URL: ${ADMIN_API_URL:-http://admin-api:8098}
+    depends_on:
+      - admin-api
+
+  admin-api:
+    container_name: ot_admin_api
+    build:
+      context: .
+      dockerfile: ./apps/admin-api/Dockerfile
+    image: cjrutherford/optimistic_tanuki_admin-api:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${ADMIN_API_PORT:-8098}:8098'
+    environment:
+      ADMIN_API_DEPLOYMENT_PATH: /app/ops/deployments/production.yaml
+      ADMIN_API_SECRETS_PATH: /app/.secrets
+      ADMIN_API_WORKSPACE_ROOT: /workspace
+      ADMIN_API_PORT: 8098
+      PRODUCTION_IMAGE_TAG: ${PRODUCTION_IMAGE_TAG:-latest}
+    volumes:
+      - ./ops:/app/ops
+      - ./.secrets:/app/.secrets
+      - ./:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - gateway
+      - authentication
 
   leads-app:
     container_name: ot_leads_app

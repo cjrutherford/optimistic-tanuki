@@ -7,9 +7,10 @@
 # - route / to the host's frontend service
 # - route /api to gateway:3000
 # - route /ws to the gateway websocket port required by that host
-# - terminate TLS at ingress
+# - terminate TLS at ingress with certbot-synced Kubernetes TLS secrets
 #
-# Adjust tls.secretName values to match your certificate strategy.
+# Adjust tls.secretName values to match the secrets created from your certbot
+# certificate files.
 #
 ---
 apiVersion: networking.k8s.io/v1
@@ -24,6 +25,8 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
+    # These secrets should be refreshed from certbot whenever the certificates
+    # renew.
     - secretName: christopherrutherford-net-public-tls
       hosts:
         - christopherrutherford.net

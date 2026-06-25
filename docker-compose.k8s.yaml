@@ -139,6 +139,26 @@ services:
       dockerfile: ./apps/owner-console/Dockerfile
     ports:
       - '8084:4000'
+    environment:
+      - ADMIN_ENV_API_URL=http://admin-env:8098
+    depends_on:
+      - admin-env
+
+  admin-env:
+    container_name: ot_admin_env
+    build:
+      context: .
+      dockerfile: ./tools/admin-env-wizard/Dockerfile
+    ports:
+      - '8098:8098'
+    environment:
+      - ADMIN_ENV_DEPLOYMENT_PATH=/app/ops/deployments/production.yaml
+      - ADMIN_ENV_ADDRESS=:8098
+      - ADMIN_ENV_WORKSPACE_ROOT=/workspace
+      - PRODUCTION_IMAGE_TAG=${PRODUCTION_IMAGE_TAG:-latest}
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
 
   marketing-generator:
     container_name: ot_marketing_generator

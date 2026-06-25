@@ -126,3 +126,32 @@ Deployment should:
    to `/config/nginx/tanuki-upstream-host.inc`
 2. replace the sample hostname with the real Tailscale or internal DNS host
 3. leave the tracked vhost files unchanged
+
+## Injection Checklist
+
+Place each item exactly here:
+
+1. Upstream host include:
+   `/config/nginx/tanuki-upstream-host.inc`
+2. Shared proxy headers include:
+   `/config/nginx/tanuki-proxy.inc`
+3. Shared app server include:
+   `/config/nginx/tanuki-app-server.inc`
+4. Shared websocket app server include:
+   `/config/nginx/tanuki-app-server-with-ws.inc`
+5. Shared error-page include:
+   `/config/nginx/error-pages.inc`
+6. Main public vhost file:
+   `/config/nginx/site-confs/default-site.conf`
+7. Additional public vhost file:
+   `/config/nginx/proxy-confs/experiments.conf`
+8. Error page assets:
+   `/config/www/_errors/`
+
+Operator notes:
+
+- keep the tracked repo sample host as a dummy value only
+- inject the real Tailscale hostname at deploy time
+- do not commit the real backend hostname into the repo
+- after changing hostnames, reload nginx and verify `/api` and `/ws` on each
+  affected public domain

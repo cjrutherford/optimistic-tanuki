@@ -2,8 +2,20 @@ import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
 import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import { BootstrapOnboardingComponent } from './components/bootstrap-onboarding.component';
 
 export const appRoutes: Route[] = [
+  {
+    path: 'setup',
+    component: BootstrapOnboardingComponent,
+  },
+  {
+    path: 'control-center',
+    loadComponent: () =>
+      import('./components/public-control-center.component').then(
+        (m) => m.PublicControlCenterComponent
+      ),
+  },
   {
     path: 'login',
     loadComponent: () =>
@@ -51,6 +63,20 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./components/operations-workspace.component').then(
             (m) => m.OperationsWorkspaceComponent
+          ),
+      },
+      {
+        path: 'control-center',
+        loadComponent: () =>
+          import('./components/admin-control-center.component').then(
+            (m) => m.AdminControlCenterComponent
+          ),
+      },
+      {
+        path: 'oauth-inspector',
+        loadComponent: () =>
+          import('./components/admin-control-center.component').then(
+            (m) => m.AdminControlCenterComponent
           ),
       },
       {
@@ -253,5 +279,5 @@ export const appRoutes: Route[] = [
       { path: '', redirectTo: 'overview', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '', redirectTo: '/setup', pathMatch: 'full' },
 ];

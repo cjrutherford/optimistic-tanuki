@@ -25,6 +25,7 @@ const (
 	ProviderAkamai Provider = "akamai"
 	ProviderVultr  Provider = "vultr"
 	ProviderOCI    Provider = "oci"
+	ProviderAWS    Provider = "aws"
 )
 
 type InfraKind string
@@ -137,8 +138,9 @@ func (e *EnvironmentDefinition) Validate() error {
 	if e.Provider != "" &&
 		e.Provider != ProviderAkamai &&
 		e.Provider != ProviderVultr &&
-		e.Provider != ProviderOCI {
-		return fmt.Errorf("invalid provider: must be 'akamai', 'vultr', or 'oci'")
+		e.Provider != ProviderOCI &&
+		e.Provider != ProviderAWS {
+		return fmt.Errorf("invalid provider: must be 'akamai', 'vultr', 'oci', or 'aws'")
 	}
 	if e.ApplyCompose && !containsTarget(e.Targets, TargetCompose) {
 		return fmt.Errorf("cannot apply compose without selecting compose target")

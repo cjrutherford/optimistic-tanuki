@@ -4,7 +4,7 @@
 # examples. Keep this file aligned with:
 # - k8s/base/config/app-registry.json
 # - docs/operators/nginx/*.conf
-# - the real public DNS and TLS certificates
+# - the real public DNS and certbot-managed TLS secrets
 #
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -18,6 +18,8 @@ metadata:
 spec:
   ingressClassName: nginx
   tls:
+    # These secrets are expected to be kept in sync from certbot output.
+    # See docs/operators/multi-domain-deployments.md for the sync contract.
     - secretName: christopherrutherford-net-public-tls
       hosts:
         - christopherrutherford.net

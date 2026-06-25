@@ -108,7 +108,7 @@ Recommended ingress pattern:
 - route `/` to the host’s frontend service
 - route `/api` to `gateway:3000`
 - route `/ws` to the gateway websocket port required by that host
-- terminate TLS at ingress with cert coverage matching the public domain groups
+- terminate TLS at ingress with Kubernetes TLS secrets kept in sync from certbot
 
 ## What Can Go Wrong
 
@@ -142,8 +142,43 @@ Cause:
 
 Recovery:
 
-- audit every public host against the TLS secret or cert-manager certificate spec
+- audit every public host against the certbot certificate set and the Kubernetes TLS secret contents
 - prefer explicit host grouping by apex domain
+
+## Certbot With Kubernetes Ingress
+
+This repo’s ingress manifests assume nginx ingress terminates TLS from standard
+`kubernetes.io/tls` secrets. They do not assume `cert-manager`.
+
+If you want certbot to remain the certificate authority workflow, use this
+contract:
+
+- certbot obtains and renews the certificates outside the app manifests
+- each certificate group is synced into the cluster as a TLS secret
+- ingress references those stable secret names
+- renewals re-apply the same secret names in place
+
+Recommended grouping:
+
+- `christopherrutherford-net-public-tls`
+  - `christopherrutherford.net`
+  - `digital-homestead.christopherrutherford.net`
+  - `fin-commander.experiments.christopherrutherford.net`
+  - `lead-tracker.experiments.christopherrutherford.net`
+  - `video.experiments.christopherrutherford.net`
+  - `business.experiments.christopherrutherford.net`
+- `optimistic-tanuki-public-tls`
+  - `optimistic-tanuki.com`
+- `forgeofwill-public-tls`
+  - `forgeofwill.com`
+- `hopefulaspirationsindustries-public-tls`
+  - `hopefulaspirationsindustries.com`
+  - `hardware.hopefulaspirationsindustries.com`
+  - `store.hopefulaspirationsindustries.com`
+- `towne-square-public-tls`
+  - `towne-square.com`
+
+The certbot sync step can be modeled with `kubectl create secret tls ... --dry-run=client -o yaml | kubectl apply -f -` during deployment or renewal automation. The critical constraint is that the secret names in ingress stay stable.
 
 ### Bypassing The Intended Edge
 
@@ -241,7 +276,7 @@ Recovery:
 1. Freeze the public host inventory.
 2. Ensure the runtime registry matches those hosts exactly.
 3. Model the same host inventory in ingress manifests.
-4. Confirm TLS secrets or certificate resources cover the full set.
+4. Confirm certbot covers the full host set and sync the resulting certificate files into the ingress TLS secret names.
 5. Route `/api` and `/ws` deliberately per host instead of relying on accidental frontend proxy behavior.
 6. Reduce public-facing client and gateway services to `ClusterIP` if ingress is the authoritative edge.
 7. Test each public host for:
@@ -250,6 +285,47 @@ Recovery:
    - `/api` response
    - websocket connection where applicable
 8. Cut DNS gradually if possible and watch for stale resolution.
+
+## Deployment Checklist
+
+1. Issue or renew the public certificates with certbot for the exact host groups above.
+2. Sync each certbot certificate and private key pair into the cluster:
+   - `christopherrutherford-net-public-tls`
+   - `optimistic-tanuki-public-tls`
+   - `forgeofwill-public-tls`
+   - `hopefulaspirationsindustries-public-tls`
+   - `towne-square-public-tls`
+3. Apply the ingress and confirm each host resolves to the nginx ingress controller.
+4. Validate `https://<host>/api/health` or equivalent before testing login flows.
+
+## Compose Deployment Checklist
+
+Use this when the public edge is nginx on one machine and the app stack is
+Docker Compose on another.
+
+1. Copy [tanuki-upstream-host.inc.sample](/home/cjrutherford/workspace/optimistic-tanuki/docs/operators/nginx/tanuki-upstream-host.inc.sample) to `/config/nginx/tanuki-upstream-host.inc`.
+2. Set the real backend machine in that file:
+   - `set $tanuki_upstream_host your-tailnet-host.ts.net;`
+   - `set $tanuki_upstream_proto http;`
+3. Copy the checked-in nginx includes and vhost files into place:
+   - `docs/operators/nginx/tanuki-proxy.inc` to `/config/nginx/tanuki-proxy.inc`
+   - `docs/operators/nginx/tanuki-app-server.inc` to `/config/nginx/tanuki-app-server.inc`
+   - `docs/operators/nginx/tanuki-app-server-with-ws.inc` to `/config/nginx/tanuki-app-server-with-ws.inc`
+   - `docs/operators/nginx/error-pages.inc` to `/config/nginx/error-pages.inc`
+   - `docs/operators/nginx/default-site.conf` to `/config/nginx/site-confs/default-site.conf`
+   - `docs/operators/nginx/experiments.conf` to `/config/nginx/proxy-confs/experiments.conf`
+4. Copy the branded error pages from `docs/operators/nginx/www/_errors/` to `/config/www/_errors/`.
+5. Confirm the runtime registry still matches every public host.
+6. On the Compose host, set the deployment inputs:
+   - `PRODUCTION_IMAGE_TAG=sha-...`
+   - optional `COMPOSE_ENV_FILE=/path/to/production.env`
+   - optional `DOCKER_PULL_BATCH_SIZE=4`
+   - optional `ROLLBACK_IMAGE_TAG=sha-previous`
+7. Trigger the rollout through the standard production script:
+   - `pnpm run docker:prod:bootstrap`
+   - or through `admin-env tui` / `admin-env serve`, which now reuse the same script
+8. Inspect rollout state at `tmp/admin-env/rollouts/production.json`.
+9. Validate each public host for page load, login, `/api`, and websocket behavior where applicable.
 
 ## Files To Inspect
 

@@ -1,0 +1,379 @@
+.bootstrap-onboarding {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.onboarding-header p {
+  color: var(--foreground, #6b7280);
+  margin-bottom: 1.5rem;
+}
+
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+}
+
+.progress-step {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.progress-step.active {
+  background: #2563eb;
+  color: white;
+}
+
+.progress-step.completed {
+  background: #16a34a;
+  color: white;
+}
+
+.progress-line {
+  width: 40px;
+  height: 2px;
+  background: #e5e7eb;
+  margin: 0 0.5rem;
+}
+
+.progress-line.completed {
+  background: #16a34a;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.inline-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inline-actions-stacked {
+  align-items: stretch;
+}
+
+.identity-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.identity-main {
+  display: grid;
+  gap: 1rem;
+}
+
+.identity-section,
+.identity-summary {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.875rem;
+  padding: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.identity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.identity-sidebar {
+  min-width: 0;
+}
+
+.service-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.select-all-toggle {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  color: #2563eb;
+  user-select: none;
+}
+
+.select-all-toggle:hover {
+  text-decoration: underline;
+}
+
+.oauth-list {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.oauth-provider {
+  padding: 1rem;
+}
+
+.oauth-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.provider-name {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.step-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.25rem 0 1rem;
+}
+
+.settings-stage {
+  padding: 1.1rem;
+  background: linear-gradient(180deg, #fcfdff 0%, #f6f9ff 100%);
+  border: 1px solid #dbe7ff;
+}
+
+.settings-panel {
+  min-width: 0;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card,
+.settings-card {
+  padding: 1rem;
+}
+
+.summary-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-stat:last-child {
+  border-bottom: none;
+}
+
+.summary-group {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.summary-group:last-child {
+  border-bottom: none;
+}
+
+.section-toolbar,
+.target-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.target-chip {
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.target-chip.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.settings-card-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.settings-card-stack.compact {
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.settings-card-header,
+.field-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.settings-card-header p,
+.field-hint,
+.section-copy {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.field-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 0.85rem;
+}
+
+.secret-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.secret-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.deploy-pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.deploy-phase {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.375rem;
+  color: var(--foreground, #6b7280);
+  transition: all 0.2s;
+}
+
+.deploy-phase .phase-icon {
+  width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.deploy-phase.active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 600;
+}
+
+.deploy-phase.done {
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.deploy-phase.errored {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.deploy-message {
+  text-align: center;
+  color: var(--foreground, #6b7280);
+  margin: 1rem 0;
+}
+
+.reconnect-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  z-index: 1000;
+  color: var(--foreground, #374151);
+  font-size: 1.125rem;
+}
+
+@media (max-width: 900px) {
+  .bootstrap-onboarding {
+    padding: 1rem;
+  }
+
+  .identity-layout,
+  .identity-grid,
+  .overview-grid,
+  .settings-grid,
+  .secret-row {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-actions-stacked {
+    flex-direction: column;
+  }
+}

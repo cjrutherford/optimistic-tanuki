@@ -356,6 +356,32 @@ services:
     environment:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
+      - ADMIN_ENV_API_URL=http://admin-env:8098
+
+  admin-env:
+    container_name: ot_admin_env
+    build:
+      context: .
+      dockerfile: ./tools/admin-env-wizard/Dockerfile
+    ports:
+      - '8098:8098'
+    environment:
+      - ADMIN_ENV_DEPLOYMENT_PATH=/app/ops/deployments/production.yaml
+      - ADMIN_ENV_ADDRESS=:8098
+      - ADMIN_ENV_WORKSPACE_ROOT=/workspace
+      - PRODUCTION_IMAGE_TAG=${PRODUCTION_IMAGE_TAG:-latest}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
+      - MICROSOFT_CLIENT_ID=${MICROSOFT_CLIENT_ID:-}
+      - MICROSOFT_CLIENT_SECRET=${MICROSOFT_CLIENT_SECRET:-}
+      - FACEBOOK_CLIENT_ID=${FACEBOOK_CLIENT_ID:-}
+      - FACEBOOK_CLIENT_SECRET=${FACEBOOK_CLIENT_SECRET:-}
+    volumes:
+      - .:/workspace
+      - ./ops:/app/ops
+      - /var/run/docker.sock:/var/run/docker.sock
 
   leads-app:
     container_name: ot_leads_app
