@@ -1,8 +1,0 @@
-[     267ms] [LOG] Angular is running in development mode. @ http://localhost:8100/main.js:15234
-[     296ms] [LOG] [ThemeService] Theme initialization complete @ http://localhost:8100/main.js:51127
-[     305ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8100/api/registry/apps:0
-[    1000ms] [LOG] [ThemeService] Loaded personality theme: {personalityId: control-center, primaryColor: #2dd4bf, mode: dark, version: 1.0.0} @ http://localhost:8084/chunk-AP72QJDR.js:0
-[    1001ms] [WARNING] Could not achieve 7:1 contrast ratio between #ffffff and #37bead @ chrome-extension://fmkadmapgofadopljbjfkapdkoienihi/build/installHook.js:0
-[    1017ms] [LOG] [ThemeService] Theme initialization complete @ http://localhost:8084/chunk-AP72QJDR.js:0
-[    1024ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://localhost:8084/dashboard/overview:0
-[    1489ms] [LOG] Attempting handshake with backend Wed Jun 24 2026 21:39:54 GMT-0400 (Eastern Daylight Time) @ chrome-extension://ienfalfjdbdpebioblfackkekamfmbnh/app/content_script_bundle.js:0

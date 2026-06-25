@@ -139,6 +139,330 @@ describe('SetupService', () => {
     });
   });
 
+  it('returns saved operator summary without exposing the password', async () => {
+    const service = new SetupService();
+    await service.saveOperator(
+      'Existing Operator',
+      'owner@example.com',
+      'secret'
+    );
+
+    await expect(service.getSavedOperatorSummary()).resolves.toEqual({
+      name: 'Existing Operator',
+      email: 'owner@example.com',
+      passwordSaved: true,
+      source: 'saved',
+      existingUser: false,
+      existingCount: 0,
+    });
+  });
+
+  it('marks a saved operator when the owner-console account already exists', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'owner-1',
+          email: 'owner@example.com',
+          firstName: 'Existing',
+          lastName: 'Owner',
+        },
+      ],
+    }) as typeof fetch;
+
+    const service = new SetupService();
+    await service.saveOperator(
+      'Existing Operator',
+      'OWNER@EXAMPLE.COM',
+      'secret'
+    );
+
+    await expect(service.getSavedOperatorSummary()).resolves.toEqual({
+      name: 'Existing Operator',
+      email: 'owner@example.com',
+      passwordSaved: true,
+      source: 'saved-existing',
+      existingUser: true,
+      existingCount: 1,
+      userId: 'owner-1',
+    });
+  });
+
+  it('falls back to the existing owner-console account when no saved operator exists', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          id: 'owner-2',
+          email: 'console@example.com',
+          name: 'Console Owner',
+        },
+      ],
+    }) as typeof fetch;
+
+    const service = new SetupService();
+
+    await expect(service.getSavedOperatorSummary()).resolves.toEqual({
+      name: 'Console Owner',
+      email: 'console@example.com',
+      passwordSaved: false,
+      source: 'existing',
+      existingUser: true,
+      existingCount: 1,
+      userId: 'owner-2',
+    });
+  });
+
+  it('tracks deploy progress snapshots during backend deployment work', async () => {
+    const service = new SetupService();
+
+    expect(service.getDeployProgress()).toEqual(
+      expect.objectContaining({
+        activePhase: 'idle',
+        phases: expect.arrayContaining([
+          expect.objectContaining({ id: 'building' }),
+          expect.objectContaining({ id: 'activating' }),
+        ]),
+      })
+    );
+
+    await expect(service.buildImages()).resolves.toEqual(
+      expect.objectContaining({
+        success: false,
+      })
+    );
+
+    expect(service.getDeployProgress()).toEqual(
+      expect.objectContaining({
+        activePhase: 'error',
+        error: expect.stringContaining('admin-env binary not found'),
+        phases: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'building',
+            substeps: expect.arrayContaining([
+              expect.objectContaining({
+                id: 'build-or-pull',
+                status: 'error',
+              }),
+            ]),
+          }),
+        ]),
+      })
+    );
+  });
+
+  it('browses host paths and stores managed files for an environment', async () => {
+    const browseRoot = path.join(workspaceRoot, 'browse');
+    fs.mkdirSync(path.join(browseRoot, 'nested'), { recursive: true });
+    fs.writeFileSync(path.join(browseRoot, 'sample.json'), '{"ok":true}');
+
+    const service = new SetupService();
+    const listing = await service.browseHostPath(browseRoot);
+    const upload = await service.storeManagedFile({
+      environmentName: 'qa',
+      filename: 'registry.json',
+      contentBase64: Buffer.from('{"apps":[]}').toString('base64'),
+    });
+
+    expect(listing.currentPath).toBe(browseRoot);
+    expect(listing.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'nested', directory: true }),
+        expect.objectContaining({ name: 'sample.json', file: true }),
+      ])
+    );
+    expect(fs.readFileSync(upload.path, 'utf-8')).toBe('{"apps":[]}');
+  });
+
+  it('takes over an existing deployment and imports a combined env file', async () => {
+    const importedDir = path.join(workspaceRoot, 'external');
+    fs.mkdirSync(importedDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(importedDir, 'legacy.yaml'),
+      [
+        'version: v1alpha1',
+        'environment:',
+        '  name: legacy',
+        '  namespace: legacy-ns',
+        '  targets: [compose]',
+        '  composeMode: image',
+        '  provider: local',
+        '  imageOwner: cjrutherford',
+        '  defaultTag: sha-legacy',
+        '  infra: [postgres]',
+        '  capabilities: []',
+        '  services: [gateway, authentication]',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+        '  - serviceId: authentication',
+        '    enabled: true',
+        'apps:',
+        '  - appId: client-interface',
+        '    domain: legacy.example.com',
+        '    uiBaseUrl: https://legacy.example.com',
+        '    apiBaseUrl: https://legacy.example.com/api',
+        '    appType: client',
+        '    visibility: public',
+        'oauth:',
+        '  enabled: true',
+        '  bridgeAppId: client-interface',
+        '  providers:',
+        '    google:',
+        '      enabled: false',
+        '      clientIdKey: GOOGLE_CLIENT_ID',
+        '      clientSecretKey: GOOGLE_CLIENT_SECRET',
+        "      redirectUri: ''",
+      ].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(importedDir, 'legacy.env'),
+      [
+        'JWT_SECRET=legacy-secret',
+        'CLIENT_INTERFACE_UI_BASE_URL=https://app.legacy.example.com',
+        'CLIENT_INTERFACE_DOMAIN=app.legacy.example.com',
+        'PRODUCTION_IMAGE_TAG=sha-imported',
+        'POSTGRES_HOST=postgres.internal',
+        'POSTGRES_PORT=5544',
+        'POSTGRES_DB=ot_legacy',
+        'POSTGRES_USER=legacy_user',
+        'GOOGLE_CLIENT_ID=google-client-id',
+        'GOOGLE_CLIENT_SECRET=google-client-secret',
+        'GOOGLE_REDIRECT_URI=https://gateway.legacy.example.com/api/oauth/callback/google',
+      ].join('\n')
+    );
+
+    const service = new SetupService();
+    const result = await service.takeOverDeployment({
+      deploymentPath: path.join(importedDir, 'legacy.yaml'),
+      secretsPath: path.join(importedDir, 'legacy.env'),
+      environmentName: 'adopted',
+    });
+
+    expect(result.environment).toBe('adopted');
+    expect(result.data.environment.name).toBe('adopted');
+    await expect(service.loadSecrets('adopted')).resolves.toEqual({
+      JWT_SECRET: 'legacy-secret',
+      GOOGLE_CLIENT_ID: 'google-client-id',
+      GOOGLE_CLIENT_SECRET: 'google-client-secret',
+    });
+    await expect(service.loadConfig('adopted')).resolves.toEqual(
+      expect.objectContaining({
+        environment: expect.objectContaining({
+          name: 'adopted',
+          defaultTag: 'sha-imported',
+        }),
+        databases: expect.arrayContaining([
+          expect.objectContaining({
+            id: 'postgres-primary',
+            host: 'postgres.internal',
+            port: 5544,
+            databaseName: 'ot_legacy',
+            username: 'legacy_user',
+          }),
+        ]),
+        settings: expect.objectContaining({
+          targets: expect.objectContaining({
+            'client-interface': expect.objectContaining({
+              uiBaseUrl: 'https://app.legacy.example.com',
+              domain: 'app.legacy.example.com',
+            }),
+          }),
+        }),
+        oauth: expect.objectContaining({
+          providers: expect.objectContaining({
+            google: expect.objectContaining({
+              enabled: true,
+              redirectUri:
+                'https://gateway.legacy.example.com/api/oauth/callback/google',
+            }),
+          }),
+        }),
+      })
+    );
+    await expect(service.getOAuthProviders('adopted')).resolves.toEqual(
+      expect.objectContaining({
+        providers: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'google',
+            clientIdValue: 'google-client-id',
+            clientSecretValue: 'google-client-secret',
+          }),
+        ]),
+      })
+    );
+  });
+
+  it('overwrites an existing managed environment when importing with the same name', async () => {
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'ops', 'deployments', 'production.yaml'),
+      [
+        'version: v1alpha1',
+        'environment:',
+        '  name: production',
+        '  namespace: optimistic-tanuki',
+        '  targets: [compose]',
+        '  composeMode: image',
+        '  provider: local',
+        '  imageOwner: cjrutherford',
+        '  defaultTag: old-tag',
+        '  infra: [postgres]',
+        '  capabilities: []',
+        '  services: [gateway]',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+        'apps: []',
+        'oauth:',
+        '  enabled: true',
+        '  bridgeAppId: client-interface',
+        '  providers: {}',
+      ].join('\n')
+    );
+    fs.writeFileSync(path.join(workspaceRoot, '.secrets'), 'JWT_SECRET=old\n');
+
+    const importedDir = path.join(workspaceRoot, 'external');
+    fs.mkdirSync(importedDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(importedDir, 'replacement.yaml'),
+      [
+        'version: v1alpha1',
+        'environment:',
+        '  name: replacement',
+        '  defaultTag: new-tag',
+        'apps: []',
+        'oauth:',
+        '  providers: {}',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+      ].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(importedDir, 'replacement.env'),
+      'JWT_SECRET=new\n'
+    );
+
+    const service = new SetupService();
+    await service.takeOverDeployment({
+      deploymentPath: path.join(importedDir, 'replacement.yaml'),
+      secretsPath: path.join(importedDir, 'replacement.env'),
+      environmentName: 'production',
+    });
+
+    await expect(service.loadConfig('production')).resolves.toEqual(
+      expect.objectContaining({
+        environment: expect.objectContaining({
+          name: 'production',
+          defaultTag: 'new-tag',
+        }),
+      })
+    );
+    await expect(service.loadSecrets('production')).resolves.toEqual({
+      JWT_SECRET: 'new',
+    });
+  });
+
   it('creates the owner through the owner-console app scope', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
@@ -250,6 +574,75 @@ describe('SetupService', () => {
     );
   });
 
+  it('fills missing wizard fields when importing a legacy deployment shape', async () => {
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'ops', 'deployments', 'production.yaml'),
+      [
+        'version: 1.0.0',
+        'apps:',
+        '  - appId: owner-console',
+        '    domain: localhost',
+        '    uiBaseUrl: http://localhost:8084',
+        '    apiBaseUrl: http://localhost:3300',
+        '    appType: admin',
+        '    visibility: internal',
+        '  - appId: client-interface',
+        '    domain: optimistic-tanuki.com',
+        '    uiBaseUrl: http://localhost:8080',
+        '    apiBaseUrl: https://optimistic-tanuki.com/api',
+        '    appType: client',
+        '    visibility: public',
+        'environment:',
+        '  name: production',
+        '  defaultTag: sha-legacy',
+        '  services:',
+        '    - gateway',
+        '    - authentication',
+        'oauth:',
+        '  providers:',
+        '    google:',
+        '      enabled: true',
+        '      clientIdKey: GOOGLE_CLIENT_ID',
+        '      clientSecretKey: GOOGLE_CLIENT_SECRET',
+        '      redirectUri: https://gateway.example.com/api/oauth/callback/google',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+        '  - serviceId: authentication',
+        '    enabled: true',
+      ].join('\n')
+    );
+
+    const service = new SetupService();
+    const config = await service.loadConfig('production');
+
+    expect(config.environment).toEqual(
+      expect.objectContaining({
+        name: 'production',
+        namespace: 'optimistic-tanuki',
+        targets: ['compose'],
+        composeMode: 'image',
+        provider: 'local',
+        imageOwner: 'cjrutherford',
+        defaultTag: 'sha-legacy',
+      })
+    );
+    expect(config.oauth).toEqual(
+      expect.objectContaining({
+        enabled: true,
+        bridgeAppId: 'client-interface',
+        providers: expect.objectContaining({
+          google: expect.objectContaining({
+            enabled: true,
+          }),
+          github: expect.objectContaining({
+            enabled: false,
+          }),
+        }),
+      })
+    );
+  });
+
   it('builds a settings catalog from app and service config sources', async () => {
     fs.writeFileSync(
       path.join(workspaceRoot, 'ops', 'deployments', 'production.yaml'),
@@ -317,7 +710,10 @@ describe('SetupService', () => {
           id: 'assets',
           targetKind: 'service',
           fields: expect.arrayContaining([
-            expect.objectContaining({ envKey: 'LOCAL_STORAGE_PATH' }),
+            expect.objectContaining({
+              envKey: 'LOCAL_STORAGE_PATH',
+              valueType: 'path',
+            }),
             expect.objectContaining({ envKey: 'STORAGE_STRATEGY' }),
           ]),
           secrets: expect.arrayContaining([

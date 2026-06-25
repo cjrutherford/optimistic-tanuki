@@ -66,6 +66,49 @@
   margin-bottom: 0.25rem;
 }
 
+.step-guide-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%);
+}
+
+.step-guide-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.step-guide-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #2563eb;
+}
+
+.step-guide-copy strong {
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.step-guide-copy p,
+.step-guide-list {
+  margin: 0;
+  color: #52627a;
+}
+
+.step-guide-list {
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.step-guide-list.compact {
+  margin-top: 1rem;
+}
+
 .inline-actions {
   display: flex;
   gap: 0.75rem;
@@ -94,6 +137,13 @@
   border-radius: 0.875rem;
   padding: 1rem;
   background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.deployment-strategy-card {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #dbe7ff;
+  background: linear-gradient(180deg, #fcfdff 0%, #f6f9ff 100%);
 }
 
 .identity-grid {
@@ -145,6 +195,34 @@
   display: grid;
   gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.oauth-explainer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.oauth-guide-card {
+  padding: 1rem;
+}
+
+.oauth-app-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.oauth-app-row {
+  display: grid;
+  gap: 0.2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.oauth-app-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .oauth-provider {
@@ -284,6 +362,93 @@
   padding: 0.85rem;
 }
 
+.field-card-actions,
+.path-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.path-actions {
+  margin-top: 0.75rem;
+}
+
+.upload-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px dashed #93c5fd;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.upload-action input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.host-browser {
+  display: grid;
+  gap: 1rem;
+}
+
+.host-browser-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.host-browser-toolbar p {
+  margin: 0.35rem 0 0;
+  color: #6b7280;
+  word-break: break-all;
+}
+
+.host-browser-list {
+  display: grid;
+  gap: 0.6rem;
+  max-height: 26rem;
+  overflow: auto;
+}
+
+.host-browser-entry {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid #dbe7ff;
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  cursor: pointer;
+  text-align: left;
+}
+
+.host-browser-entry span {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.host-browser-empty {
+  min-height: 10rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .secret-list {
   display: grid;
   gap: 0.75rem;
@@ -304,13 +469,18 @@
   margin: 1.5rem 0;
 }
 
+.deploy-phase-card {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  overflow: hidden;
+}
+
 .deploy-phase {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 0.375rem;
   color: var(--foreground, #6b7280);
   transition: all 0.2s;
 }
@@ -321,23 +491,67 @@
   font-weight: 700;
 }
 
-.deploy-phase.active {
+.deploy-phase-card.active .deploy-phase {
   border-color: #2563eb;
   background: #eff6ff;
   color: #1e40af;
   font-weight: 600;
 }
 
-.deploy-phase.done {
+.deploy-phase-card.done .deploy-phase {
   border-color: #16a34a;
   background: #f0fdf4;
   color: #166534;
 }
 
-.deploy-phase.errored {
+.deploy-phase-card.errored .deploy-phase {
   border-color: #dc2626;
   background: #fef2f2;
   color: #991b1b;
+}
+
+.deploy-substeps {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0 1rem 1rem;
+}
+
+.deploy-substep {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  background: rgba(248, 250, 252, 0.8);
+  font-size: 0.92rem;
+}
+
+.deploy-substep.running {
+  color: #1e40af;
+  background: #eff6ff;
+}
+
+.deploy-substep.done {
+  color: #166534;
+  background: #f0fdf4;
+}
+
+.deploy-substep.errored {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.substep-icon {
+  width: 1rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.substep-status {
+  margin-left: auto;
+  text-transform: capitalize;
+  font-size: 0.8rem;
 }
 
 .deploy-message {
@@ -366,6 +580,8 @@
   }
 
   .identity-layout,
+  .step-guide-card,
+  .oauth-explainer-grid,
   .identity-grid,
   .overview-grid,
   .settings-grid,
@@ -374,6 +590,10 @@
   }
 
   .inline-actions-stacked {
+    flex-direction: column;
+  }
+
+  .host-browser-toolbar {
     flex-direction: column;
   }
 }

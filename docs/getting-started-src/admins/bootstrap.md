@@ -27,3 +27,10 @@ After startup, verify the environment with:
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 ```
+
+For deployed environments that are already running outside the local bootstrap
+flow, use `setup-console` in reconfigure mode instead of rerunning the first-run
+bootstrap. The console can now take over a legacy deployment YAML plus a
+combined `tanuki.env` file, split imported secrets into the managed secrets
+store, and convert the remaining values into editable connections, global
+defaults, and app or service overrides.

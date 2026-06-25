@@ -56,7 +56,15 @@
         5
       </div>
       <div class="progress-line" [class.completed]="currentStep > 4"></div>
-      <div class="progress-step" [class.active]="currentStep === 5">6</div>
+      <div
+        class="progress-step"
+        [class.active]="currentStep === 5"
+        [class.completed]="currentStep > 5"
+      >
+        6
+      </div>
+      <div class="progress-line" [class.completed]="currentStep > 5"></div>
+      <div class="progress-step" [class.active]="currentStep === 6">7</div>
     </div>
   </header>
 
@@ -67,6 +75,19 @@
   }
 
   <main class="onboarding-content">
+    <otui-card class="step-guide-card">
+      <div class="step-guide-copy">
+        <span class="step-guide-eyebrow">{{ currentStepGuide.eyebrow }}</span>
+        <strong>{{ currentStepGuide.title }}</strong>
+        <p>{{ currentStepGuide.detail }}</p>
+      </div>
+      <ul class="step-guide-list">
+        @for (item of currentStepGuide.checklist; track item) {
+        <li>{{ item }}</li>
+        }
+      </ul>
+    </otui-card>
+
     @if (currentStep === 0) {
     <otui-card class="step">
       <otui-heading
@@ -168,6 +189,90 @@
                   image, and rollout options to match.
                 </p>
               </div>
+              <div class="form-group">
+                <lib-text-input
+                  [(ngModel)]="config.environment.defaultTag"
+                  [label]="'Image Tag'"
+                  [placeholder]="'sha-REPLACE_WITH_IMAGE_TAG'"
+                />
+                <p class="field-hint">
+                  This tag is used when the deployment runs in image/pull mode.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="identity-section">
+            <div class="settings-card-header">
+              <div>
+                <strong>Take Over Existing Deployment</strong>
+                <p>
+                  Import an existing deployment YAML and its environment file
+                  into the managed environments directory so this console can
+                  reconfigure and re-apply it.
+                </p>
+              </div>
+            </div>
+
+            <div class="identity-grid">
+              <div class="form-group">
+                <lib-text-input
+                  [(ngModel)]="takeoverDeploymentPath"
+                  [label]="'Deployment YAML Path'"
+                  [placeholder]="'ops/deployments/production.yaml'"
+                />
+                <p class="field-hint">
+                  This can be an absolute path or a path relative to the
+                  workspace root.
+                </p>
+                <div class="path-actions">
+                  <otui-button
+                    variant="secondary"
+                    (click)="openTakeoverDeploymentBrowser()"
+                    >Browse Host</otui-button
+                  >
+                </div>
+              </div>
+
+              <div class="form-group">
+                <lib-text-input
+                  [(ngModel)]="takeoverSecretsPath"
+                  [label]="'Environment / Secrets Env Path'"
+                  [placeholder]="'../tanuki.env.production'"
+                />
+                <p class="field-hint">
+                  Optional. Point this at a legacy combined env file such as
+                  <code>tanuki.env</code> or a dedicated
+                  <code>.secrets.env</code>. The console imports known secrets
+                  into the managed secrets store and maps the remaining values
+                  into connections, app overrides, and global settings.
+                </p>
+                <div class="path-actions">
+                  <otui-button
+                    variant="secondary"
+                    (click)="openTakeoverEnvBrowser()"
+                    >Browse Host</otui-button
+                  >
+                </div>
+              </div>
+
+              <div class="form-group">
+                <lib-text-input
+                  [(ngModel)]="takeoverEnvironmentName"
+                  [label]="'Imported Environment Name'"
+                  [placeholder]="'production'"
+                />
+                <p class="field-hint">
+                  Optional. Leave blank to reuse the imported deployment file
+                  name as the environment id.
+                </p>
+              </div>
+            </div>
+
+            <div class="inline-actions">
+              <otui-button variant="secondary" (click)="takeOverDeployment()"
+                >Import Deployment</otui-button
+              >
             </div>
           </section>
         </div>
@@ -198,6 +303,10 @@
             <div class="summary-stat">
               <span>Deploy mode</span>
               <strong>{{ config.environment.composeMode }}</strong>
+            </div>
+            <div class="summary-stat">
+              <span>Image tag</span>
+              <strong>{{ config.environment.defaultTag }}</strong>
             </div>
           </otui-card>
         </aside>
@@ -313,11 +422,190 @@
     } @if (currentStep === 2) {
     <otui-card class="step">
       <otui-heading
+        [text]="'Application Hosts & Return Targets'"
+        [color]="'#111827'"
+        [size]="'1.5rem'"
+      ></otui-heading>
+      <p>
+        Set the public host and exact return target for each app before
+        configuring OAuth providers.
+      </p>
+      <otui-card class="oauth-guide-card">
+        <div class="settings-card-header">
+          <div>
+            <strong>Bridge App</strong>
+            <p>
+              The bridge app owns the shared callback route. Its UI base URL is
+              used to generate provider callback URLs.
+            </p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bridgeAppId">Bridge Application</label>
+          <select id="bridgeAppId" [(ngModel)]="config.oauth.bridgeAppId">
+            @for (app of oauthConfigurableApps; track app.appId) {
+            <option [value]="app.appId">{{ app.appId }}</option>
+            }
+          </select>
+        </div>
+      </otui-card>
+      <div class="settings-card-stack">
+        @for (app of oauthConfigurableApps; track app.appId) {
+        <otui-card class="settings-card">
+          <div class="settings-card-header">
+            <div>
+              <strong>{{ app.appId }}</strong>
+              <p>
+                {{ app.appType | titlecase }} application routing used for host
+                mapping and OAuth <code>returnTo</code>.
+              </p>
+            </div>
+          </div>
+          <div class="settings-grid">
+            <div class="form-group">
+              <label>Public Domain</label>
+              <lib-text-input [(ngModel)]="app.domain" />
+            </div>
+            <div class="form-group">
+              <label>Return Target / UI Base URL</label>
+              <lib-text-input [(ngModel)]="app.uiBaseUrl" />
+              <p class="field-hint">
+                This is the exact origin the user should land on after login or
+                registration completes. It normally matches the API base URL
+                with the trailing <code>/api</code> removed.
+              </p>
+            </div>
+            <div class="form-group">
+              <label>API Base URL</label>
+              <lib-text-input
+                [ngModel]="app.apiBaseUrl"
+                (ngModelChange)="syncRoutingFromApiBaseUrl(app, $event)"
+              />
+              <p class="field-hint">
+                Updating this will refresh the inferred return target and public
+                domain when they are missing or out of sync.
+              </p>
+            </div>
+          </div>
+        </otui-card>
+        }
+      </div>
+      <div class="form-actions">
+        <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        <otui-button
+          variant="primary"
+          (click)="saveAppRouting()"
+          [disabled]="!appRoutingReady"
+          >Continue</otui-button
+        >
+      </div>
+    </otui-card>
+    } @if (currentStep === 3) {
+    <otui-card class="step">
+      <otui-heading
         [text]="'OAuth Providers'"
         [color]="'#111827'"
         [size]="'1.5rem'"
       ></otui-heading>
-      <p>Configure identity providers for your platform.</p>
+      <p>
+        Configure the shared OAuth bridge that supports login and registration
+        across your selected apps.
+      </p>
+      <div class="oauth-explainer-grid">
+        <otui-card class="oauth-guide-card">
+          <div class="settings-card-header">
+            <div>
+              <strong>Bridge Callback</strong>
+              <p>
+                The provider redirects into the bridge app first. The gateway
+                then completes login and sends the user back to the originating
+                app using <code>returnTo</code>.
+              </p>
+            </div>
+          </div>
+          <div class="summary-stat">
+            <span>Bridge app</span>
+            <strong>{{ oauthBridgeAppId }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Bridge domain</span>
+            <strong>{{ oauthBridgeAppDomain || 'Not set' }}</strong>
+          </div>
+          <div class="summary-stat">
+            <span>Bridge base URL</span>
+            <strong>{{ oauthBridgeAppBaseUrl || 'Not set' }}</strong>
+          </div>
+        </otui-card>
+
+        <otui-card class="oauth-guide-card">
+          <div class="settings-card-header">
+            <div>
+              <strong>Allowed Return Targets</strong>
+              <p>
+                These app origins are valid <code>returnTo</code> destinations
+                after login or first-time registration completes.
+              </p>
+            </div>
+          </div>
+          <div class="oauth-app-list">
+            @for (app of oauthEligibleApps; track app.appId) {
+            <div class="oauth-app-row">
+              <strong>{{ app.appId }}</strong>
+              <span>{{ app.returnToOrigin }}</span>
+            </div>
+            }
+          </div>
+        </otui-card>
+      </div>
+      <div class="oauth-explainer-grid">
+        <otui-card class="oauth-guide-card">
+          <div class="settings-card-header">
+            <div>
+              <strong>Loaded App Routing</strong>
+              <p>
+                These are the current host and <code>returnTo</code> values
+                loaded from the managed config or takeover import.
+              </p>
+            </div>
+          </div>
+          <div class="oauth-app-list">
+            @for (app of oauthConfigurableApps; track app.appId) {
+            <div class="oauth-app-row">
+              <strong>{{ app.appId }}</strong>
+              <span>Host: {{ app.domain || 'Not set' }}</span>
+              <span>Return target: {{ app.uiBaseUrl || 'Not set' }}</span>
+            </div>
+            }
+          </div>
+        </otui-card>
+
+        <otui-card class="oauth-guide-card">
+          <div class="settings-card-header">
+            <div>
+              <strong>Loaded Secrets</strong>
+              <p>
+                Imported env and secrets values are shown here so you can verify
+                takeover state before enabling providers.
+              </p>
+            </div>
+          </div>
+          <div class="oauth-app-list">
+            @for (provider of oauthProviders; track provider.name) {
+            <div class="oauth-app-row">
+              <strong>{{ provider.name }}</strong>
+              <span>
+                {{ provider.clientIdKey }}:
+                {{ maskedSecretValue(provider.clientIdKey) }}
+              </span>
+              <span>
+                {{ provider.clientSecretKey }}:
+                {{ maskedSecretValue(provider.clientSecretKey) }}
+              </span>
+            </div>
+            }
+          </div>
+        </otui-card>
+      </div>
       <div class="oauth-list">
         @for (provider of oauthProviders; track provider.name) {
         <otui-card class="oauth-provider">
@@ -334,6 +622,13 @@
               >{{ provider.status }}</otui-badge
             >
           </div>
+          <p class="section-copy">
+            Register this exact callback with {{ provider.name }}:
+            <strong>{{
+              oauthSuggestedRedirectUri(provider.name) ||
+                'Set the bridge app base URL first'
+            }}</strong>
+          </p>
           <div class="form-group">
             <lib-checkbox
               [(ngModel)]="oauthProviderValues[provider.name].enabled"
@@ -360,7 +655,23 @@
               [(ngModel)]="oauthProviderValues[provider.name].redirectUri"
               [placeholder]="'https://your-domain.com/auth/callback'"
             />
+            <div class="inline-actions">
+              <otui-button
+                variant="secondary"
+                (click)="applyOAuthSuggestedRedirectUri(provider.name)"
+                >Use Suggested Callback</otui-button
+              >
+            </div>
+            <p class="field-hint">
+              This should normally match the bridge callback exactly so the
+              provider accepts the shared login and registration flow.
+            </p>
           </div>
+          <p class="field-hint">
+            <code>returnTo</code> is added automatically when an app starts
+            OAuth. It should point at one of the allowed app origins listed
+            above.
+          </p>
           <otui-button
             variant="secondary"
             (click)="testProvider(provider.name)"
@@ -383,7 +694,7 @@
         >
       </div>
     </otui-card>
-    } @if (currentStep === 3) {
+    } @if (currentStep === 4) {
     <otui-card class="step">
       <otui-heading
         [text]="'Operator Account'"
@@ -394,6 +705,62 @@
         Enter the platform owner details. The account will be created when the
         stack deploys in the final step.
       </p>
+      @if (savedOperator && !replaceSavedOperator) {
+      <otui-card class="settings-card">
+        <div class="settings-card-header">
+          <div>
+            <strong>Operator Summary</strong>
+            <p>
+              @if (savedOperator.source === 'existing') { An operator account
+              already exists in owner-console for this deployment. } @else if
+              (savedOperator.source === 'saved-existing') { The staged operator
+              matches an account that already exists in owner-console. } @else {
+              An operator record is saved for activation during the final
+              deployment step. }
+            </p>
+          </div>
+        </div>
+        <div class="summary-stat">
+          <span>Name</span>
+          <strong>{{ savedOperator.name }}</strong>
+        </div>
+        <div class="summary-stat">
+          <span>Email</span>
+          <strong>{{ savedOperator.email }}</strong>
+        </div>
+        <div class="summary-stat">
+          <span>Password</span>
+          <strong>{{
+            savedOperator.passwordSaved ? 'Saved' : 'Not saved'
+          }}</strong>
+        </div>
+        <div class="summary-stat">
+          <span>Owner Console</span>
+          <strong>{{
+            savedOperator.existingUser
+              ? savedOperator.existingCount > 1
+                ? 'Existing account detected'
+                : 'Existing account detected'
+              : 'Will be created on deploy'
+          }}</strong>
+        </div>
+        @if (savedOperator.existingUser && savedOperator.existingCount > 1) {
+        <p class="settings-help">
+          {{ savedOperator.existingCount }} owner-console users were detected.
+          The summary is showing the best matching account.
+        </p>
+        }
+        <div class="inline-actions">
+          <otui-button variant="secondary" (click)="editSavedOperator()">
+            {{
+              savedOperator.source === 'existing'
+                ? 'Use Different Operator'
+                : 'Replace Saved Operator'
+            }}
+          </otui-button>
+        </div>
+      </otui-card>
+      } @else {
       <div class="form-group">
         <label for="operatorName">Full Name</label>
         <lib-text-input id="operatorName" [(ngModel)]="operatorName" />
@@ -428,9 +795,14 @@
         [kind]="'error'"
         [headline]="'Passwords do not match'"
       ></otui-state-message>
-      }
+      } }
       <div class="form-actions">
         <otui-button variant="secondary" (click)="prevStep()">Back</otui-button>
+        @if (savedOperator && !replaceSavedOperator) {
+        <otui-button variant="primary" (click)="nextStep()"
+          >Continue</otui-button
+        >
+        } @else {
         <otui-button
           variant="primary"
           (click)="saveOperator()"
@@ -444,9 +816,10 @@
         >
           Save &amp; Continue
         </otui-button>
+        }
       </div>
     </otui-card>
-    } @if (currentStep === 4) {
+    } @if (currentStep === 6) {
     <otui-card class="step">
       <otui-heading
         [text]="'Environment Settings & Secrets'"
@@ -455,7 +828,7 @@
       ></otui-heading>
       <p>
         Configure this environment in layers: reusable connections, shared
-        defaults, target-specific overrides, and secrets.
+        defaults, target-specific overrides, managed file paths, and secrets.
       </p>
 
       <div class="step-toolbar">
@@ -621,12 +994,43 @@
           <div class="settings-card-stack">
             @for (field of getGlobalFields(); track field.id) {
             <otui-card class="settings-card">
-              <label>{{ field.label }}</label>
+              <div class="field-card-header">
+                <label>{{ field.label }}</label>
+                @if (isPathLikeField(field)) {
+                <otui-badge variant="primary">{{ field.valueType }}</otui-badge>
+                }
+              </div>
               <lib-text-input
                 [ngModel]="globalValue(field)"
                 (ngModelChange)="updateGlobalValue(field, $event)"
                 [placeholder]="field.placeholder || ''"
               />
+              @if (field.description) {
+              <p class="field-hint">{{ field.description }}</p>
+              } @if (isPathLikeField(field)) {
+              <div class="path-actions">
+                <otui-button
+                  variant="secondary"
+                  (click)="openGlobalHostBrowser(field)"
+                  >Browse Host</otui-button
+                >
+                @if (supportsManagedUpload(field)) {
+                <label class="upload-action">
+                  <span>Upload Managed File</span>
+                  <input
+                    type="file"
+                    (change)="uploadManagedFileForGlobal($event, field)"
+                  />
+                </label>
+                }
+              </div>
+              <p class="field-hint">
+                Browse Host keeps a direct path to an existing file or directory
+                on this machine. Upload Managed File copies the file into this
+                deployment's managed workspace and stores that host path for
+                you.
+              </p>
+              }
             </otui-card>
             }
           </div>
@@ -650,7 +1054,12 @@
             @for (field of getGroupFields(selectedSettingsGroupId); track
             field.id) {
             <otui-card class="settings-card">
-              <label>{{ field.label }}</label>
+              <div class="field-card-header">
+                <label>{{ field.label }}</label>
+                @if (isPathLikeField(field)) {
+                <otui-badge variant="primary">{{ field.valueType }}</otui-badge>
+                }
+              </div>
               <lib-text-input
                 [ngModel]="groupValue(selectedSettingsGroupId, field)"
                 (ngModelChange)="
@@ -658,6 +1067,32 @@
                 "
                 [placeholder]="field.placeholder || ''"
               />
+              @if (field.description) {
+              <p class="field-hint">{{ field.description }}</p>
+              } @if (isPathLikeField(field)) {
+              <div class="path-actions">
+                <otui-button
+                  variant="secondary"
+                  (click)="openGroupHostBrowser(selectedSettingsGroupId, field)"
+                  >Browse Host</otui-button
+                >
+                @if (supportsManagedUpload(field)) {
+                <label class="upload-action">
+                  <span>Upload Managed File</span>
+                  <input
+                    type="file"
+                    (change)="
+                      uploadManagedFileForGroup(
+                        $event,
+                        selectedSettingsGroupId,
+                        field
+                      )
+                    "
+                  />
+                </label>
+                }
+              </div>
+              }
             </otui-card>
             }
           </div>
@@ -728,13 +1163,21 @@
               <div class="settings-card field-card">
                 <div class="field-card-header">
                   <label>{{ field.label }}</label>
-                  @if (targetOwnValue(selectedSettingsTarget, field)) {
-                  <otui-button
-                    variant="secondary"
-                    (click)="clearTargetOverride(selectedSettingsTarget, field)"
-                    >Clear Override</otui-button
-                  >
-                  }
+                  <div class="field-card-actions">
+                    @if (isPathLikeField(field)) {
+                    <otui-badge variant="primary">{{
+                      field.valueType
+                    }}</otui-badge>
+                    } @if (targetOwnValue(selectedSettingsTarget, field)) {
+                    <otui-button
+                      variant="secondary"
+                      (click)="
+                        clearTargetOverride(selectedSettingsTarget, field)
+                      "
+                      >Clear Override</otui-button
+                    >
+                    }
+                  </div>
                 </div>
                 <lib-text-input
                   [ngModel]="
@@ -746,6 +1189,34 @@
                   "
                   [placeholder]="field.placeholder || ''"
                 />
+                @if (field.description) {
+                <p class="field-hint">{{ field.description }}</p>
+                } @if (isPathLikeField(field)) {
+                <div class="path-actions">
+                  <otui-button
+                    variant="secondary"
+                    (click)="
+                      openTargetHostBrowser(selectedSettingsTarget, field)
+                    "
+                    >Browse Host</otui-button
+                  >
+                  @if (supportsManagedUpload(field)) {
+                  <label class="upload-action">
+                    <span>Upload Managed File</span>
+                    <input
+                      type="file"
+                      (change)="
+                        uploadManagedFileForTarget(
+                          $event,
+                          selectedSettingsTarget,
+                          field
+                        )
+                      "
+                    />
+                  </label>
+                  }
+                </div>
+                }
                 <p class="field-hint">
                   Effective value:
                   {{ targetValue(selectedSettingsTarget, field) || 'Not set' }}
@@ -827,137 +1298,67 @@
         Deploy your platform services and activate the setup. This will
         provision infrastructure and start all services.
       </p>
+      <otui-card class="deployment-strategy-card">
+        <div class="settings-card-header">
+          <div>
+            <strong>Deployment Strategy</strong>
+            <p>
+              This summarizes how the wizard expects rollout to happen for the
+              currently selected environment.
+            </p>
+          </div>
+        </div>
+        <div class="summary-stat">
+          <span>Compose mode</span>
+          <strong>{{ config.environment.composeMode }}</strong>
+        </div>
+        <div class="summary-stat">
+          <span>Runtime action</span>
+          <strong>{{ deploymentStrategyLabel }}</strong>
+        </div>
+        <div class="summary-stat">
+          <span>Default image tag</span>
+          <strong>{{ config.environment.defaultTag }}</strong>
+        </div>
+        <ul class="step-guide-list compact">
+          @for (item of deploymentStrategyNotes; track item) {
+          <li>{{ item }}</li>
+          }
+        </ul>
+      </otui-card>
       <div class="deploy-pipeline">
+        @for (phase of deployPhases; track phase.id) {
         <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'building'"
-          [class.done]="deployPhaseDone('building')"
-          [class.errored]="deployPhase === 'error' && deployStep === 'building'"
+          class="deploy-phase-card"
+          [class.active]="deployPhase === phase.id"
+          [class.done]="deployPhaseDone(phase.id)"
+          [class.errored]="deployPhase === 'error' && deployStep === phase.id"
         >
-          <span class="phase-icon">{{
-            deployPhaseDone('building')
-              ? '✓'
-              : deployPhase === 'building'
-              ? '⟳'
-              : '○'
-          }}</span>
-          <span>Build artifacts</span>
-          <span class="phase-status">{{
-            deployPhase === 'building'
-              ? 'running...'
-              : deployPhaseDone('building')
-              ? 'done'
-              : ''
-          }}</span>
+          <div class="deploy-phase">
+            <span class="phase-icon">{{ deployPhaseIcon(phase.id) }}</span>
+            <span>{{ phase.label }}</span>
+            <span class="phase-status">{{
+              deployPhaseStatusLabel(phase.id)
+            }}</span>
+          </div>
+          <div class="deploy-substeps">
+            @for (substep of phase.substeps; track substep.id) {
+            <div
+              class="deploy-substep"
+              [class.running]="substep.status === 'running'"
+              [class.done]="substep.status === 'done'"
+              [class.errored]="substep.status === 'error'"
+            >
+              <span class="substep-icon">{{
+                deploySubstepIcon(substep.status)
+              }}</span>
+              <span>{{ substep.label }}</span>
+              <span class="substep-status">{{ substep.status }}</span>
+            </div>
+            }
+          </div>
         </div>
-        <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'infra'"
-          [class.done]="deployPhaseDone('infra')"
-          [class.errored]="deployPhase === 'error' && deployStep === 'infra'"
-        >
-          <span class="phase-icon">{{
-            deployPhaseDone('infra') ? '✓' : deployPhase === 'infra' ? '⟳' : '○'
-          }}</span>
-          <span>Provision infrastructure</span>
-          <span class="phase-status">{{
-            deployPhase === 'infra'
-              ? 'running...'
-              : deployPhaseDone('infra')
-              ? 'done'
-              : ''
-          }}</span>
-        </div>
-        <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'db'"
-          [class.done]="deployPhaseDone('db')"
-          [class.errored]="deployPhase === 'error' && deployStep === 'db'"
-        >
-          <span class="phase-icon">{{
-            deployPhaseDone('db') ? '✓' : deployPhase === 'db' ? '⟳' : '○'
-          }}</span>
-          <span>Initialize databases</span>
-          <span class="phase-status">{{
-            deployPhase === 'db'
-              ? 'running...'
-              : deployPhaseDone('db')
-              ? 'done'
-              : ''
-          }}</span>
-        </div>
-        <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'deploying'"
-          [class.done]="deployPhaseDone('deploying')"
-          [class.errored]="
-            deployPhase === 'error' && deployStep === 'deploying'
-          "
-        >
-          <span class="phase-icon">{{
-            deployPhaseDone('deploying')
-              ? '✓'
-              : deployPhase === 'deploying'
-              ? '⟳'
-              : '○'
-          }}</span>
-          <span>Deploy services</span>
-          <span class="phase-status">{{
-            deployPhase === 'deploying'
-              ? 'running...'
-              : deployPhaseDone('deploying')
-              ? 'done'
-              : ''
-          }}</span>
-        </div>
-        <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'activating'"
-          [class.done]="deployPhaseDone('activating')"
-          [class.errored]="
-            deployPhase === 'error' && deployStep === 'activating'
-          "
-        >
-          <span class="phase-icon">{{
-            deployPhaseDone('activating')
-              ? '✓'
-              : deployPhase === 'activating'
-              ? '⟳'
-              : '○'
-          }}</span>
-          <span>Create owner account</span>
-          <span class="phase-status">{{
-            deployPhase === 'activating'
-              ? 'running...'
-              : deployPhaseDone('activating')
-              ? 'done'
-              : ''
-          }}</span>
-        </div>
-        <div
-          class="deploy-phase"
-          [class.active]="deployPhase === 'rebooting'"
-          [class.done]="deployPhase === 'done'"
-          [class.errored]="
-            deployPhase === 'error' && deployStep === 'rebooting'
-          "
-        >
-          <span class="phase-icon">{{
-            deployPhase === 'done'
-              ? '✓'
-              : deployPhase === 'rebooting'
-              ? '⟳'
-              : '○'
-          }}</span>
-          <span>Finalize setup</span>
-          <span class="phase-status">{{
-            deployPhase === 'rebooting'
-              ? 'redirecting...'
-              : deployPhase === 'done'
-              ? 'done'
-              : ''
-          }}</span>
-        </div>
+        }
       </div>
       @if (deployMessage) {
       <p class="deploy-message">{{ deployMessage }}</p>
@@ -987,4 +1388,48 @@
     </otui-card>
     }
   </main>
+  <otui-modal
+    [visible]="hostBrowserOpen"
+    [heading]="hostBrowserTitle"
+    [size]="'lg'"
+    (close)="closeHostBrowser()"
+  >
+    <div class="host-browser">
+      <div class="host-browser-toolbar">
+        <div>
+          <strong>Current Path</strong>
+          <p>{{ hostBrowserListing.currentPath || 'Loading...' }}</p>
+        </div>
+        <div class="path-actions">
+          @if (hostBrowserListing.parentPath) {
+          <otui-button variant="secondary" (click)="browseHostParent()"
+            >Up One Level</otui-button
+          >
+          } @if (hostBrowserMode !== 'file') {
+          <otui-button variant="primary" (click)="useCurrentHostDirectory()"
+            >Use This Folder</otui-button
+          >
+          }
+        </div>
+      </div>
+      @if (hostBrowserLoading) {
+      <div class="host-browser-empty">
+        <otui-spinner></otui-spinner>
+      </div>
+      } @else {
+      <div class="host-browser-list">
+        @for (entry of hostBrowserListing.entries; track entry.path) {
+        <button
+          type="button"
+          class="host-browser-entry"
+          (click)="browseHostEntry(entry)"
+        >
+          <strong>{{ entry.name }}</strong>
+          <span>{{ entry.directory ? 'Directory' : 'File' }}</span>
+        </button>
+        }
+      </div>
+      }
+    </div>
+  </otui-modal>
 </div>

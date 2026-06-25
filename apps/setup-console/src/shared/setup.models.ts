@@ -7,7 +7,10 @@ export type SetupSettingValueType =
   | 'url'
   | 'port'
   | 'select'
-  | 'secret';
+  | 'secret'
+  | 'path'
+  | 'directory'
+  | 'file';
 
 export type SetupInfraKind = 'postgres' | 'redis' | 'seaweedfs';
 
@@ -145,4 +148,54 @@ export interface SetupSettingsTarget {
 export interface SetupSettingsCatalog {
   groups: SetupSettingsGroup[];
   targets: SetupSettingsTarget[];
+}
+
+export interface SetupHostPathEntry {
+  name: string;
+  path: string;
+  directory: boolean;
+  file: boolean;
+}
+
+export interface SetupHostPathListing {
+  currentPath: string;
+  parentPath?: string;
+  entries: SetupHostPathEntry[];
+}
+
+export type SetupDeployPhaseId =
+  | 'building'
+  | 'infra'
+  | 'db'
+  | 'deploying'
+  | 'activating'
+  | 'rebooting';
+
+export type SetupDeployProgressStatus =
+  | 'idle'
+  | 'pending'
+  | 'running'
+  | 'done'
+  | 'error';
+
+export interface SetupDeploySubstepProgress {
+  id: string;
+  label: string;
+  status: SetupDeployProgressStatus;
+}
+
+export interface SetupDeployPhaseProgress {
+  id: SetupDeployPhaseId;
+  label: string;
+  status: SetupDeployProgressStatus;
+  substeps: SetupDeploySubstepProgress[];
+}
+
+export interface SetupDeployProgressSnapshot {
+  activePhase: SetupDeployPhaseId | 'idle' | 'done' | 'error';
+  activeSubstepId?: string | null;
+  message: string;
+  error?: string | null;
+  phases: SetupDeployPhaseProgress[];
+  updatedAt: string;
 }

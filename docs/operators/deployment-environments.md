@@ -30,6 +30,28 @@ Use this page when you are operating a generated deployment workspace under `dis
 
 The preferred operator interface is `tools/admin-env-wizard`.
 
+Compatibility-era Compose deployments that still use a root deployment YAML plus
+a single `tanuki.env` file now have a migration path through `setup-console`.
+Use the setup console when you need to take over an existing deployment,
+separate visible settings from secrets, attach services to named database
+connections, or re-apply changes without hand-editing the env file.
+
+Legacy takeover workflow:
+
+1. Start `setup-console` in reconfigure mode for the host that owns the deployment.
+2. In Step 1, choose `Take Over Existing Deployment`.
+3. Point `Deployment YAML Path` at the existing deployment file.
+4. Point `Environment / Secrets Env Path` at the legacy combined env file, such as `../tanuki.env.production`.
+5. Continue into Step 5 to review imported connections, global defaults, target overrides, and secrets before applying.
+
+Imported behavior:
+
+- recognized secrets move into the managed secrets store
+- OAuth provider ids and secrets stay in secrets so the OAuth step can validate them
+- app-specific values such as `CLIENT_INTERFACE_UI_BASE_URL` become app overrides
+- `POSTGRES_*` and `REDIS_*` values seed reusable connection slots
+- remaining non-secret env keys become global defaults for later editing
+
 Open an existing deployment workspace:
 
 ```bash

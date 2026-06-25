@@ -41,12 +41,10 @@ app.put('/api/setup/state', async (req, res) => {
     await setup.saveConfig(req.body, environment);
     res.json({ success: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: e instanceof Error ? e.message : 'Save failed',
-      });
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Save failed',
+    });
   }
 });
 
@@ -57,6 +55,40 @@ app.get('/api/setup/settings/catalog', async (_req, res) => {
     res.json(await setup.getSettingsCatalog(environment));
   } catch (e) {
     res.status(500).json({ groups: [], targets: [] });
+  }
+});
+
+app.get('/api/setup/host-paths', async (req, res) => {
+  try {
+    const requestedPath =
+      typeof req.query['path'] === 'string' ? req.query['path'] : undefined;
+    res.json(await setup.browseHostPath(requestedPath));
+  } catch (e) {
+    res.status(500).json({
+      currentPath: '',
+      parentPath: undefined,
+      entries: [],
+      message: e instanceof Error ? e.message : 'Browse failed',
+    });
+  }
+});
+
+app.post('/api/setup/managed-files', async (req, res) => {
+  try {
+    const result = await setup.storeManagedFile({
+      environmentName:
+        typeof req.body.environment === 'string'
+          ? req.body.environment
+          : undefined,
+      filename: req.body.filename,
+      contentBase64: req.body.contentBase64,
+    });
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Upload failed',
+    });
   }
 });
 
@@ -73,12 +105,26 @@ app.post('/api/setup/environments', async (req, res) => {
     const data = await setup.createEnvironment(req.body.name);
     res.json({ success: true, data });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: e instanceof Error ? e.message : 'Create failed',
-      });
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Create failed',
+    });
+  }
+});
+
+app.post('/api/setup/takeover', async (req, res) => {
+  try {
+    const result = await setup.takeOverDeployment({
+      deploymentPath: req.body.deploymentPath,
+      secretsPath: req.body.secretsPath,
+      environmentName: req.body.environmentName,
+    });
+    res.json({ success: true, ...result });
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Takeover failed',
+    });
   }
 });
 
@@ -100,12 +146,10 @@ app.put('/api/setup/secrets', async (req, res) => {
     await setup.saveSecrets(req.body, environment);
     res.json({ success: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: e instanceof Error ? e.message : 'Save failed',
-      });
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Save failed',
+    });
   }
 });
 
@@ -133,6 +177,10 @@ app.post('/api/setup/deploy-all', async (_req, res) => {
   res.json(await setup.deployAll());
 });
 
+app.get('/api/setup/deploy-progress', async (_req, res) => {
+  res.json(setup.getDeployProgress());
+});
+
 app.post('/api/setup/owner', async (req, res) => {
   try {
     const result = await setup.createOwner(
@@ -142,11 +190,9 @@ app.post('/api/setup/owner', async (req, res) => {
     );
     res.json(result);
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        error: e instanceof Error ? e.message : 'Owner creation failed',
-      });
+    res.status(500).json({
+      error: e instanceof Error ? e.message : 'Owner creation failed',
+    });
   }
 });
 
@@ -155,12 +201,19 @@ app.post('/api/setup/save-operator', async (req, res) => {
     await setup.saveOperator(req.body.name, req.body.email, req.body.password);
     res.json({ saved: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        saved: false,
-        error: e instanceof Error ? e.message : 'Save failed',
-      });
+    res.status(500).json({
+      saved: false,
+      error: e instanceof Error ? e.message : 'Save failed',
+    });
+  }
+});
+
+app.get('/api/setup/operator', async (_req, res) => {
+  try {
+    const operator = await setup.getSavedOperatorSummary();
+    res.json({ saved: !!operator, operator });
+  } catch (e) {
+    res.status(500).json({ saved: false, operator: null });
   }
 });
 
@@ -169,31 +222,84 @@ app.post('/api/setup/activate', async (_req, res) => {
     await setup.completeSetup();
     res.json({ activated: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        activated: false,
-        error: e instanceof Error ? e.message : 'Activation failed',
-      });
+    res.status(500).json({
+      activated: false,
+      error: e instanceof Error ? e.message : 'Activation failed',
+    });
   }
 });
 
 app.put('/api/setup/oauth/configure', async (req, res) => {
   try {
-    await setup.configureOAuthProvider(req.body.provider, {
-      enabled: req.body.enabled,
-      clientId: req.body.clientId,
-      clientSecret: req.body.clientSecret,
-      redirectUri: req.body.redirectUri,
-    });
+    const environment =
+      typeof req.query['env'] === 'string' ? req.query['env'] : undefined;
+    await setup.configureOAuthProvider(
+      req.body.provider,
+      {
+        enabled: req.body.enabled,
+        clientId: req.body.clientId,
+        clientSecret: req.body.clientSecret,
+        redirectUri: req.body.redirectUri,
+      },
+      environment
+    );
     res.json({ success: true });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: e instanceof Error ? e.message : 'OAuth config failed',
-      });
+    res.status(500).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'OAuth config failed',
+    });
+  }
+});
+
+app.get('/api/setup/oauth/providers', async (_req, res) => {
+  try {
+    const environment =
+      typeof _req.query['env'] === 'string' ? _req.query['env'] : undefined;
+    res.json(await setup.getOAuthProviders(environment));
+  } catch (e) {
+    res.status(500).json({
+      enabled: false,
+      bridgeAppId: 'client-interface',
+      bridgeAppDomain: '',
+      bridgeAppBaseUrl: '',
+      providers: [],
+    });
+  }
+});
+
+app.get('/api/setup/oauth/apps', async (_req, res) => {
+  try {
+    const environment =
+      typeof _req.query['env'] === 'string' ? _req.query['env'] : undefined;
+    res.json(await setup.getOAuthApps(environment));
+  } catch (e) {
+    res.status(500).json({
+      bridgeAppId: 'client-interface',
+      bridgeAppDomain: '',
+      bridgeAppBaseUrl: '',
+      apps: [],
+    });
+  }
+});
+
+app.post('/api/setup/oauth/test', async (req, res) => {
+  try {
+    const environment =
+      typeof req.query['env'] === 'string' ? req.query['env'] : undefined;
+    res.json(await setup.testOAuthProvider(req.body.provider, environment));
+  } catch (e) {
+    res.status(500).json({
+      provider: String(req.body.provider || ''),
+      reachable: false,
+      credentialValid: false,
+      authorizationEndpointOk: false,
+      tokenEndpointOk: false,
+      userInfoEndpointOk: false,
+      responseTimeMs: 0,
+      testedAt: new Date().toISOString(),
+      errors: [e instanceof Error ? e.message : 'OAuth test failed'],
+    });
   }
 });
 

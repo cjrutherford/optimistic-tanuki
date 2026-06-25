@@ -1,5 +1,0 @@
-[ -119280ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8099/polyfills-7R4CRVNH.js:0
-[ -119280ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8099/main-DHV4IV3Z.js:0
-[ -119275ms] [ERROR] Refused to apply style from 'http://localhost:8099/styles-66XIRGQD.css' because its MIME type ('text/html') is not a supported stylesheet MIME type, and strict MIME checking is enabled. @ http://localhost:8099/:0
-[ -118809ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:8099/favicon.ico:0
-[ -118843ms] [LOG] Attempting handshake with backend Wed Jun 24 2026 21:37:09 GMT-0400 (Eastern Daylight Time) @ chrome-extension://ienfalfjdbdpebioblfackkekamfmbnh/app/content_script_bundle.js:0
