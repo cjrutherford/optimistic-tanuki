@@ -67,10 +67,16 @@ func TestParseArgsValidateDeployment(t *testing.T) {
 	}
 }
 
-func TestParseArgsValidateRequiresDeployment(t *testing.T) {
-	_, err := ParseArgs([]string{"validate"})
-	if err == nil {
-		t.Fatal("expected error when deployment path is missing")
+func TestParseArgsValidateDefaults(t *testing.T) {
+	cmd, err := ParseArgs([]string{"validate"})
+	if err != nil {
+		t.Fatalf("ParseArgs() error = %v", err)
+	}
+	if cmd.Name != "validate" {
+		t.Fatalf("expected validate command, got %s", cmd.Name)
+	}
+	if cmd.DeploymentPath != "" {
+		t.Fatalf("expected empty deployment path for ad-hoc validate, got %q", cmd.DeploymentPath)
 	}
 }
 
@@ -85,5 +91,30 @@ func TestParseArgsGenerateWorkspaceConfig(t *testing.T) {
 
 	if cmd.ConfigPath != "deployments.yaml" {
 		t.Fatalf("expected config path to be captured, got %q", cmd.ConfigPath)
+	}
+}
+
+func TestParseArgsServe(t *testing.T) {
+	cmd, err := ParseArgs([]string{
+		"serve",
+		"-deployment", "ops/deployments/production.yaml",
+		"-secrets", "ops/deployments/production.secrets.env",
+		"-address", ":8098",
+	})
+	if err != nil {
+		t.Fatalf("ParseArgs() error = %v", err)
+	}
+
+	if cmd.Name != "serve" {
+		t.Fatalf("expected serve command, got %s", cmd.Name)
+	}
+	if cmd.DeploymentPath != "ops/deployments/production.yaml" {
+		t.Fatalf("expected deployment path, got %q", cmd.DeploymentPath)
+	}
+	if cmd.SecretsPath != "ops/deployments/production.secrets.env" {
+		t.Fatalf("expected secrets path, got %q", cmd.SecretsPath)
+	}
+	if cmd.Address != ":8098" {
+		t.Fatalf("expected address :8098, got %q", cmd.Address)
 	}
 }

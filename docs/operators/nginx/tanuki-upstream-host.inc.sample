@@ -1,0 +1,6 @@
+# Copy this file to /config/nginx/tanuki-upstream-host.inc on the nginx host.
+# Replace the sample hostname with the real Tailscale or internal DNS host
+# for the machine running the Tanuki compose stack.
+
+set $tanuki_upstream_host tanuki-central.tailnet.example.ts.net;
+set $tanuki_upstream_proto http;

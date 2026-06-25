@@ -10,6 +10,12 @@ import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
 import { CommunityService } from '../services/community.service';
+import {
+  ControlCenterService,
+  DeploymentHealth,
+  ImageInfo,
+  OAuthProviderDetail,
+} from '../services/control-center.service';
 import { StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
 
@@ -115,6 +121,103 @@ interface BusinessSiteCatalogStatus {
           <h3>Catalog mode: {{ businessSiteCatalogStatus.mode }}</h3>
           <p>{{ businessSiteCatalogStatus.detail }}</p>
         </a>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Deployment health</h2>
+          <p>Platform infrastructure and configuration status.</p>
+        </div>
+        @if (deploymentHealth; as health) {
+        <div class="health-grid">
+          <div class="health-item">
+            <span class="health-label">Config</span>
+            <span
+              class="health-value"
+              [class.attention]="health.configStatus === 'pending-changes'"
+            >
+              {{
+                health.configStatus === 'current'
+                  ? 'Current'
+                  : 'Pending changes'
+              }}
+            </span>
+          </div>
+          <div class="health-item">
+            <span class="health-label">Infrastructure</span>
+            <span class="health-value">{{ health.infrastructure }}</span>
+          </div>
+          <div class="health-item">
+            <span class="health-label">Database</span>
+            <span class="health-value">{{ health.databaseReadiness }}</span>
+          </div>
+          <div class="health-item">
+            <span class="health-label">Secrets</span>
+            <span class="health-value">{{ health.secretsHealth }}</span>
+          </div>
+          @if (health.lastDeployed) {
+          <div class="health-item">
+            <span class="health-label">Last deployed</span>
+            <span class="health-value"
+              >{{ health.lastDeployed.tag }} ({{
+                health.lastDeployed.result
+              }})</span
+            >
+          </div>
+          }
+        </div>
+        }
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>Image freshness</h2>
+          <p>
+            @if (updatesAvailable > 0) {
+            <span class="attention-count"
+              >{{ updatesAvailable }} service(s) with updates available</span
+            >
+            } @else {
+            <span>All services are up to date.</span>
+            }
+          </p>
+        </div>
+        <div class="images-grid">
+          @for (img of images; track img.serviceId) {
+          <div
+            class="image-item"
+            [class.update-available]="img.updateAvailable"
+          >
+            <span class="image-name">{{ img.serviceId }}</span>
+            <span class="image-tag">{{ img.currentTag }}</span>
+            @if (img.updateAvailable) {
+            <span class="update-badge">Update available</span>
+            }
+          </div>
+          }
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>OAuth health</h2>
+          <p>Identity provider status across the platform.</p>
+        </div>
+        <div class="oauth-summary">
+          @for (provider of oauthProviders; track provider.name) {
+          <div class="oauth-provider-summary">
+            <span class="provider-name">{{ provider.name }}</span>
+            <span
+              class="badge"
+              [class.badge-success]="provider.status === 'configured'"
+              [class.badge-warning]="provider.status === 'pending'"
+              [class.badge-error]="provider.status === 'error'"
+            >
+              {{ provider.status }}
+            </span>
+          </div>
+          }
+        </div>
       </section>
 
       <section class="panel">
@@ -304,6 +407,128 @@ interface BusinessSiteCatalogStatus {
         background: rgba(155, 33, 33, 0.16);
         color: #8b0000;
       }
+
+      .health-grid,
+      .images-grid,
+      .oauth-summary {
+        display: grid;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .health-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .health-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 12px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .health-label {
+        font-size: 0.78rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .health-value {
+        font-weight: 600;
+      }
+
+      .health-value.attention {
+        color: #8d4b00;
+      }
+
+      .images-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      }
+
+      .image-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .image-item.update-available {
+        border-color: #8d4b00;
+        background: rgba(196, 112, 0, 0.06);
+      }
+
+      .image-name {
+        font-weight: 600;
+      }
+
+      .image-tag {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #666;
+      }
+
+      .update-badge {
+        margin-left: auto;
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(196, 112, 0, 0.16);
+        color: #8d4b00;
+        font-weight: 700;
+      }
+
+      .oauth-summary {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .oauth-provider-summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.8);
+      }
+
+      .provider-name {
+        font-weight: 600;
+        text-transform: capitalize;
+      }
+
+      .badge {
+        font-size: 0.72rem;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-weight: 700;
+      }
+
+      .badge-success {
+        background: rgba(19, 125, 54, 0.14);
+        color: #0d6b2b;
+      }
+
+      .badge-warning {
+        background: rgba(196, 112, 0, 0.16);
+        color: #8d4b00;
+      }
+
+      .badge-error {
+        background: rgba(155, 33, 33, 0.14);
+        color: #8b0000;
+      }
+
+      .attention-count {
+        font-weight: 600;
+        color: #8d4b00;
+      }
     `,
   ],
 })
@@ -314,6 +539,7 @@ export class OperationsWorkspaceComponent implements OnInit {
   private readonly businessSiteAdminService = inject(BusinessSiteAdminService);
   private readonly communityService = inject(CommunityService);
   private readonly storeService = inject(StoreService);
+  private readonly controlCenter = inject(ControlCenterService);
 
   statusCards: DomainStatusCard[] = [];
   matrixStatusCards: MatrixStatusCard[] = [];
@@ -357,6 +583,16 @@ export class OperationsWorkspaceComponent implements OnInit {
     },
   ];
 
+  deploymentHealth: DeploymentHealth = {
+    configStatus: 'current',
+    infrastructure: 'not-provisioned',
+    databaseReadiness: 'all-slots-ready',
+    secretsHealth: 'all-keys-present',
+  };
+  images: ImageInfo[] = [];
+  oauthProviders: OAuthProviderDetail[] = [];
+  updatesAvailable = 0;
+
   ngOnInit(): void {
     this.matrixStatusCards = [
       {
@@ -384,6 +620,17 @@ export class OperationsWorkspaceComponent implements OnInit {
     this.incompleteMatrixEntries = OWNER_CONSOLE_MUTATION_MATRIX.filter(
       (entry) => entry.status !== 'complete'
     );
+
+    this.controlCenter.getDeploymentHealth().subscribe((health) => {
+      this.deploymentHealth = health;
+    });
+    this.controlCenter.getImages().subscribe((imgs) => {
+      this.images = imgs;
+      this.updatesAvailable = imgs.filter((img) => img.updateAvailable).length;
+    });
+    this.controlCenter.getOAuthProviders().subscribe((data) => {
+      this.oauthProviders = data.providers;
+    });
 
     forkJoin({
       governance: forkJoin({

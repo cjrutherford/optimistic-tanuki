@@ -54,4 +54,4 @@ spec:
   ports:
     - port: 4201
       targetPort: 4000
-  type: LoadBalancer
+  type: ClusterIP

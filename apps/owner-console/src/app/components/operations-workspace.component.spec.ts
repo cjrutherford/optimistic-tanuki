@@ -9,6 +9,7 @@ import { BusinessSiteAdminService } from '../services/business-site-admin.servic
 import { CommunityService } from '../services/community.service';
 import { StoreService } from '../services/store.service';
 import { OWNER_CONSOLE_MUTATION_MATRIX } from '../owner-console-mutation-matrix';
+import { ControlCenterService } from '../services/control-center.service';
 
 describe('OperationsWorkspaceComponent', () => {
   beforeEach(async () => {
@@ -53,6 +54,21 @@ describe('OperationsWorkspaceComponent', () => {
             getProducts: jest.fn().mockReturnValue(of([])),
             getOrders: jest.fn().mockReturnValue(of([])),
             getAppointments: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        {
+          provide: ControlCenterService,
+          useValue: {
+            getDeploymentHealth: jest.fn().mockReturnValue(
+              of({
+                configStatus: 'current',
+                infrastructure: 'compose-up',
+                databaseReadiness: 'all-slots-ready',
+                secretsHealth: 'all-keys-present',
+              })
+            ),
+            getImages: jest.fn().mockReturnValue(of([])),
+            getOAuthProviders: jest.fn().mockReturnValue(of({ providers: [] })),
           },
         },
       ],

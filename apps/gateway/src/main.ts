@@ -12,10 +12,13 @@ import { json, urlencoded } from 'express';
 import {
   applyGatewaySecurityHeaders,
   enforceTrustedBrowserOrigins,
+  getTrustedOrigins,
   parseConfiguredOrigins,
 } from './bootstrap/security';
+import { loadConfiguredRegistry } from './controllers/registry/registry.config';
 
 async function bootstrap() {
+  const registry = loadConfiguredRegistry(process.env.APP_REGISTRY_PATH);
   const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
@@ -53,10 +56,13 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   const configuredOrigins = parseConfiguredOrigins();
+  const trustedOrigins = getTrustedOrigins({ configuredOrigins, registry });
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   app.use(applyGatewaySecurityHeaders);
-  app.use(enforceTrustedBrowserOrigins);
+  app.use((request, response, next) =>
+    enforceTrustedBrowserOrigins(request, response, next, trustedOrigins)
+  );
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) {
@@ -65,7 +71,7 @@ async function bootstrap() {
       }
 
       const normalizedOrigin = origin.replace(/\/$/, '');
-      const isConfigured = configuredOrigins.includes(normalizedOrigin);
+      const isConfigured = trustedOrigins.includes(normalizedOrigin);
       const isLoopback =
         /^(https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?)$/.test(
           normalizedOrigin

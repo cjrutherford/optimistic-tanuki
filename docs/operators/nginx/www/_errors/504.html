@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>504 Gateway Timeout</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">The upstream took too long to respond.</h1>
+          <p class="lede">
+            Nginx waited for the target service, but the response window closed
+            before the app finished.
+          </p>
+          <div class="actions">
+            <button
+              class="button button-primary"
+              type="button"
+              onclick="window.location.reload()"
+            >
+              Try Again
+            </button>
+            <a class="button button-secondary" href="/">Return Home</a>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 504</div>
+            <div class="pill">Timeout between proxy and application</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">504</div>
+          <h2>Response timeout</h2>
+          <p>
+            The service may be overloaded, blocked on a downstream dependency,
+            or doing work that exceeds the proxy timeout.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Retry once</strong>
+              <span>Temporary saturation can clear on the next request.</span>
+            </div>
+            <div class="checklist-item">
+              <strong>Inspect latency sources</strong>
+              <span
+                >Check database waits, external calls, and upstream resource
+                pressure.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            Persistent 504s usually mean the app is alive but too slow for the
+            current request path.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

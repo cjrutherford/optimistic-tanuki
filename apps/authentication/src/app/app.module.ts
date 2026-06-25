@@ -31,6 +31,7 @@ import { OAuthService } from './oauth.service';
 import { KeyService } from './key.service';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import loadDatabase from './loadDatabase';
+import { BootstrapController } from './bootstrap.controller';
 
 @Module({
   imports: [
@@ -65,12 +66,11 @@ import loadDatabase from './loadDatabase';
             ],
           };
         }
-        // Default to console provider for development
         return { providers: [new ConsoleEmailProvider()] };
       },
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, BootstrapController],
   providers: [
     {
       provide: JwtService,

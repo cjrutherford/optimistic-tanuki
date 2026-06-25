@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 
 const UNSAFE_HTTP_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
@@ -15,6 +16,32 @@ export const parseConfiguredOrigins = (
     .split(',')
     .map((entry) => trimOrigin(entry))
     .filter((entry) => entry.length > 0 && entry !== '*');
+
+export const getTrustedOrigins = ({
+  configuredOrigins = parseConfiguredOrigins(),
+  registry,
+}: {
+  configuredOrigins?: string[];
+  registry?: AppRegistry;
+} = {}): string[] => {
+  const trustedOrigins = new Set<string>();
+
+  for (const origin of configuredOrigins) {
+    const normalizedOrigin = normalizeOrigin(origin);
+    if (normalizedOrigin) {
+      trustedOrigins.add(normalizedOrigin);
+    }
+  }
+
+  for (const app of registry?.apps ?? []) {
+    const normalizedOrigin = normalizeOrigin(app.uiBaseUrl);
+    if (normalizedOrigin) {
+      trustedOrigins.add(normalizedOrigin);
+    }
+  }
+
+  return [...trustedOrigins];
+};
 
 export const originHost = (origin: string): string | null => {
   try {
@@ -73,12 +100,8 @@ export const isProxiedRequest = (request: Request): boolean => {
 
 export const shouldRejectBrowserMutation = (
   request: Request,
-  configuredOrigins = parseConfiguredOrigins()
+  trustedOrigins = parseConfiguredOrigins()
 ): boolean => {
-  if (isProxiedRequest(request)) {
-    return false;
-  }
-
   if (!UNSAFE_HTTP_METHODS.has(request.method.toUpperCase())) {
     return false;
   }
@@ -96,10 +119,14 @@ export const shouldRejectBrowserMutation = (
   }
 
   if (normalizedOrigin === getRequestOrigin(request)) {
-    return false;
+    if (!isProxiedRequest(request)) {
+      return false;
+    }
+
+    return !isAllowedOrigin(normalizedOrigin, trustedOrigins);
   }
 
-  return !isAllowedOrigin(normalizedOrigin, configuredOrigins);
+  return !isAllowedOrigin(normalizedOrigin, trustedOrigins);
 };
 
 export const applyGatewaySecurityHeaders = (
@@ -138,9 +165,10 @@ export const applyGatewaySecurityHeaders = (
 export const enforceTrustedBrowserOrigins = (
   request: Request,
   response: Response,
-  next: NextFunction
+  next: NextFunction,
+  trustedOrigins = parseConfiguredOrigins()
 ): void => {
-  if (shouldRejectBrowserMutation(request)) {
+  if (shouldRejectBrowserMutation(request, trustedOrigins)) {
     response.status(403).json({
       message: 'Cross-site browser mutations are not allowed.',
     });

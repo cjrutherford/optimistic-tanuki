@@ -1,8 +1,9 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { BootstrapService } from './services/bootstrap.service';
 
 @Component({
   imports: [RouterModule, SignalMeshComponent],
@@ -29,11 +30,12 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
 export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly themeService = inject(ThemeService);
+  private readonly router = inject(Router);
+  private readonly bootstrapService = inject(BootstrapService);
 
   protected title = 'owner-console';
 
   ngOnInit(): void {
-    // Apply documented default personality (control-center) only on first load.
     if (this.isBrowser) {
       const hasStoredPersonalityTheme = !!localStorage.getItem(
         'optimistic-tanuki-personality-theme'
@@ -41,6 +43,12 @@ export class AppComponent implements OnInit {
       if (!hasStoredPersonalityTheme) {
         void this.themeService.setPersonality('control-center');
       }
+
+      this.bootstrapService.getStatus().subscribe((status) => {
+        if (!status.configured) {
+          this.router.navigate(['/setup']);
+        }
+      });
     }
   }
 

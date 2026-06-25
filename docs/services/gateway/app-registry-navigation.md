@@ -24,7 +24,9 @@ Centralized application registry providing cross-app navigation for all HAI clie
 - Angular apps consume `libs/app-registry/src/lib/default-registry.json` as their build-time fallback and the shared registry service fetches `/api/registry/apps` on first service creation.
 - The shared registry service polls `/api/registry/apps` every five minutes by default, with `APP_REGISTRY_REFRESH_INTERVAL_MS` available for overrides or disabling.
 - Gateway receives its registry through the `GATEWAY_APP_REGISTRY` provider, loaded from `APP_REGISTRY_PATH` when present and falling back to the generated build-time registry.
+- In production, gateway startup now fails if `APP_REGISTRY_PATH` is configured but invalid or unreadable, preventing silent fallback to stale localhost defaults.
 - Gateway serves registry responses from an in-memory runtime cache, adds `Cache-Control`, `ETag`, and `X-App-Registry-Version` headers, and exposes `POST /api/registry/apps` for runtime registry replacement.
+- Gateway browser mutation checks and CORS trusted-origin handling derive public origins from registry `uiBaseUrl` values, with `CORS_ALLOWED_ORIGINS` remaining as an additive override.
 - Docker Compose mounts the registry JSON into gateway through Compose env substitution and sets `APP_REGISTRY_PATH`.
 - K8s packages `k8s/base/config/app-registry.json` through `app-registry-config` and mounts it into gateway.
 - Initial app integration:

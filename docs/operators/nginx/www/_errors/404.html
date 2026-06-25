@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 Not Found</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">This page wandered off the map.</h1>
+          <p class="lede">
+            The hostname resolved and the edge is healthy, but nginx could not
+            find a matching route or upstream response for this path.
+          </p>
+          <div class="actions">
+            <a class="button button-primary" href="/">Return Home</a>
+            <button
+              class="button button-secondary"
+              type="button"
+              onclick="history.back()"
+            >
+              Go Back
+            </button>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 404</div>
+            <div class="pill">Missing path, route, or content</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">404</div>
+          <h2>Route not found</h2>
+          <p>
+            This usually means the path is invalid for the current app, or an
+            expected frontend route was not served by the target upstream.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Check the hostname</strong>
+              <span
+                >Several apps share infrastructure but not route trees.</span
+              >
+            </div>
+            <div class="checklist-item">
+              <strong>Check SPA forwarding</strong>
+              <span
+                >If this should be a client route, verify the frontend container
+                is serving it correctly.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            The edge is reachable; the missing piece is the route, content, or
+            upstream mapping.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

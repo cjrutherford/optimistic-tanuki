@@ -1,0 +1,24 @@
+{
+  "name": "setup-console-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/setup-console-e2e/src",
+  "implicitDependencies": ["setup-console"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/setup-console-e2e/playwright.config.ts",
+        "skipInstall": true
+      },
+      "configurations": {
+        "ci": {
+          "env": {
+            "BASE_URL": "http://localhost:8099"
+          }
+        }
+      }
+    }
+  },
+  "tags": ["type:e2e"]
+}

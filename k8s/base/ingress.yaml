@@ -1,117 +1,266 @@
+# Public multi-domain ingress for nginx-based cluster deployments.
+#
+# This ingress models the same public host inventory as the operator nginx
+# examples. Keep this file aligned with:
+# - k8s/base/config/app-registry.json
+# - docs/operators/nginx/*.conf
+# - the real public DNS and certbot-managed TLS secrets
+#
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: optimistic-tanuki-ingress
+  name: public-platform-ingress
   namespace: optimistic-tanuki
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: '50m'
     nginx.ingress.kubernetes.io/proxy-read-timeout: '300'
     nginx.ingress.kubernetes.io/proxy-send-timeout: '300'
-    nginx.ingress.kubernetes.io/websocket-services: 'gateway'
 spec:
   ingressClassName: nginx
+  tls:
+    # These secrets are expected to be kept in sync from certbot output.
+    # See docs/operators/multi-domain-deployments.md for the sync contract.
+    - secretName: christopherrutherford-net-public-tls
+      hosts:
+        - christopherrutherford.net
+        - digital-homestead.christopherrutherford.net
+        - fin-commander.experiments.christopherrutherford.net
+        - lead-tracker.experiments.christopherrutherford.net
+        - video.experiments.christopherrutherford.net
+        - business.experiments.christopherrutherford.net
+    - secretName: optimistic-tanuki-public-tls
+      hosts:
+        - optimistic-tanuki.com
+    - secretName: forgeofwill-public-tls
+      hosts:
+        - forgeofwill.com
+    - secretName: hopefulaspirationsindustries-public-tls
+      hosts:
+        - hopefulaspirationsindustries.com
+        - hardware.hopefulaspirationsindustries.com
+        - store.hopefulaspirationsindustries.com
+    - secretName: towne-square-public-tls
+      hosts:
+        - towne-square.com
   rules:
-    - host: localhost
+    - host: christopherrutherford.net
       http:
         paths:
-          - path: /
+          - path: /api
             pathType: Prefix
             backend:
               service:
                 name: gateway
                 port:
                   number: 3000
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: optimistic-tanuki-ingress-client
-  namespace: optimistic-tanuki
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: localhost
-      http:
-        paths:
-          - path: /client
-            pathType: Prefix
-            backend:
-              service:
-                name: client-interface
-                port:
-                  number: 8080
-          - path: /forgeofwill
-            pathType: Prefix
-            backend:
-              service:
-                name: forgeofwill
-                port:
-                  number: 8081
-          - path: /digital-homestead
-            pathType: Prefix
-            backend:
-              service:
-                name: digital-homestead
-                port:
-                  number: 8082
-          - path: /hai
-            pathType: Prefix
-            backend:
-              service:
-                name: hai
-                port:
-                  number: 8088
-          - path: /crdn
+          - path: /
             pathType: Prefix
             backend:
               service:
                 name: christopherrutherford-net
                 port:
                   number: 8083
-          - path: /console
+    - host: digital-homestead.christopherrutherford.net
+      http:
+        paths:
+          - path: /api
             pathType: Prefix
             backend:
               service:
-                name: owner-console
+                name: gateway
                 port:
-                  number: 8084
-          - path: /store
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: digital-homestead
+                port:
+                  number: 8082
+    - host: optimistic-tanuki.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3301
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: client-interface
+                port:
+                  number: 8080
+    - host: forgeofwill.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3300
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: forgeofwill
+                port:
+                  number: 8081
+    - host: towne-square.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3300
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: local-hub
+                port:
+                  number: 8087
+    - host: hopefulaspirationsindustries.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hai
+                port:
+                  number: 8088
+    - host: hardware.hopefulaspirationsindustries.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: system-configurator
+                port:
+                  number: 8091
+    - host: store.hopefulaspirationsindustries.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
             pathType: Prefix
             backend:
               service:
                 name: store-client
                 port:
                   number: 8085
-          - path: /d6
-            pathType: Prefix
-            backend:
-              service:
-                name: d6
-                port:
-                  number: 8086
-          - path: /app
-            pathType: Prefix
-            backend:
-              service:
-                name: configurable-client
-                port:
-                  number: 8090
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: business-site-ingress
-  namespace: optimistic-tanuki
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: '50m'
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: business-site.localhost
+    - host: fin-commander.experiments.christopherrutherford.net
       http:
         paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fin-commander
+                port:
+                  number: 8089
+    - host: lead-tracker.experiments.christopherrutherford.net
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: leads-app
+                port:
+                  number: 4201
+    - host: video.experiments.christopherrutherford.net
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: video-client
+                port:
+                  number: 8093
+    - host: business.experiments.christopherrutherford.net
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: gateway
+                port:
+                  number: 3000
           - path: /
             pathType: Prefix
             backend:

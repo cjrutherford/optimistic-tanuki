@@ -1,0 +1,60 @@
+{
+  "name": "setup-console",
+  "projectType": "application",
+  "prefix": "app",
+  "sourceRoot": "apps/setup-console/src",
+  "tags": ["type:app"],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/setup-console",
+        "index": "apps/setup-console/src/index.html",
+        "browser": "apps/setup-console/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/setup-console/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "styles": ["apps/setup-console/src/styles.scss"],
+        "server": "apps/setup-console/src/main.server.ts",
+        "ssr": { "entry": "apps/setup-console/src/server.ts" },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "500kb",
+              "maximumError": "1mb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "development": { "buildTarget": "setup-console:build:development" },
+        "production": { "buildTarget": "setup-console:build:production" }
+      },
+      "defaultConfiguration": "development"
+    },
+    "lint": { "executor": "@nx/eslint:lint" },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": { "jestConfig": "apps/setup-console/jest.config.ts" }
+    },
+    "serve-static": {
+      "executor": "@nx/web:file-server",
+      "options": { "port": 8099 }
+    }
+  }
+}

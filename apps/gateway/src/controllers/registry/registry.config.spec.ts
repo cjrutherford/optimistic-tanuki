@@ -30,4 +30,21 @@ describe('registry config', () => {
   it('falls back to the generated default registry when no path is provided', () => {
     expect(loadConfiguredRegistry(undefined)).toEqual(DEFAULT_APP_REGISTRY);
   });
+
+  it('throws in production when a configured registry path is invalid', () => {
+    const originalNodeEnv = process.env['NODE_ENV'];
+    process.env['NODE_ENV'] = 'production';
+
+    try {
+      expect(() => loadConfiguredRegistry('/tmp/does-not-exist.json')).toThrow(
+        /Failed to load app registry/
+      );
+    } finally {
+      if (originalNodeEnv === undefined) {
+        delete process.env['NODE_ENV'];
+      } else {
+        process.env['NODE_ENV'] = originalNodeEnv;
+      }
+    }
+  });
 });

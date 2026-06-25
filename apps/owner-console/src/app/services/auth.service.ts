@@ -15,6 +15,9 @@ import {
 export class AuthService {
   private readonly API_URL = '/api';
   private readonly TOKEN_KEY = 'auth_token';
+  private readonly APP_SCOPE_HEADER = {
+    'x-ot-appscope': 'owner-console',
+  };
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(
     this.hasToken()
   );
@@ -54,7 +57,9 @@ export class AuthService {
   ): Observable<AuthResponse> {
     const loginData: LoginRequest = { email, password, mfa };
     return this.http
-      .post<AuthResponse>(`${this.API_URL}/authentication/login`, loginData)
+      .post<AuthResponse>(`${this.API_URL}/authentication/login`, loginData, {
+        headers: this.APP_SCOPE_HEADER,
+      })
       .pipe(
         tap((response) => {
           if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
@@ -84,7 +89,10 @@ export class AuthService {
     return this.http
       .post<AuthResponse>(
         `${this.API_URL}/authentication/register`,
-        registerData
+        registerData,
+        {
+          headers: this.APP_SCOPE_HEADER,
+        }
       )
       .pipe(
         tap((response) => {

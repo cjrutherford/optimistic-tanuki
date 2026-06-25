@@ -1,6 +1,15 @@
 import { appRoutes } from './app.routes';
 
 describe('appRoutes', () => {
+  it('exposes an anonymous control-center status route outside the dashboard shell', () => {
+    const controlCenterRoute = appRoutes.find(
+      (route) => route.path === 'control-center'
+    );
+
+    expect(controlCenterRoute).toBeDefined();
+    expect(controlCenterRoute?.canActivate).toBeUndefined();
+  });
+
   it('exposes operator workspace routes under the dashboard shell', () => {
     const dashboardRoute = appRoutes.find(
       (route) => route.path === 'dashboard'
@@ -22,6 +31,8 @@ describe('appRoutes', () => {
         'community-ops',
         'contacts',
         'operations',
+        'control-center',
+        'oauth-inspector',
         'registry',
         'social-governance',
         'forum-governance',

@@ -48,9 +48,23 @@ kubectl apply -f dist/admin-env/<deployment>/argocd/application.yaml
 - local stack workflow: `docs/devops/docker-compose.md`
 - deployment workflow: `docs/devops/deployment-workspace-workflow.md`
 - deployment generation mechanics: `docs/devops/deployment-generation.md`
+- multi-domain routing guide: `docs/operators/multi-domain-deployments.md`
+- sample public ingress map: `docs/operators/k8s/multi-domain-ingress.sample.yaml`
 - ArgoCD workflow: `docs/devops/argocd.md`
 - generated deployment workspaces: `dist/admin-env/<deployment>/`
 - deployment tooling: `tools/admin-env-wizard/`
+- setup console app: `apps/setup-console/`
+- managed setup-console uploads: `ops/deployments/managed-files/<environment>/`
+
+## Setup Console Takeover
+
+Use the setup console when you need to migrate a compatibility-era deployment
+that still relies on a deployment YAML plus a combined `tanuki.env` file.
+
+- `Deployment YAML Path`: point at the existing deployment manifest.
+- `Environment / Secrets Env Path`: point at the combined env file or a dedicated `.secrets.env`.
+- Managed uploads in Step 5 copy operator-provided files into `ops/deployments/managed-files/<environment>/` and save the resulting host path back into the setting override.
+- Host browsing in Step 5 is for direct references to existing on-host files or directories.
 
 ## Default Operator Rule
 

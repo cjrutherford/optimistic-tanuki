@@ -1,7 +1,9 @@
 import type { Request } from 'express';
+import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 import {
   applyGatewaySecurityHeaders,
   enforceTrustedBrowserOrigins,
+  getTrustedOrigins,
   isAllowedOrigin,
   isProxiedRequest,
   shouldRejectBrowserMutation,
@@ -33,7 +35,48 @@ const createRequest = (overrides: Partial<Request> = {}): Request => {
   return request;
 };
 
+const registry: AppRegistry = {
+  version: '1.0.0',
+  generatedAt: '2026-06-23T00:00:00Z',
+  apps: [
+    {
+      appId: 'client-interface',
+      name: 'Optimistic Tanuki',
+      domain: 'optimistic-tanuki.com',
+      uiBaseUrl: 'https://optimistic-tanuki.com',
+      apiBaseUrl: 'https://optimistic-tanuki.com/api',
+      appType: 'client',
+      visibility: 'public',
+    },
+    {
+      appId: 'business-site',
+      name: 'Business Site',
+      domain: 'christopherrutherford.net',
+      subdomain: 'business.experiments',
+      uiBaseUrl: 'https://business.experiments.christopherrutherford.net',
+      apiBaseUrl: 'https://business.experiments.christopherrutherford.net/api',
+      appType: 'client',
+      visibility: 'public',
+    },
+  ],
+};
+
 describe('gateway security helpers', () => {
+  it('derives trusted origins from configured origins and registry uiBaseUrl values', () => {
+    expect(
+      getTrustedOrigins({
+        configuredOrigins: ['https://towne-square.com'],
+        registry,
+      })
+    ).toEqual(
+      expect.arrayContaining([
+        'https://towne-square.com',
+        'https://optimistic-tanuki.com',
+        'https://business.experiments.christopherrutherford.net',
+      ])
+    );
+  });
+
   it('allows configured origins', () => {
     expect(
       isAllowedOrigin('https://portal.optimistictanuki.com', [
@@ -53,7 +96,8 @@ describe('gateway security helpers', () => {
   it('allows same-origin browser mutations', () => {
     expect(
       shouldRejectBrowserMutation(
-        createRequest({ headers: { origin: 'http://localhost:3000' } })
+        createRequest({ headers: { origin: 'http://localhost:3000' } }),
+        ['http://localhost:3000']
       )
     ).toBe(false);
   });
@@ -89,19 +133,36 @@ describe('gateway security helpers', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('allows proxied browser mutations regardless of origin', () => {
+  it('allows proxied browser mutations when forwarded origin is trusted', () => {
     expect(
       shouldRejectBrowserMutation(
         createRequest({
           headers: {
-            origin: 'https://client.example.com',
-            'x-forwarded-host': 'client.example.com',
+            origin: 'https://optimistic-tanuki.com',
+            'x-forwarded-host': 'optimistic-tanuki.com',
             'x-forwarded-proto': 'https',
             'sec-fetch-site': 'cross-site',
           },
-        })
+        }),
+        getTrustedOrigins({ registry })
       )
     ).toBe(false);
+  });
+
+  it('rejects proxied browser mutations when forwarded origin is not trusted', () => {
+    expect(
+      shouldRejectBrowserMutation(
+        createRequest({
+          headers: {
+            origin: 'https://evil.example.com',
+            'x-forwarded-host': 'evil.example.com',
+            'x-forwarded-proto': 'https',
+            'sec-fetch-site': 'cross-site',
+          },
+        }),
+        getTrustedOrigins({ registry })
+      )
+    ).toBe(true);
   });
 
   it('identifies proxied requests', () => {

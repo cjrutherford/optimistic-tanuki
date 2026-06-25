@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>401 Unauthorized</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">Access needs a valid sign-in.</h1>
+          <p class="lede">
+            The request reached the platform, but this destination requires an
+            authenticated session before it can continue.
+          </p>
+          <div class="actions">
+            <a class="button button-primary" href="/">Return Home</a>
+            <button
+              class="button button-secondary"
+              type="button"
+              onclick="window.location.reload()"
+            >
+              Try Again
+            </button>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 401</div>
+            <div class="pill">Check your session or provider login</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">401</div>
+          <h2>Session required</h2>
+          <p>
+            This is usually a missing login, expired token, or a callback that
+            lost session state.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Sign in again</strong>
+              <span>Refresh the session, then retry the original action.</span>
+            </div>
+            <div class="checklist-item">
+              <strong>Check callback hosts</strong>
+              <span
+                >OAuth return URLs and runtime registry hosts must align.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            Host-specific access rules are enforced at the edge before the
+            request reaches the app.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

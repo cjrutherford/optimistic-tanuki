@@ -56,8 +56,10 @@ describe('DashboardComponent', () => {
       'Governance',
       'Experience',
       'Commerce',
+      'CRM',
       'Community Ops',
       'Operations',
+      'Control Center',
       'Logout',
     ]);
   });

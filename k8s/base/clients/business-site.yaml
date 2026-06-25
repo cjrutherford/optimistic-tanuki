@@ -60,4 +60,4 @@ spec:
   ports:
     - port: 8094
       targetPort: 4000
-  type: LoadBalancer
+  type: ClusterIP

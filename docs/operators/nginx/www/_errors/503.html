@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>503 Service Unavailable</title>
+    <link rel="stylesheet" href="/_errors/error.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <div class="main">
+          <div class="eyebrow">Optimistic Tanuki Platform</div>
+          <h1 class="title">This service is temporarily unavailable.</h1>
+          <p class="lede">
+            The host is online, but the application behind it is not currently
+            ready to serve traffic.
+          </p>
+          <div class="actions">
+            <button
+              class="button button-primary"
+              type="button"
+              onclick="window.location.reload()"
+            >
+              Try Again
+            </button>
+            <a class="button button-secondary" href="/">Return Home</a>
+          </div>
+          <div class="meta">
+            <div class="pill"><span class="status-mark"></span> Status 503</div>
+            <div class="pill">Maintenance, restart, or warm-up window</div>
+          </div>
+        </div>
+        <aside class="rail">
+          <div class="code-badge">503</div>
+          <h2>Temporary outage</h2>
+          <p>
+            This often appears during deployment, phased startup, or when an
+            upstream is present but not yet ready.
+          </p>
+          <div class="checklist">
+            <div class="checklist-item">
+              <strong>Wait a moment and retry</strong>
+              <span
+                >Short interruptions can clear once the target service finishes
+                booting.</span
+              >
+            </div>
+            <div class="checklist-item">
+              <strong>Check deploy status</strong>
+              <span
+                >Look for container restarts, compose updates, or registry
+                changes still taking effect.</span
+              >
+            </div>
+          </div>
+          <div class="footer-note">
+            If this persists, treat it as an availability issue rather than a
+            permissions or routing problem.
+          </div>
+        </aside>
+      </section>
+    </main>
+  </body>
+</html>

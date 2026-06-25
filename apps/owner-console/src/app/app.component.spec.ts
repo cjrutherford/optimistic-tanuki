@@ -3,6 +3,8 @@ import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
 import { RouterModule } from '@angular/router';
+import { of } from 'rxjs';
+import { BootstrapService } from './services/bootstrap.service';
 
 const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
 
@@ -10,7 +12,19 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, RouterModule.forRoot([])],
-      providers: [{ provide: PLATFORM_ID, useValue: 'browser' }],
+      providers: [
+        { provide: PLATFORM_ID, useValue: 'browser' },
+        {
+          provide: BootstrapService,
+          useValue: {
+            getStatus: jest
+              .fn()
+              .mockReturnValue(
+                of({ configured: true, phase: 'ready', checks: [] })
+              ),
+          },
+        },
+      ],
     }).compileComponents();
   });
 
