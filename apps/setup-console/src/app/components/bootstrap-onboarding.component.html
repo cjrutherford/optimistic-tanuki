@@ -1367,6 +1367,19 @@
         [kind]="'error'"
         [headline]="deployError"
       ></otui-state-message>
+      } @if (deployLogs.length) {
+      <otui-card class="deploy-log-card">
+        <div class="settings-card-header">
+          <div>
+            <strong>Deployment Log</strong>
+            <p>
+              Live build, pull, and rollout output from the batched Docker
+              commands.
+            </p>
+          </div>
+        </div>
+        <pre class="deploy-log-output">{{ deployLogs.join('\n') }}</pre>
+      </otui-card>
       }
       <div class="form-actions">
         <otui-button

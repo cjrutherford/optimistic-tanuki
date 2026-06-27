@@ -560,6 +560,24 @@
   margin: 1rem 0;
 }
 
+.deploy-log-card {
+  margin-top: 1rem;
+}
+
+.deploy-log-output {
+  margin: 0;
+  max-height: 22rem;
+  overflow: auto;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: #0f172a;
+  color: #dbeafe;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .reconnect-overlay {
   position: fixed;
   inset: 0;

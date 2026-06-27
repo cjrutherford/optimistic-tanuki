@@ -102,3 +102,5 @@ opencode.json
 ops/
 .playwright/
 .playwright-mcp/
+.setup-complete
+.setup-operator.json

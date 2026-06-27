@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { execFile } from 'child_process';
+import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { dump, load } from 'js-yaml';
 import {
@@ -172,6 +172,8 @@ export class SetupService {
   private readonly setupCompletePath: string;
   private readonly setupMode: 'setup' | 'reconfigure';
   private readonly operatorInfoPath: string;
+  private readonly dockerPullBatchSize: number;
+  private readonly dockerBuildBatchSize: number;
   private deployProgress: SetupDeployProgressSnapshot;
 
   constructor() {
@@ -184,6 +186,14 @@ export class SetupService {
     this.operatorInfoPath = path.join(
       this.workspaceRoot,
       '.setup-operator.json'
+    );
+    this.dockerPullBatchSize = this.readPositiveInt(
+      process.env['SETUP_CONSOLE_DOCKER_PULL_BATCH_SIZE'],
+      4
+    );
+    this.dockerBuildBatchSize = this.readPositiveInt(
+      process.env['SETUP_CONSOLE_DOCKER_BUILD_BATCH_SIZE'],
+      10
     );
     this.setupMode =
       process.env['SETUP_CONSOLE_MODE'] === 'reconfigure'
@@ -247,6 +257,11 @@ export class SetupService {
   private composeArgs(...args: string[]): string[] {
     const composeFile = path.join(this.workspaceRoot, 'docker-compose.yaml');
     return ['compose', '-f', composeFile, ...args];
+  }
+
+  private readPositiveInt(input: string | undefined, fallback: number): number {
+    const parsed = Number(input);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
   }
 
   private timeoutSignal(ms: number): AbortSignal | undefined {
@@ -559,6 +574,7 @@ export class SetupService {
   getDeployProgress(): SetupDeployProgressSnapshot {
     return {
       ...this.deployProgress,
+      logs: [...this.deployProgress.logs],
       phases: this.deployProgress.phases.map((phase) => ({
         ...phase,
         substeps: phase.substeps.map((substep) => ({ ...substep })),
@@ -576,6 +592,7 @@ export class SetupService {
       activeSubstepId: null,
       message: '',
       error: null,
+      logs: [],
       updatedAt: new Date().toISOString(),
       phases: [
         this.createDeployPhase('building', 'Prepare rollout assets', [
@@ -663,6 +680,20 @@ export class SetupService {
     this.deployProgress.updatedAt = new Date().toISOString();
   }
 
+  private appendDeployLog(line: string, updateMessage = false): void {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      return;
+    }
+    this.deployProgress.logs = [...this.deployProgress.logs, trimmed].slice(
+      -250
+    );
+    if (updateMessage) {
+      this.deployProgress.message = trimmed;
+    }
+    this.deployProgress.updatedAt = new Date().toISOString();
+  }
+
   private completeDeploySubstep(
     phase: SetupDeployPhaseId,
     substepId: string
@@ -701,6 +732,88 @@ export class SetupService {
       substepState.status = 'error';
     }
     this.deployProgress.updatedAt = new Date().toISOString();
+  }
+
+  private async runStreamingCommand(input: {
+    command: string;
+    args: string[];
+    cwd?: string;
+    env?: Record<string, string>;
+    onLine?: (line: string) => void;
+  }): Promise<void> {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(input.command, input.args, {
+        cwd: input.cwd || this.workspaceRoot,
+        env: {
+          ...process.env,
+          ...(input.env || {}),
+        },
+      });
+
+      let stdoutBuffer = '';
+      let stderrBuffer = '';
+      const recentLines: string[] = [];
+
+      const emitLine = (line: string) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return;
+        }
+        recentLines.push(trimmed);
+        if (recentLines.length > 20) {
+          recentLines.shift();
+        }
+        input.onLine?.(trimmed);
+      };
+
+      const flush = (
+        chunkBuffer: string,
+        emit: (line: string) => void
+      ): string => {
+        const lines = chunkBuffer.split(/\r?\n/);
+        const pending = lines.pop() || '';
+        for (const line of lines) {
+          emit(line);
+        }
+        return pending;
+      };
+
+      child.stdout.on('data', (chunk: Buffer | string) => {
+        stdoutBuffer += chunk.toString();
+        stdoutBuffer = flush(stdoutBuffer, emitLine);
+      });
+
+      child.stderr.on('data', (chunk: Buffer | string) => {
+        stderrBuffer += chunk.toString();
+        stderrBuffer = flush(stderrBuffer, emitLine);
+      });
+
+      child.on('error', (error) => {
+        reject(error);
+      });
+
+      child.on('close', (code) => {
+        if (stdoutBuffer.trim()) {
+          emitLine(stdoutBuffer.trim());
+        }
+        if (stderrBuffer.trim()) {
+          emitLine(stderrBuffer.trim());
+        }
+        if (code === 0) {
+          resolve();
+          return;
+        }
+        const details =
+          recentLines.length > 0
+            ? ` Last output: ${recentLines.slice(-8).join(' | ')}`
+            : '';
+        reject(
+          new Error(
+            `${input.command} exited with code ${code ?? 'unknown'}.${details}`
+          )
+        );
+      });
+    });
   }
 
   async browseHostPath(inputPath?: string): Promise<SetupHostPathListing> {
@@ -830,6 +943,7 @@ export class SetupService {
     const deploymentPath = this.resolveDeploymentPath();
     const secretsPath = this.resolveSecretsPath();
     const goBin = this.resolveGoBin();
+    let artifactOutputDir = 'dist/admin-env';
     this.resetDeployProgress();
     this.startDeployProgress(
       'building',
@@ -875,18 +989,54 @@ export class SetupService {
         }
       );
       const result = JSON.parse(stdout);
+      artifactOutputDir = result.outputDir || artifactOutputDir;
+      this.appendDeployLog(
+        `Generated deployment artifacts at ${artifactOutputDir}.`
+      );
+
+      if (this.activeComposeMode() === 'build') {
+        const enabledServices = this.enabledServiceIds();
+        if (enabledServices.length > 0) {
+          this.appendDeployLog(
+            `Starting batched Docker builds for ${enabledServices.length} services (batch size ${this.dockerBuildBatchSize}).`,
+            true
+          );
+          await this.runStreamingCommand({
+            command: 'bash',
+            args: [
+              './scripts/docker-build-batched.sh',
+              String(this.dockerBuildBatchSize),
+              'docker-compose.yaml',
+              '--services',
+              enabledServices.join(','),
+            ],
+            cwd: this.workspaceRoot,
+            env: {
+              DOCKER_BATCH_SIZE: String(this.dockerBuildBatchSize),
+            },
+            onLine: (line) => this.appendDeployLog(line, true),
+          });
+        } else {
+          this.appendDeployLog(
+            'No enabled services required Docker build work for this deployment.'
+          );
+        }
+      }
+
       this.completeDeploySubstep('building', 'build-or-pull');
       this.startDeployProgress(
         'building',
         'verify-artifacts',
         'Verifying generated deployment artifacts...'
       );
+      this.appendDeployLog('Build preparation completed.', true);
       this.completeDeploySubstep('building', 'verify-artifacts');
       return {
         success: true,
-        message: `Artifacts generated at ${
-          result.outputDir || 'dist/admin-env'
-        }`,
+        message:
+          this.activeComposeMode() === 'build'
+            ? `Artifacts generated and Docker builds completed at ${artifactOutputDir}`
+            : `Artifacts generated at ${artifactOutputDir}`,
       };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
@@ -1066,22 +1216,46 @@ export class SetupService {
         'apply-services',
         'Applying service rollout...'
       );
-      const { stdout } = await execFileAsync(
-        'docker',
-        this.composeArgs('up', '-d', ...enabledServices),
-        {
+
+      if (this.activeComposeMode() === 'image') {
+        this.appendDeployLog(
+          `Starting batched docker pulls for ${enabledServices.length} services (batch size ${this.dockerPullBatchSize}).`,
+          true
+        );
+        await this.runStreamingCommand({
+          command: 'bash',
+          args: ['./scripts/docker-compose-deploy.sh'],
           cwd: this.workspaceRoot,
-          maxBuffer: 10 * 1024 * 1024,
-        }
-      );
+          env: {
+            PRODUCTION_IMAGE_TAG: config.environment.defaultTag || 'latest',
+            DOCKER_PULL_BATCH_SIZE: String(this.dockerPullBatchSize),
+          },
+          onLine: (line) => this.appendDeployLog(line, true),
+        });
+      } else {
+        await this.runStreamingCommand({
+          command: 'docker',
+          args: this.composeArgs('up', '-d', ...enabledServices),
+          cwd: this.workspaceRoot,
+          onLine: (line) => this.appendDeployLog(line, true),
+        });
+      }
+
       this.completeDeploySubstep('deploying', 'apply-services');
       this.startDeployProgress(
         'deploying',
         'verify-startup',
         'Verifying gateway and service startup...'
       );
+      this.appendDeployLog('Service rollout command completed.', true);
       this.completeDeploySubstep('deploying', 'verify-startup');
-      return { success: true, message: stdout || 'Services deployed' };
+      return {
+        success: true,
+        message:
+          this.activeComposeMode() === 'image'
+            ? 'Services pulled, recreated, and seeded through the batched production rollout script.'
+            : 'Services deployed',
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       this.failDeployProgress(
@@ -1108,6 +1282,24 @@ export class SetupService {
     if (!db.success) return { phase: 'init-databases', ...db };
 
     return this.deployServices();
+  }
+
+  private activeComposeMode(): string {
+    try {
+      return this.loadDeploymentConfig().environment?.composeMode || 'image';
+    } catch {
+      return 'image';
+    }
+  }
+
+  private enabledServiceIds(): string[] {
+    try {
+      return (this.loadDeploymentConfig().services || [])
+        .filter((service) => service.enabled)
+        .map((service) => service.serviceId);
+    } catch {
+      return [];
+    }
   }
 
   async createOwner(

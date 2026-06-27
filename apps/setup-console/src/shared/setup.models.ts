@@ -196,6 +196,7 @@ export interface SetupDeployProgressSnapshot {
   activeSubstepId?: string | null;
   message: string;
   error?: string | null;
+  logs: string[];
   phases: SetupDeployPhaseProgress[];
   updatedAt: string;
 }
