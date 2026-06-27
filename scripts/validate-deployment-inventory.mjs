@@ -6,6 +6,7 @@ import { execFileSync } from 'node:child_process';
 import yaml from 'js-yaml';
 import { validateGeneratedWorkspace } from './lib/deployment-workspace-validation.mjs';
 import {
+  normalizeDeploymentInventory,
   validateComposeImageNames,
   validateDockerWorkflowMatrix,
 } from './lib/deployment-inventory-validation.mjs';
@@ -22,7 +23,7 @@ const inventoryJson = process.env.DEPLOYMENT_INVENTORY_FILE
       encoding: 'utf8',
     });
 
-const inventory = JSON.parse(inventoryJson);
+const inventory = normalizeDeploymentInventory(JSON.parse(inventoryJson));
 const workspaceDir = process.env.DEPLOYMENT_WORKSPACE_DIR;
 const expectedApps = inventory.apps
   .map((app) => app.buildAppId || app.id)

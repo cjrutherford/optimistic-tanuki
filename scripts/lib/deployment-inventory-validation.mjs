@@ -25,6 +25,25 @@ function compareRequiredList(label, expected, actual) {
   return [`${label} missing: ${missing.join(', ')}`];
 }
 
+function normalizeInventoryApp(app) {
+  return {
+    ...app,
+    ID: app.ID || app.id,
+    BuildAppID: app.BuildAppID || app.buildAppId,
+    ComposeServiceName: app.ComposeServiceName || app.composeServiceName,
+    Dockerfile: app.Dockerfile || app.dockerfile,
+    ImageName: app.ImageName || app.imageName,
+    K8sManifestPath: app.K8sManifestPath || app.k8sManifestPath,
+  };
+}
+
+export function normalizeDeploymentInventory(inventory) {
+  return {
+    ...inventory,
+    apps: (inventory.apps || []).map((app) => normalizeInventoryApp(app)),
+  };
+}
+
 function readStaticMatrixApps(job) {
   const include = job?.strategy?.matrix?.include;
   if (!Array.isArray(include)) {

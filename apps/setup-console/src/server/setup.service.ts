@@ -1218,20 +1218,26 @@ export class SetupService {
       );
 
       if (this.activeComposeMode() === 'image') {
-        this.appendDeployLog(
-          `Starting batched docker pulls for ${enabledServices.length} services (batch size ${this.dockerPullBatchSize}).`,
-          true
-        );
-        await this.runStreamingCommand({
-          command: 'bash',
-          args: ['./scripts/docker-compose-deploy.sh'],
-          cwd: this.workspaceRoot,
-          env: {
-            PRODUCTION_IMAGE_TAG: config.environment.defaultTag || 'latest',
-            DOCKER_PULL_BATCH_SIZE: String(this.dockerPullBatchSize),
-          },
-          onLine: (line) => this.appendDeployLog(line, true),
-        });
+        if (enabledServices.length > 0) {
+          this.appendDeployLog(
+            `Starting batched docker pulls for ${enabledServices.length} services (batch size ${this.dockerPullBatchSize}).`,
+            true
+          );
+          await this.runStreamingCommand({
+            command: 'bash',
+            args: ['./scripts/docker-compose-deploy.sh', ...enabledServices],
+            cwd: this.workspaceRoot,
+            env: {
+              PRODUCTION_IMAGE_TAG: config.environment.defaultTag || 'latest',
+              DOCKER_PULL_BATCH_SIZE: String(this.dockerPullBatchSize),
+            },
+            onLine: (line) => this.appendDeployLog(line, true),
+          });
+        } else {
+          this.appendDeployLog(
+            'No enabled services required deployment work for this deployment.'
+          );
+        }
       } else {
         await this.runStreamingCommand({
           command: 'docker',

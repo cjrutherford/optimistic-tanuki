@@ -251,6 +251,42 @@ describe('SetupService', () => {
     );
   });
 
+  it('passes only enabled services to the image-mode rollout script', async () => {
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'docker-compose.yaml'),
+      'services:\n  gateway:\n  authentication:\n  profile:\n'
+    );
+
+    const service: any = new SetupService();
+    service.loadDeploymentConfig = () =>
+      ({
+        environment: { composeMode: 'image', defaultTag: 'sha-test' },
+        services: [
+          { serviceId: 'gateway', enabled: true },
+          { serviceId: 'authentication', enabled: true },
+          { serviceId: 'profile', enabled: false },
+        ],
+      } as any);
+    service.runStreamingCommand = jest.fn().mockResolvedValue(undefined);
+
+    await expect(service.deployServices()).resolves.toEqual({
+      success: true,
+      message:
+        'Services pulled, recreated, and seeded through the batched production rollout script.',
+    });
+
+    expect(service.runStreamingCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        command: 'bash',
+        args: [
+          './scripts/docker-compose-deploy.sh',
+          'gateway',
+          'authentication',
+        ],
+      })
+    );
+  });
+
   it('browses host paths and stores managed files for an environment', async () => {
     const browseRoot = path.join(workspaceRoot, 'browse');
     fs.mkdirSync(path.join(browseRoot, 'nested'), { recursive: true });

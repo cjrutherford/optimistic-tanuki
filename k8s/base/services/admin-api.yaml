@@ -57,8 +57,6 @@ spec:
               mountPath: /app/.secrets
             - name: workspace
               mountPath: /workspace
-            - name: docker-socket
-              mountPath: /var/run/docker.sock
       volumes:
         - name: ops
           hostPath:
@@ -67,11 +65,7 @@ spec:
           hostPath:
             path: /.secrets
         - name: workspace
-          hostPath:
-            path: /
-        - name: docker-socket
-          hostPath:
-            path: /var/run/docker.sock
+          emptyDir: {}
       restartPolicy: Always
 ---
 apiVersion: v1
