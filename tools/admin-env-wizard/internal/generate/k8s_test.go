@@ -168,6 +168,24 @@ func TestK8sGeneratorCreatesProviderOverlay(t *testing.T) {
 	}
 }
 
+func TestK8sGeneratorSkipsAdminAPI(t *testing.T) {
+	env := fixtureEnvironmentK8s()
+	env.Services = append(env.Services, domain.ServiceSelection{ServiceID: "admin-api", Enabled: true})
+	cat := catalog.DefaultCatalog()
+
+	files, err := GenerateK8s(env, cat)
+	if err != nil {
+		t.Fatalf("failed to generate k8s: %v", err)
+	}
+
+	if _, ok := files["base/admin-api.yaml"]; ok {
+		t.Fatal("did not expect admin-api deployment in generated k8s output")
+	}
+	if _, ok := files["base/admin-api-service.yaml"]; ok {
+		t.Fatal("did not expect admin-api service in generated k8s output")
+	}
+}
+
 func TestK8sGeneratorProviderOverlayContainsStorageAndServiceTuning(t *testing.T) {
 	env := fixtureEnvironmentK8s()
 	env.Provider = domain.ProviderOCI

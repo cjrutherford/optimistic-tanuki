@@ -51,7 +51,11 @@ if [ -n "$ROLLBACK_IMAGE_TAG" ]; then
     echo "Keeping rollback image tag: $ROLLBACK_IMAGE_TAG"
 fi
 
-mapfile -t SERVICES < <(compose_cmd config --services)
+if [ "$#" -gt 0 ]; then
+    SERVICES=("$@")
+else
+    mapfile -t SERVICES < <(compose_cmd config --services)
+fi
 TOTAL_SERVICES=${#SERVICES[@]}
 
 echo "Pulling $TOTAL_SERVICES services in batches of $BATCH_SIZE"
@@ -61,7 +65,7 @@ for (( i=0; i<TOTAL_SERVICES; i+=BATCH_SIZE )); do
     compose_cmd pull "${BATCH[@]}"
 done
 
-compose_cmd up -d --no-build --force-recreate
+compose_cmd up -d --no-build --force-recreate "${SERVICES[@]}"
 pnpm run docker:prod:seed
 compose_cmd ps
 

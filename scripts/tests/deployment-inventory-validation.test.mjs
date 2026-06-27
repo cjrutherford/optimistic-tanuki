@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  normalizeDeploymentInventory,
   validateComposeImageNames,
   validateDockerWorkflowMatrix,
 } from '../lib/deployment-inventory-validation.mjs';
@@ -44,4 +45,34 @@ test('validateComposeImageNames allows extra compose-only images while requiring
   );
 
   assert.deepEqual(errors, []);
+});
+
+test('normalizeDeploymentInventory adds legacy aliases for camelCase inventory apps', () => {
+  const normalized = normalizeDeploymentInventory({
+    apps: [
+      {
+        id: 'gateway',
+        buildAppId: 'gateway',
+        composeServiceName: 'gateway',
+        dockerfile: 'apps/gateway/Dockerfile',
+        imageName: 'cjrutherford/optimistic_tanuki_gateway',
+        k8sManifestPath: 'k8s/base/gateway.yaml',
+      },
+    ],
+  });
+
+  assert.deepEqual(normalized.apps[0], {
+    id: 'gateway',
+    buildAppId: 'gateway',
+    composeServiceName: 'gateway',
+    dockerfile: 'apps/gateway/Dockerfile',
+    imageName: 'cjrutherford/optimistic_tanuki_gateway',
+    k8sManifestPath: 'k8s/base/gateway.yaml',
+    ID: 'gateway',
+    BuildAppID: 'gateway',
+    ComposeServiceName: 'gateway',
+    Dockerfile: 'apps/gateway/Dockerfile',
+    ImageName: 'cjrutherford/optimistic_tanuki_gateway',
+    K8sManifestPath: 'k8s/base/gateway.yaml',
+  });
 });

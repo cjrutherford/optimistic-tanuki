@@ -335,6 +335,7 @@ export class BootstrapOnboardingComponent implements OnInit, OnDestroy {
     | null = null;
   deployMessage = '';
   deployError: string | null = null;
+  deployLogs: string[] = [];
   deployPhases: DeployPhaseState[] = this.createDeployPhases();
 
   ngOnInit() {
@@ -1093,6 +1094,7 @@ export class BootstrapOnboardingComponent implements OnInit, OnDestroy {
   private applyDeployProgressSnapshot(snapshot: SetupDeployProgressSnapshot) {
     this.deployMessage = snapshot.message || this.deployMessage;
     this.deployError = snapshot.error || null;
+    this.deployLogs = snapshot.logs || [];
     if (
       snapshot.activePhase === 'idle' ||
       snapshot.activePhase === 'done' ||

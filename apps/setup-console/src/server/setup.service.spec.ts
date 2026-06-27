@@ -251,6 +251,85 @@ describe('SetupService', () => {
     );
   });
 
+  it('deploys only enabled services in image compose mode', async () => {
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'docker-compose.yaml'),
+      [
+        'services:',
+        '  gateway:',
+        '    image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}',
+        '  authentication:',
+        '    image: cjrutherford/optimistic_tanuki_authentication:${PRODUCTION_IMAGE_TAG:-latest}',
+        '  profile:',
+        '    image: cjrutherford/optimistic_tanuki_profile:${PRODUCTION_IMAGE_TAG:-latest}',
+      ].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'ops', 'deployments', 'production.yaml'),
+      [
+        'version: v1alpha1',
+        'environment:',
+        '  name: production',
+        '  composeMode: image',
+        '  defaultTag: sha-target',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+        '  - serviceId: authentication',
+        '    enabled: false',
+        '  - serviceId: profile',
+        '    enabled: true',
+      ].join('\n')
+    );
+
+    const service = new SetupService();
+    const runStreamingCommand = jest
+      .spyOn(service as any, 'runStreamingCommand')
+      .mockImplementation(async () => undefined);
+
+    await expect(service.deployServices()).resolves.toEqual({
+      success: true,
+      message:
+        'Services pulled, recreated, and seeded through the batched production rollout script.',
+    });
+
+    expect(runStreamingCommand).toHaveBeenCalledTimes(2);
+    expect(runStreamingCommand).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          path.join(workspaceRoot, 'docker-compose.yaml'),
+          'pull',
+          'gateway',
+          'profile',
+        ],
+      })
+    );
+    expect(runStreamingCommand).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          path.join(workspaceRoot, 'docker-compose.yaml'),
+          'up',
+          '-d',
+          '--no-build',
+          '--force-recreate',
+          'gateway',
+          'profile',
+        ],
+        env: expect.objectContaining({
+          PRODUCTION_IMAGE_TAG: 'sha-target',
+        }),
+      })
+    );
+  });
+
   it('browses host paths and stores managed files for an environment', async () => {
     const browseRoot = path.join(workspaceRoot, 'browse');
     fs.mkdirSync(path.join(browseRoot, 'nested'), { recursive: true });

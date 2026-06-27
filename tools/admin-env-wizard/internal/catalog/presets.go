@@ -720,6 +720,50 @@ func (c *Catalog) initServices() {
 				{ServiceID: "postgres", Required: true, Database: domain.InfraPostgres},
 			},
 		},
+		{
+			ID:          "admin-api",
+			Name:        "Admin API",
+			Category:    CategoryService,
+			ComposeOnly: true,
+			Compose: ComposeMetadata{
+				BuildContext:  ".",
+				Dockerfile:    "./apps/admin-api/Dockerfile",
+				ContainerPort: 8098,
+				ExternalPort:  8098,
+				DependsOn:     []string{"gateway", "authentication"},
+				EnvDefaults: map[string]string{
+					"ADMIN_API_PORT":             "8098",
+					"ADMIN_API_DEPLOYMENT_PATH":  "/app/ops/deployments/production.yaml",
+					"ADMIN_API_SECRETS_PATH":     "/app/.secrets",
+					"ADMIN_API_WORKSPACE_ROOT":   "/workspace",
+					"PRODUCTION_IMAGE_TAG":       "latest",
+				},
+				Volumes: []string{
+					"./ops:/app/ops",
+					"./.secrets:/app/.secrets",
+					"./:/workspace",
+					"/var/run/docker.sock:/var/run/docker.sock",
+				},
+			},
+			K8s: K8sMetadata{
+				Replicas:     1,
+				InternalPort: 8098,
+				ServiceType:  "ClusterIP",
+				Resources: ResourceLimits{
+					Requests: MemoryCPU{Memory: "128Mi", CPU: "100m"},
+					Limits:   MemoryCPU{Memory: "512Mi", CPU: "500m"},
+				},
+				Probes: ProbesConfig{
+					Liveness:  ProbeConfig{Port: 8098, Initial: 30, Period: 10},
+					Readiness: ProbeConfig{Port: 8098, Initial: 10, Period: 5},
+				},
+			},
+			Image: ImageMetadata{Name: "cjrutherford/optimistic_tanuki_admin-api", Tag: "latest"},
+			Dependencies: []Dependency{
+				{ServiceID: "gateway", Required: true},
+				{ServiceID: "authentication", Required: true},
+			},
+		},
 	}
 
 	for _, s := range services {

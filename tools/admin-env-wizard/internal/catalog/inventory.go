@@ -9,7 +9,7 @@ func (c *Catalog) DeployableApps() []DeployableApp {
 	apps := make([]DeployableApp, 0, len(c.presets))
 
 	for _, preset := range c.presets {
-		if preset.Category == CategoryInfra {
+		if preset.Category == CategoryInfra || preset.ComposeOnly {
 			continue
 		}
 

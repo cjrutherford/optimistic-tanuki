@@ -809,11 +809,21 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Build db-setup
+        run: docker compose -f e2e/docker-compose.e2e-stack.yaml build db-setup
+
       - name: Start full stack
         run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml up -d db-setup
           docker compose -f e2e/docker-compose.e2e-stack.yaml up -d
           echo "Waiting for services..."
           sleep 60
+
+      - name: Dump stack logs on failure
+        if: failure()
+        run: |
+          docker compose -f e2e/docker-compose.e2e-stack.yaml ps
+          docker compose -f e2e/docker-compose.e2e-stack.yaml logs db-setup gateway || true
 
       - name: Install k6
         run: |
