@@ -25,7 +25,7 @@ const inventoryJson = process.env.DEPLOYMENT_INVENTORY_FILE
 const inventory = JSON.parse(inventoryJson);
 const workspaceDir = process.env.DEPLOYMENT_WORKSPACE_DIR;
 const expectedApps = inventory.apps
-  .map((app) => app.BuildAppID || app.ID)
+  .map((app) => app.buildAppId || app.id)
   .sort();
 
 function readYaml(filePath) {
@@ -86,7 +86,7 @@ const baseKustomization = readYaml(
   path.join(repoRoot, 'k8s/base/kustomization.yaml')
 );
 const expectedResources = inventory.apps
-  .map((app) => app.K8sManifestPath.replace(/^k8s\/base\//, ''))
+  .map((app) => app.k8sManifestPath.replace(/^k8s\/base\//, ''))
   .sort();
 const actualResources = (baseKustomization.resources || [])
   .filter(
@@ -101,7 +101,7 @@ const overlayFiles = [
   path.join(repoRoot, 'k8s/overlays/staging/kustomization.yaml'),
   path.join(repoRoot, 'k8s/overlays/production/kustomization.yaml'),
 ];
-const expectedImageNames = inventory.apps.map((app) => app.ImageName).sort();
+const expectedImageNames = inventory.apps.map((app) => app.imageName).sort();
 
 const errors = [
   ...validateDockerWorkflowMatrix(
@@ -148,7 +148,7 @@ const invalidComposeImageTags = composeImageMatches
 const uniqueComposeImageNames = [...new Set(composeImageNames)].sort();
 const expectedComposeImageNames = [...expectedImageNames];
 const expectedComposeServices = inventory.apps
-  .map((app) => app.ComposeServiceName || app.ID)
+  .map((app) => app.composeServiceName || app.id)
   .sort();
 
 errors.push(

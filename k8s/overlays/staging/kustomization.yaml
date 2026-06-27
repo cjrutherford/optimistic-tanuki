@@ -20,6 +20,8 @@ configMapGenerator:
       - NODE_ENV=staging
       - LOG_LEVEL=debug
 images:
+  - name: cjrutherford/optimistic_tanuki_admin-api
+    newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_ai-orchestrator
     newTag: sha-c925c64
   - name: cjrutherford/optimistic_tanuki_app-configurator

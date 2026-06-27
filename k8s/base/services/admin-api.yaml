@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-api
+  namespace: optimistic-tanuki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-api
+  template:
+    metadata:
+      labels:
+        app: admin-api
+    spec:
+      containers:
+        - name: admin-api
+          image: cjrutherford/optimistic_tanuki_admin-api:sha-2850755da05286086a098d1dbdaf74f339af2a62
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8098
+          env:
+            - name: ADMIN_API_PORT
+              value: '8098'
+            - name: ADMIN_API_DEPLOYMENT_PATH
+              value: '/app/ops/deployments/production.yaml'
+            - name: ADMIN_API_SECRETS_PATH
+              value: '/app/.secrets'
+            - name: ADMIN_API_WORKSPACE_ROOT
+              value: '/workspace'
+            - name: PRODUCTION_IMAGE_TAG
+              value: 'latest'
+          envFrom:
+            - secretRef:
+                name: optimistic-tanuki-secrets
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '100m'
+            limits:
+              memory: '512Mi'
+              cpu: '500m'
+          livenessProbe:
+            tcpSocket:
+              port: 8098
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 8098
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: ops
+              mountPath: /app/ops
+            - name: secrets
+              mountPath: /app/.secrets
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: ops
+          hostPath:
+            path: /ops
+        - name: secrets
+          hostPath:
+            path: /.secrets
+        - name: workspace
+          hostPath:
+            path: /
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-api
+  namespace: optimistic-tanuki
+spec:
+  selector:
+    app: admin-api
+  ports:
+    - port: 8098
+      targetPort: 8098
+  clusterIP: None

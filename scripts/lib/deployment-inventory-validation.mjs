@@ -41,8 +41,10 @@ function hasDynamicMatrixResolver(job) {
   return (job?.steps ?? []).some(
     (step) =>
       typeof step?.run === 'string' &&
-      step.run.includes('resolveDockerBuildMatrix') &&
-      step.run.includes('plan.buildApps')
+      ((step.run.includes('resolveDockerBuildMatrix') &&
+        step.run.includes('plan.buildApps')) ||
+        (step.run.includes('resolve-docker-changes.mjs') &&
+          step.run.includes('--plan-file')))
   );
 }
 
@@ -61,12 +63,18 @@ export function validateDockerWorkflowMatrix(
     return compareList(`${label} matrix apps`, expectedApps, staticMatrixApps);
   }
 
-  const matrixExpression = consumerJob?.strategy?.matrix;
-  if (
-    typeof matrixExpression === 'string' &&
-    matrixExpression.includes(`needs.${producerJobName}.outputs.matrix`) &&
-    hasDynamicMatrixResolver(producerJob)
-  ) {
+  const matrix = consumerJob?.strategy?.matrix;
+  const hasDynamicRef =
+    matrix != null &&
+    ((typeof matrix === 'string' &&
+      matrix.includes(`needs.${producerJobName}.outputs.matrix`)) ||
+      (typeof matrix === 'object' &&
+        Object.values(matrix).some(
+          (v) =>
+            typeof v === 'string' &&
+            v.includes(`needs.${producerJobName}.outputs.matrix`)
+        )));
+  if (hasDynamicRef && hasDynamicMatrixResolver(producerJob)) {
     return [];
   }
 
