@@ -721,9 +721,10 @@ func (c *Catalog) initServices() {
 			},
 		},
 		{
-			ID:       "admin-api",
-			Name:     "Admin API",
-			Category: CategoryService,
+			ID:          "admin-api",
+			Name:        "Admin API",
+			Category:    CategoryService,
+			ComposeOnly: true,
 			Compose: ComposeMetadata{
 				BuildContext:  ".",
 				Dockerfile:    "./apps/admin-api/Dockerfile",

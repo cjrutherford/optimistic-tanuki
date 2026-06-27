@@ -20,8 +20,6 @@ configMapGenerator:
       - NODE_ENV=production
       - LOG_LEVEL=info
 images:
-  - name: cjrutherford/optimistic_tanuki_admin-api
-    newTag: latest
   - name: cjrutherford/optimistic_tanuki_ai-orchestrator
     newTag: latest
   - name: cjrutherford/optimistic_tanuki_app-configurator

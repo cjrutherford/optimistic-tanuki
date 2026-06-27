@@ -251,23 +251,41 @@ describe('SetupService', () => {
     );
   });
 
-  it('passes only enabled services to the image-mode rollout script', async () => {
+  it('deploys only enabled services in image compose mode', async () => {
     fs.writeFileSync(
       path.join(workspaceRoot, 'docker-compose.yaml'),
-      'services:\n  gateway:\n  authentication:\n  profile:\n'
+      [
+        'services:',
+        '  gateway:',
+        '    image: cjrutherford/optimistic_tanuki_gateway:${PRODUCTION_IMAGE_TAG:-latest}',
+        '  authentication:',
+        '    image: cjrutherford/optimistic_tanuki_authentication:${PRODUCTION_IMAGE_TAG:-latest}',
+        '  profile:',
+        '    image: cjrutherford/optimistic_tanuki_profile:${PRODUCTION_IMAGE_TAG:-latest}',
+      ].join('\n')
+    );
+    fs.writeFileSync(
+      path.join(workspaceRoot, 'ops', 'deployments', 'production.yaml'),
+      [
+        'version: v1alpha1',
+        'environment:',
+        '  name: production',
+        '  composeMode: image',
+        '  defaultTag: sha-target',
+        'services:',
+        '  - serviceId: gateway',
+        '    enabled: true',
+        '  - serviceId: authentication',
+        '    enabled: false',
+        '  - serviceId: profile',
+        '    enabled: true',
+      ].join('\n')
     );
 
-    const service: any = new SetupService();
-    service.loadDeploymentConfig = () =>
-      ({
-        environment: { composeMode: 'image', defaultTag: 'sha-test' },
-        services: [
-          { serviceId: 'gateway', enabled: true },
-          { serviceId: 'authentication', enabled: true },
-          { serviceId: 'profile', enabled: false },
-        ],
-      } as any);
-    service.runStreamingCommand = jest.fn().mockResolvedValue(undefined);
+    const service = new SetupService();
+    const runStreamingCommand = jest
+      .spyOn(service as any, 'runStreamingCommand')
+      .mockImplementation(async () => undefined);
 
     await expect(service.deployServices()).resolves.toEqual({
       success: true,
@@ -275,14 +293,39 @@ describe('SetupService', () => {
         'Services pulled, recreated, and seeded through the batched production rollout script.',
     });
 
-    expect(service.runStreamingCommand).toHaveBeenCalledWith(
+    expect(runStreamingCommand).toHaveBeenCalledTimes(2);
+    expect(runStreamingCommand).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
-        command: 'bash',
+        command: 'docker',
         args: [
-          './scripts/docker-compose-deploy.sh',
+          'compose',
+          '-f',
+          path.join(workspaceRoot, 'docker-compose.yaml'),
+          'pull',
           'gateway',
-          'authentication',
+          'profile',
         ],
+      })
+    );
+    expect(runStreamingCommand).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        command: 'docker',
+        args: [
+          'compose',
+          '-f',
+          path.join(workspaceRoot, 'docker-compose.yaml'),
+          'up',
+          '-d',
+          '--no-build',
+          '--force-recreate',
+          'gateway',
+          'profile',
+        ],
+        env: expect.objectContaining({
+          PRODUCTION_IMAGE_TAG: 'sha-target',
+        }),
       })
     );
   });

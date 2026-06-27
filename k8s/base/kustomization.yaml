@@ -28,7 +28,6 @@ resources:
   - services/video-transcoder-worker.yaml
   - services/videos.yaml
   - services/wellness.yaml
-  - services/admin-api.yaml
   - clients/business-site.yaml
   - clients/client-interface.yaml
   - clients/forgeofwill.yaml

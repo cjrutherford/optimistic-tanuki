@@ -264,6 +264,14 @@ export class SetupService {
     return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
   }
 
+  private chunkServices(services: string[], batchSize: number): string[][] {
+    const batches: string[][] = [];
+    for (let index = 0; index < services.length; index += batchSize) {
+      batches.push(services.slice(index, index + batchSize));
+    }
+    return batches;
+  }
+
   private timeoutSignal(ms: number): AbortSignal | undefined {
     if (
       typeof AbortSignal !== 'undefined' &&
@@ -1217,27 +1225,52 @@ export class SetupService {
         'Applying service rollout...'
       );
 
+      if (enabledServices.length === 0) {
+        throw new Error('No enabled services found in deployment config');
+      }
+
       if (this.activeComposeMode() === 'image') {
-        if (enabledServices.length > 0) {
+        const deployEnv = {
+          PRODUCTION_IMAGE_TAG: config.environment.defaultTag || 'latest',
+        };
+        const serviceBatches = this.chunkServices(
+          enabledServices,
+          this.dockerPullBatchSize
+        );
+        this.appendDeployLog(
+          `Starting batched docker pulls for ${enabledServices.length} services (batch size ${this.dockerPullBatchSize}).`,
+          true
+        );
+        for (const [index, batch] of serviceBatches.entries()) {
           this.appendDeployLog(
-            `Starting batched docker pulls for ${enabledServices.length} services (batch size ${this.dockerPullBatchSize}).`,
+            `Pulling batch ${index + 1}: ${batch.join(', ')}`,
             true
           );
           await this.runStreamingCommand({
-            command: 'bash',
-            args: ['./scripts/docker-compose-deploy.sh', ...enabledServices],
+            command: 'docker',
+            args: this.composeArgs('pull', ...batch),
             cwd: this.workspaceRoot,
-            env: {
-              PRODUCTION_IMAGE_TAG: config.environment.defaultTag || 'latest',
-              DOCKER_PULL_BATCH_SIZE: String(this.dockerPullBatchSize),
-            },
+            env: deployEnv,
             onLine: (line) => this.appendDeployLog(line, true),
           });
-        } else {
-          this.appendDeployLog(
-            'No enabled services required deployment work for this deployment.'
-          );
         }
+        this.appendDeployLog(
+          `Recreating selected services: ${enabledServices.join(', ')}`,
+          true
+        );
+        await this.runStreamingCommand({
+          command: 'docker',
+          args: this.composeArgs(
+            'up',
+            '-d',
+            '--no-build',
+            '--force-recreate',
+            ...enabledServices
+          ),
+          cwd: this.workspaceRoot,
+          env: deployEnv,
+          onLine: (line) => this.appendDeployLog(line, true),
+        });
       } else {
         await this.runStreamingCommand({
           command: 'docker',

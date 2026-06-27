@@ -126,3 +126,13 @@ func TestDeployableAppsExposeComposeAliasesAndManifestPaths(t *testing.T) {
 		})
 	}
 }
+
+func TestDeployableAppsExcludeAdminAPIFromStaticInventory(t *testing.T) {
+	catalog := DefaultCatalog()
+
+	for _, app := range catalog.DeployableApps() {
+		if app.ID == "admin-api" {
+			t.Fatal("admin-api should not be part of the static deployable inventory")
+		}
+	}
+}

@@ -10,6 +10,7 @@ import {
   validateComposeImageNames,
   validateDockerWorkflowMatrix,
 } from './lib/deployment-inventory-validation.mjs';
+import { normalizeDeploymentInventory } from './lib/deployment-inventory-normalization.mjs';
 
 const repoRoot = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),

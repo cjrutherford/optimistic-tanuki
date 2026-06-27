@@ -134,6 +134,9 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 		if !ok {
 			continue
 		}
+		if preset.ComposeOnly {
+			continue
+		}
 
 		for _, dep := range preset.Dependencies {
 			if dep.Database != "" {
@@ -163,6 +166,9 @@ func GenerateK8s(env *domain.EnvironmentDefinition, cat *catalog.Catalog) (map[s
 		}
 		preset, ok := cat.Get(sel.ServiceID)
 		if !ok {
+			continue
+		}
+		if preset.ComposeOnly {
 			continue
 		}
 

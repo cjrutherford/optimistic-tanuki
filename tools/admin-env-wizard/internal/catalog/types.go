@@ -72,6 +72,7 @@ type Preset struct {
 	ID            string
 	Name          string
 	Category      Category
+	ComposeOnly   bool
 	Compose       ComposeMetadata
 	K8s           K8sMetadata
 	Image         ImageMetadata
