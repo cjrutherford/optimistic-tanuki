@@ -73,6 +73,7 @@ export type {
   BusinessRelationshipPrimaryAction,
   AcceptedBusinessClient,
   BusinessAssetLibraryItem,
+  OwnerBusinessPageRecord,
   PublicBusinessSiteSummary,
   BusinessOwnerWorkflowBucket,
   BusinessOwnerWorkflowRecord,

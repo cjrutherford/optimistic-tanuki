@@ -7,7 +7,7 @@ import {
   Video,
   VideoView,
 } from '../entities';
-import { CommunityBroadcast20260417143000 } from '../../migrations/20260417143000-community-broadcast';
+import { CommunityBroadcast1776436200000 } from '../../migrations/1776436200000-community-broadcast';
 
 const createQueryRunnerMock = () => {
   const executed: string[] = [];
@@ -36,8 +36,9 @@ describe('videos static datasource', () => {
 
     expect(migrations.map((migration) => migration.name)).toEqual([
       'Initial1770152975983',
-      'CommunityBroadcast20260417143000',
-      'VideoProcessingPipeline20260418170000',
+      'CommunityBroadcast1776436200000',
+      'VideoProcessingPipeline1776522000000',
+      'ChannelAnchorColumns1782648000000',
     ]);
   });
 
@@ -64,7 +65,7 @@ describe('videos static datasource', () => {
   it('bootstraps baseline tables when community broadcast runs first', async () => {
     const queryRunner = createQueryRunnerMock();
 
-    await new CommunityBroadcast20260417143000().up(queryRunner as never);
+    await new CommunityBroadcast1776436200000().up(queryRunner as never);
 
     expect(queryRunner.hasTable).toHaveBeenCalledWith('channel');
     expect(queryRunner.executed[0]).toContain(
@@ -78,7 +79,7 @@ describe('videos static datasource', () => {
   it('backfills collision-safe community slugs before adding the unique constraint', async () => {
     const queryRunner = createQueryRunnerMock();
 
-    await new CommunityBroadcast20260417143000().up(queryRunner as never);
+    await new CommunityBroadcast1776436200000().up(queryRunner as never);
 
     const slugBackfill = queryRunner.executed.find(
       (sql) => sql.includes('UPDATE "channel"') && sql.includes('communitySlug')

@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CrossAppCardDto } from './cross-app-card.dto';
 
 export class PostDto {
   @ApiProperty({ description: 'The unique identifier of the post' })
@@ -23,4 +24,11 @@ export class PostDto {
     description: 'The ID of the profile associated with the post',
   })
   profileId!: string;
+
+  @ApiProperty({
+    description: 'Optional cross-app promotion card metadata',
+    required: false,
+    type: CrossAppCardDto,
+  })
+  crossAppCard?: CrossAppCardDto;
 }

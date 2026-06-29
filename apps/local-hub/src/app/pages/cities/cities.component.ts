@@ -11,6 +11,7 @@ import {
 import { MapComponent } from '../../components/map/map.component';
 import { CardComponent, IconComponent } from '@optimistic-tanuki/common-ui';
 import { AuthStateService } from '../../services/auth-state.service';
+import { haversineMiles } from '../../components/map/map.utils';
 
 @Component({
   selector: 'app-cities',
@@ -70,24 +71,38 @@ export class CitiesComponent implements OnInit {
   filteredCities = computed(() => {
     const states = this.selectedStates();
     const query = this.normalizeSearchValue(this.searchQuery());
+    const userLocation = this.userLocation();
 
-    return this.cities().filter((city) => {
-      const matchesState =
-        states.length === 0 || states.includes(city.adminArea);
-      const citySearchCorpus = [
-        city.name,
-        city.adminArea,
-        city.description,
-        city.timezone,
-        ...(city.highlights ?? []).flatMap((highlight) => [
-          highlight?.headline,
-          highlight?.link,
-        ]),
-      ];
-      const matchesQuery = this.matchesSearchQuery(query, citySearchCorpus);
+    return this.cities()
+      .filter((city) => {
+        const matchesState =
+          states.length === 0 || states.includes(city.adminArea);
+        const citySearchCorpus = [
+          city.name,
+          city.adminArea,
+          city.description,
+          city.timezone,
+          city.label.formatted,
+          ...(city.highlights ?? []).flatMap((highlight) => [
+            highlight?.headline,
+            highlight?.link,
+          ]),
+        ];
+        const matchesQuery = this.matchesSearchQuery(query, citySearchCorpus);
 
-      return matchesState && matchesQuery;
-    });
+        return matchesState && matchesQuery;
+      })
+      .slice()
+      .sort((left, right) => {
+        if (!userLocation) {
+          return left.name.localeCompare(right.name);
+        }
+
+        return (
+          haversineMiles(userLocation, left.coordinates) -
+          haversineMiles(userLocation, right.coordinates)
+        );
+      });
   });
 
   filteredCommunities = computed(() => {
@@ -170,7 +185,7 @@ export class CitiesComponent implements OnInit {
       const communitiesData = await this.communityService.getCommunities();
       this.communities.set(communitiesData);
       this.cities.set(
-        this.communityService.getCitiesFromCommunities(communitiesData)
+        this.communityService.getLocalitiesFromCommunities(communitiesData)
       );
 
       if (this.authState.isAuthenticated) {
@@ -208,7 +223,7 @@ export class CitiesComponent implements OnInit {
   }
 
   navigateToCity(slug: string): void {
-    this.router.navigate(['/city', slug]);
+    this.router.navigate(['/locality', slug]);
   }
 
   navigateToCommunity(slug: string): void {

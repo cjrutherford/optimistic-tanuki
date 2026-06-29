@@ -124,10 +124,13 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isAuthenticated()) {
       this.navItems.set([
         {
-          label: 'Cities',
-          action: () => this.navigateTo('/cities'),
+          label: 'Localities',
+          action: () => this.navigateTo('/localities'),
           isActive:
-            currentUrl.startsWith('/cities') || currentUrl.startsWith('/city/'),
+            currentUrl.startsWith('/localities') ||
+            currentUrl.startsWith('/locality/') ||
+            currentUrl.startsWith('/cities') ||
+            currentUrl.startsWith('/city/'),
         },
         {
           label: 'Communities',
@@ -159,10 +162,13 @@ export class AppComponent implements OnInit, OnDestroy {
     } else {
       this.navItems.set([
         {
-          label: 'Cities',
-          action: () => this.navigateTo('/cities'),
+          label: 'Localities',
+          action: () => this.navigateTo('/localities'),
           isActive:
-            currentUrl.startsWith('/cities') || currentUrl.startsWith('/city/'),
+            currentUrl.startsWith('/localities') ||
+            currentUrl.startsWith('/locality/') ||
+            currentUrl.startsWith('/cities') ||
+            currentUrl.startsWith('/city/'),
         },
         {
           label: 'Communities',

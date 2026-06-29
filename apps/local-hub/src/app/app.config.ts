@@ -8,7 +8,10 @@ import { appRoutes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  LOCALITY_INFO_API_URL,
+} from '@optimistic-tanuki/ui-models';
 import { authInterceptor } from './services/auth.interceptor';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
@@ -32,6 +35,10 @@ export const appConfig: ApplicationConfig = {
     {
       provide: API_BASE_URL,
       useValue: '/api',
+    },
+    {
+      provide: LOCALITY_INFO_API_URL,
+      useValue: 'https://en.wikipedia.org/api/rest_v1/page/summary',
     },
     {
       provide: SOCKET_HOST,

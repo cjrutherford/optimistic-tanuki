@@ -8,6 +8,9 @@ import {
   IsNotEmpty,
   IsInt,
   IsBoolean,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 
 export class CreateChannelDto {
@@ -88,6 +91,28 @@ export class CreateChannelDto {
   @IsOptional()
   @IsString()
   timezone?: string;
+
+  @ApiProperty({
+    description: 'Latitude for this channel anchor',
+    required: false,
+    example: 32.0809,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  anchorLat?: number;
+
+  @ApiProperty({
+    description: 'Longitude for this channel anchor',
+    required: false,
+    example: -81.0912,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  anchorLng?: number;
 }
 
 export class UpdateChannelDto {
@@ -129,6 +154,20 @@ export class UpdateChannelDto {
   @IsOptional()
   @IsString()
   timezone?: string;
+
+  @ApiProperty({ description: 'Channel anchor latitude', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  anchorLat?: number;
+
+  @ApiProperty({ description: 'Channel anchor longitude', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  anchorLng?: number;
 }
 
 export class ChannelDto {
@@ -173,6 +212,12 @@ export class ChannelDto {
 
   @ApiProperty({ description: 'Channel community timezone' })
   timezone?: string;
+
+  @ApiProperty({ description: 'Channel anchor latitude' })
+  anchorLat?: number;
+
+  @ApiProperty({ description: 'Channel anchor longitude' })
+  anchorLng?: number;
 
   @ApiProperty({ description: 'Created at timestamp' })
   createdAt: Date;

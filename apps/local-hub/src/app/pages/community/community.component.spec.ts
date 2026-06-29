@@ -7,6 +7,7 @@ import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 import { PaymentService } from '../../services/payment.service';
 import { of } from 'rxjs';
 import { CommunityPostsComponent } from '@optimistic-tanuki/community-ui';
@@ -48,6 +49,7 @@ const communityServiceMock = {
   getCommunityManager: jest.fn().mockResolvedValue(null),
   getActiveElection: jest.fn().mockResolvedValue(null),
   getCitySlugForCommunity: jest.fn().mockResolvedValue('test-city'),
+  getLocalitySlugForCommunity: jest.fn().mockResolvedValue('test-city'),
 };
 
 const messageServiceMock = {
@@ -70,6 +72,7 @@ const paymentServiceMock = {
 describe('CommunityComponent', () => {
   let component: CommunityComponent;
   let fixture: ComponentFixture<CommunityComponent>;
+  let router: Router;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -94,6 +97,7 @@ describe('CommunityComponent', () => {
       ],
     }).compileComponents();
 
+    router = TestBed.inject(Router);
     fixture = TestBed.createComponent(CommunityComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -153,5 +157,73 @@ describe('CommunityComponent', () => {
       'Test City'
     );
     expect(component.activeTab()).toBe('chat');
+  });
+
+  it('navigates community locality links through locality-first routes', async () => {
+    await fixture.whenStable();
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.navigateToCity();
+    await Promise.resolve();
+
+    expect(
+      communityServiceMock.getLocalitySlugForCommunity
+    ).toHaveBeenCalledWith('test-city');
+    expect(navigateSpy).toHaveBeenCalledWith(['/locality', 'test-city']);
+  });
+
+  it('uses the locality index when falling back from a community page', async () => {
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    component.navigateToCities();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/localities']);
+  });
+
+  it('includes anchor coordinates when saving a business profile', async () => {
+    await fixture.whenStable();
+    component.businessPage.set({
+      id: 'business-1',
+      communityId: '1',
+      userId: 'user-1',
+      name: 'Test Business',
+      tier: 'pro',
+      status: 'active',
+      locations: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    });
+    paymentServiceMock.updateBusinessPage.mockResolvedValue({
+      id: 'business-1',
+      communityId: '1',
+      userId: 'user-1',
+      name: 'Updated Business',
+      tier: 'pro',
+      status: 'active',
+      locations: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      anchorLat: 33.1,
+      anchorLng: -84.4,
+    });
+
+    component.businessName = 'Updated Business';
+    component.businessAnchorLat = '33.1';
+    component.businessAnchorLng = '-84.4';
+
+    await component.saveBusinessProfile();
+
+    expect(paymentServiceMock.updateBusinessPage).toHaveBeenCalledWith('1', {
+      name: 'Updated Business',
+      description: undefined,
+      website: undefined,
+      phone: undefined,
+      email: undefined,
+      address: undefined,
+      anchorLat: 33.1,
+      anchorLng: -84.4,
+    });
   });
 });

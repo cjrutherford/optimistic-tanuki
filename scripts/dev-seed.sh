@@ -172,6 +172,13 @@ wait_for_chat_collector() {
   return 1
 }
 
+build_dist_app() {
+  project="$1"
+
+  echo "Building ${project} dist for dev seeding..."
+  NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build "${project}" --configuration=development
+}
+
 refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 refresh_service permissions
@@ -181,6 +188,8 @@ refresh_services store authentication profile social payments assets chat-collec
 run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js
 wait_for_gateway
 sleep 15
+refresh_service owner-console
+run_seed_from_workspace_env owner-console "/app/apps/owner-console" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-owner.mjs
 run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js
 wait_for_chat_collector
 run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
@@ -188,6 +197,7 @@ run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" n
 run_seed_with_env classifieds "${CLASSIFIEDS_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_BASE_URL}" node ./dist/apps/classifieds/seed-classifieds.js
 refresh_service payments
 run_seed_with_run payments "${APP_RUNTIME_DIR}" node ./seed-products.js
+refresh_service business-site
 run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs
 
 run_seed_with_media_volume() {
@@ -218,6 +228,7 @@ run_seed_with_media_volume_from_image() {
   ' sh "${workdir}" "$@"
 }
 
+build_dist_app videos
 refresh_service videos
 run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues

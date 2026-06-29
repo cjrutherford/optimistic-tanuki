@@ -218,6 +218,51 @@
   }
 }
 
+.cross-app-card {
+  margin-top: calc(var(--spacing-sm) * -1);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-lg);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--local-accent) 14%, white),
+    color-mix(in srgb, var(--local-complement) 12%, white)
+  );
+  border: 1px solid color-mix(in srgb, var(--local-accent) 25%, transparent);
+  box-shadow: var(--shadow-sm);
+
+  .cross-app-eyebrow {
+    margin: 0 0 var(--spacing-xs);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--local-accent);
+  }
+
+  h3 {
+    margin: 0 0 var(--spacing-xs);
+    font-family: var(--font-heading, sans-serif);
+    color: var(--local-foreground);
+  }
+
+  .cross-app-copy {
+    margin: 0 0 var(--spacing-sm);
+    color: color-mix(in srgb, var(--local-foreground) 80%, transparent);
+  }
+
+  .cross-app-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.7rem 1rem;
+    border-radius: 999px;
+    background: var(--local-accent);
+    color: white;
+    font-weight: 700;
+    text-decoration: none;
+  }
+}
+
 .no-posts {
   text-align: center;
   padding: var(--spacing-xxl);

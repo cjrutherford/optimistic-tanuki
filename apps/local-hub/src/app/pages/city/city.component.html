@@ -9,7 +9,7 @@
     <h2>Oops!</h2>
     <p>{{ error() }}</p>
     <button class="btn btn-primary" (click)="navigateToCities()">
-      Browse All Cities
+      Browse All Localities
     </button>
   </div>
 </div>
@@ -40,7 +40,7 @@
         <div class="hero-content">
           <button class="back-link" (click)="navigateToCities()">
             <otui-icon name="arrow-back" [size]="20"></otui-icon>
-            All Cities
+            All Localities
           </button>
 
           <div class="hero-text">
@@ -186,13 +186,14 @@
                     {{ business.tier | titlecase }}
                   </span>
                 </div>
-                @if (business.website) {
+                @if (getBusinessHref(business); as businessHref) {
                 <a
-                  [href]="business.website"
+                  [href]="businessHref"
                   target="_blank"
                   rel="noopener"
                   class="business-link"
-                  >Visit Website</a
+                  data-testid="city-business-link"
+                  >{{ getBusinessLinkLabel(business) }}</a
                 >
                 }
               </div>

@@ -133,6 +133,18 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
               <p *ngIf="channel.joinPolicy">
                 Join policy: {{ channel.joinPolicy }}
               </p>
+              <p
+                *ngIf="
+                  channel.anchorLat !== undefined &&
+                  channel.anchorLng !== undefined
+                "
+              >
+                Locality anchor: {{ channel.anchorLat }},
+                {{ channel.anchorLng }}
+              </p>
+              <p *ngIf="channel.timezone">
+                Channel timezone: {{ channel.timezone }}
+              </p>
             </section>
           </div>
         </div>

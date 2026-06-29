@@ -87,6 +87,7 @@ export interface PublicBusinessSiteSummary {
   tagline: string;
   location: string;
   businessType: string;
+  ownerUserId?: string;
 }
 
 export interface CreateBusinessBookingRequest {
@@ -178,6 +179,18 @@ export interface BusinessAssetLibraryItem {
   type: string;
   profileId: string;
   url: string;
+}
+
+export interface OwnerBusinessPageRecord {
+  id: string;
+  communityId: string;
+  ownerId?: string;
+  name?: string;
+  description?: string;
+  address?: string;
+  subscriptionStatus?: string;
+  anchorLat?: number | null;
+  anchorLng?: number | null;
 }
 
 export type BusinessOwnerWorkflowBucket =
@@ -354,6 +367,27 @@ export class BusinessApiService {
         params: siteSlug ? { slug: siteSlug } : undefined,
       }
     );
+  }
+
+  getOwnerBusinessPages(): Observable<OwnerBusinessPageRecord[]> {
+    return this.http.get<OwnerBusinessPageRecord[]>(
+      '/api/payments/business/owner',
+      {
+        headers: this.authHeaders(),
+      }
+    );
+  }
+
+  updateOwnerBusinessPage(
+    businessPageId: string,
+    payload: Partial<OwnerBusinessPageRecord>
+  ): Observable<{ success: boolean; businessPage: OwnerBusinessPageRecord }> {
+    return this.http.patch<{
+      success: boolean;
+      businessPage: OwnerBusinessPageRecord;
+    }>(`/api/payments/business/owner/${businessPageId}`, payload, {
+      headers: this.authHeaders(),
+    });
   }
 
   getOwnerBookings(): Observable<Appointment[]> {

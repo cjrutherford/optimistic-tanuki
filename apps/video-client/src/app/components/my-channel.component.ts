@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { VideoService } from '../services/video.service';
@@ -10,15 +11,24 @@ import {
   ProgramBlockDto,
   VideoDto,
 } from '@optimistic-tanuki/ui-models';
+import { LocalityDiscoveryResultDto } from '@optimistic-tanuki/models';
 import {
   ChannelHeaderComponent,
   VideoGridComponent,
 } from '@optimistic-tanuki/video-ui';
+import { LocalityDiscoveryService } from '../services/locality-discovery.service';
+
+const DEFAULT_CHANNEL_RADIUS_METERS = 40234;
 
 @Component({
   selector: 'app-my-channel',
   standalone: true,
-  imports: [CommonModule, ChannelHeaderComponent, VideoGridComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ChannelHeaderComponent,
+    VideoGridComponent,
+  ],
   template: `
     <div class="my-channel">
       <div class="channel-header-section" *ngIf="channel">
@@ -51,6 +61,13 @@ import {
             (click)="activeTab = 'programming'"
           >
             Programming
+          </button>
+          <button
+            class="tab-button"
+            [class.active]="activeTab === 'locality'"
+            (click)="activeTab = 'locality'"
+          >
+            Locality
           </button>
         </div>
 
@@ -129,6 +146,85 @@ import {
               >
                 Open Public Channel
               </button>
+            </div>
+          </div>
+
+          <div *ngIf="activeTab === 'locality'" class="locality-tab">
+            <div class="locality-card">
+              <p class="section-label">Creator Anchor</p>
+              <h2>Local discovery radius</h2>
+              <p class="muted-copy">
+                Your channel’s anchor drives nearby discovery across MetroCast,
+                Local Hub, and Studio.
+              </p>
+
+              <div class="locality-grid">
+                <label>
+                  <span>Anchor latitude</span>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    [(ngModel)]="localityForm.anchorLat"
+                    name="anchorLat"
+                  />
+                </label>
+                <label>
+                  <span>Anchor longitude</span>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    [(ngModel)]="localityForm.anchorLng"
+                    name="anchorLng"
+                  />
+                </label>
+              </div>
+
+              <p *ngIf="localityLabel" class="locality-label">
+                Nearby label: {{ localityLabel }}
+              </p>
+              <p *ngIf="localityMessage" class="locality-message">
+                {{ localityMessage }}
+              </p>
+
+              <div class="workspace-actions">
+                <button
+                  class="upload-button"
+                  (click)="saveLocality()"
+                  [disabled]="!channel || localitySaving"
+                >
+                  {{ localitySaving ? 'Saving…' : 'Save locality' }}
+                </button>
+              </div>
+            </div>
+
+            <div class="locality-card" *ngIf="localityDiscovery">
+              <p class="section-label">Nearby Network</p>
+              <h3>Cross-app discovery preview</h3>
+              <p class="muted-copy">
+                Preview what this anchor connects to across the local stack.
+              </p>
+
+              <div
+                class="preview-list"
+                *ngIf="localityDiscovery.channels.length"
+              >
+                <h4>Nearby Channels</h4>
+                <p *ngFor="let nearbyChannel of localityDiscovery.channels">
+                  {{ nearbyChannel.name }} ·
+                  {{ formatDistance(nearbyChannel.distanceMeters) }}
+                </p>
+              </div>
+
+              <div
+                class="preview-list"
+                *ngIf="localityDiscovery.businesses.length"
+              >
+                <h4>Nearby Businesses</h4>
+                <p *ngFor="let business of localityDiscovery.businesses">
+                  {{ business.name }} ·
+                  {{ formatDistance(business.distanceMeters) }}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -251,19 +347,80 @@ import {
         flex-wrap: wrap;
         margin-top: 1rem;
       }
+
+      .locality-tab {
+        display: grid;
+        gap: 1.5rem;
+      }
+
+      .locality-card {
+        padding: 1.5rem;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        background: #fff;
+      }
+
+      .locality-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .locality-grid label {
+        display: grid;
+        gap: 0.4rem;
+        font-size: 0.95rem;
+      }
+
+      .locality-grid input {
+        padding: 0.7rem 0.8rem;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        font: inherit;
+      }
+
+      .section-label {
+        margin: 0 0 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #475569;
+      }
+
+      .muted-copy,
+      .locality-label,
+      .locality-message,
+      .preview-list p {
+        color: #475569;
+      }
+
+      .preview-list h4 {
+        margin: 1rem 0 0.5rem;
+      }
     `,
   ],
 })
 export class MyChannelComponent implements OnInit {
   private readonly videoService = inject(VideoService);
   private readonly profileService = inject(ProfileService);
+  private readonly localityDiscoveryService = inject(LocalityDiscoveryService);
   private readonly router = inject(Router);
 
   channel: ChannelDto | null = null;
   videos: VideoDto[] = [];
   feed: ChannelFeedDto | null = null;
   schedule: ProgramBlockDto[] = [];
-  activeTab: 'videos' | 'analytics' | 'programming' = 'videos';
+  localityDiscovery: LocalityDiscoveryResultDto | null = null;
+  localityLabel = '';
+  localityMessage = '';
+  localitySaving = false;
+  localityForm = {
+    anchorLat: '',
+    anchorLng: '',
+  };
+  activeTab: 'videos' | 'analytics' | 'programming' | 'locality' = 'videos';
   loading = true;
 
   async ngOnInit() {
@@ -275,6 +432,7 @@ export class MyChannelComponent implements OnInit {
         );
         if (channels.length > 0) {
           this.channel = channels[0];
+          this.syncLocalityForm(this.channel);
           this.videos = await this.videoService.getChannelVideos(
             this.channel.id
           );
@@ -285,6 +443,7 @@ export class MyChannelComponent implements OnInit {
           this.schedule = await firstValueFrom(
             this.videoService.getChannelSchedule(slugOrId)
           );
+          await this.refreshLocalityDiscovery();
         }
       }
     } catch (error) {
@@ -312,14 +471,50 @@ export class MyChannelComponent implements OnInit {
           .replace(/[^a-z0-9]+/g, '-'),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
+      this.syncLocalityForm(this.channel);
       this.feed = await firstValueFrom(
         this.videoService.getChannelFeed(
           this.channel.communitySlug ?? this.channel.id
         )
       );
       this.schedule = [];
+      await this.refreshLocalityDiscovery();
     } catch (error) {
       console.error('Error creating channel:', error);
+    }
+  }
+
+  async saveLocality() {
+    if (!this.channel) {
+      return;
+    }
+
+    const anchorLat = Number(this.localityForm.anchorLat);
+    const anchorLng = Number(this.localityForm.anchorLng);
+    if (!Number.isFinite(anchorLat) || !Number.isFinite(anchorLng)) {
+      this.localityMessage = 'Enter a valid latitude and longitude first.';
+      return;
+    }
+
+    this.localitySaving = true;
+    this.localityMessage = '';
+
+    try {
+      this.channel = await this.videoService.updateChannel(this.channel.id, {
+        anchorLat,
+        anchorLng,
+        timezone:
+          this.channel.timezone ??
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
+      this.syncLocalityForm(this.channel);
+      await this.refreshLocalityDiscovery();
+      this.localityMessage = 'Locality anchor saved.';
+    } catch (error) {
+      console.error('Error saving channel locality:', error);
+      this.localityMessage = 'Failed to save locality anchor.';
+    } finally {
+      this.localitySaving = false;
     }
   }
 
@@ -405,5 +600,45 @@ export class MyChannelComponent implements OnInit {
 
   getTotalViews(): number {
     return this.videos.reduce((sum, video) => sum + (video.viewCount || 0), 0);
+  }
+
+  formatDistance(distanceMeters: number): string {
+    const miles = distanceMeters / 1609.34;
+    return `${miles.toFixed(1)} mi`;
+  }
+
+  private syncLocalityForm(channel: ChannelDto) {
+    this.localityForm = {
+      anchorLat:
+        channel.anchorLat === undefined ? '' : String(channel.anchorLat),
+      anchorLng:
+        channel.anchorLng === undefined ? '' : String(channel.anchorLng),
+    };
+  }
+
+  private async refreshLocalityDiscovery() {
+    if (
+      !this.channel ||
+      this.channel.anchorLat === undefined ||
+      this.channel.anchorLng === undefined
+    ) {
+      this.localityDiscovery = null;
+      this.localityLabel = '';
+      return;
+    }
+
+    this.localityDiscovery = await firstValueFrom(
+      this.localityDiscoveryService.discoverNearby(
+        {
+          anchor: {
+            lat: this.channel.anchorLat,
+            lng: this.channel.anchorLng,
+          },
+          radiusMeters: DEFAULT_CHANNEL_RADIUS_METERS,
+        },
+        { scope: 'metrocast', limit: 6 }
+      )
+    );
+    this.localityLabel = this.localityDiscovery.locality.formatted;
   }
 }

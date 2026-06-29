@@ -64,6 +64,12 @@ assert.equal(
 );
 
 assert.equal(
+  packageJson.scripts['slice:checkpoint:dev'],
+  './scripts/verify-dev-slice-checkpoint.sh',
+  'slice:checkpoint:dev must use the dedicated Docker slice checkpoint wrapper'
+);
+
+assert.equal(
   packageJson.scripts['docker:prod:bootstrap'],
   './scripts/docker-compose-deploy.sh',
   'docker:prod:bootstrap must use the explicit compose deploy entrypoint'
@@ -498,6 +504,7 @@ for (const token of [
   'run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js',
   'run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js',
   'run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js',
+  'run_seed_from_workspace_env owner-console "/app/apps/owner-console" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-owner.mjs',
   'run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-social.js',
   'run_seed_with_run social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js',
   'run_seed_with_env social "${APP_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-community-posts.js',

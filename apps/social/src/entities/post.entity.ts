@@ -22,6 +22,18 @@ import { Reaction } from './reaction.entity';
 import { SocialComponent } from './social-component.entity';
 import { Poll } from './poll.entity';
 
+export interface CrossAppCard {
+  appId?: string;
+  appName?: string;
+  kind?: string;
+  headline?: string;
+  body?: string;
+  ctaLabel?: string;
+  targetPath?: string;
+  channelSlug?: string;
+  communitySlug?: string;
+}
+
 @Entity()
 export class Post {
   @PrimaryGeneratedColumn('uuid')
@@ -78,6 +90,9 @@ export class Post {
 
   @Column({ type: 'uuid', nullable: true })
   communityId: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  crossAppCard?: CrossAppCard | null;
 
   @Column({ type: 'timestamp', nullable: true })
   scheduledAt: Date | null;

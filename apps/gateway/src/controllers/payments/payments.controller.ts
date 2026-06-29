@@ -62,6 +62,8 @@ export interface UpdateBusinessPageDto {
   email?: string;
   address?: string;
   pinnedPostId?: string;
+  anchorLat?: number;
+  anchorLng?: number;
 }
 
 export interface CreateSponsorshipDto {
@@ -382,6 +384,21 @@ export class PaymentsController {
     );
   }
 
+  @Get('business/owner')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get business pages for the authenticated owner' })
+  async getOwnerBusinessPages(@User() user: UserDetails) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_OWNER_BUSINESS_PAGES },
+        {
+          userId: user.userId,
+        }
+      )
+    );
+  }
+
   @Get('business/:communityId')
   @Public()
   @ApiOperation({ summary: 'Get business page for community' })
@@ -412,6 +429,27 @@ export class PaymentsController {
         {
           cityId,
           communityIds: ids,
+        }
+      )
+    );
+  }
+
+  @Patch('business/owner/:businessPageId')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update an owner business page by id' })
+  async updateOwnerBusinessPage(
+    @User() user: UserDetails,
+    @Param('businessPageId') businessPageId: string,
+    @Body() dto: UpdateBusinessPageDto
+  ) {
+    return await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.UPDATE_OWNER_BUSINESS_PAGE },
+        {
+          userId: user.userId,
+          businessPageId,
+          ...dto,
         }
       )
     );

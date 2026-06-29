@@ -52,11 +52,22 @@ Common commands:
 ```bash
 pnpm run docker:dev:bootstrap
 pnpm run docker:dev
+pnpm run slice:checkpoint:dev
 pnpm run docker:dev:ps
 pnpm run docker:dev:logs
 pnpm run docker:dev:down
 pnpm run docker:dev:reset
 ```
+
+For slice-based feature work, the required boundary check is:
+
+```bash
+pnpm run slice:checkpoint:dev
+```
+
+That wrapper runs `pnpm run docker:dev` followed by
+`pnpm run docker:dev:bootstrap`. If either command fails, the current slice is
+not considered closed.
 
 ### Incremental Rebuild Rules
 

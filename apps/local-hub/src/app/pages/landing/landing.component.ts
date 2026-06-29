@@ -8,6 +8,12 @@ import {
 } from '../../services/community.service';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
 import { PaymentService, DonationGoal } from '../../services/payment.service';
+import { firstValueFrom } from 'rxjs';
+import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
+import {
+  NearbyBusinessDiscoveryDto,
+  NearbyChannelDiscoveryDto,
+} from '@optimistic-tanuki/models';
 
 @Component({
   selector: 'app-landing',
@@ -20,11 +26,16 @@ export class LandingComponent implements OnInit {
   private router = inject(Router);
   private communityService = inject(CommunityService);
   private paymentService = inject(PaymentService);
+  private localityDiscoveryService = inject(LocalityDiscoveryService);
 
   cities = signal<City[]>([]);
   communities = signal<LocalCommunity[]>([]);
   loading = signal(true);
   donationGoal = signal<DonationGoal | null>(null);
+  nearbyBusinesses = signal<NearbyBusinessDiscoveryDto[]>([]);
+  nearbyChannels = signal<NearbyChannelDiscoveryDto[]>([]);
+  nearbyLoading = signal(false);
+  nearbyLocalityLabel = signal('');
 
   totalCities = signal(0);
   totalCommunities = signal(0);
@@ -44,7 +55,7 @@ export class LandingComponent implements OnInit {
       ]);
 
       const citiesData =
-        this.communityService.getCitiesFromCommunities(communitiesData);
+        this.communityService.getLocalitiesFromCommunities(communitiesData);
 
       this.cities.set(citiesData);
       this.communities.set(communitiesData);
@@ -60,6 +71,7 @@ export class LandingComponent implements OnInit {
       );
       this.totalMembers.set(totalMembers);
       this.clampCityIndex();
+      void this.loadNearbyDiscovery();
     } catch (error) {
       console.error('Failed to load landing data:', error);
     } finally {
@@ -106,7 +118,7 @@ export class LandingComponent implements OnInit {
   }
 
   navigateToCities(): void {
-    this.router.navigate(['/cities']);
+    this.router.navigate(['/localities']);
   }
 
   navigateToLogin(): void {
@@ -118,7 +130,12 @@ export class LandingComponent implements OnInit {
   }
 
   navigateToCity(slug: string): void {
-    this.router.navigate(['/city', slug]);
+    this.router.navigate(['/locality', slug]);
+  }
+
+  formatDistance(distanceMeters: number): string {
+    const miles = distanceMeters / 1609.34;
+    return miles < 10 ? `${miles.toFixed(1)} mi` : `${Math.round(miles)} mi`;
   }
 
   private updateVisibleCityCount(): void {
@@ -147,5 +164,57 @@ export class LandingComponent implements OnInit {
     this.currentCityIndex.set(
       Math.min(this.currentCityIndex(), this.getMaxCityIndex())
     );
+  }
+
+  private async loadNearbyDiscovery(): Promise<void> {
+    const anchor = await this.requestBrowserLocation();
+    if (!anchor) {
+      return;
+    }
+
+    this.nearbyLoading.set(true);
+    try {
+      const result = await firstValueFrom(
+        this.localityDiscoveryService.discoverNearby(
+          {
+            anchor,
+            radiusMeters: 16093,
+          },
+          { limit: 4 }
+        )
+      );
+      this.nearbyBusinesses.set(result.businesses);
+      this.nearbyChannels.set(result.channels);
+      this.nearbyLocalityLabel.set(result.locality.formatted);
+    } catch (error) {
+      console.error('Failed to load nearby discovery:', error);
+    } finally {
+      this.nearbyLoading.set(false);
+    }
+  }
+
+  private requestBrowserLocation(): Promise<{
+    lat: number;
+    lng: number;
+  } | null> {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) =>
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }),
+        () => resolve(null),
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 300000,
+        }
+      );
+    });
   }
 }
