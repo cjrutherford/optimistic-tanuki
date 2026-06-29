@@ -260,6 +260,35 @@ test('docker-build-batched.sh defaults to batch size 10', () => {
   assert.match(result.stdout, /Batch size: 10/);
 });
 
+test('docker-build-batched.sh re-execs under bash when invoked through sh', () => {
+  const bakeFile = path.join(os.tmpdir(), `docker-bake-sh-${process.pid}.json`);
+  fs.writeFileSync(
+    bakeFile,
+    JSON.stringify({
+      target: {
+        'db-setup': {},
+        authentication: {},
+      },
+    })
+  );
+
+  const result = spawnSync(
+    'sh',
+    ['scripts/docker-build-batched.sh', '--dry-run'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_BAKE_FILE: bakeFile,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Batch size: 10/);
+});
+
 test('docker-build-batched.sh accepts explicit service filters', () => {
   const bakeFile = path.join(
     os.tmpdir(),
@@ -336,14 +365,39 @@ test('docker:dev stays incremental while docker:dev:bootstrap owns seeding', () 
   assert.match(packageJson.scripts['docker:dev:bootstrap'], /docker:dev:seed/);
 });
 
-test('dev-seed.sh refreshes videos before seeding it', () => {
+test('slice checkpoint wrapper runs docker:dev before docker:dev:bootstrap', () => {
+  const scriptPath = path.join(
+    repoRoot,
+    'scripts',
+    'verify-dev-slice-checkpoint.sh'
+  );
+  const script = fs.readFileSync(scriptPath, 'utf8');
+
+  assert.match(script, /pnpm run docker:dev/);
+  assert.match(script, /pnpm run docker:dev:bootstrap/);
+
+  const devIndex = script.indexOf('pnpm run docker:dev');
+  const bootstrapIndex = script.indexOf('pnpm run docker:dev:bootstrap');
+  assert.ok(
+    devIndex < bootstrapIndex,
+    'expected incremental docker:dev to run before docker:dev:bootstrap'
+  );
+});
+
+test('dev-seed.sh builds and refreshes videos before seeding it', () => {
   const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
   const script = fs.readFileSync(scriptPath, 'utf8');
+  const buildIndex = script.indexOf('build_dist_app videos');
   const refreshIndex = script.indexOf('refresh_service videos');
   const seedIndex = script.indexOf(
     'run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js'
   );
 
+  assert.notEqual(
+    buildIndex,
+    -1,
+    'expected videos dist build command to exist'
+  );
   assert.notEqual(
     refreshIndex,
     -1,
@@ -351,8 +405,48 @@ test('dev-seed.sh refreshes videos before seeding it', () => {
   );
   assert.notEqual(seedIndex, -1, 'expected videos seed command to exist');
   assert.ok(
+    buildIndex < refreshIndex,
+    'expected videos build to happen before videos refresh'
+  );
+  assert.ok(
     refreshIndex < seedIndex,
     'expected videos refresh to happen before videos seed'
+  );
+});
+
+test('dev-seed.sh refreshes workspace-mounted app containers before seeding them', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
+  const script = fs.readFileSync(scriptPath, 'utf8');
+
+  const ownerRefreshIndex = script.indexOf('refresh_service owner-console');
+  const ownerSeedIndex = script.indexOf(
+    'run_seed_from_workspace_env owner-console "/app/apps/owner-console" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-owner.mjs'
+  );
+  const businessRefreshIndex = script.indexOf('refresh_service business-site');
+  const businessSeedIndex = script.indexOf(
+    'run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs'
+  );
+
+  assert.notEqual(
+    ownerRefreshIndex,
+    -1,
+    'expected owner-console to be refreshed before seeding'
+  );
+  assert.notEqual(ownerSeedIndex, -1, 'expected owner-console seed command');
+  assert.ok(
+    ownerRefreshIndex < ownerSeedIndex,
+    'expected owner-console refresh before owner-console seed'
+  );
+
+  assert.notEqual(
+    businessRefreshIndex,
+    -1,
+    'expected business-site to be refreshed before seeding'
+  );
+  assert.notEqual(businessSeedIndex, -1, 'expected business-site seed command');
+  assert.ok(
+    businessRefreshIndex < businessSeedIndex,
+    'expected business-site refresh before business-site seed'
   );
 });
 

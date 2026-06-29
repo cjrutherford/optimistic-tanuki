@@ -72,4 +72,44 @@ describe('ChannelComponent', () => {
     expect(videoService.getChannelSchedule).toHaveBeenCalledWith('ot-live');
     expect(component.channel?.communitySlug).toBe('ot-live');
   });
+
+  it('renders locality anchor details on the about tab when the channel has an anchor', async () => {
+    videoService.getChannel.mockReturnValue(
+      of({
+        id: 'channel-1',
+        communityId: 'community-1',
+        communitySlug: 'ot-live',
+        name: 'OT Live',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
+        timezone: 'America/New_York',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any)
+    );
+    videoService.getChannelVideos.mockResolvedValue([]);
+    videoService.getChannelFeed.mockReturnValue(
+      of({
+        id: 'feed-1',
+        channelId: 'channel-1',
+        communityId: 'community-1',
+        timezone: 'America/New_York',
+        currentMode: 'scheduled',
+        lastTransitionAt: new Date(),
+      } as any)
+    );
+    videoService.getChannelSchedule.mockReturnValue(of([]));
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    component.activeTab = 'about';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Locality anchor');
+    expect(fixture.nativeElement.textContent).toContain('32.0809');
+    expect(fixture.nativeElement.textContent).toContain('-81.0912');
+    expect(fixture.nativeElement.textContent).toContain('America/New_York');
+  });
 });

@@ -6,6 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { AuthStateService } from './services/auth-state.service';
 import { of } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
+import { Router } from '@angular/router';
 
 const authStateMock = {
   isAuthenticated$: of(false),
@@ -42,6 +43,7 @@ const themeServiceMock = {
 describe('AppComponent', () => {
   let fixture: ComponentFixture<AppComponent>;
   let app: AppComponent;
+  let router: Router;
 
   beforeEach(async () => {
     themeServiceMock.setPersonality.mockClear();
@@ -60,6 +62,7 @@ describe('AppComponent', () => {
 
     fixture = TestBed.createComponent(AppComponent);
     app = fixture.componentInstance;
+    router = TestBed.inject(Router);
   });
 
   it('should create the app', () => {
@@ -103,5 +106,16 @@ describe('AppComponent', () => {
 
     expect(themeServiceMock.setPersonality).toHaveBeenCalledWith('soft-touch');
     getItemSpy.mockRestore();
+  });
+
+  it('uses locality-first navigation in the app shell', () => {
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+
+    app.updateNavItems();
+    const localityItem = app.navItems()[0];
+    localityItem.action?.();
+
+    expect(localityItem.label).toBe('Localities');
+    expect(navigateSpy).toHaveBeenCalledWith(['/localities']);
   });
 });

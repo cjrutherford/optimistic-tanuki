@@ -1,12 +1,25 @@
 import { AttachmentDto } from './attachment';
 import { CommentDto } from './comment';
 
+export interface CrossAppCardDto {
+  appId?: string;
+  appName?: string;
+  kind?: string;
+  headline?: string;
+  body?: string;
+  ctaLabel?: string;
+  targetPath?: string;
+  channelSlug?: string;
+  communitySlug?: string;
+}
+
 export interface CreatePostDto {
   title: string;
   content: string;
   attachments?: string[];
   profileId: string;
   communityId?: string;
+  crossAppCard?: CrossAppCardDto;
 }
 
 export interface PostDto {
@@ -20,12 +33,14 @@ export interface PostDto {
   createdAt: Date;
   links?: { url: string }[];
   comments?: CommentDto[];
+  crossAppCard?: CrossAppCardDto;
 }
 
 export interface UpdatePostDto {
   title?: string;
   content?: string;
   attachments?: string[];
+  crossAppCard?: CrossAppCardDto;
 }
 
 export interface SearchPostDto {

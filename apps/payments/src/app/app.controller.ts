@@ -160,6 +160,16 @@ export class AppController {
     return this.paymentService.getBusinessPage(data.communityId);
   }
 
+  @MessagePattern({ cmd: PaymentCommands.GET_OWNER_BUSINESS_PAGES })
+  async getOwnerBusinessPages(@Payload() data: { userId: string }) {
+    return this.paymentService.getOwnerBusinessPages(data.userId);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.LIST_ACTIVE_BUSINESS_PAGES })
+  async listActiveBusinessPages() {
+    return this.paymentService.listActiveBusinessPages();
+  }
+
   @MessagePattern({ cmd: PaymentCommands.UPDATE_BUSINESS_PAGE })
   async updateBusinessPage(
     @Payload()
@@ -174,6 +184,8 @@ export class AppController {
       email?: string;
       address?: string;
       pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
     }
   ) {
     return this.paymentService.updateBusinessPage(
@@ -188,6 +200,44 @@ export class AppController {
         email: data.email,
         address: data.address,
         pinnedPostId: data.pinnedPostId,
+        anchorLat: data.anchorLat,
+        anchorLng: data.anchorLng,
+      }
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_OWNER_BUSINESS_PAGE })
+  async updateOwnerBusinessPage(
+    @Payload()
+    data: {
+      userId: string;
+      businessPageId: string;
+      name?: string;
+      description?: string;
+      logoUrl?: string;
+      website?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
+    }
+  ) {
+    return this.paymentService.updateOwnerBusinessPage(
+      data.userId,
+      data.businessPageId,
+      {
+        name: data.name,
+        description: data.description,
+        logoUrl: data.logoUrl,
+        website: data.website,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        pinnedPostId: data.pinnedPostId,
+        anchorLat: data.anchorLat,
+        anchorLng: data.anchorLng,
       }
     );
   }

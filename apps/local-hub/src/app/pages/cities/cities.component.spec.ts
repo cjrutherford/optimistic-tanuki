@@ -22,17 +22,64 @@ const communityServiceMock = {
       createdAt: new Date().toISOString(),
       coordinates: { lat: 32.0809, lng: -81.0912 },
     },
+    {
+      id: 'city-2',
+      name: 'Augusta',
+      slug: 'augusta-ga',
+      localityType: 'city',
+      city: 'Augusta',
+      adminArea: 'GA',
+      countryCode: 'US',
+      description: 'River city',
+      memberCount: 1,
+      createdAt: new Date().toISOString(),
+      coordinates: { lat: 33.4735, lng: -82.0105 },
+    },
   ]),
-  getCitiesFromCommunities: jest.fn().mockReturnValue([
+  getLocalitiesFromCommunities: jest.fn().mockReturnValue([
     {
       id: 'city-1',
       name: 'Savannah',
       slug: 'savannah-ga',
+      localityType: 'city',
       countryCode: 'US',
       adminArea: 'GA',
       description: 'Coastal city',
       imageUrl: '',
       coordinates: { lat: 32.0809, lng: -81.0912 },
+      label: {
+        primary: 'Savannah',
+        formatted: 'Savannah, GA, US',
+        source: 'community-metadata',
+      },
+      scope: {
+        anchor: { lat: 32.0809, lng: -81.0912 },
+        radiusMeters: 40234,
+      },
+      population: 1,
+      timezone: 'America/New_York',
+      highlights: [],
+      communities: 1,
+    },
+    {
+      id: 'city-2',
+      name: 'Augusta',
+      slug: 'augusta-ga',
+      localityType: 'city',
+      countryCode: 'US',
+      adminArea: 'GA',
+      description: 'River city',
+      imageUrl: '',
+      coordinates: { lat: 33.4735, lng: -82.0105 },
+      label: {
+        primary: 'Augusta',
+        formatted: 'Augusta, GA, US',
+        source: 'community-metadata',
+      },
+      scope: {
+        anchor: { lat: 33.4735, lng: -82.0105 },
+        radiusMeters: 40234,
+      },
       population: 1,
       timezone: 'America/New_York',
       highlights: [],
@@ -74,5 +121,16 @@ describe('CitiesComponent', () => {
 
     expect(mapComponent).toBeDefined();
     expect(mapComponent?.mode).toBe('atlas-nearby');
+  });
+
+  it('prioritizes nearby localities when a user anchor is available', async () => {
+    await fixture.whenStable();
+
+    component.userLocation.set({ lat: 32.081, lng: -81.091 });
+
+    expect(component.filteredCities().map((city) => city.slug)).toEqual([
+      'savannah-ga',
+      'augusta-ga',
+    ]);
   });
 });

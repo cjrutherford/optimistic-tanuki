@@ -13,6 +13,7 @@ import {
   LiveSessionDto,
   ProgramBlockDto,
   StartLiveSessionDto,
+  UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
 
 @Injectable({
@@ -92,6 +93,12 @@ export class VideoService {
   createChannel(channel: CreateChannelDto): Promise<ChannelDto> {
     return firstValueFrom(
       this.http.post<ChannelDto>(`${this.API_URL}/channels`, channel)
+    );
+  }
+
+  updateChannel(id: string, channel: UpdateChannelDto): Promise<ChannelDto> {
+    return firstValueFrom(
+      this.http.put<ChannelDto>(`${this.API_URL}/channels/${id}`, channel)
     );
   }
 

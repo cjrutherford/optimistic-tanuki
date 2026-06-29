@@ -15,8 +15,7 @@
       </div>
       <h1 class="page-title">Explore Local Hubs</h1>
       <p class="page-subtitle">
-        Discover communities across {{ filteredCities().length }} supported
-        localities
+        Discover communities across {{ filteredCities().length }} localized hubs
       </p>
       <div class="stats-bar">
         <div class="stat">
@@ -40,7 +39,7 @@
   @if (loading()) {
   <div class="loading-state">
     <div class="loading-spinner"></div>
-    <p>Loading cities...</p>
+    <p>Loading localities...</p>
   </div>
   } @else {
   <section class="city-workbench">
@@ -55,8 +54,8 @@
             Regional Map
           </h2>
           <p class="section-subtitle">
-            Always-on navigation for the current result set. Select a marker to
-            jump directly into a locality hub.
+            Anchor-aware navigation for the current result set. Select a marker
+            to jump directly into a locality hub.
           </p>
         </div>
         <div class="map-frame">

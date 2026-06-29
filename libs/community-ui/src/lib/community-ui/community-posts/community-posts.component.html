@@ -97,7 +97,24 @@
         (startChat)="onStartChat($event)"
         (newCommentAdded)="onCommentAdded($event)"
       ></lib-post>
-      } @empty {
+      @if (post.crossAppCard && getCrossAppHref(post.id)) {
+      <article class="cross-app-card">
+        <p class="cross-app-eyebrow">
+          {{ post.crossAppCard.appName || 'MetroCast' }}
+        </p>
+        <h3>{{ post.crossAppCard.headline }}</h3>
+        @if (post.crossAppCard.body) {
+        <p class="cross-app-copy">{{ post.crossAppCard.body }}</p>
+        }
+        <a
+          class="cross-app-link"
+          [href]="getCrossAppHref(post.id)"
+          data-testid="cross-app-card-link"
+        >
+          {{ post.crossAppCard.ctaLabel || 'Open app' }}
+        </a>
+      </article>
+      } } @empty {
       <div class="no-posts">
         <p>No posts yet. Be the first to create one!</p>
         @if (currentProfileId && canCreatePosts) {

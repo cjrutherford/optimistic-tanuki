@@ -1,7 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { API_BASE_URL, CommunityTag } from '@optimistic-tanuki/ui-models';
+import {
+  API_BASE_URL,
+  AnchorPoint,
+  buildFallbackLocalityHighlights,
+  buildFallbackLocalityImageUrl,
+  CommunityTag,
+  RadiusScope,
+  ResolvedLocalityLabel,
+  getDefaultLocalityRadiusMeters,
+} from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
+import { LocalityResolutionService } from './locality-resolution.service';
 
 export interface CityHighlight {
   headline: string;
@@ -89,23 +99,29 @@ export interface CommunityElection {
   myVote?: string | null;
 }
 
-export interface City {
+export interface LocalitySummary {
   id: string;
   name: string;
   slug: string;
+  localityType: LocalCommunity['localityType'];
   countryCode: string;
   adminArea: string;
   description: string;
   imageUrl: string;
-  coordinates: {
-    lat: number;
-    lng: number;
-  };
+  coordinates: AnchorPoint;
+  label: ResolvedLocalityLabel;
+  scope: RadiusScope;
   population: number;
   timezone: string;
   highlights: CityHighlight[];
   communities: number;
+  externalInfo?: {
+    source: 'api';
+    articleUrl?: string;
+  };
 }
+
+export type City = LocalitySummary;
 
 export interface CityPost {
   id: string;
@@ -127,6 +143,7 @@ export interface CityPost {
 export class CommunityService {
   private http = inject(HttpClient);
   private apiBaseUrl = inject(API_BASE_URL);
+  private localityResolution = inject(LocalityResolutionService);
   private baseUrl = `${this.apiBaseUrl}/communities`;
   private socialBaseUrl = `${this.apiBaseUrl}/social/community`;
 
@@ -153,22 +170,45 @@ export class CommunityService {
   private toRootLocalityCard(
     community: LocalCommunity,
     communitiesCount: number
-  ): City {
+  ): LocalitySummary {
+    const coordinates = {
+      lat: community.coordinates?.lat || community.lat || 0,
+      lng: community.coordinates?.lng || community.lng || 0,
+    };
+
     return {
       id: community.id,
       name: community.city || community.name,
       slug: community.slug,
+      localityType: community.localityType,
       countryCode: community.countryCode || 'US',
       adminArea: community.adminArea || '',
       description: community.description || '',
-      imageUrl: community.imageUrl || '',
-      coordinates: {
-        lat: community.coordinates?.lat || community.lat || 0,
-        lng: community.coordinates?.lng || community.lng || 0,
+      imageUrl:
+        community.imageUrl ||
+        buildFallbackLocalityImageUrl(community.slug || community.id),
+      coordinates,
+      label: this.localityResolution.resolveFromCommunity({
+        name: community.name,
+        city: community.city,
+        adminArea: community.adminArea,
+        countryCode: community.countryCode,
+        timezone: community.timezone,
+        coordinates,
+      }),
+      scope: {
+        anchor: coordinates,
+        radiusMeters: getDefaultLocalityRadiusMeters(community.localityType),
       },
       population: community.population || 0,
       timezone: community.timezone || '',
-      highlights: community.highlights || [],
+      highlights:
+        community.highlights && community.highlights.length > 0
+          ? community.highlights
+          : buildFallbackLocalityHighlights({
+              slug: community.slug || community.id,
+              localityName: community.city || community.name,
+            }),
       communities: communitiesCount,
     };
   }
@@ -368,7 +408,9 @@ export class CommunityService {
    * This is a pure, synchronous operation — use it when you already have the
    * communities list to avoid a redundant HTTP call.
    */
-  getCitiesFromCommunities(communities: LocalCommunity[]): City[] {
+  getLocalitiesFromCommunities(
+    communities: LocalCommunity[]
+  ): LocalitySummary[] {
     const rootLocalities = communities.filter(
       (community) => this.isRootLocality(community) && !!community.slug
     );
@@ -402,17 +444,25 @@ export class CommunityService {
       });
   }
 
+  getCitiesFromCommunities(communities: LocalCommunity[]): City[] {
+    return this.getLocalitiesFromCommunities(communities);
+  }
+
   async getCities(): Promise<City[]> {
     try {
       const communities = await this.getCommunities();
-      return this.getCitiesFromCommunities(communities);
+      return this.getLocalitiesFromCommunities(communities);
     } catch (error) {
       console.error('Failed to fetch cities:', error);
       return [];
     }
   }
 
-  async getCityBySlug(slug: string): Promise<City | undefined> {
+  async getLocalities(): Promise<LocalitySummary[]> {
+    return this.getCities();
+  }
+
+  async getLocalityBySlug(slug: string): Promise<LocalitySummary | undefined> {
     try {
       const community = await this.getCommunityBySlug(slug);
 
@@ -427,9 +477,13 @@ export class CommunityService {
 
       return this.toRootLocalityCard(community, 1 + directChildrenCount);
     } catch (error) {
-      console.error('Failed to fetch city:', error);
+      console.error('Failed to fetch locality:', error);
       return undefined;
     }
+  }
+
+  async getCityBySlug(slug: string): Promise<City | undefined> {
+    return this.getLocalityBySlug(slug);
   }
 
   async getCitySlugForCommunity(communitySlug: string): Promise<string | null> {
@@ -459,6 +513,12 @@ export class CommunityService {
     } catch {
       return null;
     }
+  }
+
+  async getLocalitySlugForCommunity(
+    communitySlug: string
+  ): Promise<string | null> {
+    return this.getCitySlugForCommunity(communitySlug);
   }
 
   /**

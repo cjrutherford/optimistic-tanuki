@@ -520,6 +520,81 @@
   margin: 0 auto;
 }
 
+.nearby-now {
+  padding: 40px 24px 100px;
+}
+
+.nearby-header .section-title {
+  margin-bottom: 16px;
+}
+
+.nearby-status,
+.nearby-empty {
+  color: var(--foreground-muted);
+  text-align: center;
+}
+
+.nearby-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.nearby-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.06);
+}
+
+.nearby-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.nearby-panel-header h3,
+.nearby-card p {
+  margin: 0;
+}
+
+.nearby-panel-header span {
+  border-radius: 999px;
+  background: rgba(31, 122, 99, 0.12);
+  color: var(--primary);
+  padding: 0.3rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.nearby-list {
+  display: grid;
+  gap: 14px;
+}
+
+.nearby-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.nearby-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.nearby-card p {
+  color: var(--foreground-muted);
+  line-height: 1.5;
+}
+
 .business-card-demo {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -720,6 +795,10 @@
 
   .visual-row {
     grid-template-columns: repeat(var(--visible-cards, 2), minmax(0, 1fr));
+  }
+
+  .nearby-grid {
+    grid-template-columns: 1fr;
   }
 }
 

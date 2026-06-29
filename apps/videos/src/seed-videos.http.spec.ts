@@ -184,6 +184,8 @@ describe('seed video HTTP helpers', () => {
           'Imported during bootstrap from the local TV media library.',
         userId: 'user-1',
         profileId: 'profile-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
       }
     );
 
@@ -216,6 +218,8 @@ describe('seed video HTTP helpers', () => {
           'Imported during bootstrap from the local TV media library.',
         userId: 'user-1',
         profileId: 'profile-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
       },
       { headers: { Authorization: 'Bearer token-1' } }
     );

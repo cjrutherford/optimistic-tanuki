@@ -55,6 +55,10 @@ type CreateChannelInput = {
   description: string;
   userId: string;
   profileId: string;
+  communityId?: string;
+  communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
 };
 
 type CreateVideoInput = {

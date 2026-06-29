@@ -10,6 +10,7 @@ import {
   deriveVideoTitle,
   discoverSeedVideoFiles,
   getRelativeImportPath,
+  parseSeedCoordinate,
   resolveFirstExistingSeedVideoDirectory,
 } from './seed-videos.helpers';
 import {
@@ -66,6 +67,13 @@ type AuthenticatedSeedUser = SeedUserSession & {
   email: string;
 };
 
+type SeedCommunityAnchor = {
+  id: string;
+  slug: string;
+  lat: number;
+  lng: number;
+};
+
 type SeedVideoRecord = {
   title: string;
   description: string;
@@ -75,6 +83,12 @@ type SeedVideoRecord = {
   resolution?: string;
   encoding?: string;
 };
+
+const SEED_CHANNEL_LOCALITY_SLUGS = [
+  'savannah-ga',
+  'savannah-starland-district',
+  'augusta-ga',
+] as const;
 
 async function bootstrap() {
   const logger = new Logger('VideoSeedScript-HTTP');
@@ -87,10 +101,16 @@ async function bootstrap() {
     throw new Error('No seed users could be authenticated for video seeding.');
   }
 
-  const importedCount = await importVideosFromLibrary({ logger, users });
+  const communityAnchors = await loadSeedCommunityAnchors(users[0]);
+
+  const importedCount = await importVideosFromLibrary({
+    logger,
+    users,
+    communityAnchors,
+  });
 
   if (importedCount === 0) {
-    await seedFallbackCatalog({ logger, users });
+    await seedFallbackCatalog({ logger, users, communityAnchors });
   }
 
   await ensureSampleSubscriptions({ logger, users });
@@ -125,8 +145,9 @@ async function authenticateSeedUsers(
 async function importVideosFromLibrary(params: {
   logger: Logger;
   users: AuthenticatedSeedUser[];
+  communityAnchors: SeedCommunityAnchor[];
 }): Promise<number> {
-  const { logger, users } = params;
+  const { logger, users, communityAnchors } = params;
 
   if (!existsSync(DEFAULT_VIDEO_SOURCE_DIR)) {
     logger.warn(
@@ -173,7 +194,9 @@ async function importVideosFromLibrary(params: {
     const channel = await ensureChannelThroughApi(
       owner,
       channelName,
-      channelCache
+      channelCache,
+      DEFAULT_IMPORTED_CHANNEL_DESCRIPTION,
+      resolveChannelLocality(channelName, communityAnchors)
     );
     const existingVideos = await listChannelVideosThroughApi(
       owner.httpClient,
@@ -222,8 +245,9 @@ async function importVideosFromLibrary(params: {
 async function seedFallbackCatalog(params: {
   logger: Logger;
   users: AuthenticatedSeedUser[];
+  communityAnchors: SeedCommunityAnchor[];
 }): Promise<void> {
-  const { logger, users } = params;
+  const { logger, users, communityAnchors } = params;
   const channelCache = new Map<string, SeedChannel>();
   const fallbackChannels = [
     {
@@ -231,18 +255,21 @@ async function seedFallbackCatalog(params: {
       description:
         'Learn programming, web development, and software engineering with our comprehensive tutorials.',
       owner: users[0],
+      localitySlug: 'savannah-ga',
     },
     {
-      name: 'Cooking Adventures',
+      name: 'Corner Table Channel',
       description:
-        'Delicious recipes and cooking tips from around the world. Join us on a culinary journey!',
+        'Neighborhood food stories, pop-up recaps, and local chef spotlights.',
       owner: users[1],
+      localitySlug: 'savannah-starland-district',
     },
     {
-      name: 'Fitness & Health',
+      name: 'River Region Live',
       description:
-        'Get fit and stay healthy with our workout routines, nutrition advice, and wellness tips.',
+        'Hyperlocal interviews, live event cut-ins, and weekend community coverage.',
       owner: users[2],
+      localitySlug: 'augusta-ga',
     },
   ];
 
@@ -252,7 +279,8 @@ async function seedFallbackCatalog(params: {
         channel.owner,
         channel.name,
         channelCache,
-        channel.description
+        channel.description,
+        resolveLocalityBySlug(channel.localitySlug, communityAnchors)
       )
     )
   );
@@ -411,7 +439,8 @@ async function ensureChannelThroughApi(
   owner: AuthenticatedSeedUser,
   name: string,
   cache: Map<string, SeedChannel>,
-  description = DEFAULT_IMPORTED_CHANNEL_DESCRIPTION
+  description = DEFAULT_IMPORTED_CHANNEL_DESCRIPTION,
+  locality?: SeedCommunityAnchor
 ): Promise<SeedChannel> {
   const cacheKey = `${owner.profileId}:${name}`;
   const cached = cache.get(cacheKey);
@@ -438,6 +467,10 @@ async function ensureChannelThroughApi(
     description,
     profileId: owner.profileId,
     userId: owner.userId,
+    // Channel identity stays channel-specific; locality anchors only provide
+    // coordinates for cross-app proximity experiences.
+    anchorLat: locality?.lat,
+    anchorLng: locality?.lng,
   });
 
   const channel: SeedChannel = {
@@ -448,6 +481,69 @@ async function ensureChannelThroughApi(
   };
   cache.set(cacheKey, channel);
   return channel;
+}
+
+async function loadSeedCommunityAnchors(
+  owner: AuthenticatedSeedUser
+): Promise<SeedCommunityAnchor[]> {
+  const communities = await Promise.all(
+    SEED_CHANNEL_LOCALITY_SLUGS.map(async (slug) => {
+      const response = (await owner.httpClient.get(
+        `/communities/slug/${slug}`
+      )) as {
+        id?: string;
+        slug?: string;
+        lat?: number | string;
+        lng?: number | string;
+        data?: {
+          id?: string;
+          slug?: string;
+          lat?: number | string;
+          lng?: number | string;
+        };
+      };
+      const community = 'data' in response ? response.data : response;
+      const lat = parseSeedCoordinate(community?.lat);
+      const lng = parseSeedCoordinate(community?.lng);
+      if (!community?.id || lat === null || lng === null) {
+        throw new Error(`Could not resolve seed community for slug ${slug}`);
+      }
+
+      return {
+        id: community.id,
+        slug: community.slug || slug,
+        lat,
+        lng,
+      } satisfies SeedCommunityAnchor;
+    })
+  );
+
+  return communities;
+}
+
+function resolveLocalityBySlug(
+  slug: string,
+  communityAnchors: SeedCommunityAnchor[]
+): SeedCommunityAnchor {
+  const locality = communityAnchors.find(
+    (community) => community.slug === slug
+  );
+  if (!locality) {
+    throw new Error(`Missing locality seed anchor for ${slug}`);
+  }
+
+  return locality;
+}
+
+function resolveChannelLocality(
+  channelName: string,
+  communityAnchors: SeedCommunityAnchor[]
+): SeedCommunityAnchor {
+  const index =
+    [...channelName].reduce((sum, char) => sum + char.charCodeAt(0), 0) %
+    communityAnchors.length;
+
+  return communityAnchors[index];
 }
 
 function extensionWithoutDot(filePath: string): string {

@@ -103,6 +103,8 @@ export class CommunityComponent implements OnInit, OnDestroy {
   businessPhone = '';
   businessEmail = '';
   businessAddress = '';
+  businessAnchorLat = '';
+  businessAnchorLng = '';
   sponsorshipAdContent = '';
   private readonly globalOwnerRoleNames = new Set([
     'owner_console_owner',
@@ -333,6 +335,16 @@ export class CommunityComponent implements OnInit, OnDestroy {
         this.businessPhone = businessPage.phone || '';
         this.businessEmail = businessPage.email || '';
         this.businessAddress = businessPage.address || '';
+        this.businessAnchorLat =
+          businessPage.anchorLat === null ||
+          businessPage.anchorLat === undefined
+            ? ''
+            : String(businessPage.anchorLat);
+        this.businessAnchorLng =
+          businessPage.anchorLng === null ||
+          businessPage.anchorLng === undefined
+            ? ''
+            : String(businessPage.anchorLng);
       }
     } catch {
       this.messageService.addMessage({
@@ -415,6 +427,8 @@ export class CommunityComponent implements OnInit, OnDestroy {
           phone: this.businessPhone.trim() || undefined,
           email: this.businessEmail.trim() || undefined,
           address: this.businessAddress.trim() || undefined,
+          anchorLat: this.parseOptionalCoordinate(this.businessAnchorLat),
+          anchorLng: this.parseOptionalCoordinate(this.businessAnchorLng),
         }
       );
       this.businessPage.set(updated);
@@ -470,25 +484,35 @@ export class CommunityComponent implements OnInit, OnDestroy {
     const community = this.community();
     if (community) {
       this.communityService
-        .getCitySlugForCommunity(community.slug)
-        .then((citySlug) => {
-          if (citySlug) {
-            this.router.navigate(['/city', citySlug]);
+        .getLocalitySlugForCommunity(community.slug)
+        .then((localitySlug) => {
+          if (localitySlug) {
+            this.router.navigate(['/locality', localitySlug]);
           } else {
-            this.router.navigate(['/cities']);
+            this.router.navigate(['/localities']);
           }
         });
     }
   }
 
   navigateToCities(): void {
-    this.router.navigate(['/cities']);
+    this.router.navigate(['/localities']);
   }
 
   promptSignIn(action: string): void {
     this.router.navigate(['/login'], {
       queryParams: { returnUrl: this.router.url, action },
     });
+  }
+
+  private parseOptionalCoordinate(value: string): number | undefined {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
   }
 
   promptJoin(): void {

@@ -64,6 +64,8 @@ export interface BusinessPage {
   phone?: string;
   email?: string;
   address?: string;
+  anchorLat?: number | null;
+  anchorLng?: number | null;
   tier: 'basic' | 'pro' | 'enterprise';
   stripeSubscriptionId?: string;
   status: 'active' | 'past-due' | 'canceled' | 'trial';
