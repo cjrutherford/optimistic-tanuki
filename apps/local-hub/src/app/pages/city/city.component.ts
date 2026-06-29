@@ -34,11 +34,14 @@ import {
 } from '@optimistic-tanuki/common-ui';
 import { PostComponent, PostDto } from '@optimistic-tanuki/social-ui';
 import { PaymentService, BusinessPage } from '../../services/payment.service';
+import { LocalityInfoService } from '../../services/locality-info.service';
 import {
   API_BASE_URL,
   CreateAssetDto,
   ProfileDto,
 } from '@optimistic-tanuki/ui-models';
+import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
+import { AppRegistryService } from '@optimistic-tanuki/app-registry';
 import {
   ClassifiedListComponent,
   ClassifiedService,
@@ -84,6 +87,9 @@ export class CityComponent implements OnInit, OnDestroy {
   private authState = inject(AuthStateService);
   private messageService = inject(MessageService);
   private paymentService = inject(PaymentService);
+  private businessApi = inject(BusinessApiService);
+  private appRegistry = inject(AppRegistryService);
+  private localityInfoService = inject(LocalityInfoService);
   private meta = inject(Meta);
   private title = inject(Title);
   private platformId = inject(PLATFORM_ID);
@@ -99,6 +105,7 @@ export class CityComponent implements OnInit, OnDestroy {
   posts = signal<CityPost[]>([]);
   businesses = signal<BusinessPage[]>([]);
   classifieds = signal<ClassifiedAdDto[]>([]);
+  hostedBusinessSlugs = signal<Map<string, string>>(new Map());
   classifiedsLoading = signal(false);
   loading = signal(true);
   error = signal<string | null>(null);
@@ -106,6 +113,7 @@ export class CityComponent implements OnInit, OnDestroy {
   userLocation = signal<{ lat: number; lng: number } | null>(null);
   memberCommunityIds = signal<Set<string>>(new Set());
   expandingInProgress = signal<string | null>(null);
+  businessSiteBaseUrl = signal<string | null>(null);
 
   /** Currently elected manager for the root locality. */
   communityManager = signal<CommunityManager | null>(null);
@@ -192,7 +200,7 @@ export class CityComponent implements OnInit, OnDestroy {
 
   async loadCity(slug: string): Promise<void> {
     try {
-      const cityData = await this.communityService.getCityBySlug(slug);
+      const cityData = await this.communityService.getLocalityBySlug(slug);
 
       if (!cityData) {
         this.error.set('Locality not found');
@@ -200,8 +208,11 @@ export class CityComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.city.set(cityData);
-      this.updateMetaTags(cityData);
+      const enrichedCityData = await this.localityInfoService.enrichLocality(
+        cityData
+      );
+      this.city.set(enrichedCityData);
+      this.updateMetaTags(enrichedCityData);
 
       const communitiesData = await this.communityService.getCommunitiesForCity(
         slug
@@ -239,10 +250,11 @@ export class CityComponent implements OnInit, OnDestroy {
       try {
         const allCommunityIds = communitiesData.map((c) => c.id);
         const businessesData = await this.paymentService.getCityBusinesses(
-          cityData.id,
+          enrichedCityData.id,
           allCommunityIds
         );
         this.businesses.set(businessesData);
+        await this.loadHostedBusinessLinks();
       } catch {
         // Non-fatal - businesses are optional
       }
@@ -275,6 +287,57 @@ export class CityComponent implements OnInit, OnDestroy {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  async loadHostedBusinessLinks(): Promise<void> {
+    try {
+      const [sites, app] = await Promise.all([
+        firstValueFrom(this.businessApi.listPublishedSites()),
+        firstValueFrom(this.appRegistry.getApp('business-site')),
+      ]);
+
+      this.hostedBusinessSlugs.set(
+        new Map(
+          (sites || []).map((site) => [
+            this.normalizeBusinessName(site.businessName),
+            site.slug,
+          ])
+        )
+      );
+      this.businessSiteBaseUrl.set(app?.uiBaseUrl ?? null);
+    } catch {
+      this.hostedBusinessSlugs.set(new Map());
+      this.businessSiteBaseUrl.set(null);
+    }
+  }
+
+  getBusinessHref(business: BusinessPage): string | null {
+    const slug = this.hostedBusinessSlugs().get(
+      this.normalizeBusinessName(business.name)
+    );
+    const businessSiteBaseUrl = this.businessSiteBaseUrl();
+
+    if (slug && businessSiteBaseUrl) {
+      return `${businessSiteBaseUrl}/sites/${slug}`;
+    }
+
+    return business.website ?? null;
+  }
+
+  getBusinessLinkLabel(business: BusinessPage): string {
+    const slug = this.hostedBusinessSlugs().get(
+      this.normalizeBusinessName(business.name)
+    );
+
+    return slug ? 'Visit Business Site' : 'Visit Website';
+  }
+
+  private normalizeBusinessName(value: string | undefined | null): string {
+    return (value ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .replace(/\s+/g, ' ');
   }
 
   private updateMetaTags(city: City): void {
@@ -391,7 +454,7 @@ export class CityComponent implements OnInit, OnDestroy {
   }
 
   navigateToCity(slug: string): void {
-    this.router.navigate(['/city', slug]);
+    this.router.navigate(['/locality', slug]);
   }
 
   navigateToPost(communitySlug: string): void {
@@ -399,7 +462,7 @@ export class CityComponent implements OnInit, OnDestroy {
   }
 
   navigateToCities(): void {
-    this.router.navigate(['/cities']);
+    this.router.navigate(['/localities']);
   }
 
   openCreateCommunityModal(): void {

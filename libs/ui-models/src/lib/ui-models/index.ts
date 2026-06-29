@@ -83,7 +83,22 @@ export {
   ElectionStatus,
   LocalityType,
 } from './community';
+export type {
+  AnchorPoint,
+  RadiusScope,
+  ResolvedLocalityLabel,
+  LocalityLabelSource,
+  LocalityPresentationHighlight,
+} from './locality';
+export {
+  buildFallbackLocalityHighlights,
+  buildFallbackLocalityImageUrl,
+  buildCoordinateFallbackLabel,
+  buildResolvedLocalityLabel,
+  getDefaultLocalityRadiusMeters,
+} from './locality';
 export { API_BASE_URL } from './api-config.tokens';
+export { LOCALITY_INFO_API_URL } from './api-config.tokens';
 export { type PersonaTelosDto } from './telos';
 export { type PostThemeConfig, DEFAULT_POST_THEME } from './post-theme-config';
 export * from './store';

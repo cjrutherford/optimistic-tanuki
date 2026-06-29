@@ -372,6 +372,20 @@ export class PaymentService {
     });
   }
 
+  async getOwnerBusinessPages(userId: string) {
+    return this.businessPageRepository.find({
+      where: { ownerId: userId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async listActiveBusinessPages() {
+    return this.businessPageRepository.find({
+      where: { subscriptionStatus: 'active' },
+      order: { isFeatured: 'DESC', createdAt: 'ASC' },
+    });
+  }
+
   async updateBusinessPage(
     userId: string,
     communityId: string,
@@ -384,10 +398,42 @@ export class PaymentService {
       email?: string;
       address?: string;
       pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
     }
   ) {
     const businessPage = await this.businessPageRepository.findOne({
       where: { communityId, ownerId: userId },
+    });
+
+    if (!businessPage) {
+      return { success: false, message: 'Business page not found' };
+    }
+
+    Object.assign(businessPage, data);
+    await this.businessPageRepository.save(businessPage);
+
+    return { success: true, businessPage };
+  }
+
+  async updateOwnerBusinessPage(
+    userId: string,
+    businessPageId: string,
+    data: {
+      name?: string;
+      description?: string;
+      logoUrl?: string;
+      website?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
+    }
+  ) {
+    const businessPage = await this.businessPageRepository.findOne({
+      where: { id: businessPageId, ownerId: userId },
     });
 
     if (!businessPage) {

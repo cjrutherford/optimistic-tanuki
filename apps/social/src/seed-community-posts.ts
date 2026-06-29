@@ -10,6 +10,7 @@
 
 import axios, { AxiosInstance } from 'axios';
 import { Logger } from '@nestjs/common';
+import { buildMetroCastChannelPromoPost } from './seed-community-posts.helpers';
 
 interface SeedUser {
   email: string;
@@ -629,6 +630,35 @@ async function bootstrap() {
       );
     }
     await sleep(50);
+  }
+
+  try {
+    const metroCastPromo = buildMetroCastChannelPromoPost({
+      communityId: cityCommId,
+      profileId: owner.profileId,
+      channelSlug: 'savannah-signal',
+      channelName: 'Savannah Signal',
+    });
+
+    const res = await httpClient.post(
+      '/social/post',
+      {
+        ...metroCastPromo,
+        appScope,
+      },
+      { headers: { Authorization: `Bearer ${owner.token}` } }
+    );
+    const post: PostResponse = res.data?.data || res.data;
+    if (post?.id) {
+      allPosts.push(post);
+      logger.log(`Created MetroCast promo post: "${post.title}" (${post.id})`);
+    }
+  } catch (err: any) {
+    logger.warn(
+      `Failed to create MetroCast promo post: ${
+        err.response?.data?.message || err.message
+      }`
+    );
   }
 
   // ── Step 6: Create foodies sub-community posts ────────────────────────────

@@ -13,6 +13,11 @@ describe('PostService', () => {
   let postRepo: jest.Mocked<Repository<Post>>;
   let attachmentRepo: jest.Mocked<Repository<Attachment>>;
   let commentRepo: jest.Mocked<Repository<Comment>>;
+  let communityService: {
+    findOne: jest.Mock;
+    isMember: jest.Mock;
+    hasPermission: jest.Mock;
+  };
 
   const mockRepoFactory = () => ({
     create: jest.fn(),
@@ -25,6 +30,12 @@ describe('PostService', () => {
   });
 
   beforeEach(async () => {
+    communityService = {
+      findOne: jest.fn(),
+      isMember: jest.fn().mockResolvedValue(true),
+      hasPermission: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PostService,
@@ -42,9 +53,7 @@ describe('PostService', () => {
         },
         {
           provide: CommunityService,
-          useValue: {
-            findOne: jest.fn(),
-          },
+          useValue: communityService,
         },
       ],
     }).compile();
@@ -155,6 +164,43 @@ describe('PostService', () => {
 
     expect(post.attachments).toEqual(mockAttachments);
 
+    expect(result).toBe(post);
+  });
+
+  it('should preserve a cross-app MetroCast card when creating a post', async () => {
+    const dto = {
+      title: 'Tonight on Savannah Signal',
+      content: '<p>Watch the local recap on MetroCast.</p>',
+      userId: 'user1',
+      profileId: 'profile1',
+      communityId: 'community-1',
+      crossAppCard: {
+        appId: 'video-platform',
+        appName: 'MetroCast',
+        kind: 'channel-promotion',
+        headline: 'Watch Savannah Signal tonight',
+        body: 'Local updates, interviews, and replays from around Savannah.',
+        ctaLabel: 'Watch on MetroCast',
+        targetPath: '/c/savannah-signal',
+        channelSlug: 'savannah-signal',
+      },
+    } as any;
+
+    const post = { id: '1', ...dto } as Post;
+    postRepo.create.mockReturnValue(post);
+    postRepo.save.mockResolvedValue(post);
+
+    const result = await service.create(dto);
+
+    expect(postRepo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        crossAppCard: expect.objectContaining({
+          appId: 'video-platform',
+          ctaLabel: 'Watch on MetroCast',
+          targetPath: '/c/savannah-signal',
+        }),
+      })
+    );
     expect(result).toBe(post);
   });
 

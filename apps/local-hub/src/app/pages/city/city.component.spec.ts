@@ -4,12 +4,17 @@ import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
+import { of } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { CityComponent } from './city.component';
 import { CommunityService } from '../../services/community.service';
 import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { PaymentService } from '../../services/payment.service';
+import { LocalityInfoService } from '../../services/locality-info.service';
+import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
+import { AppRegistryService } from '@optimistic-tanuki/app-registry';
 import {
   ClassifiedService,
   ClassifiedAdDto,
@@ -17,15 +22,25 @@ import {
 import { MapComponent } from '../../components/map/map.component';
 
 const communityServiceMock = {
-  getCityBySlug: jest.fn().mockResolvedValue({
+  getLocalityBySlug: jest.fn().mockResolvedValue({
     id: 'city-1',
     name: 'Savannah',
     slug: 'savannah-ga',
+    localityType: 'city',
     countryCode: 'US',
     adminArea: 'GA',
     description: 'Coastal city',
     imageUrl: '',
     coordinates: { lat: 32.0809, lng: -81.0912 },
+    label: {
+      primary: 'Savannah',
+      formatted: 'Savannah, GA, US',
+      source: 'community-metadata',
+    },
+    scope: {
+      anchor: { lat: 32.0809, lng: -81.0912 },
+      radiusMeters: 40234,
+    },
     population: 1,
     timezone: 'America/New_York',
     highlights: [],
@@ -57,7 +72,20 @@ const authStateMock = {
 };
 
 const paymentServiceMock = {
-  getCityBusinesses: jest.fn().mockResolvedValue([]),
+  getCityBusinesses: jest.fn().mockResolvedValue([
+    {
+      id: 'business-1',
+      userId: 'owner-1',
+      communityId: 'city-1',
+      name: 'North Star Advisory',
+      description: 'Planning and advisory support.',
+      tier: 'pro',
+      status: 'active',
+      locations: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ]),
   getDonationGoal: jest.fn().mockResolvedValue({
     raised: 0,
     goal: 0,
@@ -71,8 +99,49 @@ const classifiedServiceMock = {
     .mockResolvedValue({ data: [] as ClassifiedAdDto[] }),
 };
 
+const localityInfoServiceMock = {
+  enrichLocality: jest.fn().mockImplementation(async (locality) => ({
+    ...locality,
+    description: 'Savannah is a coastal Georgia city.',
+    imageUrl: 'https://upload.wikimedia.org/savannah.jpg',
+    externalInfo: {
+      source: 'api',
+      articleUrl: 'https://en.wikipedia.org/wiki/Savannah,_Georgia',
+    },
+  })),
+};
+
+const businessApiServiceMock = {
+  listPublishedSites: jest.fn().mockReturnValue(
+    of([
+      {
+        slug: 'north-star-advisory',
+        businessName: 'North Star Advisory',
+        tagline: 'Steady planning for local operators.',
+        location: 'Savannah, GA',
+        businessType: 'consulting',
+      },
+    ])
+  ),
+};
+
+const appRegistryServiceMock = {
+  getApp: jest.fn().mockReturnValue(
+    of({
+      appId: 'business-site',
+      name: 'Business Site',
+      domain: 'business.local',
+      uiBaseUrl: 'http://localhost:8094',
+      apiBaseUrl: 'http://localhost:8094/api',
+      appType: 'client',
+      visibility: 'public',
+    })
+  ),
+};
+
 describe('CityComponent', () => {
   let fixture: ComponentFixture<CityComponent>;
+  let router: Router;
   const geolocation = {
     getCurrentPosition: jest.fn(),
   };
@@ -99,7 +168,10 @@ describe('CityComponent', () => {
         { provide: AuthStateService, useValue: authStateMock },
         { provide: MessageService, useValue: { addMessage: jest.fn() } },
         { provide: PaymentService, useValue: paymentServiceMock },
+        { provide: BusinessApiService, useValue: businessApiServiceMock },
+        { provide: AppRegistryService, useValue: appRegistryServiceMock },
         { provide: ClassifiedService, useValue: classifiedServiceMock },
+        { provide: LocalityInfoService, useValue: localityInfoServiceMock },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
         {
           provide: ActivatedRoute,
@@ -108,6 +180,7 @@ describe('CityComponent', () => {
       ],
     }).compileComponents();
 
+    router = TestBed.inject(Router);
     fixture = TestBed.createComponent(CityComponent);
     fixture.detectChanges();
   });
@@ -131,5 +204,40 @@ describe('CityComponent', () => {
       ?.componentInstance as MapComponent | undefined;
 
     expect(mapComponent?.userLocation).toEqual({ lat: 32.05, lng: -81.1 });
+  });
+
+  it('returns to the locality index through locality-first routes', async () => {
+    await fixture.whenStable();
+    const navigateSpy = jest.spyOn(router, 'navigate').mockResolvedValue(true);
+    const component = fixture.componentInstance;
+
+    component.navigateToCities();
+
+    expect(navigateSpy).toHaveBeenCalledWith(['/localities']);
+  });
+
+  it('enriches the locality detail with API-backed city information', async () => {
+    await fixture.whenStable();
+
+    expect(localityInfoServiceMock.enrichLocality).toHaveBeenCalled();
+    expect(fixture.componentInstance.city()).toMatchObject({
+      description: 'Savannah is a coastal Georgia city.',
+      imageUrl: 'https://upload.wikimedia.org/savannah.jpg',
+      externalInfo: {
+        source: 'api',
+      },
+    });
+  });
+
+  it('prefers the hosted business-site link when a published site matches', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const link = fixture.nativeElement.querySelector(
+      '[data-testid="city-business-link"]'
+    ) as HTMLAnchorElement | null;
+
+    expect(link?.textContent).toContain('Visit Business Site');
+    expect(link?.href).toBe('http://localhost:8094/sites/north-star-advisory');
   });
 });

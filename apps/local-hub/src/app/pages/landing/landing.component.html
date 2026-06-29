@@ -375,6 +375,79 @@
   </div>
 </section>
 
+@if (nearbyLoading() || nearbyBusinesses().length > 0 || nearbyChannels().length
+> 0) {
+<section class="nearby-now">
+  <div class="section-container">
+    <div class="story-header nearby-header">
+      <p class="story-eyebrow">Live discovery</p>
+      <h2 class="section-title">Nearby right now</h2>
+      <p class="section-subtitle">
+        @if (nearbyLocalityLabel()) { Radius-based matches around
+        {{ nearbyLocalityLabel() }}. } @else { Radius-based matches from your
+        current area. }
+      </p>
+    </div>
+
+    @if (nearbyLoading()) {
+    <p class="nearby-status">Looking for nearby businesses and channels...</p>
+    } @else {
+    <div class="nearby-grid">
+      <article class="nearby-panel">
+        <div class="nearby-panel-header">
+          <h3>Businesses</h3>
+          <span>{{ nearbyBusinesses().length }}</span>
+        </div>
+        @if (nearbyBusinesses().length === 0) {
+        <p class="nearby-empty">No nearby businesses yet.</p>
+        } @else {
+        <div class="nearby-list">
+          @for (business of nearbyBusinesses(); track business.id) {
+          <div class="nearby-card">
+            <div>
+              <strong>{{ business.name }}</strong>
+              <p>
+                {{
+                  business.description ||
+                    business.address ||
+                    'Local business profile'
+                }}
+              </p>
+            </div>
+            <span>{{ formatDistance(business.distanceMeters) }}</span>
+          </div>
+          }
+        </div>
+        }
+      </article>
+
+      <article class="nearby-panel">
+        <div class="nearby-panel-header">
+          <h3>Channels</h3>
+          <span>{{ nearbyChannels().length }}</span>
+        </div>
+        @if (nearbyChannels().length === 0) {
+        <p class="nearby-empty">No nearby channels yet.</p>
+        } @else {
+        <div class="nearby-list">
+          @for (channel of nearbyChannels(); track channel.id) {
+          <div class="nearby-card">
+            <div>
+              <strong>{{ channel.name }}</strong>
+              <p>{{ channel.description || 'Metro Cast community channel' }}</p>
+            </div>
+            <span>{{ formatDistance(channel.distanceMeters) }}</span>
+          </div>
+          }
+        </div>
+        }
+      </article>
+    </div>
+    }
+  </div>
+</section>
+}
+
 <section class="how-it-works" id="how-it-works">
   <h2 class="section-title">How It Works</h2>
   <ol class="steps">

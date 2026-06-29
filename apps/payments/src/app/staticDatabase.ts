@@ -12,6 +12,8 @@ import { Offer } from '../entities/offer.entity';
 import { SellerWallet } from '../entities/seller-wallet.entity';
 import { PayoutRequest } from '../entities/payout-request.entity';
 import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
+import { Initial1774396807253 } from '../../migrations/1774396807253-initial';
+import { BusinessPageAnchorColumns1782648600000 } from '../../migrations/1782648600000-business-page-anchor-columns';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -43,6 +45,11 @@ const entities = [
   LemonSqueezyProduct,
 ];
 
+const migrations = [
+  Initial1774396807253,
+  BusinessPageAnchorColumns1782648600000,
+];
+
 const staticSource = new DataSource({
   type: 'postgres',
   host: host,
@@ -51,6 +58,6 @@ const staticSource = new DataSource({
   password,
   database: database,
   entities,
-  migrations: ['./migrations/*.ts'],
+  migrations,
 });
 export default staticSource;

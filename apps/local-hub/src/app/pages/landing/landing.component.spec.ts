@@ -5,6 +5,8 @@ import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { CommunityService } from '../../services/community.service';
 import { PaymentService } from '../../services/payment.service';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
+import { of } from 'rxjs';
 
 const donationGoalMock = {
   monthlyGoal: 5000,
@@ -16,6 +18,41 @@ const paymentServiceMock = {
   getDonationGoal: jest.fn().mockResolvedValue(donationGoalMock),
 };
 
+const localityDiscoveryServiceMock = {
+  discoverNearby: jest.fn().mockReturnValue(
+    of({
+      anchor: { lat: 32.08, lng: -81.09 },
+      radiusMeters: 16093,
+      locality: {
+        primary: 'Savannah',
+        formatted: 'Savannah, GA, US',
+        source: 'coordinates',
+      },
+      communities: [],
+      businesses: [
+        {
+          id: 'business-1',
+          communityId: 'community-1',
+          name: 'Local Market',
+          description: 'Neighborhood grocery and deli.',
+          distanceMeters: 1200,
+          coordinates: { lat: 32.08, lng: -81.09 },
+        },
+      ],
+      channels: [
+        {
+          id: 'channel-1',
+          communityId: 'community-1',
+          name: 'Downtown Live',
+          description: 'Neighborhood stream updates.',
+          distanceMeters: 1800,
+          coordinates: { lat: 32.09, lng: -81.1 },
+        },
+      ],
+    })
+  ),
+};
+
 describe('LandingComponent', () => {
   let component: LandingComponent;
   let fixture: ComponentFixture<LandingComponent>;
@@ -25,15 +62,34 @@ describe('LandingComponent', () => {
     fixture.detectChanges();
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
     fixture.detectChanges();
   }
 
   beforeEach(async () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: jest.fn((success) =>
+          success({
+            coords: {
+              latitude: 32.08,
+              longitude: -81.09,
+            },
+          })
+        ),
+      },
+    });
+
     await TestBed.configureTestingModule({
       imports: [LandingComponent, RouterTestingModule, HttpClientTestingModule],
       providers: [
         CommunityService,
         { provide: PaymentService, useValue: paymentServiceMock },
+        {
+          provide: LocalityDiscoveryService,
+          useValue: localityDiscoveryServiceMock,
+        },
         { provide: API_BASE_URL, useValue: '' },
       ],
     }).compileComponents();
@@ -205,5 +261,20 @@ describe('LandingComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('How Towne Square works');
+  });
+
+  it('renders nearby discovery cards when browser location is available', async () => {
+    jest.spyOn(communityService, 'getCommunities').mockResolvedValue([]);
+
+    await renderComponent();
+    await Promise.resolve();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(localityDiscoveryServiceMock.discoverNearby).toHaveBeenCalled();
+    expect(compiled.textContent).toContain('Nearby right now');
+    expect(compiled.textContent).toContain('Local Market');
+    expect(compiled.textContent).toContain('Downtown Live');
   });
 });

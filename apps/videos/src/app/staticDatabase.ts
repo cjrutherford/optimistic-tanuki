@@ -12,8 +12,9 @@ import {
   VideoView,
 } from '../entities';
 import { Initial1770152975983 } from '../../migrations/1770152975983-initial';
-import { CommunityBroadcast20260417143000 } from '../../migrations/20260417143000-community-broadcast';
-import { VideoProcessingPipeline20260418170000 } from '../../migrations/20260418170000-video-processing-pipeline';
+import { CommunityBroadcast1776436200000 } from '../../migrations/1776436200000-community-broadcast';
+import { VideoProcessingPipeline1776522000000 } from '../../migrations/1776522000000-video-processing-pipeline';
+import { ChannelAnchorColumns1782648000000 } from '../../migrations/1782648000000-channel-anchor-columns';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -45,8 +46,9 @@ const entities = [
 ];
 const migrations = [
   Initial1770152975983,
-  CommunityBroadcast20260417143000,
-  VideoProcessingPipeline20260418170000,
+  CommunityBroadcast1776436200000,
+  VideoProcessingPipeline1776522000000,
+  ChannelAnchorColumns1782648000000,
 ];
 
 const staticSource = new DataSource({

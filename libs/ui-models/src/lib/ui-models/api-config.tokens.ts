@@ -30,3 +30,11 @@ import { InjectionToken } from '@angular/core';
  * }
  */
 export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL');
+
+/**
+ * Injection token for an external locality/city information API base URL.
+ * Frontends can provide a public read-only source such as Wikipedia REST.
+ */
+export const LOCALITY_INFO_API_URL = new InjectionToken<string>(
+  'LOCALITY_INFO_API_URL'
+);

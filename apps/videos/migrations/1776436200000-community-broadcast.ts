@@ -1,8 +1,8 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 import { Initial1770152975983 } from './1770152975983-initial';
 
-export class CommunityBroadcast20260417143000 implements MigrationInterface {
-  name = 'CommunityBroadcast20260417143000';
+export class CommunityBroadcast1776436200000 implements MigrationInterface {
+  name = 'CommunityBroadcast1776436200000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     const hasChannelTable = await queryRunner.hasTable('channel');

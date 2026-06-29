@@ -22,6 +22,7 @@ import {
   BusinessSiteConfig,
   BusinessSiteConfigStore,
   BusinessStoreProduct,
+  OwnerBusinessPageRecord,
   businessSiteConfigToConfigDocument,
   cloneBusinessSiteConfig,
   configDocumentToBusinessSiteConfig,
@@ -513,6 +514,82 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
               [fields]="contactFields"
               (fieldChanged)="patchDraftField($event.key, $event.value)"
             ></app-schema-form-panel>
+            <div class="locality-anchor-panel">
+              <div class="locality-anchor-header">
+                <h3>Locality Anchor</h3>
+                <p>
+                  Set the point used for radius-based discovery across Towne
+                  Square and Metro Cast.
+                </p>
+              </div>
+              @if (loadingOwnerBusinessPages()) {
+              <p class="anchor-status">Loading business locations…</p>
+              } @else if (ownerBusinessPages().length === 0) {
+              <p class="anchor-status">
+                No business page is available for this owner yet.
+              </p>
+              } @else {
+              <div class="field-grid locality-anchor-grid">
+                <label>
+                  <span>Business page</span>
+                  <select
+                    class="native-select"
+                    [ngModel]="selectedOwnerBusinessPageId()"
+                    (ngModelChange)="selectOwnerBusinessPage($event)"
+                  >
+                    @for (page of ownerBusinessPages(); track page.id) {
+                    <option [value]="page.id">
+                      {{ page.name || page.address || page.communityId }}
+                    </option>
+                    }
+                  </select>
+                </label>
+                <label>
+                  <span>Latitude</span>
+                  <input
+                    class="native-input"
+                    type="number"
+                    step="0.000001"
+                    [ngModel]="ownerBusinessAnchorLat"
+                    (ngModelChange)="ownerBusinessAnchorLat = $event"
+                    placeholder="32.0809"
+                  />
+                </label>
+                <label>
+                  <span>Longitude</span>
+                  <input
+                    class="native-input"
+                    type="number"
+                    step="0.000001"
+                    [ngModel]="ownerBusinessAnchorLng"
+                    (ngModelChange)="ownerBusinessAnchorLng = $event"
+                    placeholder="-81.0912"
+                  />
+                </label>
+              </div>
+              @if (ownerBusinessAnchorMessage()) {
+              <p class="anchor-status success">
+                {{ ownerBusinessAnchorMessage() }}
+              </p>
+              } @if (ownerBusinessAnchorError()) {
+              <p class="anchor-status error">
+                {{ ownerBusinessAnchorError() }}
+              </p>
+              }
+              <button
+                class="anchor-save-button"
+                type="button"
+                [disabled]="savingOwnerBusinessAnchor()"
+                (click)="saveOwnerBusinessAnchor()"
+              >
+                {{
+                  savingOwnerBusinessAnchor()
+                    ? 'Saving anchor…'
+                    : 'Save locality anchor'
+                }}
+              </button>
+              }
+            </div>
             }
           </otui-card>
 
@@ -2675,6 +2752,73 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
         font-weight: 600;
       }
 
+      .locality-anchor-panel {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+      }
+
+      .locality-anchor-header {
+        display: grid;
+        gap: 0.35rem;
+        margin-bottom: 1rem;
+      }
+
+      .locality-anchor-header h3,
+      .locality-anchor-header p,
+      .anchor-status,
+      .nearby-card p {
+        margin: 0;
+      }
+
+      .locality-anchor-header p,
+      .anchor-status {
+        color: rgba(15, 23, 42, 0.68);
+        font-size: 0.95rem;
+      }
+
+      .locality-anchor-grid label {
+        display: grid;
+        gap: 0.45rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .native-input,
+      .native-select {
+        width: 100%;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: 14px;
+        padding: 0.8rem 0.95rem;
+        font: inherit;
+        background: rgba(255, 255, 255, 0.98);
+      }
+
+      .anchor-status.success {
+        color: #15803d;
+      }
+
+      .anchor-status.error {
+        color: #b91c1c;
+      }
+
+      .anchor-save-button {
+        margin-top: 0.75rem;
+        border: 0;
+        border-radius: 999px;
+        padding: 0.8rem 1.2rem;
+        background: linear-gradient(135deg, #1f7a63, #0f172a);
+        color: white;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .anchor-save-button:disabled {
+        cursor: progress;
+        opacity: 0.7;
+      }
+
       .visually-hidden {
         position: absolute;
         width: 1px;
@@ -3124,6 +3268,7 @@ export class BusinessSiteEditorPageComponent {
   storeProductsLoading = signal(false);
   storeProductsError = signal('');
   storeServiceProducts = signal<BusinessStoreProduct[]>([]);
+  ownerBusinessPages = signal<OwnerBusinessPageRecord[]>([]);
   activeAssetPicker = signal<string | null>(null);
   uploadingTargets = signal<Record<string, boolean>>({});
   private configId: string | null = null;
@@ -3134,6 +3279,11 @@ export class BusinessSiteEditorPageComponent {
   readonly onboardingMode = signal(false);
   readonly richTextEditorOpen = signal(false);
   readonly guidedStep = signal(0);
+  readonly loadingOwnerBusinessPages = signal(true);
+  readonly savingOwnerBusinessAnchor = signal(false);
+  readonly selectedOwnerBusinessPageId = signal<string | null>(null);
+  readonly ownerBusinessAnchorMessage = signal('');
+  readonly ownerBusinessAnchorError = signal('');
   readonly personalities = PREDEFINED_PERSONALITIES;
   readonly guidedSteps: GuidedStepDefinition[] = [
     {
@@ -3317,6 +3467,8 @@ export class BusinessSiteEditorPageComponent {
   });
   private selectedSectionComposeSignature = '';
   private readonly customSectionBodyFallbacks = new Map<string, string>();
+  ownerBusinessAnchorLat = '';
+  ownerBusinessAnchorLng = '';
 
   private applyDraftTheme(): void {
     const theme = this.draft().theme;
@@ -3422,6 +3574,70 @@ export class BusinessSiteEditorPageComponent {
       },
     });
     void this.loadStoreProducts();
+    void this.loadOwnerBusinessPages();
+  }
+
+  selectOwnerBusinessPage(pageId: string | null): void {
+    this.selectedOwnerBusinessPageId.set(pageId);
+    const selectedPage =
+      this.ownerBusinessPages().find((page) => page.id === pageId) ?? null;
+    this.syncOwnerBusinessAnchorFields(selectedPage);
+    this.ownerBusinessAnchorMessage.set('');
+    this.ownerBusinessAnchorError.set('');
+  }
+
+  saveOwnerBusinessAnchor(): void {
+    const businessPageId = this.selectedOwnerBusinessPageId();
+    if (!businessPageId) {
+      this.ownerBusinessAnchorError.set('Select a business page first.');
+      return;
+    }
+
+    const anchorLat = this.parseOptionalCoordinate(this.ownerBusinessAnchorLat);
+    const anchorLng = this.parseOptionalCoordinate(this.ownerBusinessAnchorLng);
+
+    if (
+      (this.ownerBusinessAnchorLat.trim() && anchorLat === null) ||
+      (this.ownerBusinessAnchorLng.trim() && anchorLng === null)
+    ) {
+      this.ownerBusinessAnchorError.set(
+        'Enter valid numeric latitude and longitude values.'
+      );
+      return;
+    }
+
+    this.savingOwnerBusinessAnchor.set(true);
+    this.ownerBusinessAnchorMessage.set('');
+    this.ownerBusinessAnchorError.set('');
+
+    this.api
+      .updateOwnerBusinessPage(businessPageId, {
+        anchorLat: anchorLat ?? undefined,
+        anchorLng: anchorLng ?? undefined,
+      })
+      .subscribe({
+        next: (result) => {
+          const updatedPage = result.businessPage;
+          this.ownerBusinessPages.update((pages) =>
+            pages.map((page) =>
+              page.id === updatedPage.id ? { ...page, ...updatedPage } : page
+            )
+          );
+          this.syncOwnerBusinessAnchorFields(updatedPage);
+          this.ownerBusinessAnchorMessage.set(
+            'Locality anchor saved successfully.'
+          );
+          this.savingOwnerBusinessAnchor.set(false);
+        },
+        error: (err) => {
+          this.ownerBusinessAnchorError.set(
+            err?.error?.message ||
+              err?.message ||
+              'Unable to save the locality anchor.'
+          );
+          this.savingOwnerBusinessAnchor.set(false);
+        },
+      });
   }
 
   refreshDraftSignalFromTemplate(): void {
@@ -3434,6 +3650,45 @@ export class BusinessSiteEditorPageComponent {
       this.pendingDraftRefresh = false;
       this.draft.set(cloneBusinessSiteConfig(this.draft()));
     });
+  }
+
+  private async loadOwnerBusinessPages(): Promise<void> {
+    try {
+      const pages = await firstValueFrom(this.api.getOwnerBusinessPages());
+      this.ownerBusinessPages.set(pages);
+      const initialPage = pages[0] ?? null;
+      this.selectedOwnerBusinessPageId.set(initialPage?.id ?? null);
+      this.syncOwnerBusinessAnchorFields(initialPage);
+    } catch {
+      this.ownerBusinessPages.set([]);
+      this.selectedOwnerBusinessPageId.set(null);
+      this.syncOwnerBusinessAnchorFields(null);
+    } finally {
+      this.loadingOwnerBusinessPages.set(false);
+    }
+  }
+
+  private syncOwnerBusinessAnchorFields(
+    page: OwnerBusinessPageRecord | null
+  ): void {
+    this.ownerBusinessAnchorLat =
+      page?.anchorLat === null || page?.anchorLat === undefined
+        ? ''
+        : String(page.anchorLat);
+    this.ownerBusinessAnchorLng =
+      page?.anchorLng === null || page?.anchorLng === undefined
+        ? ''
+        : String(page.anchorLng);
+  }
+
+  private parseOptionalCoordinate(value: string): number | null {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : null;
   }
 
   landingPageBlocks(): BlockInstance[] {

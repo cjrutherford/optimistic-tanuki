@@ -95,11 +95,12 @@ describe('CommunityService', () => {
       },
     ];
 
-    expect(service.getCitiesFromCommunities(communities)).toEqual([
+    expect(service.getLocalitiesFromCommunities(communities)).toEqual([
       {
         id: 'augusta',
         name: 'Augusta',
         slug: 'augusta-ga',
+        localityType: 'city',
         countryCode: 'US',
         adminArea: 'GA',
         description: 'Augusta',
@@ -108,15 +109,49 @@ describe('CommunityService', () => {
           lat: 33.44,
           lng: -81.96,
         },
+        label: {
+          primary: 'Augusta',
+          secondary: 'GA, US',
+          formatted: 'Augusta, GA, US',
+          city: 'Augusta',
+          adminArea: 'GA',
+          countryCode: 'US',
+          timezone: 'America/New_York',
+          source: 'community-metadata',
+        },
+        scope: {
+          anchor: {
+            lat: 33.44,
+            lng: -81.96,
+          },
+          radiusMeters: 40234,
+        },
         population: 197166,
         timezone: 'America/New_York',
-        highlights: [],
+        highlights: [
+          {
+            headline: 'Augusta downtown favorites',
+            link: 'https://example.com/augusta-ga/downtown',
+            imageUrl: 'https://picsum.photos/seed/augusta-ga-downtown/800/600',
+          },
+          {
+            headline: 'Augusta local dining',
+            link: 'https://example.com/augusta-ga/food',
+            imageUrl: 'https://picsum.photos/seed/augusta-ga-food/800/600',
+          },
+          {
+            headline: 'Augusta parks and outdoors',
+            link: 'https://example.com/augusta-ga/outdoors',
+            imageUrl: 'https://picsum.photos/seed/augusta-ga-outdoors/800/600',
+          },
+        ],
         communities: 1,
       },
       {
         id: 'savannah',
         name: 'Savannah',
         slug: 'savannah-ga',
+        localityType: 'city',
         countryCode: 'US',
         adminArea: 'GA',
         description: 'Savannah',
@@ -125,15 +160,49 @@ describe('CommunityService', () => {
           lat: 32.08,
           lng: -81.09,
         },
+        label: {
+          primary: 'Savannah',
+          secondary: 'GA, US',
+          formatted: 'Savannah, GA, US',
+          city: 'Savannah',
+          adminArea: 'GA',
+          countryCode: 'US',
+          timezone: 'America/New_York',
+          source: 'community-metadata',
+        },
+        scope: {
+          anchor: {
+            lat: 32.08,
+            lng: -81.09,
+          },
+          radiusMeters: 40234,
+        },
         population: 147088,
         timezone: 'America/New_York',
-        highlights: [],
+        highlights: [
+          {
+            headline: 'Savannah downtown favorites',
+            link: 'https://example.com/savannah-ga/downtown',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-downtown/800/600',
+          },
+          {
+            headline: 'Savannah local dining',
+            link: 'https://example.com/savannah-ga/food',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-food/800/600',
+          },
+          {
+            headline: 'Savannah parks and outdoors',
+            link: 'https://example.com/savannah-ga/outdoors',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-outdoors/800/600',
+          },
+        ],
         communities: 2,
       },
       {
         id: 'statesboro',
         name: 'Statesboro',
         slug: 'statesboro-ga',
+        localityType: 'town',
         countryCode: 'US',
         adminArea: 'GA',
         description: 'Statesboro',
@@ -142,9 +211,139 @@ describe('CommunityService', () => {
           lat: 32.4488,
           lng: -81.7832,
         },
+        label: {
+          primary: 'Statesboro',
+          secondary: 'GA, US',
+          formatted: 'Statesboro, GA, US',
+          city: 'Statesboro',
+          adminArea: 'GA',
+          countryCode: 'US',
+          timezone: 'America/New_York',
+          source: 'community-metadata',
+        },
+        scope: {
+          anchor: {
+            lat: 32.4488,
+            lng: -81.7832,
+          },
+          radiusMeters: 32187,
+        },
         population: 33813,
         timezone: 'America/New_York',
-        highlights: [],
+        highlights: [
+          {
+            headline: 'Statesboro downtown favorites',
+            link: 'https://example.com/statesboro-ga/downtown',
+            imageUrl:
+              'https://picsum.photos/seed/statesboro-ga-downtown/800/600',
+          },
+          {
+            headline: 'Statesboro local dining',
+            link: 'https://example.com/statesboro-ga/food',
+            imageUrl: 'https://picsum.photos/seed/statesboro-ga-food/800/600',
+          },
+          {
+            headline: 'Statesboro parks and outdoors',
+            link: 'https://example.com/statesboro-ga/outdoors',
+            imageUrl:
+              'https://picsum.photos/seed/statesboro-ga-outdoors/800/600',
+          },
+        ],
+        communities: 1,
+      },
+    ]);
+  });
+
+  it('keeps the city-facing API as a compatibility wrapper', () => {
+    const communities: LocalCommunity[] = [
+      {
+        id: 'savannah',
+        name: 'Savannah, GA',
+        slug: 'savannah-ga',
+        description: 'Savannah',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 5,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lat: 32.08,
+        lng: -81.09,
+      },
+    ];
+
+    expect(service.getCitiesFromCommunities(communities)).toEqual(
+      service.getLocalitiesFromCommunities(communities)
+    );
+  });
+
+  it('creates fallback locality presentation when image and highlights are missing', () => {
+    const communities: LocalCommunity[] = [
+      {
+        id: 'savannah',
+        name: 'Savannah, GA',
+        slug: 'savannah-ga',
+        description: 'Savannah',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 5,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lat: 32.08,
+        lng: -81.09,
+      },
+    ];
+
+    expect(service.getLocalitiesFromCommunities(communities)).toEqual([
+      {
+        id: 'savannah',
+        name: 'Savannah',
+        slug: 'savannah-ga',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        description: 'Savannah',
+        imageUrl: 'https://picsum.photos/seed/savannah-ga/1200/800',
+        coordinates: {
+          lat: 32.08,
+          lng: -81.09,
+        },
+        label: {
+          primary: 'Savannah',
+          secondary: 'GA, US',
+          formatted: 'Savannah, GA, US',
+          city: 'Savannah',
+          adminArea: 'GA',
+          countryCode: 'US',
+          source: 'community-metadata',
+        },
+        scope: {
+          anchor: {
+            lat: 32.08,
+            lng: -81.09,
+          },
+          radiusMeters: 40234,
+        },
+        population: 0,
+        timezone: '',
+        highlights: [
+          {
+            headline: 'Savannah downtown favorites',
+            link: 'https://example.com/savannah-ga/downtown',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-downtown/800/600',
+          },
+          {
+            headline: 'Savannah local dining',
+            link: 'https://example.com/savannah-ga/food',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-food/800/600',
+          },
+          {
+            headline: 'Savannah parks and outdoors',
+            link: 'https://example.com/savannah-ga/outdoors',
+            imageUrl: 'https://picsum.photos/seed/savannah-ga-outdoors/800/600',
+          },
+        ],
         communities: 1,
       },
     ]);
@@ -180,6 +379,55 @@ describe('CommunityService', () => {
     ]);
 
     const lookupPromise = service.getCitySlugForCommunity('starland-makers');
+
+    httpMock.expectOne('/api/communities/slug/starland-makers').flush({
+      id: 'makers',
+      name: 'Starland Makers',
+      slug: 'starland-makers',
+      description: 'Neighborhood',
+      localityType: 'neighborhood',
+      parentId: 'savannah',
+      countryCode: 'US',
+      adminArea: 'GA',
+      city: 'Savannah',
+      memberCount: 12,
+      createdAt: '2024-01-01T00:00:00.000Z',
+    });
+
+    await expect(lookupPromise).resolves.toBe('savannah-ga');
+  });
+
+  it('provides a locality-first slug lookup alias for child communities', async () => {
+    jest.spyOn(service, 'getCommunities').mockResolvedValue([
+      {
+        id: 'savannah',
+        name: 'Savannah, GA',
+        slug: 'savannah-ga',
+        description: 'Savannah',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 5,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      },
+      {
+        id: 'makers',
+        name: 'Starland Makers',
+        slug: 'starland-makers',
+        description: 'Neighborhood',
+        localityType: 'neighborhood',
+        parentId: 'savannah',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 12,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      },
+    ]);
+
+    const lookupPromise =
+      service.getLocalitySlugForCommunity('starland-makers');
 
     httpMock.expectOne('/api/communities/slug/starland-makers').flush({
       id: 'makers',

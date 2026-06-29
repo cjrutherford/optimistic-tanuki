@@ -123,6 +123,6 @@ export class CommunitiesComponent implements OnInit {
   }
 
   navigateToCities(): void {
-    this.router.navigate(['/cities']);
+    this.router.navigate(['/localities']);
   }
 }

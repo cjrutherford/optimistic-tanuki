@@ -50,6 +50,8 @@ export interface ChannelDto {
   userId: string;
   communityId: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   appScope?: string;
   memberCount?: number;
@@ -113,6 +115,8 @@ export interface CreateChannelDto {
   userId: string;
   communityId?: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   timezone?: string;
   bannerAssetId?: string;
@@ -127,6 +131,8 @@ export interface UpdateChannelDto {
   name?: string;
   description?: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   timezone?: string;
   bannerAssetId?: string;

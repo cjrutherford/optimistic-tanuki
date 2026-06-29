@@ -49,6 +49,12 @@ export class BusinessPage {
   @Column({ type: 'text', nullable: true })
   address: string;
 
+  @Column({ type: 'double precision', nullable: true })
+  anchorLat: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  anchorLng: number | null;
+
   @Column({ type: 'varchar', default: 'basic' })
   tier: BusinessTier;
 

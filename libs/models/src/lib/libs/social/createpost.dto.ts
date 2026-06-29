@@ -4,9 +4,11 @@ import {
   IsUUID,
   IsOptional,
   IsArray,
+  IsObject,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { CrossAppCardDto } from './cross-app-card.dto';
 
 export class CreatePostDto {
   @ApiProperty({
@@ -61,4 +63,13 @@ export class CreatePostDto {
   @IsOptional()
   @IsUUID()
   communityId?: string;
+
+  @ApiProperty({
+    description: 'Optional cross-app promotion card metadata',
+    required: false,
+    type: CrossAppCardDto,
+  })
+  @IsOptional()
+  @IsObject()
+  crossAppCard?: CrossAppCardDto;
 }

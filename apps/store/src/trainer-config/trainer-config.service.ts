@@ -27,6 +27,7 @@ export interface PublicTrainerSiteSummary {
   tagline: string;
   location: string;
   businessType: string;
+  ownerUserId?: string;
 }
 
 @Injectable()
@@ -94,6 +95,10 @@ export class TrainerConfigService {
       tagline: String(config.brand?.['tagline'] ?? ''),
       location: String(config.contact?.['location'] ?? ''),
       businessType: String(config.businessType ?? 'general'),
+      ownerUserId:
+        typeof config.site?.['ownerUserId'] === 'string'
+          ? String(config.site['ownerUserId'])
+          : undefined,
     }));
   }
 
