@@ -14,6 +14,7 @@
     "docker:build:batched:dev": "./scripts/docker-build-batched.sh 10 docker-compose.dev.yaml",
     "docker:build:batched:prod": "./scripts/docker-build-batched.sh 10 docker-compose.yaml",
     "docker:build:batched:quick": "./scripts/docker-build-batched.sh 2",
+    "bootstrap:owner": "pnpm exec ts-node --project apps/admin-api/tsconfig.app.json apps/admin-api/src/app/bootstrap/bootstrap-owner.cli.ts",
     "docker:bootstrap:validate": "node scripts/validate-docker-bootstrap.mjs",
     "permissions:finance:validate": "node scripts/validate-permissions-finance-seed.mjs",
     "permissions:finance:playwright": "node scripts/validate-finance-permissions-playwright.mjs",

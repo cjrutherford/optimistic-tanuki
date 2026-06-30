@@ -170,6 +170,7 @@ export class SetupService {
   private readonly deploymentPath: string;
   private readonly secretsPath: string;
   private readonly setupCompletePath: string;
+  private readonly adminApiBaseUrl: string;
   private readonly setupMode: 'setup' | 'reconfigure';
   private readonly operatorInfoPath: string;
   private readonly dockerPullBatchSize: number;
@@ -183,6 +184,7 @@ export class SetupService {
       './ops/deployments/production.yaml';
     this.secretsPath = process.env['ADMIN_API_SECRETS_PATH'] || './.secrets';
     this.setupCompletePath = path.join(this.workspaceRoot, '.setup-complete');
+    this.adminApiBaseUrl = this.resolveAdminApiBaseUrl();
     this.operatorInfoPath = path.join(
       this.workspaceRoot,
       '.setup-operator.json'
@@ -1345,28 +1347,23 @@ export class SetupService {
     name: string,
     email: string,
     password: string
-  ): Promise<{ userId: string; email: string; name: string }> {
-    const [firstName, ...lastParts] = name.trim().split(/\s+/);
-    const lastName = lastParts.join(' ') || firstName;
-
-    const response = await fetch(
-      'http://localhost:3000/api/authentication/register',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-ot-appscope': 'owner-console',
-        },
-        body: JSON.stringify({
-          fn: firstName,
-          ln: lastName,
-          email: email.trim().toLowerCase(),
-          password,
-          confirm: password,
-          bio: 'Platform owner',
-        }),
-      }
-    );
+  ): Promise<{
+    userId: string;
+    profileId: string;
+    email: string;
+    name: string;
+  }> {
+    const response = await fetch(`${this.adminApiBaseUrl}/bootstrap/owner`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        email: email.trim().toLowerCase(),
+        password,
+      }),
+    });
 
     if (!response.ok) {
       const body = await response.text();
@@ -1378,6 +1375,7 @@ export class SetupService {
     const result = await response.json();
     return {
       userId: result?.data?.user?.id || result?.userId || '',
+      profileId: result?.profileId || '',
       email: email.trim().toLowerCase(),
       name,
     };
@@ -1526,15 +1524,23 @@ export class SetupService {
     );
     const operator = this.getSavedOperator();
     if (operator) {
-      try {
-        await this.createOwner(
-          operator.name,
-          operator.email,
-          operator.password
+      const existingUsers = await this.getExistingOwnerUsers();
+      const matchingExistingUser =
+        existingUsers.find(
+          (user) =>
+            user.email.trim().toLowerCase() ===
+            operator.email.trim().toLowerCase()
+        ) || null;
+
+      if (matchingExistingUser) {
+        throw new Error(
+          `Owner account ${operator.email
+            .trim()
+            .toLowerCase()} already exists. The setup bootstrap does not change existing passwords. Sign in with the existing password or reset it separately.`
         );
-      } catch {
-        // owner creation may fail if already exists; proceed with activation
       }
+
+      await this.createOwner(operator.name, operator.email, operator.password);
       try {
         fs.unlinkSync(this.operatorInfoPath);
       } catch {}
@@ -1545,7 +1551,7 @@ export class SetupService {
       'mark-setup',
       'Marking setup as complete...'
     );
-    fs.writeFileSync(this.setupCompletePath, new Date().toISOString(), 'utf-8');
+    await this.activateOwnerBootstrap();
     this.completeDeploySubstep('activating', 'mark-setup');
     this.startDeployProgress(
       'rebooting',
@@ -1563,6 +1569,26 @@ export class SetupService {
     this.deployProgress.message =
       'Setup complete! Redirecting to owner console...';
     this.deployProgress.updatedAt = new Date().toISOString();
+  }
+
+  private async activateOwnerBootstrap(): Promise<void> {
+    const response = await fetch(
+      `${this.adminApiBaseUrl}/bootstrap/owner/activate`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      }
+    );
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `Owner activation failed (${response.status})${body ? `: ${body}` : ''}`
+      );
+    }
   }
 
   async configureOAuthProvider(
@@ -2564,6 +2590,15 @@ export class SetupService {
       facebook: ['email', 'public_profile'],
     };
     return scopes[provider] || [];
+  }
+
+  private resolveAdminApiBaseUrl(): string {
+    const explicitBase =
+      process.env['SETUP_CONSOLE_ADMIN_API_URL'] ||
+      process.env['ADMIN_API_URL'] ||
+      'http://127.0.0.1:8098';
+
+    return `${explicitBase.replace(/\/+$/, '')}/api`;
   }
 
   private serializeYaml(obj: unknown): string {

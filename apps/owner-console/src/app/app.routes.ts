@@ -2,13 +2,8 @@ import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
 import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
-import { BootstrapOnboardingComponent } from './components/bootstrap-onboarding.component';
 
 export const appRoutes: Route[] = [
-  {
-    path: 'setup',
-    component: BootstrapOnboardingComponent,
-  },
   {
     path: 'control-center',
     loadComponent: () =>
@@ -279,5 +274,5 @@ export const appRoutes: Route[] = [
       { path: '', redirectTo: 'overview', pathMatch: 'full' },
     ],
   },
-  { path: '', redirectTo: '/setup', pathMatch: 'full' },
+  { path: '', redirectTo: '/control-center', pathMatch: 'full' },
 ];

@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   StoreService,
@@ -16,6 +16,7 @@ import {
   styleUrls: ['./bookings.component.scss'],
 })
 export class BookingsComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
   resources: Resource[] = [];
   userAppointments: Appointment[] = [];
   selectedResource: Resource | null = null;
@@ -45,6 +46,10 @@ export class BookingsComponent implements OnInit {
   constructor(private storeService: StoreService) {}
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.loadResources();
     this.loadUserAppointments();
   }

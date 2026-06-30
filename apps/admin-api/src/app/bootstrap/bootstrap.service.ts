@@ -1,8 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { execFile } from 'child_process';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ClientProxy } from '@nestjs/microservices';
+import {
+  AuthCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
+import {
+  RoleInitBuilder,
+  RoleInitService,
+} from '@optimistic-tanuki/permission-lib';
+import { CreateProfileDto } from '@optimistic-tanuki/models';
+import { firstValueFrom } from 'rxjs';
 import { promisify } from 'util';
 import { dump, load } from 'js-yaml';
 
@@ -83,8 +95,16 @@ export class BootstrapService {
   private readonly deploymentPath: string;
   private readonly secretsPath: string;
   private readonly setupCompletePath: string;
+  private readonly gatewayBaseUrl: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
+    private readonly authClient: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileClient: ClientProxy,
+    private readonly roleInit: RoleInitService
+  ) {
     this.workspaceRoot =
       this.configService.get<string>('admin-api.workspaceRoot') || '.';
     this.deploymentPath =
@@ -93,6 +113,10 @@ export class BootstrapService {
     this.secretsPath =
       this.configService.get<string>('admin-api.secretsPath') || './.secrets';
     this.setupCompletePath = path.join(this.workspaceRoot, '.setup-complete');
+    this.gatewayBaseUrl = this.trimTrailingSlash(
+      this.configService.get<string>('admin-api.gatewayBaseUrl') ||
+        'http://gateway:3000'
+    );
   }
 
   async getStatus(): Promise<BootstrapStatus> {
@@ -538,40 +562,84 @@ export class BootstrapService {
     name: string,
     email: string,
     password: string
-  ): Promise<{ userId: string; email: string; name: string }> {
+  ): Promise<{
+    userId: string;
+    profileId: string;
+    email: string;
+    name: string;
+  }> {
+    const normalizedEmail = email.trim().toLowerCase();
     const [firstName, ...lastParts] = name.trim().split(/\s+/);
     const lastName = lastParts.join(' ') || firstName;
 
-    const response = await fetch(
-      'http://gateway:3000/api/authentication/register',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-App-Scope': 'owner-console',
-        },
-        body: JSON.stringify({
-          fn: firstName,
-          ln: lastName,
-          email: email.trim().toLowerCase(),
-          password,
-          confirm: password,
-          bio: 'Platform owner',
-        }),
-      }
-    );
+    const existingGlobalProfiles = (await firstValueFrom(
+      this.profileClient.send(
+        { cmd: ProfileCommands.GetAll },
+        { where: { appScope: 'global' } }
+      )
+    )) as Array<{ id: string }>;
 
-    if (!response.ok) {
-      const body = await response.text();
+    if (existingGlobalProfiles.length > 0) {
       throw new Error(
-        `Owner registration failed (${response.status}): ${body}`
+        'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
       );
     }
 
-    const result = await response.json();
+    const registrationResult = await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.Register },
+        {
+          fn: firstName,
+          ln: lastName,
+          email: normalizedEmail,
+          password,
+          confirm: password,
+          bio: 'Platform owner',
+        }
+      )
+    );
+
+    const userId = registrationResult?.data?.user?.id || '';
+    if (!userId) {
+      throw new Error('Owner registration did not return a user id');
+    }
+
+    const profileInput: CreateProfileDto & { appScope: string } = {
+      userId,
+      name,
+      description: '',
+      profilePic: '',
+      coverPic: '',
+      bio: 'Platform owner',
+      location: '',
+      occupation: '',
+      interests: '',
+      skills: '',
+      appScope: 'global',
+    };
+
+    const createdProfile = (await firstValueFrom(
+      this.profileClient.send({ cmd: ProfileCommands.Create }, profileInput)
+    )) as { id?: string };
+
+    if (!createdProfile?.id) {
+      throw new Error('Owner registration did not return a profile id');
+    }
+
+    await this.roleInit.processNow(
+      new RoleInitBuilder()
+        .setScopeName('global')
+        .setProfile(createdProfile.id)
+        .assignOwnerRole()
+        .addOwnerScopeDefaults()
+        .addAssetOwnerPermissions()
+        .build()
+    );
+
     return {
-      userId: result?.data?.user?.id || result?.userId || '',
-      email: email.trim().toLowerCase(),
+      userId,
+      profileId: createdProfile.id,
+      email: normalizedEmail,
       name,
     };
   }
@@ -719,5 +787,9 @@ export class BootstrapService {
 
   private parseYaml(content: string): unknown {
     return load(content);
+  }
+
+  private trimTrailingSlash(value: string): string {
+    return value.replace(/\/+$/, '');
   }
 }
