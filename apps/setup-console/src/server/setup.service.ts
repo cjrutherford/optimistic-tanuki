@@ -1540,7 +1540,13 @@ export class SetupService {
         );
       }
 
-      await this.createOwner(operator.name, operator.email, operator.password);
+      try {
+        await this.createOwner(operator.name, operator.email, operator.password);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error);
+        this.failDeployProgress('activating', 'save-owner', msg);
+        throw error;
+      }
       try {
         fs.unlinkSync(this.operatorInfoPath);
       } catch {}
