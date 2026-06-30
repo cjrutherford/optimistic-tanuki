@@ -84,10 +84,18 @@ run_compose() {
 
 collect_missing_managed_services() {
     local running_services="$1"
+    local configured_services=""
     local missing_services=()
     local service
 
+    if [ "$DRY_RUN" -eq 0 ]; then
+        configured_services=$(docker compose "${COMPOSE_FLAGS[@]}" config --services 2>/dev/null || true)
+    fi
+
     for service in "${MANAGED_SERVICES[@]}"; do
+        if [ -n "$configured_services" ] && ! printf '%s\n' "$configured_services" | grep -Fxq "$service"; then
+            continue
+        fi
         if ! printf '%s\n' "$running_services" | grep -Fxq "$service"; then
             missing_services+=("$service")
         fi
