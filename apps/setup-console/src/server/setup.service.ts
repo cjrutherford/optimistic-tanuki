@@ -1557,7 +1557,13 @@ export class SetupService {
       'mark-setup',
       'Marking setup as complete...'
     );
-    await this.activateOwnerBootstrap();
+     try {
+       await this.activateOwnerBootstrap();
+     } catch (error) {
+       const msg = error instanceof Error ? error.message : String(error);
+       this.failDeployProgress('activating', 'mark-setup', msg);
+       throw error;
+     }
     this.completeDeploySubstep('activating', 'mark-setup');
     this.startDeployProgress(
       'rebooting',
