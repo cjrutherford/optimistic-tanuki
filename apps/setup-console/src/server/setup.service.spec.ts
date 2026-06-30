@@ -542,22 +542,81 @@ describe('SetupService', () => {
     });
   });
 
-  it('creates the owner through the owner-console app scope', async () => {
+  it('creates the owner through the admin-api bootstrap endpoint', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ data: { user: { id: 'owner-1' } } }),
+      json: async () => ({ userId: 'owner-1' }),
     }) as typeof fetch;
 
     const service = new SetupService();
     await service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password');
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://localhost:3000/api/authentication/register',
+      'http://127.0.0.1:8098/api/bootstrap/owner',
       expect.objectContaining({
+        method: 'POST',
         headers: expect.objectContaining({
-          'x-ot-appscope': 'owner-console',
+          'Content-Type': 'application/json',
         }),
       })
+    );
+  });
+
+  it('activates setup through the admin-api bootstrap endpoint', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ activated: true }),
+    }) as typeof fetch;
+
+    const service = new SetupService();
+    await service.completeSetup();
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://127.0.0.1:8098/api/bootstrap/owner/activate',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+        }),
+      })
+    );
+  });
+
+  it('does not silently finish setup when the saved owner email already exists', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          {
+            id: 'owner-1',
+            email: 'owner@example.com',
+            firstName: 'Existing',
+            lastName: 'Owner',
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ activated: true }),
+      });
+    global.fetch = fetchMock as typeof fetch;
+
+    const service = new SetupService();
+    await service.saveOperator(
+      'Owner Console',
+      'owner@example.com',
+      'password'
+    );
+
+    await expect(service.completeSetup()).rejects.toThrow(
+      'Owner account owner@example.com already exists. The setup bootstrap does not change existing passwords.'
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/api/users?scope=owner-console',
+      expect.any(Object)
     );
   });
 

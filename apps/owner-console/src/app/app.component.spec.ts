@@ -2,9 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppComponent } from './app.component';
-import { RouterModule } from '@angular/router';
-import { of } from 'rxjs';
-import { BootstrapService } from './services/bootstrap.service';
+import { Router, RouterModule } from '@angular/router';
 
 const PERSONALITY_STORAGE_KEY = 'optimistic-tanuki-personality-theme';
 
@@ -12,19 +10,7 @@ describe('AppComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppComponent, RouterModule.forRoot([])],
-      providers: [
-        { provide: PLATFORM_ID, useValue: 'browser' },
-        {
-          provide: BootstrapService,
-          useValue: {
-            getStatus: jest
-              .fn()
-              .mockReturnValue(
-                of({ configured: true, phase: 'ready', checks: [] })
-              ),
-          },
-        },
-      ],
+      providers: [{ provide: PLATFORM_ID, useValue: 'browser' }],
     }).compileComponents();
   });
 
@@ -72,5 +58,17 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
     expect(compiled.querySelector('otui-signal-mesh')).toBeTruthy();
     expect(compiled.querySelector('.app-content')).toBeTruthy();
+  });
+
+  it('does not redirect to the legacy setup route on init', () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = jest
+      .spyOn(router, 'navigate')
+      .mockResolvedValue(true as never);
+
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+
+    expect(navigateSpy).not.toHaveBeenCalledWith(['/setup']);
   });
 });

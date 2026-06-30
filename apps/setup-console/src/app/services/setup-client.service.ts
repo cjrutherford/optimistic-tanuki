@@ -286,11 +286,18 @@ export class SetupClientService {
     name: string,
     email: string,
     password: string
-  ): Observable<{ userId: string; email: string; name: string }> {
-    return this.http.post<{ userId: string; email: string; name: string }>(
-      `${this.apiUrl}/owner`,
-      { name, email, password }
-    );
+  ): Observable<{
+    userId: string;
+    profileId: string;
+    email: string;
+    name: string;
+  }> {
+    return this.http.post<{
+      userId: string;
+      profileId: string;
+      email: string;
+      name: string;
+    }>(`${this.apiUrl}/owner`, { name, email, password });
   }
 
   saveOperator(

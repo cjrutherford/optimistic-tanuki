@@ -1,6 +1,12 @@
 import { appRoutes } from './app.routes';
 
 describe('appRoutes', () => {
+  it('does not expose the legacy setup route', () => {
+    const setupRoute = appRoutes.find((route) => route.path === 'setup');
+
+    expect(setupRoute).toBeUndefined();
+  });
+
   it('exposes an anonymous control-center status route outside the dashboard shell', () => {
     const controlCenterRoute = appRoutes.find(
       (route) => route.path === 'control-center'
@@ -66,6 +72,12 @@ describe('appRoutes', () => {
     );
 
     expect(defaultChild?.redirectTo).toBe('overview');
+  });
+
+  it('redirects the app root to the public control-center entry', () => {
+    const rootRoute = appRoutes.find((route) => route.path === '');
+
+    expect(rootRoute?.redirectTo).toBe('/control-center');
   });
 
   it('assigns guided and studio workspace modes to app-config designer routes', () => {

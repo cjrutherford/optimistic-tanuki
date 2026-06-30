@@ -1,5 +1,5 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { ProductListComponent, Product } from '@optimistic-tanuki/store-ui';
 import { Router } from '@angular/router';
 import { StoreService } from '../../services/store.service';
@@ -12,6 +12,7 @@ import { StoreService } from '../../services/store.service';
   styleUrls: ['./catalog.component.scss'],
 })
 export class CatalogComponent implements OnInit {
+  private readonly platformId = inject(PLATFORM_ID);
   products: Product[] = [];
   loading = false;
   error: string | null = null;
@@ -19,6 +20,10 @@ export class CatalogComponent implements OnInit {
   constructor(private router: Router, private storeService: StoreService) {}
 
   ngOnInit(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     this.loadProducts();
   }
 

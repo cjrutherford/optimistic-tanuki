@@ -318,6 +318,114 @@ test('docker-start-phased.sh dry run still executes the full phased startup path
   assert.match(result.stdout, /Startup complete/);
 });
 
+test('docker-start-phased.sh starts missing managed services even when the restart plan is empty', () => {
+  const tempRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'docker-start-phased-missing-service-')
+  );
+  const dockerLogPath = path.join(tempRoot, 'docker.log');
+  const fakeBinDir = path.join(tempRoot, 'bin');
+  const planFile = path.join(tempRoot, 'plan.json');
+
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  writeFile(
+    path.join(fakeBinDir, 'docker'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${dockerLogPath}"
+if [[ "$*" == *" ps --services --filter status=running" ]]; then
+  printf 'postgres\\ngateway\\nowner-console\\n'
+  exit 0
+fi
+if [[ "$*" == *" ps" ]]; then
+  printf 'NAME STATUS\\n'
+  exit 0
+fi
+exit 0
+`
+  );
+  fs.chmodSync(path.join(fakeBinDir, 'docker'), 0o755);
+  fs.writeFileSync(
+    planFile,
+    JSON.stringify({
+      restartServices: [],
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '0'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_PLAN_FILE: planFile,
+        PATH: `${fakeBinDir}:${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(
+    fs.readFileSync(dockerLogPath, 'utf8'),
+    /up -d --no-deps .*business-site/
+  );
+});
+
+test('docker-start-phased.sh adds missing managed services to an incremental restart', () => {
+  const tempRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'docker-start-phased-incremental-missing-')
+  );
+  const dockerLogPath = path.join(tempRoot, 'docker.log');
+  const fakeBinDir = path.join(tempRoot, 'bin');
+  const planFile = path.join(tempRoot, 'plan.json');
+
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  writeFile(
+    path.join(fakeBinDir, 'docker'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${dockerLogPath}"
+if [[ "$*" == *" ps --services --filter status=running" ]]; then
+  printf 'postgres\\nredis\\nauthentication\\ngateway\\nowner-console\\n'
+  exit 0
+fi
+if [[ "$*" == *" ps" ]]; then
+  printf 'NAME STATUS\\n'
+  exit 0
+fi
+exit 0
+`
+  );
+  fs.chmodSync(path.join(fakeBinDir, 'docker'), 0o755);
+  fs.writeFileSync(
+    planFile,
+    JSON.stringify({
+      restartServices: ['admin-api'],
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '0'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_PLAN_FILE: planFile,
+        PATH: `${fakeBinDir}:${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(
+    fs.readFileSync(dockerLogPath, 'utf8'),
+    /up -d --no-deps .*admin-api.*business-site/
+  );
+});
+
 test('dev-seed.sh does not rely on docker compose run one-off containers', () => {
   const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
   const script = fs.readFileSync(scriptPath, 'utf8');

@@ -1,9 +1,8 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { SignalMeshComponent } from '@optimistic-tanuki/motion-ui';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { BootstrapService } from './services/bootstrap.service';
 
 @Component({
   imports: [RouterModule, SignalMeshComponent],
@@ -30,8 +29,6 @@ import { BootstrapService } from './services/bootstrap.service';
 export class AppComponent implements OnInit {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly themeService = inject(ThemeService);
-  private readonly router = inject(Router);
-  private readonly bootstrapService = inject(BootstrapService);
 
   protected title = 'owner-console';
 
@@ -43,12 +40,6 @@ export class AppComponent implements OnInit {
       if (!hasStoredPersonalityTheme) {
         void this.themeService.setPersonality('control-center');
       }
-
-      this.bootstrapService.getStatus().subscribe((status) => {
-        if (!status.configured) {
-          this.router.navigate(['/setup']);
-        }
-      });
     }
   }
 

@@ -1,5 +1,5 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, PLATFORM_ID, signal, inject } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 
 import {
@@ -46,6 +46,7 @@ export class ForumShellComponent implements OnInit {
   private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly platformId = inject(PLATFORM_ID);
 
   // Route resolved data
   userValidPermissions: string[] = [];
@@ -83,11 +84,17 @@ export class ForumShellComponent implements OnInit {
       this.checkAuthState();
     });
 
-    this.loadUserProfile();
-    this.loadTopics();
+    if (this.isBrowser()) {
+      this.loadUserProfile();
+      this.loadTopics();
+    }
 
     // Watch route params for navigation
     this.route.params.subscribe((params) => {
+      if (!this.isBrowser()) {
+        return;
+      }
+
       if (params['topicId']) {
         this.loadTopic(params['topicId']);
       }
@@ -101,6 +108,10 @@ export class ForumShellComponent implements OnInit {
     this.isLoggedIn.set(this.userLoggedIn);
     console.log('User logged in:', this.isLoggedIn());
     console.log('User Permissions:', this.userValidPermissions);
+  }
+
+  private isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
   }
 
   private async loadUserProfile() {
