@@ -1,4 +1,4 @@
-import { inject, PLATFORM_ID } from '@angular/core';
+import { computed, inject, PLATFORM_ID } from '@angular/core';
 import {
   MessageLevelType,
   MessageService,
@@ -56,7 +56,16 @@ export class ProfileComponent implements OnInit {
   userCommunities = signal<CommunityDto[]>([]);
   isFollowing = signal(false);
   isBlocked = signal(false);
+  followersCount = signal(0);
+  followingCount = signal(0);
   ownedCommunities = signal<{ id: string; name: string }[]>([]);
+  highlightedPosts = computed(() => this.userPosts().slice(0, 2));
+  recentPosts = computed(() => this.userPosts().slice(2, 6));
+  featuredCommunities = computed(() =>
+    [...this.userCommunities()]
+      .sort((left, right) => (right.memberCount ?? 0) - (left.memberCount ?? 0))
+      .slice(0, 3)
+  );
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
@@ -103,6 +112,7 @@ export class ProfileComponent implements OnInit {
       this.viewingUserId = currentProfile.id;
       this.loadUserPosts(currentProfile.id);
       this.loadUserCommunities(currentProfile.id);
+      this.loadSocialProof(currentProfile.id);
       this.checkFollowStatus(currentProfile.id);
       this.checkBlockStatus(currentProfile.id, currentProfile.id);
     }
@@ -138,6 +148,7 @@ export class ProfileComponent implements OnInit {
         this.viewingUserProfile.set(profile);
         this.loadUserPosts(userId);
         this.loadUserCommunities(userId);
+        this.loadSocialProof(userId);
         this.loadOwnedCommunities();
 
         if (currentProfile && currentProfile.id !== userId) {
@@ -193,6 +204,26 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  private loadSocialProof(profileId: string) {
+    this.followService.getFollowers(profileId).subscribe({
+      next: (followers) => {
+        this.followersCount.set(
+          Array.isArray(followers) ? followers.length : 0
+        );
+      },
+      error: (err) => console.error('Failed to load followers', err),
+    });
+
+    this.followService.getFollowing(profileId).subscribe({
+      next: (following) => {
+        this.followingCount.set(
+          Array.isArray(following) ? following.length : 0
+        );
+      },
+      error: (err) => console.error('Failed to load following', err),
+    });
+  }
+
   private checkBlockStatus(currentProfileId: string, blockedProfileId: string) {
     this.profileService.getBlockedUsers(currentProfileId).subscribe({
       next: (blocked) => {
@@ -232,6 +263,12 @@ export class ProfileComponent implements OnInit {
   }
 
   onBannerClick() {
+    if (!this.isViewingOther) {
+      this.showProfileEditor = true;
+    }
+  }
+
+  openProfileEditor() {
     if (!this.isViewingOther) {
       this.showProfileEditor = true;
     }
@@ -293,6 +330,7 @@ export class ProfileComponent implements OnInit {
         .subscribe({
           next: () => {
             this.isFollowing.set(false);
+            this.followersCount.update((count) => Math.max(0, count - 1));
             this.showMessage('Unfollowed user', 'success');
           },
           error: (err) => console.error('Failed to unfollow', err),
@@ -306,6 +344,7 @@ export class ProfileComponent implements OnInit {
         .subscribe({
           next: () => {
             this.isFollowing.set(true);
+            this.followersCount.update((count) => count + 1);
             this.showMessage('Following user', 'success');
           },
           error: (err) => console.error('Failed to follow', err),
@@ -370,6 +409,58 @@ export class ProfileComponent implements OnInit {
       .split(',')
       .map((item) => item.trim())
       .filter(Boolean);
+  }
+
+  getProfileCompletionPrompts(
+    profile: ProfileDto | null | undefined
+  ): string[] {
+    if (!profile || this.isViewingOther) {
+      return [];
+    }
+
+    const prompts: string[] = [];
+
+    if (!profile.bio?.trim()) {
+      prompts.push('Add a short bio so visitors know what you are about.');
+    }
+    if (!profile.occupation?.trim()) {
+      prompts.push('Share your expertise or current role.');
+    }
+    if (!profile.location?.trim()) {
+      prompts.push('Add your location to make local connections easier.');
+    }
+    if (this.getProfileTags(profile.skills).length === 0) {
+      prompts.push('List a few skills to show what you can help with.');
+    }
+    if (this.getProfileTags(profile.interests).length === 0) {
+      prompts.push(
+        'Add interests so communities and followers know what you enjoy.'
+      );
+    }
+    if (!profile.profilePic?.trim()) {
+      prompts.push('Upload a profile photo to make the page feel complete.');
+    }
+
+    return prompts;
+  }
+
+  getProfileCompletionScore(profile: ProfileDto | null | undefined): number {
+    if (!profile) {
+      return 0;
+    }
+
+    const checks = [
+      profile.profileName?.trim(),
+      profile.bio?.trim(),
+      profile.occupation?.trim(),
+      profile.location?.trim(),
+      this.getProfileTags(profile.skills).length > 0 ? 'skills' : '',
+      this.getProfileTags(profile.interests).length > 0 ? 'interests' : '',
+      profile.profilePic?.trim(),
+    ];
+    const completed = checks.filter(Boolean).length;
+
+    return Math.round((completed / checks.length) * 100);
   }
 
   get profile() {

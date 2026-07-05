@@ -89,6 +89,7 @@ describe('ProfileComponent', () => {
         {
           provide: FollowService,
           useValue: {
+            getFollowers: jest.fn().mockReturnValue(of([])),
             getFollowing: jest.fn().mockReturnValue(of([])),
             follow: jest.fn().mockReturnValue(of(undefined)),
             unfollow: jest.fn().mockReturnValue(of(undefined)),
@@ -150,7 +151,9 @@ describe('ProfileComponent', () => {
   it('should render expanded profile details', () => {
     const text = fixture.nativeElement.textContent;
 
-    expect(text).toContain('Profile overview');
+    expect(text).toContain('Profile identity');
+    expect(text).toContain('Social proof');
+    expect(text).toContain('Recent activity');
     expect(text).toContain('Raleigh, NC');
     expect(text).toContain('Product lead');
     expect(text).toContain('Angular');
@@ -164,5 +167,32 @@ describe('ProfileComponent', () => {
       'Community',
     ]);
     expect(component.getProfileTags('')).toEqual([]);
+  });
+
+  it('builds completion prompts for missing owner fields', () => {
+    const prompts = component.getProfileCompletionPrompts({
+      ...mockProfile,
+      bio: '',
+      location: '',
+      occupation: '',
+      skills: '',
+      interests: '',
+      profilePic: '',
+    });
+
+    expect(prompts).toEqual(
+      expect.arrayContaining([
+        'Add a short bio so visitors know what you are about.',
+        'Share your expertise or current role.',
+        'Add your location to make local connections easier.',
+        'List a few skills to show what you can help with.',
+        'Add interests so communities and followers know what you enjoy.',
+        'Upload a profile photo to make the page feel complete.',
+      ])
+    );
+  });
+
+  it('calculates profile completion from filled fields', () => {
+    expect(component.getProfileCompletionScore(mockProfile)).toBe(100);
   });
 });

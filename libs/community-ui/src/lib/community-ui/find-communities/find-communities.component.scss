@@ -18,6 +18,115 @@
   }
 }
 
+.communities-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  background: color-mix(in srgb, var(--local-accent) 6%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--local-borderColor) 40%, transparent);
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+  }
+}
+
+.eyebrow {
+  margin: 0 0 var(--spacing-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--local-complement);
+}
+
+.overview-copy {
+  h2 {
+    margin: 0 0 var(--spacing-sm);
+    font-size: clamp(1.5rem, 2.8vw, 2.25rem);
+    color: var(--local-foreground);
+  }
+
+  p:last-child {
+    margin: 0;
+    color: var(--local-complement);
+    line-height: 1.6;
+  }
+}
+
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.overview-stat {
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  background: color-mix(in srgb, var(--local-background) 82%, transparent);
+  border: 1px solid
+    color-mix(in srgb, var(--local-borderColor) 24%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  span {
+    color: var(--local-complement);
+    font-size: var(--font-size-xs, 0.75rem);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  strong {
+    font-size: 1.35rem;
+    color: var(--local-foreground);
+  }
+}
+
+.featured-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.section-heading {
+  margin-bottom: var(--spacing-md);
+
+  h3 {
+    margin: 0;
+    color: var(--local-foreground);
+  }
+}
+
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.featured-card {
+  .card-content {
+    min-height: 100%;
+  }
+}
+
+.featured-badge {
+  align-self: flex-start;
+  margin-bottom: var(--spacing-sm);
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--border-radius-full);
+  background: color-mix(in srgb, var(--local-accent) 16%, transparent);
+  color: var(--local-accent);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+}
+
 .search-section {
   margin-bottom: var(--spacing-lg);
 

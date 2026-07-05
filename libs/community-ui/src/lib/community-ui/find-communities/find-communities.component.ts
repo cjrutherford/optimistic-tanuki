@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, computed, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -53,6 +53,31 @@ export class FindCommunitiesComponent extends Variantable implements OnInit {
   topActiveCommunities = signal<CommunityWithActivity[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
+  featuredCommunities = computed(() => {
+    const deduped = new Map<string, CommunityDto | CommunityWithActivity>();
+
+    [...this.topActiveCommunities(), ...this.communities()].forEach(
+      (community) => {
+        if (!deduped.has(community.id)) {
+          deduped.set(community.id, community);
+        }
+      }
+    );
+
+    return [...deduped.values()]
+      .sort((left, right) => {
+        const memberDelta = (right.memberCount ?? 0) - (left.memberCount ?? 0);
+        if (memberDelta !== 0) {
+          return memberDelta;
+        }
+
+        return (
+          ((right as CommunityWithActivity).activityScore ?? 0) -
+          ((left as CommunityWithActivity).activityScore ?? 0)
+        );
+      })
+      .slice(0, 3);
+  });
 
   userMemberships = signal<Map<string, CommunityMemberDto>>(new Map());
   userOwnerships = signal<Set<string>>(new Set());

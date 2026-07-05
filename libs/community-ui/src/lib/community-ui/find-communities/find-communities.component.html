@@ -1,4 +1,71 @@
 <div class="find-communities">
+  <section class="communities-overview" data-testid="communities-social-proof">
+    <div class="overview-copy">
+      <p class="eyebrow">Community social proof</p>
+      <h2>Find the places already attracting people and activity.</h2>
+      <p>
+        Browse featured communities, compare membership momentum, and join the
+        spaces that match your interests.
+      </p>
+    </div>
+    <div class="overview-stats">
+      <div class="overview-stat">
+        <span>Featured</span>
+        <strong>{{ featuredCommunities().length }}</strong>
+      </div>
+      <div class="overview-stat">
+        <span>All communities</span>
+        <strong>{{ communities().length }}</strong>
+      </div>
+      <div class="overview-stat">
+        <span>Top active</span>
+        <strong>{{ topActiveCommunities().length }}</strong>
+      </div>
+    </div>
+  </section>
+
+  @if (featuredCommunities().length > 0) {
+  <section class="featured-section">
+    <div class="section-heading">
+      <p class="eyebrow">Featured communities</p>
+      <h3>Strong membership signals</h3>
+    </div>
+    <div class="featured-grid">
+      @for (community of featuredCommunities(); track community.id) {
+      <otui-card class="community-card featured-card">
+        <div class="card-content">
+          <div class="featured-badge">Featured</div>
+          <h3>{{ community.name }}</h3>
+          <p class="description">{{ community.description }}</p>
+          <div class="stats">
+            <span class="stat">
+              <strong>{{ community.memberCount }}</strong> members
+            </span>
+            @if ($any(community).activityScore > 0) {
+            <span class="stat activity">
+              <strong>{{ $any(community).activityScore }}</strong> activity
+            </span>
+            }
+          </div>
+          <div class="card-actions">
+            <otui-button
+              variant="secondary"
+              [routerLink]="[
+                '/communities',
+                community.slug || community.id,
+                'posts'
+              ]"
+            >
+              Explore
+            </otui-button>
+          </div>
+        </div>
+      </otui-card>
+      }
+    </div>
+  </section>
+  }
+
   <div class="search-section">
     <lib-text-input
       [formControl]="searchControl"

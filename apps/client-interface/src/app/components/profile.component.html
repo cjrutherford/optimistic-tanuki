@@ -45,48 +45,47 @@
   }
 
   <section class="profile-overview">
-    <otui-card class="summary-card">
+    <otui-card class="summary-card" data-testid="profile-identity-section">
       <div class="summary-header">
         <div class="summary-copy">
-          <p class="eyebrow">Profile overview</p>
+          <p class="eyebrow">Profile identity</p>
           <h2>{{ profile.profileName }}</h2>
           <p class="summary-text">
             {{
               profile.bio ||
                 (isViewingOther
                   ? 'This profile has not added a bio yet.'
-                  : 'Add a bio, location, skills, and interests to round out your profile.')
+                  : 'Add a short bio so visitors know what you are about.')
             }}
           </p>
         </div>
         <div class="summary-stats">
           <div class="stat">
-            <span class="stat-label">Posts</span>
-            <strong>{{ userPosts().length }}</strong>
+            <span class="stat-label">Followers</span>
+            <strong>{{ followersCount() }}</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Following</span>
+            <strong>{{ followingCount() }}</strong>
           </div>
           <div class="stat">
             <span class="stat-label">Communities</span>
             <strong>{{ userCommunities().length }}</strong>
           </div>
           <div class="stat">
-            <span class="stat-label">Status</span>
-            <strong>{{
-              isViewingOther
-                ? isFollowing()
-                  ? 'Following'
-                  : 'Not following'
-                : 'Owner'
-            }}</strong>
+            <span class="stat-label">Posts</span>
+            <strong>{{ userPosts().length }}</strong>
           </div>
         </div>
       </div>
 
       <div class="detail-chips">
-        @if (profile.occupation) {
-        <span class="detail-chip">Occupation · {{ profile.occupation }}</span>
-        } @if (profile.location) {
-        <span class="detail-chip">Location · {{ profile.location }}</span>
-        }
+        <span class="detail-chip">
+          Occupation · {{ profile.occupation || 'Add your current focus' }}
+        </span>
+        <span class="detail-chip">
+          Location · {{ profile.location || 'Share where you are based' }}
+        </span>
         <span class="detail-chip">
           Joined · {{ profile.created_at | date : 'mediumDate' }}
         </span>
@@ -94,48 +93,48 @@
     </otui-card>
 
     <div class="profile-sidecar">
-      <otui-card class="meta-card">
-        <h3>Quick facts</h3>
+      <otui-card class="meta-card social-proof-card">
+        <h3>Social proof</h3>
         <dl class="meta-list">
           <div class="meta-item">
-            <dt>Occupation</dt>
-            <dd>{{ profile.occupation || 'Add your current focus' }}</dd>
+            <dt>Followers</dt>
+            <dd>{{ followersCount() }} building this network</dd>
           </div>
           <div class="meta-item">
-            <dt>Location</dt>
-            <dd>{{ profile.location || 'Share where you are based' }}</dd>
+            <dt>Following</dt>
+            <dd>{{ followingCount() }} profiles tracked</dd>
           </div>
           <div class="meta-item">
-            <dt>Community reach</dt>
-            <dd>{{ userCommunities().length }} active communities</dd>
+            <dt>Status</dt>
+            <dd>
+              {{
+                isViewingOther
+                  ? isFollowing()
+                    ? 'Already following'
+                    : 'Available to follow'
+                  : 'You own this profile'
+              }}
+            </dd>
           </div>
         </dl>
       </otui-card>
 
-      @if ( getProfileTags(profile.skills).length > 0 ||
-      getProfileTags(profile.interests).length > 0 ) {
-      <otui-card class="meta-card">
-        <h3>Signals</h3>
-        @if (getProfileTags(profile.skills).length > 0) {
-        <div class="token-group">
-          <p class="token-label">Skills</p>
-          <div class="token-list">
-            @for (skill of getProfileTags(profile.skills); track skill) {
-            <span class="token">{{ skill }}</span>
-            }
+      @if (!isViewingOther && getProfileCompletionPrompts(profile).length > 0) {
+      <otui-card class="meta-card completion-card">
+        <div class="completion-header">
+          <div>
+            <h3>Profile completion</h3>
+            <p>{{ getProfileCompletionScore(profile) }}% complete</p>
           </div>
+          <otui-button variant="outlined" (action)="openProfileEditor()">
+            Update profile
+          </otui-button>
         </div>
-        } @if (getProfileTags(profile.interests).length > 0) {
-        <div class="token-group">
-          <p class="token-label">Interests</p>
-          <div class="token-list">
-            @for (interest of getProfileTags(profile.interests); track interest)
-            {
-            <span class="token">{{ interest }}</span>
-            }
-          </div>
-        </div>
-        }
+        <ul class="completion-list">
+          @for (prompt of getProfileCompletionPrompts(profile); track prompt) {
+          <li>{{ prompt }}</li>
+          }
+        </ul>
       </otui-card>
       }
     </div>
@@ -143,46 +142,126 @@
 
   <div class="profile-sections">
     <section class="profile-section">
-      <h3>Posts</h3>
-      @if (userPosts().length > 0) {
-      <div class="posts-list">
-        @for (post of userPosts(); track post.id) {
-        <otui-card class="post-card">
-          <div class="post-title">{{ post.title }}</div>
-          <div class="post-content" [innerHTML]="post.content"></div>
-          <div class="post-date">{{ post.createdAt | date }}</div>
-        </otui-card>
+      <otui-card class="meta-card">
+        <p class="eyebrow">Expertise</p>
+        <h3>What {{ isViewingOther ? 'they bring' : 'you bring' }}</h3>
+        @if (getProfileTags(profile.skills).length > 0) {
+        <div class="token-list">
+          @for (skill of getProfileTags(profile.skills); track skill) {
+          <span class="token">{{ skill }}</span>
+          }
+        </div>
+        } @else {
+        <p class="no-content">
+          {{
+            isViewingOther
+              ? 'No expertise has been shared yet.'
+              : 'Add a few skills to help collaborators understand your strengths.'
+          }}
+        </p>
         }
-      </div>
-      } @else {
-      <p class="no-content">No posts yet</p>
-      }
+      </otui-card>
     </section>
 
     <section class="profile-section">
-      <h3>Communities</h3>
-      @if (userCommunities().length > 0) {
-      <div class="communities-grid">
-        @for (community of userCommunities(); track community.id) {
-        <otui-card
-          class="community-card"
-          (click)="
-            router.navigate(['/communities', community.slug || community.id])
-          "
-        >
-          @if (community.logoUrl) {
-          <img [src]="community.logoUrl" alt="" class="community-logo" />
+      <otui-card class="meta-card">
+        <p class="eyebrow">Interests</p>
+        <h3>
+          What {{ isViewingOther ? 'they care about' : 'you care about' }}
+        </h3>
+        @if (getProfileTags(profile.interests).length > 0) {
+        <div class="token-list">
+          @for (interest of getProfileTags(profile.interests); track interest) {
+          <span class="token">{{ interest }}</span>
           }
-          <div class="community-name">{{ community.name }}</div>
-          <div class="community-members">
-            {{ community.memberCount }} members
-          </div>
-        </otui-card>
+        </div>
+        } @else {
+        <p class="no-content">
+          {{
+            isViewingOther
+              ? 'No interests have been shared yet.'
+              : 'Add interests to help the right communities and followers find you.'
+          }}
+        </p>
         }
-      </div>
-      } @else {
-      <p class="no-content">No communities yet</p>
-      }
+      </otui-card>
+    </section>
+
+    <section class="profile-section" data-testid="profile-featured-communities">
+      <otui-card class="meta-card">
+        <p class="eyebrow">Featured communities</p>
+        <h3>Where this profile shows up most</h3>
+        @if (featuredCommunities().length > 0) {
+        <div class="communities-grid">
+          @for (community of featuredCommunities(); track community.id) {
+          <button
+            type="button"
+            class="community-card"
+            (click)="
+              router.navigate(['/communities', community.slug || community.id])
+            "
+          >
+            <div class="community-name">{{ community.name }}</div>
+            <div class="community-members">
+              {{ community.memberCount }} members
+            </div>
+          </button>
+          }
+        </div>
+        } @else {
+        <p class="no-content">
+          {{
+            isViewingOther
+              ? 'No communities are featured yet.'
+              : 'Join or create communities to build your social proof.'
+          }}
+        </p>
+        }
+      </otui-card>
+    </section>
+
+    <section
+      class="profile-section"
+      data-testid="profile-recent-activity-section"
+    >
+      <otui-card class="meta-card">
+        <p class="eyebrow">Recent activity</p>
+        <h3>Highlighted posts</h3>
+        @if (highlightedPosts().length > 0) {
+        <div class="posts-list highlighted-posts">
+          @for (post of highlightedPosts(); track post.id) {
+          <article class="post-card highlight-card">
+            <div class="post-title">{{ post.title }}</div>
+            <div class="post-content" [innerHTML]="post.content"></div>
+            <div class="post-date">
+              {{ post.createdAt | date : 'mediumDate' }}
+            </div>
+          </article>
+          }
+        </div>
+        } @else {
+        <p class="no-content">
+          {{
+            isViewingOther
+              ? 'No recent activity has been shared yet.'
+              : 'Publish a post to turn this section into a stronger social signal.'
+          }}
+        </p>
+        } @if (recentPosts().length > 0) {
+        <div class="recent-activity-list">
+          <h4>More recent activity</h4>
+          @for (post of recentPosts(); track post.id) {
+          <article class="activity-item">
+            <div>
+              <strong>{{ post.title }}</strong>
+              <p class="activity-copy" [innerHTML]="post.content"></p>
+            </div>
+            <span>{{ post.createdAt | date : 'shortDate' }}</span>
+          </article>
+          }
+        </div>
+        }
+      </otui-card>
     </section>
   </div>
 </div>
