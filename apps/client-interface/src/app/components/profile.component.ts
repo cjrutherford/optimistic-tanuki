@@ -365,6 +365,13 @@ export class ProfileComponent implements OnInit {
     });
   }
 
+  getProfileTags(value: string | null | undefined): string[] {
+    return (value ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
   get profile() {
     if (this.isViewingOther) {
       return this.viewingUserProfile();

@@ -16,6 +16,7 @@ import { CardComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
 import {
   TextInputComponent,
   ImageUploadComponent,
+  TextAreaComponent,
 } from '@optimistic-tanuki/form-ui';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 import {
@@ -32,6 +33,7 @@ import { ProfilePhotoComponent } from './profile-photo/profile-photo.component';
     ReactiveFormsModule,
     ModalComponent,
     TextInputComponent,
+    TextAreaComponent,
     ImageUploadComponent,
     ButtonComponent,
     CardComponent,
@@ -58,6 +60,10 @@ export class ProfileEditorComponent implements OnChanges {
       profilePic: this.fb.control(''),
       coverPic: this.fb.control(''),
       bio: this.fb.control(''),
+      location: this.fb.control(''),
+      occupation: this.fb.control(''),
+      interests: this.fb.control(''),
+      skills: this.fb.control(''),
     });
   }
 
@@ -85,6 +91,10 @@ export class ProfileEditorComponent implements OnChanges {
         profilePic: this.profile.profilePic || '',
         coverPic: this.profile.coverPic || '',
         bio: (this.profile as any).bio || '',
+        location: this.profile.location || '',
+        occupation: this.profile.occupation || '',
+        interests: this.profile.interests || '',
+        skills: this.profile.skills || '',
       });
     } else {
       // If no profile provided, prefill the profileName with a default (e.g. user's name) if available
@@ -116,6 +126,10 @@ export class ProfileEditorComponent implements OnChanges {
           profilePic: v.profilePic,
           coverPic: v.coverPic,
           bio: v.bio,
+          location: v.location,
+          occupation: v.occupation,
+          interests: v.interests,
+          skills: v.skills,
         } as any;
         this.updateProfile.emit(payload);
       } else {
@@ -126,10 +140,10 @@ export class ProfileEditorComponent implements OnChanges {
           coverPic: v.coverPic,
           bio: v.bio,
           userId: '',
-          location: '',
-          occupation: '',
-          interests: '',
-          skills: '',
+          location: v.location,
+          occupation: v.occupation,
+          interests: v.interests,
+          skills: v.skills,
         } as any;
         this.createProfile.emit(payload);
       }

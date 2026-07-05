@@ -1,42 +1,191 @@
 @if (profile) {
-<lib-banner
-  class="profile-banner"
-  [profileName]="profile.profileName"
-  [profileImage]="profile.profilePic"
-  [backgroundImage]="profile.coverPic"
-  (bannerClick)="onBannerClick()"
->
-</lib-banner>
+<div class="profile-page">
+  <lib-banner
+    class="profile-banner"
+    [profileName]="profile.profileName"
+    [profileImage]="profile.profilePic"
+    [backgroundImage]="profile.coverPic"
+    (bannerClick)="onBannerClick()"
+  >
+  </lib-banner>
 
-@if (isViewingOther) {
-<div class="profile-actions">
-  <otui-button
-    [variant]="isFollowing() ? 'warning' : 'primary'"
-    (action)="onFollowToggle()"
-  >
-    {{ isFollowing() ? 'Unfollow' : 'Follow' }}
-  </otui-button>
-  <otui-button variant="outlined" (action)="onMessage()"> Message </otui-button>
-  <otui-button
-    [variant]="isBlocked() ? 'danger' : 'outlined'"
-    (action)="onBlockToggle()"
-  >
-    {{ isBlocked() ? 'Unblock' : 'Block' }}
-  </otui-button>
-  @if (ownedCommunities().length > 0) {
-  <div class="invite-dropdown">
-    <otui-button variant="outlined">Invite to Community</otui-button>
-    <div class="invite-menu">
-      @for (community of ownedCommunities(); track community.id) {
-      <button class="invite-option" (click)="onInviteToCommunity(community.id)">
-        {{ community.name }}
-      </button>
-      }
+  @if (isViewingOther) {
+  <div class="profile-actions">
+    <otui-button
+      [variant]="isFollowing() ? 'warning' : 'primary'"
+      (action)="onFollowToggle()"
+    >
+      {{ isFollowing() ? 'Unfollow' : 'Follow' }}
+    </otui-button>
+    <otui-button variant="outlined" (action)="onMessage()">
+      Message
+    </otui-button>
+    <otui-button
+      [variant]="isBlocked() ? 'danger' : 'outlined'"
+      (action)="onBlockToggle()"
+    >
+      {{ isBlocked() ? 'Unblock' : 'Block' }}
+    </otui-button>
+    @if (ownedCommunities().length > 0) {
+    <div class="invite-dropdown">
+      <otui-button variant="outlined">Invite to Community</otui-button>
+      <div class="invite-menu">
+        @for (community of ownedCommunities(); track community.id) {
+        <button
+          class="invite-option"
+          (click)="onInviteToCommunity(community.id)"
+        >
+          {{ community.name }}
+        </button>
+        }
+      </div>
     </div>
+    }
   </div>
   }
+
+  <section class="profile-overview">
+    <otui-card class="summary-card">
+      <div class="summary-header">
+        <div class="summary-copy">
+          <p class="eyebrow">Profile overview</p>
+          <h2>{{ profile.profileName }}</h2>
+          <p class="summary-text">
+            {{
+              profile.bio ||
+                (isViewingOther
+                  ? 'This profile has not added a bio yet.'
+                  : 'Add a bio, location, skills, and interests to round out your profile.')
+            }}
+          </p>
+        </div>
+        <div class="summary-stats">
+          <div class="stat">
+            <span class="stat-label">Posts</span>
+            <strong>{{ userPosts().length }}</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Communities</span>
+            <strong>{{ userCommunities().length }}</strong>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Status</span>
+            <strong>{{
+              isViewingOther
+                ? isFollowing()
+                  ? 'Following'
+                  : 'Not following'
+                : 'Owner'
+            }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-chips">
+        @if (profile.occupation) {
+        <span class="detail-chip">Occupation · {{ profile.occupation }}</span>
+        } @if (profile.location) {
+        <span class="detail-chip">Location · {{ profile.location }}</span>
+        }
+        <span class="detail-chip">
+          Joined · {{ profile.created_at | date : 'mediumDate' }}
+        </span>
+      </div>
+    </otui-card>
+
+    <div class="profile-sidecar">
+      <otui-card class="meta-card">
+        <h3>Quick facts</h3>
+        <dl class="meta-list">
+          <div class="meta-item">
+            <dt>Occupation</dt>
+            <dd>{{ profile.occupation || 'Add your current focus' }}</dd>
+          </div>
+          <div class="meta-item">
+            <dt>Location</dt>
+            <dd>{{ profile.location || 'Share where you are based' }}</dd>
+          </div>
+          <div class="meta-item">
+            <dt>Community reach</dt>
+            <dd>{{ userCommunities().length }} active communities</dd>
+          </div>
+        </dl>
+      </otui-card>
+
+      @if ( getProfileTags(profile.skills).length > 0 ||
+      getProfileTags(profile.interests).length > 0 ) {
+      <otui-card class="meta-card">
+        <h3>Signals</h3>
+        @if (getProfileTags(profile.skills).length > 0) {
+        <div class="token-group">
+          <p class="token-label">Skills</p>
+          <div class="token-list">
+            @for (skill of getProfileTags(profile.skills); track skill) {
+            <span class="token">{{ skill }}</span>
+            }
+          </div>
+        </div>
+        } @if (getProfileTags(profile.interests).length > 0) {
+        <div class="token-group">
+          <p class="token-label">Interests</p>
+          <div class="token-list">
+            @for (interest of getProfileTags(profile.interests); track interest)
+            {
+            <span class="token">{{ interest }}</span>
+            }
+          </div>
+        </div>
+        }
+      </otui-card>
+      }
+    </div>
+  </section>
+
+  <div class="profile-sections">
+    <section class="profile-section">
+      <h3>Posts</h3>
+      @if (userPosts().length > 0) {
+      <div class="posts-list">
+        @for (post of userPosts(); track post.id) {
+        <otui-card class="post-card">
+          <div class="post-title">{{ post.title }}</div>
+          <div class="post-content" [innerHTML]="post.content"></div>
+          <div class="post-date">{{ post.createdAt | date }}</div>
+        </otui-card>
+        }
+      </div>
+      } @else {
+      <p class="no-content">No posts yet</p>
+      }
+    </section>
+
+    <section class="profile-section">
+      <h3>Communities</h3>
+      @if (userCommunities().length > 0) {
+      <div class="communities-grid">
+        @for (community of userCommunities(); track community.id) {
+        <otui-card
+          class="community-card"
+          (click)="
+            router.navigate(['/communities', community.slug || community.id])
+          "
+        >
+          @if (community.logoUrl) {
+          <img [src]="community.logoUrl" alt="" class="community-logo" />
+          }
+          <div class="community-name">{{ community.name }}</div>
+          <div class="community-members">
+            {{ community.memberCount }} members
+          </div>
+        </otui-card>
+        }
+      </div>
+      } @else {
+      <p class="no-content">No communities yet</p>
+      }
+    </section>
+  </div>
 </div>
-}
 
 <lib-profile-editor
   [open]="showProfileEditor"
@@ -45,47 +194,6 @@
   (updateProfile)="updateProfile($event)"
   (createProfile)="createProfile($event)"
 ></lib-profile-editor>
-
-<section class="profile-section">
-  <h3>Posts</h3>
-  @if (userPosts().length > 0) {
-  <div class="posts-list">
-    @for (post of userPosts(); track post.id) {
-    <otui-card class="post-card">
-      <div class="post-title">{{ post.title }}</div>
-      <div class="post-content" [innerHTML]="post.content"></div>
-      <div class="post-date">{{ post.createdAt | date }}</div>
-    </otui-card>
-    }
-  </div>
-  } @else {
-  <p class="no-content">No posts yet</p>
-  }
-</section>
-
-<section class="profile-section">
-  <h3>Communities</h3>
-  @if (userCommunities().length > 0) {
-  <div class="communities-grid">
-    @for (community of userCommunities(); track community.id) {
-    <otui-card
-      class="community-card"
-      (click)="
-        router.navigate(['/communities', community.slug || community.id])
-      "
-    >
-      @if (community.logoUrl) {
-      <img [src]="community.logoUrl" alt="" class="community-logo" />
-      }
-      <div class="community-name">{{ community.name }}</div>
-      <div class="community-members">{{ community.memberCount }} members</div>
-    </otui-card>
-    }
-  </div>
-  } @else {
-  <p class="no-content">No communities yet</p>
-  }
-</section>
 } @else {
 <otui-card>
   <div class="no-profile">

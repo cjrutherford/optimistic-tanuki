@@ -29,10 +29,10 @@ describe('ProfileComponent', () => {
     bio: 'This is a test profile',
     coverPic: 'url/to/cover-pic',
     userId: '231',
-    location: '',
-    occupation: '',
-    interests: '',
-    skills: '',
+    location: 'Raleigh, NC',
+    occupation: 'Product lead',
+    interests: 'Communities, Product design',
+    skills: 'Angular, Facilitation',
     created_at: new Date(),
   };
 
@@ -145,5 +145,24 @@ describe('ProfileComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/profile', mockProfile.id], {
       replaceUrl: true,
     });
+  });
+
+  it('should render expanded profile details', () => {
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Profile overview');
+    expect(text).toContain('Raleigh, NC');
+    expect(text).toContain('Product lead');
+    expect(text).toContain('Angular');
+    expect(text).toContain('Communities');
+  });
+
+  it('should split comma-separated profile tags', () => {
+    expect(component.getProfileTags('Angular, Product, Community')).toEqual([
+      'Angular',
+      'Product',
+      'Community',
+    ]);
+    expect(component.getProfileTags('')).toEqual([]);
   });
 });

@@ -5,26 +5,53 @@
   (closeModal)="close()"
   size="lg"
 >
-  <otui-card style="display: flex; flex-direction: column">
+  <otui-card class="profile-editor-card">
     <form [formGroup]="profileForm" (ngSubmit)="save()" class="form-container">
-      <div class="left">
+      <div class="column">
         <lib-text-input
           label="Profile Name"
           formControlName="profileName"
         ></lib-text-input>
+        <lib-text-input
+          label="Occupation"
+          formControlName="occupation"
+          placeholder="What do you do?"
+        ></lib-text-input>
+        <lib-text-input
+          label="Location"
+          formControlName="location"
+          placeholder="Where are you based?"
+        ></lib-text-input>
+        <lib-text-area
+          label="Bio"
+          formControlName="bio"
+          placeholder="Share what people should know first."
+          [rows]="4"
+        ></lib-text-area>
+        <lib-text-area
+          label="Skills"
+          formControlName="skills"
+          placeholder="Comma-separated skills"
+          [rows]="3"
+        ></lib-text-area>
+      </div>
+      <div class="column">
         <lib-image-upload
           label="Profile Picture"
           (imageUpload)="onProfilePicUpload($event)"
           [currentImage]="profileForm.get('profilePic')?.value"
         ></lib-image-upload>
-      </div>
-      <div class="right">
-        <lib-text-input label="Bio" formControlName="bio"></lib-text-input>
         <lib-image-upload
           label="Cover Picture"
           (imageUpload)="onCoverPicUpload($event)"
           [currentImage]="profileForm.get('coverPic')?.value"
         ></lib-image-upload>
+        <lib-text-area
+          label="Interests"
+          formControlName="interests"
+          placeholder="What communities and topics energize you?"
+          [rows]="4"
+        ></lib-text-area>
       </div>
     </form>
     <div class="dialog-actions">

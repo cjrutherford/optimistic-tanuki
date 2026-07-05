@@ -8,8 +8,9 @@
 }
 
 .find-communities {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: var(--spacing-lg);
 
   @media (max-width: 640px) {
