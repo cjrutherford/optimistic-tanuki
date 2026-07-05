@@ -5,8 +5,9 @@ import {
 import {
   Component,
   Input,
+  Output,
+  EventEmitter,
   SimpleChanges,
-  computed,
   signal,
   OnInit,
   OnChanges,
@@ -155,6 +156,11 @@ export class ChatUiComponent implements OnInit, OnChanges {
       updatedAt: new Date('2023-10-01T12:10:00Z'),
     },
   ];
+  @Input() currentUserId = '';
+  @Output() messageSubmitted = new EventEmitter<{
+    conversationId: string;
+    content: string;
+  }>();
   @Input() autoOpenFirstConversation = false;
   /**
    * A signal that holds the state of each chat window.
@@ -243,14 +249,20 @@ export class ChatUiComponent implements OnInit, OnChanges {
    * Synchronizes the window states with the contacts and conversations.
    */
   private syncWindowStates() {
-    const currentStates = this.windowStates();
+    const currentStates = { ...this.windowStates() };
     this.contacts.forEach((contact) => {
+      const conversation =
+        this.conversations.filter((convo) => convo.id === contact.id) ||
+        ([] as ChatConversation[]);
+
       if (!currentStates[contact.id]) {
-        const conversation =
-          this.conversations.filter((convo) => convo.id === contact.id) ||
-          ([] as ChatConversation[]);
         currentStates[contact.id] = {
           windowState: 'hidden',
+          conversation: [...conversation] as ChatConversation[],
+        };
+      } else {
+        currentStates[contact.id] = {
+          ...currentStates[contact.id],
           conversation: [...conversation] as ChatConversation[],
         };
       }
@@ -309,6 +321,10 @@ export class ChatUiComponent implements OnInit, OnChanges {
         [contactId]: currentState,
       });
     }
+  }
+
+  handleMessageSubmitted(conversationId: string, content: string) {
+    this.messageSubmitted.emit({ conversationId, content });
   }
 
   getConversation(contactId: string): ChatConversation {

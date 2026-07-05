@@ -25,12 +25,12 @@
     @for( contact of contacts; track contact.id; let i = $index) {
     <lib-chat-window
       *ngIf="windowStates()[contact.id]?.windowState !== 'hidden'"
-      [contact]="
-        getConversationContacts(profiles, getMessagesForContact(contact.id))
-      "
+      [contact]="[contact]"
       [messages]="getConversation(contact.id)"
+      [currentUserId]="currentUserId"
       [windowState]="windowStates()[contact.id]!.windowState || 'popout'"
       (windowStateChange)="handleWindowStateChange(contact.id, $event)"
+      (messageSubmitted)="handleMessageSubmitted(contact.id, $event)"
     ></lib-chat-window>
     }
   </div>

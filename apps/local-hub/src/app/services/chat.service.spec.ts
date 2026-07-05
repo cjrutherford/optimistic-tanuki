@@ -54,7 +54,13 @@ describe('ChatService', () => {
   it('fetches messages through the HTTP chat API', async () => {
     const promise = service.getMessages('conversation-1');
 
-    const request = httpMock.expectOne('/api/chat/messages/conversation-1');
+    const request = httpMock.expectOne(
+      (req) =>
+        req.url === '/api/chat/messages/conversation-1' &&
+        req.params.has('_ts') &&
+        req.headers.get('Cache-Control') === 'no-cache' &&
+        req.headers.get('Pragma') === 'no-cache'
+    );
     expect(request.request.method).toBe('GET');
 
     request.flush([

@@ -59,6 +59,7 @@ import { ProfileAnalyticsController } from '../controllers/social/profile-analyt
 import { PollController } from '../controllers/social/poll/poll.controller';
 import { PostShareController } from '../controllers/social/post-share/post-share.controller';
 import { SocialEventController } from '../controllers/social/social-event/social-event.controller';
+import { ChatController } from '../controllers/chat/chat.controller';
 import { PaymentsController } from '../controllers/payments/payments.controller';
 import { DonationsController } from '../controllers/donations/donations.controller';
 import { LeadsController } from '../controllers/leads/leads.controller';
@@ -144,6 +145,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'community',
         requiredServices: ['social', 'permissions', 'chat-collector'],
         value: CommunityController,
+      },
+      {
+        id: 'chat',
+        requiredServices: ['chat-collector'],
+        value: ChatController,
       },
       {
         id: 'follow',

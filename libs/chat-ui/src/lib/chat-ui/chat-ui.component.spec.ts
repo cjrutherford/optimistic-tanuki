@@ -106,6 +106,68 @@ describe('ChatUiComponent', () => {
     expect(component.windowStates()['test1'].windowState).toBe('popout');
   });
 
+  it('should refresh stored conversation data while preserving windowState', () => {
+    const nextMessage = {
+      id: 'm1',
+      conversationId: 'test1',
+      senderId: 'user-1',
+      recipientId: ['user-2'],
+      content: 'Updated message',
+      timestamp: new Date(),
+      type: 'chat' as const,
+    };
+
+    component.contacts = [
+      {
+        id: 'test1',
+        name: 'Test1',
+        avatarUrl: '',
+        lastMessage: '',
+        lastMessageTime: '',
+      },
+    ];
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [],
+        participants: ['user-1', 'user-2'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.windowStates.set({
+      test1: {
+        windowState: 'fullscreen',
+        conversation: [
+          {
+            id: 'test1',
+            messages: [],
+            participants: ['user-1', 'user-2'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+      },
+    });
+
+    component.conversations = [
+      {
+        id: 'test1',
+        messages: [nextMessage],
+        participants: ['user-1', 'user-2'],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    (component as any).syncWindowStates();
+
+    expect(component.windowStates()['test1'].windowState).toBe('fullscreen');
+    expect(component.windowStates()['test1'].conversation[0].messages).toEqual([
+      nextMessage,
+    ]);
+  });
+
   it('should open chat window to popout state', () => {
     component.contacts = [
       {
@@ -190,5 +252,16 @@ describe('ChatUiComponent', () => {
     const result = component.getConversationContacts(profiles, messages);
     expect(result.length).toBe(1);
     expect(result[0].name).toBe('Test User');
+  });
+
+  it('should emit messageSubmitted with conversation id and content', () => {
+    jest.spyOn(component.messageSubmitted, 'emit');
+
+    component.handleMessageSubmitted('conversation-1', 'hello there');
+
+    expect(component.messageSubmitted.emit).toHaveBeenCalledWith({
+      conversationId: 'conversation-1',
+      content: 'hello there',
+    });
   });
 });

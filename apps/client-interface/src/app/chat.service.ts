@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
@@ -62,8 +62,20 @@ export class ChatService {
   }
 
   getMessages(conversationId: string): Promise<ChatMessage[]> {
+    const params = new HttpParams().set('_ts', Date.now().toString());
+    const headers = new HttpHeaders({
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    });
+
     return firstValueFrom(
-      this.http.get<ChatMessage[]>(`${this.baseUrl}/messages/${conversationId}`)
+      this.http.get<ChatMessage[]>(
+        `${this.baseUrl}/messages/${conversationId}`,
+        {
+          params,
+          headers,
+        }
+      )
     ) as Promise<ChatMessage[]>;
   }
 
