@@ -28,11 +28,57 @@
       <otui-button variant="secondary" (action)="onCancel()"
         >Cancel</otui-button
       >
-      <otui-button (action)="onSave()">Save Configuration</otui-button>
+      <otui-button variant="secondary" (action)="onSave()"
+        >Save Draft</otui-button
+      >
+      <otui-button (action)="publishConfiguration()">Publish</otui-button>
     </div>
   </div>
 
-  @if (workspaceMode === 'guided') {
+  <div class="release-panel">
+    <div class="release-panel-copy">
+      <p class="workspace-kicker">Release Management</p>
+      <h2>{{ releaseStatusLabel() }}</h2>
+      <p>
+        Publish configuration changes with release notes, preview the target
+        site, and rollback to a previous published revision when needed.
+      </p>
+      @if (previewUrl(); as previewUrlValue) {
+      <a [href]="previewUrlValue" target="_blank" rel="noreferrer"
+        >Open preview</a
+      >
+      }
+    </div>
+
+    <div class="release-panel-fields">
+      <label>
+        <span>Release notes</span>
+        <textarea
+          [(ngModel)]="releaseNotes"
+          rows="3"
+          placeholder="Summarize what operators should know about this release."
+        ></textarea>
+      </label>
+      <label>
+        <span>Change summary</span>
+        <textarea
+          [(ngModel)]="changeSummary"
+          rows="3"
+          placeholder="List the key experience changes in this revision."
+        ></textarea>
+      </label>
+    </div>
+  </div>
+
+  @if (statusMessage) {
+  <div class="designer-status success" role="status">
+    {{ statusMessage }}
+  </div>
+  } @if (errorMessage) {
+  <div class="designer-status error" role="alert">
+    {{ errorMessage }}
+  </div>
+  } @if (workspaceMode === 'guided') {
   <div class="guided-rail">
     <div class="guided-rail-copy">
       <strong>{{ tabs[guidedStepIndex()].label }}</strong>
@@ -166,7 +212,38 @@
     </div>
   </div>
 
-  @if (mobileSheetOpen()) {
+  @if (releaseHistory().length) {
+  <div class="release-history">
+    <div class="workspace-surface-header">
+      <div>
+        <h2>Release History</h2>
+        <p>
+          Review published revisions and rollback from a known stable version.
+        </p>
+      </div>
+    </div>
+
+    <div class="release-history-list">
+      @for (revision of releaseHistory(); track revision.version) {
+      <otui-card class="release-history-card">
+        <div class="release-history-copy">
+          <strong>v{{ revision.version }} · {{ revision.action }}</strong>
+          <p>{{ revision.releaseNotes }}</p>
+          @if (revision.changeSummary) {
+          <small>{{ revision.changeSummary }}</small>
+          }
+        </div>
+        <otui-button
+          variant="secondary"
+          (action)="rollbackConfiguration(revision.version)"
+        >
+          Rollback
+        </otui-button>
+      </otui-card>
+      }
+    </div>
+  </div>
+  } @if (mobileSheetOpen()) {
   <button
     type="button"
     class="mobile-sheet-backdrop"

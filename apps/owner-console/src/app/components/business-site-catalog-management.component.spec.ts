@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 import { of, throwError } from 'rxjs';
 
 import { BusinessSiteCatalogManagementComponent } from './business-site-catalog-management.component';
 import { AuthService } from '../services/auth.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
+import { OperatorQueueService } from '../services/operator-queue.service';
 import { RolesService } from '../services/roles.service';
 import { StoreService } from '../services/store.service';
 
@@ -23,6 +25,9 @@ describe('BusinessSiteCatalogManagementComponent', () => {
 
   const rolesService = {
     getUserRoles: jest.fn(),
+  };
+  const operatorQueueService = {
+    getQueueByDomain: jest.fn(),
   };
 
   function createToken(payload: Record<string, unknown>): string {
@@ -114,15 +119,32 @@ describe('BusinessSiteCatalogManagementComponent', () => {
         },
       ])
     );
+    operatorQueueService.getQueueByDomain.mockReturnValue(
+      of([
+        {
+          id: 'experience-business-site-readiness',
+          domain: 'Experience',
+          kind: 'catalog-readiness',
+          severity: 'high',
+          title: 'Business-site catalog readiness',
+          detail: '2 readiness issues need attention.',
+          route: '/dashboard/store/business-site',
+          status: 'attention',
+          sourceTimestamp: null,
+          tags: ['experience'],
+        },
+      ])
+    );
 
     await TestBed.configureTestingModule({
-      imports: [BusinessSiteCatalogManagementComponent],
+      imports: [BusinessSiteCatalogManagementComponent, RouterTestingModule],
       providers: [
         { provide: AuthService, useValue: authService },
         {
           provide: BusinessSiteAdminService,
           useValue: businessSiteAdminService,
         },
+        { provide: OperatorQueueService, useValue: operatorQueueService },
         { provide: RolesService, useValue: rolesService },
         { provide: StoreService, useValue: storeService },
       ],
@@ -324,5 +346,33 @@ describe('BusinessSiteCatalogManagementComponent', () => {
 
     expect(component.canManageCatalog()).toBe(true);
     expect(component.accessMessage()).toBe('');
+  });
+
+  it('accepts userId-based auth tokens for catalog governance access', () => {
+    authService.getToken.mockReturnValue(createToken({ userId: 'user-42' }));
+
+    const fixture = createComponent();
+    const component = fixture.componentInstance;
+
+    expect(rolesService.getUserRoles).toHaveBeenCalledWith('user-42');
+    expect(component.canManageCatalog()).toBe(true);
+    expect(component.accessMessage()).toBe('');
+  });
+
+  it('renders the shared experience queue item on the catalog workspace', () => {
+    const fixture = createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain('Experience Queue');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Business-site catalog readiness'
+    );
+  });
+
+  it('shows operators where to manage store service products for catalog readiness', () => {
+    const fixture = createComponent();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Manage Store Service Products'
+    );
   });
 });

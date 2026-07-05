@@ -11,7 +11,7 @@ describe('OWNER_CONSOLE_MUTATION_MATRIX', () => {
     expect(
       new Set(OWNER_CONSOLE_MUTATION_MATRIX.map((entry) => entry.workspace))
     ).toEqual(
-      new Set(['Governance', 'Experience', 'Commerce', 'Community Ops'])
+      new Set(['Governance', 'Experience', 'Commerce', 'CRM', 'Community Ops'])
     );
 
     expect(
@@ -50,5 +50,33 @@ describe('OWNER_CONSOLE_MUTATION_MATRIX', () => {
         (entry) => entry.status === 'missing'
       )
     ).toHaveLength(0);
+  });
+
+  it('captures crm mutation coverage with explicit lead interventions', () => {
+    const crmFeatures = OWNER_CONSOLE_MUTATION_MATRIX.filter(
+      (entry) => entry.workspace === 'CRM'
+    ).map((entry) => entry.feature);
+
+    expect(new Set(crmFeatures)).toEqual(
+      new Set(['Lead update', 'Lead response'])
+    );
+  });
+
+  it('breaks community moderation into concrete mutation rows', () => {
+    const communityFeatures = OWNER_CONSOLE_MUTATION_MATRIX.filter(
+      (entry) => entry.workspace === 'Community Ops'
+    ).map((entry) => entry.feature);
+
+    expect(communityFeatures).toEqual(
+      expect.arrayContaining([
+        'Social report update',
+        'Social content moderation',
+        'Forum topic update',
+        'Forum thread update',
+        'Forum report update',
+        'Forum thread moderation',
+        'Forum post moderation',
+      ])
+    );
   });
 });

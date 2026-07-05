@@ -64,7 +64,7 @@ import { CommunityService } from '../services/community.service';
       }
       .form-group label {
         font-weight: 500;
-        color: var(--text-primary);
+        color: var(--foreground, #111827);
       }
       .form-group input,
       .form-group select,
@@ -73,15 +73,16 @@ import { CommunityService } from '../services/community.service';
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-sm);
         font-size: 14px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
       .form-group input:focus,
       .form-group select:focus,
       .form-group textarea:focus {
         outline: none;
         border-color: var(--accent);
-        box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+        box-shadow: 0 0 0 2px
+          color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
       }
       .form-group textarea {
         min-height: 100px;
@@ -98,7 +99,11 @@ import { CommunityService } from '../services/community.service';
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 36%,
+          transparent
+        );
         display: flex;
         align-items: center;
         justify-content: center;

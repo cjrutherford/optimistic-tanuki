@@ -21,6 +21,13 @@ const adminApiUrl =
   process.env['ADMIN_API_URL'] ||
   process.env['ADMIN_ENV_API_URL'] ||
   'http://admin-api:8098';
+const getRequestUrl = (req: express.Request): string => {
+  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get('host') || 'localhost';
+  return `${protocol}://${host}${req.originalUrl}`;
+};
 
 app.use(
   '/socket.io',
@@ -69,7 +76,9 @@ app.use(
 
 app.use('/**', (req, res, next) => {
   angularApp
-    .handle(req)
+    .handle(req, {
+      url: getRequestUrl(req),
+    })
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next()
     )

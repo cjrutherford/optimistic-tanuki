@@ -17,7 +17,6 @@ const {
     database: configDatabase,
   },
 } = config;
-console.log(fs.readdirSync('.'));
 // Use environment variable for host if available, otherwise use configHost
 const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName

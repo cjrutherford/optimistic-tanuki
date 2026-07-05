@@ -5,6 +5,7 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
 } from '@optimistic-tanuki/models';
 
 describe('RolesController', () => {
@@ -27,6 +28,8 @@ describe('RolesController', () => {
             removePermissionFromRole: jest.fn(),
             assignRole: jest.fn(),
             unassignRole: jest.fn(),
+            previewBulkRoleMutation: jest.fn(),
+            executeBulkRoleMutation: jest.fn(),
             getUserRoles: jest.fn(),
             checkPermission: jest.fn(),
           },
@@ -119,6 +122,40 @@ describe('RolesController', () => {
       const data = { assignmentId: '1' };
       await controller.unassignRole(data);
       expect(service.unassignRole).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('previewBulkRoleMutation', () => {
+    it('should call service.previewBulkRoleMutation with the correct data', async () => {
+      const bulkRoleMutationDto: BulkRoleMutationDto = {
+        operation: 'assign',
+        roleId: 'role-1',
+        profileIds: ['profile-1', 'profile-2'],
+        appScopeId: 'scope-1',
+      };
+
+      await controller.previewBulkRoleMutation(bulkRoleMutationDto);
+
+      expect(service.previewBulkRoleMutation).toHaveBeenCalledWith(
+        bulkRoleMutationDto
+      );
+    });
+  });
+
+  describe('executeBulkRoleMutation', () => {
+    it('should call service.executeBulkRoleMutation with the correct data', async () => {
+      const bulkRoleMutationDto: BulkRoleMutationDto = {
+        operation: 'unassign',
+        roleId: 'role-1',
+        profileIds: ['profile-1', 'profile-2'],
+        appScopeId: 'scope-1',
+      };
+
+      await controller.executeBulkRoleMutation(bulkRoleMutationDto);
+
+      expect(service.executeBulkRoleMutation).toHaveBeenCalledWith(
+        bulkRoleMutationDto
+      );
     });
   });
 

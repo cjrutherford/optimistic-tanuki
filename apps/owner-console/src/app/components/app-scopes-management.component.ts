@@ -244,7 +244,11 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 36%,
+          transparent
+        );
         z-index: 999;
         display: flex;
         align-items: center;
@@ -292,10 +296,15 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       }
 
       .form-preview {
-        background: var(--background, #f5f5f5);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          var(--background, #f3f4f6)
+        );
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #ddd);
+        color: var(--foreground, #111827);
       }
 
       .form-preview h3 {
@@ -307,12 +316,20 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       }
 
       .active-badge {
-        color: var(--success, #4caf50);
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 84%,
+          var(--foreground, #111827)
+        );
         font-weight: 600;
       }
 
       .inactive-badge {
-        color: var(--warning, #ff9800);
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
         font-weight: 600;
       }
 
@@ -334,12 +351,16 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       }
 
       .info-text {
-        color: var(--accent, #007bff);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         font-weight: 500;
       }
 
       .muted-text {
-        color: var(--foreground, #999);
+        color: color-mix(in srgb, var(--foreground, #111827) 58%, transparent);
         font-style: italic;
       }
 
@@ -360,10 +381,15 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       }
 
       .change-details {
-        background: var(--background, #f9f9f9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
         padding: 1rem;
         border-radius: 6px;
         margin-bottom: 1.5rem;
+        color: var(--foreground, #111827);
       }
 
       .change-details h4 {
@@ -392,7 +418,11 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
 
       .warning-box,
       .danger-box {
-        background: rgba(255, 152, 0, 0.1);
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 14%,
+          var(--surface, #ffffff)
+        );
         border: 1px solid var(--warning, #ff9800);
         padding: 1rem;
         border-radius: 6px;
@@ -400,7 +430,11 @@ import { AgAppScopesTableComponent } from './ag-app-scopes-table.component';
       }
 
       .danger-box {
-        background: rgba(244, 67, 54, 0.1);
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 14%,
+          var(--surface, #ffffff)
+        );
         border-color: var(--danger, #f44336);
       }
 

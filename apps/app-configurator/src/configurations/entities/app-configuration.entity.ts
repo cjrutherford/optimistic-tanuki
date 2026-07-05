@@ -1,4 +1,5 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { AppConfigReleaseState } from '@optimistic-tanuki/app-config-models';
 
 @Entity()
 export class AppConfigurationEntity {
@@ -31,6 +32,9 @@ export class AppConfigurationEntity {
 
   @Column({ default: true })
   active: boolean;
+
+  @Column({ type: 'jsonb', default: () => "'{}'" })
+  release: AppConfigReleaseState;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;

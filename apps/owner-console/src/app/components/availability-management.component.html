@@ -1,6 +1,8 @@
 <div class="availability-management">
   <h2>Availability Management</h2>
 
+  <app-commerce-workspace-nav></app-commerce-workspace-nav>
+
   <div *ngIf="error" class="error-message">{{ error }}</div>
 
   <div class="actions">
@@ -13,44 +15,12 @@
   <div *ngIf="loading" class="loading">Loading availabilities...</div>
 
   <div class="availabilities-grid" *ngIf="!loading">
-    <table>
-      <thead>
-        <tr>
-          <th>Day of Week</th>
-          <th>Start Time</th>
-          <th>End Time</th>
-          <th>Hourly Rate</th>
-          <th>Service Type</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let availability of availabilities">
-          <td>{{ getDayLabel(availability.dayOfWeek) }}</td>
-          <td>{{ formatTime(availability.startTime) }}</td>
-          <td>{{ formatTime(availability.endTime) }}</td>
-          <td>${{ availability.hourlyRate.toFixed(2) }}/hr</td>
-          <td>{{ availability.serviceType || '-' }}</td>
-          <td>
-            <span [class]="availability.isActive ? 'active' : 'inactive'">
-              {{ availability.isActive ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td>
-            <button (click)="openEditModal(availability)" class="btn-edit">
-              Edit
-            </button>
-            <button
-              (click)="deleteAvailability(availability)"
-              class="btn-delete"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <otui-ag-grid
+      [rowData]="gridAvailabilities"
+      [columnDefs]="columnDefs"
+      [loading]="loading"
+      [height]="gridHeight"
+    />
   </div>
 
   <!-- Create Modal -->

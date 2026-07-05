@@ -884,6 +884,7 @@ services:
     environment:
       - NODE_ENV=development
       - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
+      - DEV_ALLOW_ALL_BROWSER_ORIGINS=true
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}

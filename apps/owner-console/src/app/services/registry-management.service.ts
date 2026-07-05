@@ -3,6 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import {
   AppRegistry,
   AppRegistryResponse,
+  PublishRegistryDto,
+  RegistryReleaseBundleResponse,
+  RollbackRegistryDto,
   NavigationLink,
 } from '@optimistic-tanuki/app-registry-backend';
 import { Observable } from 'rxjs';
@@ -41,6 +44,24 @@ export class RegistryManagementService {
     return this.http.post<AppRegistryResponse>(`${this.apiUrl}/apps`, {
       registry,
     });
+  }
+
+  publishRegistry(
+    dto: PublishRegistryDto
+  ): Observable<RegistryReleaseBundleResponse> {
+    return this.http.post<RegistryReleaseBundleResponse>(
+      `${this.apiUrl}/publish`,
+      dto
+    );
+  }
+
+  rollbackRegistry(
+    dto: RollbackRegistryDto
+  ): Observable<RegistryReleaseBundleResponse> {
+    return this.http.post<RegistryReleaseBundleResponse>(
+      `${this.apiUrl}/rollback`,
+      dto
+    );
   }
 
   getLinks(): Observable<NavigationLinksResponse> {

@@ -35,5 +35,7 @@ describe('Gateway PermissionsController metadata', () => {
     expectMutationGuarded('removePermissionFromRole', 'roles.update');
     expectMutationGuarded('assignRole', 'users.update');
     expectMutationGuarded('unassignRole', 'users.update');
+    expectMutationGuarded('previewBulkRoleMutation', 'users.update');
+    expectMutationGuarded('executeBulkRoleMutation', 'users.update');
   });
 });

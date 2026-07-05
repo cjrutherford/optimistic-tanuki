@@ -29,10 +29,12 @@ import {
         </otui-button>
       </div>
 
-      @if (loading) {
+      @if (statusMessage) {
+      <div class="status-banner success" role="status">{{ statusMessage }}</div>
+      } @if (loading) {
       <div class="loading">Loading configurations...</div>
       } @else if (error) {
-      <div class="error">{{ error }}</div>
+      <div class="error status-banner" role="alert">{{ error }}</div>
       } @else { @if (configurations.length === 0) {
       <otui-card class="empty-state">
         <otui-icon class="empty-icon" name="settings-applications"></otui-icon>
@@ -46,8 +48,11 @@ import {
         <otui-card class="config-card">
           <div class="config-header">
             <h3>{{ config.name }}</h3>
-            <span class="status-badge" [class.active]="config.active">
-              {{ config.active ? 'Active' : 'Inactive' }}
+            <span
+              class="status-badge"
+              [class.active]="config.release?.status === 'published'"
+            >
+              {{ releaseStatusLabel(config) }}
             </span>
           </div>
 
@@ -70,6 +75,24 @@ import {
               <otui-icon name="route"></otui-icon>
               <span>{{ config.routes.length }} routes</span>
             </div>
+            @if (config.release?.publishedVersion) {
+            <div class="meta-item">
+              <otui-icon name="history"></otui-icon>
+              <span>Published v{{ config.release?.publishedVersion }}</span>
+            </div>
+            } @if (config.release?.previewUrl) {
+            <div class="meta-item">
+              <otui-icon name="language"></otui-icon>
+              <a
+                class="preview-link"
+                [href]="config.release?.previewUrl"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Preview site
+              </a>
+            </div>
+            }
           </div>
 
           <div class="config-features">
@@ -117,6 +140,7 @@ import {
     `
       .app-config-list {
         padding: 2rem;
+        color: var(--foreground, #111827);
       }
 
       .header {
@@ -139,7 +163,28 @@ import {
       }
 
       .error {
-        color: #dc3545;
+        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
+      }
+
+      .status-banner {
+        margin-bottom: 1.5rem;
+        padding: 0.9rem 1rem;
+        border-radius: 1rem;
+        border: 1px solid transparent;
+        text-align: left;
+        font-size: 0.95rem;
+        font-weight: 600;
+      }
+
+      .status-banner.success {
+        background: color-mix(in srgb, var(--success, #10b981) 8%, transparent);
+        border-color: color-mix(in srgb, var(--success) 18%, transparent);
+        color: color-mix(in srgb, var(--success) 82%, var(--foreground));
+      }
+
+      .status-banner.error {
+        background: color-mix(in srgb, var(--danger) 8%, transparent);
+        border-color: color-mix(in srgb, var(--danger) 18%, transparent);
       }
 
       .empty-state {
@@ -151,7 +196,7 @@ import {
         font-size: 4rem;
         width: 4rem;
         height: 4rem;
-        color: #999;
+        color: var(--foreground-secondary, #999);
         margin-bottom: 1rem;
       }
 
@@ -160,7 +205,7 @@ import {
       }
 
       .empty-state p {
-        color: #666;
+        color: var(--foreground-secondary, #666);
         margin-bottom: 2rem;
       }
 
@@ -192,16 +237,21 @@ import {
         border-radius: 12px;
         font-size: 0.75rem;
         font-weight: 600;
-        background-color: #6c757d;
-        color: white;
+        background-color: color-mix(
+          in srgb,
+          var(--foreground, #111827) 22%,
+          var(--surface, #ffffff)
+        );
+        color: var(--foreground, #111827);
       }
 
       .status-badge.active {
-        background-color: #28a745;
+        background-color: var(--success, #28a745);
+        color: var(--on-primary, var(--primary-foreground));
       }
 
       .config-description {
-        color: #666;
+        color: var(--foreground-secondary, #666);
         font-size: 0.9rem;
         margin: 0;
       }
@@ -217,7 +267,11 @@ import {
         align-items: center;
         gap: 0.5rem;
         font-size: 0.85rem;
-        color: #666;
+        color: var(--foreground-secondary, #666);
+      }
+
+      .preview-link {
+        color: inherit;
       }
 
       .meta-item mat-icon {
@@ -236,22 +290,23 @@ import {
         padding: 0.25rem 0.75rem;
         border-radius: 4px;
         font-size: 0.75rem;
-        background-color: #007bff;
-        color: white;
+        background-color: var(--accent, var(--primary));
+        color: var(--on-primary, var(--primary-foreground));
       }
 
       .config-actions {
         display: flex;
         gap: 0.5rem;
         padding-top: 1rem;
-        border-top: 1px solid #e0e0e0;
+        border-top: 1px solid var(--border-color, #e0e0e0);
       }
 
       .action-btn {
         flex: 1;
         padding: 0.5rem;
-        border: 1px solid #e0e0e0;
-        background: white;
+        border: 1px solid var(--border-color, #e0e0e0);
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
         border-radius: 4px;
         cursor: pointer;
         display: flex;
@@ -261,13 +316,17 @@ import {
       }
 
       .action-btn:hover {
-        background-color: #f0f0f0;
+        background-color: color-mix(
+          in srgb,
+          var(--foreground, #111827) 8%,
+          var(--surface, #ffffff)
+        );
       }
 
       .action-btn.danger:hover {
-        background-color: #dc3545;
-        color: white;
-        border-color: #dc3545;
+        background-color: var(--danger, #dc3545);
+        color: var(--on-primary, var(--primary-foreground));
+        border-color: var(--danger, #dc3545);
       }
 
       .action-btn mat-icon {
@@ -282,6 +341,7 @@ export class AppConfigListComponent implements OnInit {
   configurations: AppConfiguration[] = [];
   loading = false;
   error: string | null = null;
+  statusMessage = '';
 
   constructor(
     private appConfigService: AppConfigService,
@@ -292,23 +352,22 @@ export class AppConfigListComponent implements OnInit {
     this.loadConfigurations();
   }
 
-  loadConfigurations(): void {
+  loadConfigurations(options?: { preserveStatus?: boolean }): void {
     this.loading = true;
     this.error = null;
-
-    console.log('[AppConfigList] Loading configurations from /api/app-config');
+    if (!options?.preserveStatus) {
+      this.statusMessage = '';
+    }
     this.appConfigService.getConfigurations().subscribe({
       next: (configs) => {
-        console.log('[AppConfigList] Loaded configurations:', configs);
         this.configurations = configs;
         this.loading = false;
       },
       error: (err) => {
-        this.error = `Failed to load configurations: ${
-          err.message || err.statusText || 'Unknown error'
-        }`;
+        this.error = `Failed to load configurations: ${this.describeError(
+          err
+        )}`;
         this.loading = false;
-        console.error('[AppConfigList] Error loading configurations:', err);
       },
     });
   }
@@ -321,11 +380,32 @@ export class AppConfigListComponent implements OnInit {
     this.router.navigate(['/dashboard/app-config/designer', id]);
   }
 
+  releaseStatusLabel(config: AppConfiguration): string {
+    const status = config.release?.status;
+
+    if (status === 'published') {
+      return 'Published';
+    }
+
+    if (status === 'changes-pending') {
+      return 'Changes Pending';
+    }
+
+    if (status === 'draft') {
+      return 'Draft';
+    }
+
+    return config.active ? 'Active' : 'Inactive';
+  }
+
   duplicateConfiguration(config: AppConfiguration): void {
+    this.error = null;
+    this.statusMessage = '';
     const newConfig = {
       ...config,
       name: `${config.name} (Copy)`,
       domain: undefined, // Clear domain to avoid conflicts
+      release: undefined,
     };
     delete (newConfig as any).id;
     delete (newConfig as any).createdAt;
@@ -333,11 +413,14 @@ export class AppConfigListComponent implements OnInit {
 
     this.appConfigService.createConfiguration(newConfig).subscribe({
       next: () => {
-        this.loadConfigurations();
+        this.statusMessage =
+          'Configuration duplicated. The new draft is ready in the list.';
+        this.loadConfigurations({ preserveStatus: true });
       },
       error: (err) => {
-        console.error('Error duplicating configuration:', err);
-        alert('Failed to duplicate configuration');
+        this.error = `Failed to duplicate configuration: ${this.describeError(
+          err
+        )}`;
       },
     });
   }
@@ -346,13 +429,41 @@ export class AppConfigListComponent implements OnInit {
     if (confirm(`Are you sure you want to delete "${config.name}"?`)) {
       this.appConfigService.deleteConfiguration(config.id).subscribe({
         next: () => {
-          this.loadConfigurations();
+          this.statusMessage = `"${config.name}" was removed from the configuration list.`;
+          this.loadConfigurations({ preserveStatus: true });
         },
         error: (err) => {
-          console.error('Error deleting configuration:', err);
-          alert('Failed to delete configuration');
+          this.error = `Failed to delete configuration: ${this.describeError(
+            err
+          )}`;
         },
       });
     }
+  }
+
+  private describeError(err: unknown): string {
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'message' in err &&
+      typeof err.message === 'string'
+    ) {
+      return err.message;
+    }
+
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'statusText' in err &&
+      typeof err.statusText === 'string'
+    ) {
+      return err.statusText;
+    }
+
+    return 'Unknown error';
   }
 }

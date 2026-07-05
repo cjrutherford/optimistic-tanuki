@@ -25,6 +25,7 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
   CreateAppScopeDto,
   UpdateAppScopeDto,
 } from '@optimistic-tanuki/models';
@@ -260,6 +261,36 @@ export class PermissionsController {
   async unassignRole(@Param('assignmentId') assignmentId: string) {
     return await firstValueFrom(
       this.client.send({ cmd: RoleCommands.Unassign }, { assignmentId })
+    );
+  }
+
+  @RequirePermissions('users.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiOperation({ summary: 'Preview a bulk role mutation for selected users' })
+  @Post('assignment/bulk/preview')
+  async previewBulkRoleMutation(
+    @Body() bulkRoleMutationDto: BulkRoleMutationDto
+  ) {
+    return await firstValueFrom(
+      this.client.send(
+        { cmd: RoleCommands.PreviewBulkMutation },
+        bulkRoleMutationDto
+      )
+    );
+  }
+
+  @RequirePermissions('users.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiOperation({ summary: 'Execute a bulk role mutation for selected users' })
+  @Post('assignment/bulk')
+  async executeBulkRoleMutation(
+    @Body() bulkRoleMutationDto: BulkRoleMutationDto
+  ) {
+    return await firstValueFrom(
+      this.client.send(
+        { cmd: RoleCommands.ExecuteBulkMutation },
+        bulkRoleMutationDto
+      )
     );
   }
 

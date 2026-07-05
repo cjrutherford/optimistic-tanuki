@@ -24,6 +24,8 @@ describe('Gateway AppConfigController metadata', () => {
   it('protects app configuration mutations with explicit permissions', () => {
     expectMutationGuarded('createConfiguration', 'app-config.create');
     expectMutationGuarded('updateConfiguration', 'app-config.update');
+    expectMutationGuarded('publishConfiguration', 'app-config.update');
+    expectMutationGuarded('rollbackConfiguration', 'app-config.update');
     expectMutationGuarded('deleteConfiguration', 'app-config.delete');
   });
 });

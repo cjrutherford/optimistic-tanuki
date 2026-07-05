@@ -45,21 +45,22 @@ import { CommunityService } from '../services/community.service';
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-sm);
         font-size: 14px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
       .search-input:focus {
         outline: none;
         border-color: var(--accent);
-        box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.2);
+        box-shadow: 0 0 0 2px
+          color-mix(in srgb, var(--accent, #2563eb) 22%, transparent);
       }
       .filter-select {
         padding: 8px 12px;
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-sm);
         font-size: 14px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
       .community-grid {
         display: grid;
@@ -81,11 +82,11 @@ import { CommunityService } from '../services/community.service';
       }
       .community-card h3 {
         margin: 0 0 var(--spacing-sm) 0;
-        color: var(--text-primary);
+        color: var(--foreground, #111827);
       }
       .community-card p {
         margin: 0 0 var(--spacing-sm) 0;
-        color: var(--text-secondary);
+        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
       }
       .community-card .badge {
         display: inline-block;
@@ -93,7 +94,7 @@ import { CommunityService } from '../services/community.service';
         border-radius: var(--border-radius-sm);
         font-size: 12px;
         background: var(--accent);
-        color: white;
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
       }
       .community-actions {
         display: flex;
@@ -103,7 +104,7 @@ import { CommunityService } from '../services/community.service';
       .empty-state {
         text-align: center;
         padding: var(--spacing-xl);
-        color: var(--text-secondary);
+        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
       }
       .sortable {
         cursor: pointer;
@@ -115,7 +116,7 @@ import { CommunityService } from '../services/community.service';
       .loading-state {
         text-align: center;
         padding: var(--spacing-xl);
-        color: var(--text-secondary);
+        color: color-mix(in srgb, var(--foreground, #111827) 70%, transparent);
       }
     `,
   ],

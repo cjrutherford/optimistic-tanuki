@@ -8,6 +8,7 @@ import {
   SimpleChanges,
   signal,
   computed,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -27,6 +28,7 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
         [columnDefs]="columnDefs"
         [loading]="loading"
         [height]="height"
+        (selectionChange)="selectionChange.emit($event)"
       />
     </div>
   `,
@@ -39,6 +41,24 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
         width: 100%;
         height: 100%;
         padding: 16px;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--surface, #ffffff) 92%, transparent),
+          color-mix(in srgb, var(--accent, #2563eb) 8%, var(--surface, #ffffff))
+        );
+        color: var(--foreground, #111827);
+        border-radius: var(--personality-card-radius, 12px);
+        border: var(--personality-border-width, 1px)
+          var(--personality-border-style, solid)
+          color-mix(
+            in srgb,
+            var(--border-color, #d6d6d6) 86%,
+            var(--accent, #2563eb)
+          );
+        box-shadow: var(
+          --personality-card-shadow,
+          0 10px 24px rgba(0, 0, 0, 0.08)
+        );
       }
 
       .action-group {
@@ -50,16 +70,30 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
   ],
 })
 export class AgUsersTableComponent implements OnInit, OnChanges {
+  @ViewChild(AgGridUiComponent) private readonly grid?: AgGridUiComponent;
+
   @Input() users: ProfileDto[] = [];
   @Input() loading = false;
   @Input() height = '600px';
+  @Input() selectionResetKey = 0;
   @Output() manageRoles = new EventEmitter<ProfileDto>();
+  @Output() selectionChange = new EventEmitter<ProfileDto[]>();
 
   // Internal signals
   private usersSignal = signal<ProfileDto[]>([]);
   gridData = computed(() => this.usersSignal());
 
   columnDefs: ColDef[] = [
+    {
+      headerName: '',
+      width: 64,
+      pinned: 'left',
+      checkboxSelection: true,
+      headerCheckboxSelection: true,
+      sortable: false,
+      filter: false,
+      resizable: false,
+    },
     {
       field: 'profileName',
       headerName: 'Name',
@@ -109,6 +143,13 @@ export class AgUsersTableComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['users']) {
       this.usersSignal.set(this.users || []);
+    }
+    if (
+      changes['selectionResetKey'] &&
+      !changes['selectionResetKey'].firstChange
+    ) {
+      this.grid?.gridApi?.deselectAll?.();
+      this.selectionChange.emit([]);
     }
   }
 }

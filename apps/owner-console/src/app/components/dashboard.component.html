@@ -10,9 +10,12 @@
     <button
       class="theme-toggle"
       (click)="toggleTheme()"
-      aria-label="Toggle theme"
+      [attr.aria-label]="themeToggleLabel"
     >
-      {{ (theme$ | async) === 'dark' ? '☀️' : '🌙' }}
+      <span class="theme-toggle__icon" aria-hidden="true">
+        {{ (theme$ | async) === 'dark' ? 'Light' : 'Dark' }}
+      </span>
+      <span class="theme-toggle__label">{{ themeToggleLabel }}</span>
     </button>
   </otui-app-bar>
 

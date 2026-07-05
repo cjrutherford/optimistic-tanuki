@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { StoreService } from '../services/store.service';
@@ -27,6 +28,7 @@ describe('AvailabilityManagementComponent', () => {
     await TestBed.configureTestingModule({
       imports: [AvailabilityManagementComponent],
       providers: [
+        provideRouter([]),
         { provide: StoreService, useValue: storeService },
         { provide: AuthService, useValue: authService },
       ],
@@ -56,5 +58,12 @@ describe('AvailabilityManagementComponent', () => {
     expect(component.error).toBe(
       'Unable to determine operator identity for availability creation.'
     );
+  });
+
+  it('renders availability rows through the shared ag-grid table', () => {
+    const fixture = TestBed.createComponent(AvailabilityManagementComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('otui-ag-grid')).toBeTruthy();
   });
 });

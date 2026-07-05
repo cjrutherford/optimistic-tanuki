@@ -57,7 +57,11 @@ import {
         border-bottom: 1px solid var(--border-color);
       }
       .members-table th {
-        background: var(--bg-secondary);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          var(--background, #f3f4f6)
+        );
       }
       .member-actions {
         display: flex;
@@ -69,20 +73,52 @@ import {
         font-size: 12px;
       }
       .role-owner {
-        background: gold;
-        color: black;
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 22%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
       .role-admin {
-        background: purple;
-        color: white;
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 22%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
       }
       .role-moderator {
-        background: blue;
-        color: white;
+        background: color-mix(
+          in srgb,
+          var(--info, #0ea5e9) 22%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--info, #0ea5e9) 82%,
+          var(--foreground, #111827)
+        );
       }
       .role-member {
-        background: gray;
-        color: white;
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 18%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--foreground, #111827) 82%,
+          var(--surface, #ffffff)
+        );
       }
       .manager-banner {
         display: flex;
@@ -93,7 +129,11 @@ import {
         padding: 12px;
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        background: var(--bg-secondary);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          var(--background, #f3f4f6)
+        );
       }
     `,
   ],

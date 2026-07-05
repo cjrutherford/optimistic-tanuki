@@ -6,6 +6,7 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
 } from '@optimistic-tanuki/models';
 
 @Controller('roles')
@@ -70,6 +71,20 @@ export class RolesController {
   @MessagePattern({ cmd: RoleCommands.Unassign })
   async unassignRole(@Payload() data: { assignmentId: string }) {
     return await this.rolesService.unassignRole(data.assignmentId);
+  }
+
+  @MessagePattern({ cmd: RoleCommands.PreviewBulkMutation })
+  async previewBulkRoleMutation(
+    @Payload() bulkRoleMutationDto: BulkRoleMutationDto
+  ) {
+    return await this.rolesService.previewBulkRoleMutation(bulkRoleMutationDto);
+  }
+
+  @MessagePattern({ cmd: RoleCommands.ExecuteBulkMutation })
+  async executeBulkRoleMutation(
+    @Payload() bulkRoleMutationDto: BulkRoleMutationDto
+  ) {
+    return await this.rolesService.executeBulkRoleMutation(bulkRoleMutationDto);
   }
 
   @MessagePattern({ cmd: 'Unassign:Role:ByTarget' })

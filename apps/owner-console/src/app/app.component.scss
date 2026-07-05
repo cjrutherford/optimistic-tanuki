@@ -1,3 +1,22 @@
+.skip-link {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  z-index: 3;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
+  text-decoration: none;
+  transform: translateY(-220%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
 .motion-background {
   position: fixed;
   inset: 0;

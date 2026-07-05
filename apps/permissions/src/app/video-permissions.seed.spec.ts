@@ -4,7 +4,10 @@ import * as path from 'path';
 const seedData = require('../assets/default-permissions.json');
 
 describe('video-client permission seeds', () => {
-  const shellSeedPath = path.resolve(process.cwd(), 'seed-permissions.sh');
+  const shellSeedPath = path.resolve(
+    __dirname,
+    '../../../../scripts/seed-permissions.sh'
+  );
   const shellSeed = fs.readFileSync(shellSeedPath, 'utf8');
 
   it('defines the video-client app scope and expected roles in default-permissions.json', () => {

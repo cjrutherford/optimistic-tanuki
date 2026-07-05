@@ -3,6 +3,8 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ConfigurationsService } from '../app/configurations.service';
 import {
   CreateAppConfigDto,
+  PublishAppConfigDto,
+  RollbackAppConfigDto,
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
 import { AppConfigurationEntity } from './entities/app-configuration.entity';
@@ -14,6 +16,8 @@ export const AppConfigCommands = {
   GetByName: 'app-config.getByName',
   GetAll: 'app-config.getAll',
   Update: 'app-config.update',
+  Publish: 'app-config.publish',
+  Rollback: 'app-config.rollback',
   Delete: 'app-config.delete',
 };
 
@@ -72,6 +76,25 @@ export class ConfigurationsController {
   ): Promise<AppConfigurationEntity> {
     this.logger.log(`Updating app configuration: ${data.id}`);
     return await this.configurationsService.updateConfiguration(data.id, data);
+  }
+
+  @MessagePattern({ cmd: AppConfigCommands.Publish })
+  async publishConfiguration(
+    @Payload() data: PublishAppConfigDto & { id: string }
+  ): Promise<AppConfigurationEntity> {
+    this.logger.log(`Publishing app configuration: ${data.id}`);
+    return await this.configurationsService.publishConfiguration(data.id, data);
+  }
+
+  @MessagePattern({ cmd: AppConfigCommands.Rollback })
+  async rollbackConfiguration(
+    @Payload() data: RollbackAppConfigDto & { id: string }
+  ): Promise<AppConfigurationEntity> {
+    this.logger.log(`Rolling back app configuration: ${data.id}`);
+    return await this.configurationsService.rollbackConfiguration(
+      data.id,
+      data
+    );
   }
 
   @MessagePattern({ cmd: AppConfigCommands.Delete })

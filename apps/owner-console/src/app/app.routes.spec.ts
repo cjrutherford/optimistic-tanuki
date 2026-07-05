@@ -1,4 +1,5 @@
 import { appRoutes } from './app.routes';
+import { CommunityOpsWorkspaceComponent } from './components/community-ops-workspace.component';
 
 describe('appRoutes', () => {
   it('does not expose the legacy setup route', () => {
@@ -99,5 +100,29 @@ describe('appRoutes', () => {
       editorMode: 'studio',
       workspaceKind: 'app-config',
     });
+  });
+
+  it('keeps a compatibility alias for the legacy business-site catalog route', () => {
+    const dashboardRoute = appRoutes.find(
+      (route) => route.path === 'dashboard'
+    );
+    const legacyCatalogRoute = dashboardRoute?.children?.find(
+      (route) => route.path === 'business-site/catalog'
+    );
+
+    expect(legacyCatalogRoute?.redirectTo).toBe('store/business-site');
+  });
+
+  it('loads the dedicated community ops workspace instead of the generic landing screen', async () => {
+    const dashboardRoute = appRoutes.find(
+      (route) => route.path === 'dashboard'
+    );
+    const communityOpsRoute = dashboardRoute?.children?.find(
+      (route) => route.path === 'community-ops'
+    );
+
+    const component = await communityOpsRoute?.loadComponent?.();
+
+    expect(component).toBe(CommunityOpsWorkspaceComponent);
   });
 });

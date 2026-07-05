@@ -4,9 +4,14 @@ import { RouterModule } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AppConfiguration } from '@optimistic-tanuki/app-config-models';
 import { CommunityDto } from '@optimistic-tanuki/ui-models';
+import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
 import { AppConfigService } from '../services/app-config.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { CommunityService } from '../services/community.service';
+import {
+  OperatorQueueItem,
+  OperatorQueueService,
+} from '../services/operator-queue.service';
 import { Order, StoreService } from '../services/store.service';
 import { UsersService } from '../services/users.service';
 import {
@@ -29,7 +34,7 @@ interface AttentionItem {
 @Component({
   selector: 'app-operator-overview',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, OperatorQueuePanelComponent],
   template: `
     <section class="overview-page">
       <header class="hero">
@@ -51,6 +56,11 @@ interface AttentionItem {
         </article>
         }
       </section>
+
+      <app-operator-queue-panel
+        *ngIf="!loading"
+        [items]="queueItems"
+      ></app-operator-queue-panel>
 
       <section class="attention-panel" *ngIf="!loading">
         <div class="panel-heading">
@@ -92,8 +102,8 @@ interface AttentionItem {
         <section class="metrics-grid">
           @for (slot of [1, 2, 3, 4, 5]; track slot) {
           <article class="metric-card skeleton">
-            <span class="metric-value">...</span>
-            <h2>Loading</h2>
+            <span class="metric-value">…</span>
+            <h2>Loading…</h2>
             <p>Collecting operator metrics.</p>
           </article>
           }
@@ -120,15 +130,20 @@ interface AttentionItem {
         border: 1px solid var(--border-color, #d6d6d6);
         background: radial-gradient(
             circle at top right,
-            rgba(10, 108, 116, 0.08),
+            color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent),
             transparent 34%
           ),
           linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.96),
-            rgba(246, 248, 248, 0.92)
+            color-mix(in srgb, var(--surface, #ffffff) 96%, transparent),
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 88%,
+              var(--background, #f8fafc)
+            )
           );
         padding: 24px;
+        color: var(--foreground, #111827);
       }
 
       .hero-kicker {
@@ -177,7 +192,11 @@ interface AttentionItem {
         gap: 10px;
         border-radius: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: rgba(255, 255, 255, 0.9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          transparent
+        );
         padding: 20px;
         text-decoration: none;
         color: inherit;
@@ -226,9 +245,11 @@ export class OperatorOverviewComponent implements OnInit {
   private readonly appConfigService = inject(AppConfigService);
   private readonly communityService = inject(CommunityService);
   private readonly storeService = inject(StoreService);
+  private readonly operatorQueueService = inject(OperatorQueueService);
 
   loading = true;
   metrics: OverviewMetric[] = [];
+  queueItems: OperatorQueueItem[] = [];
   attentionItems: AttentionItem[] = [];
   workspaces: OperatorWorkspaceConfig[] = OPERATOR_WORKSPACES;
 
@@ -250,8 +271,12 @@ export class OperatorOverviewComponent implements OnInit {
       appointments: this.storeService
         .getAppointments()
         .pipe(catchError(() => of([]))),
+      queueItems: this.operatorQueueService
+        .getOverviewQueue()
+        .pipe(catchError(() => of([]))),
     }).subscribe((data) => {
       this.metrics = this.buildMetrics(data);
+      this.queueItems = data.queueItems as OperatorQueueItem[];
       this.attentionItems = this.buildAttentionItems(
         data.configs,
         data.orders,
@@ -330,7 +355,7 @@ export class OperatorOverviewComponent implements OnInit {
           draftConfigs > 0
             ? `${draftConfigs} configurations are still inactive or draft.`
             : 'All known application configurations are currently active.',
-        route: '/dashboard/experience',
+        route: '/dashboard/app-config',
       },
       {
         title: 'Commerce exceptions',
@@ -338,7 +363,7 @@ export class OperatorOverviewComponent implements OnInit {
           openOrders > 0
             ? `${openOrders} orders still appear actionable from the current dataset.`
             : 'No actionable orders detected from the current order snapshot.',
-        route: '/dashboard/commerce',
+        route: '/dashboard/store/orders',
       },
       {
         title: 'Booking follow-up',
@@ -346,12 +371,12 @@ export class OperatorOverviewComponent implements OnInit {
           pendingAppointments > 0
             ? `${pendingAppointments} appointments still require approval or scheduling.`
             : 'No pending appointment approvals were detected.',
-        route: '/dashboard/operations',
+        route: '/dashboard/store/appointments',
       },
       {
         title: 'Community coverage',
         detail: `${communities.length} communities are spread across ${cities.length} city records.`,
-        route: '/dashboard/community-ops',
+        route: '/dashboard/communities',
       },
     ];
   }

@@ -14,13 +14,16 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { CommunityService } from '../community.service';
 import { PostService } from '../post.service';
 import { FollowService } from '../follow.service';
+import { PrivacyService } from '../privacy.service';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
   let fixture: ComponentFixture<ProfileComponent>;
   let profileService: ProfileService;
+  let privacyService: PrivacyService;
   let router: Router;
   let profileServiceMock: Record<string, jest.Mock | (() => unknown)>;
+  let privacyServiceMock: Record<string, jest.Mock | (() => unknown)>;
 
   const mockProfile: ProfileDto = {
     id: '1',
@@ -57,16 +60,19 @@ describe('ProfileComponent', () => {
       updateProfile: jest.fn(),
       getProfileById: jest.fn(),
       getDisplayProfile: jest.fn().mockReturnValue(of(mockProfile)),
+      ...profileOverrides,
+    };
+    privacyServiceMock = {
       getBlockedUsers: jest.fn().mockReturnValue(of([])),
       blockUser: jest.fn().mockReturnValue(of(undefined)),
       unblockUser: jest.fn().mockReturnValue(of(undefined)),
-      ...profileOverrides,
     };
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, RouterTestingModule],
       providers: [
         { provide: ProfileService, useValue: profileServiceMock },
+        { provide: PrivacyService, useValue: privacyServiceMock },
         { provide: ActivatedRoute, useValue: buildRoute(routeParams) },
         {
           provide: MessageService,
@@ -102,6 +108,7 @@ describe('ProfileComponent', () => {
     }).compileComponents();
 
     profileService = TestBed.inject(ProfileService);
+    privacyService = TestBed.inject(PrivacyService);
     router = TestBed.inject(Router);
     fixture = TestBed.createComponent(ProfileComponent);
     component = fixture.componentInstance;
@@ -145,5 +152,20 @@ describe('ProfileComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/profile', mockProfile.id], {
       replaceUrl: true,
     });
+  });
+
+  it('should use privacy service to check block status', async () => {
+    TestBed.resetTestingModule();
+
+    await createComponent(
+      { userId: 'blocked-profile' },
+      {
+        getDisplayProfile: jest
+          .fn()
+          .mockReturnValue(of({ ...mockProfile, id: 'blocked-profile' })),
+      }
+    );
+
+    expect(privacyService.getBlockedUsers).toHaveBeenCalled();
   });
 });
