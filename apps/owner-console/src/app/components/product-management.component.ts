@@ -6,11 +6,12 @@ import {
   CreateProductDto,
   UpdateProductDto,
 } from '@optimistic-tanuki/ui-models';
+import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
 @Component({
   selector: 'app-product-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CommerceWorkspaceNavComponent],
   templateUrl: './product-management.component.html',
   styleUrls: ['./product-management.component.scss'],
 })

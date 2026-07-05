@@ -59,7 +59,11 @@ interface SectionTypeOption {
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 36%,
+          transparent
+        );
         z-index: 999;
       }
 
@@ -96,14 +100,22 @@ interface SectionTypeOption {
         cursor: pointer;
         padding: 0.5rem;
         border-radius: 4px;
-        color: var(--foreground-secondary, #666);
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
         display: flex;
         align-items: center;
       }
 
       .close-btn:hover {
-        background-color: var(--accent-light, #f0f0f0);
-        color: var(--accent, #007acc);
+        background-color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 10%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .section-types-grid {
@@ -124,14 +136,27 @@ interface SectionTypeOption {
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.2s;
-        background: var(--background, white);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .section-type-item:hover {
-        border-color: var(--accent, #007acc);
-        background: var(--accent-light, #f0f8ff);
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 56%,
+          transparent
+        );
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 12%,
+          var(--surface, #ffffff)
+        );
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 8px
+          color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
       }
 
       .section-type-icon {
@@ -140,9 +165,17 @@ interface SectionTypeOption {
         justify-content: center;
         width: 48px;
         height: 48px;
-        background: var(--accent-light, #f0f0f0);
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 10%,
+          var(--surface, #ffffff)
+        );
         border-radius: 8px;
-        color: var(--accent, #007acc);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         flex-shrink: 0;
       }
 
@@ -165,7 +198,7 @@ interface SectionTypeOption {
       .section-type-info p {
         margin: 0;
         font-size: 0.875rem;
-        color: var(--foreground-secondary, #666);
+        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
         line-height: 1.4;
       }
 

@@ -70,6 +70,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.themeService.toggleTheme();
   }
 
+  get themeToggleLabel(): string {
+    return this.themeService.theme.getValue() === 'dark'
+      ? 'Light Mode'
+      : 'Dark Mode';
+  }
+
   private buildNavItems(): NavItem[] {
     const workspaceNav = [
       {

@@ -4,6 +4,8 @@
     [rowData]="rowDataSignal()"
     [columnDefs]="columnDefsSignal()"
     [gridOptions]="mergedGridOptions()"
+    [theme]="gridThemeSignal()"
     (gridReady)="onGridReady($event)"
+    (selectionChanged)="onSelectionChanged()"
   ></ag-grid-angular>
 </div>

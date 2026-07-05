@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import {
   AppConfiguration,
   CreateAppConfigDto,
+  PublishAppConfigDto,
+  RollbackAppConfigDto,
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
 
@@ -42,6 +44,26 @@ export class AppConfigService {
     dto: UpdateAppConfigDto
   ): Observable<AppConfiguration> {
     return this.http.put<AppConfiguration>(`${this.API_URL}/${id}`, dto);
+  }
+
+  publishConfiguration(
+    id: string,
+    dto: PublishAppConfigDto
+  ): Observable<AppConfiguration> {
+    return this.http.post<AppConfiguration>(
+      `${this.API_URL}/${id}/publish`,
+      dto
+    );
+  }
+
+  rollbackConfiguration(
+    id: string,
+    dto: RollbackAppConfigDto
+  ): Observable<AppConfiguration> {
+    return this.http.post<AppConfiguration>(
+      `${this.API_URL}/${id}/rollback`,
+      dto
+    );
   }
 
   deleteConfiguration(id: string): Observable<void> {

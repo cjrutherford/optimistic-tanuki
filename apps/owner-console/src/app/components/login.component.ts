@@ -9,7 +9,6 @@ import {
 import { AuthService } from '../services/auth.service';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
-import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Component({
   selector: 'app-login',
@@ -37,37 +36,49 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
         <div class="register-link">
           <a routerLink="/register">Don't have an account? Register as Owner</a>
         </div>
+        <div *ngIf="oauthConfigMessage" class="info-message">
+          {{ oauthConfigMessage }}
+        </div>
         <div *ngIf="error" class="error-message">{{ error }}</div>
       </div>
     </section>
   `,
   styles: [
     `
-      // .auth-shell {
-      //   display: grid;
-      //   grid-template-columns: minmax(0, 28rem) minmax(20rem, 34rem);
-      //   gap: 3rem;
-      //   align-items: center;
-      //   justify-content: center;
-      //   min-height: 100vh;
-      //   padding: 2rem 1.25rem 3rem;
-      //   background: radial-gradient(
-      //       circle at top left,
-      //       rgba(102, 126, 234, 0.2),
-      //       transparent 24rem
-      //     ),
-      //     radial-gradient(
-      //       circle at bottom right,
-      //       rgba(118, 75, 162, 0.18),
-      //       transparent 24rem
-      //     ),
-      //     linear-gradient(180deg, #111827 0%, #1f2937 100%);
-      // }
+      .auth-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 28rem) minmax(20rem, 34rem);
+        gap: 3rem;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem 1.25rem 3rem;
+        background: radial-gradient(
+            circle at top left,
+            color-mix(in srgb, var(--accent, var(--primary)) 18%, transparent),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            color-mix(in srgb, var(--info) 16%, transparent),
+            transparent 24rem
+          ),
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--background, #0f172a) 76%, black) 0%,
+            color-mix(
+                in srgb,
+                var(--background, #162033) 68%,
+                var(--primary, #1d4ed8)
+              )
+              100%
+          );
+      }
 
       .auth-story {
         display: grid;
         gap: 1rem;
-        color: #f3f4f6;
+        color: var(--foreground, #f3f4f6);
       }
 
       .eyebrow {
@@ -76,7 +87,7 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: #a5b4fc;
+        color: color-mix(in srgb, var(--info) 58%, var(--foreground));
       }
 
       h1 {
@@ -88,20 +99,44 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
       .lede {
         margin: 0;
-        color: rgba(243, 244, 246, 0.8);
+        color: color-mix(in srgb, var(--foreground, #f3f4f6) 82%, transparent);
         line-height: 1.7;
       }
 
       .auth-panel {
         display: grid;
         gap: 0.9rem;
+        padding: 1.25rem;
+        border-radius: 1.5rem;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 30%,
+          transparent
+        );
+        border: 1px solid
+          color-mix(in srgb, var(--border-color, #94a3b8) 34%, transparent);
+        backdrop-filter: blur(14px);
+      }
+
+      .error-message,
+      .info-message {
+        margin-top: 0.25rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.9rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
       }
 
       .error-message {
-        color: #f44336;
-        margin-top: 1rem;
-        font-size: 0.875rem;
-        text-align: center;
+        color: color-mix(in srgb, var(--danger) 48%, white);
+        background: color-mix(in srgb, var(--danger) 22%, transparent);
+        border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+      }
+
+      .info-message {
+        color: color-mix(in srgb, var(--info) 42%, white);
+        background: color-mix(in srgb, var(--info) 20%, transparent);
+        border: 1px solid color-mix(in srgb, var(--info) 28%, transparent);
       }
 
       .register-link {
@@ -109,7 +144,7 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
       }
 
       .register-link a {
-        color: #667eea;
+        color: color-mix(in srgb, var(--info) 62%, white);
         text-decoration: none;
       }
 
@@ -117,16 +152,19 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
         text-decoration: underline;
       }
 
-      // @media (max-width: 960px) {
-      //   .auth-shell {
-      //     grid-template-columns: 1fr;
-      //   }
-      // }
+      @media (max-width: 960px) {
+        .auth-shell {
+          grid-template-columns: 1fr;
+          align-items: start;
+          padding-top: 3rem;
+        }
+      }
     `,
   ],
 })
 export class LoginComponent implements OnInit {
   error = '';
+  oauthConfigMessage = '';
   private oauthService: OAuthService;
 
   constructor(
@@ -150,9 +188,10 @@ export class LoginComponent implements OnInit {
       if (config) {
         this.oauthService.configureProviders(config);
       }
+      this.oauthConfigMessage = '';
     } catch (e) {
-      // Config endpoint might not exist, continue with defaults
-      console.log('OAuth config not loaded from server, using defaults');
+      this.oauthConfigMessage =
+        'OAuth provider configuration is unavailable right now. Use email/password sign-in until providers are configured.';
     }
   }
 

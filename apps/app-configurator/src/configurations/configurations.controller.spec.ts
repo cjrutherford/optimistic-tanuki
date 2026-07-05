@@ -25,6 +25,8 @@ describe('ConfigurationsController', () => {
             getConfigurationByName: jest.fn().mockResolvedValue(mockConfig),
             getAllConfigurations: jest.fn().mockResolvedValue([mockConfig]),
             updateConfiguration: jest.fn().mockResolvedValue(mockConfig),
+            publishConfiguration: jest.fn().mockResolvedValue(mockConfig),
+            rollbackConfiguration: jest.fn().mockResolvedValue(mockConfig),
             deleteConfiguration: jest.fn().mockResolvedValue(undefined),
           },
         },
@@ -88,5 +90,19 @@ describe('ConfigurationsController', () => {
   it('deleteConfiguration should call service', async () => {
     await controller.deleteConfiguration('1');
     expect(service.deleteConfiguration).toHaveBeenCalledWith('1');
+  });
+
+  it('publishConfiguration should call service', async () => {
+    const dto = { id: '1', releaseNotes: 'Launch ready' } as any;
+    const result = await controller.publishConfiguration(dto);
+    expect(service.publishConfiguration).toHaveBeenCalledWith('1', dto);
+    expect(result).toEqual(mockConfig);
+  });
+
+  it('rollbackConfiguration should call service', async () => {
+    const dto = { id: '1', version: 1, releaseNotes: 'Rollback' } as any;
+    const result = await controller.rollbackConfiguration(dto);
+    expect(service.rollbackConfiguration).toHaveBeenCalledWith('1', dto);
+    expect(result).toEqual(mockConfig);
   });
 });

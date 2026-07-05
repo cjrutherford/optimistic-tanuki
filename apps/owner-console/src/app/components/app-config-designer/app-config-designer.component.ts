@@ -25,6 +25,7 @@ import {
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import {
   APP_CONFIG_LANDING_PAGE_BLOCK_DEFINITIONS,
+  AppConfigReleaseRevision,
   AppConfiguration,
   BlockDefinition,
   BlockInstance,
@@ -153,6 +154,10 @@ export class AppConfigDesignerComponent implements OnInit {
   });
   readonly mobileSheetOpen = signal(false);
   readonly mobileSheetView = signal<'auto' | 'structure' | 'inspector'>('auto');
+  statusMessage = '';
+  errorMessage = '';
+  releaseNotes = '';
+  changeSummary = '';
 
   constructor(
     private appConfigService: AppConfigService,
@@ -274,21 +279,20 @@ export class AppConfigDesignerComponent implements OnInit {
   }
 
   loadConfiguration(id: string): void {
-    console.log('[AppConfigDesigner] Loading configuration:', id);
+    this.errorMessage = '';
+    this.statusMessage = '';
     this.appConfigService.getConfiguration(id).subscribe({
       next: (config) => {
-        console.log('[AppConfigDesigner] Loaded configuration:', config);
         this.config = config;
+        this.releaseNotes = config.release?.releaseNotes || '';
+        this.changeSummary = config.release?.changeSummary || '';
         this.syncWorkspaceFromConfig();
         this.syncThemePreview();
       },
       error: (err) => {
-        console.error('[AppConfigDesigner] Failed to load configuration:', err);
-        alert(
-          `Failed to load configuration: ${
-            err.message || err.statusText || 'Unknown error'
-          }`
-        );
+        this.errorMessage = `Failed to load configuration: ${this.describeError(
+          err
+        )}`;
       },
     });
   }
@@ -557,61 +561,109 @@ export class AppConfigDesignerComponent implements OnInit {
 
   // Save/Cancel Actions
   onSave(): void {
+    this.errorMessage = '';
+    this.statusMessage = '';
     if (!this.config.name) {
-      alert('Please provide a name for the configuration');
+      this.errorMessage = 'Provide a configuration name before saving.';
       return;
     }
 
-    console.log('[AppConfigDesigner] Saving configuration:', this.config);
-
     if (this.configId) {
-      console.log(
-        '[AppConfigDesigner] Updating existing configuration:',
-        this.configId
-      );
       this.appConfigService
         .updateConfiguration(this.configId, this.config)
         .subscribe({
           next: (updated) => {
-            console.log('[AppConfigDesigner] Configuration updated:', updated);
-            alert('Configuration saved successfully!');
+            this.statusMessage =
+              'Configuration saved. Returning to the configuration list…';
             this.saved.emit(updated);
             this.router.navigate(['/dashboard/app-config']);
           },
           error: (err) => {
-            console.error(
-              '[AppConfigDesigner] Failed to update configuration:',
+            this.errorMessage = `Failed to save configuration: ${this.describeError(
               err
-            );
-            alert(
-              `Failed to save configuration: ${
-                err.message || err.statusText || 'Unknown error'
-              }`
-            );
+            )}`;
           },
         });
     } else {
-      console.log('[AppConfigDesigner] Creating new configuration');
       this.appConfigService.createConfiguration(this.config as any).subscribe({
         next: (created) => {
-          console.log('[AppConfigDesigner] Configuration created:', created);
-          alert('Configuration created successfully!');
+          this.statusMessage =
+            'Configuration created. Returning to the configuration list…';
           this.saved.emit(created);
           this.router.navigate(['/dashboard/app-config']);
         },
         error: (err) => {
-          console.error(
-            '[AppConfigDesigner] Failed to create configuration:',
+          this.errorMessage = `Failed to save configuration: ${this.describeError(
             err
-          );
-          alert(
-            `Failed to save configuration: ${
-              err.message || err.statusText || 'Unknown error'
-            }`
-          );
+          )}`;
         },
       });
     }
+  }
+
+  publishConfiguration(): void {
+    this.errorMessage = '';
+    this.statusMessage = '';
+
+    if (!this.configId) {
+      this.errorMessage = 'Save the configuration before publishing it.';
+      return;
+    }
+
+    if (!this.releaseNotes.trim()) {
+      this.errorMessage = 'Release notes are required before publishing.';
+      return;
+    }
+
+    this.appConfigService
+      .publishConfiguration(this.configId, {
+        releaseNotes: this.releaseNotes.trim(),
+        changeSummary: this.changeSummary.trim() || undefined,
+      })
+      .subscribe({
+        next: (published) => {
+          this.config = published;
+          this.statusMessage =
+            'Configuration published. Returning to the configuration list…';
+          this.saved.emit(published);
+          this.router.navigate(['/dashboard/app-config']);
+        },
+        error: (err) => {
+          this.errorMessage = `Failed to publish configuration: ${this.describeError(
+            err
+          )}`;
+        },
+      });
+  }
+
+  rollbackConfiguration(version: number): void {
+    if (!this.configId) {
+      this.errorMessage = 'Save the configuration before rolling it back.';
+      return;
+    }
+
+    this.errorMessage = '';
+    this.statusMessage = '';
+
+    this.appConfigService
+      .rollbackConfiguration(this.configId, {
+        version,
+        releaseNotes: 'Rollback from owner console',
+      })
+      .subscribe({
+        next: (rolledBack) => {
+          this.config = rolledBack;
+          this.syncWorkspaceFromConfig();
+          this.syncThemePreview();
+          this.statusMessage =
+            'Configuration rolled back to the selected published revision.';
+        },
+        error: (err) => {
+          this.errorMessage = `Failed to rollback configuration: ${this.describeError(
+            err
+          )}`;
+        },
+      });
   }
 
   onCancel(): void {
@@ -619,6 +671,27 @@ export class AppConfigDesignerComponent implements OnInit {
       this.cancelled.emit();
       this.router.navigate(['/dashboard/app-config']);
     }
+  }
+
+  releaseStatusLabel(): string {
+    const status = this.config.release?.status;
+    if (status === 'published') {
+      return 'Published';
+    }
+    if (status === 'changes-pending') {
+      return 'Changes Pending';
+    }
+    return 'Draft';
+  }
+
+  releaseHistory(): AppConfigReleaseRevision[] {
+    return [...(this.config.release?.history ?? [])].sort(
+      (left, right) => right.version - left.version
+    );
+  }
+
+  previewUrl(): string | null {
+    return this.config.release?.previewUrl || null;
   }
 
   private currentWorkspace() {
@@ -664,6 +737,7 @@ export class AppConfigDesignerComponent implements OnInit {
       features: next.features,
       theme: next.theme,
       active: next.active,
+      release: next.release,
       createdAt: next.createdAt,
       updatedAt: next.updatedAt,
     };
@@ -697,5 +771,31 @@ export class AppConfigDesignerComponent implements OnInit {
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(max-width: 768px)').matches
     );
+  }
+
+  private describeError(err: unknown): string {
+    if (err instanceof Error && err.message) {
+      return err.message;
+    }
+
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'message' in err &&
+      typeof err.message === 'string'
+    ) {
+      return err.message;
+    }
+
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'statusText' in err &&
+      typeof err.statusText === 'string'
+    ) {
+      return err.statusText;
+    }
+
+    return 'Unknown error';
   }
 }

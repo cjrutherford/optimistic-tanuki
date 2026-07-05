@@ -6,6 +6,9 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
+  BulkRoleMutationPreviewDto,
+  BulkRoleMutationResultDto,
   UserRoleDto,
 } from '@optimistic-tanuki/ui-models';
 
@@ -59,6 +62,24 @@ export class RolesService {
 
   unassignRole(assignmentId: string): Observable<any> {
     return this.http.delete(`${this.API_URL}/assignment/${assignmentId}`);
+  }
+
+  previewBulkRoleMutation(
+    mutation: BulkRoleMutationDto
+  ): Observable<BulkRoleMutationPreviewDto> {
+    return this.http.post<BulkRoleMutationPreviewDto>(
+      `${this.API_URL}/assignment/bulk/preview`,
+      mutation
+    );
+  }
+
+  executeBulkRoleMutation(
+    mutation: BulkRoleMutationDto
+  ): Observable<BulkRoleMutationResultDto> {
+    return this.http.post<BulkRoleMutationResultDto>(
+      `${this.API_URL}/assignment/bulk`,
+      mutation
+    );
   }
 
   getUserRoles(profileId: string): Observable<UserRoleDto[]> {

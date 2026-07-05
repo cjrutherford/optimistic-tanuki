@@ -36,6 +36,9 @@ import { HttpClient } from '@angular/common/http';
         <div class="login-link">
           <a routerLink="/login">Already have an account? Login</a>
         </div>
+        <div *ngIf="oauthConfigMessage" class="info-message">
+          {{ oauthConfigMessage }}
+        </div>
         <div *ngIf="error" class="error-message">{{ error }}</div>
         <div *ngIf="success" class="success-message">{{ success }}</div>
       </div>
@@ -43,26 +46,26 @@ import { HttpClient } from '@angular/common/http';
   `,
   styles: [
     `
-      // .auth-shell {
-      //   display: grid;
-      //   grid-template-columns: minmax(0, 28rem) minmax(20rem, 35rem);
-      //   gap: 3rem;
-      //   align-items: center;
-      //   justify-content: center;
-      //   min-height: 100vh;
-      //   padding: 2rem 1.25rem 3rem;
-      //   background: radial-gradient(
-      //       circle at top left,
-      //       rgba(102, 126, 234, 0.2),
-      //       transparent 24rem
-      //     ),
-      //     radial-gradient(
-      //       circle at bottom right,
-      //       rgba(118, 75, 162, 0.18),
-      //       transparent 24rem
-      //     ),
-      //     linear-gradient(180deg, #111827 0%, #1f2937 100%);
-      // }
+      .auth-shell {
+        display: grid;
+        grid-template-columns: minmax(0, 28rem) minmax(20rem, 35rem);
+        gap: 3rem;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 2rem 1.25rem 3rem;
+        background: radial-gradient(
+            circle at top left,
+            rgba(244, 114, 182, 0.18),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(45, 212, 191, 0.16),
+            transparent 24rem
+          ),
+          linear-gradient(180deg, #111827 0%, #1f2937 100%);
+      }
 
       .auth-story {
         display: grid;
@@ -95,20 +98,39 @@ import { HttpClient } from '@angular/common/http';
       .auth-panel {
         display: grid;
         gap: 0.9rem;
+        padding: 1.25rem;
+        border-radius: 1.5rem;
+        background: rgba(17, 24, 39, 0.44);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        backdrop-filter: blur(14px);
+      }
+
+      .error-message,
+      .success-message,
+      .info-message {
+        margin-top: 0.25rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.9rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
       }
 
       .error-message {
-        color: #f44336;
-        margin-top: 1rem;
-        font-size: 0.875rem;
-        text-align: center;
+        color: #fecaca;
+        background: rgba(185, 28, 28, 0.22);
+        border: 1px solid rgba(248, 113, 113, 0.28);
       }
 
       .success-message {
-        color: #4caf50;
-        margin-top: 1rem;
-        font-size: 0.875rem;
-        text-align: center;
+        color: #bbf7d0;
+        background: rgba(21, 128, 61, 0.22);
+        border: 1px solid rgba(74, 222, 128, 0.24);
+      }
+
+      .info-message {
+        color: #fce7f3;
+        background: rgba(157, 23, 77, 0.24);
+        border: 1px solid rgba(244, 114, 182, 0.26);
       }
 
       .login-link {
@@ -116,7 +138,7 @@ import { HttpClient } from '@angular/common/http';
       }
 
       .login-link a {
-        color: #667eea;
+        color: #f9a8d4;
         text-decoration: none;
       }
 
@@ -125,9 +147,11 @@ import { HttpClient } from '@angular/common/http';
       }
 
       @media (max-width: 960px) {
-        // .auth-shell {
-        //   grid-template-columns: 1fr;
-        // }
+        .auth-shell {
+          grid-template-columns: 1fr;
+          align-items: start;
+          padding-top: 3rem;
+        }
       }
     `,
   ],
@@ -135,6 +159,7 @@ import { HttpClient } from '@angular/common/http';
 export class RegisterComponent implements OnInit {
   error = '';
   success = '';
+  oauthConfigMessage = '';
   private oauthService: OAuthService;
   private http = inject(HttpClient);
 
@@ -155,8 +180,10 @@ export class RegisterComponent implements OnInit {
       if (config) {
         this.oauthService.configureProviders(config);
       }
+      this.oauthConfigMessage = '';
     } catch (e) {
-      console.log('OAuth config not loaded from server, using defaults');
+      this.oauthConfigMessage =
+        'OAuth provider configuration is unavailable right now. Use direct registration until providers are configured.';
     }
   }
 

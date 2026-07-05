@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { DashboardComponent } from './dashboard.component';
 import { AuthService } from '../services/auth.service';
@@ -8,11 +8,19 @@ import { AuthService } from '../services/auth.service';
 describe('DashboardComponent', () => {
   let router: Router;
   let authService: { logout: jest.Mock };
-  let themeService: {
-    theme: Observable<string>;
-    toggleTheme: jest.Mock;
-    setPersonality: jest.Mock;
-    setPrimaryColor: jest.Mock;
+  let themeService: any;
+
+  const controlCenterPersonality = {
+    id: 'control-center',
+    name: 'Control Center',
+    animations: {
+      easing: 'ease',
+      duration: {
+        fast: '150ms',
+        normal: '300ms',
+        slow: '450ms',
+      },
+    },
   };
 
   beforeEach(async () => {
@@ -20,7 +28,48 @@ describe('DashboardComponent', () => {
       logout: jest.fn(),
     };
     themeService = {
-      theme: of('light'),
+      theme: new BehaviorSubject<'light' | 'dark' | undefined>('light'),
+      themeColors$: of({
+        background: '#ffffff',
+        foreground: '#0f172a',
+        accent: '#2dd4bf',
+        accentShades: [],
+        accentGradients: {},
+        complementary: '#0f766e',
+        complementaryShades: [],
+        complementaryGradients: {},
+        tertiary: '#38bdf8',
+        tertiaryShades: [],
+        tertiaryGradients: {},
+        success: '#22c55e',
+        successShades: [],
+        successGradients: {},
+        danger: '#ef4444',
+        dangerShades: [],
+        dangerGradients: {},
+        warning: '#f59e0b',
+        warningShades: [],
+        warningGradients: {},
+      }),
+      generatedTheme$: of({
+        colors: {
+          background: '#ffffff',
+          foreground: '#0f172a',
+          primary: '#2dd4bf',
+          secondary: '#0f766e',
+          border: '#cbd5e1',
+        },
+        fonts: {
+          heading: { family: 'IBM Plex Sans' },
+          body: { family: 'IBM Plex Sans' },
+          mono: { family: 'IBM Plex Mono' },
+        },
+        personality: controlCenterPersonality,
+      }),
+      personality$: of(controlCenterPersonality),
+      getTheme: jest.fn(() => 'light'),
+      getAccentColor: jest.fn(() => '#2dd4bf'),
+      getCurrentPersonality: jest.fn(() => controlCenterPersonality),
       toggleTheme: jest.fn(),
       setPersonality: jest.fn(),
       setPrimaryColor: jest.fn(),

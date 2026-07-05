@@ -8,6 +8,8 @@
 
 # Node / package managers
 node_modules
+**/node_modules
+.pnpm-store
 npm-debug.log*
 
 # Git / IDE / tooling
@@ -18,14 +20,14 @@ npm-debug.log*
 .idea
 
 # Nx / tooling caches and temp
-# Keep .nx so Docker builds have access to the Nx project graph
-# and cached metadata. Still ignore generic tmp folders.
+.nx
 .tmp
 tmp
 .temp
 
 # Angular CLI / Vite caches (these confuse Nx project graph inside Docker)
 .angular
+**/.angular
 
 # Test / coverage / e2e artifacts
 coverage
@@ -36,6 +38,7 @@ test-results
 
 # E2E and Playwright outputs
 apps/*-e2e
+apps/**/test-results
 apps/**/playwright-report
 **/playwright-report
 **/playwright-report/**
@@ -45,6 +48,14 @@ screenshots
 **/screenshots
 storage
 codepen-material
+storybook-static
+documentation.json
+.opencode
+.kilo
+.playwright-mcp
+setup-console-step1-after.png
+setup-console-step1-fixed.png
+setup-console-step1-final.png
 
 # Logs
 **/*.log

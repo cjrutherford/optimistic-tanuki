@@ -1,10 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { MessageService } from '@optimistic-tanuki/message-ui/message.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { RolesService } from '../services/roles.service';
+import { UsersService } from '../services/users.service';
+import { GovernanceAuditService } from '../services/governance-audit.service';
 import { RolesManagementComponent } from './roles-management.component';
 
 describe('RolesManagementComponent', () => {
@@ -19,10 +22,16 @@ describe('RolesManagementComponent', () => {
   };
   let appScopesService: { getAppScopes: jest.Mock };
   let permissionsService: { getPermissions: jest.Mock };
+  let usersService: { getProfiles: jest.Mock };
   let messageService: {
     messages: ReturnType<typeof signal>;
     clearMessages: jest.Mock;
     addMessage: jest.Mock;
+  };
+  let router: { navigate: jest.Mock };
+  let governanceAuditService: {
+    getEntries: jest.Mock;
+    recordEntry: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -82,10 +91,33 @@ describe('RolesManagementComponent', () => {
         ])
       ),
     };
+    usersService = {
+      getProfiles: jest.fn().mockReturnValue(
+        of([
+          {
+            id: 'profile-1',
+            profileName: 'Operator One',
+            appScope: 'global',
+          },
+          {
+            id: 'profile-2',
+            profileName: 'Operator Two',
+            appScope: 'global',
+          },
+        ])
+      ),
+    };
     messageService = {
       messages: signal([]),
       clearMessages: jest.fn(),
       addMessage: jest.fn(),
+    };
+    router = {
+      navigate: jest.fn(),
+    };
+    governanceAuditService = {
+      getEntries: jest.fn().mockReturnValue([]),
+      recordEntry: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -94,7 +126,13 @@ describe('RolesManagementComponent', () => {
         { provide: RolesService, useValue: rolesService },
         { provide: AppScopesService, useValue: appScopesService },
         { provide: PermissionsService, useValue: permissionsService },
+        { provide: UsersService, useValue: usersService },
         { provide: MessageService, useValue: messageService },
+        { provide: Router, useValue: router },
+        {
+          provide: GovernanceAuditService,
+          useValue: governanceAuditService,
+        },
       ],
     }).compileComponents();
   });
@@ -128,6 +166,11 @@ describe('RolesManagementComponent', () => {
     expect(component.availablePermissions).toEqual([
       expect.objectContaining({ id: 'perm-2' }),
     ]);
+    expect(component.roleImpactSummary).toEqual(
+      expect.objectContaining({
+        assignedProfileCount: 0,
+      })
+    );
   });
 
   it('attaches a permission to the selected role and refreshes role data', () => {
@@ -153,6 +196,13 @@ describe('RolesManagementComponent', () => {
     expect(messageService.addMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'success' })
     );
+    expect(governanceAuditService.recordEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'role-permission-added',
+        roleId: 'role-1',
+        permissionId: 'perm-2',
+      })
+    );
   });
 
   it('removes a permission from the selected role and refreshes role data', () => {
@@ -177,6 +227,13 @@ describe('RolesManagementComponent', () => {
     expect(rolesService.getRole).toHaveBeenCalledWith('role-1');
     expect(messageService.addMessage).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'success' })
+    );
+    expect(governanceAuditService.recordEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        kind: 'role-permission-removed',
+        roleId: 'role-1',
+        permissionId: 'perm-1',
+      })
     );
   });
 
@@ -218,5 +275,29 @@ describe('RolesManagementComponent', () => {
     expect(component.currentRole.permissions).toEqual([
       { id: 'perm-1', name: 'users.update', description: 'Users update' },
     ]);
+  });
+
+  it('routes the current role into permissions inspector tracing', () => {
+    const fixture = TestBed.createComponent(RolesManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance as any;
+
+    component.currentRole = {
+      id: 'role-1',
+      name: 'owner_console_owner',
+      permissions: [],
+    };
+    component.traceRoleAssignments();
+
+    expect(router.navigate).toHaveBeenCalledWith(
+      ['/dashboard/permissions-inspector'],
+      {
+        queryParams: {
+          roleId: 'role-1',
+          roleName: 'owner_console_owner',
+          source: 'roles',
+        },
+      }
+    );
   });
 });

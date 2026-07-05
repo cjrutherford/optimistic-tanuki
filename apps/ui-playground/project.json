@@ -8,7 +8,7 @@
   "targets": {
     "build": {
       "executor": "@angular/build:application",
-      "dependsOn": ["docs-content", "api-docs-content", "^build"],
+      "dependsOn": ["^build"],
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "dist/apps/ui-playground",
@@ -52,7 +52,6 @@
     "serve": {
       "continuous": true,
       "executor": "@angular/build:dev-server",
-      "dependsOn": ["docs-content", "api-docs-content"],
       "options": {
         "poll": 2000
       },
@@ -76,6 +75,16 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "node tools/docs-site/build-compodoc-index.mjs"
+      }
+    },
+    "docs-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm exec nx run ui-playground:docs-content",
+          "pnpm exec nx run ui-playground:api-docs-content"
+        ],
+        "parallel": false
       }
     },
     "lint": {

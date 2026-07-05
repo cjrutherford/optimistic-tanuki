@@ -1,104 +1,390 @@
-<div class="store-overview">
-  <h2>Store Overview</h2>
+<section class="store-overview">
+  <header class="hero">
+    <div>
+      <p class="hero-kicker">Commerce Operations</p>
+      <h1>Commerce Operations Workspace</h1>
+      <p>
+        Triage appointments, fulfillment backlog, subscriptions, and catalog
+        readiness from one workspace before drilling into the detailed screens.
+      </p>
+    </div>
+    <div class="hero-actions">
+      <a routerLink="/dashboard/store/appointments" class="hero-link"
+        >Appointments</a
+      >
+      <a routerLink="/dashboard/store/orders" class="hero-link">Orders</a>
+      <a routerLink="/dashboard/store/business-site" class="hero-link"
+        >Catalog</a
+      >
+    </div>
+  </header>
 
   <div class="error" *ngIf="error">{{ error }}</div>
+  <div class="success" *ngIf="successMessage">{{ successMessage }}</div>
 
-  <div class="stats-cards">
-    <div class="stat-card">
-      <h3>Total Donations</h3>
-      <p class="stat-value">\${{ totalDonations.toFixed(2) }}</p>
-      <p class="stat-label">{{ donations.length }} donations</p>
+  <app-commerce-workspace-nav></app-commerce-workspace-nav>
+
+  <app-operator-queue-panel
+    [items]="queueItems"
+    heading="Commerce Queue"
+    description="Commerce actions prioritized from the shared operator queue."
+    emptyStateCopy="No commerce queue items are currently prioritized."
+  ></app-operator-queue-panel>
+
+  <section class="stats-cards">
+    <article class="stat-card">
+      <span class="stat-label">Pending appointments</span>
+      <strong class="stat-value">{{ pendingAppointments.length }}</strong>
+      <p>{{ confirmedAppointments.length }} approved sessions scheduled.</p>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Fulfillment backlog</span>
+      <strong class="stat-value">{{ fulfillmentBacklog.length }}</strong>
+      <p>${{ orderValueTotal().toFixed(2) }} waiting across active orders.</p>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Catalog readiness</span>
+      <strong class="stat-value">{{ catalogReadinessLabel }}</strong>
+      <p>
+        {{ publishReadyServiceProducts.length }} of
+        {{ serviceProducts.length }} service products are publish ready.
+      </p>
+    </article>
+
+    <article class="stat-card">
+      <span class="stat-label">Recurring revenue</span>
+      <strong class="stat-value">{{ activeSubscriptions }}</strong>
+      <p>${{ totalDonations.toFixed(2) }} in tracked donations.</p>
+    </article>
+  </section>
+
+  <section class="workspace-grid">
+    <article class="panel backlog-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Commerce backlog</h2>
+          <p>Focus on the active queue without hopping between screens.</p>
+        </div>
+        <label class="filter-label">
+          <span>Lane</span>
+          <select
+            [ngModel]="backlogFilter"
+            (ngModelChange)="setBacklogFilter($event)"
+          >
+            <option value="all">All backlog</option>
+            <option value="appointments">Appointments</option>
+            <option value="orders">Orders</option>
+            <option value="subscriptions">Subscriptions</option>
+            <option value="catalog">Catalog</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="view-presets">
+        <button
+          type="button"
+          class="view-preset-btn"
+          [class.active]="activeViewPreset === 'all'"
+          (click)="applyViewPreset('all')"
+        >
+          All work
+        </button>
+        <button
+          type="button"
+          class="view-preset-btn"
+          [class.active]="activeViewPreset === 'approval'"
+          (click)="applyViewPreset('approval')"
+        >
+          Approval desk
+        </button>
+        <button
+          type="button"
+          class="view-preset-btn"
+          [class.active]="activeViewPreset === 'fulfillment'"
+          (click)="applyViewPreset('fulfillment')"
+        >
+          Fulfillment focus
+        </button>
+        <button
+          type="button"
+          class="view-preset-btn"
+          [class.active]="activeViewPreset === 'catalog'"
+          (click)="applyViewPreset('catalog')"
+        >
+          Catalog blockers
+        </button>
+      </div>
+
+      <div class="bulk-actions" *ngIf="fulfillmentBacklog.length > 0">
+        <label class="filter-label" *ngIf="pendingAppointments.length > 0">
+          <span>Bulk appointment action</span>
+          <select [(ngModel)]="bulkAppointmentAction">
+            <option value="approve">Approve</option>
+            <option value="cancel">Cancel</option>
+          </select>
+        </label>
+        <button
+          class="bulk-action-btn secondary"
+          *ngIf="pendingAppointments.length > 0"
+          type="button"
+          (click)="applyBulkAppointmentAction()"
+          [disabled]="loading || selectedPendingAppointmentCount() === 0"
+        >
+          Apply to {{ selectedPendingAppointmentCount() }} selected
+          appointment{{ selectedPendingAppointmentCount() === 1 ? '' : 's' }}
+        </button>
+        <label class="filter-label">
+          <span>Bulk fulfillment status</span>
+          <select [(ngModel)]="bulkOrderStatus">
+            <option value="processing">Processing</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="pending">Pending</option>
+          </select>
+        </label>
+        <button
+          class="bulk-action-btn"
+          type="button"
+          (click)="applyBulkOrderStatus()"
+          [disabled]="loading || selectedFulfillmentCount() === 0"
+        >
+          Apply to {{ selectedFulfillmentCount() }} selected order{{
+            selectedFulfillmentCount() === 1 ? '' : 's'
+          }}
+        </button>
+      </div>
+
+      <div
+        class="backlog-list"
+        *ngIf="filteredBacklogItems.length; else emptyBacklog"
+      >
+        <article
+          class="backlog-item"
+          [ngClass]="backlogClass(item)"
+          *ngFor="let item of filteredBacklogItems"
+        >
+          <label class="selection-cell" *ngIf="item.lane === 'appointments'">
+            <input
+              type="checkbox"
+              [checked]="isAppointmentSelected(appointmentBacklogId(item))"
+              (change)="
+                toggleAppointmentSelection(
+                  appointmentBacklogId(item),
+                  $any($event.target).checked
+                )
+              "
+            />
+            <span>Select</span>
+          </label>
+          <label class="selection-cell" *ngIf="item.lane === 'orders'">
+            <input
+              type="checkbox"
+              [checked]="isOrderSelected(orderBacklogId(item))"
+              (change)="
+                toggleOrderSelection(
+                  orderBacklogId(item),
+                  $any($event.target).checked
+                )
+              "
+            />
+            <span>Select</span>
+          </label>
+          <div class="backlog-copy">
+            <div class="backlog-topline">
+              <span class="lane-chip">{{ laneLabel(item.lane) }}</span>
+              <span class="status" [ngClass]="getStatusClass(item.status)">
+                {{ item.status }}
+              </span>
+            </div>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.detail }}</p>
+          </div>
+          <a [routerLink]="item.route" class="backlog-link">Open</a>
+        </article>
+      </div>
+
+      <ng-template #emptyBacklog>
+        <div class="empty-state">
+          <p>No backlog items match the selected lane.</p>
+        </div>
+      </ng-template>
+    </article>
+
+    <article class="panel triage-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Workspace triage</h2>
+          <p>See where the next operator decision is likely to land.</p>
+        </div>
+      </div>
+
+      <div class="triage-group">
+        <h3>Appointments</h3>
+        <p *ngIf="pendingAppointments.length; else noPendingAppointments">
+          {{ pendingAppointments[0].title }} is the next pending appointment
+          waiting for approval.
+        </p>
+        <ng-template #noPendingAppointments>
+          <p>No appointment approvals are blocked right now.</p>
+        </ng-template>
+      </div>
+
+      <div class="triage-group">
+        <h3>Orders</h3>
+        <p *ngIf="fulfillmentBacklog.length; else noOrders">
+          {{ fulfillmentBacklog[0].id }} is currently in
+          {{ fulfillmentBacklog[0].status }} and should be moved forward.
+        </p>
+        <ng-template #noOrders>
+          <p>No active fulfillment exceptions are waiting.</p>
+        </ng-template>
+      </div>
+
+      <div class="triage-group">
+        <h3>Catalog</h3>
+        <p *ngIf="catalogReadinessIssues.length; else catalogReady">
+          {{ catalogReadinessIssues[0] }}
+        </p>
+        <ng-template #catalogReady>
+          <p>
+            Storefront {{ storefrontEnabled ? 'is' : 'is not' }} enabled and the
+            current catalog source is {{ catalogSource }}.
+          </p>
+        </ng-template>
+      </div>
+    </article>
+  </section>
+
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Exception board</h2>
+        <p>Keep the highest-cost commerce blockers visible across lanes.</p>
+      </div>
     </div>
 
-    <div class="stat-card">
-      <h3>Active Subscriptions</h3>
-      <p class="stat-value">{{ activeSubscriptions }}</p>
-      <p class="stat-label">of {{ subscriptions.length }} total</p>
+    <div
+      class="exception-board"
+      *ngIf="exceptionBoard.length; else noExceptions"
+    >
+      <article
+        class="exception-card"
+        [ngClass]="exceptionClass(item)"
+        *ngFor="let item of exceptionBoard"
+      >
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.detail }}</p>
+        </div>
+        <a [routerLink]="item.route" class="backlog-link">Open</a>
+      </article>
     </div>
-  </div>
 
-  <div class="section">
-    <h3>Recent Donations</h3>
-    <div class="loading" *ngIf="loading">Loading...</div>
+    <ng-template #noExceptions>
+      <div class="empty-state">
+        <p>No cross-lane commerce exceptions are currently open.</p>
+      </div>
+    </ng-template>
+  </section>
 
-    <table *ngIf="!loading && donations.length > 0">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Message</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let donation of donations.slice(0, 10)">
-          <td>{{ donation.createdAt | date : 'short' }}</td>
-          <td>{{ donation.currency }} \${{ donation.amount.toFixed(2) }}</td>
-          <td>
-            <span *ngIf="donation.anonymous">Anonymous</span>
-            <span *ngIf="!donation.anonymous && donation.message">{{
-              donation.message
-            }}</span>
-            <span *ngIf="!donation.anonymous && !donation.message">-</span>
-          </td>
-          <td>
-            <span class="status" [ngClass]="getStatusClass(donation.status)">
-              {{ donation.status }}
-            </span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <section class="workspace-grid secondary-grid">
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Recent donations</h2>
+          <p>
+            Keep donation signals visible without making them the primary lane.
+          </p>
+        </div>
+      </div>
 
-    <div class="empty-state" *ngIf="!loading && donations.length === 0">
-      <p>No donations yet.</p>
-    </div>
-  </div>
+      <table *ngIf="!loading && donations.length > 0">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Message</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let donation of donations.slice(0, 10)">
+            <td>{{ donation.createdAt | date : 'short' }}</td>
+            <td>{{ donation.currency }} ${{ donation.amount.toFixed(2) }}</td>
+            <td>
+              <span *ngIf="donation.anonymous">Anonymous</span>
+              <span *ngIf="!donation.anonymous && donation.message">{{
+                donation.message
+              }}</span>
+              <span *ngIf="!donation.anonymous && !donation.message">-</span>
+            </td>
+            <td>
+              <span class="status" [ngClass]="getStatusClass(donation.status)">
+                {{ donation.status }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
-  <div class="section">
-    <h3>Subscriptions</h3>
-    <div class="loading" *ngIf="loading">Loading...</div>
+      <div class="empty-state" *ngIf="!loading && donations.length === 0">
+        <p>No donations yet.</p>
+      </div>
+    </article>
 
-    <table *ngIf="!loading && subscriptions.length > 0">
-      <thead>
-        <tr>
-          <th>User ID</th>
-          <th>Product</th>
-          <th>Interval</th>
-          <th>Next Billing</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let subscription of subscriptions">
-          <td>{{ subscription.userId.substring(0, 8) }}...</td>
-          <td>{{ subscription.product?.name || subscription.productId }}</td>
-          <td>{{ subscription.interval }}</td>
-          <td>{{ subscription.nextBillingDate | date : 'short' }}</td>
-          <td>
-            <span
-              class="status"
-              [ngClass]="getStatusClass(subscription.status)"
-            >
-              {{ subscription.status }}
-            </span>
-          </td>
-          <td>
-            <button
-              class="btn btn-sm btn-cancel"
-              (click)="cancelSubscription(subscription)"
-              [disabled]="loading || subscription.status !== 'active'"
-            >
-              Cancel
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <article class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Subscriptions</h2>
+          <p>
+            Subscription changes stay available for operators who need them.
+          </p>
+        </div>
+      </div>
 
-    <div class="empty-state" *ngIf="!loading && subscriptions.length === 0">
-      <p>No subscriptions yet.</p>
-    </div>
-  </div>
-</div>
+      <table *ngIf="!loading && subscriptions.length > 0">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Product</th>
+            <th>Interval</th>
+            <th>Next Billing</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let subscription of subscriptions">
+            <td>{{ subscription.userId.substring(0, 8) }}...</td>
+            <td>{{ subscription.product?.name || subscription.productId }}</td>
+            <td>{{ subscription.interval }}</td>
+            <td>{{ subscription.nextBillingDate | date : 'short' }}</td>
+            <td>
+              <span
+                class="status"
+                [ngClass]="getStatusClass(subscription.status)"
+              >
+                {{ subscription.status }}
+              </span>
+            </td>
+            <td>
+              <button
+                class="btn btn-cancel"
+                (click)="cancelSubscription(subscription)"
+                [disabled]="loading || subscription.status !== 'active'"
+              >
+                Cancel
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty-state" *ngIf="!loading && subscriptions.length === 0">
+        <p>No subscriptions yet.</p>
+      </div>
+    </article>
+  </section>
+</section>

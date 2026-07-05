@@ -77,7 +77,7 @@ describe('BootstrapService', () => {
     expect(profileClient.send).toHaveBeenNthCalledWith(
       1,
       { cmd: ProfileCommands.GetAll },
-      { where: { appScope: 'global' } }
+      { where: [{ appScope: 'global' }, { appScope: null }] }
     );
     expect(profileClient.send).toHaveBeenNthCalledWith(
       2,
@@ -96,5 +96,39 @@ describe('BootstrapService', () => {
         ]),
       })
     );
+  });
+
+  it('treats legacy null-scoped global profiles as existing owners', async () => {
+    const authClient = {
+      send: jest.fn(),
+    };
+    const profileClient = {
+      send: jest.fn().mockReturnValue(
+        of([
+          {
+            id: 'legacy-owner-profile',
+            appScope: null,
+          },
+        ])
+      ),
+    };
+    const roleInit = {
+      processNow: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const service = new BootstrapService(
+      buildConfigService(),
+      authClient as any,
+      profileClient as any,
+      roleInit as any
+    );
+
+    await expect(
+      service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password')
+    ).rejects.toThrow(
+      'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
+    );
+
+    expect(authClient.send).not.toHaveBeenCalled();
   });
 });

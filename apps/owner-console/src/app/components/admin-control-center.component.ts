@@ -164,10 +164,16 @@ import {
 
       .hero,
       .panel {
-        border: 1px solid rgba(18, 51, 47, 0.12);
+        border: 1px solid
+          color-mix(in srgb, var(--foreground, #111827) 12%, transparent);
         border-radius: 24px;
         padding: 24px;
-        background: rgba(255, 255, 255, 0.92);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
+        color: var(--foreground, #111827);
       }
 
       .eyebrow {
@@ -175,7 +181,11 @@ import {
         font-size: 0.8rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: #0f766e;
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 78%,
+          var(--foreground, #111827)
+        );
         font-weight: 700;
       }
 
@@ -213,7 +223,8 @@ import {
         display: flex;
         justify-content: space-between;
         gap: 16px;
-        border-top: 1px solid rgba(18, 51, 47, 0.08);
+        border-top: 1px solid
+          color-mix(in srgb, var(--foreground, #111827) 8%, transparent);
         padding-top: 12px;
       }
 
@@ -227,30 +238,42 @@ import {
         flex: 1;
         min-width: 0;
         border-radius: 12px;
-        border: 1px solid rgba(18, 51, 47, 0.18);
+        border: 1px solid
+          color-mix(in srgb, var(--foreground, #111827) 18%, transparent);
         padding: 12px 14px;
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
 
       button {
         border: none;
         border-radius: 12px;
         padding: 12px 16px;
-        background: #0f766e;
-        color: white;
+        background: var(--accent, #2563eb);
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
         font-weight: 700;
       }
 
       .strategy {
         font-weight: 700;
-        color: #0f766e;
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 78%,
+          var(--foreground, #111827)
+        );
       }
 
       .wave,
       .provider-card {
-        border: 1px solid rgba(18, 51, 47, 0.1);
+        border: 1px solid
+          color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
         border-radius: 18px;
         padding: 16px;
-        background: rgba(245, 250, 250, 0.9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 90%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .provider-header {
@@ -263,11 +286,19 @@ import {
       .provider-header span {
         font-size: 0.85rem;
         font-weight: 700;
-        color: #0d6b2b;
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 80%,
+          var(--foreground, #111827)
+        );
       }
 
       .provider-header span.disabled {
-        color: #8d4b00;
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .history-list {
@@ -281,9 +312,14 @@ import {
         align-items: center;
         gap: 12px;
         padding: 12px;
-        border: 1px solid rgba(18, 51, 47, 0.1);
+        border: 1px solid
+          color-mix(in srgb, var(--foreground, #111827) 10%, transparent);
         border-radius: 12px;
-        background: rgba(245, 250, 250, 0.9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 90%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .history-status {
@@ -295,18 +331,42 @@ import {
       }
 
       .history-status.succeeded {
-        background: rgba(19, 125, 54, 0.14);
-        color: #0d6b2b;
+        background: color-mix(
+          in srgb,
+          var(--success, #15803d) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 80%,
+          var(--foreground, #111827)
+        );
       }
 
       .history-status.failed {
-        background: rgba(155, 33, 33, 0.14);
-        color: #8b0000;
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .history-status.running {
-        background: rgba(196, 112, 0, 0.16);
-        color: #8d4b00;
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 16%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .history-tag {
@@ -315,13 +375,13 @@ import {
       }
 
       .history-services {
-        color: #666;
+        color: color-mix(in srgb, var(--foreground, #111827) 72%, transparent);
         font-size: 0.85rem;
       }
 
       .history-time {
         margin-left: auto;
-        color: #888;
+        color: color-mix(in srgb, var(--foreground, #111827) 58%, transparent);
         font-size: 0.82rem;
       }
 
@@ -341,24 +401,52 @@ import {
       }
 
       .provider-status.configured {
-        background: rgba(19, 125, 54, 0.14);
-        color: #0d6b2b;
+        background: color-mix(
+          in srgb,
+          var(--success, #15803d) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 80%,
+          var(--foreground, #111827)
+        );
       }
 
       .provider-status.pending {
-        background: rgba(196, 112, 0, 0.16);
-        color: #8d4b00;
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 16%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .provider-status.error {
-        background: rgba(155, 33, 33, 0.14);
-        color: #8b0000;
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .validation-errors {
         margin: 8px 0 0;
         padding-left: 20px;
-        color: #8b0000;
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
         font-size: 0.85rem;
       }
     `,

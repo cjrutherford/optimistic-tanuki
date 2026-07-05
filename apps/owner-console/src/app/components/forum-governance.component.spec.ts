@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { of } from 'rxjs';
 
@@ -104,7 +105,29 @@ describe('ForumGovernanceComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ForumGovernanceComponent, RouterTestingModule],
-      providers: [{ provide: ForumService, useValue: forumService }],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (key: string) =>
+                  ((
+                    {
+                      source: 'community-ops',
+                      entityType: 'community',
+                      entityId: 'community-1',
+                      communityId: 'community-1',
+                      communityName: 'Makers Guild',
+                      entityTitle: 'Makers Guild',
+                    } as Record<string, string>
+                  )[key] ?? null),
+              },
+            },
+          },
+        },
+        { provide: ForumService, useValue: forumService },
+      ],
     }).compileComponents();
   });
 
@@ -173,5 +196,15 @@ describe('ForumGovernanceComponent', () => {
         status: 'actioned',
       })
     );
+  });
+
+  it('renders the scoped Community Ops handoff context when opened from a community', () => {
+    const fixture = TestBed.createComponent(ForumGovernanceComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Opened from Community Ops'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Makers Guild');
   });
 });

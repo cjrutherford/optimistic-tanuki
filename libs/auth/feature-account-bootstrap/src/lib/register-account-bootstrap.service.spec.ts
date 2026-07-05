@@ -107,6 +107,40 @@ describe('RegisterAccountBootstrapService', () => {
     expect(authClient.send).not.toHaveBeenCalled();
   });
 
+  it('rejects owner-console self-registration when a legacy null-scoped owner exists', async () => {
+    const authClient = {
+      send: jest.fn(),
+    };
+    const profileClient = {
+      send: jest
+        .fn()
+        .mockReturnValueOnce(of([{ id: 'existing-owner', appScope: null }])),
+    };
+    const roleInit = { processNow: jest.fn().mockResolvedValue(undefined) };
+    const service = new RegisterAccountBootstrapService(
+      authClient as any,
+      profileClient as any,
+      roleInit as any
+    );
+
+    await expect(
+      service.register(
+        {
+          fn: 'Second',
+          ln: 'Owner',
+          email: 'second-owner@test.com',
+          password: 'secret',
+          confirm: 'secret',
+          bio: '',
+        },
+        'owner-console'
+      )
+    ).rejects.toThrow(
+      'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
+    );
+    expect(authClient.send).not.toHaveBeenCalled();
+  });
+
   it('initializes scoped profile owner permissions for standard registrations', async () => {
     const authClient = {
       send: jest.fn().mockReturnValue(

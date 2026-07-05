@@ -41,6 +41,24 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
         width: 100%;
         height: 100%;
         padding: 16px;
+        background: linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--surface, #ffffff) 92%, transparent),
+          color-mix(in srgb, var(--accent, #2563eb) 8%, var(--surface, #ffffff))
+        );
+        color: var(--foreground, #111827);
+        border-radius: var(--personality-card-radius, 12px);
+        border: var(--personality-border-width, 1px)
+          var(--personality-border-style, solid)
+          color-mix(
+            in srgb,
+            var(--border-color, #d6d6d6) 86%,
+            var(--accent, #2563eb)
+          );
+        box-shadow: var(
+          --personality-card-shadow,
+          0 10px 24px rgba(0, 0, 0, 0.08)
+        );
       }
 
       .action-group {
@@ -51,17 +69,23 @@ import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
 
       .create-button {
         padding: 8px 16px;
-        background: var(--accent, #3f51b5);
-        color: white;
+        background: var(--gradient-primary, var(--accent, #2563eb));
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
         border: none;
-        border-radius: 4px;
+        border-radius: var(--personality-button-radius, 8px);
         cursor: pointer;
         font-size: 14px;
-        transition: background 0.2s;
+        font-weight: var(--personality-button-font-weight, 600);
+        text-transform: var(--personality-button-text-transform, none);
+        transition: transform var(--animation-duration-fast, 150ms)
+            var(--animation-easing, ease),
+          filter var(--animation-duration-fast, 150ms)
+            var(--animation-easing, ease);
       }
 
       .create-button:hover {
-        background: var(--accent-darken-10, #303f9f);
+        filter: brightness(1.04);
+        transform: translateY(-1px);
       }
     `,
   ],

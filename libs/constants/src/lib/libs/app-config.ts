@@ -5,5 +5,7 @@ export const AppConfigCommands = {
   GetByName: 'app-config.getByName',
   GetAll: 'app-config.getAll',
   Update: 'app-config.update',
+  Publish: 'app-config.publish',
+  Rollback: 'app-config.rollback',
   Delete: 'app-config.delete',
 };

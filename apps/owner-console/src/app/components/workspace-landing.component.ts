@@ -63,15 +63,27 @@ interface WorkspaceLandingData {
         border-radius: 20px;
         background: linear-gradient(
           180deg,
-          rgba(255, 255, 255, 0.95),
-          rgba(248, 248, 248, 0.92)
+          color-mix(
+            in srgb,
+            var(--surface, #ffffff) 95%,
+            var(--background, #f3f4f6)
+          ),
+          color-mix(
+            in srgb,
+            var(--surface, #ffffff) 90%,
+            var(--background, #f3f4f6)
+          )
         );
         padding: 24px;
       }
 
       .workspace-kicker {
         margin: 0 0 8px;
-        color: var(--accent, #0a6c74);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -110,7 +122,11 @@ interface WorkspaceLandingData {
         padding: 20px;
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 18px;
-        background: var(--surface-color, rgba(255, 255, 255, 0.94));
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 94%,
+          var(--background, #f3f4f6)
+        );
         color: inherit;
         text-decoration: none;
         transition: transform 160ms ease, border-color 160ms ease,
@@ -120,8 +136,13 @@ interface WorkspaceLandingData {
       .workspace-card:hover,
       .workspace-card:focus-visible {
         transform: translateY(-2px);
-        border-color: var(--accent, #0a6c74);
-        box-shadow: 0 14px 24px rgba(0, 0, 0, 0.08);
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 48%,
+          transparent
+        );
+        box-shadow: 0 14px 24px
+          color-mix(in srgb, var(--foreground, #111827) 8%, transparent);
       }
 
       .workspace-card__eyebrow,
@@ -131,11 +152,15 @@ interface WorkspaceLandingData {
       }
 
       .workspace-card__eyebrow {
-        color: var(--accent, #0a6c74);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .workspace-card__cta {
-        color: var(--foreground-secondary, #555);
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
       }
     `,
   ],

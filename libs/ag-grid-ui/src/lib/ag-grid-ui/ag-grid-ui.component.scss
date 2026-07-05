@@ -45,6 +45,21 @@
   background: var(--local-background, var(--background, #ffffff));
 }
 
+.ag-grid-wrapper ::ng-deep .ag-root,
+.ag-grid-wrapper ::ng-deep .ag-body-viewport,
+.ag-grid-wrapper ::ng-deep .ag-center-cols-viewport,
+.ag-grid-wrapper ::ng-deep .ag-center-cols-container,
+.ag-grid-wrapper ::ng-deep .ag-pinned-left-cols-container,
+.ag-grid-wrapper ::ng-deep .ag-pinned-right-cols-container,
+.ag-grid-wrapper ::ng-deep .ag-layout-normal,
+.ag-grid-wrapper ::ng-deep .ag-body,
+.ag-grid-wrapper ::ng-deep .ag-body-horizontal-scroll-viewport,
+.ag-grid-wrapper ::ng-deep .ag-floating-bottom,
+.ag-grid-wrapper ::ng-deep .ag-floating-top {
+  background: var(--local-background, var(--background, #ffffff));
+  color: var(--local-foreground, var(--foreground, #212121));
+}
+
 .ag-grid-wrapper ::ng-deep .ag-header {
   background: var(
     --local-header-background,
@@ -122,6 +137,26 @@
   color: var(--local-foreground, var(--foreground, #212121));
 }
 
+.ag-grid-wrapper ::ng-deep .ag-paging-panel,
+.ag-grid-wrapper ::ng-deep .ag-overlay,
+.ag-grid-wrapper ::ng-deep .ag-menu,
+.ag-grid-wrapper ::ng-deep .ag-popup,
+.ag-grid-wrapper ::ng-deep .ag-picker-field-wrapper,
+.ag-grid-wrapper ::ng-deep .ag-select-list,
+.ag-grid-wrapper ::ng-deep .ag-filter-toolpanel,
+.ag-grid-wrapper ::ng-deep .ag-side-bar {
+  background: var(--local-background, var(--background, #ffffff));
+  color: var(--local-foreground, var(--foreground, #212121));
+  border-color: var(--local-border-color, var(--border, #d1d5db));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-cell,
+.ag-grid-wrapper ::ng-deep .ag-header-cell,
+.ag-grid-wrapper ::ng-deep .ag-paging-row-summary-panel,
+.ag-grid-wrapper ::ng-deep .ag-paging-page-summary-panel {
+  border-color: var(--local-border-color, var(--border, #d1d5db));
+}
+
 .ag-grid-wrapper ::ng-deep .ag-icon,
 .ag-grid-wrapper ::ng-deep .ag-picker-field-icon,
 .ag-grid-wrapper ::ng-deep .ag-sort-indicator-icon {
@@ -129,6 +164,99 @@
     --local-muted-foreground,
     var(--local-foreground, var(--foreground, #212121))
   );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-action-button {
+  min-height: 32px;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: calc(
+    var(--local-border-radius, var(--border-radius-md, 8px)) * 0.75
+  );
+  background: var(
+    --local-action-button-background,
+    var(--local-accent, var(--primary, #2563eb))
+  );
+  color: var(
+    --local-action-button-foreground,
+    var(--on-primary, var(--primary-foreground, #ffffff))
+  );
+  box-shadow: none;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color
+      var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+      var(--local-easing, var(--animation-easing, ease)),
+    border-color
+      var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+      var(--local-easing, var(--animation-easing, ease)),
+    transform
+      var(--local-transition-duration, var(--animation-duration-fast, 150ms))
+      var(--local-easing, var(--animation-easing, ease));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-action-button:hover {
+  background: var(
+    --local-action-button-hover,
+    color-mix(
+      in srgb,
+      var(--local-action-button-background, var(--local-accent, #2563eb)) 88%,
+      black
+    )
+  );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-action-button:focus-visible,
+.ag-grid-wrapper ::ng-deep .ag-grid-inline-select:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: 0 0 0 3px
+    var(
+      --local-focus-ring,
+      color-mix(
+        in srgb,
+        var(--local-accent, var(--primary, #2563eb)) 24%,
+        transparent
+      )
+    );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-delete-button {
+  background: var(--local-action-delete-background, var(--danger, #dc2626));
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-delete-button:hover {
+  background: var(
+    --local-action-delete-hover,
+    color-mix(
+      in srgb,
+      var(--local-action-delete-background, var(--danger, #dc2626)) 88%,
+      black
+    )
+  );
+}
+
+.ag-grid-wrapper ::ng-deep .ag-grid-inline-select,
+.ag-grid-wrapper ::ng-deep select,
+.ag-grid-wrapper ::ng-deep .ag-input-field-input,
+.ag-grid-wrapper ::ng-deep .ag-picker-field-display {
+  min-height: 32px;
+  padding: 0.35rem 0.625rem;
+  border: 1px solid
+    var(--local-control-border, var(--local-border-color, #d1d5db));
+  border-radius: calc(
+    var(--local-border-radius, var(--border-radius-md, 8px)) * 0.75
+  );
+  background: var(
+    --local-control-background,
+    var(--local-background, var(--background, #ffffff))
+  );
+  color: var(
+    --local-control-foreground,
+    var(--local-foreground, var(--foreground, #212121))
+  );
+  font: inherit;
 }
 
 :host([data-personality='minimal']) .ag-grid-wrapper {

@@ -8,6 +8,7 @@ import { CreateProfileDto } from '../profiles/dto/create-profile.dto';
 import { UpdateProfileDto } from '../profiles/dto/update-profile.dto';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
+import { IsNull } from 'typeorm';
 
 describe('ProfileService', () => {
   let service: ProfileService;
@@ -25,6 +26,7 @@ describe('ProfileService', () => {
   };
 
   beforeEach(async () => {
+    jest.restoreAllMocks();
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -151,6 +153,89 @@ describe('ProfileService', () => {
       await service.create(createProfileDto);
 
       expect(mockPermissionsClient.send).not.toHaveBeenCalled();
+    });
+
+    it('should reuse a legacy null-scoped global profile', async () => {
+      const legacyGlobalProfile = {
+        id: 'legacy-global-id',
+        userId: 'user-123',
+        appScope: null,
+      } as Profile;
+
+      jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(legacyGlobalProfile);
+
+      await expect(
+        service.create({
+          name: 'Owner',
+          description: '',
+          userId: 'user-123',
+          profilePic: '',
+          coverPic: '',
+          bio: '',
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+          appScope: 'global',
+        })
+      ).resolves.toBe(legacyGlobalProfile);
+    });
+
+    it('should return the existing profile after a duplicate-key race on save', async () => {
+      const existingProfile = {
+        id: 'existing-id',
+        userId: 'user-123',
+        appScope: 'client-interface',
+      } as Profile;
+
+      jest
+        .spyOn(repository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(existingProfile);
+      jest.spyOn(repository, 'save').mockRejectedValueOnce({
+        code: '23505',
+        detail: 'duplicate key value violates unique constraint',
+      });
+
+      await expect(
+        service.create({
+          name: 'Test',
+          description: '',
+          userId: 'user-123',
+          profilePic: '',
+          coverPic: '',
+          bio: '',
+          location: '',
+          occupation: '',
+          interests: '',
+          skills: '',
+          appScope: 'client-interface',
+        })
+      ).resolves.toBe(existingProfile);
+    });
+  });
+
+  describe('findByUserIdAndAppScope', () => {
+    it('should treat global scope as global-or-null', async () => {
+      const result = {
+        id: 'global-profile-id',
+        userId: 'user-123',
+        appScope: null,
+      } as Profile;
+      jest.spyOn(repository, 'findOne').mockResolvedValue(result);
+
+      await expect(
+        service.findByUserIdAndAppScope('user-123', 'global')
+      ).resolves.toBe(result);
+
+      expect(repository.findOne).toHaveBeenCalledWith({
+        where: [
+          { userId: 'user-123', appScope: 'global' },
+          { userId: 'user-123', appScope: IsNull() },
+        ],
+      });
     });
   });
 

@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
 import { ColDef, GridOptions } from 'ag-grid-community';
 import { UsersService } from '../services/users.service';
@@ -44,6 +45,13 @@ interface UnusedInfo {
   template: `
     <div class="permissions-inspector">
       <h2>Permissions Inspector</h2>
+
+      @if (traceContextLabel()) {
+      <div class="permission-details">
+        <h3>Trace Context</h3>
+        <p>{{ traceContextLabel() }}</p>
+      </div>
+      }
 
       <div class="controls">
         <div class="form-group">
@@ -203,41 +211,60 @@ interface UnusedInfo {
       .form-control {
         width: 100%;
         padding: 8px;
-        border: 1px solid #ccc;
+        border: 1px solid var(--border-color, #ccc);
         border-radius: 4px;
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
 
       .btn {
         padding: 10px 20px;
-        border: none;
+        border: 1px solid transparent;
         border-radius: 4px;
         cursor: pointer;
         font-weight: bold;
       }
 
       .btn-primary {
-        background-color: #007bff;
-        color: white;
+        background-color: var(--accent, var(--primary));
+        color: var(--on-primary, var(--primary-foreground));
       }
 
       .btn-primary:hover {
-        background-color: #0056b3;
+        background-color: var(
+          --accent-darken-10,
+          color-mix(in srgb, var(--accent, var(--primary)) 90%, black)
+        );
       }
 
       .btn-secondary {
-        background-color: #6c757d;
-        color: white;
+        background-color: color-mix(
+          in srgb,
+          var(--foreground, #111827) 14%,
+          var(--surface, #ffffff)
+        );
+        color: var(--foreground, #111827);
+        border-color: var(--border-color, #d6d6d6);
       }
 
       .btn-secondary:hover {
-        background-color: #545b62;
+        background-color: color-mix(
+          in srgb,
+          var(--foreground, #111827) 20%,
+          var(--surface, #ffffff)
+        );
       }
 
       .permission-details {
         margin-top: 20px;
         padding: 20px;
-        background-color: #f8f9fa;
+        background-color: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 84%,
+          var(--background, #f8fafc)
+        );
         border-radius: 8px;
+        color: var(--foreground, #111827);
       }
 
       .details-grid {
@@ -248,16 +275,16 @@ interface UnusedInfo {
       }
 
       .detail-section {
-        background: white;
+        background: var(--surface, #ffffff);
         padding: 15px;
         border-radius: 4px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-sm);
       }
 
       .detail-section h4 {
         margin-top: 0;
-        color: #333;
-        border-bottom: 2px solid #007bff;
+        color: var(--foreground, #111827);
+        border-bottom: 2px solid var(--accent, var(--primary));
         padding-bottom: 8px;
       }
 
@@ -269,7 +296,7 @@ interface UnusedInfo {
 
       .detail-section li {
         padding: 5px 0;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-color, #e5e7eb);
       }
 
       .detail-section li:last-child {
@@ -277,7 +304,7 @@ interface UnusedInfo {
       }
 
       .no-data {
-        color: #999;
+        color: var(--foreground-secondary, #999);
         font-style: italic;
       }
 
@@ -289,8 +316,8 @@ interface UnusedInfo {
       }
 
       .permission-badge {
-        background-color: #007bff;
-        color: white;
+        background-color: var(--accent, var(--primary));
+        color: var(--on-primary, var(--primary-foreground));
         padding: 4px 12px;
         border-radius: 12px;
         font-size: 0.85em;
@@ -305,11 +332,16 @@ interface UnusedInfo {
       }
 
       .routes-list code {
-        background-color: #f4f4f4;
+        background-color: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 80%,
+          var(--background, #f3f4f6)
+        );
         padding: 6px 10px;
         border-radius: 4px;
         font-size: 0.9em;
-        border-left: 3px solid #28a745;
+        border-left: 3px solid var(--success);
+        color: var(--foreground, #111827);
       }
 
       .all-profiles-table,
@@ -323,7 +355,11 @@ interface UnusedInfo {
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: color-mix(
+          in srgb,
+          var(--background) 54%,
+          transparent
+        );
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -332,8 +368,9 @@ interface UnusedInfo {
       }
 
       .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #007bff;
+        border: 4px solid
+          color-mix(in srgb, var(--foreground) 12%, var(--surface));
+        border-top: 4px solid var(--accent, var(--primary));
         border-radius: 50%;
         width: 50px;
         height: 50px;
@@ -350,18 +387,18 @@ interface UnusedInfo {
       }
 
       .loading-overlay p {
-        color: white;
+        color: var(--foreground, #111827);
         margin-top: 15px;
         font-size: 18px;
       }
 
       .error-message {
-        background-color: #f8d7da;
-        color: #721c24;
+        background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
         padding: 15px;
         border-radius: 4px;
         margin-top: 20px;
-        border: 1px solid #f5c6cb;
+        border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
       }
     `,
   ],
@@ -374,6 +411,7 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
   unusedItems = signal<UnusedInfo[]>([]);
   loading = signal<boolean>(false);
   error = signal<string>('');
+  traceContextLabel = signal<string>('');
 
   agGridTheme = themeQuartz;
 
@@ -443,7 +481,8 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
   constructor(
     private usersService: UsersService,
     private rolesService: RolesService,
-    private permissionsService: PermissionsService
+    private permissionsService: PermissionsService,
+    private route: ActivatedRoute
   ) {
     super();
   }
@@ -470,6 +509,7 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
       next: (profiles) => {
         this.profiles.set(profiles);
         this.loading.set(false);
+        this.applyTraceContext();
       },
       error: (err) => {
         this.error.set('Failed to load profiles: ' + err.message);
@@ -740,5 +780,44 @@ export class PermissionsInspectorComponent extends Themeable implements OnInit {
 
   private getPermissionName(perm: PermissionDto): string {
     return perm.name || 'unknown';
+  }
+
+  private applyTraceContext(): void {
+    const profileId = this.route.snapshot.queryParamMap.get('profileId') ?? '';
+    const roleId = this.route.snapshot.queryParamMap.get('roleId') ?? '';
+    const roleName = this.route.snapshot.queryParamMap.get('roleName') ?? '';
+    const source = this.route.snapshot.queryParamMap.get('source') ?? '';
+
+    if (profileId) {
+      this.traceContextLabel.set(
+        `Opened from ${
+          source === 'users' ? 'Users Management' : 'Governance'
+        } for profile ${profileId}.`
+      );
+      this.selectedProfileId.set(profileId);
+      this.onProfileChange();
+      return;
+    }
+
+    if (roleId) {
+      this.traceContextLabel.set(
+        `Opened from ${
+          source === 'roles' ? 'Roles Management' : 'Governance'
+        } for role ${roleName || roleId}.`
+      );
+      void this.inspectProfilesByRole(roleId, roleName);
+    }
+  }
+
+  private async inspectProfilesByRole(
+    roleId: string,
+    roleName: string
+  ): Promise<void> {
+    await this.inspectAllProfiles();
+    this.allProfilesData.set(
+      this.allProfilesData().filter((profile) =>
+        profile.roles.some((role) => role === roleId || role === roleName)
+      )
+    );
   }
 }

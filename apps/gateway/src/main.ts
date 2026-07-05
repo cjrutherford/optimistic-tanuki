@@ -65,6 +65,14 @@ async function bootstrap() {
   );
   app.enableCors({
     origin: (origin, callback) => {
+      if (
+        process.env['NODE_ENV'] !== 'production' &&
+        process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'] === 'true'
+      ) {
+        callback(null, true);
+        return;
+      }
+
       if (!origin) {
         callback(null, true);
         return;

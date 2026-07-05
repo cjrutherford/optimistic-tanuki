@@ -7,6 +7,8 @@ import {
   CreateResourceDto,
   UpdateResourceDto,
 } from '@optimistic-tanuki/ui-models';
+import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
 type ResourceFilter = 'all' | 'room' | 'equipment' | 'vehicle' | 'inactive';
 
@@ -17,7 +19,12 @@ type ResourceForm = (CreateResourceDto & { id?: string }) & {
 @Component({
   selector: 'app-resource-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridUiComponent,
+    CommerceWorkspaceNavComponent,
+  ],
   templateUrl: './resource-management.component.html',
   styleUrls: ['./resource-management.component.scss'],
 })
@@ -37,10 +44,70 @@ export class ResourceManagementComponent implements OnInit {
   isCreating = false;
   loading = false;
   error: string | null = null;
+  gridHeight = '560px';
 
   resourceForm: ResourceForm = this.getEmptyForm();
 
   constructor(private storeService: StoreService) {}
+
+  columnDefs: ColDef[] = [
+    { field: 'name', headerName: 'Name', minWidth: 180 },
+    { field: 'type', headerName: 'Type', minWidth: 120 },
+    {
+      field: 'location',
+      headerName: 'Location',
+      minWidth: 140,
+      valueFormatter: (params) => params.value || 'N/A',
+    },
+    {
+      field: 'capacity',
+      headerName: 'Capacity',
+      minWidth: 110,
+      valueFormatter: (params) => params.value ?? 'N/A',
+    },
+    {
+      field: 'hourlyRate',
+      headerName: 'Rate',
+      minWidth: 120,
+      valueFormatter: (params) =>
+        params.value != null ? `$${params.value}` : 'N/A',
+    },
+    {
+      field: 'isActive',
+      headerName: 'Status',
+      minWidth: 120,
+      valueFormatter: (params) => (params.value ? 'Active' : 'Inactive'),
+    },
+    {
+      headerName: 'Actions',
+      minWidth: 180,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.gap = '8px';
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'ag-grid-action-button';
+        editButton.addEventListener('click', () =>
+          this.startEdit(params.data as Resource)
+        );
+        container.appendChild(editButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'ag-grid-action-button ag-grid-delete-button';
+        deleteButton.addEventListener('click', () =>
+          this.deleteResource(params.data as Resource)
+        );
+        container.appendChild(deleteButton);
+
+        return container;
+      },
+    },
+  ];
 
   ngOnInit(): void {
     this.loadResources();
@@ -87,6 +154,10 @@ export class ResourceManagementComponent implements OnInit {
 
   setFilter(filter: ResourceFilter): void {
     this.filter = filter;
+  }
+
+  get gridResources(): Resource[] {
+    return this.filteredResources;
   }
 
   startCreate(): void {

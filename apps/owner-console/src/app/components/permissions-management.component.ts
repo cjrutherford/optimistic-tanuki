@@ -217,7 +217,11 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 36%,
+          transparent
+        );
         z-index: 999;
         display: flex;
         align-items: center;
@@ -255,10 +259,15 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
       }
 
       .form-preview {
-        background: var(--background, #f5f5f5);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          var(--background, #f3f4f6)
+        );
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #ddd);
+        color: var(--foreground, #111827);
       }
 
       .form-preview h3 {
@@ -270,7 +279,11 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
       }
 
       .info-text {
-        color: var(--accent, #007bff);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         font-style: italic;
       }
 
@@ -291,10 +304,15 @@ import { AgPermissionsTableComponent } from './ag-permissions-table.component';
       }
 
       .change-details {
-        background: var(--background, #f9f9f9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
         padding: 1rem;
         border-radius: 6px;
         margin-bottom: 1.5rem;
+        color: var(--foreground, #111827);
       }
 
       .change-details h4 {

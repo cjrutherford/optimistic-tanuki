@@ -10,8 +10,10 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
 } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 
 const mockRepo = () => ({
   create: jest.fn(),
@@ -120,6 +122,54 @@ describe('RolesService', () => {
 
       const result = await service.createRole(createRoleDto);
       expect(result).toEqual(role);
+    });
+
+    it('should return existing role when name already exists', async () => {
+      const createRoleDto: CreateRoleDto = {
+        name: 'admin',
+        description: 'Admin role',
+        appScopeId: '1',
+      };
+      const existingRole = new Role();
+      existingRole.name = 'admin';
+
+      jest
+        .spyOn(rolesRepository, 'findOne')
+        .mockResolvedValueOnce(existingRole as any);
+
+      const result = await service.createRole(createRoleDto);
+
+      expect(result).toBe(existingRole);
+      expect(rolesRepository.create).not.toHaveBeenCalled();
+      expect(rolesRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should return concurrently created role on duplicate key', async () => {
+      const createAppScope = new AppScope();
+      const createRoleDto: CreateRoleDto = {
+        name: 'admin',
+        description: 'Admin role',
+        appScopeId: '1',
+      };
+      const role = new Role();
+      role.name = 'admin';
+      const duplicateError = new QueryFailedError('INSERT', [], {
+        code: '23505',
+      } as any);
+
+      jest
+        .spyOn(rolesRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(role as any);
+      jest
+        .spyOn(appScopesRepository, 'findOne')
+        .mockResolvedValue(createAppScope);
+      jest.spyOn(rolesRepository, 'create').mockReturnValue(role);
+      jest.spyOn(rolesRepository, 'save').mockRejectedValue(duplicateError);
+
+      const result = await service.createRole(createRoleDto);
+
+      expect(result).toBe(role);
     });
   });
 
@@ -284,6 +334,56 @@ describe('RolesService', () => {
       const result = await service.assignRole(assignRoleDto);
       expect(result).toEqual(assignment);
     });
+
+    it('should return existing assignment when already assigned', async () => {
+      const assignRoleDto: AssignRoleDto = {
+        roleId: '1',
+        profileId: '1',
+        appScopeId: '1',
+      };
+      const existingAssignment = new RoleAssignment();
+
+      jest
+        .spyOn(roleAssignmentsRepository, 'findOne')
+        .mockResolvedValueOnce(existingAssignment as any);
+
+      const result = await service.assignRole(assignRoleDto);
+
+      expect(result).toBe(existingAssignment);
+      expect(roleAssignmentsRepository.create).not.toHaveBeenCalled();
+      expect(roleAssignmentsRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('should return concurrently created assignment on duplicate key', async () => {
+      const assignRoleDto: AssignRoleDto = {
+        roleId: '1',
+        profileId: '1',
+        appScopeId: '1',
+      };
+      const role = new Role();
+      const appScope = new AppScope();
+      const assignment = new RoleAssignment();
+      const duplicateError = new QueryFailedError('INSERT', [], {
+        code: '23505',
+      } as any);
+
+      jest
+        .spyOn(roleAssignmentsRepository, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(assignment as any);
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
+      jest.spyOn(appScopesRepository, 'findOne').mockResolvedValue(appScope);
+      jest
+        .spyOn(roleAssignmentsRepository, 'create')
+        .mockReturnValue(assignment);
+      jest
+        .spyOn(roleAssignmentsRepository, 'save')
+        .mockRejectedValue(duplicateError);
+
+      const result = await service.assignRole(assignRoleDto);
+
+      expect(result).toBe(assignment);
+    });
   });
 
   describe('unassignRole', () => {
@@ -293,6 +393,287 @@ describe('RolesService', () => {
         .mockResolvedValue(undefined);
       await service.unassignRole('1');
       expect(roleAssignmentsRepository.delete).toHaveBeenCalledWith('1');
+    });
+  });
+
+  describe('previewBulkRoleMutation', () => {
+    it('summarizes assign impact across selected profiles', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'assign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1', 'profile-2', 'profile-3'],
+      };
+      const role = new Role();
+      role.id = 'role-1';
+      role.name = 'owner_console_owner';
+
+      const existingAssignment = new RoleAssignment();
+      existingAssignment.id = 'assignment-1';
+      existingAssignment.profileId = 'profile-2';
+
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
+      jest
+        .spyOn(roleAssignmentsRepository, 'find')
+        .mockResolvedValue([existingAssignment]);
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([]);
+
+      const result = await service.previewBulkRoleMutation(dto);
+
+      expect(result.operation).toBe('assign');
+      expect(result.totalSelected).toBe(3);
+      expect(result.affectedCount).toBe(2);
+      expect(result.unchangedCount).toBe(1);
+      expect(result.affectedProfileIds).toEqual(['profile-1', 'profile-3']);
+      expect(result.unchangedProfileIds).toEqual(['profile-2']);
+      expect(result.existingAssignmentIds).toEqual(['assignment-1']);
+    });
+
+    it('explains whether assigning the role adds new permissions or duplicates existing access', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'assign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1'],
+      };
+      const role = new Role();
+      role.id = 'role-1';
+      role.name = 'owner_console_owner';
+      role.permissions = [
+        {
+          id: 'perm-1',
+          name: 'users.update',
+          description: 'Update users',
+          resource: 'users',
+          action: 'update',
+        } as Permission,
+        {
+          id: 'perm-2',
+          name: 'roles.update',
+          description: 'Update roles',
+          resource: 'roles',
+          action: 'update',
+        } as Permission,
+      ];
+
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
+      jest.spyOn(roleAssignmentsRepository, 'find').mockResolvedValue([]);
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([
+        {
+          role: {
+            name: 'existing_operator',
+            permissions: [role.permissions[0]],
+          },
+        } as RoleAssignment,
+      ]);
+
+      const result = await service.previewBulkRoleMutation(dto);
+
+      expect(result.profileImpacts[0].permissionChanges).toEqual([
+        expect.objectContaining({
+          permissionName: 'users.update',
+          status: 'already-present',
+        }),
+        expect.objectContaining({
+          permissionName: 'roles.update',
+          status: 'added',
+        }),
+      ]);
+      expect(result.permissionChangeSummary).toEqual([
+        expect.objectContaining({
+          permissionName: 'users.update',
+          status: 'already-present',
+          affectedProfileCount: 1,
+        }),
+        expect.objectContaining({
+          permissionName: 'roles.update',
+          status: 'added',
+          affectedProfileCount: 1,
+        }),
+      ]);
+    });
+
+    it('summarizes unassign impact across selected profiles', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'unassign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1', 'profile-2'],
+      };
+      const role = new Role();
+      role.id = 'role-1';
+      role.name = 'owner_console_owner';
+
+      const existingAssignment = new RoleAssignment();
+      existingAssignment.id = 'assignment-1';
+      existingAssignment.profileId = 'profile-1';
+
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
+      jest
+        .spyOn(roleAssignmentsRepository, 'find')
+        .mockResolvedValue([existingAssignment]);
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([
+        {
+          roleId: 'role-1',
+          role,
+        } as RoleAssignment,
+      ]);
+
+      const result = await service.previewBulkRoleMutation(dto);
+
+      expect(result.operation).toBe('unassign');
+      expect(result.affectedCount).toBe(1);
+      expect(result.unchangedCount).toBe(1);
+      expect(result.affectedProfileIds).toEqual(['profile-1']);
+      expect(result.unchangedProfileIds).toEqual(['profile-2']);
+      expect(result.existingAssignmentIds).toEqual(['assignment-1']);
+    });
+
+    it('explains whether removing the role revokes permissions or leaves them covered elsewhere', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'unassign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1'],
+      };
+      const role = new Role();
+      role.id = 'role-1';
+      role.name = 'owner_console_owner';
+      role.permissions = [
+        {
+          id: 'perm-1',
+          name: 'users.update',
+          description: 'Update users',
+          resource: 'users',
+          action: 'update',
+        } as Permission,
+        {
+          id: 'perm-2',
+          name: 'roles.update',
+          description: 'Update roles',
+          resource: 'roles',
+          action: 'update',
+        } as Permission,
+      ];
+
+      jest.spyOn(rolesRepository, 'findOne').mockResolvedValue(role);
+      jest.spyOn(roleAssignmentsRepository, 'find').mockResolvedValue([
+        {
+          id: 'assignment-1',
+          profileId: 'profile-1',
+        } as RoleAssignment,
+      ]);
+      jest.spyOn(service, 'getUserRoles').mockResolvedValue([
+        {
+          roleId: 'role-1',
+          role,
+        } as RoleAssignment,
+        {
+          roleId: 'role-2',
+          role: {
+            name: 'backup_operator',
+            permissions: [role.permissions[0]],
+          },
+        } as RoleAssignment,
+      ]);
+
+      const result = await service.previewBulkRoleMutation(dto);
+
+      expect(result.profileImpacts[0].permissionChanges).toEqual([
+        expect.objectContaining({
+          permissionName: 'users.update',
+          status: 'retained',
+        }),
+        expect.objectContaining({
+          permissionName: 'roles.update',
+          status: 'removed',
+        }),
+      ]);
+      expect(result.permissionChangeSummary).toEqual([
+        expect.objectContaining({
+          permissionName: 'users.update',
+          status: 'retained',
+          affectedProfileCount: 1,
+        }),
+        expect.objectContaining({
+          permissionName: 'roles.update',
+          status: 'removed',
+          affectedProfileCount: 1,
+        }),
+      ]);
+    });
+  });
+
+  describe('executeBulkRoleMutation', () => {
+    it('assigns only profiles that are not already assigned', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'assign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1', 'profile-2'],
+      };
+
+      jest.spyOn(service, 'previewBulkRoleMutation').mockResolvedValue({
+        operation: 'assign',
+        roleId: 'role-1',
+        roleName: 'owner_console_owner',
+        appScopeId: 'scope-1',
+        totalSelected: 2,
+        affectedCount: 1,
+        unchangedCount: 1,
+        affectedProfileIds: ['profile-1'],
+        unchangedProfileIds: ['profile-2'],
+        existingAssignmentIds: [],
+        permissionChangeSummary: [],
+        profileImpacts: [],
+      });
+      const assignSpy = jest
+        .spyOn(service, 'assignRole')
+        .mockResolvedValue(new RoleAssignment());
+
+      const result = await service.executeBulkRoleMutation(dto);
+
+      expect(assignSpy).toHaveBeenCalledTimes(1);
+      expect(assignSpy).toHaveBeenCalledWith({
+        roleId: 'role-1',
+        profileId: 'profile-1',
+        appScopeId: 'scope-1',
+        targetId: undefined,
+      });
+      expect(result.completedCount).toBe(1);
+    });
+
+    it('unassigns only matching assignments from the preview set', async () => {
+      const dto: BulkRoleMutationDto = {
+        operation: 'unassign',
+        roleId: 'role-1',
+        appScopeId: 'scope-1',
+        profileIds: ['profile-1', 'profile-2'],
+      };
+
+      jest.spyOn(service, 'previewBulkRoleMutation').mockResolvedValue({
+        operation: 'unassign',
+        roleId: 'role-1',
+        roleName: 'owner_console_owner',
+        appScopeId: 'scope-1',
+        totalSelected: 2,
+        affectedCount: 1,
+        unchangedCount: 1,
+        affectedProfileIds: ['profile-2'],
+        unchangedProfileIds: ['profile-1'],
+        existingAssignmentIds: ['assignment-2'],
+        permissionChangeSummary: [],
+        profileImpacts: [],
+      });
+      const unassignSpy = jest
+        .spyOn(service, 'unassignRole')
+        .mockResolvedValue(undefined);
+
+      const result = await service.executeBulkRoleMutation(dto);
+
+      expect(unassignSpy).toHaveBeenCalledTimes(1);
+      expect(unassignSpy).toHaveBeenCalledWith('assignment-2');
+      expect(result.completedCount).toBe(1);
     });
   });
 

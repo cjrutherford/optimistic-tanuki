@@ -1,6 +1,8 @@
 <div class="appointment-management">
   <h2>Appointment Management</h2>
 
+  <app-commerce-workspace-nav></app-commerce-workspace-nav>
+
   <div *ngIf="error" class="error-message">{{ error }}</div>
 
   <div class="filters">
@@ -21,86 +23,12 @@
   <div *ngIf="loading" class="loading">Loading appointments...</div>
 
   <div class="appointments-grid" *ngIf="!loading">
-    <table>
-      <thead>
-        <tr>
-          <th>Title</th>
-          <th>User ID</th>
-          <th>Start Time</th>
-          <th>End Time</th>
-          <th>Duration</th>
-          <th>Status</th>
-          <th>Free Consultation</th>
-          <th>Total Cost</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let appointment of filteredAppointments">
-          <td>{{ appointment.title }}</td>
-          <td>{{ appointment.userId }}</td>
-          <td>{{ formatDate(appointment.startTime) }}</td>
-          <td>{{ formatDate(appointment.endTime) }}</td>
-          <td>{{ calculateDuration(appointment) }}</td>
-          <td>
-            <span [class]="getStatusClass(appointment.status)">
-              {{ appointment.status }}
-            </span>
-          </td>
-          <td>{{ appointment.isFreeConsultation ? 'Yes' : 'No' }}</td>
-          <td>
-            {{
-              appointment.totalCost
-                ? '$' + appointment.totalCost.toFixed(2)
-                : '-'
-            }}
-          </td>
-          <td>
-            <button
-              *ngIf="appointment.status === 'pending'"
-              (click)="openApproveModal(appointment)"
-              class="btn-approve"
-            >
-              Approve
-            </button>
-            <button
-              *ngIf="appointment.status === 'pending'"
-              (click)="openDenyModal(appointment)"
-              class="btn-deny"
-            >
-              Deny
-            </button>
-            <button
-              *ngIf="appointment.status === 'approved'"
-              (click)="completeAppointment(appointment)"
-              class="btn-complete"
-            >
-              Complete
-            </button>
-            <button
-              *ngIf="
-                appointment.status === 'pending' ||
-                appointment.status === 'approved'
-              "
-              (click)="cancelAppointment(appointment)"
-              class="btn-cancel"
-            >
-              Cancel
-            </button>
-            <button
-              *ngIf="
-                appointment.status === 'completed' &&
-                !appointment.isFreeConsultation
-              "
-              (click)="generateInvoice(appointment)"
-              class="btn-invoice"
-            >
-              Generate Invoice
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <otui-ag-grid
+      [rowData]="gridAppointments"
+      [columnDefs]="columnDefs"
+      [loading]="loading"
+      [height]="gridHeight"
+    />
   </div>
 
   <!-- Approve Modal -->

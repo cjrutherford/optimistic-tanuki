@@ -1,6 +1,8 @@
 <div class="resource-management">
   <h2>Resource Management</h2>
 
+  <app-commerce-workspace-nav></app-commerce-workspace-nav>
+
   <div class="catalog-summary">
     <div class="summary-card">
       <span class="summary-label">Total resources</span>
@@ -147,52 +149,13 @@
   <div class="resources-list" *ngIf="!isCreating && !isEditing">
     <div class="loading" *ngIf="loading">Loading resources...</div>
 
-    <table *ngIf="!loading && filteredResources.length > 0">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Location</th>
-          <th>Capacity</th>
-          <th>Rate</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let resource of filteredResources">
-          <td>{{ resource.name }}</td>
-          <td>{{ resource.type }}</td>
-          <td>{{ resource.location || 'N/A' }}</td>
-          <td>{{ resource.capacity ?? 'N/A' }}</td>
-          <td>
-            {{
-              resource.hourlyRate != null ? '$' + resource.hourlyRate : 'N/A'
-            }}
-          </td>
-          <td>
-            <span
-              class="status"
-              [class.active]="resource.isActive"
-              [class.inactive]="!resource.isActive"
-            >
-              {{ resource.isActive ? 'Active' : 'Inactive' }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button class="btn btn-sm btn-edit" (click)="startEdit(resource)">
-              Edit
-            </button>
-            <button
-              class="btn btn-sm btn-delete"
-              (click)="deleteResource(resource)"
-            >
-              Delete
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <otui-ag-grid
+      *ngIf="!loading && filteredResources.length > 0"
+      [rowData]="gridResources"
+      [columnDefs]="columnDefs"
+      [loading]="loading"
+      [height]="gridHeight"
+    />
 
     <div class="empty-state" *ngIf="!loading && filteredResources.length === 0">
       <p>No resources match the current filter.</p>

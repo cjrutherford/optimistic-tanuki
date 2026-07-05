@@ -19,6 +19,13 @@ describe('ConfigurationsService', () => {
     features: {} as any,
     theme: {} as any,
     active: true,
+    release: {
+      status: 'draft',
+      history: [],
+      publishedVersion: null,
+      publishedSnapshot: null,
+      previewUrl: 'https://test.example.com',
+    } as any,
     createdAt: new Date(),
     updatedAt: new Date(),
   } as AppConfigurationEntity;
@@ -72,6 +79,28 @@ describe('ConfigurationsService', () => {
 
       expect(repository.save).toHaveBeenCalled();
       expect(result).toEqual(mockConfigEntity);
+    });
+
+    it('should initialize release metadata for a new draft configuration', async () => {
+      const createDto = {
+        name: 'New App',
+        domain: 'new.example.com',
+      } as any;
+
+      jest
+        .spyOn(repository, 'save')
+        .mockImplementation(async (value) => value as any);
+
+      const result = await service.createConfiguration(createDto);
+
+      expect(result.release).toEqual(
+        expect.objectContaining({
+          status: 'draft',
+          publishedVersion: null,
+          history: [],
+          previewUrl: 'https://new.example.com',
+        })
+      );
     });
   });
 
@@ -160,6 +189,100 @@ describe('ConfigurationsService', () => {
       await expect(
         service.updateConfiguration('none', { name: 'Updated' })
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('publishConfiguration', () => {
+    it('should create a published revision with release notes', async () => {
+      jest.spyOn(repository, 'findOne').mockResolvedValue({
+        ...mockConfigEntity,
+        release: {
+          status: 'draft',
+          history: [],
+          publishedVersion: null,
+          publishedSnapshot: null,
+          previewUrl: 'https://test.example.com',
+        },
+      } as any);
+      jest
+        .spyOn(repository, 'save')
+        .mockImplementation(async (value) => value as any);
+
+      const result = await service.publishConfiguration('config-1', {
+        releaseNotes: 'Launch ready',
+        changeSummary: 'Updated hero and CTA',
+      });
+
+      expect(result.release).toEqual(
+        expect.objectContaining({
+          status: 'published',
+          publishedVersion: 1,
+          releaseNotes: 'Launch ready',
+          changeSummary: 'Updated hero and CTA',
+          history: [
+            expect.objectContaining({
+              version: 1,
+              action: 'publish',
+              releaseNotes: 'Launch ready',
+            }),
+          ],
+        })
+      );
+    });
+  });
+
+  describe('rollbackConfiguration', () => {
+    it('should restore the selected published revision snapshot', async () => {
+      const publishedSnapshot = {
+        name: 'Published App',
+        description: 'Published Description',
+        domain: 'published.example.com',
+        landingPage: { sections: [], layout: 'single-column' },
+        routes: [],
+        features: {},
+        theme: {},
+        active: true,
+      };
+      jest.spyOn(repository, 'findOne').mockResolvedValue({
+        ...mockConfigEntity,
+        name: 'Draft App',
+        release: {
+          status: 'changes-pending',
+          publishedVersion: 1,
+          publishedSnapshot,
+          previewUrl: 'https://published.example.com',
+          history: [
+            {
+              version: 1,
+              action: 'publish',
+              releasedAt: new Date(),
+              releaseNotes: 'Initial launch',
+              changeSummary: 'Launch',
+              snapshot: publishedSnapshot,
+            },
+          ],
+        },
+      } as any);
+      jest
+        .spyOn(repository, 'save')
+        .mockImplementation(async (value) => value as any);
+
+      const result = await service.rollbackConfiguration('config-1', {
+        version: 1,
+        releaseNotes: 'Rollback to stable',
+      });
+
+      expect(result.name).toBe('Published App');
+      expect(result.release.history).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            action: 'rollback',
+            releaseNotes: 'Rollback to stable',
+            version: 2,
+          }),
+        ])
+      );
+      expect(result.release.status).toBe('published');
     });
   });
 

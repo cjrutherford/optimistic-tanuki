@@ -26,7 +26,9 @@ export class RegisterAccountBootstrapService {
       const existingGlobalProfiles = (await firstValueFrom(
         this.profileClient.send(
           { cmd: ProfileCommands.GetAll },
-          { where: { appScope: 'global' } }
+          {
+            where: [{ appScope: 'global' }, { appScope: null }],
+          }
         )
       )) as Array<{ id: string }>;
 

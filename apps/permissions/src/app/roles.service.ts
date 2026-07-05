@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, IsNull, QueryFailedError, Repository } from 'typeorm';
 import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity';
 import { RoleAssignment } from '../role-assignments/entities/role-assignment.entity';
@@ -9,8 +9,12 @@ import {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
+  BulkRoleMutationPermissionChangeDto,
+  BulkRoleMutationProfileImpactDto,
+  BulkRoleMutationPreviewDto,
+  BulkRoleMutationResultDto,
 } from '@optimistic-tanuki/models';
-import { profile } from 'console';
 
 @Injectable()
 export class RolesService {
@@ -28,6 +32,15 @@ export class RolesService {
 
   async createRole(createRoleDto: CreateRoleDto): Promise<Role> {
     this.l.log(`Creating role: ${createRoleDto.name}`);
+    const existingRole = await this.rolesRepository.findOne({
+      where: { name: createRoleDto.name },
+      relations: ['permissions', 'appScope'],
+    });
+    if (existingRole) {
+      this.l.debug(`Role ${createRoleDto.name} already exists, reusing it`);
+      return existingRole;
+    }
+
     const appScope = await this.appScopesRepository.findOne({
       where: { id: createRoleDto.appScopeId },
     });
@@ -37,7 +50,23 @@ export class RolesService {
       description: createRoleDto.description,
       appScope,
     });
-    return await this.rolesRepository.save(role);
+    try {
+      return await this.rolesRepository.save(role);
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        const duplicateRole = await this.rolesRepository.findOne({
+          where: { name: createRoleDto.name },
+          relations: ['permissions', 'appScope'],
+        });
+        if (duplicateRole) {
+          this.l.debug(
+            `Role ${createRoleDto.name} was created concurrently, reusing it`
+          );
+          return duplicateRole;
+        }
+      }
+      throw error;
+    }
   }
 
   async getRole(id: string): Promise<Role> {
@@ -129,6 +158,21 @@ export class RolesService {
   }
 
   async assignRole(assignRoleDto: AssignRoleDto): Promise<RoleAssignment> {
+    const existingAssignment = await this.roleAssignmentsRepository.findOne({
+      where: {
+        profileId: assignRoleDto.profileId,
+        roleId: assignRoleDto.roleId,
+        appScopeId: assignRoleDto.appScopeId,
+      },
+      relations: ['role', 'appScope'],
+    });
+    if (existingAssignment) {
+      this.l.debug(
+        `Role ${assignRoleDto.roleId} already assigned to profile ${assignRoleDto.profileId} in scope ${assignRoleDto.appScopeId}`
+      );
+      return existingAssignment;
+    }
+
     const role = await this.rolesRepository.findOne({
       where: { id: assignRoleDto.roleId },
     });
@@ -144,11 +188,153 @@ export class RolesService {
       targetId: assignRoleDto.targetId,
     });
 
-    return await this.roleAssignmentsRepository.save(assignment);
+    try {
+      return await this.roleAssignmentsRepository.save(assignment);
+    } catch (error) {
+      if (this.isDuplicateKeyError(error)) {
+        const duplicateAssignment =
+          await this.roleAssignmentsRepository.findOne({
+            where: {
+              profileId: assignRoleDto.profileId,
+              roleId: assignRoleDto.roleId,
+              appScopeId: assignRoleDto.appScopeId,
+            },
+            relations: ['role', 'appScope'],
+          });
+        if (duplicateAssignment) {
+          this.l.debug(
+            `Role assignment already exists for profile ${assignRoleDto.profileId} role ${assignRoleDto.roleId} scope ${assignRoleDto.appScopeId}`
+          );
+          return duplicateAssignment;
+        }
+      }
+      throw error;
+    }
+  }
+
+  private isDuplicateKeyError(error: unknown): boolean {
+    if (!(error instanceof QueryFailedError)) {
+      return false;
+    }
+    return (
+      (error as QueryFailedError & { driverError?: { code?: string } })
+        .driverError?.code === '23505'
+    );
   }
 
   async unassignRole(assignmentId: string): Promise<void> {
     await this.roleAssignmentsRepository.delete(assignmentId);
+  }
+
+  async previewBulkRoleMutation(
+    bulkRoleMutationDto: BulkRoleMutationDto
+  ): Promise<BulkRoleMutationPreviewDto> {
+    const role = await this.rolesRepository.findOne({
+      where: { id: bulkRoleMutationDto.roleId },
+      relations: ['appScope', 'permissions'],
+    });
+
+    const selectedProfileIds = Array.from(
+      new Set((bulkRoleMutationDto.profileIds || []).filter(Boolean))
+    );
+
+    const existingAssignments =
+      selectedProfileIds.length === 0
+        ? []
+        : await this.roleAssignmentsRepository.find({
+            where: {
+              roleId: bulkRoleMutationDto.roleId,
+              appScopeId: bulkRoleMutationDto.appScopeId,
+              profileId: In(selectedProfileIds),
+              targetId: bulkRoleMutationDto.targetId ?? IsNull(),
+            },
+          });
+
+    const assignedProfileIds = new Set(
+      existingAssignments.map((assignment) => assignment.profileId)
+    );
+
+    const affectedProfileIds =
+      bulkRoleMutationDto.operation === 'assign'
+        ? selectedProfileIds.filter(
+            (profileId) => !assignedProfileIds.has(profileId)
+          )
+        : selectedProfileIds.filter((profileId) =>
+            assignedProfileIds.has(profileId)
+          );
+
+    const unchangedProfileIds =
+      bulkRoleMutationDto.operation === 'assign'
+        ? selectedProfileIds.filter((profileId) =>
+            assignedProfileIds.has(profileId)
+          )
+        : selectedProfileIds.filter(
+            (profileId) => !assignedProfileIds.has(profileId)
+          );
+
+    const profileImpacts = await Promise.all(
+      affectedProfileIds.map(async (profileId) => {
+        const currentAssignments = await this.getUserRoles(
+          profileId,
+          bulkRoleMutationDto.appScopeId
+        );
+
+        return this.buildProfileImpact(
+          bulkRoleMutationDto,
+          profileId,
+          role,
+          currentAssignments
+        );
+      })
+    );
+
+    return {
+      operation: bulkRoleMutationDto.operation,
+      roleId: bulkRoleMutationDto.roleId,
+      roleName: role?.name || bulkRoleMutationDto.roleId,
+      appScopeId: bulkRoleMutationDto.appScopeId,
+      targetId: bulkRoleMutationDto.targetId,
+      totalSelected: selectedProfileIds.length,
+      affectedCount: affectedProfileIds.length,
+      unchangedCount: unchangedProfileIds.length,
+      affectedProfileIds,
+      unchangedProfileIds,
+      existingAssignmentIds: existingAssignments.map(
+        (assignment) => assignment.id
+      ),
+      permissionChangeSummary: this.summarizePermissionChanges(profileImpacts),
+      profileImpacts,
+    };
+  }
+
+  async executeBulkRoleMutation(
+    bulkRoleMutationDto: BulkRoleMutationDto
+  ): Promise<BulkRoleMutationResultDto> {
+    const preview = await this.previewBulkRoleMutation(bulkRoleMutationDto);
+
+    if (bulkRoleMutationDto.operation === 'assign') {
+      await Promise.all(
+        preview.affectedProfileIds.map((profileId) =>
+          this.assignRole({
+            roleId: bulkRoleMutationDto.roleId,
+            profileId,
+            appScopeId: bulkRoleMutationDto.appScopeId,
+            targetId: bulkRoleMutationDto.targetId,
+          })
+        )
+      );
+    } else {
+      await Promise.all(
+        preview.existingAssignmentIds.map((assignmentId) =>
+          this.unassignRole(assignmentId)
+        )
+      );
+    }
+
+    return {
+      ...preview,
+      completedCount: preview.affectedCount,
+    };
   }
 
   async findRoleAssignment(
@@ -356,5 +542,107 @@ export class RolesService {
       `Permission denied: ${permissionName} for profile ${profileId} - No matching permissions found in ${assignments.length} role(s)`
     );
     return false;
+  }
+
+  private buildProfileImpact(
+    bulkRoleMutationDto: BulkRoleMutationDto,
+    profileId: string,
+    role: Role | null,
+    currentAssignments: RoleAssignment[]
+  ): BulkRoleMutationProfileImpactDto {
+    const targetPermissions = role?.permissions || [];
+    const currentPermissionKeys =
+      this.collectPermissionKeys(currentAssignments);
+    const retainedAssignments =
+      bulkRoleMutationDto.operation === 'unassign'
+        ? currentAssignments.filter(
+            (assignment) => assignment.roleId !== bulkRoleMutationDto.roleId
+          )
+        : currentAssignments;
+    const retainedPermissionKeys =
+      bulkRoleMutationDto.operation === 'unassign'
+        ? this.collectPermissionKeys(retainedAssignments)
+        : currentPermissionKeys;
+
+    return {
+      profileId,
+      permissionChanges: targetPermissions.map((permission) => {
+        const permissionName =
+          permission.name || `${permission.resource}.${permission.action}`;
+        const permissionKey = this.getPermissionKey(permission);
+
+        if (bulkRoleMutationDto.operation === 'assign') {
+          const alreadyPresent = currentPermissionKeys.has(permissionKey);
+          return {
+            permissionName,
+            resource: permission.resource,
+            action: permission.action,
+            status: alreadyPresent ? 'already-present' : 'added',
+            reason: alreadyPresent
+              ? 'Access already exists through another assigned role.'
+              : 'Access will be newly granted by this role assignment.',
+          };
+        }
+
+        const retained = retainedPermissionKeys.has(permissionKey);
+        return {
+          permissionName,
+          resource: permission.resource,
+          action: permission.action,
+          status: retained ? 'retained' : 'removed',
+          reason: retained
+            ? 'Access will remain through another assigned role.'
+            : 'Access will be removed when this role assignment is revoked.',
+        };
+      }),
+    };
+  }
+
+  private summarizePermissionChanges(
+    profileImpacts: BulkRoleMutationProfileImpactDto[]
+  ): BulkRoleMutationPermissionChangeDto[] {
+    const summary = new Map<string, BulkRoleMutationPermissionChangeDto>();
+
+    for (const impact of profileImpacts) {
+      for (const change of impact.permissionChanges) {
+        const key = `${change.permissionName}:${change.status}`;
+        const existing = summary.get(key);
+
+        if (existing) {
+          existing.affectedProfileCount =
+            (existing.affectedProfileCount || 0) + 1;
+          continue;
+        }
+
+        summary.set(key, {
+          ...change,
+          affectedProfileCount: 1,
+        });
+      }
+    }
+
+    return Array.from(summary.values());
+  }
+
+  private collectPermissionKeys(assignments: RoleAssignment[]): Set<string> {
+    const keys = new Set<string>();
+
+    for (const assignment of assignments) {
+      const permissions = assignment.role?.permissions || [];
+      for (const permission of permissions) {
+        keys.add(this.getPermissionKey(permission));
+      }
+    }
+
+    return keys;
+  }
+
+  private getPermissionKey(permission: Permission): string {
+    return [
+      permission.name || '',
+      permission.resource || '',
+      permission.action || '',
+      permission.targetId || '',
+    ].join('::');
   }
 }

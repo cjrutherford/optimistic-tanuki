@@ -47,6 +47,7 @@ import { ReactionService } from '../../reaction.service';
 import { InfiniteScrollDirective } from '../../directives/infinite-scroll.directive';
 import { LazyLoadDirective } from '../../directives/lazy-load.directive';
 import { ActivityService } from '../../activity.service';
+import { PrivacyService } from '../../privacy.service';
 
 @Component({
   selector: 'app-feed',
@@ -108,6 +109,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   );
   // Track saved items: postId -> boolean
   savedPosts = signal<{ [postId: string]: boolean }>({});
+  private readonly privacyService = inject(PrivacyService);
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
@@ -295,14 +297,15 @@ export class FeedComponent implements OnInit, OnDestroy {
     });
   }
 
-  private loadBlockedUsers(profileId: string) {
-    this.profileService.getBlockedUsers(profileId).subscribe({
+  private loadBlockedUsers(_profileId: string) {
+    this.privacyService.getBlockedUsers().subscribe({
       next: (blocked) => {
         this.blockedIds.clear();
         if (Array.isArray(blocked)) {
           blocked.forEach((b: any) => {
-            if (b.blockedProfileId) {
-              this.blockedIds.add(b.blockedProfileId);
+            const blockedProfileId = b.blockedProfileId || b.blockedId;
+            if (blockedProfileId) {
+              this.blockedIds.add(blockedProfileId);
             }
           });
         }
@@ -633,25 +636,21 @@ export class FeedComponent implements OnInit, OnDestroy {
     if (!currentProfile) return;
 
     if (this.isBlocked(post)) {
-      this.profileService
-        .unblockUser(currentProfile.id, post.profileId)
-        .subscribe({
-          next: () => {
-            this.blockedIds.delete(post.profileId);
-            console.log('User unblocked:', post.profileId);
-          },
-          error: (err: any) => console.error('Failed to unblock user', err),
-        });
+      this.privacyService.unblockUser(post.profileId).subscribe({
+        next: () => {
+          this.blockedIds.delete(post.profileId);
+          console.log('User unblocked:', post.profileId);
+        },
+        error: (err: any) => console.error('Failed to unblock user', err),
+      });
     } else {
-      this.profileService
-        .blockUser(currentProfile.id, post.profileId)
-        .subscribe({
-          next: () => {
-            this.blockedIds.add(post.profileId);
-            console.log('User blocked:', post.profileId);
-          },
-          error: (err: any) => console.error('Failed to block user', err),
-        });
+      this.privacyService.blockUser({ blockedId: post.profileId }).subscribe({
+        next: () => {
+          this.blockedIds.add(post.profileId);
+          console.log('User blocked:', post.profileId);
+        },
+        error: (err: any) => console.error('Failed to block user', err),
+      });
     }
   }
 

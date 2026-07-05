@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { FindManyOptions, FindOneOptions, IsNull, Repository } from 'typeorm';
 import { firstValueFrom } from 'rxjs';
 import { Profile, BlogRole } from '../profiles/entities/profile.entity';
 import { CreateProfileDto } from '../profiles/dto/create-profile.dto';
@@ -52,11 +52,12 @@ export class ProfileService {
     userId: string,
     appScope: string
   ): Promise<Profile> {
+    const normalizedScope = this.normalizeScope(appScope);
     const profile = await this.profileRepository.findOne({
-      where: { userId, appScope },
+      where: this.buildScopeWhere(userId, normalizedScope),
     });
     this.logger.debug(
-      `findByUserIdAndAppScope userId=${userId} appScope=${appScope} => profile=${JSON.stringify(
+      `findByUserIdAndAppScope userId=${userId} appScope=${normalizedScope} => profile=${JSON.stringify(
         profile
       )}`
     );
@@ -69,23 +70,22 @@ export class ProfileService {
       copyPermissionsFromGlobalProfile?: boolean;
     }
   ): Promise<Profile> {
+    const normalizedScope = this.normalizeScope(profile.appScope);
     // Check if a profile already exists for this user+appScope to prevent duplicates
     const existingProfile = await this.findByUserIdAndAppScope(
       profile.userId,
-      profile.appScope || 'global'
+      normalizedScope
     );
     if (existingProfile) {
       this.logger.warn(
-        `Profile already exists for user ${profile.userId} in scope ${
-          profile.appScope || 'global'
-        }, returning existing profile`
+        `Profile already exists for user ${profile.userId} in scope ${normalizedScope}, returning existing profile`
       );
       return existingProfile;
     }
 
     const newProfile: Partial<Profile> = {
       userId: profile.userId,
-      appScope: profile.appScope || null,
+      appScope: normalizedScope,
       profileName: profile.name,
       profilePic: profile.profilePic,
       coverPic: profile.coverPic,
@@ -95,12 +95,31 @@ export class ProfileService {
       interests: profile.interests,
       skills: profile.skills,
     };
-    const savedProfile = await this.profileRepository.save(newProfile);
+    let savedProfile: Profile;
+    try {
+      savedProfile = await this.profileRepository.save(newProfile);
+    } catch (error) {
+      if (!this.isUniqueViolation(error)) {
+        throw error;
+      }
+
+      const recoveredProfile = await this.findByUserIdAndAppScope(
+        profile.userId,
+        normalizedScope
+      );
+      if (recoveredProfile) {
+        this.logger.warn(
+          `Recovered existing profile for user ${profile.userId} in scope ${normalizedScope} after unique violation`
+        );
+        return recoveredProfile;
+      }
+
+      throw error;
+    }
 
     // If this is an app-scoped profile, copy permissions from the global profile
     if (
-      profile.appScope &&
-      profile.appScope !== 'global' &&
+      normalizedScope !== 'global' &&
       profile.copyPermissionsFromGlobalProfile !== false
     ) {
       await this.copyPermissionsFromGlobalProfile(
@@ -125,23 +144,12 @@ export class ProfileService {
     try {
       // Find the global profile for this user
       const globalProfile = await this.profileRepository.findOne({
-        where: { userId, appScope: null },
+        where: this.buildScopeWhere(userId, 'global'),
       });
 
       if (!globalProfile) {
-        // Also check for explicit 'global' appScope
-        const explicitGlobalProfile = await this.profileRepository.findOne({
-          where: { userId, appScope: 'global' },
-        });
-        if (!explicitGlobalProfile) {
-          this.logger.debug(
-            `No global profile found for user ${userId}, skipping permission copy`
-          );
-          return;
-        }
-        await this.copyPermissionsBetweenProfiles(
-          explicitGlobalProfile.id,
-          targetProfileId
+        this.logger.debug(
+          `No global profile found for user ${userId}, skipping permission copy`
         );
         return;
       }
@@ -242,5 +250,29 @@ export class ProfileService {
   async getBlogRole(userId: string): Promise<BlogRole> {
     const profile = await this.findByUserId(userId);
     return profile?.blogRole || BlogRole.NONE;
+  }
+
+  private normalizeScope(appScope?: string | null): string {
+    return appScope?.trim() ? appScope.trim() : 'global';
+  }
+
+  private buildScopeWhere(userId: string, appScope: string) {
+    if (appScope === 'global') {
+      return [
+        { userId, appScope: 'global' },
+        { userId, appScope: IsNull() },
+      ];
+    }
+
+    return { userId, appScope };
+  }
+
+  private isUniqueViolation(error: unknown): error is { code?: string } {
+    return (
+      !!error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: string }).code === '23505'
+    );
   }
 }

@@ -1,6 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui/button/button.component';
 import { CardComponent } from '@optimistic-tanuki/common-ui/card/card.component';
 import { HeadingComponent } from '@optimistic-tanuki/common-ui/heading/heading.component';
@@ -20,6 +22,14 @@ import { RolesService } from '../services/roles.service';
 import { AppScopesService } from '../services/app-scopes.service';
 import { PermissionsService } from '../services/permissions.service';
 import { AgRolesTableComponent } from './ag-roles-table.component';
+import { UsersService } from '../services/users.service';
+import { GovernanceAuditService } from '../services/governance-audit.service';
+
+interface RoleImpactSummary {
+  assignedProfileCount: number;
+  appScopeLabel: string;
+  sampleProfiles: string[];
+}
 
 @Component({
   selector: 'app-roles-management',
@@ -119,6 +129,39 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
           </div>
         </div>
 
+        <div class="form-preview" *ngIf="isEditMode && currentRole">
+          <div class="permissions-header">
+            <div>
+              <h3>Impact Preview</h3>
+              <p class="section-description">
+                Role definition and permission changes affect every profile
+                currently assigned to this role.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="secondary-inline"
+              (click)="traceRoleAssignments()"
+            >
+              Trace assignments
+            </button>
+          </div>
+          <div class="preview-content">
+            <p>
+              <strong>Assigned profiles:</strong>
+              {{ roleImpactSummary.assignedProfileCount }}
+            </p>
+            <p>
+              <strong>Scope:</strong>
+              {{ roleImpactSummary.appScopeLabel }}
+            </p>
+            <p *ngIf="roleImpactSummary.sampleProfiles.length > 0">
+              <strong>Examples:</strong>
+              {{ roleImpactSummary.sampleProfiles.join(', ') }}
+            </p>
+          </div>
+        </div>
+
         <div class="permissions-panel">
           <div class="permissions-header">
             <div>
@@ -126,6 +169,15 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
               <p class="section-description">
                 Attach or remove permissions for this role from the full
                 catalog.
+              </p>
+              <p
+                class="section-description"
+                *ngIf="roleImpactSummary.assignedProfileCount > 0"
+              >
+                These permission changes will affect
+                {{ roleImpactSummary.assignedProfileCount }} assigned profile{{
+                  roleImpactSummary.assignedProfileCount === 1 ? '' : 's'
+                }}.
               </p>
             </div>
           </div>
@@ -294,7 +346,11 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: color-mix(
+          in srgb,
+          var(--foreground, #111827) 36%,
+          transparent
+        );
         z-index: 999;
         display: flex;
         align-items: center;
@@ -335,7 +391,7 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         display: block;
         margin-bottom: 0.5rem;
         font-weight: 500;
-        color: var(--text-primary);
+        color: var(--foreground, #111827);
       }
 
       .scope-select {
@@ -344,22 +400,52 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-sm);
         font-size: 14px;
-        background: var(--bg-primary);
-        color: var(--text-primary);
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
+      }
+
+      .secondary-inline {
+        min-height: 36px;
+        border: 1px solid
+          color-mix(in srgb, var(--accent, #2563eb) 24%, transparent);
+        border-radius: 6px;
+        padding: 0 12px;
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 10%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 76%,
+          var(--foreground, #111827)
+        );
+        font-weight: 700;
+        cursor: pointer;
       }
 
       .form-preview {
-        background: var(--background, #f5f5f5);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 88%,
+          var(--background, #f3f4f6)
+        );
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #ddd);
+        color: var(--foreground, #111827);
       }
 
       .permissions-panel {
-        background: var(--background, #f9f9f9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
         padding: 1.5rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #ddd);
+        color: var(--foreground, #111827);
       }
 
       .permissions-header {
@@ -403,7 +489,7 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
         padding: 0.875rem 1rem;
         border: 1px solid var(--border-color, #ddd);
         border-radius: 6px;
-        background: var(--bg-primary, #fff);
+        background: var(--surface, #ffffff);
       }
 
       .permission-copy {
@@ -423,7 +509,11 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
       }
 
       .info-text {
-        color: var(--accent, #007bff);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         font-style: italic;
       }
 
@@ -444,10 +534,15 @@ import { AgRolesTableComponent } from './ag-roles-table.component';
       }
 
       .change-details {
-        background: var(--background, #f9f9f9);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
         padding: 1rem;
         border-radius: 6px;
         margin-bottom: 1.5rem;
+        color: var(--foreground, #111827);
       }
 
       .change-details h4 {
@@ -488,6 +583,9 @@ export class RolesManagementComponent implements OnInit {
   private readonly appScopesService = inject(AppScopesService);
   private readonly permissionsService = inject(PermissionsService);
   private readonly messageService = inject(MessageService);
+  private readonly usersService = inject(UsersService);
+  private readonly router = inject(Router);
+  private readonly governanceAuditService = inject(GovernanceAuditService);
 
   roles: RoleDto[] = [];
   appScopes: AppScopeDto[] = [];
@@ -508,6 +606,11 @@ export class RolesManagementComponent implements OnInit {
   confirmModalTitle = '';
   confirmModalMessage = '';
   confirmAction: 'create' | 'update' | 'delete' = 'create';
+  roleImpactSummary: RoleImpactSummary = {
+    assignedProfileCount: 0,
+    appScopeLabel: 'Scope unavailable',
+    sampleProfiles: [],
+  };
 
   get availablePermissions(): PermissionDto[] {
     const assignedIds = new Set(
@@ -584,6 +687,11 @@ export class RolesManagementComponent implements OnInit {
       description: '',
       appScopeId: '',
     };
+    this.roleImpactSummary = {
+      assignedProfileCount: 0,
+      appScopeLabel: 'Scope unavailable',
+      sampleProfiles: [],
+    };
     this.showFormModal = true;
   }
 
@@ -601,6 +709,7 @@ export class RolesManagementComponent implements OnInit {
     };
     this.showFormModal = true;
     this.refreshCurrentRole();
+    this.loadRoleImpactSummary(role);
   }
 
   closeFormModal(): void {
@@ -616,6 +725,13 @@ export class RolesManagementComponent implements OnInit {
       .addPermissionToRole(this.currentRole.id, permissionId)
       .subscribe({
         next: () => {
+          this.governanceAuditService.recordEntry({
+            kind: 'role-permission-added',
+            roleId: this.currentRole!.id,
+            roleName: this.currentRole!.name,
+            permissionId,
+            summary: `Permission added to ${this.currentRole!.name}.`,
+          });
           this.messageService.addMessage({
             content: 'Permission added to role.',
             type: 'success',
@@ -642,6 +758,13 @@ export class RolesManagementComponent implements OnInit {
       .removePermissionFromRole(this.currentRole.id, permissionId)
       .subscribe({
         next: () => {
+          this.governanceAuditService.recordEntry({
+            kind: 'role-permission-removed',
+            roleId: this.currentRole!.id,
+            roleName: this.currentRole!.name,
+            permissionId,
+            summary: `Permission removed from ${this.currentRole!.name}.`,
+          });
           this.messageService.addMessage({
             content: 'Permission removed from role.',
             type: 'success',
@@ -706,6 +829,20 @@ export class RolesManagementComponent implements OnInit {
     this.showConfirmModal = false;
   }
 
+  traceRoleAssignments(): void {
+    if (!this.currentRole?.id) {
+      return;
+    }
+
+    this.router.navigate(['/dashboard/permissions-inspector'], {
+      queryParams: {
+        roleId: this.currentRole.id,
+        roleName: this.currentRole.name,
+        source: 'roles',
+      },
+    });
+  }
+
   executeConfirmedAction(): void {
     if (this.confirmAction === 'create') {
       this.createRole();
@@ -755,6 +892,13 @@ export class RolesManagementComponent implements OnInit {
 
     this.rolesService.updateRole(this.formData.id, updateDto).subscribe({
       next: () => {
+        this.governanceAuditService.recordEntry({
+          kind: 'role-updated',
+          roleId: this.formData.id!,
+          roleName: this.formData.name,
+          appScopeId: this.formData.appScopeId,
+          summary: `Role ${this.formData.name} updated.`,
+        });
         this.messageService.addMessage({
           content: 'Role updated successfully!',
           type: 'success',
@@ -800,6 +944,12 @@ export class RolesManagementComponent implements OnInit {
 
     this.rolesService.deleteRole(this.currentRole.id).subscribe({
       next: () => {
+        this.governanceAuditService.recordEntry({
+          kind: 'role-deleted',
+          roleId: this.currentRole!.id,
+          roleName: this.currentRole!.name,
+          summary: `Role ${this.currentRole!.name} deleted.`,
+        });
         this.messageService.addMessage({
           content: 'Role deleted successfully!',
           type: 'success',
@@ -814,6 +964,56 @@ export class RolesManagementComponent implements OnInit {
           content: errorMessage,
           type: 'error',
         });
+      },
+    });
+  }
+
+  private loadRoleImpactSummary(role: RoleDto): void {
+    this.roleImpactSummary = {
+      assignedProfileCount: 0,
+      appScopeLabel: role.appScope?.name || 'Scope unavailable',
+      sampleProfiles: [],
+    };
+
+    this.usersService.getProfiles().subscribe({
+      next: (profiles) => {
+        if (!profiles.length) {
+          return;
+        }
+
+        forkJoin(
+          profiles.map((profile) => this.rolesService.getUserRoles(profile.id))
+        ).subscribe({
+          next: (assignmentsByProfile) => {
+            const matchedProfiles = profiles.filter((profile, index) =>
+              (assignmentsByProfile[index] ?? []).some(
+                (assignment) => assignment.roleId === role.id
+              )
+            );
+
+            this.roleImpactSummary = {
+              assignedProfileCount: matchedProfiles.length,
+              appScopeLabel: role.appScope?.name || 'Scope unavailable',
+              sampleProfiles: matchedProfiles
+                .slice(0, 3)
+                .map((profile) => profile.profileName || profile.userId),
+            };
+          },
+          error: () => {
+            this.roleImpactSummary = {
+              assignedProfileCount: 0,
+              appScopeLabel: role.appScope?.name || 'Scope unavailable',
+              sampleProfiles: [],
+            };
+          },
+        });
+      },
+      error: () => {
+        this.roleImpactSummary = {
+          assignedProfileCount: 0,
+          appScopeLabel: role.appScope?.name || 'Scope unavailable',
+          sampleProfiles: [],
+        };
       },
     });
   }

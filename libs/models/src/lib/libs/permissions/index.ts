@@ -13,5 +13,10 @@ export {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
+  BulkRoleMutationPermissionChangeDto,
+  BulkRoleMutationProfileImpactDto,
+  BulkRoleMutationPreviewDto,
+  BulkRoleMutationResultDto,
   RoleAssignmentDto,
 } from './role.dto';

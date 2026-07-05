@@ -1,6 +1,8 @@
 <div class="order-management">
   <h2>Order Management</h2>
 
+  <app-commerce-workspace-nav></app-commerce-workspace-nav>
+
   <div class="error" *ngIf="error">{{ error }}</div>
 
   <div class="filters">
@@ -17,49 +19,13 @@
   <div class="orders-list">
     <div class="loading" *ngIf="loading">Loading orders...</div>
 
-    <table *ngIf="!loading && filteredOrders.length > 0">
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Date</th>
-          <th>User ID</th>
-          <th>Items</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let order of filteredOrders">
-          <td>{{ order.id.substring(0, 8) }}...</td>
-          <td>{{ order.createdAt | date : 'short' }}</td>
-          <td>{{ order.userId.substring(0, 8) }}...</td>
-          <td>{{ getTotalItems(order) }}</td>
-          <td>{{ order.currency }} \${{ order.total.toFixed(2) }}</td>
-          <td>
-            <span class="status" [ngClass]="getStatusClass(order.status)">
-              {{ order.status }}
-            </span>
-          </td>
-          <td class="actions-cell">
-            <button class="btn btn-sm btn-view" (click)="viewOrder(order)">
-              View
-            </button>
-            <select
-              class="status-select"
-              [value]="order.status"
-              (change)="updateOrderStatus(order, $any($event.target).value)"
-              [disabled]="loading"
-            >
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <otui-ag-grid
+      *ngIf="!loading && filteredOrders.length > 0"
+      [rowData]="gridOrders"
+      [columnDefs]="columnDefs"
+      [loading]="loading"
+      [height]="gridHeight"
+    />
 
     <div class="empty-state" *ngIf="!loading && filteredOrders.length === 0">
       <p>No orders found.</p>

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import {
   BusinessSiteConfig,
   BusinessStoreProduct,
@@ -12,6 +13,12 @@ import { AuthService } from '../services/auth.service';
 import { RolesService } from '../services/roles.service';
 import { StoreService } from '../services/store.service';
 import { BusinessSiteAdminService } from '../services/business-site-admin.service';
+import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
+import {
+  OperatorQueueItem,
+  OperatorQueueService,
+} from '../services/operator-queue.service';
+import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
 type CatalogMode = 'manual' | 'store';
 const REQUIRED_PERMISSION = 'business-site.catalog.update';
@@ -20,7 +27,13 @@ const REQUIRED_SCOPE = 'business-site';
 @Component({
   selector: 'app-business-site-catalog-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    OperatorQueuePanelComponent,
+    CommerceWorkspaceNavComponent,
+  ],
   template: `
     <section class="catalog-page">
       <header class="hero">
@@ -32,6 +45,15 @@ const REQUIRED_SCOPE = 'business-site';
           switching modes.
         </p>
       </header>
+
+      <app-operator-queue-panel
+        [items]="queueItems()"
+        heading="Experience Queue"
+        description="Experience readiness work prioritized from the shared operator queue."
+        emptyStateCopy="No experience queue items are currently prioritized."
+      ></app-operator-queue-panel>
+
+      <app-commerce-workspace-nav></app-commerce-workspace-nav>
 
       <section class="panel">
         <div class="panel-heading">
@@ -158,11 +180,19 @@ const REQUIRED_SCOPE = 'business-site';
 
       <section class="panel">
         <div class="panel-heading">
-          <h2>Store service products</h2>
-          <p>
-            These products determine what can safely power the public
-            business-site offer section.
-          </p>
+          <div>
+            <h2>Store service products</h2>
+            <p>
+              These products determine what can safely power the public
+              business-site offer section.
+            </p>
+          </div>
+          <a
+            routerLink="/dashboard/store/products"
+            class="manage-products-link"
+          >
+            Manage Store Service Products
+          </a>
         </div>
 
         <div class="service-list">
@@ -213,20 +243,33 @@ const REQUIRED_SCOPE = 'business-site';
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
-            rgba(45, 212, 191, 0.09),
+            color-mix(in srgb, var(--accent, #2563eb) 10%, transparent),
             transparent 28%
           ),
           linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.96),
-            rgba(246, 248, 248, 0.92)
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 96%,
+              var(--background, #f3f4f6)
+            ),
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 90%,
+              var(--background, #f3f4f6)
+            )
           );
         padding: 24px;
+        color: var(--foreground, #111827);
       }
 
       .hero-kicker {
         margin: 0 0 8px;
-        color: #0f766e;
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
         font-size: 0.82rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -247,7 +290,34 @@ const REQUIRED_SCOPE = 'business-site';
       }
 
       .panel-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 16px;
         margin-bottom: 16px;
+      }
+
+      .manage-products-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid
+          color-mix(
+            in srgb,
+            var(--accent, #2563eb) 24%,
+            var(--border-color, #d6d6d6)
+          );
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
+        color: var(--foreground, #111827);
+        text-decoration: none;
+        font-weight: 700;
       }
 
       .mode-grid,
@@ -266,7 +336,11 @@ const REQUIRED_SCOPE = 'business-site';
         padding: 18px;
         border-radius: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: rgba(255, 255, 255, 0.92);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .mode-card {
@@ -274,8 +348,13 @@ const REQUIRED_SCOPE = 'business-site';
       }
 
       .mode-card.is-selected {
-        border-color: #0f766e;
-        box-shadow: 0 0 0 1px rgba(15, 118, 110, 0.2);
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 48%,
+          transparent
+        );
+        box-shadow: 0 0 0 1px
+          color-mix(in srgb, var(--accent, #2563eb) 20%, transparent);
       }
 
       .mode-card input {
@@ -291,7 +370,11 @@ const REQUIRED_SCOPE = 'business-site';
         padding: 18px;
         border-radius: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: rgba(255, 255, 255, 0.92);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .storefront-toggle span {
@@ -300,7 +383,7 @@ const REQUIRED_SCOPE = 'business-site';
       }
 
       .storefront-toggle small {
-        color: #4b5563;
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
         line-height: 1.5;
       }
 
@@ -308,12 +391,12 @@ const REQUIRED_SCOPE = 'business-site';
         font-size: 0.8rem;
         text-transform: uppercase;
         letter-spacing: 0.06em;
-        color: #4b5563;
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
       }
 
       .summary-card strong {
         font-size: 1.8rem;
-        color: #0f172a;
+        color: var(--foreground, #111827);
       }
 
       .issues-card ul {
@@ -341,13 +424,21 @@ const REQUIRED_SCOPE = 'business-site';
       }
 
       .btn-primary {
-        background: #0f766e;
-        color: white;
+        background: var(--accent, #2563eb);
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
       }
 
       .btn-secondary {
-        background: rgba(15, 118, 110, 0.12);
-        color: #115e59;
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 12%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .status-msg {
@@ -355,11 +446,19 @@ const REQUIRED_SCOPE = 'business-site';
       }
 
       .status-msg.success {
-        color: #0d6b2b;
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .status-msg.error {
-        color: #8b0000;
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .service-list {
@@ -377,7 +476,7 @@ const REQUIRED_SCOPE = 'business-site';
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
-        color: #4b5563;
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
         font-size: 0.92rem;
       }
 
@@ -386,16 +485,32 @@ const REQUIRED_SCOPE = 'business-site';
         height: fit-content;
         border-radius: 999px;
         padding: 4px 10px;
-        background: rgba(19, 125, 54, 0.14);
-        color: #0d6b2b;
+        background: color-mix(
+          in srgb,
+          var(--success, #15803d) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 82%,
+          var(--foreground, #111827)
+        );
         font-size: 0.78rem;
         font-weight: 700;
         text-transform: uppercase;
       }
 
       .status-badge.attention {
-        background: rgba(196, 112, 0, 0.16);
-        color: #8d4b00;
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 16%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
     `,
   ],
@@ -405,6 +520,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   private readonly businessSiteAdminService = inject(BusinessSiteAdminService);
   private readonly rolesService = inject(RolesService);
   private readonly storeService = inject(StoreService);
+  private readonly operatorQueueService = inject(OperatorQueueService);
 
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -412,6 +528,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   readonly accessMessage = signal('');
   readonly successMessage = signal('');
   readonly errorMessage = signal('');
+  readonly queueItems = signal<OperatorQueueItem[]>([]);
   readonly serviceProducts = signal<BusinessStoreProduct[]>([]);
   readonly businessSiteConfig = signal<BusinessSiteConfig>(
     mergeBusinessSiteConfig(DEFAULT_BUSINESS_SITE_CONFIG)
@@ -458,7 +575,15 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCatalogAccess();
+    this.loadQueue();
     this.reload();
+  }
+
+  loadQueue(): void {
+    this.operatorQueueService.getQueueByDomain('Experience').subscribe({
+      next: (items) => this.queueItems.set(items),
+      error: () => this.queueItems.set([]),
+    });
   }
 
   reload(): void {
@@ -649,8 +774,11 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
           ? normalizedPayload
           : `${normalizedPayload}${'='.repeat(4 - padding)}`;
       const decodedPayload = atob(paddedPayload);
-      const parsed = JSON.parse(decodedPayload) as { profileId?: string };
-      return parsed.profileId ?? null;
+      const parsed = JSON.parse(decodedPayload) as {
+        profileId?: string;
+        userId?: string;
+      };
+      return parsed.profileId ?? parsed.userId ?? null;
     } catch {
       return null;
     }

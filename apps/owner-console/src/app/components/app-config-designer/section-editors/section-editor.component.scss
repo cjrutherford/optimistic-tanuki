@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: color-mix(in srgb, var(--foreground) 36%, transparent);
   z-index: 999;
 }
 
@@ -96,7 +96,11 @@
   padding: 0.625rem;
   border: 1px solid var(--border-color, var(--border));
   border-radius: 4px;
-  background: var(--background, white);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 92%,
+    var(--background)
+  );
   color: var(--foreground, var(--foreground));
   font-size: 0.9rem;
 

@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { type AppConfiguration } from '@optimistic-tanuki/app-config-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -12,6 +12,8 @@ describe('AppConfigDesignerComponent', () => {
   const getConfiguration = jest.fn();
   const createConfiguration = jest.fn();
   const updateConfiguration = jest.fn();
+  const publishConfiguration = jest.fn();
+  const rollbackConfiguration = jest.fn();
   const navigate = jest.fn();
   const setTheme = jest.fn();
   const setPrimaryColor = jest.fn();
@@ -103,6 +105,13 @@ describe('AppConfigDesignerComponent', () => {
       customCss: '',
     },
     active: true,
+    release: {
+      status: 'draft',
+      history: [],
+      publishedVersion: null,
+      publishedSnapshot: null,
+      previewUrl: 'https://workspace.local',
+    },
   };
 
   function createComponent(editorMode: 'guided' | 'studio' = 'guided') {
@@ -111,6 +120,27 @@ describe('AppConfigDesignerComponent', () => {
     );
     createConfiguration.mockReturnValue(of({ ...loadedConfig }));
     updateConfiguration.mockReturnValue(of({ ...loadedConfig }));
+    publishConfiguration.mockReturnValue(
+      of({
+        ...loadedConfig,
+        release: {
+          ...loadedConfig.release,
+          status: 'published',
+          publishedVersion: 1,
+          releaseNotes: 'Launch ready',
+          history: [
+            {
+              version: 1,
+              action: 'publish',
+              releaseNotes: 'Launch ready',
+              changeSummary: 'Launch summary',
+              snapshot: {},
+            },
+          ],
+        },
+      })
+    );
+    rollbackConfiguration.mockReturnValue(of({ ...loadedConfig }));
 
     TestBed.configureTestingModule({
       imports: [AppConfigDesignerComponent],
@@ -121,6 +151,8 @@ describe('AppConfigDesignerComponent', () => {
             getConfiguration,
             createConfiguration,
             updateConfiguration,
+            publishConfiguration,
+            rollbackConfiguration,
           },
         },
         {
@@ -258,6 +290,50 @@ describe('AppConfigDesignerComponent', () => {
     expect(setPrimaryColor).toHaveBeenLastCalledWith('#0f766e');
   });
 
+  it('publishes a configuration with release notes and returns to the list', () => {
+    const { component } = createComponent('studio');
+
+    component.releaseNotes = 'Launch ready';
+    component.changeSummary = 'Launch summary';
+    component.publishConfiguration();
+
+    expect(publishConfiguration).toHaveBeenCalledWith('cfg-1', {
+      releaseNotes: 'Launch ready',
+      changeSummary: 'Launch summary',
+    });
+    expect(component.statusMessage).toContain('published');
+    expect(navigate).toHaveBeenCalledWith(['/dashboard/app-config']);
+  });
+
+  it('rolls back to a selected revision from release history', () => {
+    const { component } = createComponent('studio');
+    component.config = {
+      ...component.config,
+      release: {
+        status: 'published',
+        publishedVersion: 2,
+        publishedSnapshot: null,
+        previewUrl: 'https://workspace.local',
+        history: [
+          {
+            version: 2,
+            action: 'publish',
+            releaseNotes: 'Second release',
+            changeSummary: 'Changed hero',
+            snapshot: {},
+          },
+        ],
+      },
+    } as any;
+
+    component.rollbackConfiguration(2);
+
+    expect(rollbackConfiguration).toHaveBeenCalledWith('cfg-1', {
+      version: 2,
+      releaseNotes: 'Rollback from owner console',
+    });
+  });
+
   it('drives theme-lib for mode and personality changes from the design workspace', () => {
     const { component } = createComponent('studio');
 
@@ -391,5 +467,95 @@ describe('AppConfigDesignerComponent', () => {
     expect(heroBackground?.style.backgroundImage).toContain(
       '/assets/preview-hero.jpg'
     );
+  });
+
+  it('shows an inline validation error instead of using alert when saving without a name', () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    const { component } = createComponent('guided');
+
+    component.config.name = '';
+    component.onSave();
+
+    expect(component.errorMessage).toBe(
+      'Provide a configuration name before saving.'
+    );
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+  });
+
+  it('shows an inline success message after saving an existing configuration', () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    const { component } = createComponent('studio');
+
+    component.onSave();
+
+    expect(updateConfiguration).toHaveBeenCalledWith(
+      'cfg-1',
+      expect.objectContaining({ name: 'Workspace Config' })
+    );
+    expect(component.statusMessage).toBe(
+      'Configuration saved. Returning to the configuration list…'
+    );
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+  });
+
+  it('shows an inline error when loading an existing configuration fails', () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+    getConfiguration.mockReturnValue(
+      throwError(() => new Error('Service unavailable'))
+    );
+
+    TestBed.configureTestingModule({
+      imports: [AppConfigDesignerComponent],
+      providers: [
+        {
+          provide: AppConfigService,
+          useValue: {
+            getConfiguration,
+            createConfiguration,
+            updateConfiguration,
+          },
+        },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            data: of({ editorMode: 'guided', workspaceKind: 'app-config' }),
+            params: of({ id: 'cfg-1' }),
+            snapshot: {
+              data: { editorMode: 'guided', workspaceKind: 'app-config' },
+              paramMap: convertToParamMap({ id: 'cfg-1' }),
+            },
+          },
+        },
+        {
+          provide: Router,
+          useValue: {
+            navigate,
+          },
+        },
+        {
+          provide: ThemeService,
+          useValue: {
+            setTheme,
+            setPrimaryColor,
+            setPersonality,
+            themeColors$,
+          },
+        },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppConfigDesignerComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.errorMessage).toBe(
+      'Failed to load configuration: Service unavailable'
+    );
+    expect(alertSpy).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
   });
 });
