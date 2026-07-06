@@ -359,6 +359,18 @@ export class ChatUiComponent implements OnInit, OnChanges {
     };
   }
 
+  getParticipantContacts(contactId: string): ChatContact[] {
+    const conversation = this.getConversation(contactId);
+    if (
+      conversation.participantProfiles &&
+      conversation.participantProfiles.length > 0
+    ) {
+      return conversation.participantProfiles as ChatContact[];
+    }
+    const contact = this.contacts.find((c) => c.id === contactId);
+    return contact ? [contact] : [];
+  }
+
   getMessagesForContact(contactId: string): ChatMessage[] {
     const conversation = this.getConversation(contactId);
     return conversation.messages || [];

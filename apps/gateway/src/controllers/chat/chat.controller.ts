@@ -6,13 +6,13 @@ import {
   Inject,
   Param,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
+import { User, UserDetails } from '../../decorators/user.decorator';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 
 @ApiBearerAuth()
@@ -26,19 +26,22 @@ export class ChatController {
   ) {}
 
   @Get('conversations/find')
-  async getConversations(@Query('profileId') profileId: string) {
+  async getConversations(@User() user: UserDetails) {
     return this.forward(
       { cmd: ChatCommands.GET_CONVERSATIONS },
-      { profileId },
+      { profileId: user.profileId },
       'Failed to get conversations'
     );
   }
 
   @Get('conversations/id/:conversationId')
-  async getConversation(@Param('conversationId') conversationId: string) {
+  async getConversation(
+    @Param('conversationId') conversationId: string,
+    @User() user: UserDetails
+  ) {
     return this.forward(
       { cmd: ChatCommands.GET_CONVERSATION },
-      { conversationId },
+      { conversationId, requestingProfileId: user.profileId },
       'Failed to get conversation'
     );
   }
@@ -87,13 +90,13 @@ export class ChatController {
     body: {
       conversationId: string;
       content: string;
-      senderId: string;
       recipientIds: string[];
-    }
+    },
+    @User() user: UserDetails
   ) {
     return this.forward(
       { cmd: ChatCommands.SEND_MESSAGE },
-      body,
+      { ...body, senderId: user.profileId },
       'Failed to send message'
     );
   }

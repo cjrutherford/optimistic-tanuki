@@ -164,7 +164,11 @@ export class PostService {
     }
     await this.postRepo.update(id, sanitizedDto);
 
-    return await this.postRepo.findOne({ where: { id } });
+    const updated = await this.postRepo.findOne({ where: { id } });
+    if (!updated) {
+      throw new Error('Post not found after update');
+    }
+    return updated;
   }
 
   async remove(id: string, userId: string): Promise<{ success: boolean }> {

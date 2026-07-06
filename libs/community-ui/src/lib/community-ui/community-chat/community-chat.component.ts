@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {
@@ -74,7 +74,7 @@ import { CommunityDto } from '../models';
     `,
   ],
 })
-export class CommunityChatComponent implements OnInit {
+export class CommunityChatComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private communityService = inject(CommunityService);
   private socketChatService = inject(SocketChatService);
@@ -358,6 +358,10 @@ export class CommunityChatComponent implements OnInit {
           return conversation;
         }
 
+        if (conversation.messages.some((m) => m.id === message.id)) {
+          return conversation;
+        }
+
         return {
           ...conversation,
           messages: [...conversation.messages, message],
@@ -377,6 +381,10 @@ export class CommunityChatComponent implements OnInit {
           : contact
       )
     );
+  }
+
+  ngOnDestroy() {
+    this.socketChatService.destroy();
   }
 
   async createChatRoom() {

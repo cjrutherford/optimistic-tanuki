@@ -312,14 +312,15 @@ describe('AppController', () => {
   });
 
   it('should update a post', async () => {
-    postService.update.mockResolvedValue(undefined);
+    const updatedPost = { id: '1', title: 'Updated' };
+    postService.update.mockResolvedValue(updatedPost);
     const result = await controller.updatePost(
       '1',
       {} as any,
       'user-1',
       'profile-1'
     );
-    expect(result).toBeUndefined();
+    expect(result).toEqual(updatedPost);
     expect(postService.update).toHaveBeenCalledWith(
       '1',
       {},

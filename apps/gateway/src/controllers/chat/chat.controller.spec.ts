@@ -7,10 +7,20 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { ChatController } from './chat.controller';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { UserDetails } from '../../decorators/user.decorator';
 
 describe('ChatController', () => {
   let controller: ChatController;
   let chatService: { send: jest.Mock };
+
+  const mockUser: UserDetails = {
+    userId: 'user-1',
+    profileId: 'profile-1',
+    email: 'test@test.com',
+    name: 'Test User',
+    exp: 9999999999,
+    iat: 0,
+  };
 
   beforeEach(async () => {
     chatService = {
@@ -51,14 +61,25 @@ describe('ChatController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should get a conversation by id', async () => {
+  it('should get conversations using profile from auth context', async () => {
+    chatService.send.mockReturnValue(of([{ id: 'conversation-1' }]));
+
+    await controller.getConversations(mockUser);
+
+    expect(chatService.send).toHaveBeenCalledWith(
+      { cmd: ChatCommands.GET_CONVERSATIONS },
+      { profileId: 'profile-1' }
+    );
+  });
+
+  it('should get a conversation by id, forwarding requestingProfileId', async () => {
     chatService.send.mockReturnValue(of({ id: 'conversation-1' }));
 
-    await controller.getConversation('conversation-1');
+    await controller.getConversation('conversation-1', mockUser);
 
     expect(chatService.send).toHaveBeenCalledWith(
       { cmd: ChatCommands.GET_CONVERSATION },
-      { conversationId: 'conversation-1' }
+      { conversationId: 'conversation-1', requestingProfileId: 'profile-1' }
     );
   });
 
@@ -82,6 +103,29 @@ describe('ChatController', () => {
     expect(chatService.send).toHaveBeenCalledWith(
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
       { participantIds }
+    );
+  });
+
+  it('should send message with senderId bound to auth user profile', async () => {
+    chatService.send.mockReturnValue(of({ id: 'message-1' }));
+
+    await controller.sendMessage(
+      {
+        conversationId: 'conv-1',
+        content: 'hello',
+        recipientIds: ['profile-2'],
+      },
+      mockUser
+    );
+
+    expect(chatService.send).toHaveBeenCalledWith(
+      { cmd: ChatCommands.SEND_MESSAGE },
+      {
+        conversationId: 'conv-1',
+        content: 'hello',
+        recipientIds: ['profile-2'],
+        senderId: 'profile-1',
+      }
     );
   });
 });

@@ -48,7 +48,7 @@
     } @else { @for( contact of contacts; track contact.id; let i = $index) {
     <lib-chat-window
       *ngIf="selectedConversationId() === contact.id"
-      [contact]="[contact]"
+      [contact]="getParticipantContacts(contact.id)"
       [messages]="getConversation(contact.id)"
       [currentUserId]="currentUserId"
       [windowState]="activeWindowState()"
