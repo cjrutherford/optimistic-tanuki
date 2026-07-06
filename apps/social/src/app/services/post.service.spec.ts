@@ -107,14 +107,19 @@ describe('PostService', () => {
   });
 
   it('should update a post', async () => {
-    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.findOne.mockResolvedValue({
+      id: '1',
+      userId: 'user-1',
+      profileId: 'profile-1',
+      communityId: null,
+    } as Post);
     postRepo.update.mockResolvedValue({
       generatedMaps: [],
       raw: [],
       affected: 1,
     });
     const dto: UpdatePostDto = { title: 'Updated', content: 'Updated' };
-    await service.update('1', dto, 'user-1');
+    await service.update('1', dto, 'user-1', 'profile-1');
     // Content should be sanitized
     expect(postRepo.update).toHaveBeenCalledWith(
       '1',
@@ -188,7 +193,12 @@ describe('PostService', () => {
   });
 
   it('should update a post and sanitize content', async () => {
-    postRepo.findOne.mockResolvedValue({ id: '1' } as Post);
+    postRepo.findOne.mockResolvedValue({
+      id: '1',
+      userId: 'user-1',
+      profileId: 'profile-1',
+      communityId: null,
+    } as Post);
     postRepo.update.mockResolvedValue({
       generatedMaps: [],
       raw: [],
@@ -199,7 +209,7 @@ describe('PostService', () => {
       content: '<script>alert("xss")</script><p>Hello</p>',
     };
 
-    await service.update('1', dto, 'user-1');
+    await service.update('1', dto, 'user-1', 'profile-1');
 
     expect(postRepo.update).toHaveBeenCalledWith(
       '1',
@@ -207,6 +217,50 @@ describe('PostService', () => {
         content: '<p>Hello</p>',
       })
     );
+  });
+
+  it('rejects post updates from non-owners', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: '1',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      communityId: null,
+    } as Post);
+
+    await expect(
+      service.update('1', { title: 'Updated' }, 'owner-user', 'other-profile')
+    ).rejects.toThrow();
+  });
+
+  it('allows a non-community post update only for the owning profile', async () => {
+    postRepo.findOne.mockResolvedValue({
+      id: '1',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      communityId: null,
+    } as Post);
+    postRepo.update.mockResolvedValue({
+      generatedMaps: [],
+      raw: [],
+      affected: 1,
+    });
+    postRepo.findOne.mockResolvedValueOnce({
+      id: '1',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      communityId: null,
+    } as Post);
+    postRepo.findOne.mockResolvedValueOnce({
+      id: '1',
+      userId: 'owner-user',
+      profileId: 'owner-profile',
+      title: 'Updated',
+      communityId: null,
+    } as Post);
+
+    await expect(
+      service.update('1', { title: 'Updated' }, 'owner-user', 'owner-profile')
+    ).resolves.toEqual(expect.objectContaining({ title: 'Updated' }));
   });
 
   it('should throw error when remove fails', async () => {

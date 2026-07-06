@@ -2,6 +2,7 @@
 import {
   Component,
   computed,
+  HostListener,
   inject,
   signal,
   OnInit,
@@ -178,6 +179,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatConversations: ChatConversation[] = [];
   showChat = signal(false);
   chatInitialized = signal(false);
+  isMobileViewport = signal(false);
 
   notifications = signal<Notification[]>([]);
   unreadCount = signal(0);
@@ -226,6 +228,16 @@ export class AppComponent implements OnInit, OnDestroy {
         'The feed is the fastest way to catch up, then branch into communities, forum threads, or direct follow-up.',
     };
   });
+  suppressFixedChatOverlays = computed(() => {
+    if (!this.isMobileViewport()) {
+      return false;
+    }
+
+    const url = this.currentPath();
+    return (
+      url.startsWith('/messages') || /^\/communities\/[^/]+\/chat/.test(url)
+    );
+  });
 
   get isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -244,6 +256,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    this.updateViewportState();
+
     // Apply documented default personality (soft-touch) only on first load.
     if (this.isBrowser) {
       const hasStoredPersonalityTheme = !!localStorage.getItem(
@@ -283,6 +297,11 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.urlSub) {
       this.urlSub.unsubscribe();
     }
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.updateViewportState();
   }
 
   updateNavItems() {
@@ -506,5 +525,14 @@ export class AppComponent implements OnInit, OnDestroy {
     } else if (result.type === 'community') {
       this.router.navigate(['/communities', result.id]);
     }
+  }
+
+  private updateViewportState() {
+    if (!this.isBrowser || typeof window === 'undefined') {
+      this.isMobileViewport.set(false);
+      return;
+    }
+
+    this.isMobileViewport.set(window.innerWidth <= 640);
   }
 }

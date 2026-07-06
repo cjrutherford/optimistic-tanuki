@@ -18,6 +18,7 @@ export interface PostDto {
   profileId: string;
   communityId?: string;
   createdAt: Date;
+  updatedAt?: Date;
   links?: { url: string }[];
   comments?: CommentDto[];
 }

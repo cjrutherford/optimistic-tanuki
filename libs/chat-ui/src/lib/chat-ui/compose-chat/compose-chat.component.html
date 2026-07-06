@@ -21,20 +21,21 @@
     <textarea
       [(ngModel)]="content"
       (input)="onContentChanged($event)"
+      (keydown)="onEditorKeydown($event)"
       placeholder="Type a message..."
       class="compose-textarea"
       rows="1"
     ></textarea>
   </div>
   <div class="compose-actions">
-    <button
-      type="button"
+    <otui-button
       class="send-button"
+      variant="rounded"
+      [useGradient]="false"
       [disabled]="!content.trim()"
-      (click)="submitMessage()"
-      title="Send message (Ctrl+Enter)"
+      (action)="submitMessage()"
     >
       <span class="send-icon">➤</span>
-    </button>
+    </otui-button>
   </div>
 </div>

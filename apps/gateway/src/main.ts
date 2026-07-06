@@ -13,6 +13,7 @@ import {
   applyGatewaySecurityHeaders,
   enforceTrustedBrowserOrigins,
   getTrustedOrigins,
+  isAllowedOrigin,
   parseConfiguredOrigins,
 } from './bootstrap/security';
 import { loadConfiguredRegistry } from './controllers/registry/registry.config';
@@ -70,17 +71,7 @@ async function bootstrap() {
         return;
       }
 
-      const normalizedOrigin = origin.replace(/\/$/, '');
-      const isConfigured = trustedOrigins.includes(normalizedOrigin);
-      const isLoopback =
-        /^(https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:\d+)?)$/.test(
-          normalizedOrigin
-        );
-
-      if (
-        isConfigured ||
-        (process.env['NODE_ENV'] !== 'production' && isLoopback)
-      ) {
+      if (isAllowedOrigin(origin, trustedOrigins)) {
         callback(null, true);
         return;
       }

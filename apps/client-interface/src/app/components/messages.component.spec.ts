@@ -1,73 +1,112 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { of } from 'rxjs';
+import { By } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
 import { MessagesComponent } from './messages.component';
 import { ProfileService } from '../profile.service';
 import { ChatService } from '../chat.service';
 import { PresenceService } from '../presence.service';
-import { HttpClient } from '@angular/common/http';
-import { Router } from '@angular/router';
-import { SocketChatService } from '@optimistic-tanuki/chat-ui';
-import { of } from 'rxjs';
+import { ChatUiComponent, SocketChatService } from '@optimistic-tanuki/chat-ui';
 
 describe('MessagesComponent', () => {
   let fixture: ComponentFixture<MessagesComponent>;
   let component: MessagesComponent;
-
-  const profileServiceMock = {
-    getCurrentUserProfile: jest.fn().mockReturnValue({
-      id: 'self-profile',
-      profileName: 'Self User',
-    }),
+  let chatService: {
+    sendMessage: jest.Mock;
+    getMessages: jest.Mock;
   };
-
-  const chatServiceMock = {
-    sendMessage: jest.fn(),
-    getMessages: jest.fn(),
-  };
-
-  const presenceServiceMock = {
-    getPresenceBatch: jest.fn().mockReturnValue(of([])),
-  };
-
-  const httpMock = {
-    post: jest.fn().mockReturnValue(of([])),
-  };
-
-  const routerMock = {
-    navigate: jest.fn(),
-  };
-
-  const socketChatServiceMock = {
-    onConversations: jest.fn(),
-    onMessage: jest.fn(),
-    getConversations: jest.fn(),
-    destroy: jest.fn(),
+  let socketChatService: {
+    onConversations: jest.Mock;
+    onMessage: jest.Mock;
+    getConversations: jest.Mock;
+    destroy: jest.Mock;
   };
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    chatService = {
+      sendMessage: jest.fn(),
+      getMessages: jest.fn(),
+    };
+
+    socketChatService = {
+      onConversations: jest.fn(),
+      onMessage: jest.fn(),
+      getConversations: jest.fn(),
+      destroy: jest.fn(),
+    };
 
     await TestBed.configureTestingModule({
       imports: [MessagesComponent],
       providers: [
-        { provide: ProfileService, useValue: profileServiceMock },
-        { provide: ChatService, useValue: chatServiceMock },
-        { provide: PresenceService, useValue: presenceServiceMock },
-        { provide: HttpClient, useValue: httpMock },
-        { provide: Router, useValue: routerMock },
-        { provide: SocketChatService, useValue: socketChatServiceMock },
+        {
+          provide: ProfileService,
+          useValue: {
+            getCurrentUserProfile: jest
+              .fn()
+              .mockReturnValue({ id: 'profile-1' }),
+          },
+        },
+        {
+          provide: ChatService,
+          useValue: chatService,
+        },
+        {
+          provide: PresenceService,
+          useValue: {
+            getPresenceBatch: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        {
+          provide: HttpClient,
+          useValue: {
+            post: jest.fn().mockReturnValue(of([])),
+          },
+        },
+        {
+          provide: Router,
+          useValue: {
+            navigate: jest.fn(),
+          },
+        },
+        {
+          provide: SocketChatService,
+          useValue: socketChatService,
+        },
       ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(MessagesComponent);
     component = fixture.componentInstance;
-    (component as any).currentProfileId = 'self-profile';
+    component.currentProfileId = 'profile-1';
+  });
+
+  it('renders the route chat surface with the embedded layout', () => {
+    component.loading.set(false);
+    component.chatContacts.set([{ id: 'room-1', name: 'General' }]);
+    component.chatConversations.set([
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+
+    fixture.detectChanges();
+
+    const chatUi = fixture.debugElement.query(By.directive(ChatUiComponent))
+      .componentInstance as ChatUiComponent;
+
+    expect(chatUi.layout).toBe('embedded');
   });
 
   it('sends outgoing messages to the other conversation participants', async () => {
-    chatServiceMock.sendMessage.mockResolvedValue({
+    chatService.sendMessage.mockResolvedValue({
       id: 'message-1',
       conversationId: 'conversation-1',
-      senderId: 'self-profile',
+      senderId: 'profile-1',
       content: 'hello world',
       type: 'chat',
       recipients: ['other-profile'],
@@ -77,7 +116,7 @@ describe('MessagesComponent', () => {
     component.chatConversations.set([
       {
         id: 'conversation-1',
-        participants: ['self-profile', 'other-profile'],
+        participants: ['profile-1', 'other-profile'],
         messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -89,10 +128,10 @@ describe('MessagesComponent', () => {
       content: 'hello world',
     });
 
-    expect(chatServiceMock.sendMessage).toHaveBeenCalledWith({
+    expect(chatService.sendMessage).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       content: 'hello world',
-      senderId: 'self-profile',
+      senderId: 'profile-1',
       recipientIds: ['other-profile'],
     });
     expect(component.chatConversations()[0].messages).toHaveLength(1);
@@ -102,9 +141,9 @@ describe('MessagesComponent', () => {
   });
 
   it('appends an outgoing message even when the API response omits conversationId', async () => {
-    chatServiceMock.sendMessage.mockResolvedValue({
+    chatService.sendMessage.mockResolvedValue({
       id: 'message-2',
-      senderId: 'self-profile',
+      senderId: 'profile-1',
       content: 'fallback conversation id',
       type: 'chat',
       recipients: ['other-profile'],
@@ -114,7 +153,7 @@ describe('MessagesComponent', () => {
     component.chatConversations.set([
       {
         id: 'conversation-1',
-        participants: ['self-profile', 'other-profile'],
+        participants: ['profile-1', 'other-profile'],
         messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -136,7 +175,7 @@ describe('MessagesComponent', () => {
     component.chatConversations.set([
       {
         id: 'conversation-1',
-        participants: ['self-profile', 'other-profile'],
+        participants: ['profile-1', 'other-profile'],
         messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -149,7 +188,7 @@ describe('MessagesComponent', () => {
       senderId: 'other-profile',
       content: 'reply message',
       type: 'chat',
-      recipientId: ['self-profile'],
+      recipientId: ['profile-1'],
       timestamp: new Date('2026-07-05T18:21:00.000Z'),
     });
 
@@ -157,5 +196,11 @@ describe('MessagesComponent', () => {
     expect(component.chatConversations()[0].messages[0].content).toBe(
       'reply message'
     );
+  });
+
+  it('destroys the socket chat service on teardown', () => {
+    fixture.destroy();
+
+    expect(socketChatService.destroy).toHaveBeenCalled();
   });
 });

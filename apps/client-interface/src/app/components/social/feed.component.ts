@@ -20,6 +20,7 @@ import {
   CreateCommentDto,
   PostData,
   ImageUploadCallback,
+  UpdatePostDto,
 } from '@optimistic-tanuki/social-ui';
 import {
   CreateAttachmentDto,
@@ -195,8 +196,6 @@ export class FeedComponent implements OnInit, OnDestroy {
       // Load initial following list for the current profile
       this.loadFollowing(currentProfile.id);
       this.loadOwnedCommunities();
-      this.loadBlockedUsers(currentProfile.id);
-
       // Connect to WebSocket
       this.socialWebSocketService.connect();
 
@@ -292,23 +291,6 @@ export class FeedComponent implements OnInit, OnDestroy {
         this.ownedCommunities.set(owned);
       },
       error: (err) => console.error('Failed to load owned communities', err),
-    });
-  }
-
-  private loadBlockedUsers(profileId: string) {
-    this.profileService.getBlockedUsers(profileId).subscribe({
-      next: (blocked) => {
-        this.blockedIds.clear();
-        if (Array.isArray(blocked)) {
-          blocked.forEach((b: any) => {
-            if (b.blockedProfileId) {
-              this.blockedIds.add(b.blockedProfileId);
-            }
-          });
-        }
-        console.log('Blocked IDs loaded:', Array.from(this.blockedIds));
-      },
-      error: (err) => console.error('Failed to load blocked users', err),
     });
   }
 
@@ -576,6 +558,18 @@ export class FeedComponent implements OnInit, OnDestroy {
         error: (err) => console.error('Failed to delete post', err),
       });
     }
+  }
+
+  async updatePost(id: string, updatePostDto: UpdatePostDto): Promise<PostDto> {
+    const updatedPost = await firstValueFrom(
+      this.postService.updatePost(id, updatePostDto)
+    );
+
+    this.posts.update((posts) =>
+      posts.map((post) => (post.id === id ? { ...post, ...updatedPost } : post))
+    );
+
+    return updatedPost;
   }
 
   canFollow(post: PostDto): boolean {

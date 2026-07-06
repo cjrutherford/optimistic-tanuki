@@ -1,10 +1,17 @@
-<div class="messenger-container">
+<div class="messenger-container" [class.mobile-layout]="isMobileViewport()">
   <div class="messenger-sidebar">
     <div class="messenger-header">
       <h3>Conversations</h3>
     </div>
     <div class="contacts-container">
-      @for( contact of contacts; track contact.id; let i = $index) {
+      @if (!contacts.length) {
+      <otui-empty-state
+        class="sidebar-empty-state"
+        headline="No conversations yet"
+        body="Start a chat to see your threads and recent activity here."
+        iconGlyph="✦"
+      ></otui-empty-state>
+      } @else { @for( contact of contacts; track contact.id; let i = $index) {
       <div class="contact-item" (click)="openChat(contact.id)">
         <lib-contact-bubble [contacts]="[contact]"></lib-contact-bubble>
         <div class="contact-info">
@@ -17,21 +24,37 @@
           {{ contact.lastMessageTime | date : 'shortTime' }}
         </div>
       </div>
-      }
+      } }
     </div>
   </div>
 
   <div class="messenger-main">
-    @for( contact of contacts; track contact.id; let i = $index) {
+    @if (!contacts.length) {
+    <div class="messenger-empty-panel">
+      <otui-empty-state
+        headline="No conversations yet"
+        body="Pick a teammate, customer, or assistant to open a conversation."
+        iconGlyph="💬"
+      ></otui-empty-state>
+    </div>
+    } @else if (!selectedConversationId()) {
+    <div class="messenger-empty-panel">
+      <otui-empty-state
+        headline="Choose a conversation"
+        body="Select a thread from the sidebar to open the chat workspace."
+        iconGlyph="→"
+      ></otui-empty-state>
+    </div>
+    } @else { @for( contact of contacts; track contact.id; let i = $index) {
     <lib-chat-window
-      *ngIf="windowStates()[contact.id]?.windowState !== 'hidden'"
+      *ngIf="selectedConversationId() === contact.id"
       [contact]="[contact]"
       [messages]="getConversation(contact.id)"
       [currentUserId]="currentUserId"
-      [windowState]="windowStates()[contact.id]!.windowState || 'popout'"
+      [windowState]="activeWindowState()"
       (windowStateChange)="handleWindowStateChange(contact.id, $event)"
       (messageSubmitted)="handleMessageSubmitted(contact.id, $event)"
     ></lib-chat-window>
-    }
+    } }
   </div>
 </div>

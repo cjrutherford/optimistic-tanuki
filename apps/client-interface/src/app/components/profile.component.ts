@@ -69,11 +69,9 @@ export class ProfileComponent implements OnInit {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      if (isPlatformBrowser(this.platformId)) {
-        const profile = localStorage.getItem('selectedProfile');
-        if (profile) {
-          this.profileService.selectProfile(JSON.parse(profile));
-        }
+      const profile = this.profileService.restorePersistedSelectedProfile();
+      if (profile) {
+        this.profileService.selectProfile(profile);
       }
     }
   }
@@ -114,14 +112,14 @@ export class ProfileComponent implements OnInit {
       this.loadUserCommunities(currentProfile.id);
       this.loadSocialProof(currentProfile.id);
       this.checkFollowStatus(currentProfile.id);
-      this.checkBlockStatus(currentProfile.id, currentProfile.id);
+      this.isBlocked.set(false);
     }
 
     this.profileService.getAllProfiles().then(() => {
       if (isPlatformBrowser(this.platformId)) {
-        const profile = localStorage.getItem('selectedProfile');
+        const profile = this.profileService.restorePersistedSelectedProfile();
         if (profile) {
-          this.profileService.selectProfile(JSON.parse(profile));
+          this.profileService.selectProfile(profile);
         }
       }
     });
@@ -153,7 +151,7 @@ export class ProfileComponent implements OnInit {
 
         if (currentProfile && currentProfile.id !== userId) {
           this.checkFollowStatus(userId);
-          this.checkBlockStatus(currentProfile.id, userId);
+          this.isBlocked.set(false);
         } else {
           this.isFollowing.set(false);
           this.isBlocked.set(false);
@@ -221,18 +219,6 @@ export class ProfileComponent implements OnInit {
         );
       },
       error: (err) => console.error('Failed to load following', err),
-    });
-  }
-
-  private checkBlockStatus(currentProfileId: string, blockedProfileId: string) {
-    this.profileService.getBlockedUsers(currentProfileId).subscribe({
-      next: (blocked) => {
-        const isBlocked = blocked.some(
-          (b: any) => b.blockedProfileId === blockedProfileId
-        );
-        this.isBlocked.set(isBlocked);
-      },
-      error: (err) => console.error('Failed to check block status', err),
     });
   }
 

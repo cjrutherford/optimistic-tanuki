@@ -3,10 +3,10 @@ import { ChatUiComponent } from './chat-ui.component';
 
 const meta: Meta<ChatUiComponent> = {
   component: ChatUiComponent,
-  title: 'Theme/Personality Showcase',
+  title: 'Chat UI/Personality Showcase',
   tags: ['autodocs'],
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
   },
 };
 
@@ -14,18 +14,73 @@ export default meta;
 type Story = StoryObj<ChatUiComponent>;
 
 export const Showcase: Story = {
-  render: () => ({
-    template: `
-      <div style="padding: 48px; min-width: 400px; background: var(--background, #fff); color: var(--foreground, #000); border-radius: 8px; box-shadow: var(--shadow-md, 0 4px 6px rgba(0,0,0,0.1));">
-        <h2 style="font-family: var(--font-heading, system-ui); margin-bottom: 24px;">Personality Showcase</h2>
-        <p style="margin-bottom: 24px; font-family: var(--font-body, system-ui);">
-          Use the toolbar above to switch between personalities and color modes.
-        </p>
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-          <button style="padding: 10px 20px; background: var(--accent, #3f51b5); color: white; border: none; border-radius: var(--border-radius-md, 4px); font-family: var(--font-body, system-ui); cursor: pointer;">Primary</button>
-          <button style="padding: 10px 20px; background: transparent; color: var(--accent, #3f51b5); border: 1px solid var(--border, #ccc); border-radius: var(--border-radius-md, 4px); font-family: var(--font-body, system-ui); cursor: pointer;">Secondary</button>
-        </div>
-      </div>
-    `,
-  }),
+  args: {
+    layout: 'embedded',
+    autoOpenFirstConversation: true,
+    currentUserId: 'profile-me',
+    contacts: [
+      {
+        id: 'studio',
+        name: 'Studio Thread',
+        profilePic: 'https://placehold.co/64x64?text=ST',
+        lastMessage: 'Palette and shell treatment are ready for review.',
+        lastMessageTime: '2026-07-06T14:12:00.000Z',
+        presence: 'online',
+      },
+      {
+        id: 'support',
+        name: 'Support Queue',
+        profilePic: 'https://placehold.co/64x64?text=SQ',
+        lastMessage: 'Three customers are waiting on a handoff.',
+        lastMessageTime: '2026-07-06T13:40:00.000Z',
+        presence: 'busy',
+      },
+    ],
+    conversations: [
+      {
+        id: 'studio',
+        participants: ['profile-me', 'profile-studio'],
+        messages: [
+          {
+            id: 'pm-1',
+            conversationId: 'studio',
+            senderId: 'profile-studio',
+            recipientId: ['profile-me'],
+            content: 'Palette and shell treatment are ready for review.',
+            timestamp: new Date('2026-07-06T14:10:00.000Z'),
+            type: 'chat',
+          },
+          {
+            id: 'pm-2',
+            conversationId: 'studio',
+            senderId: 'profile-me',
+            recipientId: ['profile-studio'],
+            content:
+              'Looks good. Checking how it behaves across personalities now.',
+            timestamp: new Date('2026-07-06T14:12:00.000Z'),
+            type: 'chat',
+          },
+        ],
+        createdAt: new Date('2026-07-06T13:55:00.000Z'),
+        updatedAt: new Date('2026-07-06T14:12:00.000Z'),
+      },
+      {
+        id: 'support',
+        participants: ['profile-me', 'profile-support'],
+        messages: [
+          {
+            id: 'pm-3',
+            conversationId: 'support',
+            senderId: 'profile-support',
+            recipientId: ['profile-me'],
+            content: 'Three customers are waiting on a handoff.',
+            timestamp: new Date('2026-07-06T13:40:00.000Z'),
+            type: 'chat',
+          },
+        ],
+        createdAt: new Date('2026-07-06T13:20:00.000Z'),
+        updatedAt: new Date('2026-07-06T13:40:00.000Z'),
+      },
+    ],
+  },
 };

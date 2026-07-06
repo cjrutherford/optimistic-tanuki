@@ -1,34 +1,52 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
 .messenger-container {
   display: flex;
-  height: 100vh;
-  background: var(--background);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-lg, 16px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.messenger-container.mobile-layout {
+  flex-direction: column;
+  border-radius: var(--border-radius-md, 12px);
 }
 
 .messenger-sidebar {
   width: min(300px, 100%);
-  background: var(--background);
+  min-width: 0;
+  background: var(--surface, var(--background));
   border-right: var(--border-width, 1px) solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-@media (max-width: 640px) {
-  .messenger-sidebar {
-    width: 100%;
-    border-right: none;
-    border-bottom: var(--border-width, 1px) solid var(--border);
-  }
+.messenger-container.mobile-layout .messenger-sidebar {
+  width: 100%;
+  max-width: none;
+  max-height: min(40vh, 20rem);
+  border-right: none;
+  border-bottom: var(--border-width, 1px) solid var(--border);
 }
 
 .messenger-header {
   padding: 16px 20px;
   background: var(
-    --border-gradient,
+    --surface,
     linear-gradient(
       135deg,
-      color-mix(in srgb, var(--primary) 10%, var(--background)),
-      var(--background)
+      color-mix(in srgb, var(--primary) 10%, var(--surface, var(--background))),
+      var(--surface, var(--background))
     )
   );
   border-bottom: var(--border-width, 1px) solid var(--border);
@@ -47,10 +65,15 @@
   padding: 8px 0;
 }
 
+.sidebar-empty-state {
+  margin: auto 16px;
+}
+
 .contact-item {
   display: flex;
   align-items: center;
   padding: 12px 16px;
+  min-height: 48px;
   cursor: pointer;
   transition: background-color var(--animation-duration-fast, 200ms)
     var(--animation-easing, ease);
@@ -81,7 +104,7 @@
 
 .contact-preview {
   font-size: 0.85rem;
-  color: var(--foreground);
+  color: var(--muted-foreground, var(--foreground));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,7 +113,7 @@
 
 .contact-timestamp {
   font-size: 0.75rem;
-  color: var(--foreground);
+  color: var(--muted-foreground, var(--foreground));
   margin-left: 8px;
   min-width: 40px;
   text-align: right;
@@ -102,6 +125,26 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
+
+.messenger-container.mobile-layout .messenger-main {
+  min-height: 20rem;
+}
+
+.messenger-empty-panel {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: radial-gradient(
+      circle at top right,
+      color-mix(in srgb, var(--primary) 12%, transparent),
+      transparent 45%
+    ),
+    var(--background);
 }
 
 .contact-bubble {
@@ -110,60 +153,20 @@
   max-width: none;
 }
 
-.chat-popout {
-  position: absolute;
-  right: 320px;
-  bottom: 24px;
-  z-index: 10;
-}
-
-// ============================================
-// Personality-Specific Chat Enhancements
-// ============================================
-
-body.personality-architect {
-  .messenger-sidebar {
-    border-right-width: 2px;
+@media (max-width: 640px) {
+  .messenger-container {
+    border-radius: var(--border-radius-md, 12px);
   }
-  .contact-item:hover {
-    box-shadow: 4px 0 0 var(--primary);
-  }
-}
 
-body.personality-playful {
-  .contact-item {
-    border-radius: var(--border-radius-md, 8px);
-    margin: 4px 8px;
-  }
   .messenger-header {
-    border-radius: var(--border-radius-lg, 12px);
+    padding: 14px 16px;
   }
-}
 
-body.personality-minimal {
-  .messenger-sidebar {
-    border-right-style: none;
-  }
-}
-
-body.personality-soft-touch {
   .contact-item {
-    border-radius: var(--border-radius-lg, 16px);
-    margin: 4px 8px;
+    padding: 14px 16px;
   }
-}
 
-body.personality-electric {
-  .messenger-header {
-    border: 2px dashed var(--primary);
-  }
-}
-
-body.personality-control-center {
-  .contact-item {
-    border-left: 3px solid transparent;
-    &:hover {
-      border-left-color: var(--primary);
-    }
+  .contact-timestamp {
+    display: none;
   }
 }

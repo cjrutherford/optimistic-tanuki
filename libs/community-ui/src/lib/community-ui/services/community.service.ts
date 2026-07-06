@@ -191,6 +191,98 @@ export class CommunityService {
       .toPromise() as Promise<{ id: string } | null>;
   }
 
+  getCommunityChatConversation(conversationId: string): Promise<{
+    id: string;
+    participants: string[];
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    return this.http
+      .get<{
+        id: string;
+        participants: string[];
+        createdAt: Date;
+        updatedAt: Date;
+      }>(`/api/chat/conversations/id/${conversationId}`)
+      .toPromise() as Promise<{
+      id: string;
+      participants: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+  }
+
+  getCommunityChatMessages(conversationId: string): Promise<
+    Array<{
+      id: string;
+      conversationId: string;
+      senderId: string;
+      content: string;
+      type: 'chat' | 'info' | 'warning' | 'system';
+      recipients: string[];
+      createdAt: Date;
+    }>
+  > {
+    return this.http
+      .get<
+        Array<{
+          id: string;
+          conversationId: string;
+          senderId: string;
+          content: string;
+          type: 'chat' | 'info' | 'warning' | 'system';
+          recipients: string[];
+          createdAt: Date;
+        }>
+      >(`/api/chat/messages/${conversationId}`)
+      .toPromise() as Promise<
+      Array<{
+        id: string;
+        conversationId: string;
+        senderId: string;
+        content: string;
+        type: 'chat' | 'info' | 'warning' | 'system';
+        recipients: string[];
+        createdAt: Date;
+      }>
+    >;
+  }
+
+  sendCommunityChatMessage(payload: {
+    conversationId: string;
+    content: string;
+    senderId: string;
+    recipientIds: string[];
+  }): Promise<{
+    id: string;
+    conversationId: string;
+    senderId: string;
+    content: string;
+    type: 'chat' | 'info' | 'warning' | 'system';
+    recipients: string[];
+    createdAt: Date;
+  }> {
+    return this.http
+      .post<{
+        id: string;
+        conversationId: string;
+        senderId: string;
+        content: string;
+        type: 'chat' | 'info' | 'warning' | 'system';
+        recipients: string[];
+        createdAt: Date;
+      }>(`/api/chat/messages`, payload)
+      .toPromise() as Promise<{
+      id: string;
+      conversationId: string;
+      senderId: string;
+      content: string;
+      type: 'chat' | 'info' | 'warning' | 'system';
+      recipients: string[];
+      createdAt: Date;
+    }>;
+  }
+
   ensureCommunityChatRoom(
     communityId: string,
     ownerId: string,

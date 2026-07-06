@@ -64,6 +64,34 @@ export const isLoopbackOrigin = (origin: string): boolean => {
   return host ? LOCALHOST_HOSTNAMES.has(host) : false;
 };
 
+export const isPrivateNetworkHost = (host: string): boolean => {
+  return (
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)
+  );
+};
+
+export const isTailnetHost = (host: string): boolean =>
+  host.endsWith('.ts.net');
+
+export const isNonProductionDevelopmentOrigin = (origin: string): boolean => {
+  if (PRODUCTION) {
+    return false;
+  }
+
+  const host = originHost(origin);
+  if (!host) {
+    return false;
+  }
+
+  return (
+    LOCALHOST_HOSTNAMES.has(host) ||
+    isPrivateNetworkHost(host) ||
+    isTailnetHost(host)
+  );
+};
+
 export const isAllowedOrigin = (
   origin: string,
   configuredOrigins = parseConfiguredOrigins()
@@ -81,7 +109,7 @@ export const isAllowedOrigin = (
     return true;
   }
 
-  return !PRODUCTION && isLoopbackOrigin(normalizedOrigin);
+  return isNonProductionDevelopmentOrigin(normalizedOrigin);
 };
 
 export const getRequestOrigin = (request: Request): string => {

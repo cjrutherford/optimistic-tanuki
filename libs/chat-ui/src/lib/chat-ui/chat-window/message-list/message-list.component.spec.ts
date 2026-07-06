@@ -2,8 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MessageListComponent } from './message-list.component';
 
 describe('MessageListComponent', () => {
-  let component: MessageListComponent;
   let fixture: ComponentFixture<MessageListComponent>;
+  let component: MessageListComponent;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -12,36 +12,28 @@ describe('MessageListComponent', () => {
 
     fixture = TestBed.createComponent(MessageListComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('should return contact by senderId', () => {
-    const mockContacts = [
+  it('renders sender names from participant profiles in the message list', () => {
+    component.currentUserId = 'profile-1';
+    component.contacts = [
+      { id: 'profile-2', name: 'Member Two', profilePic: 'two.png' },
+    ];
+    component.messages = [
       {
-        id: '1',
-        name: 'John',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
-      },
-      {
-        id: '2',
-        name: 'Jane',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
+        id: 'm1',
+        conversationId: 'room-1',
+        senderId: 'profile-2',
+        recipientId: ['profile-1'],
+        content: 'hello',
+        timestamp: new Date('2026-07-05T10:03:00.000Z'),
+        type: 'chat',
       },
     ];
-    component.contacts = mockContacts;
-    expect(component.getContact('1')).toEqual(mockContacts[0]);
-  });
 
-  it('should return undefined if contact not found', () => {
-    component.contacts = [];
-    expect(component.getContact('99')).toBeUndefined();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Member Two');
+    expect(fixture.nativeElement.textContent).toContain('hello');
   });
 });

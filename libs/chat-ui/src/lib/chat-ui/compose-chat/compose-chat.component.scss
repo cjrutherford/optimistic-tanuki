@@ -1,8 +1,8 @@
 .compose-editor-container {
   display: flex;
   flex-direction: column;
-  background: var(--background);
-  border: 1px solid var(--border);
+  background: var(--surface, var(--background));
+  border: 1px solid var(--border-color, var(--border));
   border-radius: var(--border-radius-lg, 12px);
   overflow: hidden;
   transition: border-color var(--animation-duration-fast, 150ms)
@@ -19,7 +19,7 @@
   align-items: center;
   gap: 4px;
   padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-  background: var(--background);
+  background: var(--surface, var(--background));
   border-bottom: 1px solid var(--border);
 }
 
@@ -98,40 +98,14 @@
   align-items: center;
   justify-content: flex-end;
   padding: var(--spacing-sm, 8px) var(--spacing-md, 12px);
-  background: var(--background);
+  background: var(--surface, var(--background));
   border-top: 1px solid var(--border);
 }
 
 .send-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: var(--accent);
-  color: var(--primary-foreground);
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
-
-  &:disabled {
-    background: var(--muted, var(--foreground));
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  &:not(:disabled) {
-    &:hover {
-      transform: scale(1.05);
-      box-shadow: var(--shadow-md);
-    }
-
-    &:active {
-      transform: scale(0.95);
-    }
-  }
+  display: block;
+  width: 40px;
+  min-width: 40px;
 
   .send-icon {
     font-size: 14px;

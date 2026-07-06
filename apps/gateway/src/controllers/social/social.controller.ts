@@ -379,12 +379,17 @@ export class SocialController {
   @Post('post/find')
   async searchPosts(
     @Body('criteria') searchCriteria: SearchPostDto,
-    @Body('opts') opts?: SearchPostOptions
+    @Body('opts') opts?: SearchPostOptions,
+    @User() user?: UserDetails
   ): Promise<PostDto[]> {
     return await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.FIND_MANY },
-        { criteria: searchCriteria, opts: opts }
+        {
+          criteria: searchCriteria,
+          opts: opts,
+          viewerProfileId: user?.profileId,
+        }
       )
     );
   }
@@ -412,6 +417,7 @@ export class SocialController {
         { cmd: CommunityCommands.GET_FEED },
         {
           userId: user.userId,
+          profileId: user.profileId,
           appScope,
           includePublic: includePublic !== 'false',
           includeFollowing: includeFollowing === 'true',
@@ -478,7 +484,12 @@ export class SocialController {
     const result = await firstValueFrom(
       this.socialClient.send(
         { cmd: PostCommands.UPDATE },
-        { id, data: updatePostDto, userId: user.userId }
+        {
+          id,
+          data: updatePostDto,
+          userId: user.userId,
+          profileId: user.profileId,
+        }
       )
     );
 

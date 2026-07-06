@@ -2,7 +2,11 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule, NgClass, NgIf, DatePipe } from '@angular/common';
 
 import { ChatContact } from '../../chat-ui.component';
-import { ChatMessage, MessageReaction } from '../../../types/message';
+import {
+  ChatConversation,
+  ChatMessage,
+  MessageReaction,
+} from '../../../types/message';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 
 @Component({
@@ -19,6 +23,7 @@ export class MessageListComponent {
    * The list of contacts in the chat.
    */
   @Input() contacts: ChatContact[] = [];
+  @Input() conversation?: ChatConversation;
   /**
    * The list of messages in the conversation.
    */
@@ -62,6 +67,19 @@ export class MessageListComponent {
   }
 
   getContact(senderId: string): ChatContact | undefined {
+    const participantProfile = this.conversation?.participantProfiles?.find(
+      (profile) => profile.id === senderId
+    );
+
+    if (participantProfile) {
+      return {
+        id: participantProfile.id,
+        name: participantProfile.name,
+        profilePic: participantProfile.profilePic,
+        avatarUrl: participantProfile.avatarUrl,
+      };
+    }
+
     return this.contacts.find((c) => c.id === senderId);
   }
 

@@ -51,6 +51,10 @@ describe('ProfileComponent', () => {
     profileServiceMock = {
       getCurrentUserProfile: jest.fn().mockReturnValue(mockProfile),
       selectProfile: jest.fn(),
+      restorePersistedSelectedProfile: jest.fn(() => {
+        const persisted = localStorage.getItem('ot-client-selectedProfile');
+        return persisted ? JSON.parse(persisted) : null;
+      }),
       getAllProfiles: jest.fn().mockResolvedValue([mockProfile]),
       getCurrentUserProfiles: jest.fn().mockReturnValue([mockProfile]),
       createProfile: jest.fn(),
@@ -110,7 +114,7 @@ describe('ProfileComponent', () => {
   };
 
   beforeEach(async () => {
-    localStorage.removeItem('selectedProfile');
+    localStorage.removeItem('ot-client-selectedProfile');
     await createComponent();
   });
 
@@ -118,9 +122,9 @@ describe('ProfileComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should call profileService.selectProfile on init if localStorage has selectedProfile', () => {
+  it('should call profileService.selectProfile on init if localStorage has namespaced selectedProfile', () => {
     const profileStringified = JSON.stringify(mockProfile);
-    localStorage.setItem('selectedProfile', profileStringified);
+    localStorage.setItem('ot-client-selectedProfile', profileStringified);
 
     TestBed.resetTestingModule();
     return createComponent().then(() => {
@@ -128,7 +132,7 @@ describe('ProfileComponent', () => {
         ...mockProfile,
         created_at: mockProfile.created_at.toISOString(),
       });
-      localStorage.removeItem('selectedProfile');
+      localStorage.removeItem('ot-client-selectedProfile');
     });
   });
 
@@ -146,6 +150,21 @@ describe('ProfileComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/profile', mockProfile.id], {
       replaceUrl: true,
     });
+  });
+
+  it('does not fetch blocked users when loading another profile', async () => {
+    TestBed.resetTestingModule();
+
+    await createComponent(
+      { userId: 'other-profile' },
+      {
+        getDisplayProfile: jest
+          .fn()
+          .mockReturnValue(of({ ...mockProfile, id: 'other-profile' })),
+      }
+    );
+
+    expect(profileService.getBlockedUsers).not.toHaveBeenCalled();
   });
 
   it('should render expanded profile details', () => {

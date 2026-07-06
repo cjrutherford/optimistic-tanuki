@@ -1,11 +1,12 @@
 import {
+  OnInit,
   AfterViewInit,
   Component,
   ElementRef,
   EventEmitter,
+  HostListener,
   Input,
   OnChanges,
-  OnInit,
   Output,
   SimpleChanges,
   ViewChild,
@@ -18,9 +19,13 @@ import { MessageListComponent } from './message-list/message-list.component';
 import { ComposeChatComponent } from '../compose-chat/compose-chat.component';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
 import { Themeable, ThemeColors, hexToRgb } from '@optimistic-tanuki/theme-lib';
-import { GradientBuilder } from '@optimistic-tanuki/common-ui';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
-export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
+export declare type ChatWindowState =
+  | 'hidden'
+  | 'popout'
+  | 'fullscreen'
+  | 'embedded';
 
 @Component({
   selector: 'lib-chat-window',
@@ -30,10 +35,12 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
     MessageListComponent,
     ComposeChatComponent,
     ProfilePhotoComponent,
+    ButtonComponent,
   ],
   templateUrl: './chat-window.component.html',
   styleUrls: ['./chat-window.component.scss'],
   host: {
+    class: 'chat-window-host',
     '[class.theme]': 'theme',
     // Using standardized local variables with fallbacks
     '[style.--local-background]': 'background',
@@ -43,7 +50,6 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
     '[style.--local-complement]': 'complement',
     '[style.--local-complement-transparent]': 'complementTransparent',
     '[style.--local-border-color]': 'borderColor',
-    '[style.--local-border-gradient]': 'borderGradient',
     '[style.--local-transition-duration]': 'transitionDuration',
   },
 })
@@ -52,8 +58,9 @@ export declare type ChatWindowState = 'hidden' | 'popout' | 'fullscreen';
  */
 export class ChatWindowComponent
   extends Themeable
-  implements OnChanges, AfterViewInit
+  implements OnInit, OnChanges, AfterViewInit
 {
+  isMobileViewport = false;
   /**
    * The contact or contacts in the chat.
    */
@@ -93,7 +100,7 @@ export class ChatWindowComponent
    */
   @Input() windowState: ChatWindowState = 'popout';
   @ViewChild('chatWindowContent')
-  chatWindowContent!: ElementRef<HTMLDivElement>;
+  chatWindowContent?: ElementRef<HTMLDivElement>;
   /**
    * Emits when the window state changes.
    */
@@ -132,6 +139,10 @@ export class ChatWindowComponent
     this.reactionRemoved.emit(event);
   }
 
+  override ngOnInit(): void {
+    this.updateViewportState();
+  }
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['messages']) {
       this.scrollToBottom();
@@ -140,6 +151,11 @@ export class ChatWindowComponent
 
   ngAfterViewInit(): void {
     this.scrollToBottom();
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.updateViewportState();
   }
   override applyTheme(colors: ThemeColors): void {
     const accentRgb = hexToRgb(colors.accent);
@@ -150,26 +166,16 @@ export class ChatWindowComponent
     this.foreground = colors.foreground;
     this.accent = colors.accent;
     this.complement = colors.complementary;
-    this.borderColor = colors.accent;
+    this.borderColor = `rgba(${accentRgb?.r || 0}, ${accentRgb?.g || 0}, ${
+      accentRgb?.b || 0
+    }, 0.18)`;
     this.accentTransparent = `rgba(${accentRgb?.r || 0}, ${
       accentRgb?.g || 0
-    }, ${accentRgb?.b || 0}, 0.5)`;
+    }, ${accentRgb?.b || 0}, 0.14)`;
     this.complementTransparent = `rgba(${complementRgb?.r || 0}, ${
       complementRgb?.g || 0
-    }, ${complementRgb?.b || 0}, 0.5)`;
-    this.borderGradient = new GradientBuilder()
-      .setType('linear')
-      .setOptions({
-        colors: [
-          colors.accent,
-          colors.complementary,
-          colors.tertiary,
-          colors.accent,
-        ],
-        direction: 'to right',
-      })
-      .build();
-    this.transitionDuration = '0.15s'; // Use standardized duration
+    }, ${complementRgb?.b || 0}, 0.12)`;
+    this.transitionDuration = '0.15s';
   }
   /**
    * Handles closing the chat window.
@@ -188,5 +194,14 @@ export class ChatWindowComponent
       const element = this.chatWindowContent.nativeElement;
       element.scrollTop = element.scrollHeight;
     }
+  }
+
+  private updateViewportState(): void {
+    if (typeof window === 'undefined') {
+      this.isMobileViewport = false;
+      return;
+    }
+
+    this.isMobileViewport = window.innerWidth <= 640;
   }
 }

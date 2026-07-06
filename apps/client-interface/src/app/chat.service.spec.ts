@@ -54,4 +54,39 @@ describe('ClientInterface ChatService', () => {
       }),
     ]);
   });
+
+  it('sends a chat message to the messages endpoint', async () => {
+    const promise = service.sendMessage({
+      conversationId: 'room-1',
+      content: 'hello',
+      senderId: 'profile-1',
+      recipientIds: ['profile-2'],
+    });
+
+    const request = httpMock.expectOne('/api/chat/messages');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      conversationId: 'room-1',
+      content: 'hello',
+      senderId: 'profile-1',
+      recipientIds: ['profile-2'],
+    });
+
+    request.flush({
+      id: 'message-1',
+      conversationId: 'room-1',
+      senderId: 'profile-1',
+      content: 'hello',
+      type: 'chat',
+      recipients: ['profile-2'],
+      createdAt: '2026-07-05T19:12:00.000Z',
+    });
+
+    await expect(promise).resolves.toEqual(
+      expect.objectContaining({
+        id: 'message-1',
+        conversationId: 'room-1',
+      })
+    );
+  });
 });

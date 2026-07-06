@@ -1,5 +1,9 @@
 @if(windowState !== 'hidden'){
-<div class="chat-window-container" [ngClass]="windowState">
+<div
+  class="chat-window-container"
+  [ngClass]="windowState"
+  [class.mobile-window]="isMobileViewport"
+>
   <div class="chat-window-header">
     <div class="header-content">
       @if(contact && contact.length) {
@@ -38,23 +42,46 @@
     </div>
     <div class="chat-window-actions">
       @if(windowState === 'fullscreen') {
-      <button (click)="onWindowStateChange('popout')">↘️</button>
+      <otui-button
+        class="chat-window-action-button"
+        variant="text"
+        [useGradient]="false"
+        (action)="onWindowStateChange('popout')"
+      >
+        ↘
+      </otui-button>
       } @else if(windowState === 'popout') {
-      <button (click)="onWindowStateChange('fullscreen')">↗️</button>
+      <otui-button
+        class="chat-window-action-button"
+        variant="text"
+        [useGradient]="false"
+        (action)="onWindowStateChange('fullscreen')"
+      >
+        ↗
+      </otui-button>
+      } @if(windowState !== 'embedded') {
+      <otui-button
+        class="chat-window-action-button chat-window-close-button"
+        variant="text"
+        [useGradient]="false"
+        (action)="onClose()"
+      >
+        ✕
+      </otui-button>
       }
-      <button (click)="onClose()">✕</button>
     </div>
   </div>
 
   <div class="header-divider"></div>
 
-  <div class="chat-window-content">
+  <div class="chat-window-content" #chatWindowContent>
     @if(contact && contact.length) {
     <!-- <div class="participants-section">
       <lib-participants [participants]="contact"></lib-participants>
     </div> -->
     <!-- <div class="participants-divider"></div> -->
     <lib-message-list
+      [conversation]="messages"
       [messages]="messages.messages"
       [contacts]="contact"
       [currentUserId]="currentUserId"
@@ -65,6 +92,7 @@
     } @else {
     <div class="no-participants">No participants</div>
     <lib-message-list
+      [conversation]="messages"
       [messages]="messages.messages"
       [contacts]="[]"
       [currentUserId]="currentUserId"

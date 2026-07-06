@@ -46,6 +46,7 @@ import { firstValueFrom } from 'rxjs';
           [contacts]="chatContacts()"
           [conversations]="chatConversations()"
           [currentUserId]="currentProfileId || ''"
+          [layout]="'embedded'"
           (messageSubmitted)="handleMessageSubmitted($event)"
         ></lib-chat-ui>
       </div>

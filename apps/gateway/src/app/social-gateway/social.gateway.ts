@@ -68,6 +68,7 @@ export class SocialGateway {
               orderBy: 'createdAt',
               orderDirection: 'DESC',
             },
+            viewerProfileId: payload.profileId,
           }
         )
       );

@@ -81,4 +81,13 @@ export interface ChatConversation {
    * The timestamp when the conversation was last updated.
    */
   updatedAt: Date;
+  /**
+   * Optional participant profile directory for sender resolution.
+   */
+  participantProfiles?: Array<{
+    id: string;
+    name: string;
+    profilePic?: string;
+    avatarUrl?: string;
+  }>;
 }

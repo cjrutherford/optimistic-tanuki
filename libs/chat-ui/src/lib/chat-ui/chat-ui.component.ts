@@ -4,6 +4,7 @@ import {
 } from './chat-window/chat-window.component';
 import {
   Component,
+  HostListener,
   Input,
   Output,
   EventEmitter,
@@ -13,6 +14,7 @@ import {
   OnChanges,
 } from '@angular/core';
 import { DatePipe, NgIf } from '@angular/common';
+import { EmptyStateComponent } from '@optimistic-tanuki/common-ui';
 
 import { ChatConversation, ChatMessage } from '../types/message';
 
@@ -63,11 +65,19 @@ export declare type ChatContact = {
  */
 @Component({
   selector: 'lib-chat-ui',
-  imports: [ContactBubbleComponent, ChatWindowComponent, DatePipe, NgIf],
+  imports: [
+    ContactBubbleComponent,
+    ChatWindowComponent,
+    DatePipe,
+    NgIf,
+    EmptyStateComponent,
+  ],
   templateUrl: './chat-ui.component.html',
   styleUrl: './chat-ui.component.scss',
 })
 export class ChatUiComponent implements OnInit, OnChanges {
+  isMobileViewport = signal(false);
+  @Input() layout: 'floating' | 'embedded' = 'floating';
   /**
    * The list of chat contacts.
    */
@@ -175,6 +185,7 @@ export class ChatUiComponent implements OnInit, OnChanges {
    * A signal that holds the currently selected contact.
    */
   selectedContact = signal(null);
+  selectedConversationId = signal<string | null>(null);
   /**
    * A signal that determines whether the modal is shown.
    */
@@ -232,6 +243,7 @@ export class ChatUiComponent implements OnInit, OnChanges {
    * Initializes the component and syncs the window states.
    */
   ngOnInit() {
+    this.updateViewportState();
     this.syncWindowStates();
   }
 
@@ -243,6 +255,11 @@ export class ChatUiComponent implements OnInit, OnChanges {
     if (changes['contacts'] || changes['conversations']) {
       this.syncWindowStates();
     }
+  }
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.updateViewportState();
   }
 
   /**
@@ -270,10 +287,11 @@ export class ChatUiComponent implements OnInit, OnChanges {
 
     if (this.autoOpenFirstConversation && this.contacts.length > 0) {
       const firstContactId = this.contacts[0].id;
-      const firstState = currentStates[firstContactId];
-      if (firstState) {
-        firstState.windowState = 'popout';
-      }
+      this.selectedConversationId.set(firstContactId);
+      Object.keys(currentStates).forEach((contactId) => {
+        currentStates[contactId].windowState =
+          contactId === firstContactId ? this.activeWindowState() : 'hidden';
+      });
     }
 
     this.windowStates.set(currentStates);
@@ -296,15 +314,15 @@ export class ChatUiComponent implements OnInit, OnChanges {
    * @param contactId The ID of the contact to open a chat with.
    */
   openChat(contactId: string) {
-    const currentState = this.windowStates()[contactId];
-    if (currentState) {
-      currentState.windowState = 'popout';
-      this.windowStates.set({
-        ...this.windowStates(),
-        [contactId]: currentState,
-      });
-      return;
-    }
+    const updatedStates = { ...this.windowStates() };
+    Object.keys(updatedStates).forEach((id) => {
+      updatedStates[id] = {
+        ...updatedStates[id],
+        windowState: id === contactId ? this.activeWindowState() : 'hidden',
+      };
+    });
+    this.selectedConversationId.set(contactId);
+    this.windowStates.set(updatedStates);
   }
 
   /**
@@ -344,5 +362,18 @@ export class ChatUiComponent implements OnInit, OnChanges {
   getMessagesForContact(contactId: string): ChatMessage[] {
     const conversation = this.getConversation(contactId);
     return conversation.messages || [];
+  }
+
+  activeWindowState(): ChatWindowState {
+    return this.layout === 'embedded' ? 'embedded' : 'popout';
+  }
+
+  private updateViewportState(): void {
+    if (typeof window === 'undefined') {
+      this.isMobileViewport.set(false);
+      return;
+    }
+
+    this.isMobileViewport.set(window.innerWidth <= 640);
   }
 }

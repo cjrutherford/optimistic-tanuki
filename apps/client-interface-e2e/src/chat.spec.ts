@@ -134,7 +134,7 @@ async function openConversation(page: Page, expectedContactName: string) {
 async function sendMessage(page: Page, text: string) {
   await page.locator('textarea.compose-textarea').click();
   await page.locator('textarea.compose-textarea').fill(text);
-  await page.locator('button.send-button').click();
+  await page.locator('otui-button.send-button button').click();
 }
 
 async function expectMessageVisible(page: Page, text: string) {
@@ -150,11 +150,6 @@ test.describe('Chat workflow', () => {
     browser,
     request,
   }) => {
-    test.skip(
-      test.info().project.name !== 'chromium-desktop',
-      'Desktop-only chat validation'
-    );
-
     const aliceContext = await browser.newContext();
     const bobContext = await browser.newContext();
     const alicePage = await aliceContext.newPage();

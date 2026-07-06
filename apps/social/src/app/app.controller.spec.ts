@@ -313,9 +313,19 @@ describe('AppController', () => {
 
   it('should update a post', async () => {
     postService.update.mockResolvedValue(undefined);
-    const result = await controller.updatePost('1', {} as any, 'user-1');
+    const result = await controller.updatePost(
+      '1',
+      {} as any,
+      'user-1',
+      'profile-1'
+    );
     expect(result).toBeUndefined();
-    expect(postService.update).toHaveBeenCalledWith('1', {}, 'user-1');
+    expect(postService.update).toHaveBeenCalledWith(
+      '1',
+      {},
+      'user-1',
+      'profile-1'
+    );
   });
 
   it('should remove a post', async () => {
@@ -512,6 +522,68 @@ describe('AppController', () => {
       where: { title: Like('%Test%') },
       take: 20, // Should default to 20
     });
+  });
+
+  it('filters posts authored by blocked profiles from post search results', async () => {
+    postService.findAll.mockResolvedValue([
+      { id: 'post-1', title: 'Post 1', profileId: 'blocked-1' } as any,
+    ]);
+    voteService.findAll.mockResolvedValue([]);
+    commentService.findAll.mockResolvedValue([]);
+    attachmentService.findAll.mockResolvedValue([]);
+
+    const privacyService = (controller as any).privacyService;
+    privacyService.getBlockedUsers.mockResolvedValue([
+      { blockedId: 'blocked-1' },
+    ]);
+
+    const result = await controller.findAllPosts(
+      {} as any,
+      {} as any,
+      'viewer-1'
+    );
+
+    expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(result).toEqual([]);
+  });
+
+  it('filters posts authored by blocked profiles from community feed results', async () => {
+    const queryBuilder = {
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      skip: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest
+        .fn()
+        .mockResolvedValue([
+          { id: 'post-1', title: 'Post 1', profileId: 'blocked-1' },
+        ]),
+    };
+
+    (postService as any).postRepo = {
+      createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    };
+    followService.getFollowing.mockResolvedValue([] as any);
+    const communityService = (controller as any).communityService;
+    communityService.getUserCommunities.mockResolvedValue([]);
+    voteService.findAll.mockResolvedValue([]);
+    commentService.findAll.mockResolvedValue([]);
+    attachmentService.findAll.mockResolvedValue([]);
+
+    const privacyService = (controller as any).privacyService;
+    privacyService.getBlockedUsers.mockResolvedValue([
+      { blockedId: 'blocked-1' },
+    ]);
+
+    const result = await controller.getCommunityFeed({
+      userId: 'user-1',
+      profileId: 'viewer-1',
+      appScope: 'client-interface',
+      includePublic: true,
+    });
+
+    expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(result).toEqual([]);
   });
 
   it('should call follow methods', async () => {
