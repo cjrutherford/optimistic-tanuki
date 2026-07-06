@@ -15,8 +15,13 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const listenPort = process.env['PORT'] || '4000';
-const serverRenderOrigin =
-  process.env['SSR_ORIGIN'] || `http://127.0.0.1:${listenPort}`;
+const getRequestOrigin = (req: express.Request): string => {
+  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get('host') || `127.0.0.1:${listenPort}`;
+  return `${protocol}://${host}`;
+};
 
 app.use(
   express.static(browserDistFolder, {
@@ -42,7 +47,7 @@ app.get('**', (req, res, next) => {
     .render({
       bootstrap,
       documentFilePath: indexHtml,
-      url: `${serverRenderOrigin}${originalUrl}`,
+      url: `${getRequestOrigin(req)}${originalUrl}`,
       publicPath: browserDistFolder,
       providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
     })

@@ -3,8 +3,13 @@ import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   AppConfiguration,
+  AppConfigReleaseRevision,
   ThemeConfig,
 } from '@optimistic-tanuki/app-config-models';
+import {
+  PREDEFINED_PERSONALITIES,
+  type Personality,
+} from '@optimistic-tanuki/theme-models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AppConfigService } from '../services/app-config.service';
 
@@ -25,8 +30,10 @@ type ThemeDraft = Required<ThemeConfig>;
         </p>
       </header>
 
-      <div class="error" *ngIf="error">{{ error }}</div>
-      <div class="success" *ngIf="successMessage">{{ successMessage }}</div>
+      <div class="error" *ngIf="error" aria-live="polite">{{ error }}</div>
+      <div class="success" *ngIf="successMessage" aria-live="polite">
+        {{ successMessage }}
+      </div>
 
       <section class="panel" *ngIf="configurations.length; else emptyState">
         <div class="panel-heading">
@@ -67,6 +74,95 @@ type ThemeDraft = Required<ThemeConfig>;
       </section>
 
       <section class="editor-grid" *ngIf="selectedConfiguration">
+        <section class="panel release-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="hero-kicker">Release Management</p>
+              <h2>{{ releaseStatusLabel() }}</h2>
+              <p>
+                Publish theme changes with release notes, open the current
+                preview target, and roll back to a prior published revision if
+                the experience regresses.
+              </p>
+            </div>
+            <a
+              *ngIf="previewUrl() as currentPreviewUrl"
+              class="preview-link"
+              [href]="currentPreviewUrl"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open preview
+            </a>
+          </div>
+
+          <div class="field-grid release-fields">
+            <label class="wide">
+              <span>Release notes</span>
+              <textarea
+                rows="3"
+                [(ngModel)]="releaseNotes"
+                placeholder="Summarize what changed in this theme release."
+              ></textarea>
+            </label>
+            <label class="wide">
+              <span>Change summary</span>
+              <textarea
+                rows="3"
+                [(ngModel)]="changeSummary"
+                placeholder="Capture the visual or personality changes in this revision."
+              ></textarea>
+            </label>
+          </div>
+
+          <div class="actions release-actions">
+            <button
+              class="btn secondary"
+              (click)="saveTheme()"
+              [disabled]="saving"
+            >
+              {{ saving ? 'Saving…' : 'Save draft' }}
+            </button>
+            <button
+              class="btn primary"
+              (click)="publishTheme()"
+              [disabled]="saving"
+            >
+              {{ saving ? 'Publishing…' : 'Publish theme' }}
+            </button>
+          </div>
+
+          <div class="release-history" *ngIf="releaseHistory().length">
+            <div class="release-history-header">
+              <div>
+                <h3>Release history</h3>
+                <p>Roll back to a known-good theme revision if needed.</p>
+              </div>
+            </div>
+            <div class="history-list">
+              <article
+                class="history-item"
+                *ngFor="let revision of releaseHistory()"
+              >
+                <div class="history-copy">
+                  <strong>Version {{ revision.version }}</strong>
+                  <span>{{ revision.releaseNotes }}</span>
+                  <small *ngIf="revision.changeSummary">{{
+                    revision.changeSummary
+                  }}</small>
+                </div>
+                <button
+                  class="btn secondary"
+                  (click)="rollbackTheme(revision.version)"
+                  [disabled]="saving"
+                >
+                  Roll back
+                </button>
+              </article>
+            </div>
+          </div>
+        </section>
+
         <section class="panel">
           <div class="panel-heading">
             <div>
@@ -79,6 +175,31 @@ type ThemeDraft = Required<ThemeConfig>;
           </div>
 
           <div class="field-grid">
+            <label>
+              <span>Theme mode</span>
+              <select
+                [ngModel]="themeDraft.mode"
+                (ngModelChange)="updateThemeField('mode', $event)"
+              >
+                <option *ngFor="let mode of themeModes" [value]="mode">
+                  {{ mode === 'light' ? 'Light' : 'Dark' }}
+                </option>
+              </select>
+            </label>
+            <label>
+              <span>Personality</span>
+              <select
+                [ngModel]="themeDraft.personalityId"
+                (ngModelChange)="updateThemeField('personalityId', $event)"
+              >
+                <option
+                  *ngFor="let personality of personalities"
+                  [value]="personality.id"
+                >
+                  {{ personality.name }}
+                </option>
+              </select>
+            </label>
             <label>
               <span>Primary color</span>
               <input
@@ -117,7 +238,7 @@ type ThemeDraft = Required<ThemeConfig>;
                 type="text"
                 [ngModel]="themeDraft.fontFamily"
                 (ngModelChange)="updateThemeField('fontFamily', $event)"
-                placeholder="e.g. 'IBM Plex Sans', sans-serif"
+                placeholder="e.g. “IBM Plex Sans”, sans-serif…"
               />
             </label>
             <label class="wide">
@@ -126,7 +247,7 @@ type ThemeDraft = Required<ThemeConfig>;
                 rows="8"
                 [ngModel]="themeDraft.customCss"
                 (ngModelChange)="updateThemeField('customCss', $event)"
-                placeholder=".hero { letter-spacing: 0.02em; }"
+                placeholder=".hero { letter-spacing: 0.02em; }…"
               ></textarea>
             </label>
           </div>
@@ -138,13 +259,6 @@ type ThemeDraft = Required<ThemeConfig>;
               [disabled]="saving"
             >
               Reset
-            </button>
-            <button
-              class="btn primary"
-              (click)="saveTheme()"
-              [disabled]="saving"
-            >
-              {{ saving ? 'Saving…' : 'Save theme' }}
             </button>
           </div>
         </section>
@@ -202,23 +316,23 @@ type ThemeDraft = Required<ThemeConfig>;
       .panel {
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 24px;
-        background: radial-gradient(
-            circle at top left,
-            rgba(244, 114, 182, 0.1),
-            transparent 30%
-          ),
-          linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.97),
-            rgba(249, 244, 247, 0.94)
-          );
+        background: linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--surface, #ffffff) 96%, transparent),
+          color-mix(
+            in srgb,
+            var(--surface, #ffffff) 88%,
+            var(--primary, #831843) 12%
+          )
+        );
+        color: var(--foreground, #111827);
         padding: 24px;
       }
 
       .hero-kicker,
       .label,
       .preview-kicker {
-        color: #be185d;
+        color: var(--primary, #be185d);
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -232,13 +346,21 @@ type ThemeDraft = Required<ThemeConfig>;
       }
 
       .error {
-        background: rgba(220, 38, 38, 0.08);
-        color: #b91c1c;
+        background: color-mix(
+          in srgb,
+          var(--danger, #dc2626) 12%,
+          var(--surface, #ffffff)
+        );
+        color: var(--danger, #b91c1c);
       }
 
       .success {
-        background: rgba(16, 185, 129, 0.12);
-        color: #047857;
+        background: color-mix(
+          in srgb,
+          var(--success, #10b981) 14%,
+          var(--surface, #ffffff)
+        );
+        color: var(--success, #047857);
       }
 
       .panel-heading {
@@ -293,8 +415,12 @@ type ThemeDraft = Required<ThemeConfig>;
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 10px;
         padding: 0.7rem 0.9rem;
-        background: rgba(255, 255, 255, 0.96);
-        color: inherit;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 94%,
+          var(--background, #f8fafc)
+        );
+        color: var(--foreground, inherit);
       }
 
       input[type='color'] {
@@ -304,6 +430,22 @@ type ThemeDraft = Required<ThemeConfig>;
 
       textarea {
         resize: vertical;
+      }
+
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible,
+      .btn:focus-visible,
+      .preview-btn:focus-visible,
+      .preview-link:focus-visible {
+        outline: 2px solid transparent;
+        border-color: color-mix(
+          in srgb,
+          var(--primary, #831843) 65%,
+          var(--border-color, #d6d6d6)
+        );
+        box-shadow: 0 0 0 3px
+          color-mix(in srgb, var(--primary, #831843) 18%, transparent);
       }
 
       .actions {
@@ -321,19 +463,78 @@ type ThemeDraft = Required<ThemeConfig>;
 
       .btn.primary,
       .preview-btn {
-        background: #831843;
-        border-color: #831843;
-        color: #fff;
+        background: var(--primary, #831843);
+        border-color: var(--primary, #831843);
+        color: var(--on-primary, #fff);
       }
 
       .btn.secondary,
       .preview-btn.ghost {
         background: transparent;
-        color: inherit;
+        color: var(--foreground, inherit);
+      }
+
+      .btn:hover,
+      .preview-btn:hover,
+      .preview-link:hover {
+        border-color: color-mix(
+          in srgb,
+          var(--primary, #831843) 55%,
+          var(--border-color, #d6d6d6)
+        );
       }
 
       .preview-panel {
         align-content: start;
+      }
+
+      .release-panel {
+        grid-column: 1 / -1;
+      }
+
+      .release-fields,
+      .release-history,
+      .history-list {
+        display: grid;
+        gap: 16px;
+      }
+
+      .release-actions {
+        margin-top: 0;
+      }
+
+      .release-history {
+        margin-top: 20px;
+      }
+
+      .release-history-header h3 {
+        margin-bottom: 4px;
+      }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        padding: 16px;
+        border: 1px solid var(--border-color, #d6d6d6);
+        border-radius: 16px;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f8fafc)
+        );
+      }
+
+      .history-copy {
+        display: grid;
+        gap: 4px;
+      }
+
+      .preview-link {
+        color: var(--primary, #831843);
+        font-weight: 700;
+        text-decoration: none;
       }
 
       .preview-card {
@@ -342,7 +543,10 @@ type ThemeDraft = Required<ThemeConfig>;
         border-radius: 20px;
         padding: 24px;
         min-height: 280px;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+        box-shadow: var(
+          --personality-box-shadow,
+          0 18px 40px rgba(15, 23, 42, 0.12)
+        );
       }
 
       .preview-actions {
@@ -366,6 +570,8 @@ type ThemeDraft = Required<ThemeConfig>;
 export class ThemeManagementComponent implements OnInit {
   private readonly appConfigService = inject(AppConfigService);
   private readonly themeService = inject(ThemeService);
+  readonly themeModes: Array<'light' | 'dark'> = ['light', 'dark'];
+  readonly personalities: Personality[] = PREDEFINED_PERSONALITIES;
 
   configurations: AppConfiguration[] = [];
   selectedConfigId = '';
@@ -374,6 +580,8 @@ export class ThemeManagementComponent implements OnInit {
   error = '';
   successMessage = '';
   saving = false;
+  releaseNotes = '';
+  changeSummary = '';
 
   ngOnInit(): void {
     this.loadConfigurations();
@@ -399,6 +607,9 @@ export class ThemeManagementComponent implements OnInit {
       this.configurations.find((configuration) => configuration.id === id) ??
       null;
     this.themeDraft = this.createDraft(this.selectedConfiguration?.theme);
+    this.releaseNotes = this.selectedConfiguration?.release?.releaseNotes ?? '';
+    this.changeSummary =
+      this.selectedConfiguration?.release?.changeSummary ?? '';
     this.applyPreviewTheme();
   }
 
@@ -447,6 +658,86 @@ export class ThemeManagementComponent implements OnInit {
           this.error = 'Failed to save theme settings.';
         },
       });
+  }
+
+  publishTheme(): void {
+    if (!this.selectedConfiguration) {
+      return;
+    }
+
+    if (!this.releaseNotes.trim()) {
+      this.error = 'Release notes are required before publishing the theme.';
+      return;
+    }
+
+    this.saving = true;
+    this.error = '';
+    this.successMessage = '';
+
+    this.appConfigService
+      .publishConfiguration(this.selectedConfiguration.id, {
+        releaseNotes: this.releaseNotes.trim(),
+        changeSummary: this.changeSummary.trim() || undefined,
+      })
+      .subscribe({
+        next: (publishedConfiguration) => {
+          this.saving = false;
+          this.successMessage = `Theme published for ${publishedConfiguration.name}.`;
+          this.syncSelectedConfiguration(publishedConfiguration);
+        },
+        error: () => {
+          this.saving = false;
+          this.error = 'Failed to publish theme settings.';
+        },
+      });
+  }
+
+  rollbackTheme(version: number): void {
+    if (!this.selectedConfiguration) {
+      return;
+    }
+
+    this.saving = true;
+    this.error = '';
+    this.successMessage = '';
+
+    this.appConfigService
+      .rollbackConfiguration(this.selectedConfiguration.id, {
+        version,
+        releaseNotes: 'Rollback from theme management',
+      })
+      .subscribe({
+        next: (rolledBackConfiguration) => {
+          this.saving = false;
+          this.successMessage = `Theme rolled back for ${rolledBackConfiguration.name}.`;
+          this.syncSelectedConfiguration(rolledBackConfiguration);
+        },
+        error: () => {
+          this.saving = false;
+          this.error = 'Failed to rollback theme settings.';
+        },
+      });
+  }
+
+  releaseStatusLabel(): string {
+    const status = this.selectedConfiguration?.release?.status;
+    if (status === 'published') {
+      return 'Published';
+    }
+    if (status === 'changes-pending') {
+      return 'Changes Pending';
+    }
+    return 'Draft';
+  }
+
+  releaseHistory(): AppConfigReleaseRevision[] {
+    return [...(this.selectedConfiguration?.release?.history ?? [])].sort(
+      (left, right) => right.version - left.version
+    );
+  }
+
+  previewUrl(): string | null {
+    return this.selectedConfiguration?.release?.previewUrl ?? null;
   }
 
   private loadConfigurations(): void {
@@ -500,6 +791,19 @@ export class ThemeManagementComponent implements OnInit {
     this.themeService.setPrimaryColor(this.themeDraft.primaryColor);
     this.themeService.setTheme(this.themeDraft.mode);
     void this.themeService.setPersonality(this.themeDraft.personalityId);
+  }
+
+  private syncSelectedConfiguration(configuration: AppConfiguration): void {
+    this.configurations = this.configurations.map((currentConfiguration) =>
+      currentConfiguration.id === configuration.id
+        ? configuration
+        : currentConfiguration
+    );
+    this.selectedConfiguration = configuration;
+    this.themeDraft = this.createDraft(configuration.theme);
+    this.releaseNotes = configuration.release?.releaseNotes ?? '';
+    this.changeSummary = configuration.release?.changeSummary ?? '';
+    this.applyPreviewTheme();
   }
 
   private withAlpha(hexColor: string, alpha: number): string {

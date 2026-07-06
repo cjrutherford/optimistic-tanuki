@@ -93,6 +93,37 @@ describe('gateway security helpers', () => {
     ).toBe(false);
   });
 
+  it('allows all origins when the dev override is enabled', () => {
+    const originalNodeEnv = process.env['NODE_ENV'];
+    const originalOverride = process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'];
+
+    process.env['NODE_ENV'] = 'development';
+    process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'] = 'true';
+    jest.resetModules();
+
+    const reloaded = jest.requireActual(
+      './security'
+    ) as typeof import('./security');
+
+    expect(
+      reloaded.isAllowedOrigin('https://tailnet-machine.ts.net:8080', [])
+    ).toBe(true);
+
+    if (originalNodeEnv === undefined) {
+      delete process.env['NODE_ENV'];
+    } else {
+      process.env['NODE_ENV'] = originalNodeEnv;
+    }
+
+    if (originalOverride === undefined) {
+      delete process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'];
+    } else {
+      process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'] = originalOverride;
+    }
+
+    jest.resetModules();
+  });
+
   it('allows same-origin browser mutations', () => {
     expect(
       shouldRejectBrowserMutation(

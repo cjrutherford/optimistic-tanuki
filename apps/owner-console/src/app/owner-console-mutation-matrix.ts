@@ -1,7 +1,7 @@
 export type MutationMatrixStatus = 'complete' | 'partial' | 'missing';
 
 export interface OwnerConsoleMutationMatrixEntry {
-  workspace: 'Governance' | 'Experience' | 'Commerce' | 'Community Ops';
+  workspace: 'Governance' | 'Experience' | 'Commerce' | 'CRM' | 'Community Ops';
   feature: string;
   uiRoute: string;
   uiAction: string;
@@ -449,33 +449,128 @@ export const OWNER_CONSOLE_MUTATION_MATRIX: OwnerConsoleMutationMatrixEntry[] =
         'The owner-console now exposes a dedicated resource management surface for deleting bookable resources.',
     },
     {
+      workspace: 'CRM',
+      feature: 'Lead update',
+      uiRoute: '/dashboard/contacts',
+      uiAction:
+        'Update lead status, assignment, follow-up date, and operator notes.',
+      apiEndpoint: 'PATCH /api/contact/leads/:id',
+      requiredPermission: 'contact-leads.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'The CRM workspace persists lead triage changes directly from the lead detail editor, including assignment and next follow-up scheduling.',
+    },
+    {
+      workspace: 'CRM',
+      feature: 'Lead response',
+      uiRoute: '/dashboard/contacts',
+      uiAction:
+        'Send a templated response to a lead and persist the post-send status.',
+      apiEndpoint: 'POST /api/contact/leads/:id/respond',
+      requiredPermission: 'contact-leads.respond',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'The CRM workspace supports templated outreach with a persisted delivery result and updated lead status.',
+    },
+    {
       workspace: 'Community Ops',
-      feature: 'Social governance shell',
+      feature: 'Social report update',
       uiRoute: '/dashboard/social-governance',
       uiAction:
-        'Review and triage social content reports from the owner-console moderation queue.',
-      apiEndpoint:
-        'GET /api/privacy/admin/reports, PUT /api/privacy/admin/reports/:id',
+        'Review and update a social moderation report with status and operator notes.',
+      apiEndpoint: 'PUT /api/privacy/admin/reports/:id',
       requiredPermission: 'community.manage',
       positivePersona: 'platform_owner',
       negativePersona: 'operator_readonly',
       status: 'complete',
       notes:
-        'The social governance workspace now supports moderation report triage, operator notes, and reversible post/comment takedown actions through owner-console.',
+        'The social governance workspace persists report triage decisions from the moderation queue with explicit owner-console controls.',
     },
     {
       workspace: 'Community Ops',
-      feature: 'Forum governance shell',
-      uiRoute: '/dashboard/forum-governance',
-      uiAction: 'Moderate current forum topics and threads from owner-console.',
-      apiEndpoint:
-        'GET /api/forum/topics, GET /api/forum/threads, PUT /api/forum/topic/:id, PUT /api/forum/thread/:id',
-      requiredPermission: 'forum.topic.update, forum.thread.update',
+      feature: 'Social content moderation',
+      uiRoute: '/dashboard/social-governance',
+      uiAction:
+        'Hide or restore social posts and comments while recording moderation context.',
+      apiEndpoint: 'PUT /api/privacy/admin/moderation',
+      requiredPermission: 'community.manage',
       positivePersona: 'platform_owner',
       negativePersona: 'operator_readonly',
       status: 'complete',
       notes:
-        'The forum governance workspace now exposes topic/thread controls plus a forum report queue and reversible thread/post moderation actions.',
+        'The social governance workspace supports reversible post and comment moderation actions tied back to report triage.',
+    },
+    {
+      workspace: 'Community Ops',
+      feature: 'Forum topic update',
+      uiRoute: '/dashboard/forum-governance',
+      uiAction:
+        'Update topic governance settings such as lock, pin, and visibility.',
+      apiEndpoint: 'PUT /api/forum/topic/:id',
+      requiredPermission: 'forum.topic.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'Forum governance exposes direct topic controls for lock, pin, and visibility state changes.',
+    },
+    {
+      workspace: 'Community Ops',
+      feature: 'Forum thread update',
+      uiRoute: '/dashboard/forum-governance',
+      uiAction:
+        'Update thread governance settings such as lock, pin, and visibility.',
+      apiEndpoint: 'PUT /api/forum/thread/:id',
+      requiredPermission: 'forum.thread.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'Forum governance exposes direct thread controls for lock, pin, and visibility state changes.',
+    },
+    {
+      workspace: 'Community Ops',
+      feature: 'Forum report update',
+      uiRoute: '/dashboard/forum-governance',
+      uiAction:
+        'Review and update a forum moderation report with status and operator notes.',
+      apiEndpoint: 'PUT /api/forum/admin/reports/:id',
+      requiredPermission: 'forum.thread.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'The forum governance report queue persists triage status and admin notes from the owner-console.',
+    },
+    {
+      workspace: 'Community Ops',
+      feature: 'Forum thread moderation',
+      uiRoute: '/dashboard/forum-governance',
+      uiAction: 'Hide or restore a forum thread from the moderation workspace.',
+      apiEndpoint: 'PUT /api/forum/admin/thread/:id/moderation',
+      requiredPermission: 'forum.thread.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'Forum governance supports reversible thread moderation directly and as part of report actioning flows.',
+    },
+    {
+      workspace: 'Community Ops',
+      feature: 'Forum post moderation',
+      uiRoute: '/dashboard/forum-governance',
+      uiAction: 'Hide or restore a forum post from the moderation workspace.',
+      apiEndpoint: 'PUT /api/forum/admin/post/:id/moderation',
+      requiredPermission: 'forum.thread.update',
+      positivePersona: 'platform_owner',
+      negativePersona: 'operator_readonly',
+      status: 'complete',
+      notes:
+        'Forum governance supports reversible post moderation directly and while resolving forum reports.',
     },
     {
       workspace: 'Community Ops',

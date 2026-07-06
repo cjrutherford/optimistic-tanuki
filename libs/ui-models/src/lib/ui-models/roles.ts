@@ -37,4 +37,48 @@ export interface AssignRoleDto {
   roleId: string;
   profileId: string;
   appScopeId: string;
+  targetId?: string;
+}
+
+export interface BulkRoleMutationDto {
+  operation: 'assign' | 'unassign';
+  roleId: string;
+  profileIds: string[];
+  appScopeId: string;
+  targetId?: string;
+}
+
+export interface BulkRoleMutationPermissionChangeDto {
+  permissionName: string;
+  resource: string;
+  action: string;
+  status: 'added' | 'removed' | 'retained' | 'already-present';
+  reason?: string;
+  affectedProfileCount?: number;
+}
+
+export interface BulkRoleMutationProfileImpactDto {
+  profileId: string;
+  profileName?: string;
+  permissionChanges: BulkRoleMutationPermissionChangeDto[];
+}
+
+export interface BulkRoleMutationPreviewDto {
+  operation: 'assign' | 'unassign';
+  roleId: string;
+  roleName: string;
+  appScopeId: string;
+  targetId?: string;
+  totalSelected: number;
+  affectedCount: number;
+  unchangedCount: number;
+  affectedProfileIds: string[];
+  unchangedProfileIds: string[];
+  existingAssignmentIds: string[];
+  permissionChangeSummary: BulkRoleMutationPermissionChangeDto[];
+  profileImpacts: BulkRoleMutationProfileImpactDto[];
+}
+
+export interface BulkRoleMutationResultDto extends BulkRoleMutationPreviewDto {
+  completedCount: number;
 }

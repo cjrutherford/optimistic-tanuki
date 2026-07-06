@@ -78,11 +78,15 @@ import {
         min-height: 100vh;
         background: radial-gradient(
             circle at top left,
-            rgba(45, 212, 191, 0.16),
+            color-mix(in srgb, var(--accent, var(--primary)) 16%, transparent),
             transparent 28%
           ),
-          linear-gradient(180deg, #f7fbfb, #eef5f4);
-        color: #12332f;
+          linear-gradient(
+            180deg,
+            color-mix(in srgb, var(--surface, #ffffff) 96%, var(--background)),
+            color-mix(in srgb, var(--surface, #ffffff) 86%, var(--background))
+          );
+        color: var(--foreground, #12332f);
       }
 
       .control-center {
@@ -96,10 +100,16 @@ import {
       .hero,
       .panel,
       .metric-card {
-        border: 1px solid rgba(18, 51, 47, 0.12);
+        border: 1px solid
+          color-mix(in srgb, var(--border-color) 46%, transparent);
         border-radius: 24px;
-        background: rgba(255, 255, 255, 0.88);
-        box-shadow: 0 18px 40px rgba(18, 51, 47, 0.08);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 90%,
+          transparent
+        );
+        box-shadow: 0 18px 40px
+          color-mix(in srgb, var(--foreground) 8%, transparent);
       }
 
       .hero,
@@ -113,7 +123,7 @@ import {
         font-size: 0.8rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: #0f766e;
+        color: var(--accent, var(--primary));
         font-weight: 700;
       }
 
@@ -160,7 +170,11 @@ import {
       .host-pill {
         padding: 10px 14px;
         border-radius: 999px;
-        background: rgba(15, 118, 110, 0.1);
+        background: color-mix(
+          in srgb,
+          var(--accent, var(--primary)) 10%,
+          transparent
+        );
         font-weight: 600;
       }
 
@@ -168,10 +182,26 @@ import {
         width: fit-content;
         padding: 12px 18px;
         border-radius: 999px;
-        background: #0f766e;
-        color: white;
+        background: var(--accent, var(--primary));
+        color: var(--on-primary, var(--primary-foreground));
         text-decoration: none;
         font-weight: 700;
+        transition: transform 0.2s ease, box-shadow 0.2s ease,
+          background-color 0.2s ease;
+      }
+
+      .cta:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px
+          color-mix(in srgb, var(--accent, var(--primary)) 20%, transparent);
+      }
+
+      .cta:focus-visible {
+        outline: 2px solid transparent;
+        box-shadow: 0 0 0 3px
+            color-mix(in srgb, var(--accent, var(--primary)) 24%, transparent),
+          0 14px 30px
+            color-mix(in srgb, var(--accent, var(--primary)) 20%, transparent);
       }
     `,
   ],

@@ -32,7 +32,24 @@ export const appRoutes: Route[] = [
       ),
     canActivate: [authGuard],
     children: [
-      ...OPERATOR_WORKSPACES.map((workspace) => ({
+      {
+        path: 'community-ops',
+        loadComponent: () =>
+          import('./components/community-ops-workspace.component').then(
+            (m) => m.CommunityOpsWorkspaceComponent
+          ),
+      },
+      {
+        path: 'experience',
+        loadComponent: () =>
+          import('./components/experience-workspace.component').then(
+            (m) => m.ExperienceWorkspaceComponent
+          ),
+      },
+      ...OPERATOR_WORKSPACES.filter(
+        (workspace) =>
+          workspace.path !== 'community-ops' && workspace.path !== 'experience'
+      ).map((workspace) => ({
         path: workspace.path,
         loadComponent: () =>
           import('./components/workspace-landing.component').then(
@@ -143,6 +160,11 @@ export const appRoutes: Route[] = [
           import(
             './components/business-site-catalog-management.component'
           ).then((m) => m.BusinessSiteCatalogManagementComponent),
+      },
+      {
+        path: 'business-site/catalog',
+        redirectTo: 'store/business-site',
+        pathMatch: 'full',
       },
       {
         path: 'store/orders',

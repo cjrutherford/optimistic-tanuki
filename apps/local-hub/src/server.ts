@@ -16,6 +16,13 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const getRequestUrl = (req: express.Request): string => {
+  const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
+  const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = forwardedHost || req.get('host') || 'localhost';
+  return `${protocol}://${host}${req.originalUrl}`;
+};
 
 app.use(cookieParser());
 
@@ -127,13 +134,13 @@ app.get(
 );
 
 app.get('**', (req, res, next) => {
-  const { protocol, originalUrl, baseUrl, headers } = req;
+  const { baseUrl } = req;
 
   commonEngine
     .render({
       bootstrap,
       documentFilePath: indexHtml,
-      url: `${protocol}://${headers.host}${originalUrl}`,
+      url: getRequestUrl(req),
       publicPath: browserDistFolder,
       providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
     })

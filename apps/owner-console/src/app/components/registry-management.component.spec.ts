@@ -10,6 +10,8 @@ describe('RegistryManagementComponent', () => {
     getLinks: jest.Mock;
     updateLinks: jest.Mock;
     getAuditLog: jest.Mock;
+    publishRegistry: jest.Mock;
+    rollbackRegistry: jest.Mock;
   };
 
   beforeEach(async () => {
@@ -54,6 +56,15 @@ describe('RegistryManagementComponent', () => {
             generatedAt: '2026-04-22T00:00:00Z',
             apps: [],
           },
+          release: {
+            status: 'changes-pending',
+            previewUrl: 'https://haidev.com',
+            publishedVersion: 2,
+            publishedAt: '2026-07-03T10:00:00.000Z',
+            releaseNotes: 'Registry baseline published.',
+            changeSummary: 'Initial public routing set.',
+            history: [],
+          },
         })
       ),
       getLinks: jest.fn().mockReturnValue(
@@ -72,6 +83,81 @@ describe('RegistryManagementComponent', () => {
       ),
       updateLinks: jest.fn().mockReturnValue(of({ success: true, data: [] })),
       getAuditLog: jest.fn().mockReturnValue(of({ success: true, data: [] })),
+      publishRegistry: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: {
+            registry: {
+              version: '1.0.1',
+              generatedAt: '2026-07-04T10:00:00.000Z',
+              apps: [
+                {
+                  appId: 'hai',
+                  name: 'HAI',
+                  domain: 'haidev.com',
+                  uiBaseUrl: 'https://haidev.com',
+                  apiBaseUrl: 'https://api.haidev.com',
+                  iconUrl: 'https://haidev.com/assets/logo.png',
+                  appType: 'client',
+                  visibility: 'public',
+                },
+              ],
+            },
+            links: [
+              {
+                linkId: 'hai-home',
+                sourceAppId: 'hai',
+                targetAppId: 'hai',
+                type: 'nav',
+                label: 'Home',
+                path: '/',
+              },
+            ],
+            release: {
+              status: 'published',
+              previewUrl: 'https://haidev.com',
+              publishedVersion: 3,
+              publishedAt: '2026-07-04T10:00:00.000Z',
+              releaseNotes: 'Registry launch published.',
+              changeSummary: 'Public app routing stabilized.',
+              history: [],
+            },
+          },
+        })
+      ),
+      rollbackRegistry: jest.fn().mockReturnValue(
+        of({
+          success: true,
+          data: {
+            registry: {
+              version: '1.0.0',
+              generatedAt: '2026-07-03T10:00:00.000Z',
+              apps: [
+                {
+                  appId: 'hai',
+                  name: 'HAI',
+                  domain: 'haidev.com',
+                  uiBaseUrl: 'https://haidev.com',
+                  apiBaseUrl: 'https://api.haidev.com',
+                  iconUrl: 'https://haidev.com/assets/logo.png',
+                  appType: 'client',
+                  visibility: 'public',
+                },
+              ],
+            },
+            links: [],
+            release: {
+              status: 'published',
+              previewUrl: 'https://haidev.com',
+              publishedVersion: 2,
+              publishedAt: '2026-07-03T10:00:00.000Z',
+              releaseNotes: 'Registry baseline published.',
+              changeSummary: 'Initial public routing set.',
+              history: [],
+            },
+          },
+        })
+      ),
     };
 
     await TestBed.configureTestingModule({
@@ -93,6 +179,7 @@ describe('RegistryManagementComponent', () => {
     ]);
     expect(component.links[0].linkId).toBe('hai-to-store');
     expect(registryService.getAuditLog).toHaveBeenCalled();
+    expect(component.releaseStatusLabel()).toBe('Draft');
   });
 
   it('removes links that reference a deleted app', () => {
@@ -132,5 +219,37 @@ describe('RegistryManagementComponent', () => {
       'hai icon URL must be absolute.'
     );
     expect(registryService.updateRegistry).not.toHaveBeenCalled();
+  });
+
+  it('publishes the registry with release notes once it is ready', () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.releaseNotes = 'Registry launch published.';
+    component.changeSummary = 'Public app routing stabilized.';
+    component.publishRegistry();
+
+    expect(registryService.publishRegistry).toHaveBeenCalledWith({
+      releaseNotes: 'Registry launch published.',
+      changeSummary: 'Public app routing stabilized.',
+    });
+    expect(component.message).toContain('published');
+    expect(component.release?.publishedVersion).toBe(3);
+  });
+
+  it('rolls back the registry to a selected published revision', () => {
+    const fixture = TestBed.createComponent(RegistryManagementComponent);
+    fixture.detectChanges();
+    const component = fixture.componentInstance;
+
+    component.rollbackRegistry(2);
+
+    expect(registryService.rollbackRegistry).toHaveBeenCalledWith({
+      version: 2,
+      releaseNotes: 'Rollback from registry management',
+    });
+    expect(component.message).toContain('rolled back');
+    expect(component.release?.publishedVersion).toBe(2);
   });
 });

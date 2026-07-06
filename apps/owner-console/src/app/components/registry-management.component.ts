@@ -9,6 +9,9 @@ import {
   NavigationLink,
   NavigationLinkType,
   NavigationPosition,
+  PublishRegistryDto,
+  RegistryReleaseRevision,
+  RegistryReleaseState,
 } from '@optimistic-tanuki/app-registry-backend';
 import { forkJoin } from 'rxjs';
 import {
@@ -33,19 +36,27 @@ import {
           </button>
           <button
             type="button"
-            class="primary"
+            class="secondary"
             (click)="saveRegistry()"
             [disabled]="loading || validationErrors.length > 0"
           >
-            Save Apps
+            Save Apps Draft
+          </button>
+          <button
+            type="button"
+            class="secondary"
+            (click)="saveLinks()"
+            [disabled]="loading"
+          >
+            Save Links Draft
           </button>
           <button
             type="button"
             class="primary"
-            (click)="saveLinks()"
-            [disabled]="loading"
+            (click)="publishRegistry()"
+            [disabled]="loading || validationErrors.length > 0"
           >
-            Save Links
+            Publish Registry
           </button>
         </div>
       </header>
@@ -63,6 +74,87 @@ import {
         }
       </div>
       }
+
+      <section class="registry-band release-band">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Release Management</p>
+            <h2>{{ releaseStatusLabel() }}</h2>
+          </div>
+          <a
+            *ngIf="release?.previewUrl"
+            class="preview-link"
+            [href]="release?.previewUrl"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open Preview
+          </a>
+        </div>
+
+        <div class="release-readiness">
+          <article class="readiness-card">
+            <span class="readiness-label">Validation</span>
+            <strong>{{
+              validationErrors.length === 0 ? 'Ready' : 'Attention needed'
+            }}</strong>
+          </article>
+          <article class="readiness-card">
+            <span class="readiness-label">Public apps</span>
+            <strong>{{ publicAppCount() }}</strong>
+          </article>
+          <article class="readiness-card">
+            <span class="readiness-label">Links</span>
+            <strong>{{ links.length }}</strong>
+          </article>
+        </div>
+
+        <div class="release-fields">
+          <label class="wide">
+            Release notes
+            <textarea
+              [(ngModel)]="releaseNotes"
+              placeholder="Summarize what changed in this registry release."
+            ></textarea>
+          </label>
+          <label class="wide">
+            Change summary
+            <textarea
+              [(ngModel)]="changeSummary"
+              placeholder="Capture the routing, visibility, or app-directory changes in this revision."
+            ></textarea>
+          </label>
+        </div>
+
+        @if (releaseHistory().length) {
+        <div class="release-history">
+          <div class="section-heading">
+            <h2>Published Revisions</h2>
+          </div>
+          <div class="history-list">
+            @for (revision of releaseHistory(); track revision.version) {
+            <article class="history-item">
+              <div class="history-copy">
+                <strong>Version {{ revision.version }}</strong>
+                <span>{{ revision.releaseNotes }}</span>
+                @if (revision.changeSummary) {
+                <small>{{ revision.changeSummary }}</small>
+                }
+              </div>
+              <button
+                type="button"
+                class="secondary"
+                (click)="rollbackRegistry(revision.version)"
+                [disabled]="loading"
+              >
+                Roll back
+              </button>
+            </article>
+            }
+          </div>
+        </div>
+        }
+      </section>
 
       <section class="registry-band">
         <div class="section-heading">
@@ -227,14 +319,14 @@ import {
       .registry-page {
         display: grid;
         gap: 20px;
-        color: var(--foreground-color, #172026);
+        color: var(--foreground, #111827);
       }
 
       .registry-hero,
       .registry-band {
         border: 1px solid var(--border-color, #d7dde2);
         border-radius: 8px;
-        background: var(--surface-color, #fff);
+        background: var(--surface, #ffffff);
       }
 
       .registry-hero {
@@ -247,7 +339,11 @@ import {
 
       .eyebrow {
         margin: 0 0 6px;
-        color: var(--accent, #0f766e);
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 78%,
+          var(--foreground, #111827)
+        );
         font-size: 0.78rem;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -288,26 +384,55 @@ import {
       }
 
       .primary {
-        background: #0f766e;
-        color: white;
+        background: var(--accent, #2563eb);
+        color: var(--on-primary, var(--primary-foreground, #ffffff));
       }
 
       .secondary {
-        border-color: #8fb8b2;
-        background: #f3fbf9;
-        color: #0f4f49;
+        border-color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 24%,
+          transparent
+        );
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 10%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 76%,
+          var(--foreground, #111827)
+        );
       }
 
       .ghost-danger {
-        border-color: #f2b7b7;
-        background: #fff7f7;
-        color: #a51919;
+        border-color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 22%,
+          transparent
+        );
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 8%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .status {
         border-radius: 8px;
         padding: 12px 14px;
-        background: #eef6ff;
+        background: color-mix(
+          in srgb,
+          var(--info, #0ea5e9) 12%,
+          var(--surface, #ffffff)
+        );
+        color: var(--foreground, #111827);
       }
 
       .status p {
@@ -319,13 +444,29 @@ import {
       }
 
       .success {
-        background: #edfdf6;
-        color: #075e43;
+        background: color-mix(
+          in srgb,
+          var(--success, #15803d) 10%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--success, #15803d) 80%,
+          var(--foreground, #111827)
+        );
       }
 
       .error {
-        background: #fff1f1;
-        color: #9b1c1c;
+        background: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 10%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .app-grid {
@@ -335,6 +476,93 @@ import {
         padding: 20px;
       }
 
+      .release-band,
+      .release-readiness,
+      .release-fields,
+      .release-history,
+      .history-list,
+      .history-copy {
+        display: grid;
+      }
+
+      .release-band {
+        gap: 16px;
+      }
+
+      .release-readiness {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        padding: 0 20px;
+      }
+
+      .readiness-card {
+        border: 1px solid var(--border-color, #d7dde2);
+        border-radius: 10px;
+        padding: 14px 16px;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
+      }
+
+      .readiness-label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 72%,
+          var(--foreground, #111827)
+        );
+      }
+
+      .release-fields {
+        gap: 12px;
+        padding: 0 20px 20px;
+      }
+
+      .release-history {
+        border-top: 1px solid var(--border-color, #d7dde2);
+      }
+
+      .history-list {
+        gap: 12px;
+        padding: 0 20px 20px;
+      }
+
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: center;
+        border: 1px solid var(--border-color, #d7dde2);
+        border-radius: 10px;
+        padding: 14px 16px;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
+      }
+
+      .history-copy {
+        gap: 4px;
+      }
+
+      .preview-link {
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 76%,
+          var(--foreground, #111827)
+        );
+        font-weight: 700;
+        text-decoration: none;
+      }
+
       .app-editor {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -342,7 +570,11 @@ import {
         border: 1px solid var(--border-color, #d7dde2);
         border-radius: 8px;
         padding: 16px;
-        background: #fbfcfc;
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 94%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .editor-topline,
@@ -371,7 +603,7 @@ import {
         width: 100%;
         border: 1px solid #cbd5dc;
         border-radius: 6px;
-        background: white;
+        background: var(--surface, #ffffff);
         color: inherit;
         font: inherit;
         padding: 9px 10px;
@@ -402,7 +634,7 @@ import {
       }
 
       .link-head {
-        color: #56616a;
+        color: color-mix(in srgb, var(--foreground, #111827) 68%, transparent);
         font-size: 0.78rem;
         font-weight: 700;
         text-transform: uppercase;
@@ -415,7 +647,7 @@ import {
       .quiet {
         margin: 0;
         padding: 20px;
-        color: #64727d;
+        color: color-mix(in srgb, var(--foreground, #111827) 62%, transparent);
       }
 
       .audit-list {
@@ -432,7 +664,7 @@ import {
       }
 
       time {
-        color: #64727d;
+        color: color-mix(in srgb, var(--foreground, #111827) 62%, transparent);
       }
 
       @media (max-width: 760px) {
@@ -465,6 +697,9 @@ export class RegistryManagementComponent implements OnInit {
   links: NavigationLink[] = [];
   loading = false;
   message = '';
+  release: RegistryReleaseState | null = null;
+  releaseNotes = '';
+  changeSummary = '';
   registry: AppRegistry = {
     version: '1.0.0',
     generatedAt: new Date(0).toISOString(),
@@ -490,9 +725,12 @@ export class RegistryManagementComponent implements OnInit {
     }).subscribe({
       next: ({ registry, links, audit }) => {
         this.registry = this.clone(registry.data);
+        this.release = registry.release ?? null;
         this.links = this.clone(links.data);
         this.auditLog = audit.data;
         this.loading = false;
+        this.releaseNotes = this.release?.releaseNotes ?? '';
+        this.changeSummary = this.release?.changeSummary ?? '';
         this.validate();
       },
       error: (error) => {
@@ -600,8 +838,10 @@ export class RegistryManagementComponent implements OnInit {
     this.registryService.updateRegistry(this.registry).subscribe({
       next: (response) => {
         this.registry = this.clone(response.data);
+        this.release = response.release ?? this.release;
         this.loading = false;
         this.message = 'Application registry saved.';
+        this.error = '';
         this.loadAuditLog();
       },
       error: (error) => {
@@ -616,6 +856,7 @@ export class RegistryManagementComponent implements OnInit {
   saveLinks(): void {
     this.loading = true;
     this.message = '';
+    this.error = '';
     this.registryService.updateLinks(this.links).subscribe({
       next: (response) => {
         this.links = this.clone(response.data);
@@ -661,6 +902,90 @@ export class RegistryManagementComponent implements OnInit {
     this.validationErrors = errors;
   }
 
+  publishRegistry(): void {
+    this.validate();
+    if (this.validationErrors.length > 0) {
+      return;
+    }
+
+    if (!this.releaseNotes.trim()) {
+      this.error = 'Release notes are required before publishing the registry.';
+      return;
+    }
+
+    this.loading = true;
+    this.message = '';
+    this.error = '';
+
+    const payload: PublishRegistryDto = {
+      releaseNotes: this.releaseNotes.trim(),
+      changeSummary: this.changeSummary.trim() || undefined,
+    };
+
+    this.registryService.publishRegistry(payload).subscribe({
+      next: (response) => {
+        this.applyReleaseBundle(response.data);
+        this.loading = false;
+        this.message = 'Application registry published.';
+        this.loadAuditLog();
+      },
+      error: (error) => {
+        this.error = `Failed to publish registry: ${
+          error.error?.message || error.message || 'Unknown error'
+        }`;
+        this.loading = false;
+      },
+    });
+  }
+
+  rollbackRegistry(version: number): void {
+    this.loading = true;
+    this.message = '';
+    this.error = '';
+
+    this.registryService
+      .rollbackRegistry({
+        version,
+        releaseNotes: 'Rollback from registry management',
+      })
+      .subscribe({
+        next: (response) => {
+          this.applyReleaseBundle(response.data);
+          this.loading = false;
+          this.message = 'Application registry rolled back.';
+          this.loadAuditLog();
+        },
+        error: (error) => {
+          this.error = `Failed to rollback registry: ${
+            error.error?.message || error.message || 'Unknown error'
+          }`;
+          this.loading = false;
+        },
+      });
+  }
+
+  releaseStatusLabel(): string {
+    const status = this.release?.status;
+    if (status === 'published') {
+      return 'Published';
+    }
+    if (status === 'changes-pending') {
+      return 'Changes Pending';
+    }
+    return 'Draft';
+  }
+
+  releaseHistory(): RegistryReleaseRevision[] {
+    return [...(this.release?.history ?? [])].sort(
+      (left, right) => right.version - left.version
+    );
+  }
+
+  publicAppCount(): number {
+    return this.registry.apps.filter((app) => app.visibility === 'public')
+      .length;
+  }
+
   private getDomainError(app: AppRegistration): string {
     const domainPattern =
       /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
@@ -702,5 +1027,18 @@ export class RegistryManagementComponent implements OnInit {
 
   private clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;
+  }
+
+  private applyReleaseBundle(data: {
+    registry: AppRegistry;
+    links: NavigationLink[];
+    release: RegistryReleaseState;
+  }): void {
+    this.registry = this.clone(data.registry);
+    this.links = this.clone(data.links);
+    this.release = this.clone(data.release);
+    this.releaseNotes = this.release.releaseNotes ?? '';
+    this.changeSummary = this.release.changeSummary ?? '';
+    this.validate();
   }
 }

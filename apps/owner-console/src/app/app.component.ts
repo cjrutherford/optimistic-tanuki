@@ -8,6 +8,8 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
   imports: [RouterModule, SignalMeshComponent],
   selector: 'app-root',
   template: `
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
     @if (isBrowser) {
     <div class="motion-background" aria-hidden="true">
       <otui-signal-mesh
@@ -20,9 +22,9 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     </div>
     }
 
-    <div class="app-content">
+    <main id="main-content" class="app-content">
       <router-outlet></router-outlet>
-    </div>
+    </main>
   `,
   styleUrl: './app.component.scss',
 })

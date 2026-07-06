@@ -15,6 +15,8 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppConfigCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   CreateAppConfigDto,
+  PublishAppConfigDto,
+  RollbackAppConfigDto,
   UpdateAppConfigDto,
 } from '@optimistic-tanuki/app-config-models';
 import { AuthGuard } from '../../auth/auth.guard';
@@ -103,6 +105,42 @@ export class AppConfigController {
     this.logger.log(`Updating app configuration: ${id}`);
     return await firstValueFrom(
       this.client.send({ cmd: AppConfigCommands.Update }, { id, ...updateDto })
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiOperation({ summary: 'Publish app configuration' })
+  @Post(':id/publish')
+  async publishConfiguration(
+    @Param('id') id: string,
+    @Body() publishDto: PublishAppConfigDto
+  ) {
+    this.logger.log(`Publishing app configuration: ${id}`);
+    return await firstValueFrom(
+      this.client.send(
+        { cmd: AppConfigCommands.Publish },
+        { id, ...publishDto }
+      )
+    );
+  }
+
+  @RequirePermissions('app-config.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiOperation({
+    summary: 'Rollback app configuration to a published revision',
+  })
+  @Post(':id/rollback')
+  async rollbackConfiguration(
+    @Param('id') id: string,
+    @Body() rollbackDto: RollbackAppConfigDto
+  ) {
+    this.logger.log(`Rolling back app configuration: ${id}`);
+    return await firstValueFrom(
+      this.client.send(
+        { cmd: AppConfigCommands.Rollback },
+        { id, ...rollbackDto }
+      )
     );
   }
 

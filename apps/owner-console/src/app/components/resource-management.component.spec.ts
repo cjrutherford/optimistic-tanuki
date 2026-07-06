@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { ResourceManagementComponent } from './resource-management.component';
@@ -50,7 +51,10 @@ describe('ResourceManagementComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ResourceManagementComponent],
-      providers: [{ provide: StoreService, useValue: storeService }],
+      providers: [
+        provideRouter([]),
+        { provide: StoreService, useValue: storeService },
+      ],
     }).compileComponents();
   });
 
@@ -135,5 +139,13 @@ describe('ResourceManagementComponent', () => {
     component.deleteResource(component.resources[0]);
 
     expect(storeService.deleteResource).toHaveBeenCalledWith('resource-1');
+  });
+
+  it('renders resources through the shared ag-grid table', () => {
+    const fixture = TestBed.createComponent(ResourceManagementComponent);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('otui-ag-grid')).toBeTruthy();
   });
 });

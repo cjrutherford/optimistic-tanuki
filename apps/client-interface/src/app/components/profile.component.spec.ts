@@ -14,6 +14,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { CommunityService } from '../community.service';
 import { PostService } from '../post.service';
 import { FollowService } from '../follow.service';
+import { PrivacyService } from '../privacy.service';
 
 describe('ProfileComponent', () => {
   let component: ProfileComponent;
@@ -21,6 +22,7 @@ describe('ProfileComponent', () => {
   let profileService: ProfileService;
   let router: Router;
   let profileServiceMock: Record<string, jest.Mock | (() => unknown)>;
+  let privacyServiceMock: Record<string, jest.Mock | (() => unknown)>;
 
   const mockProfile: ProfileDto = {
     id: '1',
@@ -61,16 +63,19 @@ describe('ProfileComponent', () => {
       updateProfile: jest.fn(),
       getProfileById: jest.fn(),
       getDisplayProfile: jest.fn().mockReturnValue(of(mockProfile)),
+      ...profileOverrides,
+    };
+    privacyServiceMock = {
       getBlockedUsers: jest.fn().mockReturnValue(of([])),
       blockUser: jest.fn().mockReturnValue(of(undefined)),
       unblockUser: jest.fn().mockReturnValue(of(undefined)),
-      ...profileOverrides,
     };
 
     await TestBed.configureTestingModule({
       imports: [ProfileComponent, RouterTestingModule],
       providers: [
         { provide: ProfileService, useValue: profileServiceMock },
+        { provide: PrivacyService, useValue: privacyServiceMock },
         { provide: ActivatedRoute, useValue: buildRoute(routeParams) },
         {
           provide: MessageService,
@@ -150,21 +155,6 @@ describe('ProfileComponent', () => {
     expect(router.navigate).toHaveBeenCalledWith(['/profile', mockProfile.id], {
       replaceUrl: true,
     });
-  });
-
-  it('does not fetch blocked users when loading another profile', async () => {
-    TestBed.resetTestingModule();
-
-    await createComponent(
-      { userId: 'other-profile' },
-      {
-        getDisplayProfile: jest
-          .fn()
-          .mockReturnValue(of({ ...mockProfile, id: 'other-profile' })),
-      }
-    );
-
-    expect(profileService.getBlockedUsers).not.toHaveBeenCalled();
   });
 
   it('should render expanded profile details', () => {

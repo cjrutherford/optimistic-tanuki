@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 
 import { ProductManagementComponent } from './product-management.component';
@@ -54,7 +55,10 @@ describe('ProductManagementComponent', () => {
 
     await TestBed.configureTestingModule({
       imports: [ProductManagementComponent],
-      providers: [{ provide: StoreService, useValue: storeService }],
+      providers: [
+        provideRouter([]),
+        { provide: StoreService, useValue: storeService },
+      ],
     }).compileComponents();
   });
 

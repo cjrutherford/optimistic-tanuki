@@ -7,11 +7,18 @@ import {
   ApproveAppointmentDto,
   DenyAppointmentDto,
 } from '@optimistic-tanuki/ui-models';
+import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
 @Component({
   selector: 'app-appointment-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridUiComponent,
+    CommerceWorkspaceNavComponent,
+  ],
   templateUrl: './appointment-management.component.html',
   styleUrls: ['./appointment-management.component.scss'],
 })
@@ -25,6 +32,7 @@ export class AppointmentManagementComponent implements OnInit {
   showApproveModal = false;
   showDenyModal = false;
   showInvoiceModal = false;
+  gridHeight = '560px';
 
   approveForm: ApproveAppointmentDto = {
     hourlyRate: undefined,
@@ -36,6 +44,83 @@ export class AppointmentManagementComponent implements OnInit {
   };
 
   generatedInvoice: any = null;
+
+  columnDefs: ColDef[] = [
+    { field: 'title', headerName: 'Title', minWidth: 180 },
+    { field: 'userId', headerName: 'User ID', minWidth: 160 },
+    {
+      field: 'startTime',
+      headerName: 'Start',
+      minWidth: 180,
+      valueFormatter: (params) => this.formatDate(params.value),
+    },
+    {
+      field: 'endTime',
+      headerName: 'End',
+      minWidth: 180,
+      valueFormatter: (params) => this.formatDate(params.value),
+    },
+    {
+      headerName: 'Duration',
+      minWidth: 120,
+      valueGetter: (params) => this.calculateDuration(params.data),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      minWidth: 140,
+    },
+    {
+      headerName: 'Total Cost',
+      minWidth: 130,
+      valueFormatter: (params) =>
+        params.data?.totalCost
+          ? `$${Number(params.data.totalCost).toFixed(2)}`
+          : '-',
+    },
+    {
+      headerName: 'Actions',
+      minWidth: 320,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.flexWrap = 'wrap';
+        container.style.gap = '8px';
+        const appointment = params.data as Appointment;
+
+        const addButton = (label: string, handler: () => void) => {
+          const button = document.createElement('button');
+          button.textContent = label;
+          button.className = 'ag-grid-action-button';
+          button.addEventListener('click', handler);
+          container.appendChild(button);
+        };
+
+        if (appointment.status === 'pending') {
+          addButton('Approve', () => this.openApproveModal(appointment));
+          addButton('Deny', () => this.openDenyModal(appointment));
+        }
+        if (appointment.status === 'approved') {
+          addButton('Complete', () => this.completeAppointment(appointment));
+        }
+        if (
+          appointment.status === 'pending' ||
+          appointment.status === 'approved'
+        ) {
+          addButton('Cancel', () => this.cancelAppointment(appointment));
+        }
+        if (
+          appointment.status === 'completed' &&
+          !appointment.isFreeConsultation
+        ) {
+          addButton('Invoice', () => this.generateInvoice(appointment));
+        }
+        return container;
+      },
+    },
+  ];
 
   constructor(private storeService: StoreService) {}
 
@@ -73,6 +158,10 @@ export class AppointmentManagementComponent implements OnInit {
 
   onStatusFilterChange(): void {
     this.filterAppointments();
+  }
+
+  get gridAppointments(): Appointment[] {
+    return this.filteredAppointments;
   }
 
   openApproveModal(appointment: Appointment): void {

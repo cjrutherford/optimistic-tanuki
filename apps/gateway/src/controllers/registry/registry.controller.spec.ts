@@ -104,6 +104,50 @@ describe('RegistryController', () => {
     ]);
   });
 
+  it('publishes the current registry snapshot with release notes', () => {
+    controller.updateApps({
+      registry: {
+        ...DEFAULT_APP_REGISTRY,
+        version: '1.0.1',
+      },
+    });
+
+    const response = controller.publishRegistry({
+      releaseNotes: 'Registry launch published.',
+      changeSummary: 'Public app routing stabilized.',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data.release.status).toBe('published');
+    expect(response.data.release.publishedVersion).toBe(1);
+    expect(response.data.release.releaseNotes).toBe(
+      'Registry launch published.'
+    );
+  });
+
+  it('rolls the registry back to a published revision', () => {
+    controller.publishRegistry({
+      releaseNotes: 'Initial registry release.',
+      changeSummary: 'Launch baseline.',
+    });
+
+    controller.updateApps({
+      registry: {
+        ...DEFAULT_APP_REGISTRY,
+        version: '1.0.1',
+      },
+    });
+
+    const response = controller.rollbackRegistry({
+      version: 1,
+      releaseNotes: 'Rollback after validation.',
+    });
+
+    expect(response.success).toBe(true);
+    expect(response.data.release.publishedVersion).toBe(1);
+    expect(response.data.registry.version).toBe(DEFAULT_APP_REGISTRY.version);
+  });
+
   it('rejects admin registry updates with duplicate app ids', () => {
     expect(() =>
       controller.updateApps({

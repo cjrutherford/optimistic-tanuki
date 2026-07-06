@@ -8,11 +8,18 @@ import {
   CreateAvailabilityDto,
   UpdateAvailabilityDto,
 } from '@optimistic-tanuki/ui-models';
+import { AgGridUiComponent, ColDef } from '@optimistic-tanuki/ag-grid-ui';
+import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
 @Component({
   selector: 'app-availability-management',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    AgGridUiComponent,
+    CommerceWorkspaceNavComponent,
+  ],
   templateUrl: './availability-management.component.html',
   styleUrls: ['./availability-management.component.scss'],
 })
@@ -23,6 +30,7 @@ export class AvailabilityManagementComponent implements OnInit {
   showCreateModal = false;
   showEditModal = false;
   selectedAvailability: Availability | null = null;
+  gridHeight = '520px';
 
   createForm: CreateAvailabilityDto = {
     ownerId: '',
@@ -51,6 +59,69 @@ export class AvailabilityManagementComponent implements OnInit {
     private authService: AuthService
   ) {}
 
+  columnDefs: ColDef[] = [
+    {
+      field: 'dayOfWeek',
+      headerName: 'Day of Week',
+      minWidth: 150,
+      valueFormatter: (params) => this.getDayLabel(params.value),
+    },
+    {
+      field: 'startTime',
+      headerName: 'Start Time',
+      minWidth: 140,
+      valueFormatter: (params) => this.formatTime(params.value),
+    },
+    {
+      field: 'endTime',
+      headerName: 'End Time',
+      minWidth: 140,
+      valueFormatter: (params) => this.formatTime(params.value),
+    },
+    {
+      field: 'hourlyRate',
+      headerName: 'Hourly Rate',
+      minWidth: 130,
+      valueFormatter: (params) => `$${Number(params.value ?? 0).toFixed(2)}/hr`,
+    },
+    { field: 'serviceType', headerName: 'Service Type', minWidth: 150 },
+    {
+      field: 'isActive',
+      headerName: 'Status',
+      minWidth: 120,
+      valueFormatter: (params) => (params.value ? 'Active' : 'Inactive'),
+    },
+    {
+      headerName: 'Actions',
+      minWidth: 180,
+      sortable: false,
+      filter: false,
+      cellRenderer: (params: any) => {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.gap = '8px';
+
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Edit';
+        editButton.className = 'ag-grid-action-button';
+        editButton.addEventListener('click', () =>
+          this.openEditModal(params.data as Availability)
+        );
+        container.appendChild(editButton);
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Delete';
+        deleteButton.className = 'ag-grid-action-button ag-grid-delete-button';
+        deleteButton.addEventListener('click', () =>
+          this.deleteAvailability(params.data as Availability)
+        );
+        container.appendChild(deleteButton);
+
+        return container;
+      },
+    },
+  ];
+
   ngOnInit(): void {
     this.loadAvailabilities();
   }
@@ -70,6 +141,10 @@ export class AvailabilityManagementComponent implements OnInit {
         console.error(err);
       },
     });
+  }
+
+  get gridAvailabilities(): Availability[] {
+    return this.availabilities;
   }
 
   openCreateModal(): void {

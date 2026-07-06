@@ -188,6 +188,15 @@ describe('AgGridUiComponent', () => {
       host.style.getPropertyValue('--local-row-selected-background')
     ).toBeTruthy();
     expect(host.style.getPropertyValue('--local-grid-font-size')).toBeTruthy();
+    expect(
+      host.style.getPropertyValue('--local-action-button-background')
+    ).toBeTruthy();
+    expect(
+      host.style.getPropertyValue('--local-action-delete-background')
+    ).toBeTruthy();
+    expect(
+      host.style.getPropertyValue('--local-control-background')
+    ).toBeTruthy();
   });
 
   it('should expose personality id for host binding', () => {

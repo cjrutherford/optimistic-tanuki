@@ -14,7 +14,11 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   AppRegistration,
   AppRegistry,
+  PublishRegistryDto,
+  RegistryReleaseBundle,
+  RegistryReleaseState,
   NavigationLink,
+  RollbackRegistryDto,
 } from '@optimistic-tanuki/app-registry-backend';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
@@ -49,6 +53,7 @@ export class RegistryController {
   private auditLog: RegistryAuditEntry[] = [];
   private nextAuditId = 1;
   private navigationLinks: NavigationLink[];
+  private release: RegistryReleaseState;
   private registry: AppRegistry;
 
   constructor(
@@ -57,6 +62,7 @@ export class RegistryController {
   ) {
     this.registry = registry;
     this.navigationLinks = [...navigationLinks];
+    this.release = this.createInitialReleaseState(registry, navigationLinks);
   }
 
   @ApiOperation({ summary: 'Get the application registry' })
@@ -68,6 +74,7 @@ export class RegistryController {
     return {
       success: true,
       data: this.registry,
+      release: this.release,
     };
   }
 
@@ -89,6 +96,10 @@ export class RegistryController {
       ...registry,
       apps: [...registry.apps],
     };
+    this.release = this.buildUpdatedReleaseState(
+      this.registry,
+      this.navigationLinks
+    );
     this.recordAudit(
       'apps.updated',
       `Updated application registry to version ${this.registry.version}`,
@@ -176,6 +187,10 @@ export class RegistryController {
 
     links.forEach((link) => this.validateLink(link));
     this.navigationLinks = [...links];
+    this.release = this.buildUpdatedReleaseState(
+      this.registry,
+      this.navigationLinks
+    );
     this.recordAudit(
       'links.updated',
       `Updated ${links.length} navigation ${
@@ -187,6 +202,97 @@ export class RegistryController {
     return {
       success: true,
       data: this.navigationLinks,
+    };
+  }
+
+  @ApiOperation({ summary: 'Publish the current registry snapshot' })
+  @ApiResponse({ status: 201, description: 'Registry snapshot published' })
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('registry.manage')
+  @Post('publish')
+  publishRegistry(@Body() payload: PublishRegistryDto): {
+    success: true;
+    data: RegistryReleaseBundle;
+  } {
+    if (!payload?.releaseNotes?.trim()) {
+      throw new BadRequestException('Release notes are required');
+    }
+
+    const version = (this.release.publishedVersion ?? 0) + 1;
+    const publishedAt = new Date().toISOString();
+    const revision = {
+      version,
+      status: 'published' as const,
+      publishedAt,
+      releasedAt: publishedAt,
+      releaseNotes: payload.releaseNotes.trim(),
+      changeSummary: payload.changeSummary?.trim() || undefined,
+      snapshot: this.createSnapshot(this.registry, this.navigationLinks),
+    };
+
+    this.release = {
+      status: 'published',
+      previewUrl: this.buildPreviewUrl(this.registry),
+      publishedVersion: version,
+      publishedAt,
+      releaseNotes: revision.releaseNotes,
+      changeSummary: revision.changeSummary,
+      history: [revision, ...(this.release.history ?? [])],
+    };
+
+    this.recordAudit('apps.updated', `Published registry release v${version}`, {
+      version,
+      appCount: this.registry.apps.length,
+    });
+
+    return {
+      success: true,
+      data: this.currentReleaseBundle(),
+    };
+  }
+
+  @ApiOperation({ summary: 'Rollback the registry to a published revision' })
+  @ApiResponse({ status: 201, description: 'Registry rolled back' })
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('registry.manage')
+  @Post('rollback')
+  rollbackRegistry(@Body() payload: RollbackRegistryDto): {
+    success: true;
+    data: RegistryReleaseBundle;
+  } {
+    const revision = this.release.history.find(
+      (entry) => entry.version === payload?.version
+    );
+    if (!revision) {
+      throw new NotFoundException(
+        `Registry release ${payload?.version} was not found`
+      );
+    }
+
+    this.registry = this.clone(revision.snapshot.registry);
+    this.navigationLinks = this.clone(revision.snapshot.links);
+    this.release = {
+      ...this.release,
+      status: 'published',
+      previewUrl: this.buildPreviewUrl(this.registry),
+      publishedVersion: revision.version,
+      publishedAt: revision.publishedAt,
+      releaseNotes: revision.releaseNotes,
+      changeSummary: revision.changeSummary,
+    };
+
+    this.recordAudit(
+      'apps.updated',
+      `Rolled registry back to release v${revision.version}`,
+      {
+        version: revision.version,
+        reason: payload.releaseNotes,
+      }
+    );
+
+    return {
+      success: true,
+      data: this.currentReleaseBundle(),
     };
   }
 
@@ -208,6 +314,68 @@ export class RegistryController {
         'Navigation links must reference registered applications'
       );
     }
+  }
+
+  private currentReleaseBundle(): RegistryReleaseBundle {
+    return {
+      registry: this.registry,
+      links: this.navigationLinks,
+      release: this.release,
+    };
+  }
+
+  private createInitialReleaseState(
+    registry: AppRegistry,
+    links: NavigationLink[]
+  ): RegistryReleaseState {
+    return {
+      status: 'draft',
+      previewUrl: this.buildPreviewUrl(registry),
+      history: [],
+    };
+  }
+
+  private buildUpdatedReleaseState(
+    registry: AppRegistry,
+    links: NavigationLink[]
+  ): RegistryReleaseState {
+    const status =
+      this.release?.history?.length &&
+      !this.snapshotsEqual(
+        this.release.history[0].snapshot,
+        this.createSnapshot(registry, links)
+      )
+        ? 'changes-pending'
+        : this.release?.publishedVersion
+        ? 'published'
+        : 'draft';
+
+    return {
+      ...this.release,
+      status,
+      previewUrl: this.buildPreviewUrl(registry),
+    };
+  }
+
+  private createSnapshot(
+    registry: AppRegistry,
+    links: NavigationLink[]
+  ): { registry: AppRegistry; links: NavigationLink[] } {
+    return {
+      registry: this.clone(registry),
+      links: this.clone(links),
+    };
+  }
+
+  private snapshotsEqual(
+    left: { registry: AppRegistry; links: NavigationLink[] },
+    right: { registry: AppRegistry; links: NavigationLink[] }
+  ): boolean {
+    return JSON.stringify(left) === JSON.stringify(right);
+  }
+
+  private buildPreviewUrl(registry: AppRegistry): string | undefined {
+    return registry.apps.find((app) => app.visibility === 'public')?.uiBaseUrl;
   }
 
   private validateRegistry(
@@ -342,5 +510,9 @@ export class RegistryController {
     response.setHeader('X-App-Registry-Version', this.registry.version);
     const etagValue = `${this.registry.version}-${this.registry.generatedAt}`;
     response.setHeader('ETag', `W/"app-registry-${etagValue}"`);
+  }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value)) as T;
   }
 }

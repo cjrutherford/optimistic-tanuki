@@ -23,6 +23,7 @@ import { PostService } from '../post.service';
 import { FollowService } from '../follow.service';
 import { CommunityDto } from '@optimistic-tanuki/ui-models';
 import { PostDto } from '@optimistic-tanuki/social-ui';
+import { PrivacyService } from '../privacy.service';
 
 @Component({
   selector: 'app-profile',
@@ -47,6 +48,7 @@ export class ProfileComponent implements OnInit {
   private readonly communityService = inject(CommunityService);
   private readonly postService = inject(PostService);
   private readonly followService = inject(FollowService);
+  private readonly privacyService = inject(PrivacyService);
   showProfileEditor = false;
   viewingUserId: string | null = null;
   isViewingOther = false;
@@ -344,18 +346,16 @@ export class ProfileComponent implements OnInit {
     if (!currentProfile || !viewingProfile) return;
 
     if (this.isBlocked()) {
-      this.profileService
-        .unblockUser(currentProfile.id, viewingProfile.id)
-        .subscribe({
-          next: () => {
-            this.isBlocked.set(false);
-            this.showMessage('User unblocked', 'success');
-          },
-          error: (err) => console.error('Failed to unblock', err),
-        });
+      this.privacyService.unblockUser(viewingProfile.id).subscribe({
+        next: () => {
+          this.isBlocked.set(false);
+          this.showMessage('User unblocked', 'success');
+        },
+        error: (err) => console.error('Failed to unblock', err),
+      });
     } else {
-      this.profileService
-        .blockUser(currentProfile.id, viewingProfile.id)
+      this.privacyService
+        .blockUser({ blockedId: viewingProfile.id })
         .subscribe({
           next: () => {
             this.isBlocked.set(true);

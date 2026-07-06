@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   ForumPostDto,
   ThreadDto,
@@ -44,6 +45,17 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
       </section>
 
       <div class="error" *ngIf="error">{{ error }}</div>
+
+      <section class="panel" *ngIf="handoffContext">
+        <div class="panel-heading">
+          <h2>Opened from Community Ops</h2>
+          <p>
+            Investigating {{ handoffContext.entityType }} context for
+            {{ handoffContext.entityTitle }} in
+            {{ handoffContext.communityName }}.
+          </p>
+        </div>
+      </section>
 
       <section class="panel">
         <div class="panel-heading">
@@ -263,20 +275,25 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
-            rgba(96, 165, 250, 0.08),
+            color-mix(in srgb, var(--info) 10%, transparent),
             transparent 28%
           ),
           linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.96),
-            rgba(246, 248, 248, 0.92)
+            color-mix(in srgb, var(--surface, #ffffff) 96%, transparent),
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 88%,
+              var(--background, #f8fafc)
+            )
           );
         padding: 24px;
+        color: var(--foreground, #111827);
       }
 
       .hero-kicker,
       .eyebrow {
-        color: #1d4ed8;
+        color: color-mix(in srgb, var(--info) 82%, var(--foreground));
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -311,7 +328,11 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
         padding: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 18px;
-        background: rgba(255, 255, 255, 0.92);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          transparent
+        );
       }
 
       .card-copy,
@@ -335,20 +356,20 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
       .status-pill {
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(29, 78, 216, 0.12);
-        color: #1d4ed8;
+        background: color-mix(in srgb, var(--info) 12%, transparent);
+        color: color-mix(in srgb, var(--info) 82%, var(--foreground));
         font-size: 0.78rem;
         font-weight: 700;
         text-transform: uppercase;
       }
 
       .status-pill.soft {
-        background: rgba(29, 78, 216, 0.08);
+        background: color-mix(in srgb, var(--info) 8%, transparent);
       }
 
       .status-pill.warning {
-        background: rgba(196, 112, 0, 0.14);
-        color: #8d4b00;
+        background: color-mix(in srgb, var(--warning) 14%, transparent);
+        color: color-mix(in srgb, var(--warning) 82%, var(--foreground));
       }
 
       .btn,
@@ -357,7 +378,8 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
         padding: 0.55rem 0.85rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: white;
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
 
       textarea {
@@ -369,7 +391,7 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
       }
 
       .btn.warning {
-        border-color: rgba(196, 112, 0, 0.4);
+        border-color: color-mix(in srgb, var(--warning) 44%, var(--border));
       }
 
       .empty-state,
@@ -378,7 +400,7 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
       }
 
       .error {
-        color: #9b2121;
+        color: color-mix(in srgb, var(--danger) 82%, var(--foreground));
         font-weight: 600;
       }
     `,
@@ -386,12 +408,21 @@ import { ForumModerationReport, ForumService } from '../services/forum.service';
 })
 export class ForumGovernanceComponent implements OnInit {
   private readonly forumService = inject(ForumService);
+  private readonly route = inject(ActivatedRoute);
 
   topics: TopicDto[] = [];
   threads: ThreadDto[] = [];
   posts: ForumPostDto[] = [];
   reports: ForumModerationReport[] = [];
   error: string | null = null;
+  handoffContext: {
+    source: string;
+    entityType: string;
+    entityId: string;
+    communityId: string;
+    communityName: string;
+    entityTitle: string;
+  } | null = null;
   reportDrafts: Record<
     string,
     { status: ForumModerationReport['status']; adminNotes: string }
@@ -419,10 +450,29 @@ export class ForumGovernanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadHandoffContext();
     this.loadTopics();
     this.loadThreads();
     this.loadPosts();
     this.loadReports();
+  }
+
+  loadHandoffContext(): void {
+    const queryParams = this.route.snapshot.queryParamMap;
+    const source = queryParams.get('source');
+    if (source !== 'community-ops') {
+      this.handoffContext = null;
+      return;
+    }
+
+    this.handoffContext = {
+      source,
+      entityType: queryParams.get('entityType') ?? 'entity',
+      entityId: queryParams.get('entityId') ?? '',
+      communityId: queryParams.get('communityId') ?? '',
+      communityName: queryParams.get('communityName') ?? 'Unknown community',
+      entityTitle: queryParams.get('entityTitle') ?? 'Unknown entity',
+    };
   }
 
   loadTopics(): void {

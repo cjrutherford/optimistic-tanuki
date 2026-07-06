@@ -6,6 +6,14 @@
     margin-bottom: 1.5rem;
   }
 
+  .catalog-guidance {
+    margin: 1rem 0 1.5rem;
+    color: var(
+      --muted-foreground,
+      color-mix(in oklab, var(--foreground) 60%, transparent)
+    );
+  }
+
   .error {
     padding: 1rem;
     margin-bottom: 1rem;
@@ -32,7 +40,7 @@
 
     &.btn-primary {
       background-color: var(--info, var(--primary));
-      color: white;
+      color: var(--on-primary, var(--primary-foreground));
 
       &:hover:not(:disabled) {
         background-color: color-mix(in oklab, var(--primary) 90%, black);
@@ -44,7 +52,7 @@
         --muted-foreground,
         color-mix(in oklab, var(--foreground) 60%, transparent)
       );
-      color: white;
+      color: var(--on-primary, var(--primary-foreground));
       margin-left: 0.5rem;
 
       &:hover:not(:disabled) {
@@ -63,7 +71,7 @@
 
     &.btn-edit {
       background-color: var(--success);
-      color: white;
+      color: var(--on-primary, var(--primary-foreground));
 
       &:hover {
         background-color: color-mix(in oklab, var(--success) 85%, black);
@@ -72,7 +80,7 @@
 
     &.btn-delete {
       background-color: var(--danger);
-      color: white;
+      color: var(--on-primary, var(--primary-foreground));
       margin-left: 0.5rem;
 
       &:hover {
@@ -147,8 +155,9 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: white;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      background-color: var(--surface, var(--background));
+      box-shadow: 0 1px 3px
+        color-mix(in srgb, var(--foreground) 10%, transparent);
 
       thead {
         background-color: var(--surface, var(--background));

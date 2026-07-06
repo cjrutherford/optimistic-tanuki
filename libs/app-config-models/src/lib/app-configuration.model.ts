@@ -409,6 +409,38 @@ export interface LandingPageConfig {
   layout: LayoutType;
 }
 
+export type AppConfigReleaseStatus = 'draft' | 'published' | 'changes-pending';
+
+export interface AppConfigurationSnapshot {
+  name: string;
+  description?: string;
+  domain?: string;
+  landingPage: LandingPageConfig;
+  routes: RouteConfig[];
+  features: FeaturesConfig;
+  theme: ThemeConfig;
+  active: boolean;
+}
+
+export interface AppConfigReleaseRevision {
+  version: number;
+  action: 'publish' | 'rollback';
+  releasedAt?: Date;
+  releaseNotes: string;
+  changeSummary?: string;
+  snapshot: AppConfigurationSnapshot;
+}
+
+export interface AppConfigReleaseState {
+  status: AppConfigReleaseStatus;
+  publishedVersion?: number | null;
+  previewUrl?: string;
+  releaseNotes?: string;
+  changeSummary?: string;
+  publishedSnapshot?: AppConfigurationSnapshot | null;
+  history: AppConfigReleaseRevision[];
+}
+
 /**
  * Main application configuration interface
  */
@@ -422,6 +454,7 @@ export interface AppConfiguration {
   features: FeaturesConfig;
   theme: ThemeConfig;
   active: boolean;
+  release?: AppConfigReleaseState;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -452,6 +485,16 @@ export interface UpdateAppConfigDto {
   features?: FeaturesConfig;
   theme?: ThemeConfig;
   active?: boolean;
+}
+
+export interface PublishAppConfigDto {
+  releaseNotes: string;
+  changeSummary?: string;
+}
+
+export interface RollbackAppConfigDto {
+  version: number;
+  releaseNotes: string;
 }
 
 function motionKindOptions(): { label: string; value: SectionMotionKind }[] {

@@ -15,14 +15,11 @@ RUN apk add --no-cache dumb-init
 ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nestjs
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/pnpm-lock.yaml ./
-COPY --from=builder /app/pnpm-workspace.yaml ./
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w typeorm
+COPY --from=builder /app/dist/apps/classifieds/package.json ./package.json
+COPY --from=builder /app/dist/apps/classifieds/pnpm-lock.yaml ./pnpm-lock.yaml
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && CI=true pnpm install --prod --frozen-lockfile --ignore-scripts
 COPY --from=builder /app/dist/apps/classifieds ./classifieds
 COPY --from=builder /app/apps/classifieds/src/assets ./assets
-COPY --from=builder /app/node_modules ./node_modules
 USER nestjs
 EXPOSE 3017
 CMD ["node", "classifieds/main.js"]

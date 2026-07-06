@@ -1,15 +1,21 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import {
   ModerationReport,
   SocialGovernanceService,
 } from '../services/social-governance.service';
+import { OperatorQueuePanelComponent } from './operator-queue-panel.component';
+import {
+  OperatorQueueItem,
+  OperatorQueueService,
+} from '../services/operator-queue.service';
 
 @Component({
   selector: 'app-social-governance',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, OperatorQueuePanelComponent],
   template: `
     <section class="governance-page">
       <header class="hero">
@@ -35,6 +41,24 @@ import {
       </section>
 
       <div class="error" *ngIf="error">{{ error }}</div>
+
+      <app-operator-queue-panel
+        [items]="queueItems"
+        heading="Community Moderation Queue"
+        description="Shared queue items that still require moderation review or follow-through."
+        emptyStateCopy="No community moderation queue items are currently prioritized."
+      ></app-operator-queue-panel>
+
+      <section class="panel" *ngIf="handoffContext">
+        <div class="panel-heading">
+          <h2>Opened from Community Ops</h2>
+          <p>
+            Investigating {{ handoffContext.entityType }} context for
+            {{ handoffContext.entityTitle }} in
+            {{ handoffContext.communityName }}.
+          </p>
+        </div>
+      </section>
 
       <section class="panel">
         <div class="panel-heading">
@@ -135,20 +159,33 @@ import {
         border-radius: 24px;
         background: radial-gradient(
             circle at top left,
-            rgba(45, 212, 191, 0.08),
+            color-mix(in srgb, var(--accent, #2563eb) 10%, transparent),
             transparent 28%
           ),
           linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.96),
-            rgba(246, 248, 248, 0.92)
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 96%,
+              var(--background, #f3f4f6)
+            ),
+            color-mix(
+              in srgb,
+              var(--surface, #ffffff) 90%,
+              var(--background, #f3f4f6)
+            )
           );
         padding: 24px;
+        color: var(--foreground, #111827);
       }
 
       .hero-kicker,
       .eyebrow {
-        color: #0f766e;
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 78%,
+          var(--foreground, #111827)
+        );
         font-size: 0.8rem;
         font-weight: 700;
         letter-spacing: 0.08em;
@@ -183,7 +220,11 @@ import {
         padding: 18px;
         border: 1px solid var(--border-color, #d6d6d6);
         border-radius: 18px;
-        background: rgba(255, 255, 255, 0.92);
+        background: color-mix(
+          in srgb,
+          var(--surface, #ffffff) 92%,
+          var(--background, #f3f4f6)
+        );
       }
 
       .report-copy,
@@ -211,15 +252,27 @@ import {
       .status-pill {
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(15, 118, 110, 0.14);
-        color: #0f766e;
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 14%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 78%,
+          var(--foreground, #111827)
+        );
         font-size: 0.78rem;
         font-weight: 700;
         text-transform: uppercase;
       }
 
       .status-pill.soft {
-        background: rgba(15, 118, 110, 0.08);
+        background: color-mix(
+          in srgb,
+          var(--accent, #2563eb) 8%,
+          var(--surface, #ffffff)
+        );
       }
 
       .btn,
@@ -228,11 +281,25 @@ import {
         padding: 0.55rem 0.85rem;
         border-radius: 8px;
         border: 1px solid var(--border-color, #d6d6d6);
-        background: white;
+        background: var(--surface, #ffffff);
+        color: var(--foreground, #111827);
       }
 
       .btn {
         cursor: pointer;
+      }
+
+      .btn.warning {
+        background: color-mix(
+          in srgb,
+          var(--warning, #b45309) 12%,
+          var(--surface, #ffffff)
+        );
+        color: color-mix(
+          in srgb,
+          var(--warning, #b45309) 82%,
+          var(--foreground, #111827)
+        );
       }
 
       .gap-list {
@@ -248,7 +315,11 @@ import {
       }
 
       .error {
-        color: #9b2121;
+        color: color-mix(
+          in srgb,
+          var(--danger, #b91c1c) 82%,
+          var(--foreground, #111827)
+        );
         font-weight: 600;
       }
     `,
@@ -256,9 +327,20 @@ import {
 })
 export class SocialGovernanceComponent implements OnInit {
   private readonly socialGovernanceService = inject(SocialGovernanceService);
+  private readonly operatorQueueService = inject(OperatorQueueService);
+  private readonly route = inject(ActivatedRoute);
 
   reports: ModerationReport[] = [];
+  queueItems: OperatorQueueItem[] = [];
   error: string | null = null;
+  handoffContext: {
+    source: string;
+    entityType: string;
+    entityId: string;
+    communityId: string;
+    communityName: string;
+    entityTitle: string;
+  } | null = null;
   reportDrafts: Record<
     string,
     { status: ModerationReport['status']; adminNotes: string }
@@ -278,7 +360,38 @@ export class SocialGovernanceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadHandoffContext();
     this.loadReports();
+    this.loadQueue();
+  }
+
+  loadHandoffContext(): void {
+    const queryParams = this.route.snapshot.queryParamMap;
+    const source = queryParams.get('source');
+    if (source !== 'community-ops') {
+      this.handoffContext = null;
+      return;
+    }
+
+    this.handoffContext = {
+      source,
+      entityType: queryParams.get('entityType') ?? 'entity',
+      entityId: queryParams.get('entityId') ?? '',
+      communityId: queryParams.get('communityId') ?? '',
+      communityName: queryParams.get('communityName') ?? 'Unknown community',
+      entityTitle: queryParams.get('entityTitle') ?? 'Unknown entity',
+    };
+  }
+
+  loadQueue(): void {
+    this.operatorQueueService.getQueueByDomain('Community Ops').subscribe({
+      next: (items) => {
+        this.queueItems = items;
+      },
+      error: () => {
+        this.queueItems = [];
+      },
+    });
   }
 
   loadReports(): void {

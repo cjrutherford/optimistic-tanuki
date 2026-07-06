@@ -45,8 +45,9 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      background-color: white;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      background-color: var(--surface, var(--background));
+      box-shadow: 0 1px 3px
+        color-mix(in srgb, var(--foreground) 10%, transparent);
 
       thead {
         background-color: var(--surface, var(--background));
@@ -127,7 +128,7 @@
 
       &.btn-view {
         background-color: var(--info, var(--primary));
-        color: white;
+        color: var(--on-primary, var(--primary-foreground));
         margin-right: 0.5rem;
 
         &:hover {
@@ -159,7 +160,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: color-mix(in srgb, var(--foreground) 36%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -167,13 +168,14 @@
   }
 
   .modal {
-    background-color: white;
+    background-color: var(--surface, var(--background));
+    color: var(--foreground);
     border-radius: 8px;
     max-width: 800px;
     width: 90%;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px color-mix(in srgb, var(--foreground) 10%, transparent);
 
     .modal-header {
       display: flex;

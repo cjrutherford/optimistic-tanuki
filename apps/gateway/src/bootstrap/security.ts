@@ -4,6 +4,8 @@ import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 const UNSAFE_HTTP_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
 const PRODUCTION = process.env['NODE_ENV'] === 'production';
+const DEV_ALLOW_ALL_BROWSER_ORIGINS =
+  !PRODUCTION && process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'] === 'true';
 
 const trimOrigin = (value: string): string => value.trim().replace(/\/$/, '');
 
@@ -96,6 +98,10 @@ export const isAllowedOrigin = (
   origin: string,
   configuredOrigins = parseConfiguredOrigins()
 ): boolean => {
+  if (DEV_ALLOW_ALL_BROWSER_ORIGINS) {
+    return true;
+  }
+
   const normalizedOrigin = normalizeOrigin(origin);
   if (!normalizedOrigin) {
     return false;

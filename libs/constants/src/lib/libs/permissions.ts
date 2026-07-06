@@ -18,6 +18,8 @@ export const RoleCommands = {
   RemovePermission: 'RemovePermission:Role',
   Assign: 'Assign:Role',
   Unassign: 'Unassign:Role',
+  PreviewBulkMutation: 'PreviewBulkMutation:Role',
+  ExecuteBulkMutation: 'ExecuteBulkMutation:Role',
   GetUserRoles: 'GetUserRoles:Role',
   CheckPermission: 'CheckPermission:Role',
 };

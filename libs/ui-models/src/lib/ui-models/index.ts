@@ -22,6 +22,11 @@ export type {
   CreateRoleDto,
   UpdateRoleDto,
   AssignRoleDto,
+  BulkRoleMutationDto,
+  BulkRoleMutationPermissionChangeDto,
+  BulkRoleMutationProfileImpactDto,
+  BulkRoleMutationPreviewDto,
+  BulkRoleMutationResultDto,
   UserRoleDto,
 } from './roles';
 export type {

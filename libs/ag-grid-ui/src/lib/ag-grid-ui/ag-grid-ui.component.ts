@@ -1,6 +1,8 @@
 import {
   Component,
   Input,
+  Output,
+  EventEmitter,
   OnInit,
   OnDestroy,
   OnChanges,
@@ -77,6 +79,9 @@ export class AgGridUiComponent
   /** Width of the grid (default: 100%) */
   @Input() width = '100%';
 
+  /** Selected rows emitted whenever AG Grid selection changes */
+  @Output() selectionChange = new EventEmitter<any[]>();
+
   /** Grid API instance (available after grid is ready) */
   public gridApi?: GridApi;
   public personalityId = 'classic';
@@ -89,7 +94,7 @@ export class AgGridUiComponent
   private loadingSignal = signal(false);
 
   // AG Grid theme instance (created with themeQuartz)
-  private gridThemeSignal = signal<any>(themeQuartz);
+  public gridThemeSignal = signal<any>(themeQuartz);
   private personalitySignal = signal<Personality | null>(null);
 
   /** Default grid options with reasonable defaults */
@@ -225,6 +230,22 @@ export class AgGridUiComponent
         'var(--animation-duration-fast, 150ms)',
       easing:
         personality?.animations?.easing || 'var(--animation-easing, ease)',
+      'action-button-background': colors.accent,
+      'action-button-foreground':
+        'var(--on-primary, var(--primary-foreground, #ffffff))',
+      'action-button-hover': isDark
+        ? colors.accentShades[5][1]
+        : colors.accentShades[6][1],
+      'action-delete-background': colors.danger,
+      'action-delete-hover': isDark
+        ? colors.dangerShades[5][1]
+        : colors.dangerShades[6][1],
+      'control-background': isDark
+        ? colors.accentShades[9][1]
+        : colors.background,
+      'control-foreground': colors.foreground,
+      'control-border': colors.complementaryShades[2][1],
+      'focus-ring': `color-mix(in srgb, ${colors.accent} 24%, transparent)`,
     });
 
     this.gridThemeSignal.set(newTheme);
@@ -278,6 +299,15 @@ export class AgGridUiComponent
       'ag-grid: onGridReady, displayedRows=',
       this.gridApi?.getDisplayedRowCount()
     );
+  }
+
+  onSelectionChanged(): void {
+    const selectedRows =
+      this.gridApi && typeof this.gridApi.getSelectedRows === 'function'
+        ? this.gridApi.getSelectedRows()
+        : [];
+
+    this.selectionChange.emit(selectedRows);
   }
 
   /**

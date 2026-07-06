@@ -60,6 +60,19 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.app-content')).toBeTruthy();
   });
 
+  it('renders a skip link and main content landmark for keyboard navigation', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    const skipLink = compiled.querySelector('a.skip-link');
+    const mainContent = compiled.querySelector('main#main-content');
+
+    expect(skipLink?.getAttribute('href')).toBe('#main-content');
+    expect(skipLink?.textContent?.trim()).toBe('Skip to main content');
+    expect(mainContent).toBeTruthy();
+  });
+
   it('does not redirect to the legacy setup route on init', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = jest
