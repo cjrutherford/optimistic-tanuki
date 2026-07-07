@@ -8,8 +8,9 @@
 }
 
 .manage-members {
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: var(--spacing-lg);
 
   @media (max-width: 640px) {
@@ -210,6 +211,11 @@
     gap: var(--spacing-md);
     margin-bottom: var(--spacing-lg);
     align-items: flex-end;
+
+    @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: stretch;
+    }
   }
 }
 

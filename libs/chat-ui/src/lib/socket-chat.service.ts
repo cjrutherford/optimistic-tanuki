@@ -97,16 +97,17 @@ export class SocketChatService {
     private readonly authErrorHandler?: () => void
   ) {
     const token = this.authTokenProvider?.();
-    this.socket = this.ioInstance(`${this.hostUrl}/${this.namespace}`, {
+    const socketUrl = this.buildSocketUrl();
+    this.socket = this.ioInstance(socketUrl, {
       autoConnect: true,
       auth: token ? { token } : undefined,
       extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
     this.socket.on('connect', () => {
-      console.log(`Socket connected to ${this.hostUrl}/${this.namespace}`);
+      console.log(`Socket connected to ${socketUrl}`);
     });
     this.socket.on('disconnect', () => {
-      console.log(`Socket disconnected from ${this.hostUrl}/${this.namespace}`);
+      console.log(`Socket disconnected from ${socketUrl}`);
     });
     this.socket.on('connect_error', (error) => {
       console.error(`Socket connection error: ${error.message}`);
@@ -154,6 +155,18 @@ export class SocketChatService {
         }
       }
     });
+  }
+
+  private buildSocketUrl(): string {
+    const normalizedNamespace = this.namespace.startsWith('/')
+      ? this.namespace
+      : `/${this.namespace}`;
+
+    if (!this.hostUrl) {
+      return normalizedNamespace;
+    }
+
+    return `${this.hostUrl.replace(/\/$/, '')}${normalizedNamespace}`;
   }
 
   /**

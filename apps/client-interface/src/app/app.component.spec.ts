@@ -155,4 +155,32 @@ describe('AppComponent', () => {
     expect(compiled.querySelector('.motion-background')).toBeTruthy();
     expect(compiled.querySelector('otui-murmuration-scene')).toBeTruthy();
   });
+
+  it('suppresses fixed bottom overlays on dedicated mobile chat routes', () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    app.isAuthenticated.set(true);
+    app.currentPath.set('/messages');
+    app.onResize();
+
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(app.suppressFixedChatOverlays()).toBe(true);
+    expect(compiled.querySelector('.chat-floating-button')).toBeNull();
+    expect(compiled.querySelector('hai-about-tag')).toBeNull();
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: originalWidth,
+    });
+  });
 });

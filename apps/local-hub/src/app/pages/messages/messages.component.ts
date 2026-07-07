@@ -12,6 +12,7 @@ import { ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { AuthStateService } from '../../services/auth-state.service';
+import { ChatService } from '../../services/chat.service';
 
 @Component({
   selector: 'app-messages',
@@ -45,6 +46,8 @@ import { AuthStateService } from '../../services/auth-state.service';
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [currentUserId]="currentProfileId || ''"
+        (messageSubmitted)="handleMessageSubmitted($event)"
       ></lib-chat-ui>
       }
     </div>
@@ -118,6 +121,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 })
 export class MessagesComponent implements OnInit, OnDestroy {
   private authStateService = inject(AuthStateService);
+  private chatService = inject(ChatService);
   private http = inject(HttpClient);
   private router = inject(Router);
   private socketChatService = inject(SocketChatService);
@@ -127,7 +131,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
 
-  private currentProfileId: string | null = null;
+  currentProfileId: string | null = null;
 
   async ngOnInit() {
     this.socketChatService.onConversations((conversations) => {
@@ -135,11 +139,55 @@ export class MessagesComponent implements OnInit, OnDestroy {
         conversations as unknown as ChatConversation[]
       );
     });
+    this.socketChatService.onMessage((message) => {
+      this.handleIncomingMessage(message);
+    });
     await this.loadConversations();
   }
 
   ngOnDestroy() {
     this.socketChatService.destroy();
+  }
+
+  async handleMessageSubmitted(event: {
+    conversationId: string;
+    content: string;
+  }) {
+    if (!this.currentProfileId) {
+      return;
+    }
+
+    const conversation = this.chatConversations().find(
+      (item) => item.id === event.conversationId
+    );
+    if (!conversation) {
+      return;
+    }
+
+    const recipientIds = conversation.participants.filter(
+      (participantId) => participantId !== this.currentProfileId
+    );
+
+    const createdMessage = await this.chatService.sendMessage({
+      conversationId: event.conversationId,
+      content: event.content,
+      senderId: this.currentProfileId,
+      recipientIds,
+    });
+
+    this.appendMessageToConversation({
+      id: createdMessage.id,
+      conversationId: createdMessage.conversationId || event.conversationId,
+      senderId: createdMessage.senderId,
+      content: createdMessage.content,
+      type: createdMessage.type as 'chat' | 'info' | 'warning' | 'system',
+      recipientId: createdMessage.recipients || recipientIds,
+      timestamp: new Date(createdMessage.createdAt),
+    });
+  }
+
+  handleIncomingMessage(message: ChatMessage) {
+    this.appendMessageToConversation(message);
   }
 
   private async loadConversations() {
@@ -180,7 +228,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
       const conversationMessagesPromises = conversations.map(async (conv) => {
         try {
-          const messages = await this.getMessages(conv.id);
+          const messages = await this.chatService.getMessages(conv.id);
           const transformedMessages: ChatMessage[] = messages.map((m: any) => ({
             id: m.id,
             conversationId: m.conversationId,
@@ -244,9 +292,26 @@ export class MessagesComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async getMessages(conversationId: string): Promise<any[]> {
-    return firstValueFrom(
-      this.http.get<any[]>(`/api/chat/messages/${conversationId}`)
-    ) as Promise<any[]>;
+  private appendMessageToConversation(message: ChatMessage) {
+    this.chatConversations.update((conversations) =>
+      conversations.map((conversation) => {
+        if (conversation.id !== message.conversationId) {
+          return conversation;
+        }
+
+        const alreadyPresent = conversation.messages.some(
+          (existing) => existing.id === message.id
+        );
+        if (alreadyPresent) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          messages: [...conversation.messages, message],
+          updatedAt: message.timestamp,
+        };
+      })
+    );
   }
 }

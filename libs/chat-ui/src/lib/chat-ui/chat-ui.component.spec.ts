@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ChatUiComponent } from './chat-ui.component';
-import { SimpleChange, SimpleChanges } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { ChatWindowComponent } from './chat-window/chat-window.component';
 
 describe('ChatUiComponent', () => {
-  let component: ChatUiComponent;
   let fixture: ComponentFixture<ChatUiComponent>;
+  let component: ChatUiComponent;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -13,182 +14,183 @@ describe('ChatUiComponent', () => {
 
     fixture = TestBed.createComponent(ChatUiComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+  it('mounts the selected conversation in the right pane', () => {
+    component.contacts = [
+      { id: 'room-1', name: 'General' },
+      { id: 'room-2', name: 'Moderators' },
+    ];
+    component.conversations = [
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'room-2',
+        participants: ['profile-1', 'profile-3'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.autoOpenFirstConversation = true;
 
-  it('should call syncWindowStates on ngOnInit', () => {
-    const syncSpy = jest.spyOn(component as any, 'syncWindowStates');
     component.ngOnInit();
-    expect(syncSpy).toHaveBeenCalled();
+    fixture.detectChanges();
+
+    const windows = fixture.nativeElement.querySelectorAll('lib-chat-window');
+    expect(windows).toHaveLength(1);
+    expect(component.getConversation('room-1').id).toBe('room-1');
   });
 
-  it('should call syncWindowStates on ngOnChanges when contacts change', () => {
-    const syncSpy = jest.spyOn(component as any, 'syncWindowStates');
-    const changes: SimpleChanges = {
-      contacts: new SimpleChange(
-        undefined,
-        [
+  it('replaces the mounted conversation when another channel is selected', () => {
+    component.contacts = [
+      { id: 'room-1', name: 'General' },
+      { id: 'room-2', name: 'Moderators' },
+    ];
+    component.conversations = [
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: 'room-2',
+        participants: ['profile-1', 'profile-3'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    component.autoOpenFirstConversation = true;
+
+    component.ngOnInit();
+    component.openChat('room-2');
+    fixture.detectChanges();
+
+    const windows = fixture.nativeElement.querySelectorAll('lib-chat-window');
+    expect(windows).toHaveLength(1);
+    expect(component.getConversation('room-2').id).toBe('room-2');
+  });
+
+  it('uses embedded window state when embedded layout is selected', () => {
+    component.layout = 'embedded';
+    component.contacts = [{ id: 'room-1', name: 'General' }];
+    component.conversations = [
+      {
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [
           {
-            id: '4',
-            name: 'Test',
-            avatarUrl: '',
-            lastMessage: '',
-            lastMessageTime: '',
+            id: 'm1',
+            conversationId: 'room-1',
+            senderId: 'profile-2',
+            recipientId: ['profile-1'],
+            content: 'hello',
+            timestamp: new Date(),
+            type: 'chat',
           },
         ],
-        true
-      ),
-    };
-    component.ngOnChanges(changes);
-    expect(syncSpy).toHaveBeenCalled();
-  });
-
-  it('should call syncWindowStates on ngOnChanges when conversations change', () => {
-    const syncSpy = jest.spyOn(component as any, 'syncWindowStates');
-    const changes: SimpleChanges = {
-      conversations: new SimpleChange(undefined, [], true),
-    };
-    component.ngOnChanges(changes);
-    expect(syncSpy).toHaveBeenCalled();
-  });
-
-  it('should initialize windowStates with existing contacts', () => {
-    component.contacts = [
-      {
-        id: 'test1',
-        name: 'Test1',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
-      },
-    ];
-    component.conversations = [
-      {
-        id: 'test1',
-        messages: [],
-        participants: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ];
-    (component as any).syncWindowStates();
-    expect(component.windowStates()['test1']).toBeDefined();
-    expect(component.windowStates()['test1'].windowState).toBe('hidden');
+    component.autoOpenFirstConversation = true;
+
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    const windowComponent = fixture.debugElement.query(
+      By.directive(ChatWindowComponent)
+    ).componentInstance as ChatWindowComponent;
+
+    expect(windowComponent.windowState).toBe('embedded');
+    expect(fixture.nativeElement.textContent).toContain('hello');
   });
 
-  it('should not overwrite existing windowState', () => {
-    component.contacts = [
-      {
-        id: 'test1',
-        name: 'Test1',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
-      },
-    ];
-    component.conversations = [
-      {
-        id: 'test1',
-        messages: [],
-        participants: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
-    component.windowStates.set({
-      test1: { windowState: 'popout', conversation: [] },
+  it('renders a shared empty state when there are no contacts', () => {
+    component.contacts = [];
+    component.conversations = [];
+
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('No conversations yet');
+    expect(
+      fixture.nativeElement.querySelector('otui-empty-state')
+    ).not.toBeNull();
+  });
+
+  it('marks the messenger layout as mobile at small viewports', () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
     });
-    (component as any).syncWindowStates();
-    expect(component.windowStates()['test1'].windowState).toBe('popout');
-  });
 
-  it('should open chat window to popout state', () => {
-    component.contacts = [
-      {
-        id: 'test1',
-        name: 'Test1',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
-      },
-    ];
+    component.contacts = [{ id: 'room-1', name: 'General' }];
     component.conversations = [
       {
-        id: 'test1',
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
         messages: [],
-        participants: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ];
-    (component as any).syncWindowStates();
-    component.openChat('test1');
-    expect(component.windowStates()['test1'].windowState).toBe('popout');
+
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement
+        .querySelector('.messenger-container')
+        ?.classList.contains('mobile-layout')
+    ).toBe(true);
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: originalWidth,
+    });
   });
 
-  it('should handle window state change', () => {
-    component.contacts = [
-      {
-        id: 'test1',
-        name: 'Test1',
-        avatarUrl: '',
-        lastMessage: '',
-        lastMessageTime: '',
-      },
-    ];
+  it('keeps the default floating layout in popout state on mobile viewports', () => {
+    const originalWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 390,
+    });
+
+    component.contacts = [{ id: 'room-1', name: 'General' }];
     component.conversations = [
       {
-        id: 'test1',
+        id: 'room-1',
+        participants: ['profile-1', 'profile-2'],
         messages: [],
-        participants: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ];
-    (component as any).syncWindowStates();
-    component.handleWindowStateChange('test1', 'hidden');
-    expect(component.windowStates()['test1'].windowState).toBe('hidden');
-  });
 
-  it('should not change state for non-existent contact', () => {
-    const initialStates = { ...component.windowStates() };
-    component.handleWindowStateChange('nonExistent', 'hidden');
-    expect(component.windowStates()).toEqual(initialStates);
-  });
+    component.ngOnInit();
+    fixture.detectChanges();
 
-  it('should return constructed conversation contacts', () => {
-    const profiles = [
-      {
-        id: '1',
-        profileName: 'Test User',
-        profilePic: '',
-        userId: '',
-        coverPic: '',
-        bio: '',
-        location: '',
-        occupation: '',
-        interests: '',
-        skills: '',
-        created_at: new Date(),
-      },
-    ];
-    const messages = [
-      {
-        id: '1',
-        conversationId: '1',
-        senderId: '1',
-        recipientId: ['2'],
-        content: 'Hello',
-        timestamp: new Date(),
-        type: 'chat' as const,
-      },
-    ];
-    const result = component.getConversationContacts(profiles, messages);
-    expect(result.length).toBe(1);
-    expect(result[0].name).toBe('Test User');
+    expect(
+      fixture.nativeElement
+        .querySelector('.messenger-container')
+        ?.classList.contains('mobile-layout')
+    ).toBe(true);
+    expect(component.activeWindowState()).toBe('popout');
+
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: originalWidth,
+    });
   });
 });

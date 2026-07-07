@@ -105,10 +105,19 @@ export class ProfileService {
 
   selectProfile(_p: ProfileDto) {
     const profile = this.currentUserProfiles().find((p) => p.id === _p.id);
-    if (profile) {
-      this.currentUserProfile.set(profile);
-      this.authState.persistSelectedProfile(profile);
+    const selectedProfile = profile ?? _p;
+    if (selectedProfile) {
+      this.currentUserProfile.set(selectedProfile);
+      this.authState.persistSelectedProfile(selectedProfile);
     }
+  }
+
+  restorePersistedSelectedProfile() {
+    const selectedProfile = this.authState.getPersistedSelectedProfile();
+    if (selectedProfile) {
+      this.currentUserProfile.set(selectedProfile);
+    }
+    return selectedProfile;
   }
 
   getCurrentUserProfiles() {
@@ -126,7 +135,7 @@ export class ProfileService {
   getCurrentUserProfile() {
     let currentProfile = this.currentUserProfile();
     if (!currentProfile) {
-      currentProfile = this.authState.getPersistedSelectedProfile();
+      currentProfile = this.restorePersistedSelectedProfile();
       if (currentProfile) {
         this.currentUserProfile.set(currentProfile);
       }

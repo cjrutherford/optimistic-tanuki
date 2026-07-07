@@ -69,6 +69,17 @@ describe('FeedComponent', () => {
       createPost: jest
         .fn()
         .mockReturnValue(of({ id: 'new-post', profileId: '123' })),
+      updatePost: jest.fn().mockReturnValue(
+        of({
+          id: 'post-1',
+          title: 'Updated',
+          content: 'Updated body',
+          profileId: '123',
+          userId: 'user-1',
+          createdAt: new Date('2026-07-05T10:00:00.000Z'),
+          updatedAt: new Date('2026-07-05T10:05:00.000Z'),
+        })
+      ),
       deletePost: jest.fn().mockReturnValue(of(undefined)),
       getPost: jest.fn().mockReturnValue(of(null)),
       getFeed: jest.fn().mockReturnValue(of([])),
@@ -241,5 +252,52 @@ describe('FeedComponent', () => {
       denial
     );
     consoleErrorSpy.mockRestore();
+  });
+
+  it('does not call getBlockedUsers when loading the feed', fakeAsync(() => {
+    fixture.detectChanges();
+    tick();
+
+    expect(profileService.getBlockedUsers).not.toHaveBeenCalled();
+  }));
+
+  it('updates an owned post in place after saving edits', async () => {
+    const updatePostSpy = jest.spyOn(component.postService, 'updatePost');
+
+    component.posts.set([
+      {
+        id: 'post-1',
+        title: 'Original',
+        content: 'Original body',
+        profileId: '123',
+        userId: 'user-1',
+        createdAt: new Date('2026-07-05T10:00:00.000Z'),
+      } as any,
+    ]);
+
+    await expect(
+      (component as any).updatePost('post-1', {
+        title: 'Updated',
+        content: 'Updated body',
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'post-1',
+        title: 'Updated',
+      })
+    );
+
+    expect(updatePostSpy).toHaveBeenCalledWith('post-1', {
+      title: 'Updated',
+      content: 'Updated body',
+    });
+    expect(component.posts()[0]).toEqual(
+      expect.objectContaining({
+        id: 'post-1',
+        title: 'Updated',
+        content: 'Updated body',
+        updatedAt: expect.any(Date),
+      })
+    );
   });
 });

@@ -39,6 +39,7 @@ import {
   AttachmentDto,
   PostDto,
   CreateCommentDto,
+  UpdatePostDto,
 } from '../../models';
 import { SocialComponentDto } from '@optimistic-tanuki/ui-models';
 import { ProfilePhotoComponent } from '@optimistic-tanuki/profile-ui';
@@ -129,6 +130,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   }>();
   @Output() inviteToCommunity = new EventEmitter<string>();
   @Output() saveToggle = new EventEmitter<void>();
+  @Output() postUpdated = new EventEmitter<UpdatePostDto>();
 
   // ViewChild references for component reconstruction
   @ViewChild('contentContainer', { read: ViewContainerRef })
@@ -143,6 +145,9 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
   );
   private storedComponents: SocialComponentDto[] = [];
   private componentRefs: ComponentRef<any>[] = [];
+  isEditing = false;
+  editTitle = '';
+  editContent = '';
 
   downloadAttachment(attachment: AttachmentDto) {
     console.log('Downloading attachment:', attachment);
@@ -175,6 +180,51 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (this.profile?.id) {
       this.profileClick.emit(this.profile.id);
     }
+  }
+
+  canEdit(): boolean {
+    return (
+      !!this.currentUserId && this.currentUserId === this.content?.profileId
+    );
+  }
+
+  get wasEdited(): boolean {
+    if (!this.content?.updatedAt || !this.content?.createdAt) {
+      return false;
+    }
+
+    return (
+      new Date(this.content.updatedAt).getTime() !==
+      new Date(this.content.createdAt).getTime()
+    );
+  }
+
+  startEdit() {
+    this.editTitle = this.content?.title || '';
+    this.editContent = this.content?.content || '';
+    this.isEditing = true;
+  }
+
+  cancelEdit() {
+    this.isEditing = false;
+    this.editTitle = '';
+    this.editContent = '';
+  }
+
+  saveEdit() {
+    this.postUpdated.emit({
+      title: this.editTitle,
+      content: this.editContent,
+    });
+    this.isEditing = false;
+  }
+
+  onEditTitleInput(event: Event) {
+    this.editTitle = (event.target as HTMLInputElement).value;
+  }
+
+  onEditContentInput(event: Event) {
+    this.editContent = (event.target as HTMLTextAreaElement).value;
   }
 
   get attachmentRows() {
@@ -230,6 +280,7 @@ export class PostComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     if (changes['content'] && !changes['content'].firstChange) {
+      this.cancelEdit();
       // Reload component data when content changes
       this.loadComponentData();
     }

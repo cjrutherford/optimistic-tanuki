@@ -63,6 +63,7 @@
       [reactionCounts]="getReactionCounts(post.id)"
       (voteChange)="onVoteChanged($event)"
       (reactionChange)="onReactionChanged($event)"
+      (postUpdated)="updatePost(post.id, $event)"
     ></lib-post>
     }
 

@@ -1,18 +1,13 @@
-import {
-  Component,
-  EventEmitter,
-  HostListener,
-  inject,
-  Output,
-} from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { FormsModule } from '@angular/forms';
 import TurndownService from 'turndown';
+import { ButtonComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'lib-compose-chat',
-  imports: [FormsModule],
+  imports: [FormsModule, ButtonComponent],
   providers: [],
   templateUrl: './compose-chat.component.html',
   styleUrl: './compose-chat.component.scss',
@@ -22,7 +17,6 @@ import TurndownService from 'turndown';
     '[style.--accent]': 'accent',
     '[style.--complement]': 'complement',
     '[style.--border-color]': 'borderColor',
-    '[style.--border-gradient]': 'borderGradient',
     '[style.--transition-duration]': 'transitionDuration',
   },
 })
@@ -30,30 +24,27 @@ export class ComposeChatComponent extends Themeable {
   @Output() messageSubmitted: EventEmitter<string> = new EventEmitter<string>();
   content = '';
 
-  localAccent = 'var(--accent, #3f51b5)';
-  localbackground = 'var(--background, #ffffff)';
-
   override applyTheme(colors: ThemeColors): void {
-    this.background = `radial-gradient(ellipse, ${colors.background}, ${colors.accent})`;
+    this.background = colors.background;
     this.foreground = colors.foreground;
     this.accent = colors.accent;
-    this.localAccent = colors.accent;
-    this.localbackground = colors.background;
     this.complement = colors.complementary;
-    if (this.theme === 'dark') {
-      this.borderGradient = colors.accentGradients['dark'];
-      this.borderColor = colors.complementaryShades[2][0];
-    } else {
-      this.borderGradient = colors.accentGradients['light'];
-      this.borderColor = colors.complementaryShades[2][1];
-    }
+    this.borderColor = `color-mix(in srgb, ${colors.accent} 20%, ${colors.background})`;
+    this.transitionDuration = '150ms';
   }
 
   submitMessage() {
     if (!this.content.trim()) return;
 
     const turndownService = new TurndownService();
-    let markdown = turndownService.turndown(this.content);
+    const htmlContent = this.content
+      .split(/\n{2,}/)
+      .map((paragraph) => paragraph.trim())
+      .filter(Boolean)
+      .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+      .join('');
+
+    let markdown = turndownService.turndown(htmlContent);
     markdown = markdown.replace(
       /(https?:\/\/[^\s]+)/g,
       (url) => `[${url}](${url})`
@@ -67,9 +58,18 @@ export class ComposeChatComponent extends Themeable {
     this.content = target.value;
   }
 
-  @HostListener('keydown.ctrl.enter')
-  @HostListener('keydown.meta.enter')
-  onCtrlEnter(): void {
+  onEditorKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (event.shiftKey) {
+      this.content = `${this.content}\n\n`;
+      return;
+    }
+
     this.submitMessage();
   }
 }

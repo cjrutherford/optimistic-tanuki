@@ -94,6 +94,12 @@ describe('FindCommunitiesComponent', () => {
     expect(service.getUserCommunities).toBeUndefined();
   });
 
+  it('surfaces featured communities from available social proof data', () => {
+    expect(component.featuredCommunities()).toHaveLength(2);
+    expect(component.featuredCommunities()[0].name).toBe('Owned Community');
+    expect(fixture.nativeElement.textContent).toContain('Featured communities');
+  });
+
   it('preserves pending membership state after join refreshes community lists', async () => {
     const service = TestBed.inject(CommunityService) as unknown as {
       join: jest.Mock;

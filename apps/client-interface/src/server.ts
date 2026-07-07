@@ -5,6 +5,10 @@ import express from 'express';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
+import {
+  createApiProxyOptions,
+  createSocketIoProxyOptions,
+} from './server-proxy';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -36,11 +40,7 @@ const getRequestUrl = (req: express.Request): string => {
  * ```
  */ app.use(
   '/socket.io',
-  createProxyMiddleware({
-    target: gatewayWsUrl,
-    ws: true,
-    changeOrigin: true,
-  })
+  createProxyMiddleware(createSocketIoProxyOptions(gatewayWsUrl))
 );
 app.use(
   '/chat',
@@ -50,13 +50,7 @@ app.use(
     changeOrigin: true,
   })
 );
-app.use(
-  '/api',
-  createProxyMiddleware({
-    target: `${gatewayUrl}/api`,
-    changeOrigin: true,
-  })
-);
+app.use('/api', createProxyMiddleware(createApiProxyOptions(gatewayUrl)));
 
 /**
  * Serve static files from /browser

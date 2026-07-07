@@ -65,3 +65,88 @@ export async function submitProfileEditor(page: Page): Promise<void> {
     (element as HTMLElement).click();
   });
 }
+
+export async function registerAndCreateProfile(
+  page: Page,
+  options: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password: string;
+    profileName: string;
+    bio?: string;
+  }
+): Promise<void> {
+  await page.goto('/register');
+  await expect(page).toHaveURL(/\/register/);
+
+  await page
+    .locator('lib-text-input[formControlName="firstName"] input')
+    .fill(options.firstName);
+  await page
+    .locator('lib-text-input[formControlName="lastName"] input')
+    .fill(options.lastName);
+  await page
+    .locator('lib-text-input[formControlName="email"] input')
+    .fill(options.email);
+  await page
+    .locator('lib-text-input[formControlName="password"] input')
+    .fill(options.password);
+  await page
+    .locator('lib-text-input[formControlName="confirmation"] input')
+    .fill(options.password);
+
+  await page.click(
+    'otui-button[type="submit"], otui-button:has-text("Register")',
+    {
+      force: true,
+    }
+  );
+
+  await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+
+  await page
+    .locator('lib-text-input[formControlName="email"] input')
+    .fill(options.email);
+  await page
+    .locator('lib-text-input[formControlName="password"] input')
+    .fill(options.password);
+
+  await page.click(
+    'otui-button[type="submit"], otui-button:has-text("Login")',
+    {
+      force: true,
+    }
+  );
+
+  await page.waitForURL((url) => !url.pathname.endsWith('/login'), {
+    timeout: 15000,
+  });
+
+  if (!page.url().includes('/settings')) {
+    await page.goto('/settings');
+  }
+
+  await page.waitForLoadState('networkidle');
+
+  const profileNameInput = page
+    .locator('lib-text-input[formControlName="profileName"] input')
+    .first();
+  await expect(profileNameInput).toBeVisible();
+  await profileNameInput.fill(options.profileName);
+
+  const bioInput = page
+    .locator('lib-text-input[formControlName="bio"] input')
+    .first();
+  if (await bioInput.isVisible()) {
+    await bioInput.fill(options.bio ?? '');
+  }
+
+  const submitButton = page.getByRole('button', { name: /submit/i }).first();
+  await expect(submitButton).toBeVisible();
+  await submitButton.click({ force: true });
+
+  await page.waitForURL(/\/feed/, { timeout: 15000 }).catch(async () => {
+    await page.waitForTimeout(1000);
+  });
+}

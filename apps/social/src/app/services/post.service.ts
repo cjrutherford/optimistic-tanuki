@@ -120,12 +120,17 @@ export class PostService {
   async update(
     id: string,
     updatePostDto: UpdatePostDto,
-    userId: string
-  ): Promise<void> {
+    userId: string,
+    profileId?: string
+  ): Promise<Post> {
     // Get the post to check if it's a community post
     const post = await this.postRepo.findOne({ where: { id } });
     if (!post) {
       throw new Error('Post not found');
+    }
+
+    if (!post.communityId && post.profileId !== profileId) {
+      throw new Error('You do not have permission to update this post');
     }
 
     // If it's a community post, check membership or moderator privileges
@@ -158,6 +163,12 @@ export class PostService {
       sanitizedDto.content = this.sanitizeContent(updatePostDto.content);
     }
     await this.postRepo.update(id, sanitizedDto);
+
+    const updated = await this.postRepo.findOne({ where: { id } });
+    if (!updated) {
+      throw new Error('Post not found after update');
+    }
+    return updated;
   }
 
   async remove(id: string, userId: string): Promise<{ success: boolean }> {

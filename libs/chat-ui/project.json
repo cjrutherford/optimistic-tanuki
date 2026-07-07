@@ -20,25 +20,25 @@
     "storybook": {
       "executor": "@storybook/angular:start-storybook",
       "options": {
-        "port": 4400,
         "configDir": "libs/chat-ui/.storybook",
-        "browserTarget": "chat-ui:build-storybook",
-        "compodoc": true
+        "browserTarget": "client-interface:build",
+        "tsConfig": "libs/chat-ui/.storybook/tsconfig.json",
+        "port": 4400
       },
       "configurations": {
         "ci": {
+          "ci": true,
           "quiet": true
         }
       }
     },
     "build-storybook": {
       "executor": "@storybook/angular:build-storybook",
-      "outputs": ["{options.outputDir}"],
       "options": {
-        "outputDir": "dist/storybook/chat-ui",
         "configDir": "libs/chat-ui/.storybook",
-        "browserTarget": "chat-ui:build-storybook",
-        "compodoc": true
+        "browserTarget": "client-interface:build",
+        "tsConfig": "libs/chat-ui/.storybook/tsconfig.json",
+        "outputDir": "dist/storybook/chat-ui"
       },
       "configurations": {
         "ci": {

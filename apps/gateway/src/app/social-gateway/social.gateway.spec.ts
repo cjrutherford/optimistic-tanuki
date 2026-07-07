@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SocialGateway } from './social.gateway';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { PostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { throwError, of } from 'rxjs';
 
 describe('SocialGateway', () => {
@@ -42,7 +42,12 @@ describe('SocialGateway', () => {
 
       await gateway.handleGetFeed(payload, mockClient);
 
-      expect(mockSocialClient.send).toHaveBeenCalled();
+      expect(mockSocialClient.send).toHaveBeenCalledWith(
+        { cmd: PostCommands.FIND_MANY },
+        expect.objectContaining({
+          viewerProfileId: 'user123',
+        })
+      );
       expect(mockClient.emit).toHaveBeenCalledWith('feed', mockPosts);
     });
 

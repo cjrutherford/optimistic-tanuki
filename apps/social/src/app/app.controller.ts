@@ -205,7 +205,8 @@ export class AppController {
   @MessagePattern({ cmd: PostCommands.FIND_MANY })
   async findAllPosts(
     @Payload('criteria') data: SearchPostDto,
-    @Payload('opts') opts?: SearchPostOptions
+    @Payload('opts') opts?: SearchPostOptions,
+    @Payload('viewerProfileId') viewerProfileId?: string
   ) {
     const searchOptions = postSearchDtoToFindManyOptions(data);
 
@@ -224,7 +225,18 @@ export class AppController {
         searchOptions.order = { [opts.orderBy]: opts.orderDirection || 'ASC' };
       }
     }
-    const posts = await this.postService.findAll(searchOptions);
+    let posts = await this.postService.findAll(searchOptions);
+
+    if (viewerProfileId) {
+      const blocked = await this.privacyService.getBlockedUsers(
+        viewerProfileId
+      );
+      const blockedIds = new Set(
+        (blocked || []).map((entry) => entry.blockedId)
+      );
+      posts = posts.filter((post) => !blockedIds.has(post.profileId));
+    }
+
     for (const post of posts) {
       const votes = await this.voteService.findAll({
         where: { post: { id: post.id } },
@@ -262,9 +274,10 @@ export class AppController {
   async updatePost(
     @Payload('id') id: string,
     @Payload('data') data: UpdatePostDto,
-    @Payload('userId') userId: string
+    @Payload('userId') userId: string,
+    @Payload('profileId') profileId?: string
   ) {
-    return await this.postService.update(id, data, userId);
+    return await this.postService.update(id, data, userId, profileId);
   }
 
   @MessagePattern({ cmd: PostCommands.DELETE })
@@ -975,6 +988,7 @@ export class AppController {
     @Payload()
     data: {
       userId: string;
+      profileId: string;
       appScope: string;
       includePublic?: boolean;
       includeFollowing?: boolean;
@@ -1030,6 +1044,18 @@ export class AppController {
     qb.skip(offset).take(limit);
 
     const posts = await qb.getMany();
+
+    if (data.profileId) {
+      const blocked = await this.privacyService.getBlockedUsers(data.profileId);
+      const blockedIds = new Set(
+        (blocked || []).map((entry) => entry.blockedId)
+      );
+      posts.splice(
+        0,
+        posts.length,
+        ...posts.filter((post) => !blockedIds.has(post.profileId))
+      );
+    }
 
     for (const post of posts) {
       const votes = await this.voteService.findAll({

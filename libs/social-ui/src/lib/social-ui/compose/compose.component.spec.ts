@@ -107,4 +107,18 @@ describe('ComposeComponent', () => {
     const button = fixture.nativeElement.querySelector('otui-button');
     expect(button?.textContent).toContain('Save');
   });
+
+  it('preserves inline image dimensions in serialized editor HTML', () => {
+    fixture.changeDetectorRef.detectChanges();
+
+    component.editor?.commands.setContent(
+      '<p><img src="/img.png" width="320" height="180" /></p>',
+      {
+        emitUpdate: false,
+      }
+    );
+
+    expect(component.editor?.getHTML()).toContain('width="320"');
+    expect(component.editor?.getHTML()).toContain('height="180"');
+  });
 });

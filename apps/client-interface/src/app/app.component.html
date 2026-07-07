@@ -50,6 +50,7 @@
       (markAllRead)="onMarkAllRead()"
     ></notif-notification-bell>
 
+    @if (!suppressFixedChatOverlays()) {
     <div class="chat-floating-button" (click)="toggleChat()">
       <span class="chat-icon">💬</span>
       @if (!showChat()) {
@@ -64,12 +65,14 @@
         [conversations]="chatConversations"
       ></lib-chat-ui>
     </div>
-    } }
+    } } }
 
     <otui-dev-info />
 
     <lib-message />
 
+    @if (!suppressFixedChatOverlays()) {
     <hai-about-tag [config]="haiAboutConfig"></hai-about-tag>
+    }
   </div>
 </div>

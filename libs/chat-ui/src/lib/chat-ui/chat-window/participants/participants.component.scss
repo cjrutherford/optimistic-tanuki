@@ -36,7 +36,7 @@
     var(--local-complement, var(--complement)) 10%,
     transparent
   );
-  border: 1px solid var(--local-borderColor, var(--border));
+  border: 1px solid var(--local-border-color, var(--border));
   border-radius: var(--border-radius-full, 20px);
   padding: 4px 12px 4px 4px;
   gap: 8px;
@@ -69,7 +69,7 @@
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--success, #4caf50);
+    background: var(--success);
     margin-left: auto;
   }
 }

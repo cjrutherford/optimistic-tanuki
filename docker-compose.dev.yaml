@@ -863,20 +863,22 @@ services:
       context: .
       dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
-      - ./dist/apps/gateway:/usr/src/app/dist/apps/gateway
+      - ./dist/apps:/usr/src/app/dist/apps
       - ./apps/gateway/src/assets/config.yaml:/usr/src/app/dist/apps/gateway/assets/config.yaml:ro
       - ./libs/app-registry/src/lib/default-registry.json:/usr/src/app/config/app-registry.json:ro
+      - ./scripts/wait-for-node-entrypoint.sh:/usr/src/app/scripts/wait-for-node-entrypoint.sh:ro
       - /usr/src/app/node_modules
     command:
       [
         'dumb-init',
         './node_modules/.bin/nodemon',
+        '--legacy-watch',
         '--watch',
-        'dist/apps/gateway',
+        '/usr/src/app/dist/apps/gateway',
+        '--ext',
+        'js,json',
         '--exec',
-        'node --inspect=0.0.0.0:9000',
-        '-L',
-        'dist/apps/gateway/main.js',
+        'sh /usr/src/app/scripts/wait-for-node-entrypoint.sh /usr/src/app/dist/apps/gateway/main.js --inspect=0.0.0.0:9000',
       ]
     ports:
       - '3300:3300' # expose chat socket

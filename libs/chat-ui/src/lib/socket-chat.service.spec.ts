@@ -23,7 +23,7 @@ describe('SocketChatService', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        { provide: SOCKET_HOST, useValue: 'http://localhost:3000' },
+        { provide: SOCKET_HOST, useValue: '' },
         { provide: SOCKET_NAMESPACE, useValue: 'chat' },
         { provide: SOCKET_IO_INSTANCE, useValue: mockIo },
       ],
@@ -33,6 +33,10 @@ describe('SocketChatService', () => {
 
   it('should be created', () => {
     expect(service).toBeTruthy();
+  });
+
+  it('connects chat sockets through the same-origin socket.io path by default', () => {
+    expect(mockIo).toHaveBeenCalledWith('/chat', expect.any(Object));
   });
 
   it('should emit message via socket', () => {

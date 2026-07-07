@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { PostComponent, PostProfileStub } from './post.component';
 import { CommonModule } from '@angular/common';
 import { VoteComponent } from '../vote/vote.component';
@@ -133,5 +135,57 @@ describe('PostComponent', () => {
     component.openLink(link);
     expect(consoleSpy).toHaveBeenCalled();
     consoleSpy.mockRestore();
+  });
+
+  it('renders persisted inline image dimensions from post HTML', () => {
+    component.content = {
+      id: 'post-1',
+      title: 't',
+      content: '<p><img src="/img.png" width="320" height="180" /></p>',
+      profileId: 'profile-1',
+      userId: 'user-1',
+      createdAt: new Date(),
+    } as any;
+
+    fixture.detectChanges();
+
+    const image: HTMLImageElement | null =
+      fixture.nativeElement.querySelector('.post-content img');
+
+    expect(image).not.toBeNull();
+    expect(image?.getAttribute('width')).toBe('320');
+    expect(image?.getAttribute('height')).toBe('180');
+  });
+
+  it('does not force persisted-height inline images back to auto sizing', () => {
+    const styles = readFileSync(
+      resolve(
+        process.cwd(),
+        'libs/social-ui/src/lib/social-ui/post/post.component.scss'
+      ),
+      'utf8'
+    );
+
+    expect(styles).toMatch(/img\[height\][^{]*\{[^}]*height:\s*unset/);
+  });
+
+  it('treats the matching profile as editable for the current user', () => {
+    component.currentUserId = '456';
+
+    fixture.detectChanges();
+
+    expect(component.canEdit()).toBe(true);
+  });
+
+  it('shows an edited badge when the post has been updated', () => {
+    component.content = {
+      ...component.content,
+      createdAt: new Date('2026-07-05T10:00:00.000Z'),
+      updatedAt: new Date('2026-07-05T10:05:00.000Z'),
+    } as PostDto;
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Edited');
   });
 });

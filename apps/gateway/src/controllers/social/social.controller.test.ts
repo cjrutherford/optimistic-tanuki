@@ -279,6 +279,29 @@ describe('SocialController', () => {
     );
   });
 
+  it('passes viewer profile information when searching posts', async () => {
+    const searchCriteria: SearchPostDto = {
+      profileId: 'author-1',
+    };
+
+    await socialController.searchPosts(
+      searchCriteria,
+      undefined,
+      mockUser as any
+    );
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: PostCommands.FIND_MANY },
+      {
+        criteria: expect.objectContaining({
+          profileId: 'author-1',
+        }),
+        opts: undefined,
+        viewerProfileId: mockUser.profileId,
+      }
+    );
+  });
+
   it('should search comments', async () => {
     const searchCriteria: SearchCommentDto = {
       content: 'Test Content',
@@ -320,7 +343,12 @@ describe('SocialController', () => {
     await socialController.updatePost(id, mockUser, updatePostDto);
     expect(clientProxy.send).toHaveBeenCalledWith(
       { cmd: PostCommands.UPDATE },
-      { id, data: updatePostDto, userId: 'user-1' }
+      {
+        id,
+        data: updatePostDto,
+        userId: 'user-1',
+        profileId: 'profile-1',
+      }
     );
   });
 

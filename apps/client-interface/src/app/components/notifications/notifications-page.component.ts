@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, effect, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -40,24 +40,21 @@ export class NotificationsPageComponent implements OnInit {
   notifications = signal<Notification[]>([]);
   unreadCount = signal(0);
 
+  constructor() {
+    effect(() => {
+      this.notifications.set(this.notificationService.notifications());
+      this.unreadCount.set(this.notificationService.unreadCount());
+    });
+  }
+
   ngOnInit(): void {
     this.loadNotifications();
   }
 
   private loadNotifications(): void {
     const profile = this.profileService.getCurrentUserProfile();
-    if (profile) {
+    if (profile?.id) {
       this.notificationService.loadNotifications(profile.id);
-
-      // Subscribe to service signals
-      this.notifications.set(this.notificationService.notifications());
-      this.unreadCount.set(this.notificationService.unreadCount());
-
-      // Set up effect to sync with service signals
-      setInterval(() => {
-        this.notifications.set(this.notificationService.notifications());
-        this.unreadCount.set(this.notificationService.unreadCount());
-      }, 100);
     }
   }
 

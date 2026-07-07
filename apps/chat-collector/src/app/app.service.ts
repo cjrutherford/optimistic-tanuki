@@ -72,21 +72,24 @@ export class AppService {
     senderId: string;
     recipientIds: string[];
   }): Promise<Message> {
+    const conversation = await this.conversationRepository.findOne({
+      where: { id: data.conversationId, isDeleted: false },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
     const message = this.messageRepository.create({
       senderId: data.senderId,
       recipients: data.recipientIds,
       content: data.content,
       type: MessageType.CHAT,
+      conversation,
     });
     await this.messageRepository.save(message);
 
-    const conversation = await this.conversationRepository.findOne({
-      where: { id: data.conversationId },
-    });
-    if (conversation) {
-      conversation.updatedAt = new Date();
-      await this.conversationRepository.save(conversation);
-    }
+    conversation.updatedAt = new Date();
+    await this.conversationRepository.save(conversation);
 
     return message;
   }

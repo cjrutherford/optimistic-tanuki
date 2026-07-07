@@ -1,27 +1,15 @@
-import { Component, OnInit, signal, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import {
   ChatUiComponent,
   ChatContact,
   ChatConversation,
+  ChatMessage,
+  SocketChatService,
 } from '@optimistic-tanuki/chat-ui';
 import { CommunityService } from '../services/community.service';
 import { CommunityDto } from '../models';
-import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
-
-interface ChatConversationResponse {
-  id: string;
-  title: string;
-  type: string;
-  communityId?: string;
-  ownerId?: string;
-  participants: string[];
-  isDeleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 @Component({
   selector: 'lib-community-chat',
@@ -46,7 +34,10 @@ interface ChatConversationResponse {
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [currentUserId]="currentUserId"
         [autoOpenFirstConversation]="true"
+        [layout]="'embedded'"
+        (messageSubmitted)="handleMessageSubmitted($event)"
       ></lib-chat-ui>
       }
     </div>
@@ -83,10 +74,10 @@ interface ChatConversationResponse {
     `,
   ],
 })
-export class CommunityChatComponent implements OnInit {
+export class CommunityChatComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private communityService = inject(CommunityService);
-  private http = inject(HttpClient);
+  private socketChatService = inject(SocketChatService);
 
   community = signal<CommunityDto | null>(null);
   chatRoomId = signal<string | null>(null);
@@ -98,10 +89,18 @@ export class CommunityChatComponent implements OnInit {
 
   currentUserId = '';
   isOwner = signal(false);
+  private currentCommunityId: string | null = null;
 
   async ngOnInit() {
     this.route.data.subscribe((data: any) => {
       this.currentUserId = data['currentUserId'] || '';
+    });
+
+    this.socketChatService.onConversations(async (conversations: any[]) => {
+      await this.handleConversationsLoaded(conversations);
+    });
+    this.socketChatService.onMessage((message) => {
+      this.appendMessageToConversation(message);
     });
 
     const communitySlug = this.route.snapshot.paramMap.get('communitySlug');
@@ -123,8 +122,8 @@ export class CommunityChatComponent implements OnInit {
       }
 
       this.community.set(community);
+      this.currentCommunityId = community.id;
       this.isOwner.set(community.ownerId === this.currentUserId);
-
       const chatRoom = await this.communityService.getCommunityChatRoom(
         community.id
       );
@@ -132,6 +131,7 @@ export class CommunityChatComponent implements OnInit {
         this.chatRoomId.set(chatRoom.id);
         await this.loadChatRoom(chatRoom.id, community);
       }
+      this.socketChatService.getConversations(this.currentUserId);
     } catch (err) {
       console.error('Failed to load community:', err);
       this.error.set('Failed to load community');
@@ -147,8 +147,8 @@ export class CommunityChatComponent implements OnInit {
       }
 
       this.community.set(community);
+      this.currentCommunityId = communityId;
       this.isOwner.set(community.ownerId === this.currentUserId);
-
       const chatRoom = await this.communityService.getCommunityChatRoom(
         communityId
       );
@@ -156,6 +156,7 @@ export class CommunityChatComponent implements OnInit {
         this.chatRoomId.set(chatRoom.id);
         await this.loadChatRoom(chatRoom.id, community);
       }
+      this.socketChatService.getConversations(this.currentUserId);
     } catch (err) {
       console.error('Failed to load community:', err);
       this.error.set('Failed to load community');
@@ -168,7 +169,7 @@ export class CommunityChatComponent implements OnInit {
       if (communities.length > 0) {
         const community = communities[0];
         this.community.set(community);
-
+        this.currentCommunityId = community.id;
         const chatRoom = await this.communityService.getCommunityChatRoom(
           community.id
         );
@@ -176,6 +177,7 @@ export class CommunityChatComponent implements OnInit {
           this.chatRoomId.set(chatRoom.id);
           await this.loadChatRoom(chatRoom.id, community);
         }
+        this.socketChatService.getConversations(this.currentUserId);
       }
       this.loading.set(false);
     } catch (err) {
@@ -186,11 +188,20 @@ export class CommunityChatComponent implements OnInit {
 
   private async loadChatRoom(conversationId: string, community: CommunityDto) {
     try {
-      const conversation = await firstValueFrom(
-        this.http.get<ChatConversationResponse>(
-          `/api/chat/conversations/id/${conversationId}`
-        )
-      );
+      const [conversation, messages] = await Promise.all([
+        this.communityService.getCommunityChatConversation(conversationId),
+        this.communityService.getCommunityChatMessages(conversationId),
+      ]);
+
+      const transformedMessages: ChatMessage[] = messages.map((message) => ({
+        id: message.id,
+        conversationId: message.conversationId,
+        senderId: message.senderId,
+        content: message.content,
+        type: message.type,
+        recipientId: message.recipients || [],
+        timestamp: new Date(message.createdAt),
+      }));
 
       this.chatContacts.set([
         {
@@ -204,7 +215,7 @@ export class CommunityChatComponent implements OnInit {
         {
           id: conversation.id,
           participants: conversation.participants,
-          messages: [],
+          messages: transformedMessages,
           createdAt: new Date(conversation.createdAt),
           updatedAt: new Date(conversation.updatedAt),
         },
@@ -217,6 +228,163 @@ export class CommunityChatComponent implements OnInit {
       }
       this.error.set('Failed to load community chat.');
     }
+  }
+
+  async handleMessageSubmitted(event: {
+    conversationId: string;
+    content: string;
+  }) {
+    if (!this.currentUserId) {
+      return;
+    }
+
+    const conversation = this.chatConversations().find(
+      (item) => item.id === event.conversationId
+    );
+    if (!conversation) {
+      return;
+    }
+
+    const recipientIds = conversation.participants.filter(
+      (participantId) => participantId !== this.currentUserId
+    );
+
+    const createdMessage = await this.communityService.sendCommunityChatMessage(
+      {
+        conversationId: event.conversationId,
+        content: event.content,
+        senderId: this.currentUserId,
+        recipientIds,
+      }
+    );
+
+    this.appendMessageToConversation({
+      id: createdMessage.id,
+      conversationId: createdMessage.conversationId,
+      senderId: createdMessage.senderId,
+      content: createdMessage.content,
+      type: createdMessage.type,
+      recipientId: createdMessage.recipients || recipientIds,
+      timestamp: new Date(createdMessage.createdAt),
+    });
+  }
+
+  private async handleConversationsLoaded(conversations: any[]) {
+    if (!this.currentCommunityId) {
+      return;
+    }
+
+    const communityConversations = conversations.filter(
+      (conversation) =>
+        conversation.type === 'community' &&
+        conversation.communityId === this.currentCommunityId
+    );
+
+    if (communityConversations.length === 0) {
+      return;
+    }
+
+    const participantIds = Array.from(
+      new Set(
+        communityConversations.flatMap(
+          (conversation) => conversation.participants
+        )
+      )
+    ).filter((profileId) => profileId !== this.currentUserId);
+
+    const participantProfiles = participantIds.length
+      ? await this.communityService.getProfilesByIds(participantIds)
+      : [];
+    const profileMap = new Map(
+      participantProfiles.map((profile) => [
+        profile.id,
+        {
+          id: profile.id,
+          name: profile.profileName,
+          profilePic: profile.profilePic,
+        },
+      ])
+    );
+
+    const conversationsWithMessages = await Promise.all(
+      communityConversations.map(async (conversation) => {
+        const messages = await this.communityService.getCommunityChatMessages(
+          conversation.id
+        );
+        return {
+          id: conversation.id,
+          participants: conversation.participants,
+          messages: messages.map((message) => ({
+            id: message.id,
+            conversationId: message.conversationId,
+            senderId: message.senderId,
+            content: message.content,
+            type: message.type,
+            recipientId: message.recipients || [],
+            timestamp: new Date(message.createdAt),
+          })),
+          createdAt: new Date(conversation.createdAt),
+          updatedAt: new Date(conversation.updatedAt),
+          participantProfiles: conversation.participants
+            .map((participantId: string) => profileMap.get(participantId))
+            .filter(Boolean),
+        };
+      })
+    );
+
+    this.chatContacts.set(
+      communityConversations.map((conversation) => ({
+        id: conversation.id,
+        name: conversation.title || this.community()?.name || 'Community Chat',
+        profilePic: this.community()?.logoUrl || this.community()?.imageUrl,
+        lastMessage:
+          conversationsWithMessages
+            .find((item) => item.id === conversation.id)
+            ?.messages.at(-1)?.content || '',
+        lastMessageTime: conversationsWithMessages
+          .find((item) => item.id === conversation.id)
+          ?.messages.at(-1)
+          ?.timestamp?.toISOString(),
+      }))
+    );
+    this.chatConversations.set(conversationsWithMessages as any);
+    this.chatRoomId.set(communityConversations[0].id);
+  }
+
+  private appendMessageToConversation(message: ChatMessage) {
+    this.chatConversations.update((conversations) =>
+      conversations.map((conversation) => {
+        if (conversation.id !== message.conversationId) {
+          return conversation;
+        }
+
+        if (conversation.messages.some((m) => m.id === message.id)) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          messages: [...conversation.messages, message],
+          updatedAt: message.timestamp,
+        };
+      })
+    );
+
+    this.chatContacts.update((contacts) =>
+      contacts.map((contact) =>
+        contact.id === message.conversationId
+          ? {
+              ...contact,
+              lastMessage: message.content,
+              lastMessageTime: message.timestamp.toISOString(),
+            }
+          : contact
+      )
+    );
+  }
+
+  ngOnDestroy() {
+    this.socketChatService.destroy();
   }
 
   async createChatRoom() {

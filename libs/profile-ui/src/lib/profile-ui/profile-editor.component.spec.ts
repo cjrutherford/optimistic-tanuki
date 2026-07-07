@@ -51,6 +51,10 @@ describe('ProfileEditorComponent', () => {
       expect(component.profileForm.get('profilePic')).toBeDefined();
       expect(component.profileForm.get('coverPic')).toBeDefined();
       expect(component.profileForm.get('bio')).toBeDefined();
+      expect(component.profileForm.get('location')).toBeDefined();
+      expect(component.profileForm.get('occupation')).toBeDefined();
+      expect(component.profileForm.get('interests')).toBeDefined();
+      expect(component.profileForm.get('skills')).toBeDefined();
     });
 
     it('should require profileName', () => {
@@ -84,6 +88,10 @@ describe('ProfileEditorComponent', () => {
       expect(component.profileForm.get('profilePic')?.value).toBe(
         'data:image/png;base64,test'
       );
+      expect(component.profileForm.get('location')?.value).toBe(
+        'Test location'
+      );
+      expect(component.profileForm.get('skills')?.value).toBe('Test skills');
     });
 
     it('should load profile into form when profile changes and editor is open', () => {
@@ -155,6 +163,10 @@ describe('ProfileEditorComponent', () => {
         profileName: 'New User',
         description: 'Test description',
         bio: 'Test bio',
+        location: 'Remote',
+        occupation: 'Builder',
+        interests: 'Community, UX',
+        skills: 'Angular, Design systems',
         profilePic: 'data:image/png;base64,pic',
         coverPic: 'data:image/png;base64,cover',
       });
@@ -166,6 +178,10 @@ describe('ProfileEditorComponent', () => {
           name: 'New User',
           description: 'Test description',
           bio: 'Test bio',
+          location: 'Remote',
+          occupation: 'Builder',
+          interests: 'Community, UX',
+          skills: 'Angular, Design systems',
           profilePic: 'data:image/png;base64,pic',
           coverPic: 'data:image/png;base64,cover',
         })
@@ -183,6 +199,10 @@ describe('ProfileEditorComponent', () => {
         profileName: 'Updated User',
         description: 'Updated description',
         bio: 'Updated bio',
+        location: 'Raleigh',
+        occupation: 'Architect',
+        interests: 'Communities',
+        skills: 'Strategy, Product',
         profilePic: 'data:image/png;base64,newpic',
         coverPic: 'data:image/png;base64,newcover',
       });
@@ -195,6 +215,10 @@ describe('ProfileEditorComponent', () => {
           name: 'Updated User',
           description: 'Updated description',
           bio: 'Updated bio',
+          location: 'Raleigh',
+          occupation: 'Architect',
+          interests: 'Communities',
+          skills: 'Strategy, Product',
           profilePic: 'data:image/png;base64,newpic',
           coverPic: 'data:image/png;base64,newcover',
         })

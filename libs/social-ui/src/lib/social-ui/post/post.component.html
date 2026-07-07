@@ -6,7 +6,9 @@
         <button class="dropdown-item" (click)="onProfileClick()">
           View Profile
         </button>
-        @if (profile.id !== currentUserId) { @if (canFollow) {
+        @if (canEdit()) {
+        <button class="dropdown-item" (click)="startEdit()">Edit post</button>
+        } @if (profile.id !== currentUserId) { @if (canFollow) {
         <button class="dropdown-item" (click)="onFollowToggle()">
           {{ isFollowing ? 'Unfollow' : 'Follow' }}
         </button>
@@ -55,15 +57,40 @@
     </div>
     }
     <div class="title">{{ content.title }}</div>
-    <div class="subtitle">{{ content.createdAt | date }}</div>
+    <div class="subtitle">
+      {{ content.createdAt | date }} @if (wasEdited) {
+      <span class="edited-badge">Edited</span>
+      }
+    </div>
   </div>
   <div class="content">
+    @if (isEditing) {
+    <div class="edit-form">
+      <input
+        class="edit-title"
+        type="text"
+        [value]="editTitle"
+        (input)="onEditTitleInput($event)"
+      />
+      <textarea
+        class="edit-content"
+        [value]="editContent"
+        (input)="onEditContentInput($event)"
+      ></textarea>
+      <div class="edit-actions">
+        <otui-button variant="primary" (action)="saveEdit()">Save</otui-button>
+        <otui-button variant="secondary" (action)="cancelEdit()"
+          >Cancel</otui-button
+        >
+      </div>
+    </div>
+    } @else {
     <div
       class="post-content"
       #contentContainer
       [innerHTML]="content.content"
     ></div>
-    @if (attachments.length > 0) {
+    } @if (attachments.length > 0) {
     <div class="post-attachment">
       <h3>Attachments</h3>
       <otui-grid [columns]="6" [rows]="attachmentRows" class="attachment">

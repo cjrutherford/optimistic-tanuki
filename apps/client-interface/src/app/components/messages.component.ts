@@ -45,6 +45,9 @@ import { firstValueFrom } from 'rxjs';
         <lib-chat-ui
           [contacts]="chatContacts()"
           [conversations]="chatConversations()"
+          [currentUserId]="currentProfileId || ''"
+          [layout]="'embedded'"
+          (messageSubmitted)="handleMessageSubmitted($event)"
         ></lib-chat-ui>
       </div>
       }
@@ -119,13 +122,16 @@ export class MessagesComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
 
-  private currentProfileId: string | null = null;
+  currentProfileId: string | null = null;
 
   async ngOnInit() {
     this.socketChatService.onConversations((conversations) => {
       this.handleConversationsLoaded(
         conversations as unknown as AppChatConversation[]
       );
+    });
+    this.socketChatService.onMessage((message) => {
+      this.handleIncomingMessage(message);
     });
     await this.loadConversations();
   }
@@ -137,6 +143,47 @@ export class MessagesComponent implements OnInit, OnDestroy {
   clearAll() {
     this.chatContacts.set([]);
     this.chatConversations.set([]);
+  }
+
+  async handleMessageSubmitted(event: {
+    conversationId: string;
+    content: string;
+  }) {
+    if (!this.currentProfileId) {
+      return;
+    }
+
+    const conversation = this.chatConversations().find(
+      (item) => item.id === event.conversationId
+    );
+    if (!conversation) {
+      return;
+    }
+
+    const recipientIds = conversation.participants.filter(
+      (participantId) => participantId !== this.currentProfileId
+    );
+
+    const createdMessage = await this.chatService.sendMessage({
+      conversationId: event.conversationId,
+      content: event.content,
+      senderId: this.currentProfileId,
+      recipientIds,
+    });
+
+    this.appendMessageToConversation({
+      id: createdMessage.id,
+      conversationId: createdMessage.conversationId || event.conversationId,
+      senderId: createdMessage.senderId,
+      content: createdMessage.content,
+      type: createdMessage.type as 'chat' | 'info' | 'warning' | 'system',
+      recipientId: createdMessage.recipients || recipientIds,
+      timestamp: new Date(createdMessage.createdAt),
+    });
+  }
+
+  handleIncomingMessage(message: ChatMessage) {
+    this.appendMessageToConversation(message);
   }
 
   private async loadConversations() {
@@ -251,5 +298,40 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.error.set('Failed to load conversations. Please try again later.');
       this.loading.set(false);
     }
+  }
+
+  private appendMessageToConversation(message: ChatMessage) {
+    this.chatConversations.update((conversations) =>
+      conversations.map((conversation) => {
+        if (conversation.id !== message.conversationId) {
+          return conversation;
+        }
+
+        const alreadyPresent = conversation.messages.some(
+          (existing) => existing.id === message.id
+        );
+        if (alreadyPresent) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          messages: [...conversation.messages, message],
+          updatedAt: message.timestamp,
+        };
+      })
+    );
+
+    this.chatContacts.update((contacts) =>
+      contacts.map((contact) =>
+        contact.id === message.conversationId
+          ? {
+              ...contact,
+              lastMessage: message.content,
+              lastMessageTime: message.timestamp.toISOString(),
+            }
+          : contact
+      )
+    );
   }
 }

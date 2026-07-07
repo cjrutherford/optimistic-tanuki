@@ -193,4 +193,32 @@ describe('AppService', () => {
       expect(result).toEqual(mockConversation);
     });
   });
+
+  describe('postMessageHttp', () => {
+    it('associates the saved message with its conversation', async () => {
+      const conversation = Object.assign(new Conversation(), {
+        id: 'conversation-1',
+      });
+      jest
+        .spyOn(conversationRepository, 'findOne')
+        .mockResolvedValue(conversation);
+
+      await service.postMessageHttp({
+        conversationId: 'conversation-1',
+        content: 'Hello from HTTP',
+        senderId: 'user-1',
+        recipientIds: ['user-2'],
+      });
+
+      expect(messageRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          senderId: 'user-1',
+          recipients: ['user-2'],
+          content: 'Hello from HTTP',
+          type: MessageType.CHAT,
+          conversation,
+        })
+      );
+    });
+  });
 });

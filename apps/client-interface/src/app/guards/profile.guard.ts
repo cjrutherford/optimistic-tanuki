@@ -24,9 +24,10 @@ export class ProfileGuard implements CanActivate {
       try {
         await this.profileService.getAllProfiles();
         if (isPlatformBrowser(this.platformId)) {
-          const selectedProfile = localStorage.getItem('selectedProfile');
+          const selectedProfile =
+            this.authStateService.getPersistedSelectedProfile();
           if (selectedProfile) {
-            this.profileService.selectProfile(JSON.parse(selectedProfile));
+            this.profileService.selectProfile(selectedProfile);
           }
         }
         return true;

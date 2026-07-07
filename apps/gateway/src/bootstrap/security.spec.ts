@@ -180,6 +180,40 @@ describe('gateway security helpers', () => {
     ).toBe(false);
   });
 
+  it('allows proxied same-origin browser mutations from private-network development hosts', () => {
+    expect(
+      shouldRejectBrowserMutation(
+        createRequest({
+          headers: {
+            origin: 'http://192.168.1.50:8080',
+            host: '192.168.1.50:8080',
+            'x-forwarded-host': '192.168.1.50:8080',
+            'x-forwarded-proto': 'http',
+            'sec-fetch-site': 'same-origin',
+          },
+        }),
+        getTrustedOrigins({ registry })
+      )
+    ).toBe(false);
+  });
+
+  it('allows proxied same-origin browser mutations from tailnet development hosts', () => {
+    expect(
+      shouldRejectBrowserMutation(
+        createRequest({
+          headers: {
+            origin: 'http://demo.tailnet.ts.net:8080',
+            host: 'demo.tailnet.ts.net:8080',
+            'x-forwarded-host': 'demo.tailnet.ts.net:8080',
+            'x-forwarded-proto': 'http',
+            'sec-fetch-site': 'same-origin',
+          },
+        }),
+        getTrustedOrigins({ registry })
+      )
+    ).toBe(false);
+  });
+
   it('rejects proxied browser mutations when forwarded origin is not trusted', () => {
     expect(
       shouldRejectBrowserMutation(
