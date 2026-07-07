@@ -212,7 +212,7 @@ describe('FeedComponent', () => {
     fixture.detectChanges();
     tick();
     expect(component).toBeTruthy();
-    expect(privacyService.getBlockedUsers).toHaveBeenCalled();
+    expect(privacyService.getBlockedUsers).not.toHaveBeenCalled();
   }));
 
   it('should not prepend a post when create fails with an isolation denial', async () => {
@@ -258,7 +258,7 @@ describe('FeedComponent', () => {
     fixture.detectChanges();
     tick();
 
-    expect(profileService.getBlockedUsers).not.toHaveBeenCalled();
+    expect(privacyService.getBlockedUsers).not.toHaveBeenCalled();
   }));
 
   it('updates an owned post in place after saving edits', async () => {
