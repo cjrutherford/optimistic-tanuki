@@ -45,3 +45,103 @@ New components and UX should either try to use existing component elements or bu
 - For `SKIP_SETUP=true` or other live-stack runs, teardown must not bring down shared Docker services. Respect the existing environment flags before stopping compose stacks.
 - When an e2e failure appears after a UX refactor, inspect shared libraries first for DRY fixes before patching multiple app suites independently.
 - After changes, rerun the smallest failing e2e slice first, then rerun the affected app suite, and only then rerun broader cross-app validation.
+
+## Standalone Audio Models Server (External)
+
+The `audio-models` service runs PyTorch-based MusicGen and Demucs on a GPU server and is **not** part of the main Docker Compose stack. It requires NVIDIA GPUs and must be operated separately.
+
+### Setup
+
+```bash
+# On the target server (must have NVIDIA GPU + nvidia-container-toolkit installed):
+git clone <repo-url>
+cd optimistic-tanuki
+
+# Build the audio-models image
+docker build -t optimistic-tanuki-audio-models:latest docker/audio-models/
+
+# Run with GPU passthrough
+docker run -d \
+  --name ot_audio_models \
+  --gpus all \
+  -p 3100:3100 \
+  -v audio-model-data:/models \
+  -e OLLAMA_HOST=http://<host>:3009 \
+  optimistic-tanuki-audio-models:latest
+```
+
+### Service connectivity
+
+The `audio-workstation` microservice expects `audio-models` at `SERVICE_AUDIO_MODELS_HOST` (default: `audio-models`) on port `3100`. When running on an external server:
+
+1. Set `AUDIO_MODELS_HOST=<external-ip>` in the `audio-workstation` environment in either compose file.
+2. Or use Docker's `extra_hosts` to point the `audio-models` hostname to the external IP.
+
+### Health check
+
+```
+curl http://<external-ip>:3100/health
+```
+
+The model server exposes:
+
+- `POST /generate` — generate music from prompt (MusicGen)
+- `POST /separate` — separate stems (Demucs)
+- `GET /health` — health check
+
+## E2E Testing for Orchestra Features
+
+Two e2e projects exist for the audio/orchestra features:
+
+### orchestra-client-e2e (Playwright)
+
+Browser-based E2E tests for the Orchestra SSR app at `apps/orchestra-client-e2e/`.
+
+Tests cover:
+
+- Projects page loads with empty state
+- Create a new project → navigate to workspace
+- Collaboration mode selection (Full Auto / Cover / Full Collab)
+- Stem management and generation prompts
+- Chat panel with all three agents (Composer, Mix, Master)
+- Arrangement / Mix tab switching
+- Export dialog and transport bar
+
+Run against the running Docker stack:
+
+```bash
+pnpm exec nx run orchestra-client-e2e:e2e
+```
+
+### audio-workstation-e2e (Jest)
+
+TCP microservice E2E tests for the audio-workstation at `apps/audio-workstation-e2e/`.
+
+Tests exercise all TCP message patterns:
+
+- Project CRUD (create, get, update, list, delete)
+- Track management (create, list, update, delete)
+- Generation requests and status polling
+- Mix snapshot save and listing
+- Export start, status, and listing
+
+Run against the running Docker stack:
+
+```bash
+HOST=localhost PORT=3025 pnpm exec nx run audio-workstation-e2e:e2e
+```
+
+### Docker Compose for standalone e2e runs
+
+Each project has a minimal Docker compose file under `e2e/`:
+
+- `e2e/docker-compose.orchestra-client-e2e.yaml` — full stack (db, redis, audio-workstation, gateway, orchestra-client)
+- `e2e/docker-compose.audio-workstation-e2e.yaml` — minimal stack (db, redis, audio-workstation only)
+
+Usage:
+
+```bash
+docker compose -f e2e/docker-compose.audio-workstation-e2e.yaml up -d
+pnpm exec nx run audio-workstation-e2e:e2e
+docker compose -f e2e/docker-compose.audio-workstation-e2e.yaml down
+```

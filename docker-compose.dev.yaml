@@ -261,6 +261,39 @@ services:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
 
+  orchestra-client:
+    container_name: ot_orchestra_client
+    build:
+      context: .
+      dockerfile: ./docker/dev/ssr-runtime.Dockerfile
+      args:
+        - APP_ROOT=/app
+        - GIT_SHA=${GIT_SHA:-unknown}
+    volumes:
+      - ./apps/orchestra-client:/app/apps/orchestra-client
+      - ./libs:/app/libs
+      - ./dist/apps:/app/dist/apps
+      - /usr/src/app/node_modules
+    ports:
+      - '8099:4000'
+      - '9260:9260'
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/app/dist/apps/orchestra-client/server',
+        '--ext',
+        'mjs,js,json',
+        '--delay',
+        '2',
+        '--exec',
+        "sh -c 'while [ ! -f /app/dist/apps/orchestra-client/server/server.mjs ]; do sleep 1; done; exec node --inspect=0.0.0.0:9260 /app/dist/apps/orchestra-client/server/server.mjs'",
+      ]
+    environment:
+      - NODE_ENV=development
+      - GATEWAY_URL=http://gateway:3000
+
   business-site:
     container_name: ot_business_site
     build:
@@ -814,6 +847,45 @@ services:
         '-L',
         'main.js',
       ]
+
+  audio-workstation:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/audio-workstation:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node --inspect=0.0.0.0:9257',
+        '-L',
+        'main.js',
+      ]
+    ports:
+      - '3025:3025'
+      - '9257:9257'
+    environment:
+      - NODE_ENV=development
+      - AUDIO_WORKSTATION_PORT=3025
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_NAME=postgres
+      - SERVICE_ASSETS_HOST=assets
+      - SERVICE_ASSETS_PORT=3005
+      - SERVICE_AI_ORCHESTRATOR_HOST=ai-orchestrator
+      - SERVICE_AI_ORCHESTRATOR_PORT=3010
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   telos-docs-service:
     build:

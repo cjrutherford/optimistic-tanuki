@@ -1,0 +1,95 @@
+{
+  "name": "orchestra-client",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "orch",
+  "sourceRoot": "apps/orchestra-client/src",
+  "tags": ["type:app", "scope:audio", "platform:web", "visibility:public"],
+  "targets": {
+    "build": {
+      "executor": "@angular-devkit/build-angular:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/orchestra-client",
+        "index": "apps/orchestra-client/src/index.html",
+        "browser": "apps/orchestra-client/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/orchestra-client/tsconfig.app.json",
+        "inlineStyleLanguage": "scss",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/orchestra-client/public"
+          }
+        ],
+        "styles": ["apps/orchestra-client/src/styles.scss"],
+        "scripts": [],
+        "server": "apps/orchestra-client/src/main.server.ts",
+        "ssr": {
+          "entry": "apps/orchestra-client/src/server.ts"
+        },
+        "outputMode": "server"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "16kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular-devkit/build-angular:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "orchestra-client:build:production"
+        },
+        "development": {
+          "buildTarget": "orchestra-client:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    },
+    "serve-ssr": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "buildTarget": "orchestra-client:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "orchestra-client:build:development"
+        },
+        "production": {
+          "buildTarget": "orchestra-client:build:production"
+        }
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/orchestra-client/jest.config.ts"
+      }
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "orchestra-client-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/orchestra-client-e2e/src",
+  "implicitDependencies": ["orchestra-client"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/playwright:playwright",
+      "options": {
+        "config": "apps/orchestra-client-e2e/playwright.config.ts"
+      },
+      "configurations": {
+        "ci": {
+          "env": {
+            "CI": "true",
+            "BASE_URL": "http://localhost:8099",
+            "GATEWAY_URL": "http://localhost:3000"
+          }
+        },
+        "docker": {
+          "env": {
+            "E2E_DOCKER": "true",
+            "CI": "true",
+            "BASE_URL": "http://localhost:8099",
+            "GATEWAY_URL": "http://localhost:3000"
+          }
+        }
+      }
+    }
+  },
+  "tags": ["type:e2e"]
+}

@@ -213,6 +213,21 @@ services:
     depends_on:
       - gateway
 
+  orchestra-client:
+    container_name: ot_orchestra_client
+    build:
+      context: .
+      dockerfile: ./apps/orchestra-client/Dockerfile
+    image: cjrutherford/optimistic_tanuki_orchestra-client:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${ORCHESTRA_CLIENT_PORT:-8099}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+
   ui-playground:
     container_name: ot_ui_playground
     build:
@@ -527,6 +542,27 @@ services:
       db-setup: # Ensures db-setup is completed before starting social
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  audio-workstation:
+    container_name: ot_audio_workstation
+    build:
+      context: .
+      dockerfile: ./apps/audio-workstation/Dockerfile
+    image: cjrutherford/optimistic_tanuki_audio-workstation:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${AUDIO_WORKSTATION_PORT:-3025}:3025'
+    environment:
+      <<: *service_db_env
+      AUDIO_WORKSTATION_PORT: 3025
+      SERVICE_ASSETS_HOST: assets
+      SERVICE_ASSETS_PORT: 3005
+      SERVICE_AI_ORCHESTRATOR_HOST: ai-orchestrator
+      SERVICE_AI_ORCHESTRATOR_PORT: 3010
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   forum:
     container_name: ot_forum
     build:

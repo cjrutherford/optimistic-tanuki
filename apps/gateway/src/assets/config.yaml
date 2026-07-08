@@ -110,6 +110,11 @@ services:
     transport: TCP
     host: ot_learning_service
     port: 3024
+  audio_workstation:
+    name: audio_workstation
+    transport: TCP
+    host: audio-workstation
+    port: 3025
 auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=

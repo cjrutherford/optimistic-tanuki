@@ -1,0 +1,18 @@
+{
+  "name": "audio-workstation-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "implicitDependencies": ["audio-workstation"],
+  "targets": {
+    "e2e": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{e2eProjectRoot}"],
+      "options": {
+        "jestConfig": "apps/audio-workstation-e2e/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "dependsOn": ["audio-workstation:build"]
+    }
+  },
+  "tags": ["type:e2e"]
+}

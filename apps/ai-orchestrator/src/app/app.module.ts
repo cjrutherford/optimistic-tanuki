@@ -34,6 +34,14 @@ import { DataTracker } from './data/data-tracker.service';
 import { ConversationService } from './conversation/conversation.service';
 import { RedisCheckpointer } from './conversation/redis-checkpointer';
 
+// Audio agents
+import { AudioController } from './audio.controller';
+import { ComposerAgent } from './agents/composer.agent';
+import { StemAgent } from './agents/stem.agent';
+import { MixAgent } from './agents/mix.agent';
+import { MasterAgent } from './agents/master.agent';
+import { AudioAgentRegistry } from './agents/audio-agent-registry.service';
+
 @Module({
   imports: [
     LoggerModule,
@@ -42,7 +50,7 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     }),
     HttpModule,
   ],
-  controllers: [AppController, WellnessController],
+  controllers: [AppController, WellnessController, AudioController],
   providers: [
     AppService,
     ToolsService,
@@ -66,6 +74,12 @@ import { RedisCheckpointer } from './conversation/redis-checkpointer';
     DataTracker,
     ConversationService,
     RedisCheckpointer,
+    // Audio agents
+    ComposerAgent,
+    StemAgent,
+    MixAgent,
+    MasterAgent,
+    AudioAgentRegistry,
     // {
     //   provide: APP_GUARD,
     //   useClass: RateLimitGuard,

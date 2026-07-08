@@ -14,6 +14,7 @@ import {
   ProjectPlanningMcpToolsModule,
   TelosDocsMcpToolsModule,
 } from './mcp/mcp-tools.module';
+import { AudioMcpToolsModule } from './mcp/audio/audio-mcp.module';
 
 type GatewayServiceProviderDefinition = {
   token: string;
@@ -155,6 +156,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     serviceId: 'learning-service',
     configKey: 'learning_service',
   },
+  {
+    token: ServiceTokens.AUDIO_WORKSTATION_SERVICE,
+    serviceId: 'audio-workstation',
+    configKey: 'audio_workstation',
+  },
 ];
 
 type ModuleImport = Type<any> | DynamicModule;
@@ -169,7 +175,12 @@ export const createMcpToolImports = (
   );
   const enableTelosDocs = isServiceEnabled(composition, 'telos-docs-service');
 
-  if (!enableProjectPlanning && !enableTelosDocs) {
+  const enableAudioWorkstation = isServiceEnabled(
+    composition,
+    'audio-workstation'
+  );
+
+  if (!enableProjectPlanning && !enableTelosDocs && !enableAudioWorkstation) {
     return imports;
   }
 
@@ -180,6 +191,9 @@ export const createMcpToolImports = (
   }
   if (enableTelosDocs) {
     imports.push(TelosDocsMcpToolsModule);
+  }
+  if (enableAudioWorkstation) {
+    imports.push(AudioMcpToolsModule);
   }
 
   return imports;

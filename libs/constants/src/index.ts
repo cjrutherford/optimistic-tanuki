@@ -142,3 +142,13 @@ export {
 } from './lib/libs/finance';
 
 export { LearningCommands } from './lib/libs/learning';
+
+export {
+  AudioProjectCommands,
+  TrackCommands,
+  MixCommands,
+  GenerationCommands,
+  ExportCommands,
+  CollaborationMode,
+  type CollaborationModeType,
+} from './lib/libs/audio-workstation';

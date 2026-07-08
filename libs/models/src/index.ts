@@ -18,3 +18,4 @@ export * from './lib/libs/videos';
 export * from './lib/libs/system-configurator';
 export * from './lib/libs/leads/contracts';
 export * from './lib/libs/leads';
+export * from './lib/libs/audio-workstation';

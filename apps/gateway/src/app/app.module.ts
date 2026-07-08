@@ -66,6 +66,7 @@ import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
 import { LearningController } from '../controllers/learning/learning.controller';
+import { AudioController } from '../controllers/audio/audio.controller';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -106,6 +107,7 @@ const gatewayServices = [
   'system-configurator-api',
   'videos',
   'learning-service',
+  'audio-workstation',
 ] as const;
 
 const gatewayComposition = normalizeGatewayComposition(
@@ -293,6 +295,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'learning',
         requiredServices: ['learning-service'],
         value: LearningController,
+      },
+      {
+        id: 'audio',
+        requiredServices: ['audio-workstation'],
+        value: AudioController,
       },
       {
         id: 'trainer',
