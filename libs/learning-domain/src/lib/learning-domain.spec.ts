@@ -5,7 +5,11 @@ import {
   evaluateRequirementGroup,
   isOfferingUnlocked,
 } from './learning-domain';
-import { sampleProgramTrack, tutorialProgramTracks } from './sample-program';
+import {
+  programmingBasicsProgramTrack,
+  sampleProgramTrack,
+  tutorialProgramTracks,
+} from './sample-program';
 
 describe('learning-domain', () => {
   it('calculates credit totals from completed offerings', () => {
@@ -49,6 +53,29 @@ describe('learning-domain', () => {
 
   it('validates sample program data against schema', () => {
     expect(() => ProgramTrackSchema.parse(sampleProgramTrack)).not.toThrow();
+  });
+
+  it('provides a multi-language programming basics course', () => {
+    const course = programmingBasicsProgramTrack.offerings[0];
+
+    expect(programmingBasicsProgramTrack.supportedLanguageIds).toEqual([
+      'typescript',
+      'go',
+      'cpp',
+      'rust',
+    ]);
+    expect(course.outcomeTags).toEqual(
+      expect.arrayContaining([
+        'functions',
+        'scope',
+        'execution-context',
+        'runtimes',
+        'garbage-collection',
+        'memory-management',
+        'algorithms',
+      ])
+    );
+    expect(() => ProgramTrackSchema.parse(programmingBasicsProgramTrack)).not.toThrow();
   });
 
   it('provides single-language tutorial tracks with a locked-down runner profile', () => {
