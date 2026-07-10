@@ -230,22 +230,26 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
                 {
                   languageId: 'typescript',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'go',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'cpp',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'rust',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
               ],
             },
@@ -257,22 +261,26 @@ export const programmingBasicsProgramTrack: ProgramTrack = {
                 {
                   languageId: 'typescript',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'go',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'cpp',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
                 {
                   languageId: 'rust',
                   strategy: 'fenced-blocks',
-                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                  sourcePath:
+                    'content/programming-basics/functions-and-scope.md',
                 },
               ],
             },
