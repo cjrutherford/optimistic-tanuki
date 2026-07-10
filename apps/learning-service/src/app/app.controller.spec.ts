@@ -7,12 +7,12 @@ import {
   Attempt,
   Evaluation,
   ProgramTrack,
-  sampleProgramTrack,
+  sampleProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
-  private readonly programs: ProgramTrack[] = [sampleProgramTrack];
+  private readonly programs: ProgramTrack[] = sampleProgramTracks;
   private readonly attempts = new Map<string, Attempt>();
   private readonly evaluations = new Map<string, Evaluation>();
 

@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Attempt, Evaluation, ProgramTrack } from '@optimistic-tanuki/learning-domain';
+import {
+  Attempt,
+  Evaluation,
+  ProgramTrack,
+} from '@optimistic-tanuki/learning-domain';
 import { AttemptEntity } from '../entities/attempt.entity';
 import { EvaluationEntity } from '../entities/evaluation.entity';
 import { ProgramTrackEntity } from '../entities/program-track.entity';
-import {
-  LEARNING_REPOSITORY,
-  LearningRepository,
-} from './learning.repository';
-import { sampleProgramTrack } from '@optimistic-tanuki/learning-domain';
+import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
+import { sampleProgramTracks } from '@optimistic-tanuki/learning-domain';
 
 export { LEARNING_REPOSITORY };
 
@@ -27,7 +28,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
   async listPrograms(): Promise<ProgramTrack[]> {
     const rows = await this.programTrackRepo.find();
     if (rows.length === 0) {
-      return [sampleProgramTrack];
+      return sampleProgramTracks;
     }
     return rows.map((row) => row.data as unknown as ProgramTrack);
   }

@@ -87,6 +87,8 @@ Variant strategy is captured in lesson metadata (`strategy`, `sourcePath`, `lang
 ### Milestone 3
 
 - Integrate with gateway and client applications.
-- Add learner dashboard for requirement progress and credit ledger visibility.
+- Seed the unified catalog with source-pinned TypeScript, Go, C++, and Rust foundation tracks from `letsgots`, `letsgogo`, `letsgocpp`, and `letsgorust`.
+- Add a learner dashboard for requirement progress, credit ledger visibility, and a language selector.
+- Run submitted code only in a dedicated runner deployment that enforces a read-only root filesystem, scratch-only writable storage, no network, a maximum of 32 processes, 256 MiB memory, 1 MiB output, and 10 seconds execution time. The learning service and gateway must never execute user code directly.
 - Implement evaluation queue for async review: LLM pre-grade worker, human reviewer UI, override flow with audit trail.
 - Add credit ledger service operations: award credits after successful evaluation, query credit totals per user per track.

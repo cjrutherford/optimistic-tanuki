@@ -17,6 +17,25 @@ export const LanguageSchema = z.object({
 });
 export type Language = z.infer<typeof LanguageSchema>;
 
+export const RunnerProfileSchema = z.object({
+  runtime: z.string().min(1),
+  maxExecutionSeconds: z.number().int().positive().max(10),
+  maxMemoryMiB: z.number().int().positive().max(256),
+  maxProcesses: z.number().int().positive().max(32),
+  maxOutputBytes: z.number().int().positive().max(1_048_576),
+  networkEnabled: z.literal(false),
+  readOnlyRootFilesystem: z.literal(true),
+  writableFilesystem: z.literal('scratch-only'),
+});
+export type RunnerProfile = z.infer<typeof RunnerProfileSchema>;
+
+export const TutorialSourceSchema = z.object({
+  repositoryUrl: z.url().startsWith('https://github.com/cjrutherford/'),
+  revision: z.string().regex(/^[a-f0-9]{40}$/),
+  runner: RunnerProfileSchema,
+});
+export type TutorialSource = z.infer<typeof TutorialSourceSchema>;
+
 export const SubjectSchema = z.object({
   id: z.string().min(1),
   displayName: z.string().min(1),
@@ -64,9 +83,9 @@ export const QuizMcqActivitySchema = z.object({
   type: z.literal('quiz.mcq'),
   id: z.string().min(1),
   prompt: z.string().min(1),
-  options: z.array(z.object({ id: z.string().min(1), text: z.string().min(1) })).min(
-    2
-  ),
+  options: z
+    .array(z.object({ id: z.string().min(1), text: z.string().min(1) }))
+    .min(2),
   correctOptionIds: z.array(z.string().min(1)).min(1),
 });
 export const WritingResponseActivitySchema = z.object({
@@ -110,7 +129,9 @@ export const RequirementGroupSchema: z.ZodType<RequirementGroup> = z.lazy(() =>
     id: z.string().min(1),
     operator: z.enum(['AND', 'OR']),
     minRequired: z.number().int().positive().optional(),
-    children: z.array(z.union([RequirementNodeSchema, RequirementGroupSchema])).min(1),
+    children: z
+      .array(z.union([RequirementNodeSchema, RequirementGroupSchema]))
+      .min(1),
   })
 );
 
@@ -149,6 +170,7 @@ export const ProgramTrackSchema = z.object({
   displayName: z.string().min(1),
   subjectIds: z.array(z.string().min(1)).min(1),
   supportedLanguageIds: z.array(z.string().min(1)).min(1),
+  source: TutorialSourceSchema.optional(),
   focuses: z.array(FocusSchema).min(1),
   offerings: z.array(OfferingSchema).min(1),
   requirements: RequirementGroupSchema,

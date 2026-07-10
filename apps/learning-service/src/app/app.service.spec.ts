@@ -6,12 +6,12 @@ import {
   Attempt,
   Evaluation,
   ProgramTrack,
-  sampleProgramTrack,
+  sampleProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
-  private readonly programs: ProgramTrack[] = [sampleProgramTrack];
+  private readonly programs: ProgramTrack[] = sampleProgramTracks;
   private readonly attempts = new Map<string, Attempt>();
   private readonly evaluations = new Map<string, Evaluation>();
 
@@ -55,8 +55,8 @@ describe('AppService', () => {
 
   it('returns seeded programs', async () => {
     const programs = await service.listPrograms();
-    expect(programs[0].supportedLanguageIds).toEqual(
-      expect.arrayContaining(['go', 'typescript'])
+    expect(programs.map((program) => program.supportedLanguageIds[0])).toEqual(
+      expect.arrayContaining(['go', 'typescript', 'cpp', 'rust'])
     );
   });
 
