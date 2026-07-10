@@ -75,7 +75,9 @@ describe('learning-domain', () => {
         'algorithms',
       ])
     );
-    expect(() => ProgramTrackSchema.parse(programmingBasicsProgramTrack)).not.toThrow();
+    expect(() =>
+      ProgramTrackSchema.parse(programmingBasicsProgramTrack)
+    ).not.toThrow();
   });
 
   it('provides single-language tutorial tracks with a locked-down runner profile', () => {
