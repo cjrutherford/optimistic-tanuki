@@ -102,7 +102,7 @@ describe('learning-domain', () => {
       { id: 'typescript-foundations', modules: 12, lessons: 38 },
       { id: 'go-foundations', modules: 11, lessons: 47 },
       { id: 'cpp-foundations', modules: 7, lessons: 23 },
-      { id: 'rust-foundations', modules: 9, lessons: 25 },
+      { id: 'rust-foundations', modules: 9, lessons: 23 },
     ]);
   });
 
