@@ -152,7 +152,8 @@ export const sampleProgramTrack: ProgramTrack = {
         {
           type: 'project.submission',
           id: 'systems-capstone-submission',
-          prompt: 'Submit architecture document and implementation repository URL.',
+          prompt:
+            'Submit architecture document and implementation repository URL.',
           artifactTypes: ['repo-url', 'architecture-doc'],
         },
       ],
@@ -186,3 +187,160 @@ export const sampleProgramTrack: ProgramTrack = {
     ],
   },
 };
+
+const tutorialSources = {
+  typescript: {
+    repositoryUrl: 'https://github.com/cjrutherford/letsgots',
+    revision: 'fc3f36f8198489ccbf04e5f138dbc9e3eaa97dd8',
+    runner: {
+      runtime: 'node-tsx',
+      maxExecutionSeconds: 10,
+      maxMemoryMiB: 256,
+      maxProcesses: 32,
+      maxOutputBytes: 1_048_576,
+      networkEnabled: false,
+      readOnlyRootFilesystem: true,
+      writableFilesystem: 'scratch-only',
+    },
+  },
+  go: {
+    repositoryUrl: 'https://github.com/cjrutherford/letsgogo',
+    revision: 'e819cf24e0493f75212a9fb1a8b24a9725fc4660',
+    runner: {
+      runtime: 'go-wasm',
+      maxExecutionSeconds: 10,
+      maxMemoryMiB: 256,
+      maxProcesses: 32,
+      maxOutputBytes: 1_048_576,
+      networkEnabled: false,
+      readOnlyRootFilesystem: true,
+      writableFilesystem: 'scratch-only',
+    },
+  },
+  cpp: {
+    repositoryUrl: 'https://github.com/cjrutherford/letsgocpp',
+    revision: '4ee199e194a3e9538acd354b7f1400aa6d7a501e',
+    runner: {
+      runtime: 'g++-cxx17-catch2',
+      maxExecutionSeconds: 10,
+      maxMemoryMiB: 256,
+      maxProcesses: 32,
+      maxOutputBytes: 1_048_576,
+      networkEnabled: false,
+      readOnlyRootFilesystem: true,
+      writableFilesystem: 'scratch-only',
+    },
+  },
+  rust: {
+    repositoryUrl: 'https://github.com/cjrutherford/letsgorust',
+    revision: '9c025dfa08897268881895fce9be0ca697abb6cc',
+    runner: {
+      runtime: 'rustc-2021',
+      maxExecutionSeconds: 10,
+      maxMemoryMiB: 256,
+      maxProcesses: 32,
+      maxOutputBytes: 1_048_576,
+      networkEnabled: false,
+      readOnlyRootFilesystem: true,
+      writableFilesystem: 'scratch-only',
+    },
+  },
+} as const;
+
+function tutorialProgramTrack(
+  id: string,
+  displayName: string,
+  languageId: 'typescript' | 'go' | 'cpp' | 'rust',
+  sourcePath: string
+): ProgramTrack {
+  return {
+    id,
+    displayName,
+    subjectIds: ['programming'],
+    supportedLanguageIds: [languageId],
+    source: tutorialSources[languageId],
+    focuses: [
+      {
+        id: `${id}-focus`,
+        displayName: `${displayName} Foundations`,
+        subjectIds: ['programming'],
+      },
+    ],
+    offerings: [
+      {
+        id: `${id}-100-core`,
+        type: 'course',
+        displayName: `${displayName} Foundations`,
+        subjectId: 'programming',
+        level: 100,
+        credits: 3,
+        outcomeTags: ['foundations', languageId],
+        modules: [
+          {
+            id: `${id}-basics`,
+            title: `${displayName} Basics`,
+            lessons: [
+              {
+                id: `${id}-intro`,
+                title: `Introduction to ${displayName}`,
+                slug: 'introduction',
+                languageVariants: [
+                  {
+                    languageId,
+                    strategy: 'file-variant',
+                    sourcePath,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+        activities: [
+          {
+            type: 'code.run',
+            id: `${id}-hello-world`,
+            prompt: `Write and test a Hello World program in ${displayName}.`,
+            starterCode: '',
+          },
+        ],
+      },
+    ],
+    requirements: {
+      id: `${id}-requirements`,
+      operator: 'AND',
+      children: [{ kind: 'offering', offeringId: `${id}-100-core` }],
+    },
+  };
+}
+
+export const tutorialProgramTracks: ProgramTrack[] = [
+  tutorialProgramTrack(
+    'typescript-foundations',
+    'TypeScript',
+    'typescript',
+    'src/content/modules/basics'
+  ),
+  tutorialProgramTrack(
+    'go-foundations',
+    'Go',
+    'go',
+    'src/content/modules/basics'
+  ),
+  tutorialProgramTrack(
+    'cpp-foundations',
+    'C++',
+    'cpp',
+    'src/content/modules/basics'
+  ),
+  tutorialProgramTrack(
+    'rust-foundations',
+    'Rust',
+    'rust',
+    'src/content/modules/basics'
+  ),
+];
+
+export const sampleProgramTracks: ProgramTrack[] = [
+  sampleProgramTrack,
+  ...tutorialProgramTracks,
+];
