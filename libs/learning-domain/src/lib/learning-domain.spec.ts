@@ -87,4 +87,40 @@ describe('learning-domain', () => {
       expect(() => ProgramTrackSchema.parse(track)).not.toThrow();
     }
   });
+
+  it('migrates every language course module and lesson', () => {
+    expect(
+      tutorialProgramTracks.map((track) => ({
+        id: track.id,
+        modules: track.offerings[0].modules.length,
+        lessons: track.offerings[0].modules.reduce(
+          (total, module) => total + module.lessons.length,
+          0
+        ),
+      }))
+    ).toEqual([
+      { id: 'typescript-foundations', modules: 12, lessons: 38 },
+      { id: 'go-foundations', modules: 11, lessons: 47 },
+      { id: 'cpp-foundations', modules: 7, lessons: 23 },
+      { id: 'rust-foundations', modules: 9, lessons: 25 },
+    ]);
+  });
+
+  it('places Rust lifetimes after traits and generics', () => {
+    const rust = tutorialProgramTracks.find(
+      (track) => track.id === 'rust-foundations'
+    )!;
+
+    expect(rust.offerings[0].modules.map((module) => module.id)).toEqual([
+      'rust-foundations-basics',
+      'rust-foundations-ownership',
+      'rust-foundations-structs',
+      'rust-foundations-error-handling',
+      'rust-foundations-traits',
+      'rust-foundations-lifetimes',
+      'rust-foundations-collections',
+      'rust-foundations-concurrency',
+      'rust-foundations-testing',
+    ]);
+  });
 });
