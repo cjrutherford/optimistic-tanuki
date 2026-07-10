@@ -188,6 +188,279 @@ export const sampleProgramTrack: ProgramTrack = {
   },
 };
 
+export const programmingBasicsProgramTrack: ProgramTrack = {
+  id: 'programming-basics',
+  displayName: 'Programming Basics',
+  subjectIds: ['programming', 'computer-science'],
+  supportedLanguageIds: ['typescript', 'go', 'cpp', 'rust'],
+  focuses: [
+    {
+      id: 'programming-basics-foundations',
+      displayName: 'Programming Foundations',
+      subjectIds: ['programming', 'computer-science'],
+    },
+  ],
+  offerings: [
+    {
+      id: 'programming-basics-100-core',
+      type: 'course',
+      displayName: 'Programming Basics',
+      subjectId: 'programming',
+      level: 100,
+      credits: 3,
+      outcomeTags: [
+        'functions',
+        'scope',
+        'execution-context',
+        'runtimes',
+        'garbage-collection',
+        'memory-management',
+        'algorithms',
+      ],
+      modules: [
+        {
+          id: 'programming-basics-functions-and-scope',
+          title: 'Functions and Scope',
+          lessons: [
+            {
+              id: 'programming-basics-functions-and-scope-functions',
+              title: 'Functions',
+              slug: 'functions',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+              ],
+            },
+            {
+              id: 'programming-basics-functions-and-scope-scope',
+              title: 'Scope and Variable Lifetime',
+              slug: 'scope-and-variable-lifetime',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/functions-and-scope.md',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'programming-basics-execution',
+          title: 'Execution Contexts and Runtimes',
+          lessons: [
+            {
+              id: 'programming-basics-execution-contexts',
+              title: 'Execution Contexts',
+              slug: 'execution-contexts',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+              ],
+            },
+            {
+              id: 'programming-basics-runtimes',
+              title: 'Language Runtimes',
+              slug: 'language-runtimes',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/execution.md',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'programming-basics-memory',
+          title: 'Memory Management',
+          lessons: [
+            {
+              id: 'programming-basics-memory-management',
+              title: 'Memory Management',
+              slug: 'memory-management',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+              ],
+            },
+            {
+              id: 'programming-basics-garbage-collection',
+              title: 'Garbage Collection',
+              slug: 'garbage-collection',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/memory-management.md',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          id: 'programming-basics-algorithms',
+          title: 'Algorithms',
+          lessons: [
+            {
+              id: 'programming-basics-algorithms',
+              title: 'Algorithms and Complexity',
+              slug: 'algorithms-and-complexity',
+              languageVariants: [
+                {
+                  languageId: 'typescript',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/algorithms.md',
+                },
+                {
+                  languageId: 'go',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/algorithms.md',
+                },
+                {
+                  languageId: 'cpp',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/algorithms.md',
+                },
+                {
+                  languageId: 'rust',
+                  strategy: 'fenced-blocks',
+                  sourcePath: 'content/programming-basics/algorithms.md',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      activities: [
+        {
+          type: 'code.run',
+          id: 'programming-basics-implementation',
+          prompt:
+            'Choose a supported language and implement a function that searches a collection.',
+          starterCode: '',
+        },
+        {
+          type: 'quiz.mcq',
+          id: 'programming-basics-memory-quiz',
+          prompt:
+            'Which concept determines how long a variable name can be accessed?',
+          options: [
+            { id: 'scope', text: 'Scope' },
+            { id: 'runtime', text: 'Runtime' },
+          ],
+          correctOptionIds: ['scope'],
+        },
+      ],
+    },
+  ],
+  requirements: {
+    id: 'programming-basics-requirements',
+    operator: 'AND',
+    children: [{ kind: 'offering', offeringId: 'programming-basics-100-core' }],
+  },
+};
+
 const tutorialSources = {
   typescript: {
     repositoryUrl: 'https://github.com/cjrutherford/letsgots',
@@ -759,5 +1032,6 @@ export const tutorialProgramTracks: ProgramTrack[] =
 
 export const sampleProgramTracks: ProgramTrack[] = [
   sampleProgramTrack,
+  programmingBasicsProgramTrack,
   ...tutorialProgramTracks,
 ];
