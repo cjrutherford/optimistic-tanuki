@@ -214,6 +214,7 @@ describe('LangChainAgentService', () => {
       }).compile();
 
       service = module.get<LangChainAgentService>(LangChainAgentService);
+      toolFactory = module.get(ToolFactory);
       toolsService = module.get<ToolsService>(ToolsService);
       mcpExecutor = module.get<MCPToolExecutor>(MCPToolExecutor);
       systemPromptBuilder =
@@ -241,11 +242,12 @@ describe('LangChainAgentService', () => {
       await service.initializeAgent('user-123', 'conv-123');
       await service.initializeAgent('user-456', 'conv-456');
 
-      expect(toolFactory.createTools).toHaveBeenNthCalledWith(1, {
+      const createTools = (service as any).toolFactory.createTools as jest.Mock;
+      expect(createTools).toHaveBeenNthCalledWith(1, {
         userId: 'user-123',
         conversationId: 'conv-123',
       });
-      expect(toolFactory.createTools).toHaveBeenNthCalledWith(2, {
+      expect(createTools).toHaveBeenNthCalledWith(2, {
         userId: 'user-456',
         conversationId: 'conv-456',
       });
