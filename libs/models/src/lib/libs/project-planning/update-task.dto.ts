@@ -15,17 +15,6 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   @IsUUID()
   id!: string;
 
-  @ApiPropertyOptional({ description: 'User assigned to the task' })
-  @IsOptional()
-  @IsString()
-  @IsUUID()
-  assignee?: string;
-
-  @ApiPropertyOptional({ description: 'Due date of the task' })
-  @IsOptional()
-  @IsDateString()
-  dueDate?: Date;
-
   @ApiPropertyOptional({ description: 'User who last updated the task' })
   @IsOptional()
   @IsString()
@@ -47,6 +36,18 @@ export class QueryTaskDto extends PartialType(CreateTaskDto) {
   @IsOptional()
   @IsUUID()
   updatedBy?: string;
+
+  @ApiPropertyOptional({ description: 'User assigned to the task' })
+  @IsOptional()
+  @IsUUID()
+  assignee?: string;
+
+  @ApiPropertyOptional({
+    type: [Date],
+    description: 'Due date range [from, to]',
+  })
+  @IsOptional()
+  dueDate?: [Date, Date];
 
   @ApiPropertyOptional({
     type: [Date],

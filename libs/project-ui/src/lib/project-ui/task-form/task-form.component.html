@@ -1,9 +1,21 @@
 <form [formGroup]="taskForm" (ngSubmit)="onSubmit()">
   <otui-card>
-    <lib-text-input formControlName="title" label="Title"></lib-text-input>
+    <lib-text-input
+      formControlName="title"
+      label="Title"
+      [hasError]="
+        taskForm.controls['title'].invalid && taskForm.controls['title'].touched
+      "
+      errorMessage="A title between 3 and 200 characters is required."
+    ></lib-text-input>
     <lib-text-area
       formControlName="description"
       label="Description"
+      [hasError]="
+        taskForm.controls['description'].invalid &&
+        taskForm.controls['description'].touched
+      "
+      errorMessage="A description between 10 and 5000 characters is required."
     ></lib-text-area>
     <lib-select
       formControlName="status"
@@ -11,6 +23,15 @@
       [options]="statusOptions"
     >
     </lib-select>
+    <lib-text-input
+      formControlName="assignee"
+      label="Assignee (profile ID)"
+    ></lib-text-input>
+    <lib-text-input
+      formControlName="dueDate"
+      label="Due date"
+      type="date"
+    ></lib-text-input>
     <lib-select
       formControlName="priority"
       label="Priority"
@@ -27,6 +48,6 @@
       ></lib-tag-selector>
     </div>
 
-    <otui-button type="submit">Save</otui-button>
+    <otui-button type="submit" [disabled]="taskForm.invalid">Save</otui-button>
   </otui-card>
 </form>

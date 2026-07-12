@@ -15,6 +15,7 @@ import {
   CalendarOptions,
   EventClickArg,
   DateSelectArg,
+  EventDropArg,
 } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -61,6 +62,10 @@ export class TaskCalendarComponent
   @Output() editTask = new EventEmitter<Task>();
   @Output() deleteTask = new EventEmitter<string>();
   @Output() dateSelected = new EventEmitter<Date>();
+  @Output() dateChanged = new EventEmitter<{
+    taskId: string;
+    dueDate: Date;
+  }>();
 
   showModal = signal(false);
   showEditModal = signal(false);
@@ -81,6 +86,7 @@ export class TaskCalendarComponent
     selectMirror: true,
     dayMaxEvents: true,
     eventClick: this.handleEventClick.bind(this),
+    eventDrop: this.handleEventDrop.bind(this),
     select: this.handleDateSelect.bind(this),
     events: [],
     eventColor: '#378006',
@@ -185,6 +191,21 @@ export class TaskCalendarComponent
     this.selectedDate.set(selectInfo.start);
     this.dateSelected.emit(selectInfo.start);
     this.showModal.set(true);
+  }
+
+  handleEventDrop(dropInfo: EventDropArg): void {
+    const task = this.tasks.find(
+      (candidate) => candidate.id === dropInfo.event.id
+    );
+    if (!task || !dropInfo.event.start) {
+      dropInfo.revert();
+      return;
+    }
+
+    this.dateChanged.emit({
+      taskId: task.id,
+      dueDate: dropInfo.event.start,
+    });
   }
 
   onEditFormSubmit(task: any): void {

@@ -5,7 +5,7 @@
 <!-- Create Task Modal -->
 @if(showModal()) {
 <otui-modal [title]="'Create Task'" (closeModal)="closeModal()">
-  <lib-task-form (submitEvent)="onCreateFormSubmit($event)"> </lib-task-form>
+  <lib-task-form (formSubmit)="onCreateFormSubmit($event)"> </lib-task-form>
 </otui-modal>
 }
 
@@ -14,7 +14,7 @@
 <otui-modal [title]="'Edit Task'" (closeModal)="closeEditModal()">
   <lib-task-form
     [task]="selectedTask()"
-    (submitEvent)="onEditFormSubmit($event)"
+    (formSubmit)="onEditFormSubmit($event)"
   >
   </lib-task-form>
 </otui-modal>

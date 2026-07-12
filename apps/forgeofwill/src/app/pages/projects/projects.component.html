@@ -87,6 +87,7 @@
             (editTask)="onEditTask($event)"
             (createTask)="onCreateTask($event)"
             [tasks]="selectedProject()!.tasks"
+            (dateChanged)="onTaskDateChanged($event)"
           ></lib-task-calendar>
           } @else if (taskViewMode() === 'kanban') {
           <lib-task-kanban

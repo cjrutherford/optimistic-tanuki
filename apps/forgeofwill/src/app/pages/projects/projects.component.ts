@@ -318,6 +318,37 @@ export class ProjectsComponent implements OnInit {
     });
   }
 
+  onTaskDateChanged(event: { taskId: string; dueDate: Date }): void {
+    this.taskService
+      .updateTask({ id: event.taskId, dueDate: event.dueDate })
+      .subscribe({
+        next: (updatedTask) => {
+          this.selectedProject.update((project) => {
+            if (!project) return project;
+            return {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === updatedTask.id ? updatedTask : task
+              ),
+            };
+          });
+          this.messageService.addMessage({
+            content: 'Task due date updated successfully',
+            type: 'success',
+          });
+        },
+        error: () => {
+          const project = this.selectedProject();
+          if (project) this.loadProject(project.id);
+          this.messageService.addMessage({
+            content:
+              'Unable to update the task due date. The calendar was reset.',
+            type: 'error',
+          });
+        },
+      });
+  }
+
   onCreateRisk(risk: CreateRisk) {
     console.log('Create risk:', risk);
     const currentProject = this.selectedProject();

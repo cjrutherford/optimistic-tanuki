@@ -33,6 +33,12 @@ export class Task {
   @Column({ type: 'enum', enum: TaskPriority, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
 
+  @Column({ nullable: true })
+  assignee?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  dueDate?: Date;
+
   @Column({ type: 'varchar', default: 'project-planning' })
   appScope: string;
 
