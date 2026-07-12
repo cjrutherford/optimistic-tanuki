@@ -237,6 +237,23 @@ describe('LangChainAgentService', () => {
       expect((createReactAgent as jest.Mock).mock.calls.length).toBe(callCount);
     });
 
+    it('should rebuild tools when the active context changes', async () => {
+      await service.initializeAgent('user-123', 'conv-123');
+      await service.initializeAgent('user-456', 'conv-456');
+
+      expect(toolFactory.createTools).toHaveBeenNthCalledWith(1, {
+        userId: 'user-123',
+        conversationId: 'conv-123',
+      });
+      expect(toolFactory.createTools).toHaveBeenNthCalledWith(2, {
+        userId: 'user-456',
+        conversationId: 'conv-456',
+      });
+      expect(
+        (createReactAgent as jest.Mock).mock.calls.length
+      ).toBeGreaterThanOrEqual(2);
+    });
+
     it('should handle tool normalization with various schema types', async () => {
       toolFactory.createTools.mockResolvedValue([
         {
