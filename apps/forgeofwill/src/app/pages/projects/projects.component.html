@@ -120,6 +120,7 @@
             [risks]="selectedProject()!.risks"
             [changes]="selectedProject()!.changes"
             [projectId]="selectedProject()!.id"
+            (nodeClick)="onMindMapNodeSelected($event)"
           ></lib-mind-map>
           }
           <otui-button (click)="hideDetails()" class="close-button">
@@ -139,11 +140,12 @@
       </div>
       }
 
-      <!-- AI Summary -->
       <div class="row-container">
         <otui-tile class="ai-summary-tile">
-          <h3>AI Project Summary</h3>
-          <p>An Overview of the project provided by your AI Project Manager.</p>
+          <lib-project-summary
+            [project]="selectedProject()!"
+            (entitySelected)="onSummaryEntitySelected($event)"
+          ></lib-project-summary>
         </otui-tile>
       </div>
 
