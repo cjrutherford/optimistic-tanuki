@@ -5,6 +5,9 @@ export const ProjectCommands = {
   FIND_ONE: 'project.findOne',
   REMOVE: 'project.remove',
   FIND_ALL: 'project.findAll',
+  CREATE_AI_CHANGE: 'project.createAiChange',
+  FIND_AI_CHANGES: 'project.findAiChanges',
+  REVIEW_AI_CHANGE: 'project.reviewAiChange',
 };
 
 export const ProjectJournalCommands = {
