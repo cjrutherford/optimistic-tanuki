@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType } from '@nestjs/mapped-types';
 import { CreateTaskDto } from './create-task.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
@@ -31,7 +31,9 @@ export class UpdateTaskDto extends PartialType(CreateTaskDto) {
   override tagIds?: string[];
 }
 
-export class QueryTaskDto extends PartialType(CreateTaskDto) {
+export class QueryTaskDto extends OmitType(PartialType(CreateTaskDto), [
+  'dueDate',
+] as const) {
   @ApiPropertyOptional({ description: 'User who last updated the task' })
   @IsOptional()
   @IsUUID()
