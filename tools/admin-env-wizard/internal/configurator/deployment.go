@@ -331,6 +331,7 @@ func DeploymentConfigFromEnvironment(env *domain.EnvironmentDefinition) *Deploym
 
 	for _, app := range apps {
 		if app.AppID == "client-interface" {
+			bridgeCallbackBase := strings.TrimSuffix(resolveAppUIBaseURL(doc, app), "/")
 			doc.OAuth = DeploymentOAuth{
 				Enabled:     true,
 				BridgeAppID: "client-interface",
@@ -339,7 +340,7 @@ func DeploymentConfigFromEnvironment(env *domain.EnvironmentDefinition) *Deploym
 						Enabled:         true,
 						ClientIDKey:     "GOOGLE_CLIENT_ID",
 						ClientSecretKey: "GOOGLE_CLIENT_SECRET",
-						RedirectURI:     "https://gateway.example.com/api/oauth/callback/google",
+						RedirectURI:     bridgeCallbackBase + "/oauth/callback/google",
 					},
 				},
 			}
@@ -663,11 +664,6 @@ func renderRuntimeEnv(doc *DeploymentConfig, secrets map[string]string, cat *cat
 	}
 
 	if doc.OAuth.Enabled {
-		bridgeApp := findDeploymentApp(doc.Apps, doc.OAuth.BridgeAppID)
-		if bridgeApp != nil {
-			values["CLIENT_INTERFACE_DOMAIN"] = appHost(bridgeApp.Domain, bridgeApp.Subdomain)
-			values["CLIENT_INTERFACE_UI_BASE_URL"] = resolveAppUIBaseURL(doc, *bridgeApp)
-		}
 		for provider, config := range doc.OAuth.Providers {
 			if !config.Enabled {
 				continue

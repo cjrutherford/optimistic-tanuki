@@ -97,18 +97,6 @@ services:
     environment:
       <<: *service_db_env
       JWT_SECRET: ${JWT_SECRET:-}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-}
-      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
-      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
-      MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI:-}
-      FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
-      FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
-      FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -383,20 +371,6 @@ services:
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
-      CLIENT_INTERFACE_DOMAIN: ${CLIENT_INTERFACE_DOMAIN:-}
-      CLIENT_INTERFACE_UI_BASE_URL: ${CLIENT_INTERFACE_UI_BASE_URL:-}
-      CI_GOOGLE_CLIENT_ID: ${CI_GOOGLE_CLIENT_ID:-}
-      CI_GOOGLE_CLIENT_SECRET: ${CI_GOOGLE_CLIENT_SECRET:-}
-      CI_GOOGLE_REDIRECT_URI: ${CI_GOOGLE_REDIRECT_URI:-}
-      CI_GITHUB_CLIENT_ID: ${CI_GITHUB_CLIENT_ID:-}
-      CI_GITHUB_CLIENT_SECRET: ${CI_GITHUB_CLIENT_SECRET:-}
-      CI_GITHUB_REDIRECT_URI: ${CI_GITHUB_REDIRECT_URI:-}
-      CI_MICROSOFT_CLIENT_ID: ${CI_MICROSOFT_CLIENT_ID:-}
-      CI_MICROSOFT_CLIENT_SECRET: ${CI_MICROSOFT_CLIENT_SECRET:-}
-      CI_MICROSOFT_REDIRECT_URI: ${CI_MICROSOFT_REDIRECT_URI:-}
-      CI_FACEBOOK_CLIENT_ID: ${CI_FACEBOOK_CLIENT_ID:-}
-      CI_FACEBOOK_CLIENT_SECRET: ${CI_FACEBOOK_CLIENT_SECRET:-}
-      CI_FACEBOOK_REDIRECT_URI: ${CI_FACEBOOK_REDIRECT_URI:-}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
     volumes:
       - ${APP_REGISTRY_HOST_PATH:-./libs/app-registry/src/lib/default-registry.json}:${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}:ro

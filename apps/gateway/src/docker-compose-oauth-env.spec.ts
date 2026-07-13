@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 describe('docker compose oauth environment wiring', () => {
-  it('passes oauth provider environment variables into authentication and gateway', () => {
+  it('passes oauth provider secrets only into the gateway', () => {
     const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
     const compose = fs.readFileSync(composePath, 'utf8');
 
@@ -32,8 +32,8 @@ describe('docker compose oauth environment wiring', () => {
     expect(gatewaySection).toBeTruthy();
 
     for (const line of expectedLines) {
-      expect(authenticationSection).toContain(line);
       expect(gatewaySection).toContain(line);
+      expect(authenticationSection).not.toContain(line);
     }
   });
 });

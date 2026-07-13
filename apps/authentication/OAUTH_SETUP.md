@@ -1,64 +1,82 @@
 # OAuth Provider Setup Guide
 
-This guide explains how to configure OAuth authentication providers for the Optimistic Tanuki platform.
+This guide explains how to configure the platform's shared, gateway-owned OAuth bridge.
 
 ## Overview
 
-The authentication service supports the following OAuth providers:
+The gateway supports the following OAuth providers:
 
 - **Google**
 - **GitHub**
 - **Microsoft**
 - **Facebook**
 
-Each provider requires its own set of credentials (Client ID and Client Secret) which must be obtained from the respective developer consoles.
+Each provider requires its own client ID and client secret. The gateway owns those
+secrets and performs provider token exchange. The authentication service only
+allowlists provider identities received from the gateway; it does not need a
+second copy of provider credentials.
 
-## Configuration Methods
+## Configuration Precedence
 
-### Method 1: Environment Variables (Recommended for Docker)
+OAuth values resolve in this order, from lowest to highest priority:
 
-The authentication service uses environment variable substitution in the `config.yaml` file. When running via Docker Compose, you can pass these values as environment variables:
+1. Built-in provider endpoints and scopes
+2. Gateway `config.yaml` values, when present
+3. Non-empty gateway environment variables
+
+Environment variables override individual fields. A blank environment value
+does not erase a YAML value. `GATEWAY_CONFIG_PATH` may point at a mounted
+gateway configuration file; otherwise the bundled `assets/config.yaml` is used.
+
+### Environment Variables (Recommended for production)
+
+Pass shared provider credentials only to the gateway:
 
 ```yaml
 # docker-compose.yml
 services:
-  authentication:
+  gateway:
     environment:
-      # Google OAuth
-      - GOOGLE_CLIENT_ID=your-google-client-id
-      - GOOGLE_CLIENT_SECRET=your-google-client-secret
-      - GOOGLE_REDIRECT_URI=https://your-domain.com/oauth/callback
-
-      # GitHub OAuth
-      - GITHUB_CLIENT_ID=your-github-client-id
-      - GITHUB_CLIENT_SECRET=your-github-client-secret
-      - GITHUB_REDIRECT_URI=https://your-domain.com/oauth/callback
-
-      # Microsoft OAuth
-      - MICROSOFT_CLIENT_ID=your-microsoft-client-id
-      - MICROSOFT_CLIENT_SECRET=your-microsoft-client-secret
-      - MICROSOFT_REDIRECT_URI=https://your-domain.com/oauth/callback
-
-      # Facebook OAuth
-      - FACEBOOK_CLIENT_ID=your-facebook-app-id
-      - FACEBOOK_CLIENT_SECRET=your-facebook-app-secret
-      - FACEBOOK_REDIRECT_URI=https://your-domain.com/oauth/callback
+      GOOGLE_CLIENT_ID: your-google-client-id
+      GOOGLE_CLIENT_SECRET: your-google-client-secret
+      GOOGLE_REDIRECT_URI: https://optimistic-tanuki.com/oauth/callback/google
 ```
 
-### Method 2: Direct Configuration (Development)
+Repeat the three variables with `GITHUB_`, `MICROSOFT_`, or `FACEBOOK_`
+prefixes. The redirect variable is optional when the registry has a valid
+`client-interface.uiBaseUrl`; the gateway then derives
+`<uiBaseUrl>/oauth/callback/<provider>`.
 
-For local development, you can directly edit the `apps/authentication/src/assets/config.yaml` file:
+### Gateway YAML (Development or mounted runtime config)
+
+Provider credentials may instead be supplied in the gateway's `config.yaml`:
 
 ```yaml
 oauth:
   google:
     enabled: true
-    clientId: 'your-actual-client-id'
-    clientSecret: 'your-actual-client-secret'
-    redirectUri: 'http://localhost:4200/oauth/callback'
+    clientId: your-google-client-id
+    clientSecret: your-google-client-secret
+    redirectUri: https://optimistic-tanuki.com/oauth/callback/google
 ```
 
-**Note:** Never commit actual credentials to version control. Use environment variables for production deployments.
+Provider endpoints and scopes may also be overridden in YAML, but normally use
+the built-in defaults. Never commit real credentials.
+
+## Configuration Source Responsibilities
+
+- `.secrets` and `*.secrets.env` are inputs to the deployment/setup tooling.
+  They are not read directly by gateway or authentication at runtime.
+- Kubernetes generation writes provider values to the dedicated
+  `gateway-oauth-secrets` Secret. The production deploy script applies that
+  Secret only for gateway; shared service Secrets do not contain OAuth keys.
+- Generated production env files carry the final secret overrides into the
+  gateway container.
+- Gateway `config.yaml` supplies non-secret defaults and may supply mounted
+  deployment values when an operator chooses file-based configuration.
+- `tools/registry/apps.production.sample.yaml` supplies public application URLs,
+  return-target allowlisting, and the default client OAuth bridge URL. It must
+  never contain provider secrets.
 
 ## Provider-Specific Setup Instructions
 
@@ -186,20 +204,20 @@ Common causes:
 
 ## Environment Variable Reference
 
-| Variable                  | Description                | Example                                       |
-| ------------------------- | -------------------------- | --------------------------------------------- |
-| `GOOGLE_CLIENT_ID`        | Google OAuth Client ID     | `123456789-abc123.apps.googleusercontent.com` |
-| `GOOGLE_CLIENT_SECRET`    | Google OAuth Client Secret | `GOCSPX-xxxxxxxx`                             |
-| `GOOGLE_REDIRECT_URI`     | Google Redirect URI        | `https://app.example.com/oauth/callback`      |
-| `GITHUB_CLIENT_ID`        | GitHub OAuth App Client ID | `Iv1.abc123`                                  |
-| `GITHUB_CLIENT_SECRET`    | GitHub OAuth App Secret    | `abc123def456`                                |
-| `GITHUB_REDIRECT_URI`     | GitHub Redirect URI        | `https://app.example.com/oauth/callback`      |
-| `MICROSOFT_CLIENT_ID`     | Microsoft App Client ID    | `12345678-1234-1234-1234-123456789012`        |
-| `MICROSOFT_CLIENT_SECRET` | Microsoft App Secret       | `abc123~def456`                               |
-| `MICROSOFT_REDIRECT_URI`  | Microsoft Redirect URI     | `https://app.example.com/oauth/callback`      |
-| `FACEBOOK_CLIENT_ID`      | Facebook App ID            | `1234567890123456`                            |
-| `FACEBOOK_CLIENT_SECRET`  | Facebook App Secret        | `abc123def456ghi789`                          |
-| `FACEBOOK_REDIRECT_URI`   | Facebook Redirect URI      | `https://app.example.com/oauth/callback`      |
+| Variable                  | Description                | Example                                            |
+| ------------------------- | -------------------------- | -------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`        | Google OAuth Client ID     | `123456789-abc123.apps.googleusercontent.com`      |
+| `GOOGLE_CLIENT_SECRET`    | Google OAuth Client Secret | `GOCSPX-xxxxxxxx`                                  |
+| `GOOGLE_REDIRECT_URI`     | Google Redirect URI        | `https://app.example.com/oauth/callback/google`    |
+| `GITHUB_CLIENT_ID`        | GitHub OAuth App Client ID | `Iv1.abc123`                                       |
+| `GITHUB_CLIENT_SECRET`    | GitHub OAuth App Secret    | `abc123def456`                                     |
+| `GITHUB_REDIRECT_URI`     | GitHub Redirect URI        | `https://app.example.com/oauth/callback/github`    |
+| `MICROSOFT_CLIENT_ID`     | Microsoft App Client ID    | `12345678-1234-1234-1234-123456789012`             |
+| `MICROSOFT_CLIENT_SECRET` | Microsoft App Secret       | `abc123~def456`                                    |
+| `MICROSOFT_REDIRECT_URI`  | Microsoft Redirect URI     | `https://app.example.com/oauth/callback/microsoft` |
+| `FACEBOOK_CLIENT_ID`      | Facebook App ID            | `1234567890123456`                                 |
+| `FACEBOOK_CLIENT_SECRET`  | Facebook App Secret        | `abc123def456ghi789`                               |
+| `FACEBOOK_REDIRECT_URI`   | Facebook Redirect URI      | `https://app.example.com/oauth/callback/facebook`  |
 
 ## Support
 

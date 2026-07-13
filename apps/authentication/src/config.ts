@@ -44,6 +44,41 @@ const oauthEnvPrefixes: Record<OAuthProviderName, string> = {
   facebook: 'FACEBOOK',
 };
 
+const defaultOAuthProviders: Record<
+  OAuthProviderName,
+  Omit<OAuthProviderConfig, 'clientId' | 'clientSecret' | 'redirectUri'>
+> = {
+  google: {
+    enabled: false,
+    scopes: ['openid', 'email', 'profile'],
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    userInfoEndpoint: 'https://openidconnect.googleapis.com/v1/userinfo',
+  },
+  github: {
+    enabled: false,
+    scopes: ['read:user', 'user:email'],
+    authorizationEndpoint: 'https://github.com/login/oauth/authorize',
+    tokenEndpoint: 'https://github.com/login/oauth/access_token',
+    userInfoEndpoint: 'https://api.github.com/user',
+  },
+  microsoft: {
+    enabled: false,
+    scopes: ['openid', 'email', 'profile', 'User.Read'],
+    authorizationEndpoint:
+      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    userInfoEndpoint: 'https://graph.microsoft.com/v1.0/me',
+  },
+  facebook: {
+    enabled: false,
+    scopes: ['email', 'public_profile'],
+    authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
+    tokenEndpoint: 'https://graph.facebook.com/v18.0/oauth/access_token',
+    userInfoEndpoint: 'https://graph.facebook.com/v18.0/me',
+  },
+};
+
 const isPlaceholderValue = (value: unknown): value is string =>
   typeof value === 'string' && value.startsWith('${') && value.endsWith('}');
 
@@ -63,26 +98,25 @@ const mergeOAuthProviderConfig = (
   provider: OAuthProviderName,
   config?: OAuthProviderConfig
 ): OAuthProviderConfig | undefined => {
-  if (!config) {
-    return undefined;
-  }
+  const baseConfig = {
+    ...defaultOAuthProviders[provider],
+    ...(config ?? {}),
+  };
 
   const prefix = oauthEnvPrefixes[provider];
   const clientId =
-    envValue(`${prefix}_CLIENT_ID`) ?? configValue(config.clientId);
+    envValue(`${prefix}_CLIENT_ID`) ?? configValue(baseConfig.clientId);
   const clientSecret =
-    envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(config.clientSecret);
+    envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(baseConfig.clientSecret);
   const redirectUri =
-    envValue(`${prefix}_REDIRECT_URI`) ?? configValue(config.redirectUri);
+    envValue(`${prefix}_REDIRECT_URI`) ?? configValue(baseConfig.redirectUri);
 
   return {
-    ...config,
+    ...baseConfig,
     clientId: clientId ?? '',
     clientSecret: clientSecret ?? '',
     redirectUri: redirectUri ?? '',
-    enabled:
-      config.enabled !== false &&
-      Boolean(clientId && clientSecret && redirectUri),
+    enabled: Boolean(config && config.enabled !== false),
   };
 };
 
@@ -106,10 +140,13 @@ const mergeOAuthConfig = (
 
 const resolveConfigPath = () => {
   const configDir = path.resolve(__dirname, './assets');
-  const candidates = [
-    path.join(configDir, 'config.yaml'),
-    path.join(configDir, 'config.yaml.sample'),
-  ];
+  const configuredPath = process.env.AUTHENTICATION_CONFIG_PATH?.trim();
+  const candidates = configuredPath
+    ? [path.resolve(configuredPath)]
+    : [
+        path.join(configDir, 'config.yaml'),
+        path.join(configDir, 'config.yaml.sample'),
+      ];
 
   for (const candidate of candidates) {
     if (fs.existsSync(candidate)) {

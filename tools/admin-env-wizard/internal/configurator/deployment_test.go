@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/catalog"
+	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/domain"
 	"github.com/cjrutherford/optimistic-tanuki/admin-env-wizard/internal/output"
 )
 
@@ -206,17 +207,31 @@ PRODUCTION_IMAGE_TAG=latest
 		t.Fatalf("read generated runtime env: %v", err)
 	}
 	envText := string(envBytes)
-	if !strings.Contains(envText, "CLIENT_INTERFACE_DOMAIN=app.example.com") {
-		t.Fatalf("expected client-interface domain in runtime env, got %s", envText)
-	}
-	if !strings.Contains(envText, "CLIENT_INTERFACE_UI_BASE_URL=https://app.example.com") {
-		t.Fatalf("expected resolved client-interface base URL in runtime env, got %s", envText)
+	if strings.Contains(envText, "CLIENT_INTERFACE_DOMAIN=") || strings.Contains(envText, "CLIENT_INTERFACE_UI_BASE_URL=") {
+		t.Fatalf("expected registry to own client-interface routing, got %s", envText)
 	}
 	if strings.Contains(envText, "REDIS_PASSWORD=\n") {
 		t.Fatalf("expected blank optional values to be omitted from runtime env, got %s", envText)
 	}
 	if !strings.Contains(envText, "GOOGLE_CLIENT_ID=test-google-client-id") {
 		t.Fatalf("expected OAuth secret material in runtime env, got %s", envText)
+	}
+}
+
+func TestDeploymentConfigDefaultsOAuthRedirectToRegistryBridge(t *testing.T) {
+	env := DefaultEnvironment()
+	env.Services = append(env.Services, domain.ServiceSelection{
+		ServiceID: "client-interface",
+		Enabled:   true,
+	})
+
+	doc := DeploymentConfigFromEnvironment(env)
+	provider, ok := doc.OAuth.Providers["google"]
+	if !ok {
+		t.Fatal("expected default google OAuth provider")
+	}
+	if provider.RedirectURI != "https://client-interface.example.com/oauth/callback/google" {
+		t.Fatalf("expected registry bridge callback, got %q", provider.RedirectURI)
 	}
 }
 
