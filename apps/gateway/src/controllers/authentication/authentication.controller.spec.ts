@@ -278,6 +278,17 @@ describe('AuthenticationController', () => {
     expect(clientProxy.send).not.toHaveBeenCalled();
   });
 
+  it('rejects email actions when email is missing', async () => {
+    await expect(
+      controller.requestEmailAction(
+        'system-configurator',
+        'verification',
+        {} as { email: string }
+      )
+    ).rejects.toThrow('Email is required');
+    expect(clientProxy.send).not.toHaveBeenCalled();
+  });
+
   it('provisions minimum leads permissions during leads-app registration', async () => {
     const registerRequest: RegisterRequest = {
       fn: 'Lead',

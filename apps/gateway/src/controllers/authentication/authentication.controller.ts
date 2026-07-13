@@ -121,11 +121,15 @@ export class AuthenticationController {
         HttpStatus.BAD_REQUEST
       );
     }
+    if (typeof body.email !== 'string' || body.email.trim().length === 0) {
+      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
+    }
+    const email = body.email.trim();
     await firstValueFrom(
       this.authClient.send(
         { cmd: AuthCommands.RequestEmailAuthAction },
         {
-          email: body.email,
+          email,
           purpose,
           context: {
             appId: app.appId,
