@@ -6,6 +6,8 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 SECRETS_FILE="$PROJECT_DIR/.secrets"
 OUTPUT_FILE="$PROJECT_DIR/k8s/base/secrets.yaml"
 LEGACY_OUTPUT_FILE="$PROJECT_DIR/k8s/secrets/secrets.yaml"
+OAUTH_OUTPUT_FILE="$PROJECT_DIR/k8s/base/gateway-oauth-secrets.yaml"
+OAUTH_LEGACY_OUTPUT_FILE="$PROJECT_DIR/k8s/secrets/gateway-oauth-secrets.yaml"
 
 echo "============================================="
 echo "  Generating K8s Secrets from .secrets"
@@ -28,6 +30,18 @@ REDIS_PASSWORD=$(grep "^REDIS_PASSWORD=" "$SECRETS_FILE" | cut -d'=' -f2-)
 TAILSCALE_OAUTH_CLIENT_ID=$(grep "^TAILSCALE_OAUTH_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2-)
 TAILSCALE_OAUTH_CLIENT_SECRET=$(grep "^TAILSCALE_OAUTH_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2-)
 TAILSCALE_FQDN=$(grep "^TAILSCALE_FQDN=" "$SECRETS_FILE" | cut -d'=' -f2-)
+GOOGLE_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+GOOGLE_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+GOOGLE_REDIRECT_URI=$(grep "^GOOGLE_REDIRECT_URI=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+GITHUB_CLIENT_ID=$(grep "^GITHUB_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+GITHUB_CLIENT_SECRET=$(grep "^GITHUB_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+GITHUB_REDIRECT_URI=$(grep "^GITHUB_REDIRECT_URI=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+MICROSOFT_CLIENT_ID=$(grep "^MICROSOFT_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+MICROSOFT_CLIENT_SECRET=$(grep "^MICROSOFT_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+MICROSOFT_REDIRECT_URI=$(grep "^MICROSOFT_REDIRECT_URI=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+FACEBOOK_CLIENT_ID=$(grep "^FACEBOOK_CLIENT_ID=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+FACEBOOK_CLIENT_SECRET=$(grep "^FACEBOOK_CLIENT_SECRET=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
+FACEBOOK_REDIRECT_URI=$(grep "^FACEBOOK_REDIRECT_URI=" "$SECRETS_FILE" | cut -d'=' -f2- || true)
 
 if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$JWT_SECRET" ]; then
     echo "Error: Required secrets not found in .secrets file"
@@ -60,12 +74,41 @@ stringData:
 EOF
 )
 
+OAUTH_SECRET_CONTENT=$(cat << EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gateway-oauth-secrets
+  namespace: optimistic-tanuki
+type: Opaque
+stringData:
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+  GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+  GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+  GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+  GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI}
+  MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID}
+  MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET}
+  MICROSOFT_REDIRECT_URI: ${MICROSOFT_REDIRECT_URI}
+  FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID}
+  FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET}
+  FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI}
+EOF
+)
+
+mkdir -p "$(dirname "$LEGACY_OUTPUT_FILE")"
 printf "%s\n" "$SECRET_CONTENT" > "$OUTPUT_FILE"
 printf "%s\n" "$SECRET_CONTENT" > "$LEGACY_OUTPUT_FILE"
+printf "%s\n" "$OAUTH_SECRET_CONTENT" > "$OAUTH_OUTPUT_FILE"
+printf "%s\n" "$OAUTH_SECRET_CONTENT" > "$OAUTH_LEGACY_OUTPUT_FILE"
 
 echo "K8s secrets generated successfully at:"
 echo "  - $OUTPUT_FILE"
 echo "  - $LEGACY_OUTPUT_FILE"
+echo "  - $OAUTH_OUTPUT_FILE (gateway only)"
+echo "  - $OAUTH_LEGACY_OUTPUT_FILE (gateway only)"
 echo ""
 echo "To apply to cluster:"
 echo "  microk8s kubectl apply -f $OUTPUT_FILE"
+echo "  microk8s kubectl apply -f $OAUTH_OUTPUT_FILE"

@@ -161,8 +161,7 @@ export class OAuthController {
       issuedAt: Date.now(),
     });
 
-    const redirectUri =
-      this.resolveClientInterfaceCallbackBase() + `/oauth/callback/${provider}`;
+    const redirectUri = this.resolveProviderRedirectUri(provider, config);
     const params = new URLSearchParams({
       client_id: config.clientId,
       redirect_uri: redirectUri,
@@ -463,10 +462,24 @@ export class OAuthController {
         (origin ? new URL(origin).hostname : host?.split(':')[0]);
 
       this.logger.debug(`Getting OAuth configuration for domain=${domain}`);
+      const result: Record<string, unknown> = {};
 
-      return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.GetOAuthConfig }, { domain })
-      );
+      for (const provider of this.providers) {
+        const config = this.getProviderConfig(provider, domain);
+        if (!config.enabled || !config.clientId) {
+          continue;
+        }
+
+        result[provider] = {
+          clientId: config.clientId,
+          redirectUri: this.resolveProviderRedirectUri(provider, config),
+          scopes: config.scopes || [],
+          authorizationEndpoint: config.authorizationEndpoint,
+          enabled: true,
+        };
+      }
+
+      return result;
     } catch (error) {
       this.logger.error('Error in getOAuthConfig:', error?.message || error);
       throw new HttpException(
@@ -543,6 +556,18 @@ export class OAuthController {
       'client-interface callback host is not configured',
       HttpStatus.INTERNAL_SERVER_ERROR
     );
+  }
+
+  private resolveProviderRedirectUri(
+    provider: string,
+    config: GatewayOAuthProviderConfig
+  ): string {
+    const configuredRedirectUri = config.redirectUri?.trim();
+    if (configuredRedirectUri) {
+      return configuredRedirectUri;
+    }
+
+    return `${this.resolveClientInterfaceCallbackBase()}/oauth/callback/${provider}`;
   }
 
   private findRegistryAppByDomain(
@@ -681,8 +706,7 @@ export class OAuthController {
       throw new Error(`${provider} OAuth credentials are incomplete`);
     }
 
-    const redirectUri =
-      this.resolveClientInterfaceCallbackBase() + `/oauth/callback/${provider}`;
+    const redirectUri = this.resolveProviderRedirectUri(provider, config);
     const tokenParams = new URLSearchParams({
       client_id: config.clientId,
       client_secret: config.clientSecret,

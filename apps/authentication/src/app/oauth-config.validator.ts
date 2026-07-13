@@ -76,78 +76,11 @@ export class OAuthConfigValidator implements OnModuleInit {
       return { enabled: false };
     }
 
-    // Validate required fields
-    const errors: string[] = [];
-
-    if (!config.clientId || config.clientId.trim() === '') {
-      errors.push('clientId is missing');
-    } else if (config.clientId.startsWith('${')) {
-      errors.push(
-        'clientId contains unresolved placeholder (environment variable not set)'
-      );
-    }
-
-    if (!config.clientSecret || config.clientSecret.trim() === '') {
-      errors.push('clientSecret is missing');
-    } else if (config.clientSecret.startsWith('${')) {
-      errors.push(
-        'clientSecret contains unresolved placeholder (environment variable not set)'
-      );
-    }
-
-    if (!config.redirectUri || config.redirectUri.trim() === '') {
-      errors.push('redirectUri is missing');
-    } else if (config.redirectUri.startsWith('${')) {
-      errors.push(
-        'redirectUri contains unresolved placeholder (environment variable not set)'
-      );
-    }
-
-    if (!config.authorizationEndpoint) {
-      errors.push('authorizationEndpoint is missing');
-    }
-
-    if (!config.tokenEndpoint) {
-      errors.push('tokenEndpoint is missing');
-    }
-
-    if (!config.userInfoEndpoint) {
-      errors.push('userInfoEndpoint is missing');
-    }
-
-    if (!config.scopes || config.scopes.length === 0) {
-      errors.push('scopes are missing');
-    }
-
-    // If there are validation errors, disable the provider and log warnings
-    if (errors.length > 0) {
-      this.logger.warn(
-        `⚠️  ${displayName} OAuth: Disabled due to configuration errors:`
-      );
-      errors.forEach((error) => {
-        this.logger.warn(`    - ${error}`);
-      });
-      this.logger.warn(
-        `    To enable: Configure the missing values in your environment variables`
-      );
-      this.logger.warn(
-        `    See OAUTH_SETUP.md for detailed setup instructions`
-      );
-
-      return {
-        enabled: false,
-        clientId: config.clientId,
-        clientSecret: config.clientSecret,
-        redirectUri: config.redirectUri,
-        scopes: config.scopes,
-        authorizationEndpoint: config.authorizationEndpoint,
-        tokenEndpoint: config.tokenEndpoint,
-        userInfoEndpoint: config.userInfoEndpoint,
-      };
-    }
-
-    // Provider is properly configured
-    this.logger.log(`✓ ${displayName} OAuth: Properly configured`);
+    // The gateway owns provider credentials and token exchange. Authentication
+    // only needs an allowlist for identities received over the internal RPC
+    // boundary, so duplicating gateway secrets here would create a second
+    // runtime source of truth.
+    this.logger.log(`✓ ${displayName} OAuth: Allowed for gateway identities`);
 
     return {
       enabled: true,

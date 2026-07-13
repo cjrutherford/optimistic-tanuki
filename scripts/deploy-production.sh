@@ -263,6 +263,17 @@ else
 fi
 
 echo ""
+echo "Step 6.5: Applying runtime secrets..."
+SHARED_SECRET_FILE="$PROJECT_DIR/k8s/base/secrets.yaml"
+GATEWAY_OAUTH_SECRET_FILE="$PROJECT_DIR/k8s/base/gateway-oauth-secrets.yaml"
+if [ ! -f "$SHARED_SECRET_FILE" ] || [ ! -f "$GATEWAY_OAUTH_SECRET_FILE" ]; then
+    echo "Error: generated Kubernetes secret manifests are missing."
+    exit 1
+fi
+$KUBECTL_CMD apply -f "$SHARED_SECRET_FILE"
+$KUBECTL_CMD apply -f "$GATEWAY_OAUTH_SECRET_FILE"
+
+echo ""
 echo "Step 7: Applying ArgoCD application and waiting for infrastructure..."
 
 ARGO_REPO_URL="${ARGO_REPO_URL:-https://github.com/cjrutherford/optimistic-tanuki.git}"

@@ -43,6 +43,37 @@ const clientInterfaceOauthEnvPrefixes: Record<OAuthProviderName, string> = {
   facebook: 'CI_FACEBOOK',
 };
 
+const defaultOAuthProviders: Record<
+  OAuthProviderName,
+  GatewayOAuthProviderConfig
+> = {
+  google: {
+    scopes: ['openid', 'email', 'profile'],
+    authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenEndpoint: 'https://oauth2.googleapis.com/token',
+    userInfoEndpoint: 'https://openidconnect.googleapis.com/v1/userinfo',
+  },
+  github: {
+    scopes: ['read:user', 'user:email'],
+    authorizationEndpoint: 'https://github.com/login/oauth/authorize',
+    tokenEndpoint: 'https://github.com/login/oauth/access_token',
+    userInfoEndpoint: 'https://api.github.com/user',
+  },
+  microsoft: {
+    scopes: ['openid', 'email', 'profile', 'User.Read'],
+    authorizationEndpoint:
+      'https://login.microsoftonline.com/common/oauth2/v2.0/authorize',
+    tokenEndpoint: 'https://login.microsoftonline.com/common/oauth2/v2.0/token',
+    userInfoEndpoint: 'https://graph.microsoft.com/v1.0/me',
+  },
+  facebook: {
+    scopes: ['email', 'public_profile'],
+    authorizationEndpoint: 'https://www.facebook.com/v18.0/dialog/oauth',
+    tokenEndpoint: 'https://graph.facebook.com/v18.0/oauth/access_token',
+    userInfoEndpoint: 'https://graph.facebook.com/v18.0/me',
+  },
+};
+
 const isPlaceholderValue = (value: unknown): value is string =>
   typeof value === 'string' && value.startsWith('${') && value.endsWith('}');
 
@@ -80,9 +111,13 @@ const hasOAuthProviderConfigValues = (
 const mergeOAuthProviderConfig = (
   provider: OAuthProviderName,
   config?: GatewayOAuthProviderConfig,
-  prefixOverrides?: Record<OAuthProviderName, string>
+  prefixOverrides?: Record<OAuthProviderName, string>,
+  includeDefaults = true
 ): GatewayOAuthProviderConfig | undefined => {
-  const baseConfig = config ?? {};
+  const baseConfig = {
+    ...(includeDefaults ? defaultOAuthProviders[provider] : {}),
+    ...(config ?? {}),
+  };
 
   const prefix = (prefixOverrides || oauthEnvPrefixes)[provider];
   const clientId =
@@ -93,7 +128,7 @@ const mergeOAuthProviderConfig = (
     envValue(`${prefix}_REDIRECT_URI`) ?? configValue(baseConfig.redirectUri);
 
   if (
-    !hasOAuthProviderConfigValues(config) &&
+    !hasOAuthProviderConfigValues(baseConfig) &&
     !clientId &&
     !clientSecret &&
     !redirectUri
@@ -106,9 +141,7 @@ const mergeOAuthProviderConfig = (
     clientId,
     clientSecret,
     redirectUri,
-    enabled:
-      baseConfig.enabled !== false &&
-      Boolean(clientId && clientSecret && redirectUri),
+    enabled: baseConfig.enabled !== false && Boolean(clientId && clientSecret),
   };
 };
 
@@ -124,7 +157,8 @@ const mergeOAuthAppOverride = (
     const providerConfig = mergeOAuthProviderConfig(
       provider,
       appOverride[provider],
-      clientInterfaceOauthEnvPrefixes
+      clientInterfaceOauthEnvPrefixes,
+      false
     );
     if (providerConfig) {
       merged[provider] = providerConfig;
@@ -260,7 +294,9 @@ export type Config = {
 };
 
 export const loadConfig = (): Config => {
-  const configPath = path.resolve(__dirname, './assets/config.yaml');
+  const configPath = process.env.GATEWAY_CONFIG_PATH?.trim()
+    ? path.resolve(process.env.GATEWAY_CONFIG_PATH)
+    : path.resolve(__dirname, './assets/config.yaml');
   const fileContents = fs.readFileSync(configPath, 'utf8');
   const config = yaml.load(fileContents) as Config;
 

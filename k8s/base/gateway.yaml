@@ -97,6 +97,78 @@ spec:
                   name: optimistic-tanuki-secrets
                   key: JWT_SECRET
                   optional: true
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
+            - name: GOOGLE_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GOOGLE_REDIRECT_URI
+                  optional: true
+            - name: GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GITHUB_CLIENT_ID
+                  optional: true
+            - name: GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GITHUB_CLIENT_SECRET
+                  optional: true
+            - name: GITHUB_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: GITHUB_REDIRECT_URI
+                  optional: true
+            - name: MICROSOFT_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: MICROSOFT_CLIENT_ID
+                  optional: true
+            - name: MICROSOFT_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: MICROSOFT_CLIENT_SECRET
+                  optional: true
+            - name: MICROSOFT_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: MICROSOFT_REDIRECT_URI
+                  optional: true
+            - name: FACEBOOK_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: FACEBOOK_CLIENT_ID
+                  optional: true
+            - name: FACEBOOK_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: FACEBOOK_CLIENT_SECRET
+                  optional: true
+            - name: FACEBOOK_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-oauth-secrets
+                  key: FACEBOOK_REDIRECT_URI
+                  optional: true
             - name: POSTGRES_HOST
               value: 'postgres'
             - name: POSTGRES_PORT

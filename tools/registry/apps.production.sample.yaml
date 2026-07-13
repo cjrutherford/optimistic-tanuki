@@ -6,6 +6,7 @@ apps:
   - appId: hai
     name: HAI Company Website
     domain: hopefulaspirationsindustries.com
+    uiBaseUrl: https://hopefulaspirationsindustries.com
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -17,6 +18,7 @@ apps:
     name: HAI Computer
     domain: hopefulaspirationsindustries.com
     subdomain: computer
+    uiBaseUrl: https://computer.hopefulaspirationsindustries.com
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -27,6 +29,7 @@ apps:
     name: Developer Portal
     domain: hopefulaspirationsindustries.com
     subdomain: dev
+    uiBaseUrl: https://dev.hopefulaspirationsindustries.com
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -36,6 +39,7 @@ apps:
   - appId: forgeofwill
     name: Forge of Will
     domain: forgeofwill.com
+    uiBaseUrl: https://forgeofwill.com
     apiBaseUrl: https://forgeofwill.com/api
     appType: client
     visibility: public
@@ -46,6 +50,7 @@ apps:
   - appId: client-interface
     name: Optimistic Tanuki
     domain: optimistic-tanuki.com
+    uiBaseUrl: https://optimistic-tanuki.com
     apiBaseUrl: https://optimistic-tanuki.com/api
     iconUrl: https://optimistic-tanuki.com/favicon.ico
     appType: client
@@ -57,6 +62,7 @@ apps:
     name: HAI Store
     domain: hopefulaspirationsindustries.com
     subdomain: store
+    uiBaseUrl: https://store.hopefulaspirationsindustries.com
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
@@ -101,7 +107,8 @@ apps:
   - appId: christopherrutherford-net
     name: ChristopherRutherford.net
     domain: christopherrutherford.net
-    apiBaseUrl: https://christopherrutherford.com/api
+    uiBaseUrl: https://christopherrutherford.net
+    apiBaseUrl: https://christopherrutherford.net/api
     appType: client
     visibility: internal
     description: Christopher Rutherford portfolio site; deployed but not actively advertised.
@@ -111,6 +118,7 @@ apps:
     name: Digital Homestead
     domain: christopherrutherford.net
     subdomain: digital-homestead
+    uiBaseUrl: https://digital-homestead.christopherrutherford.net
     apiBaseUrl: https://digital-homestead.christopherrutherford.net/api
     appType: client
     visibility: public
@@ -121,6 +129,7 @@ apps:
     name: Daily 6
     domain: christopherrutherford.net
     subdomain: d6
+    uiBaseUrl: https://d6.christopherrutherford.net
     apiBaseUrl: https://d6.christopherrutherford.net/api
     appType: client
     visibility: public
@@ -131,6 +140,7 @@ apps:
     name: Business Shell
     domain: christopherrutherford.net
     subdomain: business.experiments
+    uiBaseUrl: https://business.experiments.christopherrutherford.net
     apiBaseUrl: https://business.experiments.christopherrutherford.net/api
     appType: client
     visibility: public

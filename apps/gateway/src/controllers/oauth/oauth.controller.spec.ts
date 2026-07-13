@@ -12,8 +12,14 @@ import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
 describe('OAuthController', () => {
   let controller: OAuthController;
   let authClient: ClientProxy;
+  let configGet: jest.Mock;
+  const originalEnv = process.env;
 
   beforeEach(async () => {
+    process.env = { ...originalEnv };
+    delete process.env.CLIENT_INTERFACE_DOMAIN;
+    delete process.env.CLIENT_INTERFACE_UI_BASE_URL;
+    configGet = jest.fn();
     authClient = {
       send: jest.fn().mockReturnValue(of(true)),
       connect: jest.fn().mockResolvedValue({}),
@@ -38,7 +44,19 @@ describe('OAuthController', () => {
         {
           provide: GATEWAY_APP_REGISTRY,
           useValue: {
-            apps: [],
+            version: 'test',
+            generatedAt: '2026-07-13T00:00:00Z',
+            apps: [
+              {
+                appId: 'client-interface',
+                name: 'Optimistic Tanuki',
+                domain: 'optimistic-tanuki.example',
+                uiBaseUrl: 'https://optimistic-tanuki.example',
+                apiBaseUrl: 'https://optimistic-tanuki.example/api',
+                appType: 'client',
+                visibility: 'public',
+              },
+            ],
           },
         },
         {
@@ -52,7 +70,7 @@ describe('OAuthController', () => {
         {
           provide: ConfigService,
           useValue: {
-            get: jest.fn(),
+            get: configGet,
           },
         },
         {
@@ -68,8 +86,108 @@ describe('OAuthController', () => {
     controller = module.get<OAuthController>(OAuthController);
   });
 
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('startOAuth', () => {
+    const request = { params: { provider: 'google' } } as any;
+
+    it('uses the provider redirect URI when config supplies one', async () => {
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'client-id',
+              redirectUri: 'https://oauth.example/callback/google',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.startOAuth(
+        request,
+        response,
+        'https://optimistic-tanuki.example/login',
+        'client-interface',
+        undefined
+      );
+
+      const redirect = new URL(response.redirect.mock.calls[0][0]);
+      expect(redirect.searchParams.get('redirect_uri')).toBe(
+        'https://oauth.example/callback/google'
+      );
+    });
+
+    it('falls back to the registry bridge URL when config omits redirect URI', async () => {
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'client-id',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.startOAuth(
+        request,
+        response,
+        'https://optimistic-tanuki.example/login',
+        'client-interface',
+        undefined
+      );
+
+      const redirect = new URL(response.redirect.mock.calls[0][0]);
+      expect(redirect.searchParams.get('redirect_uri')).toBe(
+        'https://optimistic-tanuki.example/oauth/callback/google'
+      );
+    });
+  });
+
+  describe('getOAuthConfig', () => {
+    it('returns sanitized provider config from the gateway source of truth', async () => {
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'public-client-id',
+              clientSecret: 'must-not-leak',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+
+      const result = await controller.getOAuthConfig(
+        { headers: { origin: 'https://optimistic-tanuki.example' } } as any,
+        undefined
+      );
+
+      expect(result).toEqual({
+        google: {
+          clientId: 'public-client-id',
+          redirectUri:
+            'https://optimistic-tanuki.example/oauth/callback/google',
+          scopes: ['openid'],
+          authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
+          enabled: true,
+        },
+      });
+      expect(JSON.stringify(result)).not.toContain('must-not-leak');
+      expect(authClient.send).not.toHaveBeenCalled();
+    });
   });
 
   describe('oauthCallback', () => {

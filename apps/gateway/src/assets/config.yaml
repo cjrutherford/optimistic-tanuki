@@ -109,6 +109,27 @@ auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
 
+# Shared OAuth bridge credentials. Built-in defaults supply provider endpoints
+# and scopes; unresolved placeholders are treated as missing so non-empty
+# environment values can provide the final override.
+oauth:
+  google:
+    clientId: ${GOOGLE_CLIENT_ID}
+    clientSecret: ${GOOGLE_CLIENT_SECRET}
+    redirectUri: ${GOOGLE_REDIRECT_URI}
+  github:
+    clientId: ${GITHUB_CLIENT_ID}
+    clientSecret: ${GITHUB_CLIENT_SECRET}
+    redirectUri: ${GITHUB_REDIRECT_URI}
+  microsoft:
+    clientId: ${MICROSOFT_CLIENT_ID}
+    clientSecret: ${MICROSOFT_CLIENT_SECRET}
+    redirectUri: ${MICROSOFT_REDIRECT_URI}
+  facebook:
+    clientId: ${FACEBOOK_CLIENT_ID}
+    clientSecret: ${FACEBOOK_CLIENT_SECRET}
+    redirectUri: ${FACEBOOK_REDIRECT_URI}
+
 # Permissions cache configuration
 # Provider options: memory, file, redis
 permissions:

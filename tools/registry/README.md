@@ -147,3 +147,17 @@ Then apply your normal K8s rollout flow.
 - Gateway reads that path from `APP_REGISTRY_PATH`.
 - If `APP_REGISTRY_PATH` is absent, gateway falls back to the bundled default
   registry.
+
+## OAuth Routing Contract
+
+The registry contains routing data, not OAuth credentials. Gateway uses the
+registered `client-interface.uiBaseUrl` as the default shared provider callback
+bridge and uses all registered `uiBaseUrl` origins to validate cross-application
+OAuth return targets.
+
+For production, keep every `uiBaseUrl` explicit in
+`apps.production.sample.yaml`. Provider client IDs and secrets belong in the
+gateway `config.yaml` or in non-empty gateway environment variables; environment
+values take final precedence. `.secrets` files are consumed by deployment tools
+to generate those runtime environment values and are not another runtime config
+source.
