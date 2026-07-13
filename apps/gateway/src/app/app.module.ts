@@ -372,7 +372,15 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     {
       provide: JwtService,
       useFactory: (config: ConfigService) => {
-        const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
+        const secret =
+          config.get<string>('auth.jwtSecret') ??
+          config.get<string>('auth.jwt_secret');
+
+        if (!secret) {
+          throw new Error(
+            'JWT secret is not configured; set JWT_SECRET or auth.jwtSecret'
+          );
+        }
         return new JwtService({ secret });
       },
       inject: [ConfigService],
