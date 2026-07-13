@@ -39,6 +39,9 @@ describe('videos static datasource', () => {
       'CommunityBroadcast1776436200000',
       'VideoProcessingPipeline1776522000000',
       'ChannelAnchorColumns1782648000000',
+      'ChannelBusinessPage1783420800000',
+      'PersistBroadcastPlaylistDecisions1783600000000',
+      'PersistBroadcastPlaylistDecisionHistory1783610000000',
     ]);
   });
 

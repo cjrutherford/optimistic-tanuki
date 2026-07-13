@@ -347,6 +347,26 @@ function eligibleBuildServices(services, selectedServices = null) {
     .sort(([left], [right]) => left.localeCompare(right));
 }
 
+function shouldRerunDbSetup(changedFilesSet) {
+  if (changedFilesSet.size === 0) {
+    return false;
+  }
+
+  for (const changedPath of changedFilesSet) {
+    if (
+      changedPath === 'scripts/setup-and-migrate.sh' ||
+      changedPath === 'scripts/create-dbs.sh' ||
+      changedPath === 'docker/db-setup/Dockerfile' ||
+      changedPath.endsWith('/src/app/staticDatabase.ts') ||
+      changedPath.includes('/migrations/')
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function loadPlannerState(stateFilePath) {
   if (!stateFilePath || !fs.existsSync(stateFilePath)) {
     return null;
@@ -445,6 +465,13 @@ export async function createComposeBuildPlan({
     buildServices,
     reverseDependencies
   );
+  if (
+    shouldRerunDbSetup(changedFilesSet) &&
+    !restartServices.includes('db-setup')
+  ) {
+    restartServices.unshift('db-setup');
+    reasons['db-setup'] = 'migration-inputs-changed';
+  }
   const buildApps = serviceEntries
     .filter((entry) => buildServices.includes(entry.serviceName))
     .map((entry) => entry.serviceInputs.appId)

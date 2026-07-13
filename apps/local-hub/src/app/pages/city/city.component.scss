@@ -343,6 +343,80 @@ app-donation-progress {
   background: color-mix(in srgb, var(--surface) 82%, var(--background));
 }
 
+.local-network-section {
+  padding: 48px 0;
+  background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--primary) 12%, var(--background)),
+      transparent 56%
+    ),
+    var(--background);
+}
+
+.local-network-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.network-card {
+  display: flex;
+  min-height: 208px;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--foreground);
+  box-shadow: var(--shadow-card);
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease,
+    border-color 180ms ease;
+
+  &:hover {
+    border-color: var(--primary);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-card-hover);
+  }
+
+  h3 {
+    margin: 0 0 10px;
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--foreground-muted);
+    line-height: 1.5;
+  }
+}
+
+.network-card--channel {
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+}
+
+.network-card--business {
+  background: color-mix(in srgb, var(--secondary) 8%, var(--surface));
+}
+
+.network-kicker {
+  margin-bottom: 14px;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.network-link {
+  margin-top: auto;
+  padding-top: 20px;
+  color: var(--primary);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 .businesses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

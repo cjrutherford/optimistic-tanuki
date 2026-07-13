@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { MyChannelComponent } from './my-channel.component';
 import { VideoService } from '../services/video.service';
@@ -12,6 +12,7 @@ describe('MyChannelComponent', () => {
   let videoService: jest.Mocked<VideoService>;
   let profileService: jest.Mocked<ProfileService>;
   let localityDiscoveryService: jest.Mocked<LocalityDiscoveryService>;
+  let router: Router;
 
   beforeEach(async () => {
     const videoServiceSpy = {
@@ -56,6 +57,7 @@ describe('MyChannelComponent', () => {
     localityDiscoveryService = TestBed.inject(
       LocalityDiscoveryService
     ) as jest.Mocked<LocalityDiscoveryService>;
+    router = TestBed.inject(Router);
   });
 
   it('loads locality discovery for the current channel anchor and saves updated anchors', async () => {
@@ -164,5 +166,91 @@ describe('MyChannelComponent', () => {
     });
     expect(component.channel?.anchorLat).toBe(32.09);
     expect(component.localityMessage).toContain('saved');
+  });
+
+  it('exposes live handoff details in the programming workspace and opens the public live route', async () => {
+    const navigateSpy = jest
+      .spyOn(router, 'navigate')
+      .mockResolvedValue(true as never);
+
+    profileService.getCurrentUserProfile.mockReturnValue({
+      id: 'profile-1',
+      userId: 'user-1',
+      profileName: 'Savannah Signal',
+    } as any);
+    videoService.getUserChannels.mockReturnValue(
+      of([
+        {
+          id: 'channel-1',
+          name: 'Savannah Signal',
+          profileId: 'profile-1',
+          userId: 'user-1',
+          communityId: 'community-1',
+          communitySlug: 'savannah-signal',
+          anchorLat: 32.0809,
+          anchorLng: -81.0912,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        } as any,
+      ])
+    );
+    videoService.getChannelVideos.mockResolvedValue([]);
+    videoService.getChannelFeed.mockReturnValue(
+      of({
+        id: 'feed-1',
+        channelId: 'channel-1',
+        communityId: 'community-1',
+        timezone: 'America/New_York',
+        currentMode: 'live',
+        activeLiveSessionId: 'session-1',
+        activeLiveSession: {
+          id: 'session-1',
+          communityId: 'community-1',
+          channelId: 'channel-1',
+          title: 'Savannah Signal Live',
+          status: 'live',
+          startedByUserId: 'user-1',
+          startedByProfileId: 'profile-1',
+          startedAt: new Date('2026-07-08T18:00:00.000Z'),
+        },
+        liveHandoff: {
+          status: 'ready',
+          playbackPath: '/watch/live/savannah-signal',
+          requiresAuth: false,
+          tokenContract: 'gateway-token-exchange',
+          localityPolicy: 'planned-channel-anchor',
+        },
+        lastTransitionAt: new Date(),
+      } as any)
+    );
+    videoService.getChannelSchedule.mockReturnValue(of([]));
+    localityDiscoveryService.discoverNearby.mockReturnValue(
+      of({
+        anchor: { lat: 32.0809, lng: -81.0912 },
+        radiusMeters: 40234,
+        locality: {
+          primary: 'Savannah',
+          formatted: 'Savannah, GA, US',
+          timezone: 'America/New_York',
+          source: 'community-metadata',
+        },
+        communities: [],
+        businesses: [],
+        channels: [],
+      } as any)
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    component.activeTab = 'programming';
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Savannah Signal Live');
+    expect(fixture.nativeElement.textContent).toContain(
+      'gateway-token-exchange'
+    );
+
+    component.openLiveHandoff();
+    expect(navigateSpy).toHaveBeenCalledWith(['/watch/live/savannah-signal']);
   });
 });

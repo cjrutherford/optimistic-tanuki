@@ -28,7 +28,7 @@ export class ChannelFeed {
   timezone: string;
 
   @Column({ type: 'varchar', length: 20, default: 'offline' })
-  currentMode: 'offline' | 'scheduled' | 'live';
+  currentMode: 'offline' | 'scheduled' | 'live' | 'replay';
 
   @Column({ type: 'uuid', nullable: true })
   activeProgramBlockId: string | null;
@@ -38,6 +38,40 @@ export class ChannelFeed {
 
   @Column({ type: 'uuid', nullable: true })
   activeVideoId: string | null;
+
+  @Column({ type: 'varchar', length: 20, default: 'offline' })
+  activePlaylistKind:
+    | 'live'
+    | 'scheduled'
+    | 'rerun'
+    | 'ad'
+    | 'filler'
+    | 'offline';
+
+  @Column({
+    type: 'varchar',
+    length: 120,
+    default: 'no-playable-source-available',
+  })
+  activePlaylistReason: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  activePlaylistSessionId: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  activePlaylistBlockId: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  activePlaylistVideoId: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  activePlaylistPlacementType: 'pre-roll' | 'mid-roll' | 'post-roll' | null;
+
+  @Column({ type: 'text', nullable: true })
+  activePlaylistMediaUrl: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  activePlaylistDecidedAt: Date | null;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   lastTransitionAt: Date;

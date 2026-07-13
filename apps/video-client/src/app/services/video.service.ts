@@ -13,6 +13,8 @@ import {
   LiveSessionDto,
   ProgramBlockDto,
   StartLiveSessionDto,
+  LivePlaybackTokenDto,
+  LivePlaybackTokenValidationDto,
   UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
 
@@ -138,6 +140,23 @@ export class VideoService {
     return this.http.post<LiveSessionDto | null>(
       `${this.API_URL}/channels/${slugOrId}/live/stop`,
       {}
+    );
+  }
+
+  issueLiveToken(slugOrId: string): Observable<LivePlaybackTokenDto> {
+    return this.http.post<LivePlaybackTokenDto>(
+      `${this.API_URL}/channels/${slugOrId}/live/token`,
+      {}
+    );
+  }
+
+  validateLiveToken(
+    slugOrId: string,
+    token: string
+  ): Observable<LivePlaybackTokenValidationDto> {
+    return this.http.post<LivePlaybackTokenValidationDto>(
+      `${this.API_URL}/channels/${slugOrId}/live/token/validate`,
+      { token }
     );
   }
 

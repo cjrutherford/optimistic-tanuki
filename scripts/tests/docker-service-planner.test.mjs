@@ -174,6 +174,27 @@ test('createComposeBuildPlan respects selected service filters', async () => {
   assert.ok(!('client-interface' in plan.services));
 });
 
+test('createComposeBuildPlan reruns db-setup when migration inputs change', async () => {
+  const workspaceRoot = makeComposeFixture();
+  const firstPlan = await createComposeBuildPlan({
+    workspaceRoot,
+    composeFile: 'docker-compose.yaml',
+  });
+
+  const changedPlan = await createComposeBuildPlan({
+    workspaceRoot,
+    composeFile: 'docker-compose.yaml',
+    previousState: firstPlan.state,
+    changedFiles: ['apps/authentication/migrations/123-add-column.ts'],
+  });
+
+  assert.match(
+    changedPlan.reasons['db-setup'] || '',
+    /migration-inputs-changed/
+  );
+  assert.ok(changedPlan.restartServices.includes('db-setup'));
+});
+
 test('resolve-docker-changes excludes non-buildable compose services from unchanged apps', () => {
   const planFile = path.join(
     os.tmpdir(),
@@ -344,6 +365,7 @@ test('docker-start-phased.sh dry run still executes the full phased startup path
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Phase 1: Infrastructure/);
+  assert.match(result.stdout, /up -d --force-recreate .*db-setup/);
   assert.match(result.stdout, /Startup complete/);
 });
 
@@ -453,6 +475,60 @@ exit 0
     fs.readFileSync(dockerLogPath, 'utf8'),
     /up -d --no-deps .*admin-api.*business-site/
   );
+});
+
+test('docker-start-phased.sh reruns db-setup during incremental restart plans', () => {
+  const tempRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'docker-start-phased-db-setup-')
+  );
+  const dockerLogPath = path.join(tempRoot, 'docker.log');
+  const fakeBinDir = path.join(tempRoot, 'bin');
+  const planFile = path.join(tempRoot, 'plan.json');
+
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  writeFile(
+    path.join(fakeBinDir, 'docker'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${dockerLogPath}"
+if [[ "$*" == *" ps --services --filter status=running" ]]; then
+  printf 'postgres\\nredis\\nauthentication\\ngateway\\n'
+  exit 0
+fi
+if [[ "$*" == *" ps" ]]; then
+  printf 'NAME STATUS\\n'
+  exit 0
+fi
+exit 0
+`
+  );
+  fs.chmodSync(path.join(fakeBinDir, 'docker'), 0o755);
+  fs.writeFileSync(
+    planFile,
+    JSON.stringify({
+      restartServices: ['db-setup', 'payments'],
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '0'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_PLAN_FILE: planFile,
+        PATH: `${fakeBinDir}:${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const log = fs.readFileSync(dockerLogPath, 'utf8');
+  assert.match(log, /up -d .*db-setup/);
+  assert.match(log, /wait db-setup/);
+  assert.match(log, /up -d --no-deps .*payments/);
 });
 
 test('dev-seed.sh does not rely on docker compose run one-off containers', () => {

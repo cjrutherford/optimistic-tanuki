@@ -98,6 +98,11 @@
         </div>
       </header>
 
+      <app-sponsorship-banner
+        [communityId]="city()!.id"
+        type="banner"
+      ></app-sponsorship-banner>
+
       <!-- ── Local Highlights ──────────────────────────────────────────────────── -->
       <section class="city-highlights-section">
         <div class="section-container">
@@ -148,6 +153,75 @@
               <span class="highlight-text">{{ highlight.headline }}</span>
             </a>
             }
+          </div>
+        </div>
+      </section>
+
+      <!-- ── Local Network ───────────────────────────────────────────────────── -->
+      <section class="local-network-section">
+        <div class="section-container">
+          <div class="section-header">
+            <div class="section-header-content">
+              <p class="section-kicker">Towne Square connects the local dial</p>
+              <h2 class="section-title">Local Network</h2>
+              <p class="section-subtitle">
+                Conversations, channels, and businesses that share the
+                {{ city()!.name }} radius.
+              </p>
+            </div>
+          </div>
+
+          <div class="local-network-grid">
+            <a
+              class="network-card network-card--conversation"
+              href="#locality-discussions"
+            >
+              <span class="network-kicker">Towne Square</span>
+              <h3>Local conversations</h3>
+              <p>
+                {{ posts().length }} recent discussion{{
+                  posts().length === 1 ? '' : 's'
+                }}
+                from this locality.
+              </p>
+              <span class="network-link">Join the conversation</span>
+            </a>
+
+            @for (channel of nearbyChannels(); track channel.id) { @if
+            (getMetroCastChannelHref(channel); as channelHref) {
+            <a
+              class="network-card network-card--channel"
+              [href]="channelHref"
+              data-testid="locality-network-channel-link"
+            >
+              <span class="network-kicker">MetroCast</span>
+              <h3>{{ channel.name }}</h3>
+              <p>
+                {{
+                  channel.description || 'Local programming from your radius.'
+                }}
+              </p>
+              <span class="network-link">Watch local channel</span>
+            </a>
+            } } @for (business of nearbyBusinesses(); track business.id) { @if
+            (getNearbyBusinessHref(business); as businessHref) {
+            <a
+              class="network-card network-card--business"
+              [href]="businessHref"
+              data-testid="locality-network-business-link"
+            >
+              <span class="network-kicker">Studio</span>
+              <h3>{{ business.name }}</h3>
+              <p>
+                {{
+                  business.description ||
+                    business.address ||
+                    'A nearby business with a public Studio presence.'
+                }}
+              </p>
+              <span class="network-link">Visit local business</span>
+            </a>
+            } }
           </div>
         </div>
       </section>
@@ -332,7 +406,7 @@
 
       <!-- ── Community Posts ─────────────────────────────────────────────────── -->
       @if (posts().length > 0) {
-      <section class="posts-section">
+      <section class="posts-section" id="locality-discussions">
         <div class="section-container">
           <div class="section-header">
             <h2 class="section-title">Recent Discussions</h2>

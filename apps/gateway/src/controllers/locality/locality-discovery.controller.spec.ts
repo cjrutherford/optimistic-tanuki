@@ -13,6 +13,7 @@ describe('LocalityDiscoveryController', () => {
   let controller: LocalityDiscoveryController;
   let socialClient: jest.Mocked<ClientProxy>;
   let paymentsClient: jest.Mocked<ClientProxy>;
+  let storeClient: jest.Mocked<ClientProxy>;
   let videosClient: jest.Mocked<ClientProxy>;
 
   beforeEach(async () => {
@@ -21,6 +22,10 @@ describe('LocalityDiscoveryController', () => {
       connect: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ClientProxy>;
     paymentsClient = {
+      send: jest.fn(),
+      connect: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<ClientProxy>;
+    storeClient = {
       send: jest.fn(),
       connect: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ClientProxy>;
@@ -83,19 +88,6 @@ describe('LocalityDiscoveryController', () => {
     );
 
     paymentsClient.send.mockImplementation((pattern: any) => {
-      if (pattern?.cmd === 'trainer.config.listPublicSiteSummaries') {
-        return of([
-          {
-            slug: 'savannah-coffee-roasters',
-            businessName: 'Savannah Coffee Roasters',
-            tagline: 'Small-batch local roasting.',
-            location: 'Savannah, GA',
-            businessType: 'coffee',
-            ownerUserId: 'owner-savannah',
-          },
-        ]);
-      }
-
       if (pattern?.cmd !== PaymentCommands.LIST_ACTIVE_BUSINESS_PAGES) {
         return of([]);
       }
@@ -124,6 +116,22 @@ describe('LocalityDiscoveryController', () => {
           address: 'Savannah, GA',
           anchorLat: 32.0821,
           anchorLng: -81.0905,
+        },
+      ]);
+    });
+    storeClient.send.mockImplementation((pattern: any) => {
+      if (pattern !== 'trainer.config.listPublicSiteSummaries') {
+        return of([]);
+      }
+
+      return of([
+        {
+          slug: 'savannah-coffee-roasters',
+          businessName: 'Savannah Coffee Roasters',
+          tagline: 'Small-batch local roasting.',
+          location: 'Savannah, GA',
+          businessType: 'coffee',
+          ownerUserId: 'owner-savannah',
         },
       ]);
     });
@@ -169,7 +177,8 @@ describe('LocalityDiscoveryController', () => {
       controllers: [LocalityDiscoveryController],
       providers: [
         { provide: ServiceTokens.SOCIAL_SERVICE, useValue: socialClient },
-        { provide: ServiceTokens.STORE_SERVICE, useValue: paymentsClient },
+        { provide: ServiceTokens.PAYMENTS_SERVICE, useValue: paymentsClient },
+        { provide: ServiceTokens.STORE_SERVICE, useValue: storeClient },
         { provide: ServiceTokens.VIDEOS_SERVICE, useValue: videosClient },
       ],
     }).compile();
@@ -200,8 +209,8 @@ describe('LocalityDiscoveryController', () => {
       { cmd: PaymentCommands.LIST_ACTIVE_BUSINESS_PAGES },
       {}
     );
-    expect(paymentsClient.send).toHaveBeenCalledWith(
-      { cmd: 'trainer.config.listPublicSiteSummaries' },
+    expect(storeClient.send).toHaveBeenCalledWith(
+      'trainer.config.listPublicSiteSummaries',
       {}
     );
 

@@ -6,6 +6,7 @@ import { VideoView } from '../entities/video-view.entity';
 import { ChannelFeed } from '../entities/channel-feed.entity';
 import { ProgramBlock } from '../entities/program-block.entity';
 import { LiveSession } from '../entities/live-session.entity';
+import { PlaylistDecisionHistory } from '../entities/playlist-decision-history.entity';
 import { ConfigService } from '@nestjs/config';
 
 export default function loadDatabase(config: ConfigService): DataSourceOptions {
@@ -18,6 +19,7 @@ export default function loadDatabase(config: ConfigService): DataSourceOptions {
     ChannelFeed,
     ProgramBlock,
     LiveSession,
+    PlaylistDecisionHistory,
   ];
   const { host, port, username, password, database: dbName } = database;
   const ormConfig: DataSourceOptions = {

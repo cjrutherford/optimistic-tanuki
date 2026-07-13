@@ -112,6 +112,22 @@ const DEFAULT_CHANNEL_RADIUS_METERS = 40234;
                 feed.timezone
               }})
             </p>
+            <div
+              class="locality-card"
+              *ngIf="feed?.activeLiveSession && feed?.liveHandoff"
+            >
+              <p class="section-label">Live Session</p>
+              <h3>{{ feed?.activeLiveSession?.title }}</h3>
+              <p class="muted-copy">
+                Handoff status: {{ feed?.liveHandoff?.status }}
+              </p>
+              <p class="muted-copy">
+                Token contract: {{ feed?.liveHandoff?.tokenContract }}
+              </p>
+              <p class="muted-copy">
+                Locality policy: {{ feed?.liveHandoff?.localityPolicy }}
+              </p>
+            </div>
             <p *ngIf="schedule.length > 0">
               Scheduled blocks: {{ schedule.length }}
             </p>
@@ -145,6 +161,13 @@ const DEFAULT_CHANNEL_RADIUS_METERS = 40234;
                 (click)="openPublicChannel()"
               >
                 Open Public Channel
+              </button>
+              <button
+                class="tab-button active"
+                *ngIf="feed?.liveHandoff?.playbackPath"
+                (click)="openLiveHandoff()"
+              >
+                Open Live Handoff
               </button>
             </div>
           </div>
@@ -596,6 +619,15 @@ export class MyChannelComponent implements OnInit {
       return;
     }
     this.router.navigate(['/c', this.channel.communitySlug ?? this.channel.id]);
+  }
+
+  openLiveHandoff() {
+    const playbackPath = this.feed?.liveHandoff?.playbackPath;
+    if (!playbackPath) {
+      return;
+    }
+
+    this.router.navigate([playbackPath]);
   }
 
   getTotalViews(): number {

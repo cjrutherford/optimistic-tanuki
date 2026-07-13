@@ -75,6 +75,8 @@ export class LocalityDiscoveryController {
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
     private readonly socialClient: ClientProxy,
+    @Inject(ServiceTokens.PAYMENTS_SERVICE)
+    private readonly paymentsClient: ClientProxy,
     @Inject(ServiceTokens.STORE_SERVICE)
     private readonly storeClient: ClientProxy,
     @Inject(ServiceTokens.VIDEOS_SERVICE)
@@ -151,14 +153,14 @@ export class LocalityDiscoveryController {
     );
     const [businesses, publicSiteSummaries] = await Promise.all([
       firstValueFrom(
-        this.storeClient.send(
+        this.paymentsClient.send(
           { cmd: PaymentCommands.LIST_ACTIVE_BUSINESS_PAGES },
           {}
         )
       ) as Promise<BusinessPageRecord[]>,
       firstValueFrom(
         this.storeClient.send(
-          { cmd: TrainerConfigCommands.LIST_PUBLIC_SITE_SUMMARIES },
+          TrainerConfigCommands.LIST_PUBLIC_SITE_SUMMARIES,
           {}
         )
       ) as Promise<PublicSiteSummaryRecord[]>,

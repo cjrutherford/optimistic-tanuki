@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Patch,
+  Put,
   Query,
   RawBodyRequest,
   Req,
@@ -23,7 +24,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { PaymentCommands } from '@optimistic-tanuki/constants';
+import { PaymentCommands, VideoCommands } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -66,10 +67,29 @@ export interface UpdateBusinessPageDto {
   anchorLng?: number;
 }
 
-export interface CreateSponsorshipDto {
-  communityId: string;
-  type: 'sticky-ad' | 'banner' | 'featured';
-  adContent?: string;
+export interface CampaignCreativeInputDto {
+  placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+  headline?: string;
+  body?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  imageUrl?: string;
+}
+
+export interface CampaignTargetPlacementInputDto {
+  targetType: 'channel' | 'community';
+  targetId: string;
+  placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+}
+
+export interface CreateAdvertisingCampaignDto {
+  businessPageId: string;
+  name: string;
+  budget?: number | null;
+  startsAt: string;
+  endsAt: string;
+  creatives: CampaignCreativeInputDto[];
+  targetPlacements: CampaignTargetPlacementInputDto[];
 }
 
 export interface CreateOfferDto {
@@ -103,6 +123,7 @@ export interface CreatePayoutRequestDto {
 @Controller('payments')
 export class PaymentsController {
   private readonly paymentsClient: ReturnType<typeof ClientProxyFactory.create>;
+  private readonly videosClient: ReturnType<typeof ClientProxyFactory.create>;
   private readonly logger = new Logger(PaymentsController.name);
 
   private resolveMonthYear(month?: string, year?: string) {
@@ -131,6 +152,12 @@ export class PaymentsController {
         host: serviceConfig.host,
         port: serviceConfig.port,
       },
+    });
+    const videosConfig =
+      this.configService.get<TcpServiceConfig>('services.videos');
+    this.videosClient = ClientProxyFactory.create({
+      transport: Transport.TCP,
+      options: { host: videosConfig.host, port: videosConfig.port },
     });
   }
 
@@ -399,6 +426,35 @@ export class PaymentsController {
     );
   }
 
+  @Patch('business/owner/:businessPageId/channel/:channelId')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Associate an owned business page with an owned channel',
+  })
+  async assignBusinessChannel(
+    @User() user: UserDetails,
+    @Param('businessPageId') businessPageId: string,
+    @Param('channelId') channelId: string
+  ) {
+    const pages = await firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_OWNER_BUSINESS_PAGES },
+        { userId: user.userId }
+      )
+    );
+    if (!pages.some((page: { id: string }) => page.id === businessPageId)) {
+      throw new Error('Business page not found');
+    }
+
+    return firstValueFrom(
+      this.videosClient.send(
+        { cmd: VideoCommands.ASSIGN_CHANNEL_BUSINESS_PAGE },
+        { channelId, userId: user.userId, businessPageId }
+      )
+    );
+  }
+
   @Get('business/:communityId')
   @Public()
   @ApiOperation({ summary: 'Get business page for community' })
@@ -495,54 +551,80 @@ export class PaymentsController {
     );
   }
 
-  @Post('sponsorship/checkout')
+  @Post('advertising-campaigns')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create community sponsorship checkout' })
-  async createSponsorshipCheckout(
+  @ApiOperation({ summary: 'Create an owner-managed advertising campaign' })
+  async createAdvertisingCampaign(
     @User() user: UserDetails,
-    @Body() dto: CreateSponsorshipDto,
-    @AppScope() appScope: string
+    @Body() dto: CreateAdvertisingCampaignDto
   ) {
-    return await firstValueFrom(
+    return firstValueFrom(
       this.paymentsClient.send(
-        { cmd: PaymentCommands.CREATE_SPONSORSHIP_CHECKOUT },
-        {
-          userId: user.userId,
-          communityId: dto.communityId,
-          type: dto.type,
-          adContent: dto.adContent,
-          appScope,
-        }
+        { cmd: PaymentCommands.CREATE_ADVERTISING_CAMPAIGN },
+        { userId: user.userId, ...dto }
       )
     );
   }
 
-  @Get('sponsorship/:communityId/active')
-  @Public()
-  @ApiOperation({ summary: 'Get active sponsorships for community' })
-  async getActiveSponsorships(@Param('communityId') communityId: string) {
-    return await firstValueFrom(
-      this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS },
-        {
-          communityId,
-        }
-      )
-    );
-  }
-
-  @Get('sponsorship/user')
+  @Put('advertising-campaigns/:campaignId')
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user sponsorships' })
-  async getUserSponsorships(@User() user: UserDetails) {
-    return await firstValueFrom(
+  @ApiOperation({ summary: 'Update an owner-managed advertising campaign' })
+  async updateAdvertisingCampaign(
+    @User() user: UserDetails,
+    @Param('campaignId') campaignId: string,
+    @Body() dto: CreateAdvertisingCampaignDto
+  ) {
+    return firstValueFrom(
       this.paymentsClient.send(
-        { cmd: PaymentCommands.GET_USER_SPONSORSHIPS },
-        {
-          userId: user.userId,
-        }
+        { cmd: PaymentCommands.UPDATE_ADVERTISING_CAMPAIGN },
+        { userId: user.userId, campaignId, ...dto }
+      )
+    );
+  }
+
+  @Get('advertising-campaigns/owner')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List owner advertising campaigns' })
+  async getOwnerAdvertisingCampaigns(@User() user: UserDetails) {
+    return firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_OWNER_ADVERTISING_CAMPAIGNS },
+        { userId: user.userId }
+      )
+    );
+  }
+
+  @Patch('advertising-campaigns/:campaignId/status')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Set owner advertising campaign lifecycle status' })
+  async updateAdvertisingCampaignStatus(
+    @User() user: UserDetails,
+    @Param('campaignId') campaignId: string,
+    @Body() dto: { status: 'draft' | 'active' | 'paused' | 'archived' }
+  ) {
+    return firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.UPDATE_ADVERTISING_CAMPAIGN_STATUS },
+        { userId: user.userId, campaignId, status: dto.status }
+      )
+    );
+  }
+
+  @Get('advertising-campaigns/eligible/on-page')
+  @Public()
+  @ApiOperation({ summary: 'Discover eligible on-page advertising campaigns' })
+  async getEligibleOnPageCampaigns(
+    @Query('channelId') channelId?: string,
+    @Query('communityId') communityId?: string
+  ) {
+    return firstValueFrom(
+      this.paymentsClient.send(
+        { cmd: PaymentCommands.GET_ELIGIBLE_ON_PAGE_CAMPAIGNS },
+        { channelId, communityId }
       )
     );
   }

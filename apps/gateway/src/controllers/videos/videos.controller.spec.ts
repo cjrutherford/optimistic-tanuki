@@ -101,4 +101,84 @@ describe('VideosController', () => {
       }
     );
   });
+
+  it('decorates channel feed responses with a live playback handoff route', async () => {
+    videosService.send = jest
+      .fn()
+      .mockReturnValueOnce(
+        of({
+          id: 'channel-1',
+          communityId: 'community-1',
+          communitySlug: 'ot-live',
+        })
+      )
+      .mockReturnValueOnce(
+        of({
+          id: 'feed-1',
+          channelId: 'channel-1',
+          communityId: 'community-1',
+          currentMode: 'live',
+          activeLiveSessionId: 'session-1',
+          activeLiveSession: {
+            id: 'session-1',
+            title: 'OT Live',
+            status: 'live',
+          },
+          liveHandoff: {
+            status: 'ready',
+            requiresAuth: false,
+            tokenContract: 'gateway-token-exchange',
+            localityPolicy: 'planned-channel-anchor',
+          },
+        })
+      ) as any;
+
+    await expect(controller.getChannelFeed('ot-live')).resolves.toEqual(
+      expect.objectContaining({
+        liveHandoff: expect.objectContaining({
+          playbackPath: '/watch/live/ot-live',
+        }),
+      })
+    );
+  });
+
+  it('issues a live playback token for the channel community', async () => {
+    videosService.send = jest
+      .fn()
+      .mockReturnValueOnce(of({ id: 'channel-1', communityId: 'community-1' }))
+      .mockReturnValueOnce(
+        of({
+          status: 'ready',
+          sessionId: 'session-1',
+          token: 'handoff-token',
+        })
+      ) as any;
+
+    await expect(controller.issueLiveToken('ot-live')).resolves.toEqual({
+      status: 'ready',
+      sessionId: 'session-1',
+      token: 'handoff-token',
+    });
+
+    expect(videosService.send).toHaveBeenLastCalledWith(
+      { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
+      { communityId: 'community-1' }
+    );
+  });
+
+  it('forwards live-token verification with the resolved channel community', async () => {
+    videosService.send = jest
+      .fn()
+      .mockReturnValueOnce(of({ id: 'channel-1', communityId: 'community-1' }))
+      .mockReturnValueOnce(of({ valid: true, sessionId: 'session-1' })) as any;
+
+    await expect(
+      controller.validateLiveToken('ot-live', { token: 'signed-token' })
+    ).resolves.toEqual({ valid: true, sessionId: 'session-1' });
+
+    expect(videosService.send).toHaveBeenLastCalledWith(
+      { cmd: VideoCommands.VALIDATE_LIVE_TOKEN },
+      { communityId: 'community-1', token: 'signed-token' }
+    );
+  });
 });

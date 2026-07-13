@@ -15,6 +15,7 @@ import { PaymentService } from '../../services/payment.service';
 import { LocalityInfoService } from '../../services/locality-info.service';
 import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
 import { AppRegistryService } from '@optimistic-tanuki/app-registry';
+import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
 import {
   ClassifiedService,
   ClassifiedAdDto,
@@ -72,6 +73,7 @@ const authStateMock = {
 };
 
 const paymentServiceMock = {
+  getEligibleOnPageCampaigns: jest.fn().mockResolvedValue([]),
   getCityBusinesses: jest.fn().mockResolvedValue([
     {
       id: 'business-1',
@@ -126,15 +128,51 @@ const businessApiServiceMock = {
 };
 
 const appRegistryServiceMock = {
-  getApp: jest.fn().mockReturnValue(
+  getApp: jest.fn().mockImplementation((appId: string) =>
+    of(
+      appId === 'video-client'
+        ? {
+            appId: 'video-client',
+            name: 'MetroCast',
+            domain: 'metrocast.local',
+            uiBaseUrl: 'http://localhost:8093',
+            apiBaseUrl: 'http://localhost:8093/api',
+            appType: 'client',
+            visibility: 'public',
+          }
+        : {
+            appId: 'business-site',
+            name: 'Business Site',
+            domain: 'business.local',
+            uiBaseUrl: 'http://localhost:8094',
+            apiBaseUrl: 'http://localhost:8094/api',
+            appType: 'client',
+            visibility: 'public',
+          }
+    )
+  ),
+};
+
+const localityDiscoveryServiceMock = {
+  discoverNearby: jest.fn().mockReturnValue(
     of({
-      appId: 'business-site',
-      name: 'Business Site',
-      domain: 'business.local',
-      uiBaseUrl: 'http://localhost:8094',
-      apiBaseUrl: 'http://localhost:8094/api',
-      appType: 'client',
-      visibility: 'public',
+      businesses: [
+        {
+          id: 'business-1',
+          name: 'North Star Advisory',
+          sitePath: '/sites/north-star-advisory',
+          distanceMeters: 1200,
+        },
+      ],
+      channels: [
+        {
+          id: 'channel-1',
+          name: 'Savannah Signal',
+          communitySlug: 'savannah-signal',
+          description: 'Local updates and replays.',
+          distanceMeters: 900,
+        },
+      ],
     })
   ),
 };
@@ -170,6 +208,10 @@ describe('CityComponent', () => {
         { provide: PaymentService, useValue: paymentServiceMock },
         { provide: BusinessApiService, useValue: businessApiServiceMock },
         { provide: AppRegistryService, useValue: appRegistryServiceMock },
+        {
+          provide: LocalityDiscoveryService,
+          useValue: localityDiscoveryServiceMock,
+        },
         { provide: ClassifiedService, useValue: classifiedServiceMock },
         { provide: LocalityInfoService, useValue: localityInfoServiceMock },
         { provide: API_BASE_URL, useValue: 'http://localhost:3000' },
@@ -239,5 +281,30 @@ describe('CityComponent', () => {
 
     expect(link?.textContent).toContain('Visit Business Site');
     expect(link?.href).toBe('http://localhost:8094/sites/north-star-advisory');
+  });
+
+  it('renders the local network hub with MetroCast and Studio destinations', async () => {
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(localityDiscoveryServiceMock.discoverNearby).toHaveBeenCalledWith(
+      {
+        anchor: { lat: 32.0809, lng: -81.0912 },
+        radiusMeters: 40234,
+      },
+      { scope: 'local-hub', limit: 3 }
+    );
+    expect(fixture.nativeElement.textContent).toContain('Local Network');
+    expect(fixture.nativeElement.textContent).toContain('Savannah Signal');
+    const channelLink = fixture.nativeElement.querySelector(
+      '[data-testid="locality-network-channel-link"]'
+    ) as HTMLAnchorElement | null;
+    expect(channelLink?.href).toBe('http://localhost:8093/c/savannah-signal');
+    const businessLink = fixture.nativeElement.querySelector(
+      '[data-testid="locality-network-business-link"]'
+    ) as HTMLAnchorElement | null;
+    expect(businessLink?.href).toBe(
+      'http://localhost:8094/sites/north-star-advisory'
+    );
   });
 });

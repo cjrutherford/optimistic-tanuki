@@ -57,6 +57,7 @@ function repository<T extends object>(
     save: jest.fn(async (input: T) => ({ id: 'saved-id', ...input })),
     find: jest.fn(async () => []),
     findOne: jest.fn(async () => null),
+    delete: jest.fn(async () => ({ affected: 0 })),
     createQueryBuilder: jest.fn(),
     ...overrides,
   };
@@ -78,6 +79,9 @@ function createService(providerAdapter = new RecordingProviderAdapter()) {
       lemonSqueezyVariantId: 'variant-pro',
     })),
   });
+  const campaignRepository = repository();
+  const campaignCreativeRepository = repository();
+  const campaignTargetPlacementRepository = repository();
 
   const service = new PaymentService(
     donationRepository as never,
@@ -86,20 +90,46 @@ function createService(providerAdapter = new RecordingProviderAdapter()) {
     repository() as never,
     businessPageRepository as never,
     repository() as never,
-    repository() as never,
     productRepository as never,
     providerAdapter,
-    billingReconciliationService as never
+    billingReconciliationService as never,
+    campaignRepository as never,
+    campaignCreativeRepository as never,
+    campaignTargetPlacementRepository as never
   );
 
   return {
     service,
     providerAdapter,
     billingReconciliationService,
+    campaignRepository,
+    campaignCreativeRepository,
+    campaignTargetPlacementRepository,
   };
 }
 
 describe('PaymentService provider adapter boundary', () => {
+  it('rejects a community mid-roll target when creating a campaign', async () => {
+    const { service } = createService();
+
+    await expect(
+      service.createAdvertisingCampaign('user-1', {
+        businessPageId: 'business-page-1',
+        name: 'Neighborhood launch',
+        startsAt: new Date('2026-07-10T00:00:00.000Z'),
+        endsAt: new Date('2026-08-10T00:00:00.000Z'),
+        targetPlacements: [
+          {
+            targetType: 'community',
+            targetId: 'community-1',
+            placementType: 'mid-roll',
+          },
+        ],
+        creatives: [],
+      })
+    ).rejects.toThrow('Community targets only support on-page placement');
+  });
+
   it('delegates donation checkout URL creation to the configured provider', async () => {
     const { service, providerAdapter } = createService();
 
@@ -209,7 +239,6 @@ describe('PaymentService provider adapter boundary', () => {
       businessPageRepository as never,
       repository() as never,
       repository() as never,
-      repository() as never,
       new RecordingProviderAdapter(),
       new RecordingBillingReconciliationService() as never
     );
@@ -238,7 +267,6 @@ describe('PaymentService provider adapter boundary', () => {
       repository() as never,
       repository() as never,
       businessPageRepository as never,
-      repository() as never,
       repository() as never,
       repository() as never,
       new RecordingProviderAdapter(),
@@ -275,7 +303,6 @@ describe('PaymentService provider adapter boundary', () => {
       businessPageRepository as never,
       repository() as never,
       repository() as never,
-      repository() as never,
       new RecordingProviderAdapter(),
       new RecordingBillingReconciliationService() as never
     );
@@ -297,5 +324,86 @@ describe('PaymentService provider adapter boundary', () => {
     expect(businessPageRepository.findOne).toHaveBeenCalledWith({
       where: { id: 'business-1', ownerId: 'user-1' },
     });
+  });
+
+  it('returns only active, dated, directly targeted playback campaigns with matching creatives', async () => {
+    const {
+      service,
+      campaignRepository,
+      campaignCreativeRepository,
+      campaignTargetPlacementRepository,
+    } = createService();
+    const now = new Date('2026-07-12T12:00:00.000Z');
+    jest.useFakeTimers().setSystemTime(now);
+    campaignTargetPlacementRepository.find.mockResolvedValue([
+      {
+        campaignId: 'campaign-1',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+      },
+      {
+        campaignId: 'campaign-2',
+        targetType: 'community',
+        targetId: 'community-1',
+        placementType: 'mid-roll',
+      },
+      {
+        campaignId: 'campaign-3',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+      },
+    ]);
+    campaignRepository.find.mockResolvedValue([
+      {
+        id: 'campaign-1',
+        businessPageId: 'business-1',
+        name: 'Local launch',
+        status: 'active',
+        budget: 100,
+        startsAt: new Date('2026-07-01T00:00:00.000Z'),
+        endsAt: new Date('2026-07-31T00:00:00.000Z'),
+      },
+      {
+        id: 'campaign-3',
+        businessPageId: 'business-3',
+        name: 'Expired launch',
+        status: 'active',
+        budget: 900,
+        startsAt: new Date('2026-06-01T00:00:00.000Z'),
+        endsAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    ]);
+    campaignCreativeRepository.find.mockResolvedValue([
+      {
+        campaignId: 'campaign-1',
+        placementType: 'pre-roll',
+        imageUrl: 'https://ads.test/local-launch.mp4',
+      },
+      {
+        campaignId: 'campaign-3',
+        placementType: 'pre-roll',
+        imageUrl: 'https://ads.test/expired.mp4',
+      },
+    ]);
+
+    await expect(
+      service.getEligiblePlaybackCampaigns({
+        channelId: 'channel-1',
+        communityId: 'community-1',
+        placementType: 'pre-roll',
+      })
+    ).resolves.toEqual([
+      expect.objectContaining({
+        campaignId: 'campaign-1',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+        mediaUrl: 'https://ads.test/local-launch.mp4',
+        localityMatch: 'channel-anchor',
+      }),
+    ]);
+    jest.useRealTimers();
   });
 });

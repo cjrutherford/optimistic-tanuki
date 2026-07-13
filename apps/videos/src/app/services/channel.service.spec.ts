@@ -72,6 +72,14 @@ describe('ChannelService', () => {
     expect(result).toBe(channel);
   });
 
+  it('loads channel listings without relation graphs', async () => {
+    repository.find!.mockResolvedValue([]);
+
+    await service.findAll();
+
+    expect(repository.find).toHaveBeenCalledWith({});
+  });
+
   it('persists anchor coordinates when creating a channel', async () => {
     const savedChannel = {
       id: 'channel-1',
@@ -109,5 +117,17 @@ describe('ChannelService', () => {
       })
     );
     expect(result).toBe(savedChannel);
+  });
+
+  it('assigns a business page only when the user owns the channel', async () => {
+    const channel = { id: 'channel-1', userId: 'user-1' } as Channel;
+    repository.findOne!.mockResolvedValue(channel);
+
+    await service.assignBusinessPage('channel-1', 'user-1', 'business-1');
+
+    expect(repository.update).toHaveBeenCalledWith(
+      'channel-1',
+      expect.objectContaining({ businessPageId: 'business-1' })
+    );
   });
 });

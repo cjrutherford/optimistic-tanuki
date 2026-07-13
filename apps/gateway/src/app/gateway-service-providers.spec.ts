@@ -20,8 +20,14 @@ describe('gateway service providers', () => {
     const storeProvider = providers.find(
       (provider) => provider.provide === ServiceTokens.STORE_SERVICE
     );
+    const paymentsProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.PAYMENTS_SERVICE
+    );
 
     const proxy = storeProvider!.useFactory!(
+      {} as ConfigService
+    ) as DisabledClientProxy;
+    const paymentsProxy = paymentsProvider!.useFactory!(
       {} as ConfigService
     ) as DisabledClientProxy;
 
@@ -30,6 +36,10 @@ describe('gateway service providers', () => {
     await expect(
       firstValueFrom(proxy.send({ cmd: 'noop' }, {}))
     ).rejects.toThrow('Gateway service "store" is disabled');
+    await expect(paymentsProxy.connect()).resolves.toBeUndefined();
+    await expect(
+      firstValueFrom(paymentsProxy.send({ cmd: 'noop' }, {}))
+    ).rejects.toThrow('Gateway service "payments" is disabled');
   });
 
   it('creates real proxies for enabled services', () => {

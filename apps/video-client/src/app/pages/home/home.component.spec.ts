@@ -5,6 +5,7 @@ import { HomeComponent } from './home.component';
 import { VideoService } from '../../services/video.service';
 import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
 import { AppRegistryService } from '@optimistic-tanuki/app-registry';
+import { SponsorDiscoveryService } from '../../services/sponsor-discovery.service';
 
 describe('HomeComponent', () => {
   let fixture: ComponentFixture<HomeComponent>;
@@ -12,6 +13,7 @@ describe('HomeComponent', () => {
   let videoService: jest.Mocked<VideoService>;
   let localityDiscoveryService: jest.Mocked<LocalityDiscoveryService>;
   let appRegistryService: jest.Mocked<AppRegistryService>;
+  let sponsorDiscoveryService: jest.Mocked<SponsorDiscoveryService>;
 
   beforeEach(async () => {
     const videoServiceSpy = {
@@ -23,6 +25,9 @@ describe('HomeComponent', () => {
     };
     const appRegistryServiceSpy = {
       getApp: jest.fn(),
+    };
+    const sponsorDiscoveryServiceSpy = {
+      discoverOnPage: jest.fn(),
     };
 
     await TestBed.configureTestingModule({
@@ -41,6 +46,10 @@ describe('HomeComponent', () => {
           provide: AppRegistryService,
           useValue: appRegistryServiceSpy,
         },
+        {
+          provide: SponsorDiscoveryService,
+          useValue: sponsorDiscoveryServiceSpy,
+        },
       ],
     }).compileComponents();
 
@@ -53,6 +62,9 @@ describe('HomeComponent', () => {
     appRegistryService = TestBed.inject(
       AppRegistryService
     ) as jest.Mocked<AppRegistryService>;
+    sponsorDiscoveryService = TestBed.inject(
+      SponsorDiscoveryService
+    ) as jest.Mocked<SponsorDiscoveryService>;
   });
 
   it('loads nearby locality discovery for the home page and renders channel cards', async () => {
@@ -68,6 +80,21 @@ describe('HomeComponent', () => {
         appType: 'client',
         visibility: 'public',
       } as any)
+    );
+    sponsorDiscoveryService.discoverOnPage.mockReturnValue(
+      of([
+        {
+          id: 'campaign-1',
+          businessPageId: 'business-1',
+          name: 'North Star Local Launch',
+          creative: {
+            headline: 'North Star Advisory',
+            body: 'Operations guidance for nearby teams.',
+            ctaLabel: 'Explore Studio',
+            ctaUrl: 'https://northstar.example',
+          },
+        },
+      ])
     );
     localityDiscoveryService.discoverNearby.mockReturnValue(
       of({
@@ -123,7 +150,11 @@ describe('HomeComponent', () => {
       },
       { scope: 'local-hub', limit: 6 }
     );
+    expect(sponsorDiscoveryService.discoverOnPage).toHaveBeenCalledWith({
+      communityId: 'community-1',
+    });
     expect(component.localityLabel).toBe('Savannah, GA, US');
+    expect(fixture.nativeElement.textContent).toContain('Open local tuner');
     expect(fixture.nativeElement.textContent).toContain('Nearby Channels');
     expect(fixture.nativeElement.textContent).toContain('Savannah Signal');
     expect(fixture.nativeElement.textContent).toContain('Nearby Businesses');
@@ -131,6 +162,14 @@ describe('HomeComponent', () => {
       '[data-testid="nearby-business-link"]'
     ) as HTMLAnchorElement | null;
     expect(businessLink?.href).toBe(
+      'http://localhost:8094/sites/north-star-advisory'
+    );
+    expect(fixture.nativeElement.textContent).toContain('Local Sponsors');
+    expect(fixture.nativeElement.textContent).toContain('North Star Advisory');
+    const sponsorLink = fixture.nativeElement.querySelector(
+      '[data-testid="local-sponsor-link"]'
+    ) as HTMLAnchorElement | null;
+    expect(sponsorLink?.href).toBe(
       'http://localhost:8094/sites/north-star-advisory'
     );
   });

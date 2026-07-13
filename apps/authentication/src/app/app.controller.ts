@@ -104,7 +104,7 @@ export class AppController {
       const userId = await this.appService.getUserIdFromEmail(email);
       this.l.debug('userIdFromEmail result:', userId);
       return userId;
-    } catch (e) {
+    } catch (e: Error | any) {
       if (e instanceof RpcException) {
         throw e;
       }
@@ -128,7 +128,7 @@ export class AppController {
       const { email, password, mfa } = data;
       this.l.log('login:', email, password, mfa);
       return await this.appService.login(email, password, mfa, data.profileId);
-    } catch (e) {
+    } catch (e: Error | any) {
       if (e instanceof RpcException) {
         throw e;
       }
@@ -215,7 +215,8 @@ export class AppController {
       const { token } = data;
       const tokenValidation = await this.appService.validateToken(token);
       return tokenValidation;
-    } catch (e) {
+    } catch (e: Error | any) {
+      this.l.error('validate error:', e.message, e.stack, e);
       if (e instanceof RpcException) {
         throw e;
       }

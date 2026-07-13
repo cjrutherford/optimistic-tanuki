@@ -5,3 +5,4 @@ export { VideoView } from './video-view.entity';
 export { ChannelFeed } from './channel-feed.entity';
 export { ProgramBlock } from './program-block.entity';
 export { LiveSession } from './live-session.entity';
+export { PlaylistDecisionHistory } from './playlist-decision-history.entity';

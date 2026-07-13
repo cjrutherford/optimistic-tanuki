@@ -111,6 +111,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     configKey: 'store',
   },
   {
+    token: ServiceTokens.PAYMENTS_SERVICE,
+    serviceId: 'payments',
+    configKey: 'payments',
+  },
+  {
     token: ServiceTokens.APP_CONFIGURATOR_SERVICE,
     serviceId: 'app-configurator',
     configKey: 'app_configurator',

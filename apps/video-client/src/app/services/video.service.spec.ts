@@ -40,6 +40,14 @@ describe('VideoService', () => {
       activeProgramBlockId: 'block-1',
       activeLiveSessionId: null,
       activeVideoId: 'video-1',
+      activeLiveSession: null,
+      liveHandoff: {
+        status: 'standby',
+        playbackPath: '/watch/live/ot-live',
+        requiresAuth: false,
+        tokenContract: 'gateway-token-exchange',
+        localityPolicy: 'planned-channel-anchor',
+      },
       lastTransitionAt: new Date('2026-04-17T14:00:00.000Z'),
     };
 
@@ -90,6 +98,26 @@ describe('VideoService', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(dto);
     req.flush({ id: 'live-1', status: 'live' });
+  });
+
+  it('requests a playback token for a live channel handoff', () => {
+    service.issueLiveToken('ot-live').subscribe();
+
+    const req = httpMock.expectOne('/api/videos/channels/ot-live/live/token');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    req.flush({ status: 'ready', token: 'handoff-token' });
+  });
+
+  it('validates a live playback token against the channel handoff route', () => {
+    service.validateLiveToken('ot-live', 'signed-token').subscribe();
+
+    const req = httpMock.expectOne(
+      '/api/videos/channels/ot-live/live/token/validate'
+    );
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ token: 'signed-token' });
+    req.flush({ valid: true, sessionId: 'session-1' });
   });
 
   it('updates channel locality anchors through the channel endpoint', async () => {

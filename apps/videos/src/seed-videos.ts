@@ -24,6 +24,7 @@ import {
   SeedUserCredentials,
   SeedUserSession,
   subscribeToChannelThroughApi,
+  updateChannelThroughApi,
   uploadAssetThroughApi,
 } from './seed-videos.http';
 
@@ -458,6 +459,7 @@ async function ensureChannelThroughApi(
   );
 
   if (existing) {
+    await ensureChannelAnchorThroughApi(owner, existing, locality);
     cache.set(cacheKey, existing);
     return existing;
   }
@@ -478,9 +480,36 @@ async function ensureChannelThroughApi(
     name,
     profileId: owner.profileId,
     userId: owner.userId,
+    anchorLat: locality?.lat ?? null,
+    anchorLng: locality?.lng ?? null,
   };
   cache.set(cacheKey, channel);
   return channel;
+}
+
+async function ensureChannelAnchorThroughApi(
+  owner: AuthenticatedSeedUser,
+  channel: SeedChannel,
+  locality?: SeedCommunityAnchor
+): Promise<void> {
+  if (!locality) {
+    return;
+  }
+
+  if (
+    channel.anchorLat === locality.lat &&
+    channel.anchorLng === locality.lng
+  ) {
+    return;
+  }
+
+  await updateChannelThroughApi(owner.httpClient, owner.token, channel.id, {
+    anchorLat: locality.lat,
+    anchorLng: locality.lng,
+  });
+
+  channel.anchorLat = locality.lat;
+  channel.anchorLng = locality.lng;
 }
 
 async function loadSeedCommunityAnchors(

@@ -296,7 +296,7 @@ async function bootstrap() {
       tenant.owner?.bio ||
       tenant.businessType;
 
-    await paymentsDb.query(
+    const result = await paymentsDb.query(
       `
         INSERT INTO "business_pages" (
           "communityId",
@@ -344,6 +344,7 @@ async function bootstrap() {
           "anchorLat" = EXCLUDED."anchorLat",
           "anchorLng" = EXCLUDED."anchorLng",
           "updatedAt" = NOW()
+        RETURNING "id", "communityId"
       `,
       [
         locality.id,
@@ -358,6 +359,47 @@ async function bootstrap() {
         coordinates.lat,
         coordinates.lng,
       ]
+    );
+
+    return result.rows[0];
+  }
+
+  async function seedAdvertisingCampaign(
+    tenant,
+    owner,
+    businessPage,
+    locality
+  ) {
+    const campaignName = `${tenant.brand.businessName} local launch`;
+
+    await paymentsDb.query(
+      `
+        DELETE FROM "advertising_campaigns"
+        WHERE "businessPageId" = $1
+      `,
+      [businessPage.id]
+    );
+
+    const campaign = await paymentsDb.query(
+      `INSERT INTO "advertising_campaigns" ("businessPageId", "userId", "name", "status", "startsAt", "endsAt")
+       VALUES ($1, $2, $3, 'active', NOW(), NOW() + INTERVAL '90 days') RETURNING "id"`,
+      [businessPage.id, owner.userId, campaignName]
+    );
+    const campaignId = campaign.rows[0].id;
+    await paymentsDb.query(
+      `INSERT INTO "advertising_campaign_creatives" ("campaignId", "placementType", "headline", "body", "ctaLabel", "ctaUrl")
+       VALUES ($1, 'on-page', $2, $3, 'Learn more', $4)`,
+      [
+        campaignId,
+        tenant.brand.businessName,
+        tenant.brand.tagline,
+        `https://${tenant.site.slug}.local`,
+      ]
+    );
+    await paymentsDb.query(
+      `INSERT INTO "advertising_campaign_target_placements" ("campaignId", "targetType", "targetId", "placementType")
+       VALUES ($1, 'community', $2, 'on-page')`,
+      [campaignId, locality.id]
     );
   }
 
@@ -541,11 +583,17 @@ async function bootstrap() {
       continue;
     }
     await upsertBusinessSiteConfig(tenant, owner.profileId, owner.userId);
-    await upsertBusinessPageSeed(
+    const businessPage = await upsertBusinessPageSeed(
       tenant,
       owner,
       localityAnchors[index % localityAnchors.length],
       index
+    );
+    await seedAdvertisingCampaign(
+      tenant,
+      owner,
+      businessPage,
+      localityAnchors[index % localityAnchors.length]
     );
     logger.log(`Hosted tenant ready at /sites/${tenant.site.slug}`);
   }

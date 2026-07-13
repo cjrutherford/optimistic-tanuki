@@ -57,8 +57,8 @@ const messageServiceMock = {
 };
 
 const paymentServiceMock = {
+  getEligibleOnPageCampaigns: jest.fn().mockResolvedValue([]),
   getBusinessPage: jest.fn().mockResolvedValue(null),
-  getActiveSponsorships: jest.fn().mockResolvedValue([]),
   getDonationGoal: jest.fn().mockResolvedValue({
     raised: 0,
     goal: 0,
@@ -66,7 +66,6 @@ const paymentServiceMock = {
   }),
   createBusinessPage: jest.fn(),
   updateBusinessPage: jest.fn(),
-  createSponsorship: jest.fn(),
 };
 
 describe('CommunityComponent', () => {
@@ -105,6 +104,30 @@ describe('CommunityComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('clears a prior loading error after a community retry succeeds', async () => {
+    await fixture.whenStable();
+    communityServiceMock.getCommunityBySlug
+      .mockRejectedValueOnce(new Error('Temporary API failure'))
+      .mockResolvedValueOnce({
+        id: '1',
+        name: 'Test City',
+        slug: 'test-city',
+        parentId: null,
+        localityType: 'city',
+        coordinates: { lat: 32.0809, lng: -81.0912 },
+      });
+
+    await component.loadCommunity('test-city');
+    expect(component.error()).toBe(
+      'Community not found or unable to load. Please try again.'
+    );
+
+    await component.loadCommunity('test-city');
+
+    expect(component.error()).toBeNull();
+    expect(component.community()?.slug).toBe('test-city');
   });
 
   it('passes the membership gate into the post composer', async () => {

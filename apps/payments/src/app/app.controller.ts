@@ -212,6 +212,7 @@ export class AppController {
     data: {
       userId: string;
       businessPageId: string;
+      channelId?: string;
       name?: string;
       description?: string;
       logoUrl?: string;
@@ -252,38 +253,113 @@ export class AppController {
     );
   }
 
-  @MessagePattern({ cmd: PaymentCommands.CREATE_SPONSORSHIP_CHECKOUT })
-  async createSponsorshipCheckout(
+  @MessagePattern({ cmd: PaymentCommands.CREATE_ADVERTISING_CAMPAIGN })
+  async createAdvertisingCampaign(
     @Payload()
     data: {
       userId: string;
-      communityId: string;
-      type: string;
-      adContent?: string;
-      appScope: string;
-      months?: number;
-      businessPageId?: string;
+      businessPageId: string;
+      name: string;
+      budget?: number | null;
+      startsAt: string | Date;
+      endsAt: string | Date;
+      creatives: Array<{
+        placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+        headline?: string;
+        body?: string;
+        ctaLabel?: string;
+        ctaUrl?: string;
+        imageUrl?: string;
+      }>;
+      targetPlacements: Array<{
+        targetType: 'channel' | 'community';
+        targetId: string;
+        placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+      }>;
     }
   ) {
-    return this.paymentService.createSponsorshipCheckout(
+    return this.paymentService.createAdvertisingCampaign(data.userId, {
+      ...data,
+      startsAt: new Date(data.startsAt),
+      endsAt: new Date(data.endsAt),
+    });
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_ADVERTISING_CAMPAIGN })
+  async updateAdvertisingCampaign(
+    @Payload()
+    data: {
+      userId: string;
+      campaignId: string;
+      businessPageId: string;
+      name: string;
+      budget?: number | null;
+      startsAt: string | Date;
+      endsAt: string | Date;
+      creatives: Array<{
+        placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+        headline?: string;
+        body?: string;
+        ctaLabel?: string;
+        ctaUrl?: string;
+        imageUrl?: string;
+      }>;
+      targetPlacements: Array<{
+        targetType: 'channel' | 'community';
+        targetId: string;
+        placementType: 'pre-roll' | 'mid-roll' | 'post-roll' | 'on-page';
+      }>;
+    }
+  ) {
+    return this.paymentService.updateAdvertisingCampaign(
       data.userId,
-      data.communityId,
-      data.type,
-      data.adContent,
-      data.appScope,
-      data.months,
-      data.businessPageId
+      data.campaignId,
+      {
+        ...data,
+        startsAt: new Date(data.startsAt),
+        endsAt: new Date(data.endsAt),
+      }
     );
   }
 
-  @MessagePattern({ cmd: PaymentCommands.GET_ACTIVE_SPONSORSHIPS })
-  async getActiveSponsorships(@Payload() data: { communityId: string }) {
-    return this.paymentService.getActiveSponsorships(data.communityId);
+  @MessagePattern({ cmd: PaymentCommands.GET_OWNER_ADVERTISING_CAMPAIGNS })
+  async getOwnerAdvertisingCampaigns(@Payload() data: { userId: string }) {
+    return this.paymentService.getOwnerAdvertisingCampaigns(data.userId);
   }
 
-  @MessagePattern({ cmd: PaymentCommands.GET_USER_SPONSORSHIPS })
-  async getUserSponsorships(@Payload() data: { userId: string }) {
-    return this.paymentService.getUserSponsorships(data.userId);
+  @MessagePattern({ cmd: PaymentCommands.UPDATE_ADVERTISING_CAMPAIGN_STATUS })
+  async updateAdvertisingCampaignStatus(
+    @Payload()
+    data: {
+      userId: string;
+      campaignId: string;
+      status: 'draft' | 'active' | 'paused' | 'archived';
+    }
+  ) {
+    return this.paymentService.updateAdvertisingCampaignStatus(
+      data.userId,
+      data.campaignId,
+      data.status
+    );
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_ELIGIBLE_ON_PAGE_CAMPAIGNS })
+  async getEligibleOnPageCampaigns(
+    @Payload() data: { channelId?: string; communityId?: string }
+  ) {
+    return this.paymentService.getEligibleOnPageCampaigns(data);
+  }
+
+  @MessagePattern({ cmd: PaymentCommands.GET_ELIGIBLE_PLAYBACK_CAMPAIGNS })
+  async getEligiblePlaybackCampaigns(
+    @Payload()
+    data: {
+      channelId?: string;
+      communityId?: string;
+      placementType: 'pre-roll' | 'mid-roll' | 'post-roll';
+    }
+  ) {
+    return this.paymentService.getEligiblePlaybackCampaigns(data);
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_TRANSACTIONS })

@@ -15,11 +15,15 @@ import { VideoView } from '../entities/video-view.entity';
 import { ChannelFeed } from '../entities/channel-feed.entity';
 import { ProgramBlock } from '../entities/program-block.entity';
 import { LiveSession } from '../entities/live-session.entity';
+import { PlaylistDecisionHistory } from '../entities/playlist-decision-history.entity';
 import { ChannelService } from './services/channel.service';
 import { VideoService } from './services/video.service';
 import { SubscriptionService } from './services/subscription.service';
 import { VideoViewService } from './services/video-view.service';
 import { BroadcastService } from './services/broadcast.service';
+import { LiveMediaTransportService } from './services/live-media-transport.service';
+import { BroadcastSchedulerService } from './services/broadcast-scheduler.service';
+import { PlaylistGenerator } from './services/playlist-generator.service';
 import { VideoProcessingService } from './services/video-processing.service';
 import { VIDEO_PROCESSING_CONFIG } from './services/video-processing.service';
 import { VideoTranscodeClientService } from './services/video-transcode-client.service';
@@ -46,6 +50,9 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     SubscriptionService,
     VideoViewService,
     BroadcastService,
+    LiveMediaTransportService,
+    BroadcastSchedulerService,
+    PlaylistGenerator,
     VideoProcessingService,
     VideoTranscodeClientService,
     {
@@ -63,6 +70,17 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
           options: {
             host: process.env['ASSETS_HOST'] || 'assets',
             port: Number.parseInt(process.env['ASSETS_PORT'] || '3005', 10),
+          },
+        }),
+    },
+    {
+      provide: ServiceTokens.PAYMENTS_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env['PAYMENTS_HOST'] || 'payments',
+            port: Number.parseInt(process.env['PAYMENTS_PORT'] || '3004', 10),
           },
         }),
     },
@@ -99,6 +117,11 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     {
       provide: getRepositoryToken(LiveSession),
       useFactory: (ds: DataSource) => ds.getRepository(LiveSession),
+      inject: ['VIDEOS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(PlaylistDecisionHistory),
+      useFactory: (ds: DataSource) => ds.getRepository(PlaylistDecisionHistory),
       inject: ['VIDEOS_CONNECTION'],
     },
   ],

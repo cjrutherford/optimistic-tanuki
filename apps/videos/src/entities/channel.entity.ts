@@ -26,6 +26,9 @@ export class Channel {
   @Column()
   userId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  businessPageId: string | null;
+
   @Column({ unique: true })
   communityId: string;
 

@@ -26,6 +26,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
+import { SponsorshipBannerComponent } from '../../components/sponsorship-banner/sponsorship-banner.component';
 import {
   CardComponent,
   ModalComponent,
@@ -43,6 +44,10 @@ import {
 import { BusinessApiService } from '@optimistic-tanuki/business-data-access';
 import { AppRegistryService } from '@optimistic-tanuki/app-registry';
 import {
+  NearbyBusinessDiscoveryDto,
+  NearbyChannelDiscoveryDto,
+} from '@optimistic-tanuki/models';
+import {
   ClassifiedListComponent,
   ClassifiedService,
   ClassifiedAdDto,
@@ -51,6 +56,7 @@ import {
   UpdateClassifiedAdDto,
 } from '@optimistic-tanuki/classified-ui';
 import { SelectComponent } from '@optimistic-tanuki/form-ui';
+import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
 
 interface CommunityTreeNode {
   community: LocalCommunity;
@@ -65,6 +71,7 @@ interface CommunityTreeNode {
     CommonModule,
     MapComponent,
     DonationProgressComponent,
+    SponsorshipBannerComponent,
     FormsModule,
     CardComponent,
     ModalComponent,
@@ -90,6 +97,7 @@ export class CityComponent implements OnInit, OnDestroy {
   private businessApi = inject(BusinessApiService);
   private appRegistry = inject(AppRegistryService);
   private localityInfoService = inject(LocalityInfoService);
+  private localityDiscoveryService = inject(LocalityDiscoveryService);
   private meta = inject(Meta);
   private title = inject(Title);
   private platformId = inject(PLATFORM_ID);
@@ -114,6 +122,9 @@ export class CityComponent implements OnInit, OnDestroy {
   memberCommunityIds = signal<Set<string>>(new Set());
   expandingInProgress = signal<string | null>(null);
   businessSiteBaseUrl = signal<string | null>(null);
+  metroCastBaseUrl = signal<string | null>(null);
+  nearbyChannels = signal<NearbyChannelDiscoveryDto[]>([]);
+  nearbyBusinesses = signal<NearbyBusinessDiscoveryDto[]>([]);
 
   /** Currently elected manager for the root locality. */
   communityManager = signal<CommunityManager | null>(null);
@@ -213,6 +224,7 @@ export class CityComponent implements OnInit, OnDestroy {
       );
       this.city.set(enrichedCityData);
       this.updateMetaTags(enrichedCityData);
+      await this.loadLocalNetwork(enrichedCityData);
 
       const communitiesData = await this.communityService.getCommunitiesForCity(
         slug
@@ -311,6 +323,36 @@ export class CityComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async loadLocalNetwork(city: City): Promise<void> {
+    try {
+      const [discovery, metroCastApp, businessSiteApp] = await Promise.all([
+        firstValueFrom(
+          this.localityDiscoveryService.discoverNearby(city.scope, {
+            scope: 'local-hub',
+            limit: 3,
+          })
+        ),
+        firstValueFrom(this.appRegistry.getApp('video-client')),
+        firstValueFrom(this.appRegistry.getApp('business-site')),
+      ]);
+
+      this.nearbyChannels.set(discovery.channels.slice(0, 3));
+      this.nearbyBusinesses.set(
+        discovery.businesses
+          .filter((business) => !!business.sitePath)
+          .slice(0, 3)
+      );
+      this.metroCastBaseUrl.set(metroCastApp?.uiBaseUrl ?? null);
+      this.businessSiteBaseUrl.set(
+        businessSiteApp?.uiBaseUrl ?? this.businessSiteBaseUrl()
+      );
+    } catch {
+      // The locality hub remains useful when cross-app discovery is unavailable.
+      this.nearbyChannels.set([]);
+      this.nearbyBusinesses.set([]);
+    }
+  }
+
   getBusinessHref(business: BusinessPage): string | null {
     const slug = this.hostedBusinessSlugs().get(
       this.normalizeBusinessName(business.name)
@@ -330,6 +372,24 @@ export class CityComponent implements OnInit, OnDestroy {
     );
 
     return slug ? 'Visit Business Site' : 'Visit Website';
+  }
+
+  getMetroCastChannelHref(channel: NearbyChannelDiscoveryDto): string | null {
+    const metroCastBaseUrl = this.metroCastBaseUrl();
+    if (!metroCastBaseUrl) {
+      return null;
+    }
+
+    return `${metroCastBaseUrl}/c/${channel.communitySlug || channel.id}`;
+  }
+
+  getNearbyBusinessHref(business: NearbyBusinessDiscoveryDto): string | null {
+    const businessSiteBaseUrl = this.businessSiteBaseUrl();
+    if (!businessSiteBaseUrl || !business.sitePath) {
+      return null;
+    }
+
+    return `${businessSiteBaseUrl}${business.sitePath}`;
   }
 
   private normalizeBusinessName(value: string | undefined | null): string {

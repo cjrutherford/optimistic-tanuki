@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import {
   expectPageLoads,
   findCity,
@@ -21,6 +21,23 @@ test.describe('City and community detail pages', () => {
 
     await expectPageLoads(page, `/city/${city.slug}`);
     await expectPageLoads(page, `/city/${city.slug}/classifieds`);
+  });
+
+  test('shows the cross-app local network hub for a seeded city', async ({
+    page,
+    request,
+  }) => {
+    const city = findCity(await getCommunities(request));
+    test.skip(!city?.slug, 'No seeded city is available');
+
+    await expectPageLoads(page, `/city/${city.slug}`);
+    await expect(
+      page.getByRole('heading', { name: 'Local Network' })
+    ).toBeVisible();
+    await expect(
+      page.getByText('Local conversations', { exact: true })
+    ).toBeVisible();
+    await expect(page.getByText('Sponsored', { exact: true })).toBeVisible();
   });
 
   test('loads community detail pages for seeded community', async ({

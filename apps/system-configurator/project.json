@@ -27,8 +27,7 @@
         "server": "apps/system-configurator/src/main.server.ts",
         "ssr": {
           "entry": "apps/system-configurator/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

@@ -6,7 +6,9 @@ import { Donation } from '../entities/donation.entity';
 import { ClassifiedPayment } from '../entities/classified-payment.entity';
 import { BusinessPage } from '../entities/business-page.entity';
 import { BusinessTheme } from '../entities/business-theme.entity';
-import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
+import { AdvertisingCampaign } from '../entities/advertising-campaign.entity';
+import { AdvertisingCampaignCreative } from '../entities/advertising-campaign-creative.entity';
+import { AdvertisingCampaignTargetPlacement } from '../entities/advertising-campaign-target-placement.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
 import { SellerWallet } from '../entities/seller-wallet.entity';
@@ -14,6 +16,7 @@ import { PayoutRequest } from '../entities/payout-request.entity';
 import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 import { Initial1774396807253 } from '../../migrations/1774396807253-initial';
 import { BusinessPageAnchorColumns1782648600000 } from '../../migrations/1782648600000-business-page-anchor-columns';
+import { ReplaceLegacySponsorshipsWithCampaigns1783510400000 } from '../../migrations/1783510400000-replace-legacy-sponsorships-with-campaigns';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -37,7 +40,9 @@ const entities = [
   ClassifiedPayment,
   BusinessPage,
   BusinessTheme,
-  CommunitySponsorship,
+  AdvertisingCampaign,
+  AdvertisingCampaignCreative,
+  AdvertisingCampaignTargetPlacement,
   Transaction,
   Offer,
   SellerWallet,
@@ -48,6 +53,7 @@ const entities = [
 const migrations = [
   Initial1774396807253,
   BusinessPageAnchorColumns1782648600000,
+  ReplaceLegacySponsorshipsWithCampaigns1783510400000,
 ];
 
 const staticSource = new DataSource({

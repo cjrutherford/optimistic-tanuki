@@ -7,6 +7,7 @@ describe('payments static datasource', () => {
     expect(migrations.map((migration) => migration.name)).toEqual([
       'Initial1774396807253',
       'BusinessPageAnchorColumns1782648600000',
+      'ReplaceLegacySponsorshipsWithCampaigns1783510400000',
     ]);
   });
 });

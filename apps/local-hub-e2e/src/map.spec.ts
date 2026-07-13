@@ -3,23 +3,32 @@ import {
   LocalHubCommunity,
   expectPageLoads,
   findCity,
-  findCommunity,
   getCommunities,
 } from './helpers/local-hub-api';
 
 type CommunityWithCoordinates = LocalHubCommunity & {
-  coordinates?: { lat: number; lng: number };
+  coordinates?: { lat: number; lng: number } | null;
+  lat?: number | string | null;
+  lng?: number | string | null;
 };
 
-function isRenderableCoordinate(
-  coordinates: { lat: number; lng: number } | undefined
-): coordinates is { lat: number; lng: number } {
-  return (
-    !!coordinates &&
+function getRenderableCoordinates(
+  community: CommunityWithCoordinates
+): { lat: number; lng: number } | undefined {
+  const coordinates = {
+    lat: Number(community.coordinates?.lat ?? community.lat),
+    lng: Number(community.coordinates?.lng ?? community.lng),
+  };
+
+  if (
     Number.isFinite(coordinates.lat) &&
     Number.isFinite(coordinates.lng) &&
     !(coordinates.lat === 0 && coordinates.lng === 0)
-  );
+  ) {
+    return coordinates;
+  }
+
+  return undefined;
 }
 
 function haversineMiles(
@@ -40,23 +49,30 @@ function haversineMiles(
 function findNearbyCluster(
   communities: CommunityWithCoordinates[]
 ): { latitude: number; longitude: number } | null {
-  const cities = communities.filter(
-    (community) =>
-      community.localityType === 'city' &&
-      isRenderableCoordinate(community.coordinates)
-  );
+  const cities = communities
+    .map((community) => ({
+      ...community,
+      coordinates: getRenderableCoordinates(community),
+    }))
+    .filter(
+      (
+        community
+      ): community is CommunityWithCoordinates & {
+        coordinates: { lat: number; lng: number };
+      } => community.localityType === 'city' && !!community.coordinates
+    );
 
   for (const city of cities) {
     const nearby = cities.filter(
       (candidate) =>
         candidate.id !== city.id &&
-        haversineMiles(city.coordinates!, candidate.coordinates!) <= 250
+        haversineMiles(city.coordinates, candidate.coordinates) <= 250
     );
 
     if (nearby.length > 0) {
       return {
-        latitude: city.coordinates!.lat,
-        longitude: city.coordinates!.lng,
+        latitude: city.coordinates.lat,
+        longitude: city.coordinates.lng,
       };
     }
   }
@@ -138,10 +154,19 @@ test.describe('Map rendering', () => {
     page,
     request,
   }) => {
-    const community = findCommunity(await getCommunities(request));
-    test.skip(!community?.slug, 'No seeded community is available');
+    const community = (await getCommunities(request)).find(
+      (candidate) =>
+        !!candidate.slug &&
+        !!candidate.localityType &&
+        candidate.localityType !== 'city' &&
+        !!getRenderableCoordinates(candidate as CommunityWithCoordinates)
+    );
+    test.skip(!community?.slug, 'No anchored local community is available');
 
     await expectPageLoads(page, `/c/${community.slug}`);
+    await expect(
+      page.getByText('Community not found or unable to load. Please try again.')
+    ).toHaveCount(0);
     await expect(page.locator('.map-marker--focus')).toHaveCount(1);
     await expectInsideMap(page, '.map-marker--focus');
   });

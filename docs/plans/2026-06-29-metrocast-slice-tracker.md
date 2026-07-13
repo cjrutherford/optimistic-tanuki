@@ -309,22 +309,52 @@ Key files touched:
 
 ### Slice 10: Tuner-side “local now” browsing experience
 
-**Status:** Next
+**Status:** Done
 
 **Goal:** Turn locality-aware discovery into an OTA-style browsing flow.
 
-Deliverables:
+Delivered:
 
 - Local channel rail beyond homepage
 - “On now / upcoming” sections using channel feed + schedule
 - Better routing from discovery cards into live or scheduled viewing
+- Shared locality scope helpers for MetroCast discovery surfaces
+- Home page CTA into the local tuner browse flow
+- Channel page query-param handling for schedule/live landing context
+- Dev video seed now backfills missing channel anchors for pre-existing channels
+  so locality discovery remains populated after repeated reseeds
+
+Verified with:
+
+- `pnpm exec jest apps/video-client/src/app/pages/home/home.component.spec.ts apps/video-client/src/app/pages/channel/channel.component.spec.ts apps/video-client/src/app/pages/local-browse/local-browse.component.spec.ts --runInBand`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test video-client --runInBand`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build video-client --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test videos --runInBand --testPathPattern=seed-videos.http.spec.ts`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build videos --configuration=development`
+- `pnpm run docker:dev:seed`
+- `curl -s "http://127.0.0.1:8093/api/locality/discovery?lat=32.0809&lng=-81.0912&radiusMeters=40234&scope=local-hub&limit=12"`
+- `curl -s http://127.0.0.1:8093/browse/local`
+
+Key files touched:
+
+- `apps/videos/src/seed-videos.ts`
+- `apps/videos/src/seed-videos.http.ts`
+- `apps/videos/src/seed-videos.http.spec.ts`
+- `apps/video-client/src/app/locality/video-locality.utils.ts`
+- `apps/video-client/src/app/pages/local-browse/local-browse.component.ts`
+- `apps/video-client/src/app/pages/local-browse/local-browse.component.spec.ts`
+- `apps/video-client/src/app/pages/home/home.component.ts`
+- `apps/video-client/src/app/pages/home/home.component.spec.ts`
+- `apps/video-client/src/app/pages/channel/channel.component.ts`
+- `apps/video-client/src/app/pages/channel/channel.component.spec.ts`
+- `apps/video-client/src/app/app.routes.ts`
 
 This is the first slice that should make MetroCast feel like a real local tuner
 instead of a generic video app with locality tags.
 
 ### Slice 11: Linear broadcast engine basics
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Deliver the first practical slice of the PRD’s cold-start solution.
 
@@ -340,9 +370,17 @@ Deliverables:
 This slice should stop short of overbuilding a full scheduler worker if the
 current channel feed logic can be extended incrementally.
 
+Verified with:
+
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test videos --runInBand --testPathPattern=broadcast.service.spec.ts`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test video-client --runInBand --testPathPattern='channel.component.spec.ts|local-browse.component.spec.ts'`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build videos --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build video-client --configuration=development`
+- `pnpm run slice:checkpoint:dev`
+
 ### Slice 12: Live handoff foundations
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Prepare the path from passive/local playback to live interaction.
 
@@ -354,51 +392,114 @@ Deliverables:
 
 This is the backend/frontend contract slice before a full WebRTC/live media UX.
 
+Verified with:
+
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test videos --runInBand --testPathPattern=broadcast.service.spec.ts`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test gateway --runInBand --testPathPattern=videos.controller.spec.ts`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test video-client --runInBand --testPathPattern='app.routes.spec.ts|video.service.spec.ts|channel.component.spec.ts|my-channel.component.spec.ts'`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build videos --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build gateway --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build video-client --configuration=development`
+- `pnpm run slice:checkpoint:dev`
+
 ### Slice 13: Business ad and sponsor inventory foundation
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Extend Studio from page management into local commercial presence.
 
-Deliverables:
+Delivered:
 
-- Ad asset/business promotion domain shape
-- Studio-side management primitives for local ad inventory
-- Seed/demo content for fictitious sponsors or advertisers
+- Backward-compatible sponsor inventory extension on
+  `community_sponsorships` with:
+  - sponsor naming/tagline fields
+  - CTA/image metadata
+  - cross-app surface targeting
+  - owner inventory lifecycle state
+- New payments/gateway owner sponsor inventory CRUD surface while preserving
+  legacy sponsorship checkout and active sponsorship reads
+- Studio owner route and workspace page for managing sponsor inventory
+- Development sponsor seed content for seeded business anchors
+- Docker startup hardening so `db-setup` is force-recreated and reruns
+  migrations before seeding when startup scripts run again
 
 This should remain domain/model focused, not a full ad-injection engine yet.
 
+Verified with:
+
+- `pnpm exec jest -c apps/payments/jest.config.ts --runInBand apps/payments/src/app/staticDatabase.spec.ts apps/payments/src/app/services/payment.service.spec.ts`
+- `pnpm exec jest -c libs/business-portal-ui/jest.config.ts --runInBand libs/business-portal-ui/src/lib/business-owner-sponsor-inventory-page.component.spec.ts libs/business-portal-ui/src/lib/business-portal-shell.component.spec.ts`
+- `pnpm exec jest -c libs/business-data-access/jest.config.ts --runInBand libs/business-data-access/src/lib/business-api.service.spec.ts`
+- `node --test scripts/tests/docker-service-planner.test.mjs`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build payments --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build gateway --configuration=development`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build business-site --configuration=development`
+- `pnpm run docker:dev:up`
+- `docker compose -f docker-compose.yaml -f docker-compose.dev.yaml exec -T business-site sh -lc 'cd /app/apps/business-site && GATEWAY_URL=http://gateway:3000/api node ./src/seed-business.mjs'`
+
 ### Slice 14: Local ad placement in MetroCast surfaces
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Surface local business promotion inside MetroCast in a way that
 matches the anchor/radius model.
 
 Deliverables:
 
-- Nearby sponsor or promoted-business placement in viewer UI
-- Locality-aware sponsor selection
-- Reuse business-site hosted presence as landing destination where possible
+- Nearby sponsor placement in the MetroCast viewer home page
+- Public, locality-aware active sponsor discovery with anchor/radius matching
+- One sponsor card per business page, preferring MetroCast inventory over the
+  cross-app fallback
+- Hosted Studio business-site destinations where the sponsor business is in the
+  local discovery result; the inventory CTA is used as a fallback
+- Dev sponsor reseeding clears stale records when the one-business-per-community
+  seed model repurposes a business page
+
+Delivered:
+
+- `GET /payments/sponsor-inventory/nearby` public gateway endpoint
+- Payments sponsor selection limited to active `metro-cast` and `cross-app`
+  inventory with anchored business pages inside the requested radius
+- MetroCast `Local Sponsors` rail and a typed sponsor discovery client
+- Shared `NearbySponsorDiscoveryDto` contract
+
+Verified with:
+
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test payments --runInBand --testPathPattern=payment.service.spec.ts`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test video-client --runInBand --testPathPattern='home.component.spec.ts|sponsor-discovery.service.spec.ts'`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx run-many --target=build --projects=payments,gateway,video-client --configuration=development --parallel=3`
+- `pnpm run docker:dev:seed` business-site seed stage
+- Live local gateway request to `/api/payments/sponsor-inventory/nearby`
+- `pnpm run slice:checkpoint:dev`
 
 ### Slice 15: Public locality hub convergence
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Make locality pages in Towne Square feel like the umbrella hub for
 all three tent poles.
 
 Deliverables:
 
-- locality page sections for:
-  - nearby conversations
-  - nearby channels
-  - nearby businesses
-- cleaner cross-navigation between local-hub, MetroCast, and business-site
+- City/locality page `Local Network` hub after the locality overview
+- Towne Square conversation card that anchors to recent local discussions
+- Nearby MetroCast channel cards resolved through the app registry
+- Nearby Studio business cards using hosted business-site destinations
+- Locality-anchor discovery from the city scope, without new city tables or
+  duplicate cross-app data sources
+- Local-hub Playwright configuration now uses the system Chrome channel
+
+Verified with:
+
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx test local-hub --runInBand`
+- `NX_DAEMON=false NX_ISOLATE_PLUGINS=false pnpm nx build local-hub --configuration=development`
+- Live-stack `local-hub-e2e` assertion for the public Local Network hub at a
+  seeded city route
+- `pnpm run slice:checkpoint:dev`
 
 ### Slice 16: Creator/business operational Studio convergence
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Reduce the conceptual gap between creator operations and business
 operations.
@@ -411,9 +512,51 @@ Deliverables:
   - business-owned channels
   - creator-hosted local promotions
 
+Current scope: Studio sponsor inventory can persist an optional MetroCast
+channel relationship. This provides the targeting primitive while keeping
+legacy, locality-only sponsorship inventory backward compatible.
+
+### Slice 16.1: Campaign advertising replacement
+
+**Status:** Done
+
+**Goal:** Replace legacy sponsorship inventory with owner-managed advertising
+campaigns that can independently purchase placements against multiple channels
+and communities.
+
+Deliverables:
+
+- Campaign lifecycle, budget/date metadata, and one creative per placement type
+- Target-placement line items allowing multiple channel/community targets
+- Channel placements: pre-roll, mid-roll, post-roll, and on-page
+- Community placements: on-page only
+- Studio campaign editor with a target-placement matrix
+- Unified campaign eligibility query for Local Hub and MetroCast on-page ads
+- Removal of `community_sponsorships`, legacy sponsor APIs/UI/seeds, and all
+  legacy advertising records without migration
+- Evaluator guide and owner-to-viewer cross-app Playwright journey
+
+Roll-placement records are persisted but not delivered until the broadcast
+scheduler exists. Campaign activation is owner-managed; checkout, pacing,
+impressions, and billing are deferred.
+
+Validation completed July 11, 2026:
+
+- Fresh development builds passed for `payments`, `gateway`, `local-hub`,
+  `video-client`, and `business-site`.
+- Focused payments, business data-access, Studio campaign, Local Hub, and
+  MetroCast tests passed after stale sponsorship fixtures were removed.
+- `pnpm run docker:dev:bootstrap` completed after making `db-setup` an
+  unconditional startup prerequisite; campaign migration and seeds succeeded.
+- Studio Playwright journey passed for multi-target creation, per-placement
+  creative, edit, activate, pause, and archive.
+- Towne Square Playwright journey passed for seeded city campaign delivery.
+- Evaluator workflow is documented in
+  `docs/guides/metrocast-locality-evaluator-guide.md`.
+
 ### Slice 17: Live media handoff implementation
 
-**Status:** Planned
+**Status:** Partial - remediation in progress
 
 **Goal:** Implement the PRD’s passive-to-live transition in a thin, testable
 slice.
@@ -424,9 +567,61 @@ Deliverables:
 - live token issuance path
 - viewer handoff experience from scheduled/local feed to live session
 
+Implemented July 12, 2026:
+
+- `POST /api/videos/channels/:slugOrId/live/token` issues a five-minute,
+  session-bound opaque handoff token only while the channel feed is live.
+- Scheduled, replay, offline, and ended feeds return an explicit unavailable
+  handoff without credentials.
+- MetroCast now uses a dedicated `/watch/live/:slugOrId` player route with
+  loading, standby, connecting, live, ended, offline, and error states.
+- A live source URL is rendered when supplied by the broadcaster; the player
+  otherwise exposes the connected session state without pretending that a
+  media transport exists.
+- Focused videos, Gateway, and video-client tests passed, and production builds
+  passed for all three affected projects.
+
+Actual HLS/WebRTC ingestion, token verification at a media provider, and
+automated playlist transitions remain intentionally deferred to Slices 18 and
+the production media integration that follows them.
+
+Validation reassessment, July 12, 2026:
+
+- The viewer route, feed state transitions, and unavailable-state contract are
+  implemented and smoke-tested.
+- The original token was an unpersisted random UUID returned from a public
+  endpoint, so it was neither verifiable nor enforceably bound to the active
+  session.
+- Remediation 17.1 completed: the token is now a signed HMAC capability with
+  audience, community, active-session, issue-time, expiry, and nonce claims.
+  `POST /api/videos/channels/:slugOrId/live/token/validate` verifies the
+  signature, expiry, community, and current live session for a future media
+  gateway. Production requires `LIVE_PLAYBACK_TOKEN_SECRET`; development may
+  fall back to `JWT_SECRET` or a development-only secret.
+- Remaining after 17.1: location policy enforcement and a real HLS/WebRTC
+  transport adapter.
+- Remediation 17.2 completed: MetroCast validates the signed capability before
+  it enters the live playback state. Component coverage now exercises standby,
+  successful live handoff, unavailable issuance, and stopped-session
+  validation rejection. A focused Chromium Playwright journey uses deterministic
+  API interception to verify the rendered live and ended states without
+  mutating seed data.
+- The direct Playwright command passes against the running stack:
+  `SKIP_SETUP=true pnpm exec playwright test -c apps/video-client-e2e/playwright.config.ts --project=chromium --grep 'Live playback handoff'`.
+  The checked-in Nx E2E wrapper currently fails while discovering unrelated
+  Jest-style workspace tests; that runner configuration defect is outside this
+  slice and must be corrected before Nx-native E2E status can be trusted.
+- Remediation 17.3 completed: the videos service now produces a short-lived,
+  subscriber-only LiveKit room credential after signed handoff validation when
+  `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` are configured.
+  The MetroCast player attaches validated LiveKit video tracks over its HLS
+  fallback, then disconnects the room on route change or component teardown.
+  Without a LiveKit configuration, the existing HLS source remains the only
+  advertised playback path. Location policy enforcement remains outstanding.
+
 ### Slice 18: Automated broadcast scheduling worker
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Move from schedule-aware feeds to actual automated playlist
 management.
@@ -439,18 +634,88 @@ Deliverables:
 
 This is the main backend-heavy slice of the MetroCast PRD.
 
+Implemented July 12, 2026:
+
+- Added a Nest `BroadcastSchedulerService` worker that refreshes every
+  channel feed on a configurable interval (15 seconds by default).
+- Added `BroadcastService.refreshAllFeeds()` so scheduled blocks, replay
+  continuity, ended live sessions, and feed transition timestamps are updated
+  without requiring a viewer request.
+- Added a pure `PlaylistGenerator` with deterministic precedence:
+  live session, eligible ad break, scheduled program, rerun, configured filler,
+  then offline.
+- Added `BROADCAST_SCHEDULER_ENABLED`,
+  `BROADCAST_SCHEDULER_INTERVAL_MS`, and `BROADCAST_FILLER_VIDEO_ID` runtime
+  controls.
+- The scheduler is explicitly safe to disable during maintenance and never
+  overrides an active live session.
+- Full videos tests and the development videos build passed. The running
+  `ot_videos` container was rebuilt/restarted and remained healthy; Gateway
+  feed smoke validation returned `200`.
+
+The scheduler accepts an ad-break candidate but does not yet perform locality
+target selection or campaign delivery. Slice 19 owns that targeting bridge;
+the scheduler's precedence policy is the stable integration boundary.
+
+Remediation 18.1 completed July 12, 2026:
+
+- Each scheduler decision is now persisted on its `channel_feed` as the active
+  playlist item, including kind, selection reason, optional ad placement/media,
+  and decision time.
+- Feed reads expose that projection through `activePlaylistItem`, giving the
+  player and future delivery workers a durable current-state contract.
+- Migration `1783600000000-persist-broadcast-playlist-decisions` creates the
+  required columns through `db-setup`; no seed-time schema repair is used.
+- Remaining Slice 18 remediation: prevent redundant decision writes, add a
+  durable history/idempotency model, and consume the persisted item in playback.
+
+Remediation 18.2 completed July 13, 2026:
+
+- Scheduler decisions now compare their complete source selection before a
+  write, so an unchanged tick does not rewrite the feed or move its decision
+  timestamp.
+- Changed selections append an immutable `playlist_decision_history` record
+  with source session/block/video identifiers, placement, media, and decision
+  time; the active feed projection carries the same source identifiers.
+- Both playlist migrations are registered with the videos static datasource so
+  `db-setup` applies them on a fresh or existing development database.
+- MetroCast channel feeds render the persisted playlist kind and route a
+  persisted program video to the existing watch player.
+
 ### Slice 19: Local ad targeting engine
 
-**Status:** Planned
+**Status:** Foundation complete - remediation pending
 
-**Goal:** Apply locality matching between business inventory and creator/channel
-reach.
+**Goal:** Apply locality matching and delivery rules between campaign target
+placements and creator/channel reach.
 
 Deliverables:
 
-- ad selection rules using anchors/radius first
+- campaign ad selection rules using anchors/radius first
 - optional polygon/geofence follow-up only if needed
-- bridge from Studio-managed ad inventory into MetroCast playback decisions
+- bridge from Studio-managed campaign inventory into MetroCast playback decisions
+
+Implemented July 12, 2026:
+
+- Added the payments playback eligibility contract for `pre-roll`, `mid-roll`,
+  and `post-roll` placements.
+- Eligibility requires an active campaign, an in-window campaign date, a
+  direct channel/community target match, and a matching creative media URL.
+- Returned candidates identify whether the locality match came from a channel
+  anchor or community anchor; no city table or duplicated locality inventory
+  was introduced.
+- Connected the MetroCast scheduler to payments over the existing TCP service
+  boundary. Scheduled feeds request pre-roll candidates; replay feeds request
+  post-roll candidates.
+- Live and offline feeds bypass ad selection. Payments failures degrade to the
+  normal program/replay/filler path so ad infrastructure cannot create dead air.
+- Playlist precedence remains live session, eligible ad, scheduled program,
+  rerun, filler, then offline.
+
+The current creative contract uses the configured creative URL as the playback
+media boundary. Upload/transcoding of video ads, impression pacing, billing,
+and viewer-radius selection are deferred to the media delivery and locality
+trust work that follows.
 
 ### Slice 20: Proof-of-locality and anti-spoofing foundations
 

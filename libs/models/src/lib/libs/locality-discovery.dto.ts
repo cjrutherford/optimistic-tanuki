@@ -66,6 +66,22 @@ export interface NearbyChannelDiscoveryDto {
   };
 }
 
+export interface NearbySponsorDiscoveryDto {
+  id: string;
+  businessPageId: string;
+  channelId?: string | null;
+  businessName: string;
+  businessDescription?: string | null;
+  sponsorName?: string | null;
+  sponsorTagline?: string | null;
+  ctaLabel?: string | null;
+  ctaUrl?: string | null;
+  adImageUrl?: string | null;
+  surface: 'metro-cast' | 'cross-app';
+  type: 'sticky-ad' | 'banner' | 'featured';
+  distanceMeters: number;
+}
+
 export interface LocalityDiscoveryResultDto {
   anchor: {
     lat: number;

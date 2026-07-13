@@ -4,11 +4,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { VideoService } from '../../services/video.service';
 import { VideoDto } from '@optimistic-tanuki/ui-models';
-import {
-  buildCoordinateFallbackLabel,
-  getDefaultLocalityRadiusMeters,
-  RadiusScope,
-} from '@optimistic-tanuki/ui-models';
+import { RadiusScope } from '@optimistic-tanuki/ui-models';
 import {
   LocalityDiscoveryResultDto,
   NearbyBusinessDiscoveryDto,
@@ -17,12 +13,16 @@ import {
 import { VideoGridComponent } from '@optimistic-tanuki/video-ui';
 import { AuroraRibbonComponent } from '@optimistic-tanuki/motion-ui';
 import { LocalityDiscoveryService } from '../../services/locality-discovery.service';
+import {
+  OnPageCampaign,
+  SponsorDiscoveryService,
+} from '../../services/sponsor-discovery.service';
 import { AppRegistryService } from '@optimistic-tanuki/app-registry';
-
-const DEFAULT_VIDEO_HOME_SCOPE: RadiusScope = {
-  anchor: { lat: 32.0809, lng: -81.0912 },
-  radiusMeters: getDefaultLocalityRadiusMeters('city'),
-};
+import {
+  buildVideoLocalityLabel,
+  formatVideoDistance,
+  resolveVideoRadiusScope,
+} from '../../locality/video-locality.utils';
 
 @Component({
   selector: 'video-home',
@@ -50,6 +50,9 @@ const DEFAULT_VIDEO_HOME_SCOPE: RadiusScope = {
             Tune into nearby channels, catch what's airing around you, and jump
             into the broader stream when you want more.
           </p>
+          <div class="hero-actions">
+            <a class="hero-link" routerLink="/browse/local">Open local tuner</a>
+          </div>
           <div class="hero-locality" *ngIf="localityLabel">
             <span class="hero-chip">Tuned to {{ localityLabel }}</span>
             <span class="hero-chip muted" *ngIf="localityMeta">
@@ -159,6 +162,38 @@ const DEFAULT_VIDEO_HOME_SCOPE: RadiusScope = {
         </div>
       </section>
 
+      <section class="video-section" *ngIf="nearbySponsors.length > 0">
+        <div class="section-heading">
+          <h2>Local Sponsors</h2>
+          <p>Campaigns selected for your local programming.</p>
+        </div>
+        <div class="nearby-grid">
+          <article
+            class="nearby-card sponsor-card"
+            *ngFor="let sponsor of nearbySponsors"
+          >
+            <div class="nearby-card-copy">
+              <p class="nearby-kicker">Sponsored</p>
+              <h3>{{ sponsor.creative.headline || sponsor.name }}</h3>
+              <p>
+                {{
+                  sponsor.creative.body ||
+                    'A local business supporting programming.'
+                }}
+              </p>
+            </div>
+            <a
+              *ngIf="getSponsorHref(sponsor) as href"
+              class="nearby-link"
+              [href]="href"
+              data-testid="local-sponsor-link"
+            >
+              {{ sponsor.creative.ctaLabel || 'Visit sponsor' }}
+            </a>
+          </article>
+        </div>
+      </section>
+
       <section class="video-section">
         <h2>Recommended Videos</h2>
         <video-grid
@@ -243,6 +278,22 @@ const DEFAULT_VIDEO_HOME_SCOPE: RadiusScope = {
         justify-content: center;
         gap: 0.75rem;
         margin-top: 1.5rem;
+      }
+
+      .hero-actions {
+        margin-top: 1.5rem;
+      }
+
+      .hero-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.85rem 1.15rem;
+        border-radius: 999px;
+        background: rgba(var(--foreground-rgb, 232, 232, 236), 0.92);
+        color: #07111f;
+        font-weight: 700;
+        text-decoration: none;
       }
 
       .hero-chip {
@@ -439,6 +490,7 @@ export class HomeComponent implements OnInit {
   trendingVideos: VideoDto[] = [];
   nearbyChannels: NearbyChannelDiscoveryDto[] = [];
   nearbyBusinesses: NearbyBusinessDiscoveryDto[] = [];
+  nearbySponsors: OnPageCampaign[] = [];
   localityDiscovery: LocalityDiscoveryResultDto | null = null;
   localityLabel = '';
   localityMeta = '';
@@ -449,7 +501,8 @@ export class HomeComponent implements OnInit {
   constructor(
     private readonly videoService: VideoService,
     private readonly localityDiscoveryService: LocalityDiscoveryService,
-    private readonly appRegistry: AppRegistryService
+    private readonly appRegistry: AppRegistryService,
+    private readonly sponsorDiscoveryService: SponsorDiscoveryService
   ) {}
 
   ngOnInit() {
@@ -489,7 +542,6 @@ export class HomeComponent implements OnInit {
       this.appRegistry.getApp('business-site')
     );
     this.businessSiteBaseUrl = businessSiteApp?.uiBaseUrl ?? null;
-
     this.localityDiscoveryService
       .discoverNearby(scope, { scope: 'local-hub', limit: 6 })
       .subscribe({
@@ -499,9 +551,25 @@ export class HomeComponent implements OnInit {
           this.nearbyBusinesses = result.businesses
             .filter((business) => !!this.getBusinessHref(business))
             .slice(0, 6);
-          this.localityLabel =
-            result.locality.formatted ||
-            buildCoordinateFallbackLabel(result.anchor).formatted;
+          const communityId = result.communities[0]?.id;
+          if (communityId) {
+            this.sponsorDiscoveryService
+              .discoverOnPage({ communityId })
+              .subscribe({
+                next: (campaigns) => {
+                  this.nearbySponsors = campaigns.slice(0, 6);
+                },
+                error: (err) => {
+                  console.error('Error loading local campaigns:', err);
+                },
+              });
+          } else {
+            this.nearbySponsors = [];
+          }
+          this.localityLabel = buildVideoLocalityLabel(
+            result.locality,
+            result.anchor
+          );
           this.localityMeta = [
             this.formatDistance(result.radiusMeters),
             result.locality.timezone,
@@ -510,9 +578,7 @@ export class HomeComponent implements OnInit {
             .join(' radius • ');
         },
         error: (err) => {
-          this.localityLabel = buildCoordinateFallbackLabel(
-            scope.anchor
-          ).formatted;
+          this.localityLabel = buildVideoLocalityLabel(null, scope.anchor);
           this.localityMeta = `${this.formatDistance(
             scope.radiusMeters
           )} radius`;
@@ -529,39 +595,24 @@ export class HomeComponent implements OnInit {
     return `${this.businessSiteBaseUrl}${business.sitePath}`;
   }
 
-  async resolveRadiusScope(): Promise<RadiusScope> {
-    const geolocation = globalThis.navigator?.geolocation;
-    if (!geolocation) {
-      return DEFAULT_VIDEO_HOME_SCOPE;
-    }
+  getSponsorHref(sponsor: OnPageCampaign): string | null {
+    const business = this.nearbyBusinesses.find(
+      (candidate) => candidate.id === sponsor.businessPageId
+    );
 
-    return new Promise((resolve) => {
-      geolocation.getCurrentPosition(
-        (position) =>
-          resolve({
-            anchor: {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            },
-            radiusMeters: DEFAULT_VIDEO_HOME_SCOPE.radiusMeters,
-          }),
-        () => resolve(DEFAULT_VIDEO_HOME_SCOPE),
-        {
-          enableHighAccuracy: false,
-          maximumAge: 5 * 60 * 1000,
-          timeout: 3000,
-        }
-      );
-    });
+    return (
+      (business && this.getBusinessHref(business)) ||
+      sponsor.creative.ctaUrl ||
+      null
+    );
+  }
+
+  async resolveRadiusScope(): Promise<RadiusScope> {
+    return resolveVideoRadiusScope();
   }
 
   formatDistance(distanceMeters: number): string {
-    const miles = distanceMeters / 1609.34;
-    if (miles >= 10) {
-      return `${Math.round(miles)} mi`;
-    }
-
-    return `${miles.toFixed(1)} mi`;
+    return formatVideoDistance(distanceMeters);
   }
 
   navigateToVideo(video: VideoDto) {

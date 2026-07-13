@@ -8,6 +8,7 @@ import {
   ChannelSubscription,
   LiveSession,
   ProgramBlock,
+  PlaylistDecisionHistory,
   Video,
   VideoView,
 } from '../entities';
@@ -15,6 +16,9 @@ import { Initial1770152975983 } from '../../migrations/1770152975983-initial';
 import { CommunityBroadcast1776436200000 } from '../../migrations/1776436200000-community-broadcast';
 import { VideoProcessingPipeline1776522000000 } from '../../migrations/1776522000000-video-processing-pipeline';
 import { ChannelAnchorColumns1782648000000 } from '../../migrations/1782648000000-channel-anchor-columns';
+import { ChannelBusinessPage1783420800000 } from '../../migrations/1783420800000-channel-business-page';
+import { PersistBroadcastPlaylistDecisions1783600000000 } from '../../migrations/1783600000000-persist-broadcast-playlist-decisions';
+import { PersistBroadcastPlaylistDecisionHistory1783610000000 } from '../../migrations/1783610000000-persist-broadcast-playlist-decision-history';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -43,12 +47,16 @@ const entities = [
   ProgramBlock,
   Video,
   VideoView,
+  PlaylistDecisionHistory,
 ];
 const migrations = [
   Initial1770152975983,
   CommunityBroadcast1776436200000,
   VideoProcessingPipeline1776522000000,
   ChannelAnchorColumns1782648000000,
+  ChannelBusinessPage1783420800000,
+  PersistBroadcastPlaylistDecisions1783600000000,
+  PersistBroadcastPlaylistDecisionHistory1783610000000,
 ];
 
 const staticSource = new DataSource({

@@ -6,6 +6,10 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalSetup(config: FullConfig) {
+  if (process.env['SKIP_SETUP'] === 'true') {
+    return;
+  }
+
   const composeFile = join(
     __dirname,
     '../../e2e/docker-compose.video-client-e2e.yaml'

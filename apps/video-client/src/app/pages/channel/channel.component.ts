@@ -13,6 +13,10 @@ import {
   VideoGridComponent,
 } from '@optimistic-tanuki/video-ui';
 import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
+import {
+  OnPageCampaign,
+  SponsorDiscoveryService,
+} from '../../services/sponsor-discovery.service';
 
 @Component({
   selector: 'video-channel',
@@ -79,15 +83,62 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
             <section *ngIf="activeTab === 'feed'" class="feed-section">
               <div *ngIf="feed" class="feed-status-card">
                 <p class="eyebrow">Current Feed</p>
-                <h2>
-                  {{
-                    feed.currentMode === 'live'
-                      ? 'Live on air now'
-                      : 'Scheduled programming'
-                  }}
-                </h2>
+                <h2>{{ getFeedHeadline() }}</h2>
+                <p *ngIf="getFeedDetail() as detail">{{ detail }}</p>
+                <p *ngIf="feed?.activePlaylistItem as playlistItem">
+                  {{ getPlaylistLabel(playlistItem.kind) }}
+                </p>
+                <a
+                  *ngIf="getPlaylistVideoId() as videoId"
+                  class="live-link"
+                  data-testid="current-playlist-link"
+                  [routerLink]="['/watch', videoId]"
+                >
+                  Watch current program
+                </a>
                 <p>Timezone: {{ feed.timezone }}</p>
               </div>
+
+              <div
+                *ngIf="feed?.activeLiveSession && feed?.liveHandoff"
+                class="feed-status-card live-handoff-card"
+              >
+                <p class="eyebrow">Live handoff ready</p>
+                <h3>{{ feed?.activeLiveSession?.title }}</h3>
+                <p>
+                  Status: {{ feed?.liveHandoff?.status }} · Token contract:
+                  {{ feed?.liveHandoff?.tokenContract }}
+                </p>
+                <p>Locality policy: {{ feed?.liveHandoff?.localityPolicy }}</p>
+                <a
+                  *ngIf="feed?.liveHandoff?.playbackPath"
+                  class="live-link"
+                  [routerLink]="feed?.liveHandoff?.playbackPath"
+                >
+                  Open live playback contract
+                </a>
+              </div>
+
+              <section *ngIf="channelSponsors.length" class="sponsor-rail">
+                <p class="eyebrow">Local supporters</p>
+                <article
+                  *ngFor="let sponsor of channelSponsors"
+                  class="sponsor-card"
+                >
+                  <strong>{{
+                    sponsor.creative.headline || sponsor.name
+                  }}</strong>
+                  <p>{{ sponsor.creative.body }}</p>
+                  <a
+                    *ngIf="sponsor.creative.ctaUrl"
+                    [href]="sponsor.creative.ctaUrl"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    {{ sponsor.creative.ctaLabel || 'Visit sponsor' }}
+                  </a>
+                </article>
+              </section>
             </section>
 
             <div *ngIf="activeTab === 'videos'" class="videos-section">
@@ -108,7 +159,11 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
               <div *ngIf="schedule.length === 0" class="no-videos">
                 <p>No blocks are scheduled right now.</p>
               </div>
-              <article *ngFor="let block of schedule" class="schedule-card">
+              <article
+                *ngFor="let block of schedule"
+                class="schedule-card"
+                [class.highlighted]="block.id === highlightedScheduleBlockId"
+              >
                 <p class="eyebrow">
                   {{
                     block.blockType === 'live_window'
@@ -240,6 +295,18 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
         margin: 0.5rem 0;
       }
 
+      .live-handoff-card {
+        margin-top: 1rem;
+      }
+
+      .live-link {
+        display: inline-flex;
+        margin-top: 0.75rem;
+        color: var(--accent, #6366f1);
+        text-decoration: none;
+        font-weight: 600;
+      }
+
       .eyebrow {
         text-transform: uppercase;
         font-size: 0.7rem;
@@ -273,6 +340,12 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
         margin: 0.5rem 0;
       }
 
+      .schedule-card.highlighted {
+        border-color: rgba(var(--accent-rgb, 99, 102, 241), 0.45);
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb, 99, 102, 241), 0.3),
+          0 18px 36px rgba(var(--accent-rgb, 99, 102, 241), 0.12);
+      }
+
       .videos-section {
         min-height: 400px;
       }
@@ -300,6 +373,25 @@ import { ParticleVeilComponent } from '@optimistic-tanuki/motion-ui';
         color: rgba(var(--foreground-rgb, 232, 232, 236), 0.6);
       }
 
+      .sponsor-rail {
+        margin-top: 1rem;
+        display: grid;
+        gap: 0.65rem;
+      }
+      .sponsor-card {
+        padding: 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0.8rem;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .sponsor-card p {
+        margin: 0.35rem 0;
+        opacity: 0.8;
+      }
+      .sponsor-card a {
+        color: var(--primary, #5eead4);
+      }
+
       .error {
         color: var(--danger, #ef4444);
       }
@@ -316,13 +408,30 @@ export class ChannelComponent implements OnInit {
   error: string | null = null;
   isSubscribed = false;
   activeTab: 'feed' | 'videos' | 'schedule' | 'about' = 'feed';
+  highlightedScheduleBlockId: string | null = null;
+  channelSponsors: OnPageCampaign[] = [];
 
   constructor(
     private route: ActivatedRoute,
-    private videoService: VideoService
+    private videoService: VideoService,
+    private sponsorDiscoveryService: SponsorDiscoveryService
   ) {}
 
   ngOnInit() {
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab');
+      if (
+        tab === 'feed' ||
+        tab === 'videos' ||
+        tab === 'schedule' ||
+        tab === 'about'
+      ) {
+        this.activeTab = tab;
+      }
+
+      this.highlightedScheduleBlockId = params.get('block');
+    });
+
     this.route.paramMap.subscribe((params) => {
       this.channelSlugOrId = params.get('slugOrId');
       if (this.channelSlugOrId) {
@@ -342,6 +451,7 @@ export class ChannelComponent implements OnInit {
         this.channel = channel;
         this.loading = false;
         this.loadChannelVideos(channel.id);
+        this.loadChannelSponsors(channel);
       },
       error: (err) => {
         this.error = 'Failed to load channel';
@@ -382,6 +492,15 @@ export class ChannelComponent implements OnInit {
     });
   }
 
+  loadChannelSponsors(channel: ChannelDto) {
+    this.sponsorDiscoveryService
+      .discoverOnPage({ channelId: channel.id })
+      .subscribe({
+        next: (sponsors) => (this.channelSponsors = sponsors),
+        error: () => (this.channelSponsors = []),
+      });
+  }
+
   navigateToVideo(video: VideoDto) {
     window.location.href = `/watch/${video.id}`;
   }
@@ -394,5 +513,55 @@ export class ChannelComponent implements OnInit {
   onUnsubscribe(channelId: string) {
     console.log('Unsubscribe from channel:', channelId);
     this.isSubscribed = false;
+  }
+
+  getFeedHeadline(): string {
+    switch (this.feed?.currentMode) {
+      case 'live':
+        return 'Live on air now';
+      case 'replay':
+        return 'Replay continuity';
+      case 'scheduled':
+        return 'Scheduled programming';
+      default:
+        return 'Currently off air';
+    }
+  }
+
+  getFeedDetail(): string | null {
+    const activeBlock = this.schedule.find(
+      (block) => block.id === this.feed?.activeProgramBlockId
+    );
+
+    if (!activeBlock) {
+      return null;
+    }
+
+    switch (this.feed?.currentMode) {
+      case 'replay':
+        return `Now looping: ${activeBlock.title}`;
+      case 'scheduled':
+        return `Airing now: ${activeBlock.title}`;
+      default:
+        return activeBlock.title;
+    }
+  }
+
+  getPlaylistVideoId(): string | null {
+    return this.feed?.activePlaylistItem?.videoId ?? null;
+  }
+
+  getPlaylistLabel(
+    kind: NonNullable<ChannelFeedDto['activePlaylistItem']>['kind']
+  ): string {
+    const labels: Record<string, string> = {
+      live: 'Live session',
+      scheduled: 'Scheduled program',
+      rerun: 'Replay program',
+      ad: 'Local ad break',
+      filler: 'Local filler program',
+      offline: 'No current programming',
+    };
+    return labels[kind] ?? 'Current program';
   }
 }

@@ -49,7 +49,7 @@ ESSENTIAL_API_SERVICES=(
     admin-api profile social permissions app-configurator system-configurator-api
 )
 FEATURE_SERVICES=(
-    finance payments store assets project-planning chat-collector prompt-proxy
+    finance payments store assets livekit project-planning chat-collector prompt-proxy
     telos-docs-service blogging forum wellness classifieds
 )
 HEAVY_SERVICES=(
@@ -80,6 +80,13 @@ run_compose() {
     else
         docker compose "${COMPOSE_FLAGS[@]}" "$@"
     fi
+}
+
+run_db_setup() {
+    echo "=== Running db-setup ==="
+    run_compose up -d --force-recreate "${EXTRA_FLAGS[@]}" db-setup
+    run_compose wait db-setup
+    echo ""
 }
 
 collect_missing_managed_services() {
@@ -135,6 +142,10 @@ for (const service of plan.restartServices || []) {
     local missing_services
     missing_services=$(collect_missing_managed_services "$running_services")
 
+    # Migrations are a startup prerequisite, not a seed responsibility. Always
+    # converge schemas even when the incremental planner finds no app restart.
+    run_db_setup
+
     if [ -z "$restart_services" ] && [ -z "$missing_services" ]; then
         echo "No changed services require restart"
         run_compose ps
@@ -172,7 +183,18 @@ for (const service of plan.restartServices || []) {
     else
         echo "=== Starting missing managed services ==="
     fi
-    run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
+
+    local FILTERED_RESTART_ARRAY=()
+    for service in "${RESTART_ARRAY[@]}"; do
+        if [ "$service" = "db-setup" ]; then
+            continue
+        fi
+        FILTERED_RESTART_ARRAY+=("$service")
+    done
+
+    if [ "${#FILTERED_RESTART_ARRAY[@]}" -gt 0 ]; then
+        run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${FILTERED_RESTART_ARRAY[@]}"
+    fi
     echo ""
     run_compose ps
     rm -f "$PLAN_FILE"
@@ -216,9 +238,7 @@ echo "Postgres is ready"
 echo ""
 
 echo "=== Phase 2: db-setup ==="
-run_compose up -d "${EXTRA_FLAGS[@]}" db-setup
-run_compose wait db-setup
-echo ""
+run_db_setup
 
 run_phase "Phase 3: Core services" "$PHASE_DELAY" "${CORE_SERVICES[@]}"
 run_phase "Phase 4: Essential APIs" "$PHASE_DELAY" \

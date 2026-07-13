@@ -27,8 +27,7 @@
         "server": "apps/hai/src/main.server.ts",
         "ssr": {
           "entry": "apps/hai/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

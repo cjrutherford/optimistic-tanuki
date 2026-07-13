@@ -22,11 +22,7 @@ import { AuthStateService } from '../../services/auth-state.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { MapComponent } from '../../components/map/map.component';
 import { SponsorshipBannerComponent } from '../../components/sponsorship-banner/sponsorship-banner.component';
-import {
-  PaymentService,
-  BusinessPage,
-  CommunitySponsorship,
-} from '../../services/payment.service';
+import { PaymentService, BusinessPage } from '../../services/payment.service';
 import { DonationProgressComponent } from '../../components/donation-progress/donation-progress.component';
 import {
   ModalComponent,
@@ -79,13 +75,8 @@ export class CommunityComponent implements OnInit, OnDestroy {
   loadingBusiness = signal(false);
   businessCheckoutInProgress = signal(false);
   savingBusinessProfile = signal(false);
-  sponsorshipCheckoutInProgress = signal(false);
   businessPage = signal<BusinessPage | null>(null);
-  activeSponsorships = signal<CommunitySponsorship[]>([]);
   selectedBusinessTier = signal<'basic' | 'pro' | 'enterprise'>('basic');
-  selectedSponsorshipType = signal<'sticky-ad' | 'banner' | 'featured'>(
-    'banner'
-  );
 
   /** Elected manager for this locality (only set when community is a locality). */
   communityManager = signal<CommunityManager | null>(null);
@@ -94,7 +85,6 @@ export class CommunityComponent implements OnInit, OnDestroy {
   votingInProgress = signal(false);
 
   showBusinessModal = signal(false);
-  showSponsorshipModal = signal(false);
   showElectionModal = signal(false);
 
   businessName = '';
@@ -105,7 +95,6 @@ export class CommunityComponent implements OnInit, OnDestroy {
   businessAddress = '';
   businessAnchorLat = '';
   businessAnchorLng = '';
-  sponsorshipAdContent = '';
   private readonly globalOwnerRoleNames = new Set([
     'owner_console_owner',
     'global_admin',
@@ -207,6 +196,9 @@ export class CommunityComponent implements OnInit, OnDestroy {
   }
 
   async loadCommunity(slug: string): Promise<void> {
+    this.error.set(null);
+    this.loading.set(true);
+
     try {
       const data = await this.communityService.getCommunityBySlug(slug);
 
@@ -320,13 +312,11 @@ export class CommunityComponent implements OnInit, OnDestroy {
   private async loadBusinessSupportData(communityId: string): Promise<void> {
     this.loadingBusiness.set(true);
     try {
-      const [businessPage, sponsorships] = await Promise.all([
-        this.paymentService.getBusinessPage(communityId),
-        this.paymentService.getActiveSponsorships(communityId),
-      ]);
+      const businessPage = await this.paymentService.getBusinessPage(
+        communityId
+      );
 
       this.businessPage.set(businessPage);
-      this.activeSponsorships.set(sponsorships);
 
       if (businessPage) {
         this.businessName = businessPage.name || '';
@@ -443,33 +433,6 @@ export class CommunityComponent implements OnInit, OnDestroy {
       });
     } finally {
       this.savingBusinessProfile.set(false);
-    }
-  }
-
-  async startSponsorshipCheckout(): Promise<void> {
-    const community = this.community();
-    if (!community) return;
-
-    if (!this.isAuthenticated()) {
-      this.promptSignIn('sponsor-community');
-      return;
-    }
-
-    this.sponsorshipCheckoutInProgress.set(true);
-    try {
-      const { checkoutUrl } = await this.paymentService.createSponsorship(
-        community.id,
-        this.selectedSponsorshipType(),
-        this.sponsorshipAdContent.trim() || undefined
-      );
-      window.location.href = checkoutUrl;
-    } catch {
-      this.messageService.addMessage({
-        content: 'Failed to start sponsorship checkout. Please try again.',
-        type: 'error',
-      });
-    } finally {
-      this.sponsorshipCheckoutInProgress.set(false);
     }
   }
 

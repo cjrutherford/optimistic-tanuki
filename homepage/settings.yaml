@@ -1,0 +1,11 @@
+title: Optimistic Tanuki Local Stack
+headerStyle: boxedWidgets
+hideVersion: true
+color: slate
+layout:
+  Local Network:
+    style: row
+    columns: 4
+  Platform Services:
+    style: row
+    columns: 4

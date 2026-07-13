@@ -13,3 +13,4 @@ export { BusinessOwnerAvailabilityPageComponent } from './lib/business-owner-ava
 export { BusinessClientLoginPageComponent } from './lib/business-client-login-page.component';
 export { BusinessClientRegisterPageComponent } from './lib/business-client-register-page.component';
 export { BusinessOwnerProductsPageComponent } from './lib/business-owner-products-page.component';
+export { BusinessOwnerAdCampaignPageComponent } from './lib/business-owner-ad-campaign-page.component';
