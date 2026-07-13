@@ -22,6 +22,7 @@ interface LoginType {
   template: `
     <div class="login-page">
       <lib-login-block
+        appId="d6"
         [title]="'Welcome Back'"
         [description]="'Sign in to continue your wellness journey'"
         [heroSrc]="

@@ -22,6 +22,8 @@ apps:
     apiBaseUrl: https://hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
+    authEmail:
+      { enabled: true, from: no-reply@hopefulaspirationsindustries.com }
     description: Build-to-order personal cloud and homelab systems.
     sortOrder: 2
 
@@ -43,6 +45,7 @@ apps:
     apiBaseUrl: https://forgeofwill.com/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@forgeofwill.com }
     description: Planning and execution workspace for goals, tasks, and projects.
     iconUrl: https://forgeofwill.com/favicon.ico
     sortOrder: 4
@@ -55,6 +58,7 @@ apps:
     iconUrl: https://optimistic-tanuki.com/favicon.ico
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@optimistic-tanuki.com }
     description: Client-facing social and community interface for the broader platform.
     sortOrder: 5
 
@@ -76,6 +80,7 @@ apps:
     apiBaseUrl: https://api.hopefulaspirationsindustries.com
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@towne-square.com }
     description: Local-first community, classifieds, and business listings.
     iconUrl: https://towne-square.com/favicon.ico
     sortOrder: 7
@@ -88,6 +93,7 @@ apps:
     apiBaseUrl: https://fin-commander.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Guided personal finance workflows for accounts, plans, and scenarios.
     iconUrl: https://fin-commander.experiments.christopherrutherford.net/favicon.ico
     sortOrder: 8
@@ -100,6 +106,7 @@ apps:
     apiBaseUrl: https://lead-tracker.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Opportunity discovery from interests, locality, and skills.
     iconUrl: https://lead-tracker.experiments.christopherrutherford.net/favicon.ico
     sortOrder: 9
@@ -122,6 +129,7 @@ apps:
     apiBaseUrl: https://digital-homestead.christopherrutherford.net/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Public publishing and homestead-oriented content experience.
     sortOrder: 51
 
@@ -133,6 +141,7 @@ apps:
     apiBaseUrl: https://d6.christopherrutherford.net/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Daily Reflections
     sortOrder: 53
 
@@ -144,5 +153,6 @@ apps:
     apiBaseUrl: https://business.experiments.christopherrutherford.net/api
     appType: client
     visibility: public
+    authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Self-configurable business site.
     sortOrder: 54

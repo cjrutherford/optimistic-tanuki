@@ -257,6 +257,7 @@ describe('AppService', () => {
       firstName: 'John',
       lastName: 'Doe',
       totpSecret: null,
+      emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
       keyData: { salt: 'someSalt' },
     };
 
@@ -318,6 +319,19 @@ describe('AppService', () => {
         '123456',
         'someTotpSecret'
       );
+    });
+
+    it('rejects password login until platform email verification completes', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        ...mockUser,
+        emailVerifiedAt: null,
+      } as UserEntity);
+
+      await expectRpcError(
+        service.login('test@example.com', 'password'),
+        'EMAIL_VERIFICATION_REQUIRED'
+      );
+      expect(saltedHashService.validateHash).not.toHaveBeenCalled();
     });
   });
 });

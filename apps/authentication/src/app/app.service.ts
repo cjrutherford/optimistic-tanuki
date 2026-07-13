@@ -55,6 +55,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+
       this.l.debug(`Found user ID ${user.id} for email ${normalizedEmail}`);
       return user.id;
     } catch (e) {
@@ -79,6 +80,10 @@ export class AppService {
       });
       if (!user) {
         throw new RpcException('User not found');
+      }
+
+      if (!user.emailVerifiedAt) {
+        throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
       }
 
       const { id: userId, password: storedHash, totpSecret } = user;
@@ -144,7 +149,6 @@ export class AppService {
         throw new RpcException('Invalid data');
       }
       this.l.log('Registering user:', normalizedEmail, fn, ln, bio);
-      this.l.log('Checking passwords', password, confirm);
       try {
         this.passwordPolicyService.ensurePasswordConfirmation(
           password,
@@ -184,7 +188,7 @@ export class AppService {
         console.error('Error creating hash');
         throw new RpcException('Error creating hash');
       }
-      this.l.log('Hash created successfully:', hashData);
+      this.l.log('Password hash created successfully');
       const insertResult = await this.userRepo.insert({
         email: normalizedEmail,
         firstName: fn,
@@ -216,7 +220,7 @@ export class AppService {
       newUser.keyData = newKeyData;
       await this.userRepo.save(newUser);
 
-      this.l.log('New user registered successfully:', newUser);
+      this.l.log(`New user registered successfully: ${newUser.id}`);
       return {
         message: 'User Created',
         code: 0,
@@ -424,6 +428,9 @@ export class AppService {
         relations: ['keyData'],
       });
       if (!user) throw new RpcException('User not found');
+      if (!user.emailVerifiedAt) {
+        throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
+      }
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -450,7 +457,7 @@ export class AppService {
 
       return { message: 'Issued token', code: 0, data: { newToken: tk } };
     } catch (e) {
-      console.error('Error issuing token:', e);
+      this.l.error('Error issuing token', e instanceof Error ? e.message : e);
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }

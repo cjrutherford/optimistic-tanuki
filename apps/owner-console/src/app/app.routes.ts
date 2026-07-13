@@ -1,9 +1,13 @@
 import { Route } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('auth_token'),
   {
     path: 'control-center',
     loadComponent: () =>

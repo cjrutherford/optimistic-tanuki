@@ -22,6 +22,7 @@ import {
   RegisterAccountBootstrapService,
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 import { AuthGuard } from '../../auth/auth.guard';
+import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
@@ -92,6 +93,29 @@ describe('AuthenticationController', () => {
           useValue: registerBootstrap,
         },
         Logger,
+        {
+          provide: GATEWAY_APP_REGISTRY,
+          useValue: {
+            version: '1',
+            generatedAt: '2026-07-13T00:00:00Z',
+            apps: [
+              {
+                appId: 'system-configurator',
+                name: 'HAI Computer',
+                domain: 'hopefulaspirationsindustries.com',
+                uiBaseUrl: 'https://hardware.hopefulaspirationsindustries.com',
+                apiBaseUrl:
+                  'https://hardware.hopefulaspirationsindustries.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@hopefulaspirationsindustries.com',
+                },
+              },
+            ],
+          },
+        },
       ],
     })
       .overrideGuard(AuthGuard)
@@ -192,6 +216,66 @@ describe('AuthenticationController', () => {
       registerRequest,
       'test'
     );
+  });
+
+  it('sends verification after a successful app registration', async () => {
+    const requestSpy = jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockResolvedValue({ accepted: true });
+    const registration = {
+      fn: 'System',
+      ln: 'Builder',
+      email: 'builder@example.com',
+      password: 'long-password',
+      confirm: 'long-password',
+      bio: '',
+    };
+
+    await controller.registerUser(
+      registration,
+      'system-configurator',
+      'system-configurator'
+    );
+
+    expect(requestSpy).toHaveBeenCalledWith(
+      'system-configurator',
+      'verification',
+      { email: 'builder@example.com', returnPath: '/' }
+    );
+  });
+
+  it('requests a magic link using trusted registry email metadata', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ accepted: true, sent: true })
+    );
+
+    await expect(
+      controller.requestEmailAction('system-configurator', 'magic-link', {
+        email: 'person@example.com',
+        returnPath: '/review',
+      })
+    ).resolves.toEqual({ accepted: true });
+
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.RequestEmailAuthAction },
+      expect.objectContaining({
+        email: 'person@example.com',
+        context: expect.objectContaining({
+          appId: 'system-configurator',
+          from: 'no-reply@hopefulaspirationsindustries.com',
+          returnPath: '/review',
+        }),
+      })
+    );
+  });
+
+  it('rejects email actions for unknown application ids', async () => {
+    await expect(
+      controller.requestEmailAction('unknown-app', 'verification', {
+        email: 'person@example.com',
+      })
+    ).rejects.toThrow('Email authentication is not configured');
+    expect(clientProxy.send).not.toHaveBeenCalled();
   });
 
   it('provisions minimum leads permissions during leads-app registration', async () => {

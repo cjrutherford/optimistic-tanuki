@@ -69,6 +69,11 @@ export interface BootstrapConfig {
     apiBaseUrl: string;
     appType: string;
     visibility: string;
+    authEmail?: {
+      enabled: boolean;
+      from: string;
+      replyTo?: string;
+    };
   }>;
   oauth: {
     enabled: boolean;
@@ -637,6 +642,34 @@ export class BootstrapService {
         .addAssetOwnerPermissions()
         .build()
     );
+
+    const ownerApp = this.loadDeploymentConfig().apps.find(
+      (app) => app.appId === 'owner-console'
+    );
+    if (ownerApp?.authEmail?.enabled && ownerApp.authEmail.from) {
+      try {
+        await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.RequestEmailAuthAction },
+            {
+              purpose: 'verification',
+              email: normalizedEmail,
+              context: {
+                appId: ownerApp.appId,
+                appName: 'Owner Console',
+                uiBaseUrl: ownerApp.uiBaseUrl,
+                from: ownerApp.authEmail.from,
+                replyTo: ownerApp.authEmail.replyTo,
+                returnPath: '/',
+              },
+            }
+          )
+        );
+      } catch {
+        // Account creation remains idempotent; the owner can request another
+        // verification message from the Owner Console login screen.
+      }
+    }
 
     return {
       userId,

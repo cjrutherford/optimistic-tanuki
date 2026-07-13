@@ -1,9 +1,13 @@
 import { Route } from '@angular/router';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { MemberGuard } from './guards/member.guard';
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('ot-local-hub-authToken'),
   {
     path: '',
     loadComponent: () =>

@@ -36,6 +36,7 @@ describe('TokenEntity', () => {
       password: 'xxxx',
       keyData: null,
       oauthProviders: [],
+      authActionTokens: [],
     }; // Mock user entity
     token.user = user;
     expect(token.user).toBe(user);

@@ -8,6 +8,7 @@ import {
   mergeBusinessSiteConfig,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
+import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 
 @Component({
   selector: 'business-login-page',
@@ -75,6 +76,30 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
           <button type="submit" class="otui-btn primary" [disabled]="loading()">
             @if (loading()) { Signing in… } @else { Sign In }
           </button>
+          <button
+            type="button"
+            class="email-link"
+            (click)="requestEmail('magic-link')"
+          >
+            Email me a magic link
+          </button>
+          <button
+            type="button"
+            class="email-link"
+            (click)="requestEmail('password-reset')"
+          >
+            Forgot password?
+          </button>
+          <button
+            type="button"
+            class="email-link"
+            (click)="requestEmail('verification')"
+          >
+            Resend verification
+          </button>
+          @if (emailStatus()) {
+          <p role="status">{{ emailStatus() }}</p>
+          }
         </form>
 
         <a class="register-link" [routerLink]="registerRoute()">
@@ -245,13 +270,37 @@ export class BusinessLoginPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
   password = '';
   readonly mode = signal<'owner' | 'client'>('owner');
   loading = signal(false);
   errorMsg = signal('');
+  emailStatus = signal('');
   readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  requestEmail(
+    purpose: 'verification' | 'magic-link' | 'password-reset'
+  ): void {
+    if (!this.email) {
+      this.emailStatus.set('Enter your email address first.');
+      return;
+    }
+    const returnPath = this.siteSlug
+      ? `/sites/${this.siteSlug}/owner/login`
+      : '/owner/login';
+    this.emailAuth
+      .request('business-site', this.email, purpose, returnPath)
+      .subscribe({
+        next: () =>
+          this.emailStatus.set(
+            'If that account exists, a secure email is on its way.'
+          ),
+        error: () =>
+          this.emailStatus.set('Email could not be requested right now.'),
+      });
+  }
 
   private clientLoginRoute(): string[] {
     return this.siteSlug

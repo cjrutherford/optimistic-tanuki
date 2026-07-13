@@ -511,6 +511,91 @@
         Configure the shared OAuth bridge that supports login and registration
         across your selected apps.
       </p>
+      <otui-card class="settings-card">
+        <div class="settings-card-header">
+          <div>
+            <strong>Transactional Email</strong>
+            <p>
+              Connect the shared Stalwart server once. Each application uses its
+              own root-domain sender identity from the app registry.
+            </p>
+          </div>
+          <otui-badge [variant]="emailSetup.configured ? 'success' : 'warning'">
+            {{ emailSetup.configured ? 'configured' : 'credentials required' }}
+          </otui-badge>
+        </div>
+        <div class="settings-grid">
+          <div class="form-group">
+            <label>SMTP host</label>
+            <lib-text-input [(ngModel)]="emailSetup.host" />
+          </div>
+          <div class="form-group">
+            <label>Port</label>
+            <input
+              type="number"
+              min="1"
+              max="65535"
+              [(ngModel)]="emailSetup.port"
+            />
+          </div>
+          <div class="form-group">
+            <lib-checkbox
+              [(ngModel)]="emailSetup.secure"
+              label="Implicit TLS"
+            />
+          </div>
+          <div class="form-group">
+            <label>Mailbox / SMTP user</label>
+            <lib-text-input [(ngModel)]="emailSetup.user" />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <lib-text-input
+              type="password"
+              [(ngModel)]="emailPassword"
+              [placeholder]="
+                emailSetup.passwordPresent
+                  ? 'Saved — leave blank to keep'
+                  : 'Required'
+              "
+            />
+          </div>
+          <div class="form-group">
+            <label>Default sender</label>
+            <lib-text-input
+              [(ngModel)]="emailSetup.from"
+              placeholder="no-reply@christopherrutherford.net"
+            />
+          </div>
+        </div>
+        <div class="inline-actions">
+          <otui-button
+            variant="primary"
+            (click)="saveEmailSetup()"
+            [disabled]="
+              !emailSetup.user ||
+              (!emailPassword && !emailSetup.passwordPresent)
+            "
+            >Save Email Settings</otui-button
+          >
+          <lib-text-input
+            [(ngModel)]="emailTestRecipient"
+            placeholder="Test recipient"
+          />
+          <otui-button
+            variant="secondary"
+            (click)="testEmailConnection()"
+            [disabled]="
+              !emailSetup.configured ||
+              !emailTestRecipient ||
+              emailTestState === 'testing'
+            "
+          >
+            {{ emailTestState === 'testing' ? 'Sending…' : 'Send Test Email' }}
+          </otui-button>
+          @if (emailTestState === 'sent') { <span>Test email sent.</span> }
+        </div>
+      </otui-card>
       <div class="oauth-explainer-grid">
         <otui-card class="oauth-guide-card">
           <div class="settings-card-header">

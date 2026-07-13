@@ -43,6 +43,39 @@ apps:
 	}
 }
 
+func TestGeneratePreservesRootDomainAuthEmail(t *testing.T) {
+	dir := t.TempDir()
+	input := filepath.Join(dir, "apps.yaml")
+	output := filepath.Join(dir, "registry.json")
+	data := `version: "1.0.0"
+generatedAt: "2026-07-13T00:00:00Z"
+apps:
+  - appId: hardware
+    name: Hardware
+    domain: hopefulaspirationsindustries.com
+    subdomain: hardware
+    apiBaseUrl: https://hardware.hopefulaspirationsindustries.com/api
+    appType: client
+    visibility: public
+    authEmail:
+      enabled: true
+      from: no-reply@hopefulaspirationsindustries.com
+`
+	if err := os.WriteFile(input, []byte(data), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := run([]string{"generate", "--input", input, "--output", output}); err != nil {
+		t.Fatal(err)
+	}
+	generated, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(generated), `"from": "no-reply@hopefulaspirationsindustries.com"`) {
+		t.Fatalf("expected authEmail sender in generated registry: %s", generated)
+	}
+}
+
 func TestGenerateIsIdempotentForSameInput(t *testing.T) {
 	dir := t.TempDir()
 	input := filepath.Join(dir, "apps.yaml")

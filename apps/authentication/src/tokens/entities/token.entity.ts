@@ -23,4 +23,7 @@ export class TokenEntity {
 
   @Column({ type: 'boolean', default: false })
   revoked = false;
+
+  @Column({ type: 'uuid', nullable: true })
+  profileId?: string | null;
 }

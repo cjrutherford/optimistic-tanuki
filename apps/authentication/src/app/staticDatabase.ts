@@ -6,6 +6,7 @@ import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
+import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
 
 const resolveConfigPath = () => {
   const candidates = [
@@ -45,7 +46,13 @@ const host = process.env.POSTGRES_HOST || configHost;
 // Use environment variable for database name if available, otherwise use configDatabase or configName
 const database = process.env.POSTGRES_DB || configDatabase || configName;
 
-const entities = [KeyDatum, UserEntity, TokenEntity, OAuthProviderEntity];
+const entities = [
+  KeyDatum,
+  UserEntity,
+  TokenEntity,
+  OAuthProviderEntity,
+  AuthActionTokenEntity,
+];
 
 console.log(
   `Using database configuration: host=${host}, port=${port}, username=${username}, database=${database}`

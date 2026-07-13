@@ -4,7 +4,10 @@ import { ProfileGuard } from './guards/profile.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './state/user-permissions.service';
 import { AuthStateService } from './state/auth-state.service';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
 
 const forumPermissionResolver: ResolveFn<string[]> = async () => {
@@ -46,6 +49,7 @@ const communityUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('ot-client-authToken'),
   {
     path: '',
     loadComponent: () =>

@@ -3,6 +3,8 @@ import * as path from 'path';
 import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { dump, load } from 'js-yaml';
+import * as nodemailer from 'nodemailer';
+import { buildSmtpTransportOptions } from './email-setup';
 import {
   BootstrapConfig,
   SetupDatabaseSlot,
@@ -579,6 +581,61 @@ export class SetupService {
       this.serializeEnv(secrets),
       'utf-8'
     );
+  }
+
+  async getEmailStatus(environmentName?: string) {
+    const secrets = this.loadSecretsFile(environmentName);
+    return {
+      host: secrets['SMTP_HOST'] || 'mail.christopherrutherford.net',
+      port: Number(secrets['SMTP_PORT'] || '465'),
+      secure: (secrets['SMTP_SECURE'] || 'true').toLowerCase() === 'true',
+      user: secrets['SMTP_USER'] || '',
+      passwordPresent: Boolean(secrets['SMTP_PASS']),
+      from: secrets['SMTP_FROM'] || '',
+      configured: Boolean(secrets['SMTP_USER'] && secrets['SMTP_PASS']),
+    };
+  }
+
+  async configureEmail(
+    input: {
+      host?: string;
+      port?: number;
+      secure?: boolean;
+      user: string;
+      password?: string;
+      from?: string;
+    },
+    environmentName?: string
+  ): Promise<void> {
+    const existing = this.loadSecretsFile(environmentName);
+    existing['SMTP_HOST'] =
+      input.host?.trim() || 'mail.christopherrutherford.net';
+    existing['SMTP_PORT'] = String(input.port || 465);
+    existing['SMTP_SECURE'] = String(input.secure !== false);
+    existing['SMTP_USER'] = input.user.trim();
+    if (input.password) existing['SMTP_PASS'] = input.password;
+    existing['SMTP_FROM'] = input.from?.trim() || input.user.trim();
+    buildSmtpTransportOptions(existing);
+    await this.saveSecrets(existing, environmentName);
+  }
+
+  async testEmail(
+    recipient: string,
+    from: string | undefined,
+    environmentName?: string
+  ) {
+    const secrets = this.loadSecretsFile(environmentName);
+    const transport = nodemailer.createTransport(
+      buildSmtpTransportOptions(secrets)
+    );
+    await transport.verify();
+    const sent = await transport.sendMail({
+      from: from?.trim() || secrets['SMTP_FROM'] || secrets['SMTP_USER'],
+      to: recipient.trim(),
+      subject: 'Optimistic Tanuki email connection test',
+      text: 'Your Stalwart SMTP connection is configured and sending email successfully.',
+    });
+    return { success: true, messageId: sent.messageId };
   }
 
   getDeployProgress(): SetupDeployProgressSnapshot {
@@ -1541,7 +1598,11 @@ export class SetupService {
       }
 
       try {
-        await this.createOwner(operator.name, operator.email, operator.password);
+        await this.createOwner(
+          operator.name,
+          operator.email,
+          operator.password
+        );
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error);
         this.failDeployProgress('activating', 'save-owner', msg);
@@ -1557,13 +1618,13 @@ export class SetupService {
       'mark-setup',
       'Marking setup as complete...'
     );
-     try {
-       await this.activateOwnerBootstrap();
-     } catch (error) {
-       const msg = error instanceof Error ? error.message : String(error);
-       this.failDeployProgress('activating', 'mark-setup', msg);
-       throw error;
-     }
+    try {
+      await this.activateOwnerBootstrap();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.failDeployProgress('activating', 'mark-setup', msg);
+      throw error;
+    }
     this.completeDeploySubstep('activating', 'mark-setup');
     this.startDeployProgress(
       'rebooting',

@@ -15,6 +15,12 @@ import {
 
 import { BusinessLoginPageComponent } from './business-login-page.component';
 import { RouterLink } from '@angular/router';
+import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
+
+const emailAuthProvider = {
+  provide: EmailAuthClientService,
+  useValue: { request: jest.fn() },
+};
 
 describe('BusinessLoginPageComponent', () => {
   it('routes a completed owner to the owner dashboard after login', () => {
@@ -33,6 +39,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: BusinessAuthService,
@@ -92,6 +99,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: BusinessAuthService,
@@ -133,6 +141,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: BusinessAuthService,
@@ -169,6 +178,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: BusinessAuthService,
@@ -215,6 +225,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: BusinessAuthService,
@@ -262,6 +273,7 @@ describe('BusinessLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessLoginPageComponent],
       providers: [
+        emailAuthProvider,
         provideRouter([]),
         {
           provide: ActivatedRoute,

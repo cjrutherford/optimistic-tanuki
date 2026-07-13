@@ -1,9 +1,13 @@
 import { Routes } from '@angular/router';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { ProfileGuard } from './guards/profile.guard';
 
 export const appRoutes: Routes = [
+  ...emailAuthRoutes('ot-d6_authToken'),
   {
     path: '',
     loadComponent: () =>

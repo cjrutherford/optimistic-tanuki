@@ -153,6 +153,47 @@ app.put('/api/setup/secrets', async (req, res) => {
   }
 });
 
+app.get('/api/setup/email/status', async (req, res) => {
+  try {
+    const environment =
+      typeof req.query['env'] === 'string' ? req.query['env'] : undefined;
+    res.json(await setup.getEmailStatus(environment));
+  } catch (e) {
+    res.status(500).json({
+      message: e instanceof Error ? e.message : 'Email status failed',
+    });
+  }
+});
+
+app.put('/api/setup/email/configure', async (req, res) => {
+  try {
+    const environment =
+      typeof req.query['env'] === 'string' ? req.query['env'] : undefined;
+    await setup.configureEmail(req.body, environment);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(400).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Email config failed',
+    });
+  }
+});
+
+app.post('/api/setup/email/test', async (req, res) => {
+  try {
+    const environment =
+      typeof req.query['env'] === 'string' ? req.query['env'] : undefined;
+    res.json(
+      await setup.testEmail(req.body.recipient, req.body.from, environment)
+    );
+  } catch (e) {
+    res.status(502).json({
+      success: false,
+      message: e instanceof Error ? e.message : 'Email test failed',
+    });
+  }
+});
+
 app.post('/api/setup/validate', async (_req, res) => {
   res.json(await setup.validate());
 });

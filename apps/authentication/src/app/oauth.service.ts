@@ -235,6 +235,18 @@ export class OAuthService {
   }
 
   private async issueTokenForUser(user: UserEntity, profileId?: string) {
+    if (!user.emailVerifiedAt) {
+      return {
+        message: 'Email verification required',
+        code: 2,
+        data: {
+          userId: user.id,
+          email: user.email,
+          verificationRequired: true,
+        },
+      };
+    }
+
     const pl = {
       userId: user.id,
       name: `${user.firstName} ${user.lastName}`,
@@ -254,9 +266,6 @@ export class OAuthService {
       revoked: false,
     };
     await this.tokenRepo.save(ntk);
-
-    // Return sanitized user data without sensitive fields
-    const { password, keyData, ...sanitizedUser } = user;
 
     return {
       message: 'OAuth login successful',

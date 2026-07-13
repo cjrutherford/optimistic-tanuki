@@ -20,6 +20,7 @@ import { tenantOverviewRoute } from '../tenant-routes';
   imports: [LoginBlockComponent],
   template: `
     <lib-login-block
+      appId="fin-commander"
       title="Fin Commander Login"
       [heroSrc]="'images/login-splash.png'"
       description="Authenticate to access your finance command surfaces."

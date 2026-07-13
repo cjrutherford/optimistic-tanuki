@@ -1,6 +1,9 @@
 import { Route, ResolveFn } from '@angular/router';
 import { inject } from '@angular/core';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthStateService } from './auth-state.service';
 
 const forumIsLoggedInResolver: ResolveFn<boolean> = () => {
@@ -14,6 +17,7 @@ const forumUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('dh-client-authToken'),
   {
     path: '',
     loadComponent: () =>

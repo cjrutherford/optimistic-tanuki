@@ -1,5 +1,8 @@
 import { Route } from '@angular/router';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { authGuard } from './auth.guard';
 import { alreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { profileGuard } from './profile.guard';
@@ -11,6 +14,7 @@ import {
 } from './onboarding-gate.service';
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('ot-leads-authToken'),
   {
     path: 'register',
     loadComponent: () =>

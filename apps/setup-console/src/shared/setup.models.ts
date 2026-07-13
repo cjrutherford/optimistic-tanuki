@@ -54,6 +54,11 @@ export interface SetupAppSelection {
   apiBaseUrl: string;
   appType: string;
   visibility: string;
+  authEmail?: {
+    enabled: boolean;
+    from: string;
+    replyTo?: string;
+  };
 }
 
 export interface SetupOAuthProviderConfig {

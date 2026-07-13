@@ -81,6 +81,7 @@ describe('OAuthService', () => {
         firstName: 'Test',
         lastName: 'User',
         email: 'test@example.com',
+        emailVerifiedAt: new Date(),
         password: 'hash',
         keyData: null,
       };
@@ -110,6 +111,7 @@ describe('OAuthService', () => {
         firstName: 'Test',
         lastName: 'User',
         email: 'test@example.com',
+        emailVerifiedAt: new Date(),
         password: 'hash',
         keyData: null,
       };
@@ -142,6 +144,32 @@ describe('OAuthService', () => {
 
       expect(result.code).toBe(1);
       expect((result.data as any).needsRegistration).toBe(true);
+    });
+
+    it('does not issue a session until platform email verification completes', async () => {
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue({
+        provider: 'google',
+        providerUserId: 'google-123',
+        user: {
+          id: 'user-1',
+          firstName: 'Test',
+          lastName: 'User',
+          email: 'test@example.com',
+          emailVerifiedAt: null,
+        },
+      });
+
+      const result = await service.oauthLogin(
+        'google',
+        'google-123',
+        'test@example.com',
+        'Test User'
+      );
+      expect(result).toMatchObject({
+        code: 2,
+        data: { userId: 'user-1', verificationRequired: true },
+      });
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
   });
 

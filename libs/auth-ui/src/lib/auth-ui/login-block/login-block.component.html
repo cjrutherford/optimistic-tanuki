@@ -20,6 +20,32 @@
             ></lib-text-input>
             <otui-button type="submit">Login</otui-button>
           </form>
+          <div class="email-auth-actions" aria-label="Email sign in options">
+            <button
+              type="button"
+              (click)="requestMagicLink()"
+              [disabled]="emailActionPending"
+            >
+              Email me a magic link
+            </button>
+            <button
+              type="button"
+              (click)="requestPasswordReset()"
+              [disabled]="emailActionPending"
+            >
+              Forgot password?
+            </button>
+            <button
+              type="button"
+              (click)="requestVerification()"
+              [disabled]="emailActionPending"
+            >
+              Resend verification
+            </button>
+          </div>
+          @if (emailActionStatus) {
+          <p class="email-auth-status" role="status">{{ emailActionStatus }}</p>
+          }
           <lib-oauth-buttons
             *ngIf="showOAuth"
             [enabledProviders]="enabledOAuthProviders"

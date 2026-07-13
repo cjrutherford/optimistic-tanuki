@@ -62,6 +62,16 @@ export interface OAuthAppsInfo {
   }>;
 }
 
+export interface EmailSetupStatus {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  passwordPresent: boolean;
+  from: string;
+  configured: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SetupClientService {
   private readonly apiUrl = '/api/setup';
@@ -279,6 +289,43 @@ export class SetupClientService {
     return this.http.put<{ success: boolean }>(
       `${this.apiUrl}/oauth/configure${query}`,
       { provider, ...config }
+    );
+  }
+
+  getEmailStatus(environment?: string): Observable<EmailSetupStatus> {
+    const query = environment ? `?env=${encodeURIComponent(environment)}` : '';
+    return this.http.get<EmailSetupStatus>(
+      `${this.apiUrl}/email/status${query}`
+    );
+  }
+
+  configureEmail(
+    config: {
+      host: string;
+      port: number;
+      secure: boolean;
+      user: string;
+      password?: string;
+      from?: string;
+    },
+    environment?: string
+  ): Observable<{ success: boolean }> {
+    const query = environment ? `?env=${encodeURIComponent(environment)}` : '';
+    return this.http.put<{ success: boolean }>(
+      `${this.apiUrl}/email/configure${query}`,
+      config
+    );
+  }
+
+  testEmail(
+    recipient: string,
+    from: string | undefined,
+    environment?: string
+  ): Observable<{ success: boolean; messageId: string }> {
+    const query = environment ? `?env=${encodeURIComponent(environment)}` : '';
+    return this.http.post<{ success: boolean; messageId: string }>(
+      `${this.apiUrl}/email/test${query}`,
+      { recipient, from }
     );
   }
 
