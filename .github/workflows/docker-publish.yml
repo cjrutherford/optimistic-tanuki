@@ -159,7 +159,7 @@ jobs:
 
       - name: Get previous successful workflow run
         id: prev-run
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {

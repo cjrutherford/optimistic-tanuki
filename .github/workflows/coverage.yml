@@ -117,7 +117,7 @@ jobs:
 
       - name: Comment PR with coverage
         if: github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && always()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
