@@ -26,6 +26,7 @@ import {
   ContactBubbleComponent,
   SOCKET_HOST,
   SOCKET_NAMESPACE,
+  SOCKET_PATH,
   SOCKET_IO_INSTANCE,
   SOCKET_AUTH_TOKEN_PROVIDER,
   SOCKET_AUTH_ERROR_HANDLER,
@@ -45,6 +46,7 @@ import { io } from 'socket.io-client';
       useFactory: (
         platformId: object,
         socketHost: string,
+        socketPath: string,
         socketNamespace: string,
         socketIoInstance: typeof io,
         authTokenProvider?: () => string | null,
@@ -53,6 +55,7 @@ import { io } from 'socket.io-client';
         isPlatformBrowser(platformId)
           ? new SocketChatService(
               socketHost,
+              socketPath,
               socketNamespace,
               socketIoInstance,
               authTokenProvider,
@@ -62,6 +65,7 @@ import { io } from 'socket.io-client';
       deps: [
         PLATFORM_ID,
         SOCKET_HOST,
+        SOCKET_PATH,
         SOCKET_NAMESPACE,
         SOCKET_IO_INSTANCE,
         SOCKET_AUTH_TOKEN_PROVIDER,

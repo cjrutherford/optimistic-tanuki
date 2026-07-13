@@ -1,4 +1,4 @@
-import { SOCKET_HOST } from '@optimistic-tanuki/chat-ui';
+import { SOCKET_HOST, SOCKET_PATH } from '@optimistic-tanuki/chat-ui';
 import { appConfig } from './app.config';
 
 type FactoryProvider = {
@@ -21,5 +21,21 @@ describe('appConfig socket host', () => {
     expect(socketHostProvider?.useFactory?.()).toBe('');
 
     (window as Window & { env?: { SOCKET_URL?: string } }).env = originalEnv;
+  });
+
+  it('uses the runtime Socket.IO transport path override', () => {
+    const socketPathProvider = (appConfig.providers as FactoryProvider[]).find(
+      (provider) => provider.provide === SOCKET_PATH
+    );
+
+    const originalEnv = (window as Window & { env?: { SOCKET_PATH?: string } })
+      .env;
+    (window as Window & { env?: { SOCKET_PATH?: string } }).env = {
+      SOCKET_PATH: '/ws',
+    };
+
+    expect(socketPathProvider?.useFactory?.()).toBe('/ws');
+
+    (window as Window & { env?: { SOCKET_PATH?: string } }).env = originalEnv;
   });
 });

@@ -18,6 +18,10 @@ const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const runtimeSocketEnvironment = JSON.stringify({
+  SOCKET_URL: process.env['SOCKET_URL'] || '',
+  SOCKET_PATH: process.env['SOCKET_PATH'] || '/socket.io',
+}).replace(/</g, '\\u003c');
 
 /**
  * Example Express Rest API endpoints can be defined here.
@@ -74,9 +78,7 @@ app.use('/**', (req, res, next) => {
   angularApp
     .handle(req, {
       document: (html: string) => {
-        const envScript = `<script>window['env'] = { SOCKET_URL: '${
-          process.env['SOCKET_URL'] || gatewayWsUrl
-        }' };</script>`;
+        const envScript = `<script>window['env'] = ${runtimeSocketEnvironment};</script>`;
         const finalDoc = html.replace('</body>', `${envScript}</body>`);
         return finalDoc;
       },

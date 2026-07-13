@@ -4,6 +4,10 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SocialWebSocketService } from './social-websocket.service';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 import { AuthStateService } from './state/auth-state.service';
+import { PLATFORM_ID } from '@angular/core';
+import { io } from 'socket.io-client';
+
+jest.mock('socket.io-client', () => ({ io: jest.fn() }));
 
 describe('SocialWebSocketService', () => {
   let service: SocialWebSocketService;
@@ -20,11 +24,13 @@ describe('SocialWebSocketService', () => {
         {
           provide: AuthStateService,
           useValue: {
+            getToken: jest.fn().mockReturnValue(null),
             getDecodedTokenValue: jest.fn(),
             getPersistedSelectedProfile: jest.fn().mockReturnValue(null),
             isAuthenticated: jest.fn().mockReturnValue(false),
           },
         },
+        { provide: PLATFORM_ID, useValue: 'browser' },
       ],
     });
     service = TestBed.inject(SocialWebSocketService);
@@ -54,6 +60,32 @@ describe('SocialWebSocketService', () => {
 
   it('should not be connected initially', () => {
     expect(service.isConnected()).toBeFalsy();
+  });
+
+  it('uses the runtime socket path for the production social connection', () => {
+    const mockSocket = {
+      on: jest.fn(),
+      disconnect: jest.fn(),
+      connected: false,
+    };
+    (io as jest.Mock).mockReturnValue(mockSocket);
+    (
+      window as Window & {
+        env?: { SOCKET_URL?: string; SOCKET_PATH?: string };
+      }
+    ).env = {
+      SOCKET_URL: 'https://optimistic-tanuki.com',
+      SOCKET_PATH: '/ws',
+    };
+
+    service.connect();
+
+    expect(io).toHaveBeenCalledWith(
+      'https://optimistic-tanuki.com/social',
+      expect.objectContaining({ path: '/ws' })
+    );
+
+    delete (window as Window & { env?: unknown }).env;
   });
 
   it('should disconnect cleanly', () => {

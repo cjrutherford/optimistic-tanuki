@@ -19,6 +19,10 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const runtimeSocketEnvironment = JSON.stringify({
+  SOCKET_URL: process.env['SOCKET_URL'] || '',
+  SOCKET_PATH: process.env['SOCKET_PATH'] || '/socket.io',
+}).replace(/</g, '\\u003c');
 
 const getRequestUrl = (req: express.Request): string => {
   const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
@@ -78,7 +82,14 @@ app.get('**', (req, res, next) => {
       publicPath: browserDistFolder,
       providers: [{ provide: APP_BASE_HREF, useValue: baseUrl }],
     })
-    .then((html) => res.send(html))
+    .then((html) =>
+      res.send(
+        html.replace(
+          '</body>',
+          `<script>window['env'] = ${runtimeSocketEnvironment};</script></body>`
+        )
+      )
+    )
     .catch((err) => next(err));
 });
 

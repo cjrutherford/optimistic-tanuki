@@ -60,12 +60,20 @@ export class SocialWebSocketService implements OnDestroy {
       // If apiBaseUrl is relative, use window.location.origin
       url = new URL(this.apiBaseUrl, window.location.origin);
     }
-    const wsUrl = `${url.protocol}//${url.hostname}:3301`;
+    const socketEnvironment = (
+      window as {
+        env?: { SOCKET_URL?: string; SOCKET_PATH?: string };
+      }
+    ).env;
+    const wsUrl =
+      socketEnvironment?.SOCKET_URL || `${url.protocol}//${url.hostname}:3301`;
+    const socketPath = socketEnvironment?.SOCKET_PATH || '/socket.io';
 
     console.log('Connecting to Social WebSocket at:', wsUrl);
 
     const token = this.authStateService.getToken();
     this.socket = io(`${wsUrl}/social`, {
+      path: socketPath,
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: this.baseReconnectDelay,
