@@ -372,7 +372,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     {
       provide: JwtService,
       useFactory: (config: ConfigService) => {
-        const secret = config.get('auth.jwt_secret') || 'default_jwt_secret';
+        const secret = config.get('auth.jwtSecret') || 'default_jwt_secret';
         return new JwtService({ secret });
       },
       inject: [ConfigService],
