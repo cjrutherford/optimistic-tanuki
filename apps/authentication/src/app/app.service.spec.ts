@@ -398,4 +398,30 @@ describe('AppService', () => {
       );
     });
   });
+
+  describe('issueToken', () => {
+    it('persists the profileId with issued app-scoped sessions', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        id: 'someUserId',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
+        keyData: { salt: 'someSalt' },
+        password: 'hashedPassword',
+      } as any);
+      jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
+
+      const result = await service.issueToken('someUserId', 'profile-1');
+
+      expect(result).toEqual({
+        message: 'Issued token',
+        code: 0,
+        data: { newToken: 'mockToken' },
+      });
+      expect(tokenRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ profileId: 'profile-1' })
+      );
+    });
+  });
 });

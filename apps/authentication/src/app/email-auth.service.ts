@@ -164,6 +164,7 @@ export class EmailAuthService {
     if (!consumed.affected)
       throw new RpcException({ code: 'ACTION_TOKEN_USED' });
     const next = this.passwordTools.createNewHash(password);
+    if (!action.user.keyData) throw new RpcException('User not found');
     action.user.password = next.hash;
     action.user.keyData.salt = next.salt.toString();
     await this.users.save(action.user);

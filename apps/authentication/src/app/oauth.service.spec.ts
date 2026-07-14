@@ -104,6 +104,39 @@ describe('OAuthService', () => {
       expect((result.data as any).newToken).toBe('mock-jwt-token');
     });
 
+    it('persists profileId when issuing an OAuth session', async () => {
+      const mockUser = {
+        id: 'user-1',
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        emailVerifiedAt: new Date(),
+        password: 'hash',
+        keyData: null,
+      };
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue({
+        provider: 'google',
+        providerUserId: 'google-123',
+        user: mockUser,
+      });
+      (oauthRepo.save as jest.Mock).mockResolvedValue({});
+      (tokenRepo.save as jest.Mock).mockResolvedValue({});
+
+      await service.oauthLogin(
+        'google',
+        'google-123',
+        'test@example.com',
+        'Test User',
+        undefined,
+        undefined,
+        'profile-1'
+      );
+
+      expect(tokenRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ profileId: 'profile-1' })
+      );
+    });
+
     it('should auto-link when email matches an existing user', async () => {
       (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
       const mockUser = {

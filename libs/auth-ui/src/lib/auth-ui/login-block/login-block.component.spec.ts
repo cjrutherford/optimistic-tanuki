@@ -156,6 +156,31 @@ describe('LoginBlockComponent', () => {
     );
   });
 
+  it('reports when email sign-in is unavailable for the app', () => {
+    component.appId = '';
+    component.loginForm.patchValue({ email: 'test@example.com' });
+
+    component.requestMagicLink();
+
+    expect(component.emailActionStatus).toBe(
+      'Email sign-in is not available right now.'
+    );
+    expect(emailAuthMock.request).not.toHaveBeenCalled();
+  });
+
+  it('reports when an email request is already in progress', () => {
+    component.appId = 'client-interface';
+    component.emailActionPending = true;
+    component.loginForm.patchValue({ email: 'test@example.com' });
+
+    component.requestMagicLink();
+
+    expect(component.emailActionStatus).toBe(
+      'Email request already in progress.'
+    );
+    expect(emailAuthMock.request).not.toHaveBeenCalled();
+  });
+
   it('should create', () => {
     expect(component).toBeTruthy();
   });

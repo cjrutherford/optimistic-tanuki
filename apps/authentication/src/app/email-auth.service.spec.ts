@@ -163,4 +163,20 @@ describe('EmailAuthService', () => {
       { revoked: true }
     );
   });
+
+  it('returns an RPC error when the reset token user has no key data', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.PasswordReset,
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user, keyData: null },
+    });
+
+    await expect(
+      service.resetPassword('raw-token', 'new-password', 'new-password')
+    ).rejects.toThrow(RpcException);
+    expect(users.save).not.toHaveBeenCalled();
+    expect(sessions.update).not.toHaveBeenCalled();
+  });
 });

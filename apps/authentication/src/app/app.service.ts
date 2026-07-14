@@ -463,6 +463,7 @@ export class AppService {
         userId: user.id,
         user,
         revoked: false,
+        profileId: profileId || null,
       };
       await this.tokenRepo.save(ntk);
 

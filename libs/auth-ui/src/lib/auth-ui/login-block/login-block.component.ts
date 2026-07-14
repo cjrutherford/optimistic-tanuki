@@ -118,8 +118,16 @@ export class LoginBlockComponent extends Themeable {
     purpose: 'verification' | 'magic-link' | 'password-reset'
   ) {
     const email = String(this.loginForm.value.email || '').trim();
-    if (!this.appId || !email || this.emailActionPending) {
+    if (!this.appId) {
+      this.emailActionStatus = 'Email sign-in is not available right now.';
+      return;
+    }
+    if (!email) {
       this.emailActionStatus = 'Enter your email address first.';
+      return;
+    }
+    if (this.emailActionPending) {
+      this.emailActionStatus = 'Email request already in progress.';
       return;
     }
     this.emailActionPending = true;
