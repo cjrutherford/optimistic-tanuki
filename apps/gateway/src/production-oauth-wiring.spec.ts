@@ -51,7 +51,7 @@ describe('production OAuth secret wiring', () => {
     for (const key of oauthKeys) {
       expect(secretsExample).toContain(`${key}=`);
       expect(generator).toContain(`${key}=`);
-      expect(generator).toContain(`${key}: \${${key}}`);
+      expect(generator).toContain(`${key}: "\${${key}}"`);
       expect(gateway).toContain(`- name: ${key}`);
       expect(gateway).toContain(`key: ${key}`);
       expect(authentication).not.toContain(`- name: ${key}`);

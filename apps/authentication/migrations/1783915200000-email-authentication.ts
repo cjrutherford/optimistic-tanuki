@@ -7,6 +7,12 @@ export class EmailAuthentication1783915200000 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "user_entity" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" timestamptz`
     );
+    // Existing accounts predate email verification. Treat them as trusted so
+    // enabling enforcement does not lock out the current user base; accounts
+    // created after this migration must complete the verification flow.
+    await queryRunner.query(
+      `UPDATE "user_entity" SET "emailVerifiedAt" = NOW() WHERE "emailVerifiedAt" IS NULL`
+    );
     await queryRunner.query(
       `ALTER TABLE "token" ADD COLUMN IF NOT EXISTS "profileId" uuid`
     );
