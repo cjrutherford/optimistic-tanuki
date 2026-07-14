@@ -21,6 +21,10 @@ const AuthCommands = {
   GetOAuthConfig: 'GetOAuthConfig',
   // Invalidate a token on logout. Payload: { token }
   Logout: 'Logout',
+  RequestEmailAuthAction: 'RequestEmailAuthAction',
+  InspectEmailAuthAction: 'InspectEmailAuthAction',
+  ConsumeEmailAuthAction: 'ConsumeEmailAuthAction',
+  ConfirmPasswordReset: 'ConfirmPasswordReset',
 };
 
 export default AuthCommands;

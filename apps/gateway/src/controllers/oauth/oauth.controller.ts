@@ -22,6 +22,7 @@ import {
 import {
   AppRegistration,
   AppRegistry,
+  isApprovedAuthEmailSender,
 } from '@optimistic-tanuki/app-registry-backend';
 import {
   CreateProfileDto,
@@ -257,12 +258,42 @@ export class OAuthController {
       );
 
       let userId = loginResult?.data?.userId as string | undefined;
+      if (loginResult?.data?.verificationRequired) {
+        await this.sendOAuthVerificationEmail(
+          statePayload.appScope,
+          identity.email,
+          statePayload.returnTo
+        );
+        response.redirect(
+          this.withQuery(finalCallbackUrl, {
+            error: 'email_verification_required',
+            error_description:
+              'Check your email to verify your account before signing in.',
+            returnTo: statePayload.returnTo,
+          })
+        );
+        return;
+      }
       if (!userId && loginResult?.data?.needsRegistration) {
         userId = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
           identity
         );
+        await this.sendOAuthVerificationEmail(
+          statePayload.appScope,
+          identity.email,
+          statePayload.returnTo
+        );
+        response.redirect(
+          this.withQuery(finalCallbackUrl, {
+            error: 'email_verification_required',
+            error_description:
+              'Check your email to verify your account before signing in.',
+            returnTo: statePayload.returnTo,
+          })
+        );
+        return;
       }
 
       if (!userId) {
@@ -520,6 +551,50 @@ export class OAuthController {
     }
 
     return parsed.toString();
+  }
+
+  private async sendOAuthVerificationEmail(
+    appId: string,
+    email: string,
+    returnTo: string
+  ): Promise<void> {
+    const canonicalAppId =
+      (
+        {
+          'leads-app': 'opportunity-compass',
+          finance: 'fin-commander',
+          'video-client': 'video-platform',
+        } as Record<string, string>
+      )[appId] || appId;
+    const app = this.registry.apps.find(
+      (entry) => entry.appId === canonicalAppId
+    );
+    if (!app?.authEmail?.enabled || !app.authEmail.from) {
+      throw new Error(`Email verification is not configured for ${appId}`);
+    }
+    if (!isApprovedAuthEmailSender(app.authEmail.from)) {
+      throw new Error(
+        `Email sender for ${appId} must use an approved root domain`
+      );
+    }
+    const parsedReturn = new URL(returnTo);
+    await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.RequestEmailAuthAction },
+        {
+          purpose: 'verification',
+          email,
+          context: {
+            appId: app.appId,
+            appName: app.name || app.appId,
+            uiBaseUrl: app.uiBaseUrl,
+            from: app.authEmail.from,
+            replyTo: app.authEmail.replyTo,
+            returnPath: `${parsedReturn.pathname}${parsedReturn.search}`,
+          },
+        }
+      )
+    );
   }
 
   private resolveAppScopeForReturnTo(returnTo: string): string | null {

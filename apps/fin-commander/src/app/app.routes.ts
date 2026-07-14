@@ -1,6 +1,9 @@
 import { Route } from '@angular/router';
 import { createFinanceRoutes } from '@optimistic-tanuki/finance-ui';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { AuthGuard } from './guards/auth.guard';
 import { onboardingCompleteGuard } from './guards/onboarding-complete.guard';
 import { ProfileGuard } from './guards/profile.guard';
@@ -92,6 +95,7 @@ const tenantChildren: Route[] = [
 ];
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('fin-commander-auth-authToken'),
   {
     path: '',
     loadComponent: () =>

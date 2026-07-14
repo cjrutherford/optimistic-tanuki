@@ -39,6 +39,7 @@ import { AuthStateService } from '../../services/auth-state.service';
       </div> -->
       <div class="auth-panel">
         <lib-login-block
+          appId="local-hub"
           title="Welcome to Towne Square"
           description="Sign in to join communities and connect with your neighbors."
           heroSrc="assets/ts.png"

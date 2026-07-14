@@ -66,7 +66,7 @@ describe('authentication config oauth env loading', () => {
         '  password: postgres',
         '  database: ot_authentication',
         'auth:',
-        '  jwt_secret: test-secret',
+        '  jwtSecret: test-secret',
         'oauth:',
         '  google:',
         '    clientId: yaml-client-id',
@@ -80,6 +80,8 @@ describe('authentication config oauth env loading', () => {
 
     const { default: loadConfig } = await import('./config');
     const config = loadConfig();
+
+    expect(config.auth.jwt_secret).toBe('test-secret');
 
     expect(config.oauth.google).toEqual(
       expect.objectContaining({

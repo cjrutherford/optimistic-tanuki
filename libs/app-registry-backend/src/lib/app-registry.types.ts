@@ -16,6 +16,11 @@ export interface AppRegistration {
   description?: string;
   iconUrl?: string;
   features?: Record<string, boolean>;
+  authEmail?: {
+    enabled: boolean;
+    from: string;
+    replyTo?: string;
+  };
   sortOrder?: number;
   updatedAt?: string;
 }

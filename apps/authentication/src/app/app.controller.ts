@@ -14,14 +14,79 @@ import {
   ValidateTokenRequest,
 } from '@optimistic-tanuki/models';
 import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
+import { EmailAuthService, AuthEmailContext } from './email-auth.service';
+import { AuthActionPurpose } from '../email-auth/entities/auth-action-token.entity';
 
 @Controller()
 export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly oauthService: OAuthService,
+    private readonly emailAuthService: EmailAuthService,
     private readonly l: Logger
   ) {}
+
+  @MessagePattern({ cmd: AuthCommands.RequestEmailAuthAction })
+  requestEmailAuthAction(
+    @Payload()
+    data: {
+      email: string;
+      purpose: AuthActionPurpose;
+      context: AuthEmailContext;
+    }
+  ) {
+    if (!data?.email || !data?.purpose || !data?.context?.appId) {
+      throw new RpcException('Invalid email authentication request');
+    }
+    return this.emailAuthService.requestAction(
+      data.email,
+      data.purpose,
+      data.context
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.InspectEmailAuthAction })
+  async inspectEmailAuthAction(
+    @Payload() data: { token: string; purpose: AuthActionPurpose }
+  ) {
+    const action = await this.emailAuthService.inspect(
+      data.token,
+      data.purpose
+    );
+    return {
+      userId: action.user.id,
+      email: action.user.email,
+      appId: action.appId,
+      returnPath: action.returnPath,
+    };
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ConsumeEmailAuthAction })
+  consumeEmailAuthAction(
+    @Payload()
+    data: {
+      token: string;
+      purpose: AuthActionPurpose.Verification | AuthActionPurpose.MagicLink;
+      profileId?: string;
+    }
+  ) {
+    return this.emailAuthService.consumeLoginAction(
+      data.token,
+      data.purpose,
+      data.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: AuthCommands.ConfirmPasswordReset })
+  confirmPasswordReset(
+    @Payload() data: { token: string; password: string; confirmation: string }
+  ) {
+    return this.emailAuthService.resetPassword(
+      data.token,
+      data.password,
+      data.confirmation
+    );
+  }
 
   @MessagePattern({ cmd: AuthCommands.UserIdFromEmail })
   async userIdFromEmail(@Payload() data: { email: string }) {

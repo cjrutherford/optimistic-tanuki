@@ -32,6 +32,8 @@ import { KeyService } from './key.service';
 import { OAuthConfigValidator } from './oauth-config.validator';
 import loadDatabase from './loadDatabase';
 import { BootstrapController } from './bootstrap.controller';
+import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
+import { EmailAuthService } from './email-auth.service';
 
 @Module({
   imports: [
@@ -49,12 +51,13 @@ import { BootstrapController } from './bootstrap.controller';
       useFactory: (config: ConfigService) => {
         const smtpHost = config.get<string>('SMTP_HOST');
         if (smtpHost) {
+          const smtpSecure = config.get<string | boolean>('SMTP_SECURE');
           return {
             providers: [
               new SmtpEmailProvider({
                 host: smtpHost,
-                port: config.get<number>('SMTP_PORT') || 587,
-                secure: config.get<boolean>('SMTP_SECURE') || false,
+                port: Number(config.get<string | number>('SMTP_PORT') || 465),
+                secure: smtpSecure === true || smtpSecure === 'true',
                 auth: {
                   user: config.get<string>('SMTP_USER') || '',
                   pass: config.get<string>('SMTP_PASS') || '',
@@ -83,10 +86,23 @@ import { BootstrapController } from './bootstrap.controller';
     AppService,
     OAuthService,
     OAuthConfigValidator,
+    EmailAuthService,
     SaltedHashService,
     PasswordPolicyService,
     KeyService,
     AsymmetricService,
+    {
+      provide: 'EMAIL_PASSWORD_TOOLS',
+      useFactory: (
+        policy: PasswordPolicyService,
+        hashing: SaltedHashService
+      ) => ({
+        ensurePasswordConfirmation: (password: string, confirmation: string) =>
+          policy.ensurePasswordConfirmation(password, confirmation),
+        createNewHash: (password: string) => hashing.createNewHash(password),
+      }),
+      inject: [PasswordPolicyService, SaltedHashService],
+    },
     {
       provide: 'totp',
       useValue: authenticator,
@@ -125,6 +141,11 @@ import { BootstrapController } from './bootstrap.controller';
     {
       provide: getRepositoryToken(KeyDatum),
       useFactory: (ds: DataSource) => ds.getRepository(KeyDatum),
+      inject: ['AUTHENTICATION_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AuthActionTokenEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(AuthActionTokenEntity),
       inject: ['AUTHENTICATION_CONNECTION'],
     },
     {

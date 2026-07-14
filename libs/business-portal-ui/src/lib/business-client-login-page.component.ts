@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
+import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 
 @Component({
   selector: 'business-client-login-page',
@@ -38,6 +39,18 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
           <otui-button type="submit" variant="primary" [disabled]="loading()">
             {{ loading() ? 'Signing in…' : 'Sign in' }}
           </otui-button>
+          <button type="button" (click)="requestEmail('magic-link')">
+            Email me a magic link
+          </button>
+          <button type="button" (click)="requestEmail('password-reset')">
+            Forgot password?
+          </button>
+          <button type="button" (click)="requestEmail('verification')">
+            Resend verification
+          </button>
+          @if (emailStatus()) {
+          <p role="status">{{ emailStatus() }}</p>
+          }
         </form>
       </otui-card>
     </section>
@@ -88,12 +101,36 @@ export class BusinessClientLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute, { optional: true });
+  private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
   password = '';
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly emailStatus = signal('');
   readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+
+  requestEmail(
+    purpose: 'verification' | 'magic-link' | 'password-reset'
+  ): void {
+    if (!this.email) {
+      this.emailStatus.set('Enter your email address first.');
+      return;
+    }
+    const returnPath = this.siteSlug
+      ? `/sites/${this.siteSlug}/client/login`
+      : '/client/login';
+    this.emailAuth
+      .request('business-site', this.email, purpose, returnPath)
+      .subscribe({
+        next: () =>
+          this.emailStatus.set(
+            'If that account exists, a secure email is on its way.'
+          ),
+        error: () =>
+          this.emailStatus.set('Email could not be requested right now.'),
+      });
+  }
 
   private dashboardRoute(): string[] {
     return this.siteSlug

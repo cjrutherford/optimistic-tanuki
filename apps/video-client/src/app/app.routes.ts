@@ -5,13 +5,17 @@ import { ChannelComponent } from './pages/channel/channel.component';
 import { UploadComponent } from './pages/upload/upload.component';
 import { LoginComponent } from './components/login.component';
 import { RegisterComponent } from './components/register.component';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 import { ProfileSettingsComponent } from './components/profile-settings.component';
 import { ViewHistoryComponent } from './components/view-history.component';
 import { MyChannelComponent } from './components/my-channel.component';
 import { authGuard } from './guards/auth.guard';
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('authToken'),
   { path: '', component: HomeComponent },
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },

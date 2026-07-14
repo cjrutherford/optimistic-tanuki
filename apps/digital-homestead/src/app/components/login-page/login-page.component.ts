@@ -25,6 +25,7 @@ const LOGIN_HERO_IMAGE = 'assets/digital-independence.png';
       </div>
 
       <lib-login-block
+        appId="digital-homestead"
         title="Digital Homestead"
         description="Sign in to access blog editing features"
         [heroSrc]="heroImage"

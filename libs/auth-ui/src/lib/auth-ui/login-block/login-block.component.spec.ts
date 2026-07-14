@@ -3,11 +3,13 @@ import { LoginBlockComponent } from './login-block.component';
 import { ThemeService, ThemeColors } from '@optimistic-tanuki/theme-lib';
 import { of } from 'rxjs';
 import { ReactiveFormsModule } from '@angular/forms';
+import { EmailAuthClientService } from '../../services/email-auth.service';
 
 describe('LoginBlockComponent', () => {
   let component: LoginBlockComponent;
   let fixture: ComponentFixture<LoginBlockComponent>;
   let themeServiceMock: any;
+  let emailAuthMock: { request: jest.Mock };
 
   beforeEach(async () => {
     themeServiceMock = {
@@ -125,15 +127,58 @@ describe('LoginBlockComponent', () => {
       } as ThemeColors),
       getTheme: () => 'light',
     };
+    emailAuthMock = {
+      request: jest.fn().mockReturnValue(of({ accepted: true })),
+    };
 
     await TestBed.configureTestingModule({
       imports: [LoginBlockComponent, ReactiveFormsModule],
-      providers: [{ provide: ThemeService, useValue: themeServiceMock }],
+      providers: [
+        { provide: ThemeService, useValue: themeServiceMock },
+        { provide: EmailAuthClientService, useValue: emailAuthMock },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(LoginBlockComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  });
+
+  it('requests a magic link for the configured application', () => {
+    component.appId = 'client-interface';
+    component.loginForm.patchValue({ email: 'test@example.com' });
+    component.requestMagicLink();
+    expect(emailAuthMock.request).toHaveBeenCalledWith(
+      'client-interface',
+      'test@example.com',
+      'magic-link',
+      '/'
+    );
+  });
+
+  it('reports when email sign-in is unavailable for the app', () => {
+    component.appId = '';
+    component.loginForm.patchValue({ email: 'test@example.com' });
+
+    component.requestMagicLink();
+
+    expect(component.emailActionStatus).toBe(
+      'Email sign-in is not available right now.'
+    );
+    expect(emailAuthMock.request).not.toHaveBeenCalled();
+  });
+
+  it('reports when an email request is already in progress', () => {
+    component.appId = 'client-interface';
+    component.emailActionPending = true;
+    component.loginForm.patchValue({ email: 'test@example.com' });
+
+    component.requestMagicLink();
+
+    expect(component.emailActionStatus).toBe(
+      'Email request already in progress.'
+    );
+    expect(emailAuthMock.request).not.toHaveBeenCalled();
   });
 
   it('should create', () => {

@@ -31,6 +31,7 @@ let authenticator: any;
 let keyService: KeyService;
 let jwtHandle: typeof jwt;
 let jwtService: JwtService;
+let configService: ConfigService;
 
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
@@ -243,6 +244,7 @@ describe('AppService', () => {
     authenticator = module.get('totp');
     jwtHandle = module.get('jwt');
     jwtService = module.get<JwtService>(JwtService);
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -257,6 +259,7 @@ describe('AppService', () => {
       firstName: 'John',
       lastName: 'Doe',
       totpSecret: null,
+      emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
       keyData: { salt: 'someSalt' },
     };
 
@@ -317,6 +320,107 @@ describe('AppService', () => {
       expect(authenticator.check).toHaveBeenCalledWith(
         '123456',
         'someTotpSecret'
+      );
+    });
+
+    it('rejects password login until platform email verification completes', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        ...mockUser,
+        emailVerifiedAt: null,
+      } as UserEntity);
+
+      await expectRpcError(
+        service.login('test@example.com', 'password'),
+        'EMAIL_VERIFICATION_REQUIRED'
+      );
+      expect(saltedHashService.validateHash).not.toHaveBeenCalled();
+    });
+
+    it('verifies an existing development seed user before password login', async () => {
+      const unverifiedUser = {
+        ...mockUser,
+        emailVerifiedAt: null,
+      } as UserEntity;
+      jest
+        .spyOn(configService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_AUTO_VERIFY_EMAILS' ? 'true' : undefined
+        );
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(unverifiedUser);
+      jest.spyOn(userRepo, 'save').mockResolvedValue(unverifiedUser);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
+      jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
+
+      await service.login('test@example.com', 'password');
+
+      expect(userRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
+      );
+    });
+  });
+
+  describe('registerUser', () => {
+    it('marks development seed registrations as email verified', async () => {
+      jest
+        .spyOn(configService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_AUTO_VERIFY_EMAILS' ? 'true' : undefined
+        );
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'new-user' } as UserEntity);
+      jest.spyOn(userRepo, 'insert').mockResolvedValue({
+        identifiers: [{ id: 'new-user' }],
+      } as any);
+      jest
+        .spyOn(keyRepo, 'save')
+        .mockResolvedValue({ id: 'key-1' } as KeyDatum);
+      jest
+        .spyOn(userRepo, 'save')
+        .mockResolvedValue({ id: 'new-user' } as UserEntity);
+
+      await service.registerUser(
+        'seed@example.test',
+        'Seed',
+        'User',
+        'Password123!',
+        'Password123!'
+      );
+
+      expect(userRepo.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'seed@example.test',
+          emailVerifiedAt: expect.any(Date),
+        })
+      );
+    });
+  });
+
+  describe('issueToken', () => {
+    it('persists the profileId with issued app-scoped sessions', async () => {
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue({
+        id: 'someUserId',
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00Z'),
+        keyData: { salt: 'someSalt' },
+        password: 'hashedPassword',
+      } as any);
+      jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
+
+      const result = await service.issueToken('someUserId', 'profile-1');
+
+      expect(result).toEqual({
+        message: 'Issued token',
+        code: 0,
+        data: { newToken: 'mockToken' },
+      });
+      expect(tokenRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ profileId: 'profile-1' })
       );
     });
   });

@@ -26,6 +26,7 @@ import { HttpClient } from '@angular/common/http';
       </div>
       <div class="auth-panel">
         <lib-login-block
+          appId="owner-console"
           title="Owner Console"
           description="Sign in to manage users, roles, and permissions."
           [heroSrc]="'/tempest-in-a-teacup.png'"

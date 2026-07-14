@@ -7,6 +7,8 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  Headers,
+  HttpCode,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -40,6 +42,15 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
+import type {
+  AppRegistry,
+  AppRegistration,
+} from '@optimistic-tanuki/app-registry-backend';
+import { isApprovedAuthEmailSender } from '@optimistic-tanuki/app-registry-backend';
+import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { Public } from '../../decorators/public.decorator';
+
+type EmailActionPurpose = 'verification' | 'password-reset' | 'magic-link';
 
 @ApiTags('authentication')
 @Controller('authentication')
@@ -76,7 +87,9 @@ export class AuthenticationController {
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly loginBootstrap: LoginAccountBootstrapService,
-    private readonly registerBootstrap: RegisterAccountBootstrapService
+    private readonly registerBootstrap: RegisterAccountBootstrapService,
+    @Inject(GATEWAY_APP_REGISTRY)
+    private readonly appRegistry: AppRegistry
   ) {
     this.authClient
       .connect()
@@ -84,6 +97,74 @@ export class AuthenticationController {
         console.log('AuthenticationController connected to authClient');
       })
       .catch((e) => console.error(e));
+  }
+
+  @Post('email-action/request')
+  @Public()
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async requestEmailAction(
+    @Headers('x-ot-app-id') appId: string,
+    @Body('purpose') purpose: EmailActionPurpose,
+    @Body()
+    body: { email: string; purpose?: EmailActionPurpose; returnPath?: string }
+  ) {
+    const app = this.resolveEmailApp(appId);
+    const allowedPurposes: EmailActionPurpose[] = [
+      'verification',
+      'password-reset',
+      'magic-link',
+    ];
+    if (!allowedPurposes.includes(purpose)) {
+      throw new HttpException(
+        'Invalid email action purpose',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    if (typeof body.email !== 'string' || body.email.trim().length === 0) {
+      throw new HttpException('Email is required', HttpStatus.BAD_REQUEST);
+    }
+    const email = body.email.trim();
+    await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.RequestEmailAuthAction },
+        {
+          email,
+          purpose,
+          context: {
+            appId: app.appId,
+            appName: app.name,
+            uiBaseUrl: app.uiBaseUrl,
+            from: app.authEmail!.from,
+            replyTo: app.authEmail!.replyTo,
+            returnPath: this.safeReturnPath(body.returnPath),
+          },
+        }
+      )
+    );
+    return { accepted: true };
+  }
+
+  @Post('email-verification/confirm')
+  @Public()
+  confirmEmailVerification(@Body() body: { token: string }) {
+    return this.consumeEmailLogin(body.token, 'verification');
+  }
+
+  @Post('magic-link/confirm')
+  @Public()
+  confirmMagicLink(@Body() body: { token: string }) {
+    return this.consumeEmailLogin(body.token, 'magic-link');
+  }
+
+  @Post('password-reset/confirm')
+  @Public()
+  confirmPasswordReset(
+    @Body() body: { token: string; password: string; confirmation: string }
+  ) {
+    return firstValueFrom(
+      this.authClient.send({ cmd: AuthCommands.ConfirmPasswordReset }, body)
+    );
   }
 
   @Post('login')
@@ -190,11 +271,26 @@ export class AuthenticationController {
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   async registerUser(
     @Body() data: RegisterRequest,
-    @AppScope() appScope: string
+    @AppScope() appScope: string,
+    @Headers('x-ot-app-id') appId?: string
   ) {
     try {
       this.logger.debug('registerUser called');
       const result = await this.registerBootstrap.register(data, appScope);
+      const canonicalAppId = appId || this.canonicalAppForScope(appScope);
+      if (canonicalAppId && !result?.data?.user?.emailVerifiedAt) {
+        try {
+          await this.requestEmailAction(canonicalAppId, 'verification', {
+            email: data.email,
+            returnPath: '/',
+          });
+        } catch (deliveryError) {
+          this.logger.error(
+            'Registration succeeded but verification delivery failed',
+            this.errorMessage(deliveryError)
+          );
+        }
+      }
       return result;
     } catch (error) {
       this.logger.error(
@@ -396,6 +492,91 @@ export class AuthenticationController {
         HttpStatus.INTERNAL_SERVER_ERROR
       );
     }
+  }
+
+  private resolveEmailApp(appId: string): AppRegistration {
+    const app = this.appRegistry.apps.find((entry) => entry.appId === appId);
+    if (!app?.authEmail?.enabled || !app.authEmail.from) {
+      throw new HttpException(
+        'Email authentication is not configured for this application',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    if (!isApprovedAuthEmailSender(app.authEmail.from)) {
+      throw new HttpException(
+        'Email authentication sender must use an approved root domain',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    if (
+      process.env.NODE_ENV === 'production' &&
+      /localhost|127\.0\.0\.1/.test(app.uiBaseUrl)
+    ) {
+      throw new HttpException(
+        'Email authentication callback URL is not production-ready',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+    return app;
+  }
+
+  private safeReturnPath(path?: string): string {
+    return path?.startsWith('/') && !path.startsWith('//') ? path : '/';
+  }
+
+  private async consumeEmailLogin(
+    token: string,
+    purpose: 'verification' | 'magic-link'
+  ) {
+    const inspected = (await firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.InspectEmailAuthAction },
+        { token, purpose }
+      )
+    )) as { userId: string; email: string; appId: string; returnPath: string };
+    this.resolveEmailApp(inspected.appId);
+    const profileScope = this.profileScopeForApp(inspected.appId);
+    const profile = await this.getOrCreateAppScopedProfile(
+      {
+        userId: inspected.userId,
+        email: inspected.email,
+      } as UserDetails,
+      profileScope
+    );
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ConsumeEmailAuthAction },
+        { token, purpose, profileId: profile.id }
+      )
+    );
+  }
+
+  private profileScopeForApp(appId: string): string {
+    return (
+      (
+        {
+          'opportunity-compass': 'leads-app',
+          'fin-commander': 'finance',
+          'video-platform': 'video-platform',
+          d6: 'D6',
+        } as Record<string, string>
+      )[appId] || appId
+    );
+  }
+
+  private canonicalAppForScope(appScope: string): string | null {
+    const alias = (
+      {
+        'leads-app': 'opportunity-compass',
+        finance: 'fin-commander',
+        'video-client': 'video-platform',
+        D6: 'd6',
+      } as Record<string, string>
+    )[appScope];
+    const appId = alias || appScope;
+    return this.appRegistry.apps.some((app) => app.appId === appId)
+      ? appId
+      : null;
   }
 
   private errorMessage(error: unknown): string {

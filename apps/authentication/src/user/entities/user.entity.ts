@@ -9,6 +9,7 @@ import {
 import { KeyDatum as KeyDataEntity } from '../../key-data/entities';
 import { TokenEntity } from '../../tokens/entities';
 import { OAuthProviderEntity } from '../../oauth-providers/entities/oauth-provider.entity';
+import { AuthActionTokenEntity } from '../../email-auth/entities/auth-action-token.entity';
 import { v4 as uuidv4 } from 'uuid';
 import { IsObject } from 'class-validator';
 
@@ -38,6 +39,9 @@ export class UserEntity {
   @Column({ default: null })
   totpSecret?: string;
 
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  emailVerifiedAt?: Date | null;
+
   @OneToMany((type) => TokenEntity, (te) => te.user)
   tokens: TokenEntity[];
 
@@ -48,4 +52,7 @@ export class UserEntity {
 
   @OneToMany(() => OAuthProviderEntity, (op) => op.user)
   oauthProviders: OAuthProviderEntity[];
+
+  @OneToMany(() => AuthActionTokenEntity, (token) => token.user)
+  authActionTokens: AuthActionTokenEntity[];
 }

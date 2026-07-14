@@ -11,6 +11,7 @@ import {
   ValidateTokenRequest,
 } from '@optimistic-tanuki/models';
 import { Logger } from '@nestjs/common';
+import { EmailAuthService } from './email-auth.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -40,6 +41,15 @@ describe('AppController', () => {
             linkProvider: jest.fn(),
             unlinkProvider: jest.fn(),
             getLinkedProviders: jest.fn(),
+          },
+        },
+        {
+          provide: EmailAuthService,
+          useValue: {
+            requestAction: jest.fn(),
+            inspect: jest.fn(),
+            consumeLoginAction: jest.fn(),
+            resetPassword: jest.fn(),
           },
         },
       ],

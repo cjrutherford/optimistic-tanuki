@@ -13,6 +13,7 @@ import {
   OAuthButtonsComponent,
   OAuthProviderEvent,
 } from '../oauth-buttons/oauth-buttons.component';
+import { EmailAuthClientService } from '../../services/email-auth.service';
 
 @Component({
   selector: 'lib-login-block',
@@ -45,6 +46,8 @@ export class LoginBlockComponent extends Themeable {
     'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=MnwzNjUyOXwwfDF8c2VhcmNofDJ8fGxvZ298ZW58MHx8fHwxNjg3NTY5NzA1&ixlib=rb-4.0.3&q=80&w=1080';
   @Input() heroAlt = 'login-block works!';
   @Input() showOAuth = true;
+  @Input() appId = '';
+  @Input() returnPath = '/';
   @Input() enabledOAuthProviders: string[] = [
     'google',
     'github',
@@ -54,7 +57,12 @@ export class LoginBlockComponent extends Themeable {
   @Output() submitEvent = new EventEmitter<LoginType>();
   @Output() oauthProviderSelected = new EventEmitter<OAuthProviderEvent>();
   loginForm: FormGroup;
-  constructor(private readonly fb: FormBuilder) {
+  emailActionStatus = '';
+  emailActionPending = false;
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly emailAuth: EmailAuthClientService
+  ) {
     super();
     this.loginForm = this.fb.group({
       email: this.fb.control(''),
@@ -92,5 +100,51 @@ export class LoginBlockComponent extends Themeable {
 
   onOAuthProvider(event: OAuthProviderEvent) {
     this.oauthProviderSelected.emit(event);
+  }
+
+  requestMagicLink() {
+    this.requestEmailAction('magic-link');
+  }
+
+  requestPasswordReset() {
+    this.requestEmailAction('password-reset');
+  }
+
+  requestVerification() {
+    this.requestEmailAction('verification');
+  }
+
+  private requestEmailAction(
+    purpose: 'verification' | 'magic-link' | 'password-reset'
+  ) {
+    const email = String(this.loginForm.value.email || '').trim();
+    if (!this.appId) {
+      this.emailActionStatus = 'Email sign-in is not available right now.';
+      return;
+    }
+    if (!email) {
+      this.emailActionStatus = 'Enter your email address first.';
+      return;
+    }
+    if (this.emailActionPending) {
+      this.emailActionStatus = 'Email request already in progress.';
+      return;
+    }
+    this.emailActionPending = true;
+    this.emailActionStatus = '';
+    this.emailAuth
+      .request(this.appId, email, purpose, this.returnPath)
+      .subscribe({
+        next: () => {
+          this.emailActionPending = false;
+          this.emailActionStatus =
+            'If that account exists, a secure email is on its way.';
+        },
+        error: () => {
+          this.emailActionPending = false;
+          this.emailActionStatus =
+            'Email could not be requested right now. Please try again.';
+        },
+      });
   }
 }

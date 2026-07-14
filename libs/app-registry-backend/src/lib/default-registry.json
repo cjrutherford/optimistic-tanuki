@@ -24,7 +24,11 @@
       "visibility": "public",
       "description": "Build-to-order personal cloud and homelab configurator.",
       "iconUrl": "http://localhost:8091/assets/hai-computer.png",
-      "sortOrder": 2
+      "sortOrder": 2,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@hopefulaspirationsindustries.com"
+      }
     },
     {
       "appId": "store",
@@ -48,7 +52,11 @@
       "visibility": "public",
       "description": "Opportunity discovery from interests, locality, and skills.",
       "iconUrl": "http://localhost:8095/favicon.ico",
-      "sortOrder": 4
+      "sortOrder": 4,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "client-interface",
@@ -60,7 +68,11 @@
       "visibility": "public",
       "description": "Social media, identity, messaging, and utility workflows.",
       "iconUrl": "http://localhost:8080/assets/tanuki.svg",
-      "sortOrder": 10
+      "sortOrder": 10,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@optimistic-tanuki.com"
+      }
     },
     {
       "appId": "forgeofwill",
@@ -72,7 +84,11 @@
       "visibility": "public",
       "description": "Personal project planning and execution workspace.",
       "iconUrl": "http://localhost:8081/android-chrome-192x192.png",
-      "sortOrder": 11
+      "sortOrder": 11,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@forgeofwill.com"
+      }
     },
     {
       "appId": "digital-homestead",
@@ -84,7 +100,11 @@
       "visibility": "public",
       "description": "Homestead publishing and community storytelling experience.",
       "iconUrl": "http://localhost:8082/assets/dh.png",
-      "sortOrder": 12
+      "sortOrder": 12,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "christopherrutherford-net",
@@ -108,7 +128,11 @@
       "visibility": "internal",
       "description": "Internal operator console for registry and platform management.",
       "iconUrl": "http://localhost:8084/tempest-in-a-teacup.png",
-      "sortOrder": 14
+      "sortOrder": 14,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "d6",
@@ -120,7 +144,11 @@
       "visibility": "public",
       "description": "Wellness tracking and daily practice workflows.",
       "iconUrl": "http://localhost:8086/assets/box-logo.png",
-      "sortOrder": 15
+      "sortOrder": 15,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "local-hub",
@@ -132,7 +160,11 @@
       "visibility": "public",
       "description": "Local-first community, classifieds, and business listings.",
       "iconUrl": "http://localhost:8087/assets/ts.png",
-      "sortOrder": 16
+      "sortOrder": 16,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@towne-square.com"
+      }
     },
     {
       "appId": "fin-commander",
@@ -144,7 +176,11 @@
       "visibility": "public",
       "description": "Guided personal finance workflows for accounts, plans, and scenarios.",
       "iconUrl": "http://localhost:8089/images/fin-commander-icon.png",
-      "sortOrder": 17
+      "sortOrder": 17,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "configurable-client",
@@ -168,7 +204,11 @@
       "visibility": "public",
       "description": "Business marketing, scheduling, portal, and owner operations app.",
       "iconUrl": "http://localhost:8094/assets/logo.png",
-      "sortOrder": 19
+      "sortOrder": 19,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "business-configurator",
@@ -204,7 +244,11 @@
       "visibility": "public",
       "description": "Upload, playback, and channel workflows for video content.",
       "iconUrl": "http://localhost:8093/android-chrome-192x192.png",
-      "sortOrder": 22
+      "sortOrder": 22,
+      "authEmail": {
+        "enabled": true,
+        "from": "no-reply@christopherrutherford.net"
+      }
     },
     {
       "appId": "ui-playground",

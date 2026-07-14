@@ -5,7 +5,10 @@ import { AlreadyAuthenticatedGuard } from './already-authenticated.guard';
 import { inject } from '@angular/core';
 import { UserPermissionsService } from './user-permissions.service';
 import { AuthStateService } from './auth-state.service';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver = async () => {
   const permissionsService = inject(UserPermissionsService);
@@ -25,6 +28,7 @@ const forumUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('fow-client-authToken'),
   {
     path: '',
     loadComponent: () =>

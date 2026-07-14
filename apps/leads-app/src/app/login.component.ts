@@ -32,6 +32,7 @@ import { ProfileService } from './profile.service';
       </div>
       <div class="auth-panel">
         <lib-login-block
+          appId="opportunity-compass"
           [heroSrc]="'assets/compass-splash.png'"
           title="Lead Command Login"
           description="Sign in to resume onboarding, triage, and workspace routing."

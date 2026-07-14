@@ -26,6 +26,10 @@ spec:
               value: '4000'
             - name: GATEWAY_URL
               value: 'http://gateway:3000'
+            - name: SOCKET_URL
+              value: 'https://optimistic-tanuki.com'
+            - name: SOCKET_PATH
+              value: '/ws'
           resources:
             requests:
               memory: '64Mi'

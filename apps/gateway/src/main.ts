@@ -87,7 +87,8 @@ async function bootstrap() {
       callback(new Error('Origin not allowed by CORS policy'));
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    allowedHeaders: 'Authorization,Content-Type,X-Requested-With',
+    allowedHeaders:
+      'Authorization,Content-Type,X-Requested-With,X-ot-appscope,X-ot-app-id',
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });

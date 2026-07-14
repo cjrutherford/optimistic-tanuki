@@ -44,6 +44,7 @@ import { Subject, Observable } from 'rxjs';
  *  }]
  */
 export const SOCKET_HOST = 'SOCKET_HOST';
+export const SOCKET_PATH = 'SOCKET_PATH';
 export const SOCKET_NAMESPACE = 'SOCKET_NAMESPACE';
 export const SOCKET_IO_INSTANCE = 'SOCKET_IO_INSTANCE';
 export const SOCKET_AUTH_TOKEN_PROVIDER = 'SOCKET_AUTH_TOKEN_PROVIDER';
@@ -87,6 +88,9 @@ export class SocketChatService {
    */
   constructor(
     @Inject(SOCKET_HOST) private readonly hostUrl = 'http://localhost:3000',
+    @Optional()
+    @Inject(SOCKET_PATH)
+    private readonly socketPath = '/socket.io',
     @Inject(SOCKET_NAMESPACE) private readonly namespace = 'chat',
     @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io,
     @Optional()
@@ -100,6 +104,7 @@ export class SocketChatService {
     const socketUrl = this.buildSocketUrl();
     this.socket = this.ioInstance(socketUrl, {
       autoConnect: true,
+      path: this.socketPath,
       auth: token ? { token } : undefined,
       extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
     });

@@ -10,7 +10,12 @@ export class AuthenticationService {
   private readonly http = inject(HttpClient);
 
   register(registerRequest: RegisterRequest): Observable<any> {
-    return this.http.post('/api/authentication/register', registerRequest);
+    return this.http.post('/api/authentication/register', registerRequest, {
+      headers: {
+        'x-ot-app-id': 'video-platform',
+        'x-ot-appscope': 'video-platform',
+      },
+    });
   }
 
   confirmEmail(token: string): Observable<any> {

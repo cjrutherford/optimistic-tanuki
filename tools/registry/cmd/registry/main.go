@@ -15,17 +15,24 @@ import (
 )
 
 type appConfig struct {
-	AppID       string `json:"appId" yaml:"appId"`
-	Name        string `json:"name" yaml:"name"`
-	Domain      string `json:"domain" yaml:"domain"`
-	Subdomain   string `json:"subdomain,omitempty" yaml:"subdomain,omitempty"`
-	UIBaseURL   string `json:"uiBaseUrl" yaml:"uiBaseUrl,omitempty"`
-	APIBaseURL  string `json:"apiBaseUrl" yaml:"apiBaseUrl"`
-	AppType     string `json:"appType" yaml:"appType"`
-	Visibility  string `json:"visibility" yaml:"visibility"`
-	Description string `json:"description,omitempty" yaml:"description,omitempty"`
-	IconURL     string `json:"iconUrl,omitempty" yaml:"iconUrl,omitempty"`
-	SortOrder   int    `json:"sortOrder,omitempty" yaml:"sortOrder,omitempty"`
+	AppID       string           `json:"appId" yaml:"appId"`
+	Name        string           `json:"name" yaml:"name"`
+	Domain      string           `json:"domain" yaml:"domain"`
+	Subdomain   string           `json:"subdomain,omitempty" yaml:"subdomain,omitempty"`
+	UIBaseURL   string           `json:"uiBaseUrl" yaml:"uiBaseUrl,omitempty"`
+	APIBaseURL  string           `json:"apiBaseUrl" yaml:"apiBaseUrl"`
+	AppType     string           `json:"appType" yaml:"appType"`
+	Visibility  string           `json:"visibility" yaml:"visibility"`
+	Description string           `json:"description,omitempty" yaml:"description,omitempty"`
+	IconURL     string           `json:"iconUrl,omitempty" yaml:"iconUrl,omitempty"`
+	SortOrder   int              `json:"sortOrder,omitempty" yaml:"sortOrder,omitempty"`
+	AuthEmail   *authEmailConfig `json:"authEmail,omitempty" yaml:"authEmail,omitempty"`
+}
+
+type authEmailConfig struct {
+	Enabled bool   `json:"enabled" yaml:"enabled"`
+	From    string `json:"from" yaml:"from"`
+	ReplyTo string `json:"replyTo,omitempty" yaml:"replyTo,omitempty"`
 }
 
 type registryConfig struct {

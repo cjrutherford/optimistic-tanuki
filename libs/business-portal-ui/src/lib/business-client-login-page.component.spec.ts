@@ -5,6 +5,7 @@ import { of } from 'rxjs';
 import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
 
 import { BusinessClientLoginPageComponent } from './business-client-login-page.component';
+import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 
 describe('BusinessClientLoginPageComponent', () => {
   it('routes a hosted business client to the matching hosted dashboard after login', () => {
@@ -14,6 +15,10 @@ describe('BusinessClientLoginPageComponent', () => {
     TestBed.configureTestingModule({
       imports: [BusinessClientLoginPageComponent],
       providers: [
+        {
+          provide: EmailAuthClientService,
+          useValue: { request: jest.fn() },
+        },
         {
           provide: ActivatedRoute,
           useValue: {

@@ -13,6 +13,7 @@ import {
   BootstrapStatus,
   OAuthAppsInfo,
   OAuthProviderInfo,
+  EmailSetupStatus,
   SavedOperatorInfo,
 } from '../services/setup-client.service';
 import {
@@ -312,6 +313,18 @@ export class BootstrapOnboardingComponent implements OnInit, OnDestroy {
   oauthBridgeAppDomain = '';
   oauthBridgeAppBaseUrl = '';
   testingProvider: string | null = null;
+  emailSetup: EmailSetupStatus = {
+    host: 'mail.christopherrutherford.net',
+    port: 465,
+    secure: true,
+    user: '',
+    passwordPresent: false,
+    from: '',
+    configured: false,
+  };
+  emailPassword = '';
+  emailTestRecipient = '';
+  emailTestState: 'idle' | 'testing' | 'sent' | 'error' = 'idle';
   deployPhase:
     | 'idle'
     | 'building'
@@ -491,6 +504,7 @@ export class BootstrapOnboardingComponent implements OnInit, OnDestroy {
         this.activeEnvironment = state.activeEnvironment;
         this.restoreFromConfig();
         this.loadSecrets();
+        this.loadEmailSetup();
         this.loadOperatorSummary();
       },
       error: () => {
@@ -638,6 +652,60 @@ export class BootstrapOnboardingComponent implements OnInit, OnDestroy {
         this.secretEntries = [];
       },
     });
+  }
+
+  loadEmailSetup() {
+    this.setupService.getEmailStatus(this.activeEnvironment).subscribe({
+      next: (status) => (this.emailSetup = status),
+    });
+  }
+
+  saveEmailSetup() {
+    this.loading = true;
+    this.error = null;
+    this.setupService
+      .configureEmail(
+        {
+          host: this.emailSetup.host,
+          port: this.emailSetup.port,
+          secure: this.emailSetup.secure,
+          user: this.emailSetup.user,
+          password: this.emailPassword || undefined,
+          from: this.emailSetup.from,
+        },
+        this.activeEnvironment
+      )
+      .subscribe({
+        next: () => {
+          this.loading = false;
+          this.emailPassword = '';
+          this.loadEmailSetup();
+        },
+        error: (err) => {
+          this.loading = false;
+          this.error =
+            err.error?.message ||
+            err.message ||
+            'Failed to save email settings';
+        },
+      });
+  }
+
+  testEmailConnection() {
+    this.emailTestState = 'testing';
+    this.setupService
+      .testEmail(
+        this.emailTestRecipient,
+        this.emailSetup.from,
+        this.activeEnvironment
+      )
+      .subscribe({
+        next: () => (this.emailTestState = 'sent'),
+        error: (err) => {
+          this.emailTestState = 'error';
+          this.error = err.error?.message || err.message || 'Email test failed';
+        },
+      });
   }
 
   loadOperatorSummary() {

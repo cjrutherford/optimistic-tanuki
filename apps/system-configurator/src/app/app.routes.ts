@@ -7,9 +7,13 @@ import { ConfirmationComponent } from './pages/confirmation/confirmation.compone
 import { AuthenticationGuard } from './auth/authentication.guard';
 import { AlreadyAuthenticatedGuard } from './auth/already-authenticated.guard';
 import { ProfileReadyGuard } from './auth/profile-ready.guard';
-import { OAuthCallbackComponent } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  OAuthCallbackComponent,
+} from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
+  ...emailAuthRoutes('hai-system-configurator-authToken'),
   { path: '', component: LandingComponent, title: 'HAI Computer' },
   {
     path: 'configure/:chassisId',

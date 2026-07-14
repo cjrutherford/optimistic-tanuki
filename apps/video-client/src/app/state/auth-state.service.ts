@@ -37,7 +37,12 @@ export class AuthStateService {
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
     const response = await firstValueFrom(
-      this.http.post<LoginResponse>('/api/authentication/login', loginRequest)
+      this.http.post<LoginResponse>('/api/authentication/login', loginRequest, {
+        headers: {
+          'x-ot-app-id': 'video-platform',
+          'x-ot-appscope': 'video-platform',
+        },
+      })
     );
 
     if (!response) {

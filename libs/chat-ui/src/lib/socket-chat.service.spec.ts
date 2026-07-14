@@ -2,6 +2,7 @@ import {
   SOCKET_HOST,
   SOCKET_IO_INSTANCE,
   SOCKET_NAMESPACE,
+  SOCKET_PATH,
   SocketChatService,
 } from './socket-chat.service';
 
@@ -25,6 +26,7 @@ describe('SocketChatService', () => {
       providers: [
         { provide: SOCKET_HOST, useValue: '' },
         { provide: SOCKET_NAMESPACE, useValue: 'chat' },
+        { provide: SOCKET_PATH, useValue: '/ws' },
         { provide: SOCKET_IO_INSTANCE, useValue: mockIo },
       ],
     });
@@ -35,8 +37,11 @@ describe('SocketChatService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('connects chat sockets through the same-origin socket.io path by default', () => {
-    expect(mockIo).toHaveBeenCalledWith('/chat', expect.any(Object));
+  it('uses the configured Socket.IO transport path', () => {
+    expect(mockIo).toHaveBeenCalledWith(
+      '/chat',
+      expect.objectContaining({ path: '/ws' })
+    );
   });
 
   it('should emit message via socket', () => {

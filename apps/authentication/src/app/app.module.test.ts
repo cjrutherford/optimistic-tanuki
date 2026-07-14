@@ -13,6 +13,8 @@ import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import { OAuthProviderEntity } from '../oauth-providers/entities/oauth-provider.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
+import { AuthActionTokenEntity } from '../email-auth/entities/auth-action-token.entity';
+import { EmailAuthService } from './email-auth.service';
 
 jest.mock('../config', () => {
   const mockConfig = {
@@ -68,6 +70,8 @@ describe('AppModule', () => {
       .useValue({}) // Mock AppService
       .overrideProvider(OAuthService)
       .useValue({}) // Mock OAuthService
+      .overrideProvider(EmailAuthService)
+      .useValue({})
       .overrideProvider(getRepositoryToken(UserEntity))
       .useValue({ target: UserEntity })
       .overrideProvider(getRepositoryToken(TokenEntity))
@@ -76,6 +80,8 @@ describe('AppModule', () => {
       .useValue({ target: KeyDatum })
       .overrideProvider(getRepositoryToken(OAuthProviderEntity))
       .useValue({ target: OAuthProviderEntity })
+      .overrideProvider(getRepositoryToken(AuthActionTokenEntity))
+      .useValue({ target: AuthActionTokenEntity })
       .overrideProvider('AUTHENTICATION_CONNECTION')
       .useValue({
         // Mock DatabaseModule
@@ -86,6 +92,7 @@ describe('AppModule', () => {
           },
         }),
         close: jest.fn().mockResolvedValue({}),
+        getRepository: jest.fn((entity) => ({ target: entity })),
       })
       .compile();
   });

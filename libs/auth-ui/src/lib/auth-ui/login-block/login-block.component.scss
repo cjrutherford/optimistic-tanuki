@@ -103,3 +103,31 @@ body.personality-control-center .card-inner {
     padding: 12px;
   }
 }
+.email-auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+
+  button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--local-foreground);
+    cursor: pointer;
+    font: inherit;
+    padding: 0.35rem 0;
+    text-decoration: underline;
+    text-decoration-color: var(--local-accent);
+    text-underline-offset: 0.25rem;
+  }
+
+  button:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+}
+
+.email-auth-status {
+  margin: 0.75rem 0 0;
+}

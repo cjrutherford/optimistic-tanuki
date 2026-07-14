@@ -46,6 +46,15 @@ export class AppService {
     return email.trim().toLowerCase();
   }
 
+  private autoVerifyEmailsEnabled(): boolean {
+    return (
+      String(
+        this.configService.get<string | boolean>('AUTH_AUTO_VERIFY_EMAILS') ??
+          'false'
+      ).toLowerCase() === 'true'
+    );
+  }
+
   async getUserIdFromEmail(email: string): Promise<string> {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -55,6 +64,7 @@ export class AppService {
       if (!user) {
         throw new RpcException('User not found');
       }
+
       this.l.debug(`Found user ID ${user.id} for email ${normalizedEmail}`);
       return user.id;
     } catch (e) {
@@ -79,6 +89,15 @@ export class AppService {
       });
       if (!user) {
         throw new RpcException('User not found');
+      }
+
+      if (!user.emailVerifiedAt && this.autoVerifyEmailsEnabled()) {
+        user.emailVerifiedAt = new Date();
+        await this.userRepo.save(user);
+      }
+
+      if (!user.emailVerifiedAt) {
+        throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
       }
 
       const { id: userId, password: storedHash, totpSecret } = user;
@@ -144,7 +163,6 @@ export class AppService {
         throw new RpcException('Invalid data');
       }
       this.l.log('Registering user:', normalizedEmail, fn, ln, bio);
-      this.l.log('Checking passwords', password, confirm);
       try {
         this.passwordPolicyService.ensurePasswordConfirmation(
           password,
@@ -184,7 +202,7 @@ export class AppService {
         console.error('Error creating hash');
         throw new RpcException('Error creating hash');
       }
-      this.l.log('Hash created successfully:', hashData);
+      this.l.log('Password hash created successfully');
       const insertResult = await this.userRepo.insert({
         email: normalizedEmail,
         firstName: fn,
@@ -192,6 +210,7 @@ export class AppService {
         password: hashData.hash,
         keyData: { salt: hashData.salt },
         bio: bio,
+        emailVerifiedAt: this.autoVerifyEmailsEnabled() ? new Date() : null,
       });
       this.l.log('User inserted successfully:', insertResult);
       const newUserId = insertResult.identifiers[0].id;
@@ -216,7 +235,7 @@ export class AppService {
       newUser.keyData = newKeyData;
       await this.userRepo.save(newUser);
 
-      this.l.log('New user registered successfully:', newUser);
+      this.l.log(`New user registered successfully: ${newUser.id}`);
       return {
         message: 'User Created',
         code: 0,
@@ -424,6 +443,9 @@ export class AppService {
         relations: ['keyData'],
       });
       if (!user) throw new RpcException('User not found');
+      if (!user.emailVerifiedAt) {
+        throw new RpcException('EMAIL_VERIFICATION_REQUIRED');
+      }
 
       const tk = this.tokenIssuerService.issueForUser(
         {
@@ -441,6 +463,7 @@ export class AppService {
         userId: user.id,
         user,
         revoked: false,
+        profileId: profileId || null,
       };
       await this.tokenRepo.save(ntk);
 
@@ -450,7 +473,7 @@ export class AppService {
 
       return { message: 'Issued token', code: 0, data: { newToken: tk } };
     } catch (e) {
-      console.error('Error issuing token:', e);
+      this.l.error('Error issuing token', e instanceof Error ? e.message : e);
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }

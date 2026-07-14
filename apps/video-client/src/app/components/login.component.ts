@@ -35,6 +35,7 @@ import { ProfileService } from '../services/profile.service';
       </div>
       <div class="login-content">
         <lib-login-block
+          appId="video-platform"
           title="Sign in to Video Client"
           description="Watch, upload, schedule, and manage your channel in one place."
           heroSrc="assets/login-splash.png"
