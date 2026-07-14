@@ -278,7 +278,7 @@ export class AuthenticationController {
       this.logger.debug('registerUser called');
       const result = await this.registerBootstrap.register(data, appScope);
       const canonicalAppId = appId || this.canonicalAppForScope(appScope);
-      if (canonicalAppId) {
+      if (canonicalAppId && !result?.data?.user?.emailVerifiedAt) {
         try {
           await this.requestEmailAction(canonicalAppId, 'verification', {
             email: data.email,

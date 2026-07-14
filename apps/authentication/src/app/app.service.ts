@@ -46,6 +46,15 @@ export class AppService {
     return email.trim().toLowerCase();
   }
 
+  private autoVerifyEmailsEnabled(): boolean {
+    return (
+      String(
+        this.configService.get<string | boolean>('AUTH_AUTO_VERIFY_EMAILS') ??
+          'false'
+      ).toLowerCase() === 'true'
+    );
+  }
+
   async getUserIdFromEmail(email: string): Promise<string> {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -80,6 +89,11 @@ export class AppService {
       });
       if (!user) {
         throw new RpcException('User not found');
+      }
+
+      if (!user.emailVerifiedAt && this.autoVerifyEmailsEnabled()) {
+        user.emailVerifiedAt = new Date();
+        await this.userRepo.save(user);
       }
 
       if (!user.emailVerifiedAt) {
@@ -196,6 +210,7 @@ export class AppService {
         password: hashData.hash,
         keyData: { salt: hashData.salt },
         bio: bio,
+        emailVerifiedAt: this.autoVerifyEmailsEnabled() ? new Date() : null,
       });
       this.l.log('User inserted successfully:', insertResult);
       const newUserId = insertResult.identifiers[0].id;

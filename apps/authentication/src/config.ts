@@ -24,7 +24,8 @@ export declare type AuthConfigType = {
     database: string;
   };
   auth: {
-    jwt_secret: string;
+    jwt_secret?: string;
+    jwtSecret?: string;
   };
   oauth: {
     google?: OAuthProviderConfig;
@@ -172,7 +173,10 @@ const loadConfig = () => {
       username: process.env.POSTGRES_USER || configData.database.username,
     },
     auth: {
-      jwt_secret: process.env.JWT_SECRET || configData.auth.jwt_secret,
+      jwt_secret:
+        process.env.JWT_SECRET ||
+        configData.auth.jwt_secret ||
+        configData.auth.jwtSecret,
     },
     oauth: mergeOAuthConfig(configData.oauth),
   };

@@ -31,6 +31,7 @@ let authenticator: any;
 let keyService: KeyService;
 let jwtHandle: typeof jwt;
 let jwtService: JwtService;
+let configService: ConfigService;
 
 jest.mock('qrcode', () => ({
   toDataURL: jest.fn().mockResolvedValue('qrCodeDataUrl'),
@@ -243,6 +244,7 @@ describe('AppService', () => {
     authenticator = module.get('totp');
     jwtHandle = module.get('jwt');
     jwtService = module.get<JwtService>(JwtService);
+    configService = module.get<ConfigService>(ConfigService);
   });
 
   it('should be defined', () => {
@@ -332,6 +334,68 @@ describe('AppService', () => {
         'EMAIL_VERIFICATION_REQUIRED'
       );
       expect(saltedHashService.validateHash).not.toHaveBeenCalled();
+    });
+
+    it('verifies an existing development seed user before password login', async () => {
+      const unverifiedUser = {
+        ...mockUser,
+        emailVerifiedAt: null,
+      } as UserEntity;
+      jest
+        .spyOn(configService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_AUTO_VERIFY_EMAILS' ? 'true' : undefined
+        );
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(unverifiedUser);
+      jest.spyOn(userRepo, 'save').mockResolvedValue(unverifiedUser);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(true as any);
+      jest.spyOn(tokenRepo, 'save').mockResolvedValue(undefined);
+
+      await service.login('test@example.com', 'password');
+
+      expect(userRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
+      );
+    });
+  });
+
+  describe('registerUser', () => {
+    it('marks development seed registrations as email verified', async () => {
+      jest
+        .spyOn(configService, 'get')
+        .mockImplementation((key: string) =>
+          key === 'AUTH_AUTO_VERIFY_EMAILS' ? 'true' : undefined
+        );
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: 'new-user' } as UserEntity);
+      jest.spyOn(userRepo, 'insert').mockResolvedValue({
+        identifiers: [{ id: 'new-user' }],
+      } as any);
+      jest
+        .spyOn(keyRepo, 'save')
+        .mockResolvedValue({ id: 'key-1' } as KeyDatum);
+      jest
+        .spyOn(userRepo, 'save')
+        .mockResolvedValue({ id: 'new-user' } as UserEntity);
+
+      await service.registerUser(
+        'seed@example.test',
+        'Seed',
+        'User',
+        'Password123!',
+        'Password123!'
+      );
+
+      expect(userRepo.insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          email: 'seed@example.test',
+          emailVerifiedAt: expect.any(Date),
+        })
+      );
     });
   });
 });

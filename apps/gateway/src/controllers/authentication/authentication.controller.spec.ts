@@ -244,6 +244,33 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('does not send verification for an already verified development seed user', async () => {
+    registerBootstrap.register.mockResolvedValueOnce({
+      data: {
+        user: {
+          id: 'seed-user',
+          emailVerifiedAt: '2026-07-14T00:00:00.000Z',
+        },
+      },
+    });
+    const requestSpy = jest.spyOn(controller, 'requestEmailAction');
+
+    await controller.registerUser(
+      {
+        fn: 'Seed',
+        ln: 'User',
+        email: 'seed@example.test',
+        password: 'long-password',
+        confirm: 'long-password',
+        bio: '',
+      },
+      'system-configurator',
+      'system-configurator'
+    );
+
+    expect(requestSpy).not.toHaveBeenCalled();
+  });
+
   it('requests a magic link using trusted registry email metadata', async () => {
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
       of({ accepted: true, sent: true })
