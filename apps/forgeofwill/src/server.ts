@@ -90,13 +90,13 @@ app.use('/**', (req, res, next) => {
  * Keep track of errors for debugging purposes.
  */
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  next();
-  if (res.errored) {
-    console.error(
-      `Unhandled Exception in Exrpess Server: "${res.status}" : "${res.statusCode}" \n\n Message: ${res.statusMessage} \n\n Request: "${req.url}" - "${req.ip}"`
-    );
-  }
+app.use((err: unknown, req: Request, _res: Response, next: NextFunction) => {
+  console.error('Unhandled exception in Express server', {
+    url: req.url,
+    ip: req.ip,
+    err,
+  });
+  next(err);
 });
 
 /**
