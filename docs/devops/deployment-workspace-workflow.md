@@ -113,7 +113,7 @@ secrets:
 services:
   payments:
     secrets:
-      STRIPE_SECRET_KEY: sk_live_xxx
+      STRIPE_SECRET_KEY: changeme
   prompt-proxy:
     secrets:
       OPENAI_API_KEY: sk-proxy-xxx

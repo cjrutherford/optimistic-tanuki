@@ -9,7 +9,7 @@ import {
 export interface CartItem {
   productId: string;
   name: string;
-  price: number;
+  priceCents: number;
   quantity: number;
   imageUrl?: string;
 }
@@ -31,11 +31,20 @@ export class ShoppingCartComponent extends Themeable {
   @Output() removeItem = new EventEmitter<string>();
   @Output() checkout = new EventEmitter<void>();
 
-  get total(): number {
+  /** Cart total in integer cents — summed as integers to avoid float drift. */
+  get totalCents(): number {
     return this.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
+      (sum, item) => sum + item.priceCents * item.quantity,
       0
     );
+  }
+
+  itemTotalCents(item: CartItem): number {
+    return item.priceCents * item.quantity;
+  }
+
+  formatCents(cents: number): string {
+    return (cents / 100).toFixed(2);
   }
 
   onQuantityChange(productId: string, quantity: number): void {

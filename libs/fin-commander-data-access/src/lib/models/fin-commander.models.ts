@@ -15,8 +15,10 @@ export interface FinCommanderGoal {
   id: string;
   planId: string;
   name: string;
-  targetAmount: number;
-  currentAmount: number;
+  /** Target amount in integer cents. Never store money as a float. */
+  targetAmountCents: number;
+  /** Current amount in integer cents. Never store money as a float. */
+  currentAmountCents: number;
   dueDate: string;
   strategy: string;
 }

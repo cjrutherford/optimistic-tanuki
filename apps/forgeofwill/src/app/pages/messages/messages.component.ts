@@ -45,6 +45,9 @@ import { AuthStateService } from '../../auth-state.service';
       <lib-chat-ui
         [contacts]="chatContacts()"
         [conversations]="chatConversations()"
+        [currentUserId]="currentProfileId || ''"
+        [layout]="'embedded'"
+        (messageSubmitted)="handleMessageSubmitted($event)"
       ></lib-chat-ui>
       }
     </div>
@@ -127,13 +130,16 @@ export class MessagesComponent implements OnInit, OnDestroy {
   loading = signal(true);
   error = signal<string | null>(null);
 
-  private currentProfileId: string | null = null;
+  currentProfileId: string | null = null;
 
   async ngOnInit() {
     this.socketChatService.onConversations((conversations) => {
       this.handleConversationsLoaded(
         conversations as unknown as ChatConversation[]
       );
+    });
+    this.socketChatService.onMessage((message) => {
+      this.handleIncomingMessage(message);
     });
     await this.loadConversations();
   }
@@ -151,6 +157,60 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.currentProfileId = userData.profileId;
     this.socketChatService.getConversations(userData.profileId);
+  }
+
+  handleMessageSubmitted(event: { conversationId: string; content: string }) {
+    if (!this.currentProfileId) {
+      return;
+    }
+
+    const conversation = this.chatConversations().find(
+      (item) => item.id === event.conversationId
+    );
+    if (!conversation) {
+      return;
+    }
+
+    this.socketChatService.sendMessage({
+      conversationId: event.conversationId,
+      content: event.content,
+      senderId: this.currentProfileId,
+      recipientId: conversation.participants.filter(
+        (participantId) => participantId !== this.currentProfileId
+      ),
+      type: 'chat',
+    });
+  }
+
+  handleIncomingMessage(message: ChatMessage) {
+    this.chatConversations.update((conversations) =>
+      conversations.map((conversation) => {
+        if (
+          conversation.id !== message.conversationId ||
+          conversation.messages.some((existing) => existing.id === message.id)
+        ) {
+          return conversation;
+        }
+
+        return {
+          ...conversation,
+          messages: [...conversation.messages, message],
+          updatedAt: message.timestamp,
+        };
+      })
+    );
+
+    this.chatContacts.update((contacts) =>
+      contacts.map((contact) =>
+        contact.id === message.conversationId
+          ? {
+              ...contact,
+              lastMessage: message.content,
+              lastMessageTime: message.timestamp.toISOString(),
+            }
+          : contact
+      )
+    );
   }
 
   private async handleConversationsLoaded(conversations: ChatConversation[]) {
@@ -233,6 +293,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,
           updatedAt: c.updatedAt,
+          participantProfiles: c.participants
+            .map((participantId) => profileMap.get(participantId))
+            .filter((participant): participant is ProfileDto => !!participant)
+            .map((participant) => ({
+              id: participant.id,
+              name: participant.profileName,
+              profilePic: participant.profilePic,
+            })),
         }))
       );
 

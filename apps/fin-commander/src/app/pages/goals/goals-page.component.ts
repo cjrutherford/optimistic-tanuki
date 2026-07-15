@@ -20,6 +20,26 @@ function createGoalId(): string {
   return `goal-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 }
 
+/**
+ * Editor draft holds amounts as dollars for a natural input experience.
+ * Amounts are converted to integer cents on save, matching the cents-native
+ * {@link FinCommanderGoal} model.
+ */
+interface GoalDraft {
+  id: string;
+  planId: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  dueDate: string;
+  strategy: string;
+}
+
+/** Convert a dollar amount to integer cents, guarding against NaN. */
+function dollarsToCents(dollars: number): number {
+  return Math.round((Number(dollars) || 0) * 100);
+}
+
 @Component({
   selector: 'fc-goals-page',
   standalone: true,
@@ -170,14 +190,14 @@ function createGoalId(): string {
               <div class="amount-current">
                 <span class="amount-label">Current</span>
                 <span class="amount-value current">{{
-                  formatCurrency(goal.currentAmount)
+                  formatCurrency(goal.currentAmountCents)
                 }}</span>
               </div>
               <div class="amount-sep">of</div>
               <div class="amount-target">
                 <span class="amount-label">Target</span>
                 <span class="amount-value">{{
-                  formatCurrency(goal.targetAmount)
+                  formatCurrency(goal.targetAmountCents)
                 }}</span>
               </div>
             </div>
@@ -732,7 +752,7 @@ export class GoalsPageComponent {
   });
   private planId = '';
 
-  draft: FinCommanderGoal = {
+  draft: GoalDraft = {
     id: 'goal-new',
     planId: this.planId,
     name: '',
@@ -752,10 +772,10 @@ export class GoalsPageComponent {
   }
 
   getProgressPercent(goal: FinCommanderGoal): number {
-    if (!goal.targetAmount) return 0;
+    if (!goal.targetAmountCents) return 0;
     return Math.min(
       100,
-      Math.round((goal.currentAmount / goal.targetAmount) * 100)
+      Math.round((goal.currentAmountCents / goal.targetAmountCents) * 100)
     );
   }
 
@@ -767,12 +787,14 @@ export class GoalsPageComponent {
     );
   }
 
-  formatCurrency(amount: number): string {
+  /** Formats an integer-cents amount as USD with two decimals. */
+  formatCurrency(amountCents: number): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 0,
-    }).format(amount);
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format((Number(amountCents) || 0) / 100);
   }
 
   formatDate(dateStr: string): string {
@@ -786,7 +808,16 @@ export class GoalsPageComponent {
   saveGoal() {
     this.bumpDraft();
     if (this.draftErrors().length > 0) return;
-    this.store.saveGoal({ ...this.draft, id: createGoalId() });
+    const goal: FinCommanderGoal = {
+      id: createGoalId(),
+      planId: this.draft.planId,
+      name: this.draft.name,
+      targetAmountCents: dollarsToCents(this.draft.targetAmount),
+      currentAmountCents: dollarsToCents(this.draft.currentAmount),
+      dueDate: this.draft.dueDate,
+      strategy: this.draft.strategy,
+    };
+    this.store.saveGoal(goal);
     this.statusMessage.set(`Goal "${this.draft.name.trim()}" saved.`);
     this.resetDraft();
     this.loadGoals();

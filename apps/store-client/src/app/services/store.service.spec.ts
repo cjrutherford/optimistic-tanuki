@@ -3,7 +3,12 @@ import {
   HttpClientTestingModule,
   HttpTestingController,
 } from '@angular/common/http/testing';
-import { StoreService, Product, Order, DonationRequest } from './store.service';
+import {
+  StoreService,
+  Product,
+  Order,
+  CreateDonationRequest,
+} from './store.service';
 
 describe('StoreService', () => {
   let service: StoreService;
@@ -34,7 +39,7 @@ describe('StoreService', () => {
           id: '1',
           name: 'Test Product',
           description: 'Test Description',
-          price: 99.99,
+          priceCents: 9999,
           type: 'physical',
           stock: 10,
           active: true,
@@ -59,7 +64,7 @@ describe('StoreService', () => {
         id: '1',
         name: 'Test Product',
         description: 'Test Description',
-        price: 99.99,
+        priceCents: 9999,
         type: 'physical',
         stock: 10,
         active: true,
@@ -80,8 +85,8 @@ describe('StoreService', () => {
     it('should create an order', () => {
       const mockOrder: Order = {
         userId: 'user123',
-        items: [{ productId: '1', quantity: 2, price: 99.99 }],
-        total: 199.98,
+        items: [{ productId: '1', quantity: 2, unitPriceCents: 9999 }],
+        totalCents: 19998,
         currency: 'USD',
       };
 
@@ -110,7 +115,7 @@ describe('StoreService', () => {
           id: 'order1',
           userId: 'user123',
           items: [],
-          total: 99.99,
+          totalCents: 9999,
           currency: 'USD',
           status: 'completed',
         },
@@ -129,8 +134,8 @@ describe('StoreService', () => {
 
   describe('createDonation', () => {
     it('should create a donation with USD currency by default', () => {
-      const donationRequest: DonationRequest = {
-        amount: 50,
+      const donationRequest: CreateDonationRequest = {
+        amountCents: 5000,
         message: 'Test donation',
         anonymous: false,
       };
@@ -149,8 +154,8 @@ describe('StoreService', () => {
     });
 
     it('should use provided currency if specified', () => {
-      const donationRequest: DonationRequest = {
-        amount: 50,
+      const donationRequest: CreateDonationRequest = {
+        amountCents: 5000,
         message: 'Test donation',
         anonymous: true,
         currency: 'EUR',

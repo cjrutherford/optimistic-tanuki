@@ -91,9 +91,9 @@ import { firstValueFrom } from 'rxjs';
       }
 
       .messages-shell {
-        overflow: auto;
-        min-height: 28rem;
-        max-height: calc(100vh - 14rem);
+        height: min(42rem, calc(100dvh - 20rem));
+        min-height: 0;
+        overflow: hidden;
       }
 
       .loading,
@@ -164,21 +164,12 @@ export class MessagesComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentProfileId
     );
 
-    const createdMessage = await this.chatService.sendMessage({
+    this.socketChatService.sendMessage({
       conversationId: event.conversationId,
       content: event.content,
       senderId: this.currentProfileId,
-      recipientIds,
-    });
-
-    this.appendMessageToConversation({
-      id: createdMessage.id,
-      conversationId: createdMessage.conversationId || event.conversationId,
-      senderId: createdMessage.senderId,
-      content: createdMessage.content,
-      type: createdMessage.type as 'chat' | 'info' | 'warning' | 'system',
-      recipientId: createdMessage.recipients || recipientIds,
-      timestamp: new Date(createdMessage.createdAt),
+      recipientId: recipientIds,
+      type: 'chat',
     });
   }
 
@@ -289,6 +280,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
           messages: messagesMap.get(c.id) || [],
           createdAt: c.createdAt,
           updatedAt: c.updatedAt,
+          participantProfiles: c.participants
+            .map((participantId) => profileMap.get(participantId))
+            .filter((participant): participant is ProfileDto => !!participant)
+            .map((participant) => ({
+              id: participant.id,
+              name: participant.profileName,
+              profilePic: participant.profilePic,
+            })),
         }))
       );
 

@@ -23,7 +23,7 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  priceCents: number;
   type: string;
   imageUrl?: string;
   stock: number;
@@ -36,7 +36,7 @@ export interface Order {
   id: string;
   userId: string;
   status: string;
-  total: number;
+  totalCents: number;
   currency: string;
   items: OrderItem[];
   createdAt: Date;
@@ -49,13 +49,13 @@ export interface OrderItem {
   productId: string;
   product?: Product;
   quantity: number;
-  price: number;
+  unitPriceCents: number;
 }
 
 export interface Donation {
   id: string;
   userId?: string;
-  amount: number;
+  amountCents: number;
   currency: string;
   message?: string;
   anonymous: boolean;

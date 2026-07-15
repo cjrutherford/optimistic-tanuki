@@ -3,11 +3,12 @@
  * Dynamically loads Google Fonts and custom fonts based on personality configuration
  */
 
-import { Injectable } from '@angular/core';
+import { Injectable, isDevMode } from '@angular/core';
 import {
   Personality,
   PersonalityFonts,
   FontConfig,
+  PREDEFINED_PERSONALITIES,
 } from '@optimistic-tanuki/theme-models';
 
 /**
@@ -18,6 +19,76 @@ export interface FontLoadStatus {
   loaded: boolean;
   error?: string;
 }
+
+/**
+ * Extract the primary family token from a CSS font stack, e.g.
+ * `'Poppins, system-ui, sans-serif'` -> `poppins`. Detection must key off the
+ * primary token, never a substring of the whole stack — otherwise any stack
+ * containing a generic fallback (`sans-serif`, `system-ui`) is misclassified as
+ * a system font and its web font never loads.
+ */
+function primaryFamilyToken(family: string): string {
+  return family.split(',')[0].trim().replace(/['"]/g, '').toLowerCase();
+}
+
+/**
+ * Generic/system/locally-installed family primaries that must never be network
+ * loaded. Matched against the primary token only.
+ */
+const SYSTEM_FONT_PRIMARIES = new Set<string>([
+  'system-ui',
+  '-apple-system',
+  'blinkmacsystemfont',
+  'segoe ui',
+  'sf mono',
+  'sf pro',
+  'monaco',
+  'inconsolata',
+  'menlo',
+  'consolas',
+  'arial',
+  'arial narrow',
+  'helvetica',
+  'helvetica neue',
+  'impact',
+  'georgia',
+  'times new roman',
+  'courier new',
+  'comic sans ms',
+  'sans-serif',
+  'serif',
+  'monospace',
+  'cursive',
+  'fantasy',
+]);
+
+/**
+ * Web font allowlist generated from the personality registry: every primary
+ * `fonts.*.family` token that is not a system/local family is treated as
+ * loadable. Generating this from the source of truth means a personality can
+ * introduce a new web font without also editing a hand-maintained list.
+ */
+function buildRegistryWebFonts(): Set<string> {
+  const fonts = new Set<string>();
+  for (const personality of PREDEFINED_PERSONALITIES) {
+    const configs = [
+      personality.fonts.heading,
+      personality.fonts.body,
+      personality.fonts.mono,
+      personality.fonts.accent,
+    ];
+    for (const config of configs) {
+      if (!config) continue;
+      const token = primaryFamilyToken(config.family);
+      if (!SYSTEM_FONT_PRIMARIES.has(token)) {
+        fonts.add(token);
+      }
+    }
+  }
+  return fonts;
+}
+
+const REGISTRY_WEB_FONTS = buildRegistryWebFonts();
 
 /**
  * Service for loading fonts dynamically based on personality
@@ -51,6 +122,19 @@ export class FontLoadingService {
 
     if (fonts.accent) {
       results.push(await this.loadFont('accent', fonts.accent));
+    }
+
+    if (isDevMode()) {
+      const fallbacks = results.filter((r) => !r.loaded);
+      if (fallbacks.length > 0) {
+        console.warn(
+          `[FontLoadingService] Personality "${personality.id}" has fonts that ` +
+            `failed to load and will fall back: ` +
+            fallbacks
+              .map((f) => `${f.family}${f.error ? ` (${f.error})` : ''}`)
+              .join(', ')
+        );
+      }
     }
 
     return results;
@@ -105,69 +189,44 @@ export class FontLoadingService {
    * Internal font loading implementation
    */
   private async loadFontInternal(config: FontConfig): Promise<void> {
-    // Check if this is a system font (no need to load)
+    // Check if this is a system/locally-installed font (no need to load)
     if (this.isSystemFont(config.family)) {
       return Promise.resolve();
     }
 
-    // Check for Google Fonts
+    // Check for a registry-recognized web font
     if (this.isGoogleFont(config.family)) {
       return this.loadGoogleFont(config);
     }
 
-    // For custom fonts, assume they're already loaded or use @font-face in CSS
+    // Unrecognized non-system family: nothing loads it, so it will silently
+    // fall back to a generic and the personality collapses toward the default.
+    // Surface it in development rather than failing quietly.
+    if (isDevMode()) {
+      console.warn(
+        `[FontLoadingService] Font "${config.family}" is neither a known ` +
+          `system font nor present in the personality registry; it will not ` +
+          `be loaded and will fall back to a generic family.`
+      );
+    }
     return Promise.resolve();
   }
 
   /**
-   * Check if font is a system font
+   * Check if a font's primary family is a system/locally-installed family that
+   * should not be network loaded. Keyed off the primary token only.
    */
   private isSystemFont(family: string): boolean {
-    const systemFonts = [
-      'system-ui',
-      '-apple-system',
-      'blinkmacsystemfont',
-      'segoe ui',
-      'roboto',
-      'helvetica neue',
-      'arial',
-      'sans-serif',
-      'serif',
-      'monospace',
-      'georgia',
-      'times new roman',
-      'courier new',
-      'cursive',
-      'fantasy',
-    ];
-
-    const normalizedFamily = family.toLowerCase();
-    return systemFonts.some((sf) => normalizedFamily.includes(sf));
+    return SYSTEM_FONT_PRIMARIES.has(primaryFamilyToken(family));
   }
 
   /**
-   * Check if font is a Google Font
+   * Check if a font's primary family is a loadable web font. The allowlist is
+   * generated from the personality registry (see REGISTRY_WEB_FONTS) so it
+   * stays in sync with the fonts personalities actually declare.
    */
   private isGoogleFont(family: string): boolean {
-    const googleFonts = [
-      'inter',
-      'poppins',
-      'nunito sans',
-      'quicksand',
-      'source sans pro',
-      'source code pro',
-      'cormorant garamond',
-      'playfair display',
-      'great vibes',
-      'comic neue',
-      'fredoka',
-      'jetbrains mono',
-      'fira code',
-      'sf mono',
-    ];
-
-    const normalizedFamily = family.toLowerCase().split(',')[0].trim();
-    return googleFonts.some((gf) => normalizedFamily.includes(gf));
+    return REGISTRY_WEB_FONTS.has(primaryFamilyToken(family));
   }
 
   /**

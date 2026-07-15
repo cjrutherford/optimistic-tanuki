@@ -4,6 +4,8 @@ import {
   MinLength,
   MaxLength,
   IsNumber,
+  IsInt,
+  Min,
   IsOptional,
   IsBoolean,
   IsUUID,
@@ -23,9 +25,13 @@ export class CreateProductDto {
   @MinLength(0)
   @MaxLength(2000)
   description?: string;
-  @ApiProperty({ description: 'Product price', example: 29.99 })
-  @IsNumber()
-  price!: number;
+  @ApiProperty({
+    description: 'Product price in integer cents',
+    example: 2999,
+  })
+  @IsInt()
+  @Min(0)
+  priceCents!: number;
   @ApiProperty({ description: 'Product type', example: 'physical' })
   @IsString()
   type!: string;
@@ -78,10 +84,14 @@ export class UpdateProductDto {
   @MinLength(0)
   @MaxLength(2000)
   description?: string;
-  @ApiPropertyOptional({ description: 'Product price', example: 29.99 })
-  @IsNumber()
+  @ApiPropertyOptional({
+    description: 'Product price in integer cents',
+    example: 2999,
+  })
+  @IsInt()
+  @Min(0)
   @IsOptional()
-  price?: number;
+  priceCents?: number;
   @ApiPropertyOptional({ description: 'Product type', example: 'physical' })
   @IsString()
   @IsOptional()

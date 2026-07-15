@@ -155,7 +155,7 @@ export const minimalPersonality: Personality = {
     borderRadiusMultiplier: 0.75,
     borderStyle: 'hairline' as BorderStyle,
     borderWidth: '0.5px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
+    shadowIntensity: 'none' as ShadowIntensity,
     shadowMultiplier: 0.6,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.6,
@@ -334,14 +334,14 @@ export const softPersonality: Personality = {
   id: 'soft',
   name: 'Soft',
   description:
-    'Gentle pastel tones with smooth transitions and calming aesthetics.',
+    'Gentle pastel tones with airy spacing, smooth transitions, and calming aesthetics.',
   version: '1.0.0',
 
   colorHarmony: {
     type: 'analogous' as ColorHarmonyType,
     saturationBoost: -0.2,
-    lightnessShift: 0.15,
-    accentSaturation: 45,
+    lightnessShift: 0.18,
+    accentSaturation: 42,
     accentLightness: 65,
     analogousSpread: 35,
   },
@@ -361,7 +361,7 @@ export const softPersonality: Personality = {
     borderStyle: 'thin' as BorderStyle,
     borderWidth: '1px',
     shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.7,
+    shadowMultiplier: 0.6,
     typography: 'elegant' as TypographyStyle,
     lineHeight: 1.7,
     letterSpacing: '0.02em',
@@ -370,7 +370,7 @@ export const softPersonality: Personality = {
   fonts: {
     body: {
       family: '"Nunito Sans", system-ui, sans-serif',
-      weights: [300, 400, 600],
+      weights: [300, 400, 500],
       display: 'swap',
       preload: true,
     },
@@ -409,11 +409,11 @@ export const softPersonality: Personality = {
     foregroundContrast: 88,
     secondaryLuminosityOffset: 42,
     mutedLuminosityOffset: 60,
-    neutralSaturation: 12,
+    neutralSaturation: 8,
     darkModeLuminosityScale: 12,
-    darkModeSaturationBoost: 8,
+    darkModeSaturationBoost: 6,
     shadowTint: 'primary-tint',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     pageBackgroundOpacity: 0.03,
   },
 
@@ -425,7 +425,7 @@ export const softPersonality: Personality = {
     touchTargetSize: '44px',
   },
 
-  tags: ['gentle', 'calming', 'wellness', 'friendly'],
+  tags: ['gentle', 'airy', 'calming', 'wellness'],
   category: 'casual',
 };
 
@@ -458,8 +458,8 @@ export const professionalPersonality: Personality = {
   tokens: {
     spacingScale: 'comfortable' as SpacingScale,
     spacingMultiplier: 1,
-    borderRadius: 'soft' as BorderRadiusStyle,
-    borderRadiusMultiplier: 0.875,
+    borderRadius: 'sharp' as BorderRadiusStyle,
+    borderRadiusMultiplier: 0.5,
     borderStyle: 'thin' as BorderStyle,
     borderWidth: '1px',
     shadowIntensity: 'medium' as ShadowIntensity,
@@ -663,8 +663,8 @@ export const elegantPersonality: Personality = {
     spacingMultiplier: 1.1,
     borderRadius: 'soft' as BorderRadiusStyle,
     borderRadiusMultiplier: 1,
-    borderStyle: 'hairline' as BorderStyle,
-    borderWidth: '0.5px',
+    borderStyle: 'double' as BorderStyle,
+    borderWidth: '3px',
     shadowIntensity: 'subtle' as ShadowIntensity,
     shadowMultiplier: 0.8,
     typography: 'elegant' as TypographyStyle,
@@ -700,13 +700,13 @@ export const elegantPersonality: Personality = {
   },
 
   animations: {
-    speed: 'slow' as AnimationSpeed,
+    speed: 'deliberate' as AnimationSpeed,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
     duration: {
       instant: '0ms',
       fast: '200ms',
-      normal: '500ms',
-      slow: '800ms',
+      normal: '550ms',
+      slow: '900ms',
     },
     staggerDelay: '120ms',
     prefersReducedMotion: false,
@@ -844,23 +844,26 @@ export const architectPersonality: Personality = {
 };
 
 /**
- * Soft Touch personality - Organic Warm
- * Gentle, pill-shaped, ultra-soft with rounded corners
+ * Soft Touch personality - Warm Tactile Paper
+ * Grounded, warm, tactile identity with a soft optical serif heading and
+ * pill-shaped edges with real lift. Deliberately differentiated from `soft`
+ * (airy/light/pastel) per Workstream B1 — `soft-touch` reads as "paper",
+ * not a lighter-weight clone of `soft`.
  * Best for: Wellness apps, form-heavy UIs, educational content
  */
 export const softTouchPersonality: Personality = {
   id: 'soft-touch',
   name: 'Soft Touch',
   description:
-    'Organic warm aesthetic - gentle, pill-shaped, ultra-soft with rounded corners',
+    'Warm tactile "paper" aesthetic - a soft optical serif heading, humanist sans body, pill-shaped edges, and tactile lift for wellness and form-heavy UIs.',
   version: '1.0.0',
 
   colorHarmony: {
     type: 'analogous' as ColorHarmonyType,
     saturationBoost: -0.25,
-    lightnessShift: 0.12,
+    lightnessShift: 0.08,
     accentSaturation: 40,
-    accentLightness: 60,
+    accentLightness: 55,
     analogousSpread: 30,
   },
 
@@ -872,28 +875,28 @@ export const softTouchPersonality: Personality = {
   },
 
   tokens: {
-    spacingScale: 'airy' as SpacingScale,
-    spacingMultiplier: 1.25,
-    borderRadius: 'round' as BorderRadiusStyle,
+    spacingScale: 'comfortable' as SpacingScale,
+    spacingMultiplier: 1.15,
+    borderRadius: 'pill' as BorderRadiusStyle,
     borderRadiusMultiplier: 1.75,
     borderStyle: 'thin' as BorderStyle,
-    borderWidth: '0.5px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
-    shadowMultiplier: 0.5,
-    typography: 'elegant' as TypographyStyle,
-    lineHeight: 1.7,
-    letterSpacing: '0.01em',
+    borderWidth: '1.5px',
+    shadowIntensity: 'medium' as ShadowIntensity,
+    shadowMultiplier: 1.1,
+    typography: 'friendly' as TypographyStyle,
+    lineHeight: 1.6,
+    letterSpacing: '0em',
   },
 
   fonts: {
     body: {
-      family: '"Nunito", system-ui, sans-serif',
-      weights: [300, 400, 500, 600],
+      family: '"Mulish", system-ui, sans-serif',
+      weights: [400, 500, 600, 700],
       display: 'swap',
       preload: true,
     },
     heading: {
-      family: '"Quicksand", system-ui, sans-serif',
+      family: '"Fraunces", Georgia, serif',
       weights: [400, 500, 600, 700],
       display: 'swap',
       preload: true,
@@ -908,42 +911,42 @@ export const softTouchPersonality: Personality = {
 
   animations: {
     speed: 'slow' as AnimationSpeed,
-    easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+    easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
     duration: {
       instant: '0ms',
       fast: '200ms',
-      normal: '350ms',
-      slow: '600ms',
+      normal: '380ms',
+      slow: '650ms',
     },
     staggerDelay: '80ms',
     prefersReducedMotion: true,
   },
 
-  iconStyle: 'rounded' as IconStyle,
+  iconStyle: 'outlined' as IconStyle,
 
   colorGeneration: {
-    backgroundLuminosity: 99,
-    surfaceLuminosityOffset: -1,
-    foregroundContrast: 88,
+    backgroundLuminosity: 97,
+    surfaceLuminosityOffset: -2,
+    foregroundContrast: 90,
     secondaryLuminosityOffset: 42,
     mutedLuminosityOffset: 58,
-    neutralSaturation: 10,
+    neutralSaturation: 18,
     darkModeLuminosityScale: 8,
-    darkModeSaturationBoost: 6,
+    darkModeSaturationBoost: 9,
     shadowTint: 'warm',
-    shadowOpacity: 0.04,
-    pageBackgroundOpacity: 0.03,
+    shadowOpacity: 0.14,
+    pageBackgroundOpacity: 0.05,
   },
 
   mobile: {
     spacingMultiplier: 0.9,
     borderRadiusMultiplier: 1.5,
-    shadowReduction: 0.5,
+    shadowReduction: 0.4,
     fontScale: 0.95,
     touchTargetSize: '48px',
   },
 
-  tags: ['organic', 'warm', 'gentle', 'soft', 'friendly'],
+  tags: ['warm', 'tactile', 'paper', 'organic', 'wellness'],
   category: 'casual',
 };
 
@@ -1191,9 +1194,9 @@ export const foundationPersonality: Personality = {
     spacingMultiplier: 0.85,
     borderRadius: 'sharp' as BorderRadiusStyle,
     borderRadiusMultiplier: 0.75,
-    borderStyle: 'hairline' as BorderStyle,
-    borderWidth: '0.5px',
-    shadowIntensity: 'subtle' as ShadowIntensity,
+    borderStyle: 'none' as BorderStyle,
+    borderWidth: '0px',
+    shadowIntensity: 'none' as ShadowIntensity,
     shadowMultiplier: 0.5,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.5,
@@ -1224,15 +1227,15 @@ export const foundationPersonality: Personality = {
   },
 
   animations: {
-    speed: 'fast' as AnimationSpeed,
+    speed: 'instant' as AnimationSpeed,
     easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
     duration: {
       instant: '0ms',
-      fast: '75ms',
-      normal: '150ms',
-      slow: '250ms',
+      fast: '50ms',
+      normal: '75ms',
+      slow: '120ms',
     },
-    staggerDelay: '25ms',
+    staggerDelay: '10ms',
     prefersReducedMotion: true,
   },
 
@@ -1270,6 +1273,30 @@ function createPresentation(
   return config;
 }
 
+/**
+ * Derives the presentation typography font-family values from the personality's
+ * canonical `fonts` block, so `--personality-font-family` (emitted from
+ * `familyValue`) can never diverge from `--font-heading`/`--font-body`. This is
+ * the single source of truth: edit `Personality.fonts`, not these values.
+ */
+function withDerivedFontFamilies(
+  personality: Personality,
+  presentation: PersonalityPresentation
+): PersonalityPresentation {
+  const headingFamily =
+    personality.fonts.heading?.family ?? personality.fonts.body.family;
+  const bodyFamily = personality.fonts.body.family;
+  return {
+    ...presentation,
+    typography: {
+      ...presentation.typography,
+      familyValue: headingFamily,
+      headingFamilyValue: headingFamily,
+      bodyFamilyValue: bodyFamily,
+    },
+  };
+}
+
 const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
   classic: createPresentation({
     border: {
@@ -1287,9 +1314,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'normal',
       fontStyle: 'normal',
-      familyValue: "'Inter', -apple-system, sans-serif",
-      headingFamilyValue: "'Inter', -apple-system, sans-serif",
-      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
       weightValue: '400',
     },
     animation: {
@@ -1336,9 +1360,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'bold',
       fontStyle: 'normal',
-      familyValue: "'Inter', -apple-system, sans-serif",
-      headingFamilyValue: "'Inter', -apple-system, sans-serif",
-      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
       weightValue: '700',
     },
     animation: {
@@ -1385,9 +1406,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'serif',
       fontWeight: 'light',
       fontStyle: 'normal',
-      familyValue: "'Georgia', 'Times New Roman', serif",
-      headingFamilyValue: "'Georgia', 'Times New Roman', serif",
-      bodyFamilyValue: "'Georgia', 'Times New Roman', serif",
       weightValue: '300',
     },
     animation: {
@@ -1425,7 +1443,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       radius: 'small',
       styleValue: 'solid',
       widthValue: '1px',
-      radiusValue: '4px',
+      radiusValue: '2px',
     },
     shadow: { style: 'subtle', value: '0 1px 3px rgba(0,0,0,0.1)' },
     typography: {
@@ -1434,9 +1452,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'medium',
       fontStyle: 'normal',
-      familyValue: "'Roboto', 'Segoe UI', sans-serif",
-      headingFamilyValue: "'Roboto', 'Segoe UI', sans-serif",
-      bodyFamilyValue: "'Roboto', 'Segoe UI', sans-serif",
       weightValue: '500',
     },
     animation: {
@@ -1446,21 +1461,21 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       duration: '0s',
       transition: 'none',
     },
-    layout: { borderRadius: '4px', spacing: 'normal', maxWidth: '76rem' },
+    layout: { borderRadius: '2px', spacing: 'normal', maxWidth: '76rem' },
     components: {
       button: {
-        borderRadius: '4px',
+        borderRadius: '2px',
         padding: '10px 20px',
         fontWeight: '500',
         textTransform: 'none',
       },
       card: {
-        borderRadius: '4px',
+        borderRadius: '2px',
         padding: '16px',
         boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
       },
       input: {
-        borderRadius: '4px',
+        borderRadius: '2px',
         borderWidth: '1px',
         focusStyle:
           '0 0 0 2px color-mix(in srgb, var(--primary) 18%, transparent)',
@@ -1483,9 +1498,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'display',
       fontWeight: 'bold',
       fontStyle: 'normal',
-      familyValue: "'Poppins', 'Comic Sans MS', cursive",
-      headingFamilyValue: "'Poppins', 'Comic Sans MS', cursive",
-      bodyFamilyValue: "'Poppins', 'Comic Sans MS', cursive",
       weightValue: '700',
     },
     animation: {
@@ -1532,17 +1544,14 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'serif',
       fontWeight: 'normal',
       fontStyle: 'normal',
-      familyValue: "'Playfair Display', 'Times New Roman', serif",
-      headingFamilyValue: "'Playfair Display', 'Times New Roman', serif",
-      bodyFamilyValue: "'Playfair Display', 'Times New Roman', serif",
       weightValue: '400',
     },
     animation: {
       style: 'subtle',
-      speed: 'normal',
+      speed: 'slow',
       timingFunction: 'ease',
-      duration: '0.3s',
-      transition: 'all 0.3s ease',
+      duration: '0.4s',
+      transition: 'all 0.4s ease',
     },
     layout: { borderRadius: '0px', spacing: 'normal', maxWidth: '70rem' },
     components: {
@@ -1581,9 +1590,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'normal',
       fontStyle: 'normal',
-      familyValue: "'Helvetica Neue', 'Arial', sans-serif",
-      headingFamilyValue: "'Helvetica Neue', 'Arial', sans-serif",
-      bodyFamilyValue: "'Helvetica Neue', 'Arial', sans-serif",
       weightValue: '400',
     },
     animation: {
@@ -1630,9 +1636,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'extrabold',
       fontStyle: 'normal',
-      familyValue: "'Oswald', 'Arial Narrow', sans-serif",
-      headingFamilyValue: "'Oswald', 'Arial Narrow', sans-serif",
-      bodyFamilyValue: "'IBM Plex Sans', sans-serif",
       weightValue: '800',
     },
     animation: {
@@ -1669,34 +1672,31 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       width: 'thin',
       radius: 'pill',
       styleValue: 'solid',
-      widthValue: '1px',
+      widthValue: '1.5px',
       radiusValue: '9999px',
     },
-    shadow: { style: 'glow', value: '0 8px 22px rgba(0,0,0,0.08)' },
+    shadow: { style: 'glow', value: '0 10px 26px rgba(0,0,0,0.14)' },
     typography: {
-      fontFamily: 'handwritten',
-      headingFamily: 'sans-serif',
+      fontFamily: 'serif',
+      headingFamily: 'serif',
       bodyFamily: 'sans-serif',
-      fontWeight: 'normal',
+      fontWeight: 'medium',
       fontStyle: 'normal',
-      familyValue: "'Quicksand', 'Nunito', sans-serif",
-      headingFamilyValue: "'Quicksand', 'Nunito', sans-serif",
-      bodyFamilyValue: "'Nunito', sans-serif",
-      weightValue: '400',
+      weightValue: '500',
     },
     animation: {
-      style: 'flowing',
+      style: 'subtle',
       speed: 'slow',
-      timingFunction: 'ease-out',
+      timingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
       duration: '0.35s',
-      transition: 'all 0.35s ease-out',
+      transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
     },
     layout: { borderRadius: '24px', spacing: 'relaxed', maxWidth: '72rem' },
     components: {
       button: {
         borderRadius: '9999px',
         padding: '12px 26px',
-        fontWeight: '500',
+        fontWeight: '600',
         textTransform: 'none',
       },
       card: {
@@ -1706,7 +1706,7 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       },
       input: {
         borderRadius: '18px',
-        borderWidth: '1px',
+        borderWidth: '1.5px',
         focusStyle:
           '0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent)',
       },
@@ -1728,9 +1728,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'bold',
       fontStyle: 'normal',
-      familyValue: "'DM Serif Display', 'Georgia', serif",
-      headingFamilyValue: "'DM Serif Display', 'Georgia', serif",
-      bodyFamilyValue: "'Inter', -apple-system, sans-serif",
       weightValue: '700',
     },
     animation: {
@@ -1777,9 +1774,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'monospace',
       fontWeight: 'medium',
       fontStyle: 'normal',
-      familyValue: "'Space Grotesk', 'JetBrains Mono', monospace",
-      headingFamilyValue: "'Space Grotesk', sans-serif",
-      bodyFamilyValue: "'JetBrains Mono', monospace",
       weightValue: '500',
     },
     animation: {
@@ -1815,8 +1809,8 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       style: 'solid',
       width: 'thin',
       radius: 'none',
-      styleValue: 'solid',
-      widthValue: '1px',
+      styleValue: 'none',
+      widthValue: '0px',
       radiusValue: '0px',
     },
     shadow: { style: 'none', value: 'none' },
@@ -1826,9 +1820,6 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       bodyFamily: 'sans-serif',
       fontWeight: 'medium',
       fontStyle: 'normal',
-      familyValue: 'system-ui, -apple-system, sans-serif',
-      headingFamilyValue: 'system-ui, -apple-system, sans-serif',
-      bodyFamilyValue: 'system-ui, -apple-system, sans-serif',
       weightValue: '500',
     },
     animation: {
@@ -1879,7 +1870,10 @@ export const PREDEFINED_PERSONALITIES: Personality[] = [
   foundationPersonality,
 ].map((personality) => ({
   ...personality,
-  presentation: PRESENTATION_BY_ID[personality.id],
+  presentation: withDerivedFontFamilies(
+    personality,
+    PRESENTATION_BY_ID[personality.id]
+  ),
 }));
 
 /**

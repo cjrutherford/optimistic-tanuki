@@ -54,8 +54,8 @@ describe('FinCommanderPlanStore', () => {
       id: 'goal-a',
       planId: 'home-command',
       name: 'Tenant A goal',
-      targetAmount: 1000,
-      currentAmount: 100,
+      targetAmountCents: 100000,
+      currentAmountCents: 10000,
       dueDate: '2026-05-01',
       strategy: 'Save monthly',
     });
@@ -65,8 +65,8 @@ describe('FinCommanderPlanStore', () => {
       id: 'goal-b',
       planId: 'home-command',
       name: 'Tenant B goal',
-      targetAmount: 2000,
-      currentAmount: 200,
+      targetAmountCents: 200000,
+      currentAmountCents: 20000,
       dueDate: '2026-06-01',
       strategy: 'Save weekly',
     });

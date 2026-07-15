@@ -32,7 +32,9 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
             <p class="lede">{{ item.description }}</p>
             }
             <div class="product-meta">
-              <span class="product-price">\${{ formatPrice(item.price) }}</span>
+              <span class="product-price"
+                >\${{ formatPrice(item.priceCents / 100) }}</span
+              >
               <span
                 class="product-stock"
                 [class.out-of-stock]="item.stock === 0"
@@ -233,7 +235,7 @@ export class BusinessProductDetailComponent {
       id: product.id,
       name: product.name,
       description: product.description,
-      price: Number(product.price),
+      priceCents: product.priceCents,
       imageUrl: product.imageUrl,
       stock: product.stock,
       type: product.type,

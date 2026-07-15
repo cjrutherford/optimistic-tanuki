@@ -5,6 +5,50 @@ staged_files="$(git diff --cached --name-only --diff-filter=ACMR)"
 
 [ -z "$staged_files" ] && exit 0
 
+# --- Secret scanning --------------------------------------------------------
+# Lightweight, pattern-based safety net that blocks commits touching files
+# whose *staged content* looks like it contains credential material (cloud
+# API keys, live payment keys, VPN/OAuth client keys, private key blocks,
+# etc). It is intentionally simple -- a handful of well-known token shapes,
+# not a full secret scanner -- and exists because a real Tailscale OAuth
+# client secret was previously committed to k8s/base/secrets.yaml. See
+# docs/devops/secrets-management.md for the incident writeup and the
+# recommended long-term fix (External Secrets Operator).
+#
+# Bypass (only when you are certain every match is a false positive, e.g. a
+# test fixture or a doc showing a redacted example):
+#   SKIP_SECRET_SCAN=1 git commit ...
+if [ "${SKIP_SECRET_SCAN:-0}" != "1" ]; then
+  secret_pattern='tskey-[A-Za-z0-9-]+|sk_live_[A-Za-z0-9]+|sk_test_[A-Za-z0-9]+|ghp_[A-Za-z0-9]{36}|gho_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]+|xox[baprs]-[0-9A-Za-z-]+|AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'
+  secret_hits=""
+  old_ifs="$IFS"
+  IFS='
+'
+  for file in $staged_files; do
+    IFS="$old_ifs"
+    [ -f "$file" ] || continue
+    if git show ":$file" 2>/dev/null | grep -Eq "$secret_pattern"; then
+      secret_hits="$secret_hits $file"
+    fi
+    IFS='
+'
+  done
+  IFS="$old_ifs"
+
+  if [ -n "$secret_hits" ]; then
+    echo "error: possible secret material detected in staged file(s):" >&2
+    for file in $secret_hits; do
+      echo "  - $file" >&2
+    done
+    echo "" >&2
+    echo "If every match above is a false positive (test fixture, redacted" >&2
+    echo "doc example, etc.), bypass with:" >&2
+    echo "  SKIP_SECRET_SCAN=1 git commit ..." >&2
+    echo "Otherwise remove the value and see docs/devops/secrets-management.md" >&2
+    exit 1
+  fi
+fi
+
 # Prefer a directly-installed pnpm because some local Node + corepack
 # combinations crash with ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING when invoked
 # as `corepack pnpm`. Fall back to corepack only if no standalone pnpm exists.

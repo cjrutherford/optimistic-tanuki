@@ -123,7 +123,7 @@ import {
               <td>{{ transaction.postedOn }}</td>
               <td>{{ transaction.description }}</td>
               <td>{{ transaction.type }}</td>
-              <td>{{ transaction.amount }}</td>
+              <td>{{ formatCents(transaction.amountCents) }}</td>
               <td>{{ transaction.category }}</td>
             </tr>
             }
@@ -253,6 +253,16 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
     await this.loadAccounts();
   }
 
+  /** Formats an integer-cents amount as USD with two decimals for display. */
+  formatCents(amountCents: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format((Number(amountCents) || 0) / 100);
+  }
+
   activePlaceholder(): string {
     return (
       this.registry.manifests.find(
@@ -330,7 +340,9 @@ export class FinCommanderImportWorkbenchComponent implements OnInit {
       for (const transaction of preview.transactions) {
         await this.financeService.createTransaction({
           accountId: this.accountId,
-          amount: transaction.amount,
+          // Finance transactions are stored as decimal dollars; convert from the
+          // importer's integer cents at the boundary.
+          amount: transaction.amountCents / 100,
           type: transaction.type,
           category: transaction.category,
           description: transaction.description,

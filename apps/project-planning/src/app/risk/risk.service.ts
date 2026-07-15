@@ -7,8 +7,13 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Risk } from '../entities/risk.entity';
-import { Between, FindOptionsWhere, Like, Repository } from 'typeorm';
+import { Between, FindOptionsWhere, In, Like, Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
+import {
+  assertFound,
+  assertProjectAccess,
+  getAccessibleProjectIds,
+} from '../common/project-access.util';
 
 @Injectable()
 export class RiskService {
@@ -19,13 +24,16 @@ export class RiskService {
     private readonly projectRepository: Repository<Project>
   ) {}
 
-  async create(createRiskDto: CreateRiskDto) {
+  async create(createRiskDto: CreateRiskDto, requestingUserId?: string) {
     console.log('RiskService.create received:', JSON.stringify(createRiskDto));
     const project = await this.projectRepository.findOne({
       where: { id: createRiskDto.projectId },
     });
     if (!project) {
       throw new Error(`Project with id ${createRiskDto.projectId} not found`);
+    }
+    if (requestingUserId) {
+      assertProjectAccess(project, requestingUserId);
     }
     const riskData = {
       description: createRiskDto.description || createRiskDto.name, // Fallback to name if description is missing
@@ -47,7 +55,7 @@ export class RiskService {
     return await this.riskRepository.save(risk);
   }
 
-  async findAll(query: QueryRiskDto) {
+  async findAll(query: QueryRiskDto, requestingUserId?: string) {
     const where: FindOptionsWhere<Risk> = {};
     for (const key of [
       'impact',
@@ -72,23 +80,68 @@ export class RiskService {
         where[key] = Like(`%${query[key]}%`);
       }
     }
-    if (query.projectId) {
+
+    if (requestingUserId) {
+      const accessibleProjectIds = await getAccessibleProjectIds(
+        this.projectRepository,
+        requestingUserId
+      );
+      if (query.projectId) {
+        if (!accessibleProjectIds.includes(query.projectId)) {
+          return [];
+        }
+        where.project = { id: query.projectId };
+      } else {
+        if (accessibleProjectIds.length === 0) {
+          return [];
+        }
+        where.project = { id: In(accessibleProjectIds) };
+      }
+    } else if (query.projectId) {
       where.project = { id: query.projectId };
     }
     return await this.riskRepository.find({ where });
   }
 
-  async findOne(id: string) {
-    return await this.riskRepository.findOne({ where: { id } });
+  async findOne(id: string, requestingUserId?: string) {
+    const risk = await this.riskRepository.findOne({
+      where: { id },
+      relations: ['project'],
+    });
+    if (requestingUserId) {
+      assertFound(risk, `Risk with id ${id} not found`);
+      assertProjectAccess(risk.project, requestingUserId);
+    }
+    return risk;
   }
 
-  async update(id: string, updateRiskDto: UpdateRiskDto) {
+  async update(
+    id: string,
+    updateRiskDto: UpdateRiskDto,
+    requestingUserId?: string
+  ) {
+    if (requestingUserId) {
+      const risk = await this.riskRepository.findOne({
+        where: { id },
+        relations: ['project'],
+      });
+      assertFound(risk, `Risk with id ${id} not found`);
+      assertProjectAccess(risk.project, requestingUserId);
+    }
     delete updateRiskDto.projectId;
     await this.riskRepository.update(id, updateRiskDto);
     return await this.riskRepository.findOne({ where: { id } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestingUserId?: string) {
+    if (requestingUserId) {
+      const risk = await this.riskRepository.findOne({
+        where: { id },
+        relations: ['project'],
+      });
+      assertFound(risk, `Risk with id ${id} not found`);
+      assertProjectAccess(risk.project, requestingUserId);
+    }
     await this.riskRepository.update(id, { deletedAt: new Date() });
     return await this.riskRepository.findOne({ where: { id } });
   }

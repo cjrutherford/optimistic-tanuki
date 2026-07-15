@@ -11,11 +11,15 @@ import {
   ArrayContains,
   Between,
   FindOptionsWhere,
-  In,
   IsNull,
   Not,
   Repository,
 } from 'typeorm';
+import {
+  accessibleProjectWhere,
+  assertFound,
+  assertProjectAccess,
+} from '../common/project-access.util';
 
 @Injectable()
 export class ProjectService {
@@ -33,7 +37,7 @@ export class ProjectService {
     return await this.projectRepository.save(project);
   }
 
-  async findAll(query: QueryProjectDto) {
+  async findAll(query: QueryProjectDto, requestingUserId?: string) {
     const where: FindOptionsWhere<Project> = {};
 
     if (query.name) {
@@ -66,27 +70,60 @@ export class ProjectService {
     if (query.members) {
       where.members = ArrayContains(query.members);
     }
-    return await this.projectRepository.find({
-      where,
-      relations: ['tasks', 'risks', 'changes', 'journalEntries'],
-    });
+
+    const relations = ['tasks', 'risks', 'changes', 'journalEntries'];
+
+    // Scope results to projects the caller owns or is a member of. When no
+    // requesting user is supplied (trusted internal call) fall back to the
+    // raw query.
+    if (requestingUserId) {
+      return await this.projectRepository.find({
+        where: accessibleProjectWhere(where, requestingUserId),
+        relations,
+      });
+    }
+
+    return await this.projectRepository.find({ where, relations });
   }
 
-  async findOne(id: string) {
-    return await this.projectRepository.findOne({
+  async findOne(id: string, requestingUserId?: string) {
+    const project = await this.projectRepository.findOne({
       where: { id },
       relations: ['tasks', 'risks', 'changes', 'journalEntries'],
     });
+
+    if (requestingUserId) {
+      assertFound(project, `Project with id ${id} not found`);
+      assertProjectAccess(project, requestingUserId);
+    }
+
+    return project;
   }
 
-  async update(id: string, updateProjectDto: UpdateProjectDto) {
+  async update(
+    id: string,
+    updateProjectDto: UpdateProjectDto,
+    requestingUserId?: string
+  ) {
+    if (requestingUserId) {
+      const project = await this.projectRepository.findOne({ where: { id } });
+      assertFound(project, `Project with id ${id} not found`);
+      assertProjectAccess(project, requestingUserId);
+    }
+
     return await this.projectRepository.update(id, {
       ...updateProjectDto,
       updatedAt: new Date(),
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestingUserId?: string) {
+    if (requestingUserId) {
+      const project = await this.projectRepository.findOne({ where: { id } });
+      assertFound(project, `Project with id ${id} not found`);
+      assertProjectAccess(project, requestingUserId);
+    }
+
     return await this.projectRepository.update(id, { deletedAt: new Date() });
   }
 }

@@ -8,6 +8,19 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { CommerceWorkspaceNavComponent } from './commerce-workspace-nav.component';
 
+// The form binds to a dollar-denominated `price` field for a friendlier
+// input UX; it is converted to `priceCents` when building the DTO.
+interface ProductFormModel {
+  id?: string;
+  name: string;
+  description?: string;
+  price: number;
+  type: string;
+  imageUrl?: string;
+  stock?: number;
+  active?: boolean;
+}
+
 @Component({
   selector: 'app-product-management',
   standalone: true,
@@ -25,7 +38,7 @@ export class ProductManagementComponent implements OnInit {
   loading = false;
   error: string | null = null;
 
-  productForm: CreateProductDto & { id?: string } = this.getEmptyForm();
+  productForm: ProductFormModel = this.getEmptyForm();
 
   constructor(private storeService: StoreService) {}
 
@@ -78,12 +91,13 @@ export class ProductManagementComponent implements OnInit {
     this.filter = filter;
   }
 
-  formatPrice(price: number | string): string {
-    const priceNumber = typeof price === 'string' ? parseFloat(price) : price;
-    return priceNumber.toFixed(2);
+  formatPrice(priceCents: number | string): string {
+    const centsNumber =
+      typeof priceCents === 'string' ? parseFloat(priceCents) : priceCents;
+    return (centsNumber / 100).toFixed(2);
   }
 
-  getEmptyForm(): CreateProductDto & { id?: string } {
+  getEmptyForm(): ProductFormModel {
     return {
       name: '',
       description: '',
@@ -106,7 +120,16 @@ export class ProductManagementComponent implements OnInit {
     this.isEditing = true;
     this.isCreating = false;
     this.selectedProduct = product;
-    this.productForm = { ...product };
+    this.productForm = {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.priceCents / 100,
+      type: product.type,
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      active: product.active,
+    };
   }
 
   cancelEdit(): void {
@@ -130,7 +153,7 @@ export class ProductManagementComponent implements OnInit {
     const dto: CreateProductDto = {
       name: this.productForm.name,
       description: this.productForm.description,
-      price: this.productForm.price,
+      priceCents: Math.round(this.productForm.price * 100),
       type: this.productForm.type,
       imageUrl: this.productForm.imageUrl,
       stock: this.productForm.stock,
@@ -158,7 +181,7 @@ export class ProductManagementComponent implements OnInit {
     const dto: UpdateProductDto = {
       name: this.productForm.name,
       description: this.productForm.description,
-      price: this.productForm.price,
+      priceCents: Math.round(this.productForm.price * 100),
       type: this.productForm.type,
       imageUrl: this.productForm.imageUrl,
       stock: this.productForm.stock,

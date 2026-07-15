@@ -2,7 +2,8 @@ import { Injectable } from '@angular/core';
 
 export interface FinCommanderImportDraft {
   postedOn: string;
-  amount: number;
+  /** Parsed amount in integer cents. Never a float in the money path. */
+  amountCents: number;
   type: 'credit' | 'debit';
   category: string;
   description: string;

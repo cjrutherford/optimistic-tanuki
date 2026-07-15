@@ -599,7 +599,7 @@ export class ValidationPageComponent {
     id: 'product-1',
     name: 'Validation Kit',
     description: 'A representative commerce surface for personality sweeps.',
-    price: 49,
+    priceCents: 4900,
     imageUrl: '',
     stock: 9,
     type: 'digital',

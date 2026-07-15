@@ -75,7 +75,7 @@ describe('OperationsWorkspaceComponent', () => {
                   type: 'service',
                   active: true,
                   description: '',
-                  price: 0,
+                  priceCents: 0,
                 },
               ])
             ),

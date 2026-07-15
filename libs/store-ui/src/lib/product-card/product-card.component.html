@@ -11,7 +11,7 @@
       {{ product.description }}
     </p>
     <div class="product-footer">
-      <span class="product-price">\${{ parsePrice(product.price) }}</span>
+      <span class="product-price">\${{ parsePrice(product.priceCents) }}</span>
       <span class="product-stock" [class.out-of-stock]="product.stock === 0">
         {{ product.stock > 0 ? product.stock + ' in stock' : 'Out of stock' }}
       </span>

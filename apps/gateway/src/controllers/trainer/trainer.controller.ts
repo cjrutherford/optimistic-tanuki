@@ -446,7 +446,7 @@ export class TrainerController {
       (product) => !product?.description?.trim()
     );
     const hasInvalidPrice = serviceProducts.some(
-      (product) => Number(product?.price) <= 0
+      (product) => Number(product?.priceCents) <= 0
     );
 
     if (hasMissingDescription || hasInvalidPrice) {
@@ -589,7 +589,7 @@ export class TrainerController {
         label: product.name,
         description: product.description || 'Store-backed service offer.',
         serviceType: product.type,
-        startingRate: Number(product.price || 0),
+        startingRate: Number(product.priceCents || 0) / 100,
         allowOnlineBooking: true,
       }));
     }

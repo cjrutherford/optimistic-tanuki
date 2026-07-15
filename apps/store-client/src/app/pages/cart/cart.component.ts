@@ -15,14 +15,14 @@ export class CartComponent {
     {
       productId: '1',
       name: 'Premium Coffee Beans',
-      price: 24.99,
+      priceCents: 2499,
       quantity: 2,
       imageUrl: '/assets/products/coffee.jpg',
     },
     {
       productId: '4',
       name: 'Handcrafted Mug',
-      price: 14.99,
+      priceCents: 1499,
       quantity: 1,
       imageUrl: '/assets/products/mug.jpg',
     },

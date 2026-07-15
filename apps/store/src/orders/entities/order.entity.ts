@@ -19,8 +19,8 @@ export class OrderEntity {
   @Column({ type: 'varchar', length: 50 })
   status: string; // 'pending', 'processing', 'completed', 'cancelled'
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  total: number;
+  @Column({ type: 'int' })
+  totalCents: number;
 
   @Column({ type: 'varchar', length: 3, default: 'USD' })
   currency: string;

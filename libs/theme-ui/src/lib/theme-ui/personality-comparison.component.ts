@@ -345,8 +345,9 @@ export class PersonalityComparisonComponent {
     }
     return {
       '--personality-heading-family':
-        presentation.typography.headingFamilyValue,
-      '--personality-body-family': presentation.typography.bodyFamilyValue,
+        presentation.typography.headingFamilyValue ?? '',
+      '--personality-body-family':
+        presentation.typography.bodyFamilyValue ?? '',
       '--personality-font-weight': presentation.typography.weightValue,
       '--personality-border-radius': presentation.layout.borderRadius,
       '--personality-card-shadow': presentation.shadow.value,

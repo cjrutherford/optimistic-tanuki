@@ -9,3 +9,9 @@ export { BankConnection } from './bank-connection.entity';
 export { LinkedBankAccount } from './linked-bank-account.entity';
 export { FinancialInvoice } from './financial-invoice.entity';
 export { FinancialCheckoutSession } from './financial-checkout-session.entity';
+export { FinCommanderPlanEntity } from './fin-commander-plan.entity';
+export { FinCommanderGoalEntity } from './fin-commander-goal.entity';
+export {
+  FinCommanderScenarioEntity,
+  FinCommanderScenarioAssumptionRecord,
+} from './fin-commander-scenario.entity';

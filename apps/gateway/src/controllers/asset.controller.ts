@@ -23,6 +23,7 @@ import { firstValueFrom } from 'rxjs';
 import { RequirePermissions } from '../decorators/permissions.decorator';
 import { PermissionsGuard } from '../guards/permissions.guard';
 import { AuthGuard } from '../auth/auth.guard';
+import { LongRunning } from '../decorators/request-timeout.decorator';
 
 @Controller('asset')
 export class AssetController {
@@ -81,6 +82,7 @@ export class AssetController {
   }
 
   @Get('/:id')
+  @LongRunning()
   async getAssetById(@Param('id') id: string, @Res() res: Response) {
     try {
       const value = await firstValueFrom(

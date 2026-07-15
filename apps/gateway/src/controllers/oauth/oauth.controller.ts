@@ -71,6 +71,7 @@ type OAuthStatePayload = {
 type OAuthIdentity = {
   providerUserId: string;
   email: string;
+  emailVerified: boolean;
   displayName: string;
   firstName: string;
   lastName: string;
@@ -250,6 +251,7 @@ export class OAuthController {
             provider,
             providerUserId: identity.providerUserId,
             email: identity.email,
+            emailVerified: identity.emailVerified,
             displayName: identity.displayName,
             accessToken: identity.accessToken,
             refreshToken: identity.refreshToken,
@@ -858,6 +860,11 @@ export class OAuthController {
         return {
           providerUserId: String(profile.sub || ''),
           email: String(profile.email || ''),
+          // Google returns the standard OIDC email_verified claim (may be a
+          // boolean or the string "true" depending on serialization).
+          emailVerified:
+            profile.email_verified === true ||
+            profile.email_verified === 'true',
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.given_name || ''),
           lastName: String(profile.family_name || ''),
@@ -865,12 +872,20 @@ export class OAuthController {
           refreshToken: tokenPayload.refresh_token,
         };
       case 'github': {
+        const githubEmailInfo = await this.fetchGithubEmail(accessToken);
         const githubEmail =
-          String(profile.email || '') ||
-          (await this.fetchGithubEmail(accessToken));
+          String(profile.email || '') || githubEmailInfo.email;
+        // GitHub does not expose a verified flag on the /user profile; trust
+        // verification only from the /user/emails API, and only when it maps
+        // to the address we ultimately use.
+        const emailVerified =
+          !!githubEmail &&
+          githubEmail === githubEmailInfo.email &&
+          githubEmailInfo.verified;
         return {
           providerUserId: String(profile.id || ''),
           email: githubEmail,
+          emailVerified,
           displayName: String(profile.name || profile.login || githubEmail),
           firstName: '',
           lastName: '',
@@ -884,6 +899,10 @@ export class OAuthController {
           email: String(
             profile.mail || profile.userPrincipalName || profile.id || ''
           ),
+          // Microsoft Graph /me exposes no email verification claim, so we
+          // cannot assert ownership. Treat as unverified: existing accounts
+          // must link Microsoft manually from account settings.
+          emailVerified: false,
           displayName: String(
             profile.displayName || profile.userPrincipalName || ''
           ),
@@ -896,6 +915,9 @@ export class OAuthController {
         return {
           providerUserId: String(profile.id || ''),
           email: String(profile.email || ''),
+          // Facebook only returns an email address once the user has verified
+          // it, so a present email implies a verified email.
+          emailVerified: Boolean(profile.email),
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.first_name || ''),
           lastName: String(profile.last_name || ''),
@@ -907,7 +929,9 @@ export class OAuthController {
     }
   }
 
-  private async fetchGithubEmail(accessToken: string): Promise<string> {
+  private async fetchGithubEmail(
+    accessToken: string
+  ): Promise<{ email: string; verified: boolean }> {
     const response = await fetch('https://api.github.com/user/emails', {
       headers: {
         Accept: 'application/json',
@@ -916,7 +940,7 @@ export class OAuthController {
       },
     });
     if (!response.ok) {
-      return '';
+      return { email: '', verified: false };
     }
 
     const emails = (await response.json()) as Array<{
@@ -929,7 +953,10 @@ export class OAuthController {
       emails.find((entry) => entry.primary) ||
       emails.find((entry) => entry.verified) ||
       emails[0];
-    return primary?.email || '';
+    return {
+      email: primary?.email || '',
+      verified: Boolean(primary?.verified),
+    };
   }
 
   private async registerOAuthUser(

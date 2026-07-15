@@ -7,6 +7,15 @@ function normalizeType(value: string): 'credit' | 'debit' {
   return value.trim().toLowerCase() === 'credit' ? 'credit' : 'debit';
 }
 
+/**
+ * Parse a raw amount string (dollars) into integer cents. Guards against NaN
+ * so malformed rows import as 0 rather than corrupting the money path.
+ */
+export function parseAmountToCents(value: string | undefined): number {
+  const parsed = parseFloat((value ?? '').trim());
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+}
+
 export const csvImportProvider: FinCommanderImportProvider = {
   manifest: {
     id: 'csv',
@@ -28,7 +37,7 @@ export const csvImportProvider: FinCommanderImportProvider = {
       return {
         postedOn: postedOn?.trim() || new Date().toISOString().slice(0, 10),
         description: description?.trim() || `Imported row ${index + 1}`,
-        amount: Number(amount ?? 0),
+        amountCents: parseAmountToCents(amount),
         type: normalizeType(type ?? 'debit'),
         category: category?.trim() || 'Imported',
         payeeOrVendor: description?.trim() || 'Unknown merchant',

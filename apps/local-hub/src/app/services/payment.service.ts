@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
@@ -200,11 +200,36 @@ export class PaymentService {
 
   /** Handle an error: set the error signal, clear loading, re-throw. */
   private fail(err: unknown): never {
-    const message =
-      err instanceof Error ? err.message : 'An unexpected error occurred.';
-    this.error.set(message);
+    this.error.set(this.toErrorMessage(err));
     this.loading.set(false);
     throw err;
+  }
+
+  /**
+   * Derive a human-readable message from a failed request. Angular's
+   * HttpErrorResponse implements the Error interface structurally but does NOT
+   * extend the native Error class, so a plain `instanceof Error` check misses
+   * it and silently discards the server's message. Prefer the server-provided
+   * message, then the transport-level error text, then a generic fallback.
+   */
+  private toErrorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      const body = err.error;
+      if (typeof body === 'string' && body.trim()) {
+        return body;
+      }
+      const bodyMessage = (body as { message?: unknown } | null)?.message;
+      if (typeof bodyMessage === 'string' && bodyMessage.trim()) {
+        return bodyMessage;
+      }
+      if (typeof err.message === 'string' && err.message.trim()) {
+        return err.message;
+      }
+    }
+    if (err instanceof Error && err.message.trim()) {
+      return err.message;
+    }
+    return 'An unexpected error occurred.';
   }
 
   async getDonationGoal(month?: number, year?: number): Promise<DonationGoal> {
@@ -216,7 +241,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<DonationGoal>(`${this.apiBaseUrl}/donations/goal${query}`)
+        this.http.get<DonationGoal>(`${this.baseUrl}/donations/goal${query}`)
       );
       this.end();
       return result;
@@ -237,7 +262,7 @@ export class PaymentService {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<Donation[]>(`${this.apiBaseUrl}/donations${query}`)
+        this.http.get<Donation[]>(`${this.baseUrl}/donations${query}`)
       );
       this.end();
       return result;

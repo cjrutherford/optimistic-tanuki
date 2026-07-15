@@ -206,12 +206,7 @@ export class AppComponent implements OnInit, OnDestroy {
       };
     }
     if (url.startsWith('/messages')) {
-      return {
-        eyebrow: 'Messages',
-        title: 'Handle direct follow-up without leaving the workspace',
-        description:
-          'Use messages for one-to-one or small-group coordination after discovery happens elsewhere.',
-      };
+      return null;
     }
     if (url.startsWith('/settings') || url.startsWith('/notifications')) {
       return {
@@ -229,14 +224,12 @@ export class AppComponent implements OnInit, OnDestroy {
     };
   });
   suppressFixedChatOverlays = computed(() => {
-    if (!this.isMobileViewport()) {
-      return false;
+    const url = this.currentPath();
+    if (url.startsWith('/messages')) {
+      return true;
     }
 
-    const url = this.currentPath();
-    return (
-      url.startsWith('/messages') || /^\/communities\/[^/]+\/chat/.test(url)
-    );
+    return this.isMobileViewport() && /^\/communities\/[^/]+\/chat/.test(url);
   });
 
   get isBrowser(): boolean {

@@ -2,7 +2,7 @@
 export class CreateProductDto {
   name: string = '';
   description?: string;
-  price = 0;
+  priceCents = 0;
   type: string = '';
   imageUrl?: string;
   stock?: number;
@@ -12,7 +12,7 @@ export class CreateProductDto {
 export class UpdateProductDto {
   name?: string;
   description?: string;
-  price?: number;
+  priceCents?: number;
   type?: string;
   imageUrl?: string;
   stock?: number;

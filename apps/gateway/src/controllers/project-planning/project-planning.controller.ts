@@ -66,11 +66,11 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Project found' })
   @RequirePermissions('project-planning.project.read')
   @Get('projects/:id')
-  async findProjectById(@Param('id') id: string) {
+  async findProjectById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.FIND_ONE },
-        { id }
+        { id, requestingUserId: user.profileId }
       )
     );
   }
@@ -79,9 +79,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Projects retrieved' })
   @RequirePermissions('project-planning.project.read')
   @Get('projects')
-  async findAllProjects() {
+  async findAllProjects(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ProjectCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -89,9 +92,15 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Projects retrieved' })
   @RequirePermissions('project-planning.project.read')
   @Post('projects/query')
-  async queryProjects(@Body() query: QueryProjectDto) {
+  async queryProjects(
+    @User() user: UserDetails,
+    @Body() query: QueryProjectDto
+  ) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ProjectCommands.FIND_ALL }, query)
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_ALL },
+        { ...query, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -122,7 +131,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectCommands.UPDATE },
-        { ...updateProjectDto, updatedBy: user.profileId }
+        {
+          ...updateProjectDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -131,9 +144,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Project deleted successfully' })
   @RequirePermissions('project-planning.project.delete')
   @Delete('projects/:id')
-  async deleteProject(@Param('id') id: string) {
+  async deleteProject(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ProjectCommands.DELETE }, { id })
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.DELETE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -141,9 +157,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Change found' })
   @RequirePermissions('project-planning.change.read')
   @Get('changes/:id')
-  async findChangeById(@Param('id') id: string) {
+  async findChangeById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ChangeCommands.FIND_ONE }, { id })
+      this.projectPlanningService.send(
+        { cmd: ChangeCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -151,9 +170,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Changes retrieved' })
   @RequirePermissions('project-planning.change.read')
   @Get('changes')
-  async findAllChanges() {
+  async findAllChanges(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ChangeCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: ChangeCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -161,9 +183,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Changes retrieved' })
   @RequirePermissions('project-planning.change.read')
   @Post('changes/query')
-  async queryChanges(@Body() query: QueryChangeDto) {
+  async queryChanges(@User() user: UserDetails, @Body() query: QueryChangeDto) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ChangeCommands.FIND_ALL }, query)
+      this.projectPlanningService.send(
+        { cmd: ChangeCommands.FIND_ALL },
+        { ...query, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -178,7 +203,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ChangeCommands.CREATE },
-        { ...createChangeDto, createdBy: user.profileId }
+        {
+          ...createChangeDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -194,7 +223,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ChangeCommands.UPDATE },
-        { ...updateChangeDto, updatedBy: user.profileId }
+        {
+          ...updateChangeDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -203,9 +236,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Change deleted successfully' })
   @RequirePermissions('project-planning.change.delete')
   @Delete('changes/:id')
-  async deleteChange(@Param('id') id: string) {
+  async deleteChange(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: ChangeCommands.REMOVE }, { id })
+      this.projectPlanningService.send(
+        { cmd: ChangeCommands.REMOVE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -213,11 +249,11 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Journal entry found' })
   @RequirePermissions('project-planning.journal.read')
   @Get('journal/:id')
-  async findJournalById(@Param('id') id: string) {
+  async findJournalById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.FIND_ONE },
-        { id }
+        { id, requestingUserId: user.profileId }
       )
     );
   }
@@ -226,11 +262,11 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Journal entries retrieved' })
   @RequirePermissions('project-planning.journal.read')
   @Get('journal')
-  async findAllJournals() {
+  async findAllJournals(@User() user: UserDetails) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.FIND_ALL },
-        {}
+        { requestingUserId: user.profileId }
       )
     );
   }
@@ -239,11 +275,14 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Journal entries retrieved' })
   @RequirePermissions('project-planning.journal.read')
   @Post('journal/query')
-  async queryJournals(@Body() query: QueryProjectJournalDto) {
+  async queryJournals(
+    @User() user: UserDetails,
+    @Body() query: QueryProjectJournalDto
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.FIND_ALL },
-        query
+        { ...query, requestingUserId: user.profileId }
       )
     );
   }
@@ -262,7 +301,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.CREATE },
-        { ...createJournalDto, createdBy: user.profileId }
+        {
+          ...createJournalDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -281,7 +324,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.UPDATE },
-        { ...updateJournalDto, updatedBy: user.profileId }
+        {
+          ...updateJournalDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -293,11 +340,11 @@ export class ProjectPlanningController {
   })
   @RequirePermissions('project-planning.journal.delete')
   @Delete('journal/:id')
-  async deleteJournal(@Param('id') id: string) {
+  async deleteJournal(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: ProjectJournalCommands.REMOVE },
-        { id }
+        { id, requestingUserId: user.profileId }
       )
     );
   }
@@ -306,9 +353,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Risk found' })
   @RequirePermissions('project-planning.risk.read')
   @Get('risk/:id')
-  async findRiskById(@Param('id') id: string) {
+  async findRiskById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: RiskCommands.FIND_ONE }, { id })
+      this.projectPlanningService.send(
+        { cmd: RiskCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -316,9 +366,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Risks retrieved' })
   @RequirePermissions('project-planning.risk.read')
   @Get('risk')
-  async findAllRisks() {
+  async findAllRisks(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: RiskCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: RiskCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -326,9 +379,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Risks retrieved' })
   @RequirePermissions('project-planning.risk.read')
   @Post('risk/query')
-  async queryRisks(@Body() query: QueryRiskDto) {
+  async queryRisks(@User() user: UserDetails, @Body() query: QueryRiskDto) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: RiskCommands.FIND_ALL }, query)
+      this.projectPlanningService.send(
+        { cmd: RiskCommands.FIND_ALL },
+        { ...query, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -343,7 +399,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: RiskCommands.CREATE },
-        { ...createRiskDto, createdBy: user.profileId }
+        {
+          ...createRiskDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -359,7 +419,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: RiskCommands.UPDATE },
-        { ...updateRiskDto, updatedBy: user.profileId }
+        {
+          ...updateRiskDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -368,9 +432,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Risk deleted successfully' })
   @RequirePermissions('project-planning.risk.delete')
   @Delete('risk/:id')
-  async deleteRisk(@Param('id') id: string) {
+  async deleteRisk(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: RiskCommands.DELETE }, { id })
+      this.projectPlanningService.send(
+        { cmd: RiskCommands.DELETE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -378,9 +445,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task found' })
   @RequirePermissions('project-planning.task.read')
   @Get('tasks/:id')
-  async findTaskById(@Param('id') id: string) {
+  async findTaskById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskCommands.FIND_ONE }, { id })
+      this.projectPlanningService.send(
+        { cmd: TaskCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -388,9 +458,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Tasks retrieved' })
   @RequirePermissions('project-planning.task.read')
   @Get('tasks')
-  async findAllTasks() {
+  async findAllTasks(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: TaskCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -398,9 +471,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Tasks retrieved' })
   @RequirePermissions('project-planning.task.read')
   @Post('tasks/query')
-  async queryTasks(@Body() query: QueryTaskDto) {
+  async queryTasks(@User() user: UserDetails, @Body() query: QueryTaskDto) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskCommands.FIND_ALL }, query)
+      this.projectPlanningService.send(
+        { cmd: TaskCommands.FIND_ALL },
+        { ...query, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -415,7 +491,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskCommands.CREATE },
-        { ...createTaskDto, createdBy: user.profileId }
+        {
+          ...createTaskDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -431,7 +511,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskCommands.UPDATE },
-        { ...updateTaskDto, updatedBy: user.profileId }
+        {
+          ...updateTaskDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -440,9 +524,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task deleted successfully' })
   @RequirePermissions('project-planning.task.delete')
   @Delete('tasks/:id')
-  async deleteTask(@Param('id') id: string) {
+  async deleteTask(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskCommands.DELETE }, { id })
+      this.projectPlanningService.send(
+        { cmd: TaskCommands.DELETE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -450,9 +537,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Timer found' })
   @RequirePermissions('project-planning.timer.read')
   @Get('timers/:id')
-  async findTimerById(@Param('id') id: string) {
+  async findTimerById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TimerCommands.FIND_ONE }, { id })
+      this.projectPlanningService.send(
+        { cmd: TimerCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -460,9 +550,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Timers retrieved' })
   @RequirePermissions('project-planning.timer.read')
   @Get('timers')
-  async findAllTimers() {
+  async findAllTimers(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TimerCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: TimerCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -477,7 +570,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TimerCommands.CREATE },
-        { ...createTimerDto, createdBy: user.profileId }
+        {
+          ...createTimerDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -493,7 +590,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TimerCommands.UPDATE },
-        { ...updateTimerDto, updatedBy: user.profileId }
+        {
+          ...updateTimerDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -502,9 +603,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Timer deleted successfully' })
   @RequirePermissions('project-planning.timer.delete')
   @Delete('timers/:id')
-  async deleteTimer(@Param('id') id: string) {
+  async deleteTimer(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TimerCommands.DELETE }, { id })
+      this.projectPlanningService.send(
+        { cmd: TimerCommands.DELETE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 

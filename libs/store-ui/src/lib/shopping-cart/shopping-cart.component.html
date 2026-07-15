@@ -10,7 +10,7 @@
       />
       <div class="item-details">
         <h3>{{ item.name }}</h3>
-        <p class="item-price">\${{ item.price.toFixed(2) }}</p>
+        <p class="item-price">\${{ formatCents(item.priceCents) }}</p>
       </div>
       <div class="item-quantity">
         <button (click)="onQuantityChange(item.productId, item.quantity - 1)">
@@ -21,9 +21,7 @@
           +
         </button>
       </div>
-      <div class="item-total">
-        \${{ (item.price * item.quantity).toFixed(2) }}
-      </div>
+      <div class="item-total">\${{ formatCents(itemTotalCents(item)) }}</div>
       <button class="remove-btn" (click)="onRemoveItem(item.productId)">
         ×
       </button>
@@ -37,7 +35,7 @@
   <div class="cart-summary" *ngIf="items.length > 0">
     <div class="summary-row">
       <span>Total:</span>
-      <span class="total-amount">\${{ total.toFixed(2) }}</span>
+      <span class="total-amount">\${{ formatCents(totalCents) }}</span>
     </div>
     <button class="checkout-btn" (click)="onCheckout()">
       Proceed to Checkout

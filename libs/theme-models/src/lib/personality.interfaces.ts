@@ -318,9 +318,17 @@ export interface PersonalityPresentation {
     bodyFamily: PersonalityFontFamily;
     fontWeight: PersonalityFontWeight;
     fontStyle: PersonalityFontStyle;
-    familyValue: string;
-    headingFamilyValue: string;
-    bodyFamilyValue: string;
+    /**
+     * CSS font-family values. These are DERIVED from `Personality.fonts` (the
+     * single source of truth) when the registry is assembled in
+     * `personalities.ts` — they are not authored per-personality. Authoring them
+     * by hand is what caused `--personality-font-family` to diverge from
+     * `--font-heading`/`--font-body`; `personality-fonts.spec.ts` fails if they
+     * ever disagree again. Optional here because the source objects omit them.
+     */
+    familyValue?: string;
+    headingFamilyValue?: string;
+    bodyFamilyValue?: string;
     weightValue: string;
   };
   animation: {

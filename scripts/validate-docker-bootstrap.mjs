@@ -464,7 +464,7 @@ assert.equal(
   'classifieds dev service must mount config assets where the compiled runtime resolves them'
 );
 assert.equal(
-  assetsDevBlockMatch[0].includes('    user: "0:0"'),
+  assetsDevBlockMatch[0].includes("    user: '0:0'"),
   true,
   'assets dev service must run as root so the local storage volume is writable'
 );
@@ -567,6 +567,7 @@ assert.equal(
 
 const ignoredPackageManagerScanDirs = new Set([
   '.angular',
+  '.claude',
   '.git',
   '.nx',
   '.vscode',
@@ -575,9 +576,13 @@ const ignoredPackageManagerScanDirs = new Set([
   'node_modules',
   'playwright-report',
   'storybook-static',
+  'test-results',
   'tmp',
 ]);
 const ignoredPackageManagerScanFiles = new Set([
+  // Prose describing the public SDK's `npm install` for external developers —
+  // the published package is consumed via npm, not this repo's pnpm workspace.
+  '.github/prompts/generate-email-campaign.prompt.md',
   'apps/ui-playground/public/generated/compodoc',
   'ollama-screener-results-graphs.html',
   'libs/app-catalog-contracts/README.md',
@@ -600,6 +605,7 @@ const ignoredPackageManagerScanExtensions = new Set([
   '.jpeg',
   '.png',
   '.webp',
+  '.zip',
 ]);
 
 const forbiddenPackageManagerPatterns = [

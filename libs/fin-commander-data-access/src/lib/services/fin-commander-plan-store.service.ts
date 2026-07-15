@@ -25,8 +25,9 @@ const DEFAULT_GOALS: FinCommanderGoal[] = [
     id: 'goal-emergency',
     planId: 'home-command',
     name: 'Emergency reserve',
-    targetAmount: 18000,
-    currentAmount: 9200,
+    // $18,000.00 and $9,200.00 in integer cents.
+    targetAmountCents: 1_800_000,
+    currentAmountCents: 920_000,
     dueDate: '2026-11-01',
     strategy:
       'Route tax refunds and recurring surplus into the reserve account.',
@@ -35,8 +36,9 @@ const DEFAULT_GOALS: FinCommanderGoal[] = [
     id: 'goal-runway',
     planId: 'studio-command',
     name: 'Ninety-day runway',
-    targetAmount: 45000,
-    currentAmount: 28600,
+    // $45,000.00 and $28,600.00 in integer cents.
+    targetAmountCents: 4_500_000,
+    currentAmountCents: 2_860_000,
     dueDate: '2026-09-01',
     strategy:
       'Keep owner draws capped until the operating floor reaches target.',

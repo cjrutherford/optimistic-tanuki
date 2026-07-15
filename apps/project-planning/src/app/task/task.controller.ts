@@ -13,28 +13,43 @@ export class TaskController {
   constructor(private readonly taskService: TaskService) {}
 
   @MessagePattern({ cmd: TaskCommands.CREATE })
-  async create(@Payload() createTaskDto: CreateTaskDto) {
-    return await this.taskService.create(createTaskDto);
+  async create(
+    @Payload() createTaskDto: CreateTaskDto & { requestingUserId?: string }
+  ) {
+    const { requestingUserId, ...dto } = createTaskDto;
+    return await this.taskService.create(dto, requestingUserId);
   }
 
   @MessagePattern({ cmd: TaskCommands.FIND_ALL })
-  async findAll(@Payload() query: QueryTaskDto) {
-    return await this.taskService.findAll(query);
+  async findAll(
+    @Payload() query: QueryTaskDto & { requestingUserId?: string }
+  ) {
+    const { requestingUserId, ...q } = query;
+    return await this.taskService.findAll(q, requestingUserId);
   }
 
   @MessagePattern({ cmd: TaskCommands.FIND_ONE })
-  async findOne(@Payload('id') id: string) {
-    return await this.taskService.findOne(id);
+  async findOne(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.taskService.findOne(id, requestingUserId);
   }
 
   @MessagePattern({ cmd: TaskCommands.UPDATE })
-  async update(@Payload() updateTaskDto: UpdateTaskDto) {
+  async update(
+    @Payload() updateTaskDto: UpdateTaskDto & { requestingUserId?: string }
+  ) {
     console.log('Updating task with DTO:', updateTaskDto);
-    return await this.taskService.update(updateTaskDto.id, updateTaskDto);
+    const { requestingUserId, ...dto } = updateTaskDto;
+    return await this.taskService.update(dto.id, dto, requestingUserId);
   }
 
   @MessagePattern({ cmd: TaskCommands.DELETE })
-  async remove(@Payload() id: string) {
-    return await this.taskService.remove(id);
+  async remove(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.taskService.remove(id, requestingUserId);
   }
 }

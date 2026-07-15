@@ -52,6 +52,63 @@ import { Public } from '../../decorators/public.decorator';
 
 type EmailActionPurpose = 'verification' | 'password-reset' | 'magic-link';
 
+/**
+ * Resolves a throttle limit from an environment variable, falling back to a
+ * production-safe default. This lets E2E/load environments raise the limit
+ * (e.g. THROTTLE_LOGIN_LIMIT) without shipping absurd defaults to production.
+ */
+const throttleLimitFromEnv = (envKey: string, fallback: number): number => {
+  const raw = process.env[envKey];
+  const parsed = raw === undefined || raw === '' ? NaN : Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const AUTH_THROTTLE_TTL = throttleLimitFromEnv('THROTTLE_AUTH_TTL', 60000);
+
+// Credential-sensitive route throttles. Defaults are intentionally strict to
+// blunt brute-force / credential-stuffing; each is env-overridable for E2E.
+//
+// IMPORTANT: overrides must be keyed to a throttler NAME configured in the
+// gateway's ThrottlerModule (`short`/`medium`/`long` in app.module.ts). The
+// guard only consults metadata for configured names, so `{ default: ... }`
+// is silently ignored here. We override `long` (the 60s window throttler).
+const LOGIN_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_LOGIN_LIMIT', 10),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+const PASSWORD_RESET_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_PASSWORD_RESET_LIMIT', 10),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+const MFA_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_MFA_LIMIT', 10),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+const EMAIL_CONFIRM_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_EMAIL_CONFIRM_LIMIT', 20),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+const EMAIL_ACTION_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_EMAIL_ACTION_LIMIT', 5),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+const REGISTER_THROTTLE = {
+  long: {
+    limit: throttleLimitFromEnv('THROTTLE_REGISTER_LIMIT', 100),
+    ttl: AUTH_THROTTLE_TTL,
+  },
+};
+
 @ApiTags('authentication')
 @Controller('authentication')
 export class AuthenticationController {
@@ -61,7 +118,7 @@ export class AuthenticationController {
         name: 'Discovery Session',
         description:
           'Starter consultation offer to help new owners publish a store-backed service catalog immediately.',
-        price: 95,
+        priceCents: 9500,
         type: 'service',
         stock: 0,
         active: true,
@@ -70,7 +127,7 @@ export class AuthenticationController {
         name: 'Signature Service',
         description:
           'Publish-ready starter service product you can rename, reprice, and tailor to your workflow.',
-        price: 250,
+        priceCents: 25000,
         type: 'service',
         stock: 0,
         active: true,
@@ -102,7 +159,7 @@ export class AuthenticationController {
   @Post('email-action/request')
   @Public()
   @HttpCode(HttpStatus.ACCEPTED)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle(EMAIL_ACTION_THROTTLE)
   async requestEmailAction(
     @Headers('x-ot-app-id') appId: string,
     @Body('purpose') purpose: EmailActionPurpose,
@@ -147,18 +204,21 @@ export class AuthenticationController {
 
   @Post('email-verification/confirm')
   @Public()
+  @Throttle(EMAIL_CONFIRM_THROTTLE)
   confirmEmailVerification(@Body() body: { token: string }) {
     return this.consumeEmailLogin(body.token, 'verification');
   }
 
   @Post('magic-link/confirm')
   @Public()
+  @Throttle(EMAIL_CONFIRM_THROTTLE)
   confirmMagicLink(@Body() body: { token: string }) {
     return this.consumeEmailLogin(body.token, 'magic-link');
   }
 
   @Post('password-reset/confirm')
   @Public()
+  @Throttle(PASSWORD_RESET_THROTTLE)
   confirmPasswordReset(
     @Body() body: { token: string; password: string; confirmation: string }
   ) {
@@ -168,6 +228,7 @@ export class AuthenticationController {
   }
 
   @Post('login')
+  @Throttle(LOGIN_THROTTLE)
   @ApiOperation({ summary: 'Login a user' })
   @ApiResponse({ status: 201, description: 'User logged in successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -268,7 +329,7 @@ export class AuthenticationController {
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User registered successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  @Throttle({ default: { limit: 100, ttl: 60000 } })
+  @Throttle(REGISTER_THROTTLE)
   async registerUser(
     @Body() data: RegisterRequest,
     @AppScope() appScope: string,
@@ -357,6 +418,7 @@ export class AuthenticationController {
   }
 
   @Post('reset')
+  @Throttle(PASSWORD_RESET_THROTTLE)
   @ApiOperation({ summary: 'Reset user password' })
   @ApiResponse({ status: 201, description: 'Password reset successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -375,6 +437,7 @@ export class AuthenticationController {
   }
 
   @Post('enable-mfa')
+  @Throttle(MFA_THROTTLE)
   @ApiOperation({ summary: 'Enable multi-factor authentication' })
   @ApiResponse({ status: 201, description: 'MFA enabled successfully.' })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
@@ -411,6 +474,7 @@ export class AuthenticationController {
   }
 
   @Post('validate-mfa')
+  @Throttle(MFA_THROTTLE)
   @ApiOperation({ summary: 'Validate multi-factor authentication token' })
   @ApiResponse({
     status: 201,

@@ -1609,7 +1609,7 @@ export class BusinessLandingPageComponent {
       id: product.id,
       name: product.name,
       description: product.description,
-      price: Number(product.price),
+      priceCents: product.priceCents,
       imageUrl: product.imageUrl,
       stock: product.stock,
       type: product.type,

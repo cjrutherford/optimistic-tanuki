@@ -194,6 +194,15 @@ export const createGatewayServiceProviders = (
         `services.${definition.configKey}`
       );
 
+      // NOTE ON RESILIENCE: @nestjs/microservices' TCP *client* (v11) exposes
+      // no request-timeout option, and — unlike the Redis client — it does not
+      // consume `retryAttempts`/`retryDelay` (they are absent from
+      // TcpClientOptions and never read by ClientTCP at runtime). The client is
+      // lazy and transparently reconnects on the next `send()` after a drop, so
+      // transient disconnects self-heal. Protection against a slow/hung
+      // upstream service is therefore enforced at the request layer by the
+      // RequestTimeoutInterceptor (RxJS `timeout`), which bounds how long any
+      // gateway request will wait for a microservice reply.
       return ClientProxyFactory.create({
         transport: Transport.TCP,
         options: {

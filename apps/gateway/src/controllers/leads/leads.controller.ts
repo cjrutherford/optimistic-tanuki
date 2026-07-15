@@ -47,6 +47,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User } from '../../decorators/user.decorator';
+import { LongRunning } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 
 @ApiTags('leads')
@@ -412,6 +413,7 @@ export class LeadsController {
   }
 
   @Post('onboarding/resume/parse')
+  @LongRunning()
   @UseInterceptors(FileInterceptor('file'))
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Parse a resume upload for onboarding prefill' })

@@ -140,3 +140,19 @@ export {
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
 } from './lib/libs/finance';
+
+export {
+  FinCommanderPlanCommands,
+  FinCommanderGoalCommands,
+  FinCommanderScenarioCommands,
+  FinCommanderPlanDto,
+  CreateFinCommanderPlanDto,
+  UpdateFinCommanderPlanDto,
+  FinCommanderGoalDto,
+  CreateFinCommanderGoalDto,
+  UpdateFinCommanderGoalDto,
+  FinCommanderScenarioAssumptionDto,
+  FinCommanderScenarioDto,
+  CreateFinCommanderScenarioDto,
+  UpdateFinCommanderScenarioDto,
+} from './lib/libs/fin-commander';

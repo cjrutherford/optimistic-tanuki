@@ -3,13 +3,18 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Post,
   Patch,
   Query,
+  RawBodyRequest,
+  Req,
+  UnauthorizedException,
   UseGuards,
   Logger,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom, defaultIfEmpty } from 'rxjs';
 import {
@@ -25,6 +30,7 @@ import { User, UserDetails } from '../../decorators/user.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { ConfigService } from '@nestjs/config';
 import { TcpServiceConfig } from '../../config';
+import { verifyWebhookSignature } from './payments-webhook';
 
 export interface CreateDonationDto {
   amount: number;
@@ -809,9 +815,33 @@ export class PaymentsController {
   @Public()
   @ApiOperation({ summary: 'Lemon Squeezy webhook receiver' })
   async handleWebhook(
+    @Req() request: RawBodyRequest<Request>,
     @Body() body: Record<string, unknown>,
-    @Query('signature') signatureHeader?: string
+    @Headers('x-signature') signatureHeader?: string
   ) {
+    const secret = this.configService.get<string>('payments.webhookSecret');
+
+    if (!secret) {
+      // Fail closed: never process an unverifiable webhook when the signing
+      // secret is misconfigured. Do not log the payload or secret.
+      this.logger.error(
+        'Rejecting Lemon Squeezy webhook: signing secret is not configured'
+      );
+      throw new UnauthorizedException('Webhook signature verification failed');
+    }
+
+    if (!signatureHeader) {
+      this.logger.warn(
+        'Rejecting Lemon Squeezy webhook: missing X-Signature header'
+      );
+      throw new UnauthorizedException('Webhook signature verification failed');
+    }
+
+    if (!verifyWebhookSignature(request.rawBody, signatureHeader, secret)) {
+      this.logger.warn('Rejecting Lemon Squeezy webhook: invalid signature');
+      throw new UnauthorizedException('Webhook signature verification failed');
+    }
+
     return await firstValueFrom(
       this.paymentsClient
         .send(

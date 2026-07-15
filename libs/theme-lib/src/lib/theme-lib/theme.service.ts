@@ -744,8 +744,12 @@ export class ThemeService {
         personality.presentation.border.radiusValue;
       variables['--personality-box-shadow'] =
         personality.presentation.shadow.value;
-      variables['--personality-font-family'] =
-        personality.presentation.typography.familyValue;
+      // Derived from personality.fonts (single source of truth); always agrees
+      // with --font-heading. See personalities.ts withDerivedFontFamilies().
+      if (personality.presentation.typography.familyValue) {
+        variables['--personality-font-family'] =
+          personality.presentation.typography.familyValue;
+      }
       variables['--personality-font-weight'] =
         personality.presentation.typography.weightValue;
       variables['--personality-transition'] =

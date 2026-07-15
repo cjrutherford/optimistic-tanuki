@@ -42,6 +42,12 @@ export class UserEntity {
   @Column({ type: 'timestamptz', nullable: true, default: null })
   emailVerifiedAt?: Date | null;
 
+  @Column({ type: 'int', default: 0 })
+  failedLoginCount?: number;
+
+  @Column({ type: 'timestamptz', nullable: true, default: null })
+  lockedUntil?: Date | null;
+
   @OneToMany((type) => TokenEntity, (te) => te.user)
   tokens: TokenEntity[];
 

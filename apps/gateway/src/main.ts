@@ -93,7 +93,16 @@ async function bootstrap() {
     optionsSuccessStatus: 204,
   });
 
-  app.use(json({ limit: '50mb' }));
+  app.use(
+    json({
+      limit: '50mb',
+      // Preserve the raw request buffer so webhook receivers (e.g. Lemon
+      // Squeezy) can verify HMAC signatures computed over the exact bytes.
+      verify: (req, _res, buf) => {
+        (req as unknown as { rawBody?: Buffer }).rawBody = buf;
+      },
+    })
+  );
   app.use(urlencoded({ limit: '50mb', extended: true, parameterLimit: 50000 }));
   await app.listen(port, '0.0.0.0');
   Logger.log(

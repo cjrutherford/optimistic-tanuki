@@ -291,6 +291,7 @@ export class AppController {
       accessToken?: string;
       refreshToken?: string;
       profileId?: string;
+      emailVerified?: boolean;
     }
   ) {
     try {
@@ -310,7 +311,8 @@ export class AppController {
         data.displayName,
         data.accessToken,
         data.refreshToken,
-        data.profileId
+        data.profileId,
+        data.emailVerified ?? false
       );
     } catch (e) {
       if (e instanceof RpcException) throw e;

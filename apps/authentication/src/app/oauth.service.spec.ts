@@ -137,7 +137,7 @@ describe('OAuthService', () => {
       );
     });
 
-    it('should auto-link when email matches an existing user', async () => {
+    it('should auto-link when email matches an existing user and provider email is verified', async () => {
       (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
       const mockUser = {
         id: 'user-1',
@@ -156,12 +156,47 @@ describe('OAuthService', () => {
         'google',
         'google-123',
         'test@example.com',
-        'Test User'
+        'Test User',
+        undefined,
+        undefined,
+        undefined,
+        true // provider asserts the email is verified
       );
 
       expect(result.code).toBe(0);
       expect((result.data as any).newToken).toBe('mock-jwt-token');
       expect(oauthRepo.save).toHaveBeenCalled();
+    });
+
+    it('refuses to auto-link when the provider email is not verified', async () => {
+      (oauthRepo.findOne as jest.Mock).mockResolvedValue(null);
+      const mockUser = {
+        id: 'user-1',
+        firstName: 'Test',
+        lastName: 'User',
+        email: 'test@example.com',
+        emailVerifiedAt: new Date(),
+        password: 'hash',
+        keyData: null,
+      };
+      (userRepo.findOne as jest.Mock).mockResolvedValue(mockUser);
+
+      await expect(
+        service.oauthLogin(
+          'google',
+          'google-123',
+          'test@example.com',
+          'Test User',
+          undefined,
+          undefined,
+          undefined,
+          false // provider did NOT verify the email
+        )
+      ).rejects.toThrow(RpcException);
+
+      // No account was linked and no session issued for the takeover attempt.
+      expect(oauthRepo.save).not.toHaveBeenCalled();
+      expect(tokenRepo.save).not.toHaveBeenCalled();
     });
 
     it('should return needsRegistration when no matching user found', async () => {

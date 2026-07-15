@@ -17,8 +17,8 @@ export class ProductEntity {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number;
+  @Column({ type: 'int' })
+  priceCents: number;
 
   @Column({ type: 'varchar', length: 50 })
   type: string; // 'physical', 'digital', 'subscription', 'donation'
