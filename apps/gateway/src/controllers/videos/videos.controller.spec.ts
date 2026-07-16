@@ -128,7 +128,7 @@ describe('VideosController', () => {
             status: 'ready',
             requiresAuth: false,
             tokenContract: 'gateway-token-exchange',
-            localityPolicy: 'planned-channel-anchor',
+            localityPolicy: 'unverified-anchor-radius',
           },
         })
       ) as any;
@@ -154,7 +154,12 @@ describe('VideosController', () => {
         })
       ) as any;
 
-    await expect(controller.issueLiveToken('ot-live')).resolves.toEqual({
+    await expect(
+      controller.issueLiveToken('ot-live', {
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      })
+    ).resolves.toEqual({
       status: 'ready',
       sessionId: 'session-1',
       token: 'handoff-token',
@@ -162,7 +167,29 @@ describe('VideosController', () => {
 
     expect(videosService.send).toHaveBeenLastCalledWith(
       { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
-      { communityId: 'community-1' }
+      { communityId: 'community-1', viewerLat: 32.0809, viewerLng: -81.0912 }
+    );
+  });
+
+  it('does not allow a live token request body to override the resolved community', async () => {
+    videosService.send = jest
+      .fn()
+      .mockReturnValueOnce(of({ id: 'channel-1', communityId: 'community-1' }))
+      .mockReturnValueOnce(of({ status: 'unavailable' })) as any;
+
+    await controller.issueLiveToken('ot-live', {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+      communityId: 'other-community',
+    } as any);
+
+    expect(videosService.send).toHaveBeenLastCalledWith(
+      { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
+      {
+        communityId: 'community-1',
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      }
     );
   });
 
@@ -173,12 +200,21 @@ describe('VideosController', () => {
       .mockReturnValueOnce(of({ valid: true, sessionId: 'session-1' })) as any;
 
     await expect(
-      controller.validateLiveToken('ot-live', { token: 'signed-token' })
+      controller.validateLiveToken('ot-live', {
+        token: 'signed-token',
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      })
     ).resolves.toEqual({ valid: true, sessionId: 'session-1' });
 
     expect(videosService.send).toHaveBeenLastCalledWith(
       { cmd: VideoCommands.VALIDATE_LIVE_TOKEN },
-      { communityId: 'community-1', token: 'signed-token' }
+      {
+        communityId: 'community-1',
+        token: 'signed-token',
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      }
     );
   });
 });

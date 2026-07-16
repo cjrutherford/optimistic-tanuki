@@ -12,6 +12,8 @@ import {
   UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
 
+const viewerLocation = { viewerLat: 32.0809, viewerLng: -81.0912 };
+
 describe('VideoService', () => {
   let service: VideoService;
   let httpMock: HttpTestingController;
@@ -101,22 +103,27 @@ describe('VideoService', () => {
   });
 
   it('requests a playback token for a live channel handoff', () => {
-    service.issueLiveToken('ot-live').subscribe();
+    service.issueLiveToken('ot-live', viewerLocation).subscribe();
 
     const req = httpMock.expectOne('/api/videos/channels/ot-live/live/token');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({});
+    expect(req.request.body).toEqual(viewerLocation);
     req.flush({ status: 'ready', token: 'handoff-token' });
   });
 
   it('validates a live playback token against the channel handoff route', () => {
-    service.validateLiveToken('ot-live', 'signed-token').subscribe();
+    service
+      .validateLiveToken('ot-live', 'signed-token', viewerLocation)
+      .subscribe();
 
     const req = httpMock.expectOne(
       '/api/videos/channels/ot-live/live/token/validate'
     );
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ token: 'signed-token' });
+    expect(req.request.body).toEqual({
+      token: 'signed-token',
+      ...viewerLocation,
+    });
     req.flush({ valid: true, sessionId: 'session-1' });
   });
 

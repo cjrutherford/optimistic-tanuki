@@ -269,6 +269,7 @@ export class AppController {
         body?: string;
         ctaLabel?: string;
         ctaUrl?: string;
+        mediaUrl?: string;
         imageUrl?: string;
       }>;
       targetPlacements: Array<{
@@ -302,6 +303,7 @@ export class AppController {
         body?: string;
         ctaLabel?: string;
         ctaUrl?: string;
+        mediaUrl?: string;
         imageUrl?: string;
       }>;
       targetPlacements: Array<{

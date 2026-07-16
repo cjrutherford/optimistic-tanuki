@@ -29,6 +29,7 @@ export interface CampaignCreativeDto {
   body?: string | null;
   ctaLabel?: string | null;
   ctaUrl?: string | null;
+  mediaUrl?: string | null;
   imageUrl?: string | null;
 }
 

@@ -5,12 +5,14 @@ import { ProgramBlock } from '../../entities/program-block.entity';
 import { LiveSession } from '../../entities/live-session.entity';
 import { LiveMediaTransportService } from './live-media-transport.service';
 import { PlaylistDecisionHistory } from '../../entities/playlist-decision-history.entity';
+import { Channel } from '../../entities/channel.entity';
 
 describe('BroadcastService', () => {
   let service: BroadcastService;
   let feedRepository: jest.Mocked<Partial<Repository<ChannelFeed>>>;
   let blockRepository: jest.Mocked<Partial<Repository<ProgramBlock>>>;
   let sessionRepository: jest.Mocked<Partial<Repository<LiveSession>>>;
+  let channelRepository: jest.Mocked<Partial<Repository<Channel>>>;
   let playlistHistoryRepository: jest.Mocked<
     Partial<Repository<PlaylistDecisionHistory>>
   >;
@@ -36,6 +38,9 @@ describe('BroadcastService', () => {
       save: jest.fn(),
       findOne: jest.fn(),
     };
+    channelRepository = {
+      findOne: jest.fn(),
+    };
     playlistHistoryRepository = {
       create: jest.fn((input) => input as PlaylistDecisionHistory),
       save: jest.fn(async (input) => input as PlaylistDecisionHistory),
@@ -46,6 +51,7 @@ describe('BroadcastService', () => {
       blockRepository as Repository<ProgramBlock>,
       sessionRepository as Repository<LiveSession>,
       new LiveMediaTransportService(),
+      channelRepository as Repository<Channel>,
       playlistHistoryRepository as Repository<PlaylistDecisionHistory>
     );
   });
@@ -330,7 +336,7 @@ describe('BroadcastService', () => {
           status: 'ready',
           requiresAuth: false,
           tokenContract: 'gateway-token-exchange',
-          localityPolicy: 'planned-channel-anchor',
+          localityPolicy: 'unverified-anchor-radius',
         }),
       })
     );
@@ -349,7 +355,16 @@ describe('BroadcastService', () => {
       liveSourceUrl: 'https://media.example/live.m3u8',
     } as LiveSession);
 
-    const result = await service.issueLiveToken('community-1');
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+
+    const result = await service.issueLiveToken('community-1', {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+    });
 
     expect(result).toEqual(
       expect.objectContaining({
@@ -362,6 +377,120 @@ describe('BroadcastService', () => {
     );
     expect(result.expiresAt!.getTime()).toBe(
       new Date('2026-07-08T18:05:00.000Z').getTime()
+    );
+  });
+
+  it('denies a live token when the viewer is outside the channel anchor radius', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+      liveSourceUrl: 'https://media.example/live.m3u8',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+
+    await expect(
+      service.issueLiveToken('community-1', {
+        viewerLat: 33.749,
+        viewerLng: -84.388,
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'unavailable',
+        token: null,
+        unavailableReason: 'outside-anchor-radius',
+      })
+    );
+  });
+
+  it('denies a live token without browser coordinates', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+
+    await expect(service.issueLiveToken('community-1')).resolves.toEqual(
+      expect.objectContaining({
+        status: 'unavailable',
+        token: null,
+        unavailableReason: 'viewer-location-required',
+      })
+    );
+  });
+
+  it('denies a live token with impossible browser coordinates', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+    } as LiveSession);
+
+    await expect(
+      service.issueLiveToken('community-1', {
+        viewerLat: 91,
+        viewerLng: -81.0912,
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'unavailable',
+        unavailableReason: 'invalid-viewer-location',
+      })
+    );
+  });
+
+  it('denies a live token when the channel has no anchor', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: null,
+      anchorLng: null,
+    } as Channel);
+
+    await expect(
+      service.issueLiveToken('community-1', {
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'unavailable',
+        token: null,
+        unavailableReason: 'channel-anchor-unavailable',
+      })
     );
   });
 
@@ -385,9 +514,17 @@ describe('BroadcastService', () => {
       status: 'live',
       liveSourceUrl: 'https://media.example/live.m3u8',
     } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
 
     try {
-      const result = await service.issueLiveToken('community-1');
+      const result = await service.issueLiveToken('community-1', {
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+      });
 
       expect(result.mediaTransport).toEqual(
         expect.objectContaining({
@@ -437,16 +574,28 @@ describe('BroadcastService', () => {
     } as LiveSession;
     feedRepository.findOne!.mockResolvedValue(feed);
     sessionRepository.findOne!.mockResolvedValue(session);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
 
-    const issued = await service.issueLiveToken('community-1');
-    const valid = await service.validateLiveToken('community-1', issued.token!);
+    const viewerLocation = { viewerLat: 32.0809, viewerLng: -81.0912 };
+    const issued = await service.issueLiveToken('community-1', viewerLocation);
+    const valid = await service.validateLiveToken(
+      'community-1',
+      issued.token!,
+      viewerLocation
+    );
     const wrongCommunity = await service.validateLiveToken(
       'community-2',
-      issued.token!
+      issued.token!,
+      viewerLocation
     );
     const tampered = await service.validateLiveToken(
       'community-1',
-      `${issued.token!.slice(0, -1)}x`
+      `${issued.token!.slice(0, -1)}x`,
+      viewerLocation
     );
 
     expect(valid).toEqual(
@@ -458,6 +607,36 @@ describe('BroadcastService', () => {
     );
     expect(wrongCommunity).toEqual({ valid: false });
     expect(tampered).toEqual({ valid: false });
+  });
+
+  it('rejects validation when the caller omits the issued browser location', async () => {
+    const feed = {
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed;
+    const session = {
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+      endedAt: null,
+    } as LiveSession;
+    feedRepository.findOne!.mockResolvedValue(feed);
+    sessionRepository.findOne!.mockResolvedValue(session);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+
+    const issued = await service.issueLiveToken('community-1', {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+    });
+
+    await expect(
+      service.validateLiveToken('community-1', issued.token!)
+    ).resolves.toEqual({ valid: false, reason: 'viewer-location-required' });
   });
 
   it('returns an unavailable handoff token when the channel is not live', async () => {

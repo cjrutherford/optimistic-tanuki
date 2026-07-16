@@ -102,6 +102,7 @@ function createService(providerAdapter = new RecordingProviderAdapter()) {
     service,
     providerAdapter,
     billingReconciliationService,
+    businessPageRepository,
     campaignRepository,
     campaignCreativeRepository,
     campaignTargetPlacementRepository,
@@ -128,6 +129,101 @@ describe('PaymentService provider adapter boundary', () => {
         creatives: [],
       })
     ).rejects.toThrow('Community targets only support on-page placement');
+  });
+
+  it('persists a placement-specific media URL when creating a campaign', async () => {
+    const { service, campaignCreativeRepository, businessPageRepository } =
+      createService();
+    businessPageRepository.findOne.mockResolvedValue({
+      id: 'business-page-1',
+      ownerId: 'user-1',
+    });
+
+    await service.createAdvertisingCampaign('user-1', {
+      businessPageId: 'business-page-1',
+      name: 'Neighborhood launch',
+      startsAt: new Date('2026-07-10T00:00:00.000Z'),
+      endsAt: new Date('2026-08-10T00:00:00.000Z'),
+      targetPlacements: [
+        {
+          targetType: 'channel',
+          targetId: 'channel-1',
+          placementType: 'pre-roll',
+        },
+      ],
+      creatives: [
+        {
+          placementType: 'pre-roll',
+          mediaUrl: 'https://ads.test/launch.mp4',
+        } as never,
+      ],
+    });
+
+    expect(campaignCreativeRepository.save).toHaveBeenCalledWith([
+      expect.objectContaining({
+        placementType: 'pre-roll',
+        mediaUrl: 'https://ads.test/launch.mp4',
+      }),
+    ]);
+  });
+
+  it.each(['http://ads.test/launch.mp4', '/launch.mp4', 'ads.test/launch.mp4'])(
+    'rejects a non-absolute HTTPS media URL on create: %s',
+    async (mediaUrl) => {
+      const { service } = createService();
+
+      await expect(
+        service.createAdvertisingCampaign('user-1', {
+          businessPageId: 'business-page-1',
+          name: 'Neighborhood launch',
+          startsAt: new Date('2026-07-10T00:00:00.000Z'),
+          endsAt: new Date('2026-08-10T00:00:00.000Z'),
+          targetPlacements: [
+            {
+              targetType: 'channel',
+              targetId: 'channel-1',
+              placementType: 'pre-roll',
+            },
+          ],
+          creatives: [{ placementType: 'pre-roll', mediaUrl } as never],
+        })
+      ).rejects.toThrow('Creative mediaUrl must be an absolute HTTPS URL');
+    }
+  );
+
+  it('rejects a non-absolute HTTPS media URL on update', async () => {
+    const { service, campaignRepository, businessPageRepository } =
+      createService();
+    campaignRepository.findOne.mockResolvedValue({
+      id: 'campaign-1',
+      userId: 'user-1',
+    });
+    businessPageRepository.findOne.mockResolvedValue({
+      id: 'business-page-1',
+      ownerId: 'user-1',
+    });
+
+    await expect(
+      service.updateAdvertisingCampaign('user-1', 'campaign-1', {
+        businessPageId: 'business-page-1',
+        name: 'Neighborhood launch',
+        startsAt: new Date('2026-07-10T00:00:00.000Z'),
+        endsAt: new Date('2026-08-10T00:00:00.000Z'),
+        targetPlacements: [
+          {
+            targetType: 'channel',
+            targetId: 'channel-1',
+            placementType: 'pre-roll',
+          },
+        ],
+        creatives: [
+          {
+            placementType: 'pre-roll',
+            mediaUrl: 'http://ads.test/launch.mp4',
+          } as never,
+        ],
+      })
+    ).rejects.toThrow('Creative mediaUrl must be an absolute HTTPS URL');
   });
 
   it('delegates donation checkout URL creation to the configured provider', async () => {
@@ -404,6 +500,162 @@ describe('PaymentService provider adapter boundary', () => {
         localityMatch: 'channel-anchor',
       }),
     ]);
+    jest.useRealTimers();
+  });
+
+  it('normalizes new and legacy media URLs and excludes unusable creatives', async () => {
+    const {
+      service,
+      campaignRepository,
+      campaignCreativeRepository,
+      campaignTargetPlacementRepository,
+    } = createService();
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-12T12:00:00.000Z'));
+    campaignTargetPlacementRepository.find.mockResolvedValue([
+      {
+        campaignId: 'new',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+      },
+      {
+        campaignId: 'legacy',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+      },
+      {
+        campaignId: 'invalid',
+        targetType: 'channel',
+        targetId: 'channel-1',
+        placementType: 'pre-roll',
+      },
+    ]);
+    campaignRepository.find.mockResolvedValue([
+      ...['new', 'legacy', 'invalid'].map((id) => ({
+        id,
+        businessPageId: `business-${id}`,
+        name: id,
+        status: 'active',
+        startsAt: new Date('2026-07-01T00:00:00.000Z'),
+        endsAt: new Date('2026-07-31T00:00:00.000Z'),
+      })),
+    ]);
+    campaignCreativeRepository.find.mockResolvedValue([
+      {
+        campaignId: 'new',
+        placementType: 'pre-roll',
+        mediaUrl: 'https://ads.test/new.mp4',
+        imageUrl: null,
+      },
+      {
+        campaignId: 'legacy',
+        placementType: 'pre-roll',
+        mediaUrl: null,
+        imageUrl: 'https://ads.test/legacy.mp4',
+      },
+      {
+        campaignId: 'invalid',
+        placementType: 'pre-roll',
+        mediaUrl: 'http://ads.test/invalid.mp4',
+        imageUrl: null,
+      },
+    ]);
+
+    await expect(
+      service.getEligiblePlaybackCampaigns({
+        channelId: 'channel-1',
+        placementType: 'pre-roll',
+      })
+    ).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          campaignId: 'new',
+          mediaUrl: 'https://ads.test/new.mp4',
+        }),
+        expect.objectContaining({
+          campaignId: 'legacy',
+          mediaUrl: 'https://ads.test/legacy.mp4',
+        }),
+      ])
+    );
+    const result = await service.getEligiblePlaybackCampaigns({
+      channelId: 'channel-1',
+      placementType: 'pre-roll',
+    });
+    expect(result).toHaveLength(2);
+    jest.useRealTimers();
+  });
+
+  it('normalizes legacy image URLs for owner campaign reads', async () => {
+    const {
+      service,
+      campaignRepository,
+      campaignCreativeRepository,
+      campaignTargetPlacementRepository,
+    } = createService();
+    campaignRepository.find.mockResolvedValue([
+      { id: 'campaign-1', userId: 'user-1' },
+    ]);
+    campaignCreativeRepository.find.mockResolvedValue([
+      {
+        campaignId: 'campaign-1',
+        placementType: 'on-page',
+        mediaUrl: null,
+        imageUrl: 'https://ads.test/legacy.jpg',
+      },
+    ]);
+    campaignTargetPlacementRepository.find.mockResolvedValue([]);
+
+    await expect(
+      service.getOwnerAdvertisingCampaigns('user-1')
+    ).resolves.toEqual([
+      expect.objectContaining({
+        creatives: [
+          expect.objectContaining({
+            mediaUrl: 'https://ads.test/legacy.jpg',
+            imageUrl: 'https://ads.test/legacy.jpg',
+          }),
+        ],
+      }),
+    ]);
+  });
+
+  it('requires usable HTTPS media for on-page eligibility', async () => {
+    const {
+      service,
+      campaignRepository,
+      campaignCreativeRepository,
+      campaignTargetPlacementRepository,
+    } = createService();
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-12T12:00:00.000Z'));
+    campaignTargetPlacementRepository.find.mockResolvedValue([
+      {
+        campaignId: 'invalid',
+        targetType: 'community',
+        targetId: 'community-1',
+        placementType: 'on-page',
+      },
+    ]);
+    campaignRepository.find.mockResolvedValue([
+      {
+        id: 'invalid',
+        status: 'active',
+        startsAt: new Date('2026-07-01T00:00:00.000Z'),
+        endsAt: new Date('2026-07-31T00:00:00.000Z'),
+      },
+    ]);
+    campaignCreativeRepository.find.mockResolvedValue([
+      {
+        campaignId: 'invalid',
+        placementType: 'on-page',
+        imageUrl: 'http://ads.test/invalid.jpg',
+      },
+    ]);
+
+    await expect(
+      service.getEligibleOnPageCampaigns({ communityId: 'community-1' })
+    ).resolves.toEqual([]);
     jest.useRealTimers();
   });
 });

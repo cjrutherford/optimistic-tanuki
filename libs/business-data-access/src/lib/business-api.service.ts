@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { LeadSource, LeadStatus } from '@optimistic-tanuki/models';
 import {
   Appointment,
@@ -224,6 +225,7 @@ export interface OwnerAdvertisingCampaignRecord {
     body?: string | null;
     ctaLabel?: string | null;
     ctaUrl?: string | null;
+    mediaUrl?: string | null;
     imageUrl?: string | null;
   }>;
   targetPlacements: Array<{
@@ -459,10 +461,22 @@ export class BusinessApiService {
   }
 
   getOwnerAdvertisingCampaigns(): Observable<OwnerAdvertisingCampaignRecord[]> {
-    return this.http.get<OwnerAdvertisingCampaignRecord[]>(
-      '/api/payments/advertising-campaigns/owner',
-      { headers: this.authHeaders() }
-    );
+    return this.http
+      .get<OwnerAdvertisingCampaignRecord[]>(
+        '/api/payments/advertising-campaigns/owner',
+        { headers: this.authHeaders() }
+      )
+      .pipe(
+        map((campaigns) =>
+          campaigns.map((campaign) => ({
+            ...campaign,
+            creatives: campaign.creatives.map((creative) => ({
+              ...creative,
+              mediaUrl: creative.mediaUrl ?? creative.imageUrl ?? null,
+            })),
+          }))
+        )
+      );
   }
 
   createAdvertisingCampaign(

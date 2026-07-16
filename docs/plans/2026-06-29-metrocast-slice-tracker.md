@@ -556,7 +556,7 @@ Validation completed July 11, 2026:
 
 ### Slice 17: Live media handoff implementation
 
-**Status:** Partial - remediation in progress
+**Status:** Done
 
 **Goal:** Implement the PRD’s passive-to-live transition in a thin, testable
 slice.
@@ -617,7 +617,15 @@ Validation reassessment, July 12, 2026:
   The MetroCast player attaches validated LiveKit video tracks over its HLS
   fallback, then disconnects the room on route change or component teardown.
   Without a LiveKit configuration, the existing HLS source remains the only
-  advertised playback path. Location policy enforcement remains outstanding.
+  advertised playback path.
+- Remediation 17.4 completed July 16, 2026: issuance and validation now require
+  the same browser-provided coordinates, bind that pair into the signed token,
+  and enforce a channel-anchor radius of 50 km by default
+  (`LIVE_PLAYBACK_MAX_DISTANCE_KM` is configurable). Missing, invalid,
+  unanchored, and out-of-radius requests receive explicit denial reasons.
+  The live player requests browser geolocation only for this handoff and never
+  uses the discovery fallback. This policy is explicitly
+  `unverified-anchor-radius`; anti-spoofing remains Slice 20 work.
 
 ### Slice 18: Automated broadcast scheduling worker
 
@@ -684,7 +692,7 @@ Remediation 18.2 completed July 13, 2026:
 
 ### Slice 19: Local ad targeting engine
 
-**Status:** Foundation complete - remediation pending
+**Status:** Done
 
 **Goal:** Apply locality matching and delivery rules between campaign target
 placements and creator/channel reach.
@@ -712,10 +720,22 @@ Implemented July 12, 2026:
 - Playlist precedence remains live session, eligible ad, scheduled program,
   rerun, filler, then offline.
 
-The current creative contract uses the configured creative URL as the playback
-media boundary. Upload/transcoding of video ads, impression pacing, billing,
-and viewer-radius selection are deferred to the media delivery and locality
-trust work that follows.
+Remediation 19.1 completed July 16, 2026:
+
+- Creatives now expose a placement-specific `mediaUrl`, validated as an
+  absolute HTTPS URL. Migration `1785000000000-advertising-campaign-media-url`
+  is registered with the payments datasource and applies through `db-setup`.
+- Existing `imageUrl` records remain readable and normalize to `mediaUrl` for
+  owner, on-page, and playback eligibility responses.
+- Studio can edit and validate media per placement; Local Hub renders the
+  normalized creative with an accessible sponsored CTA.
+- The scheduler explicitly requests pre-roll for initial scheduled playback,
+  stable mid-roll for an interrupted scheduled program, and post-roll for
+  replay. Live sessions continue to bypass all campaign selection.
+
+Upload/transcoding of ad media, impression pacing, billing, viewer-radius ad
+selection, polygons/geofences, and locality anti-spoofing remain deferred to
+the media delivery and locality trust work that follows.
 
 ### Slice 20: Proof-of-locality and anti-spoofing foundations
 

@@ -355,7 +355,10 @@ export class VideosController {
 
   @Public()
   @Post('channels/:slugOrId/live/token')
-  async issueLiveToken(@Param('slugOrId') slugOrId: string) {
+  async issueLiveToken(
+    @Param('slugOrId') slugOrId: string,
+    @Body() body: { viewerLat?: number; viewerLng?: number }
+  ) {
     const channel = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
@@ -365,7 +368,7 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
-        { communityId: channel.communityId }
+        { ...body, communityId: channel.communityId }
       )
     );
   }
@@ -374,7 +377,8 @@ export class VideosController {
   @Post('channels/:slugOrId/live/token/validate')
   async validateLiveToken(
     @Param('slugOrId') slugOrId: string,
-    @Body() body: { token: string }
+    @Body()
+    body: { token: string; viewerLat?: number; viewerLng?: number }
   ) {
     const channel = await firstValueFrom(
       this.videosService.send(
@@ -385,7 +389,7 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.VALIDATE_LIVE_TOKEN },
-        { communityId: channel.communityId, token: body.token }
+        { ...body, communityId: channel.communityId }
       )
     );
   }

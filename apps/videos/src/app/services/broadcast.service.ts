@@ -16,6 +16,7 @@ import { ChannelFeed } from '../../entities/channel-feed.entity';
 import { LiveSession } from '../../entities/live-session.entity';
 import { ProgramBlock } from '../../entities/program-block.entity';
 import { PlaylistDecisionHistory } from '../../entities/playlist-decision-history.entity';
+import { Channel } from '../../entities/channel.entity';
 import { LiveMediaTransportService } from './live-media-transport.service';
 import type { PlaylistDecision } from './playlist-generator.service';
 
@@ -26,6 +27,13 @@ interface LiveTokenClaims {
   expiresAt: number;
   issuedAt: number;
   nonce: string;
+  viewerLat: number;
+  viewerLng: number;
+}
+
+interface ViewerLocation {
+  viewerLat?: number;
+  viewerLng?: number;
 }
 
 @Injectable()
@@ -38,6 +46,8 @@ export class BroadcastService {
     @InjectRepository(LiveSession)
     private readonly sessionRepository: Repository<LiveSession>,
     private readonly liveMediaTransport: LiveMediaTransportService,
+    @InjectRepository(Channel)
+    private readonly channelRepository: Repository<Channel>,
     @Optional()
     @InjectRepository(PlaylistDecisionHistory)
     private readonly playlistHistoryRepository?: Repository<PlaylistDecisionHistory>
@@ -214,7 +224,10 @@ export class BroadcastService {
     return savedSession;
   }
 
-  async issueLiveToken(communityId: string): Promise<LivePlaybackTokenDto> {
+  async issueLiveToken(
+    communityId: string,
+    viewerLocation: ViewerLocation = {}
+  ): Promise<LivePlaybackTokenDto> {
     const feed = await this.feedRepository.findOne({ where: { communityId } });
     if (!feed?.activeLiveSessionId || feed.currentMode !== 'live') {
       return {
@@ -239,6 +252,14 @@ export class BroadcastService {
       };
     }
 
+    const localityFailure = await this.liveLocalityFailure(
+      communityId,
+      viewerLocation
+    );
+    if (localityFailure) {
+      return this.unavailableLiveToken(localityFailure);
+    }
+
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     return {
       status: 'ready',
@@ -256,6 +277,8 @@ export class BroadcastService {
         expiresAt: Math.floor(expiresAt.getTime() / 1000),
         issuedAt: Math.floor(Date.now() / 1000),
         nonce: randomUUID(),
+        viewerLat: viewerLocation.viewerLat!,
+        viewerLng: viewerLocation.viewerLng!,
       }),
       expiresAt,
     };
@@ -263,7 +286,8 @@ export class BroadcastService {
 
   async validateLiveToken(
     communityId: string,
-    token: string
+    token: string,
+    viewerLocation: ViewerLocation = {}
   ): Promise<LivePlaybackTokenValidationDto> {
     const claims = this.readLiveToken(token);
     if (
@@ -273,6 +297,31 @@ export class BroadcastService {
       claims.expiresAt <= Math.floor(Date.now() / 1000)
     ) {
       return { valid: false };
+    }
+
+    if (
+      !Number.isFinite(viewerLocation.viewerLat) ||
+      !Number.isFinite(viewerLocation.viewerLng)
+    ) {
+      return { valid: false, reason: 'viewer-location-required' };
+    }
+    if (!this.hasValidCoordinates(viewerLocation)) {
+      return { valid: false, reason: 'invalid-viewer-location' };
+    }
+
+    if (
+      claims.viewerLat !== viewerLocation.viewerLat ||
+      claims.viewerLng !== viewerLocation.viewerLng
+    ) {
+      return { valid: false, reason: 'viewer-location-mismatch' };
+    }
+
+    const localityFailure = await this.liveLocalityFailure(
+      communityId,
+      viewerLocation
+    );
+    if (localityFailure) {
+      return { valid: false, reason: localityFailure };
     }
 
     const feed = await this.feedRepository.findOne({ where: { communityId } });
@@ -302,6 +351,94 @@ export class BroadcastService {
       }),
       expiresAt: new Date(claims.expiresAt * 1000),
     };
+  }
+
+  private unavailableLiveToken(
+    unavailableReason: NonNullable<LivePlaybackTokenDto['unavailableReason']>
+  ): LivePlaybackTokenDto {
+    return {
+      status: 'unavailable',
+      sessionId: null,
+      playbackUrl: null,
+      token: null,
+      expiresAt: null,
+      unavailableReason,
+    };
+  }
+
+  private async liveLocalityFailure(
+    communityId: string,
+    viewerLocation: ViewerLocation
+  ): Promise<NonNullable<LivePlaybackTokenDto['unavailableReason']> | null> {
+    if (
+      !Number.isFinite(viewerLocation.viewerLat) ||
+      !Number.isFinite(viewerLocation.viewerLng)
+    ) {
+      return 'viewer-location-required';
+    }
+    if (!this.hasValidCoordinates(viewerLocation)) {
+      return 'invalid-viewer-location';
+    }
+
+    const channel = await this.channelRepository.findOne({
+      where: { communityId },
+    });
+    if (!channel || !this.hasValidCoordinates(channel)) {
+      return 'channel-anchor-unavailable';
+    }
+
+    const distanceKm = this.distanceKm(
+      viewerLocation.viewerLat!,
+      viewerLocation.viewerLng!,
+      channel.anchorLat!,
+      channel.anchorLng!
+    );
+    return distanceKm <= this.livePlaybackMaxDistanceKm()
+      ? null
+      : 'outside-anchor-radius';
+  }
+
+  private hasValidCoordinates(coordinates: {
+    viewerLat?: number;
+    viewerLng?: number;
+    anchorLat?: number | null;
+    anchorLng?: number | null;
+  }): boolean {
+    const lat = coordinates.viewerLat ?? coordinates.anchorLat;
+    const lng = coordinates.viewerLng ?? coordinates.anchorLng;
+    return (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat! >= -90 &&
+      lat! <= 90 &&
+      lng! >= -180 &&
+      lng! <= 180
+    );
+  }
+
+  private livePlaybackMaxDistanceKm(): number {
+    const configured = Number.parseFloat(
+      process.env['LIVE_PLAYBACK_MAX_DISTANCE_KM'] || '50'
+    );
+    return Number.isFinite(configured) && configured > 0 ? configured : 50;
+  }
+
+  private distanceKm(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number {
+    const toRadians = (value: number) => (value * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+    const latitudeDelta = toRadians(lat2 - lat1);
+    const longitudeDelta = toRadians(lng2 - lng1);
+    const a =
+      Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(longitudeDelta / 2) ** 2;
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   private signLiveToken(claims: LiveTokenClaims): string {
@@ -454,7 +591,7 @@ export class BroadcastService {
         playbackPath: null,
         requiresAuth: false,
         tokenContract: 'gateway-token-exchange',
-        localityPolicy: 'planned-channel-anchor',
+        localityPolicy: 'unverified-anchor-radius',
       };
     }
 
@@ -464,7 +601,7 @@ export class BroadcastService {
         playbackPath: null,
         requiresAuth: false,
         tokenContract: 'gateway-token-exchange',
-        localityPolicy: 'planned-channel-anchor',
+        localityPolicy: 'unverified-anchor-radius',
       };
     }
 

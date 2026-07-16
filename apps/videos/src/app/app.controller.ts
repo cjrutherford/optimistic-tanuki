@@ -221,17 +221,31 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VideoCommands.ISSUE_LIVE_TOKEN })
-  async issueLiveToken(@Payload() payload: { communityId: string }) {
-    return this.broadcastService.issueLiveToken(payload.communityId);
+  async issueLiveToken(
+    @Payload()
+    payload: {
+      communityId: string;
+      viewerLat?: number;
+      viewerLng?: number;
+    }
+  ) {
+    return this.broadcastService.issueLiveToken(payload.communityId, payload);
   }
 
   @MessagePattern({ cmd: VideoCommands.VALIDATE_LIVE_TOKEN })
   async validateLiveToken(
-    @Payload() payload: { communityId: string; token: string }
+    @Payload()
+    payload: {
+      communityId: string;
+      token: string;
+      viewerLat?: number;
+      viewerLng?: number;
+    }
   ) {
     return this.broadcastService.validateLiveToken(
       payload.communityId,
-      payload.token
+      payload.token,
+      payload
     );
   }
 

@@ -85,7 +85,9 @@ export interface OnPageAdvertisingCampaign {
     body?: string | null;
     ctaLabel?: string | null;
     ctaUrl?: string | null;
+    mediaUrl?: string | null;
     imageUrl?: string | null;
+    businessSiteUrl?: string | null;
   };
 }
 
@@ -522,7 +524,14 @@ export class PaymentService {
         )
       );
       this.end();
-      return result;
+      return result.map((campaign) => ({
+        ...campaign,
+        creative: {
+          ...campaign.creative,
+          mediaUrl:
+            campaign.creative.mediaUrl ?? campaign.creative.imageUrl ?? null,
+        },
+      }));
     } catch (err) {
       return this.fail(err);
     }

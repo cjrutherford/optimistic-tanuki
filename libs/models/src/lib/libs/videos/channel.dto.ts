@@ -252,8 +252,8 @@ export class LiveHandoffDto {
   @ApiProperty({ example: 'gateway-token-exchange' })
   tokenContract: 'none' | 'gateway-token-exchange';
 
-  @ApiProperty({ example: 'planned-channel-anchor' })
-  localityPolicy: 'none' | 'planned-channel-anchor';
+  @ApiProperty({ example: 'unverified-anchor-radius' })
+  localityPolicy: 'none' | 'unverified-anchor-radius';
 }
 
 export class LiveMediaTransportDto {
@@ -291,6 +291,13 @@ export class LivePlaybackTokenDto {
 
   @ApiProperty({ required: false })
   expiresAt: Date | null;
+
+  @ApiProperty({ required: false })
+  unavailableReason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius';
 }
 
 export class LivePlaybackTokenValidationDto {
@@ -308,6 +315,14 @@ export class LivePlaybackTokenValidationDto {
 
   @ApiProperty({ required: false })
   expiresAt?: Date;
+
+  @ApiProperty({ required: false })
+  reason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius'
+    | 'viewer-location-mismatch';
 }
 
 export class LiveSessionDto {

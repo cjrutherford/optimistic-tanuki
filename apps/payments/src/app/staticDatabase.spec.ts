@@ -8,6 +8,7 @@ describe('payments static datasource', () => {
       'Initial1774396807253',
       'BusinessPageAnchorColumns1782648600000',
       'ReplaceLegacySponsorshipsWithCampaigns1783510400000',
+      'AdvertisingCampaignMediaUrl1785000000000',
     ]);
   });
 });

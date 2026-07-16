@@ -180,7 +180,7 @@ export interface LiveHandoffDto {
   playbackPath?: string | null;
   requiresAuth: boolean;
   tokenContract: 'none' | 'gateway-token-exchange';
-  localityPolicy: 'none' | 'planned-channel-anchor';
+  localityPolicy: 'none' | 'unverified-anchor-radius';
 }
 
 export interface LivePlaybackTokenDto {
@@ -190,6 +190,11 @@ export interface LivePlaybackTokenDto {
   playbackUrl: string | null;
   mediaTransport?: LiveMediaTransportDto | null;
   expiresAt: Date | null;
+  unavailableReason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius';
 }
 
 export interface LivePlaybackTokenValidationDto {
@@ -198,6 +203,12 @@ export interface LivePlaybackTokenValidationDto {
   playbackUrl?: string | null;
   mediaTransport?: LiveMediaTransportDto | null;
   expiresAt?: Date;
+  reason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius'
+    | 'viewer-location-mismatch';
 }
 
 export interface LiveMediaTransportDto {

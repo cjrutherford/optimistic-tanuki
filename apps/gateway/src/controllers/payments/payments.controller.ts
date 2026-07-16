@@ -73,6 +73,7 @@ export interface CampaignCreativeInputDto {
   body?: string;
   ctaLabel?: string;
   ctaUrl?: string;
+  mediaUrl?: string;
   imageUrl?: string;
 }
 

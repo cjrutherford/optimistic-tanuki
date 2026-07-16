@@ -123,10 +123,15 @@ export class BroadcastSchedulerService
   }
 
   private async buildDecision(feed: ChannelFeedDto): Promise<PlaylistDecision> {
+    if (feed.currentMode === 'live') {
+      return this.playlistGenerator.buildDecision({
+        liveSessionId: feed.activeLiveSessionId,
+      });
+    }
+
     const ad = await this.findAdCandidate(feed);
     return this.playlistGenerator.buildDecision({
-      liveSessionId:
-        feed.currentMode === 'live' ? feed.activeLiveSessionId : null,
+      liveSessionId: null,
       scheduledBlockId:
         feed.currentMode === 'scheduled' ? feed.activeProgramBlockId : null,
       scheduledVideoId:
@@ -146,8 +151,7 @@ export class BroadcastSchedulerService
       return null;
     }
 
-    const placementType: 'pre-roll' | 'post-roll' =
-      feed.currentMode === 'scheduled' ? 'pre-roll' : 'post-roll';
+    const placementType = this.getPlacementType(feed);
     try {
       const candidates = await firstValueFrom(
         this.paymentService.send(
@@ -174,5 +178,19 @@ export class BroadcastSchedulerService
       );
       return null;
     }
+  }
+
+  private getPlacementType(
+    feed: ChannelFeedDto
+  ): 'pre-roll' | 'mid-roll' | 'post-roll' {
+    if (feed.currentMode === 'replay') {
+      return 'post-roll';
+    }
+
+    return feed.activePlaylistItem?.kind === 'scheduled' ||
+      (feed.activePlaylistItem?.kind === 'ad' &&
+        feed.activePlaylistItem.placementType === 'mid-roll')
+      ? 'mid-roll'
+      : 'pre-roll';
   }
 }

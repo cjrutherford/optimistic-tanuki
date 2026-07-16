@@ -32,6 +32,44 @@ import { BillingReconciliationService } from './billing-reconciliation.service';
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
 
+  private getCreativeMediaUrl(creative: {
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+  }) {
+    const mediaUrl = creative.mediaUrl?.trim() || null;
+    const legacyImageUrl = creative.imageUrl?.trim() || null;
+    return mediaUrl || legacyImageUrl;
+  }
+
+  private validateCreativeMediaUrl(creative: {
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+  }) {
+    const mediaUrl = creative.mediaUrl?.trim() || null;
+    if (mediaUrl !== null && !this.isUsableMediaUrl(mediaUrl)) {
+      throw new Error('Creative mediaUrl must be an absolute HTTPS URL');
+    }
+    return this.getCreativeMediaUrl(creative);
+  }
+
+  private validateCreativeMediaUrls(
+    creatives: Array<{ mediaUrl?: string | null; imageUrl?: string | null }>
+  ) {
+    creatives.forEach((creative) => this.validateCreativeMediaUrl(creative));
+  }
+
+  private isUsableMediaUrl(url?: string | null) {
+    if (!url) {
+      return false;
+    }
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'https:' && parsed.hostname.length > 0;
+    } catch {
+      return false;
+    }
+  }
+
   private normalizeMonthYear(month?: number | string, year?: number | string) {
     const now = new Date();
     const parsedMonth = Number(month);
@@ -100,6 +138,7 @@ export class PaymentService {
       creatives: CampaignCreativeDto[];
     }
   ) {
+    this.validateCreativeMediaUrls(data.creatives);
     if (
       data.targetPlacements.some(
         (target) => !isValidCampaignTargetPlacement(target)
@@ -148,6 +187,7 @@ export class PaymentService {
           body: creative.body?.trim() || null,
           ctaLabel: creative.ctaLabel?.trim() || null,
           ctaUrl: creative.ctaUrl?.trim() || null,
+          mediaUrl: this.getCreativeMediaUrl(creative),
           imageUrl: creative.imageUrl?.trim() || null,
         })
       )
@@ -191,9 +231,12 @@ export class PaymentService {
     ]);
     return campaigns.map((campaign) => ({
       ...campaign,
-      creatives: creatives.filter(
-        (creative) => creative.campaignId === campaign.id
-      ),
+      creatives: creatives
+        .filter((creative) => creative.campaignId === campaign.id)
+        .map((creative) => ({
+          ...creative,
+          mediaUrl: this.getCreativeMediaUrl(creative),
+        })),
       targetPlacements: targetPlacements.filter(
         (target) => target.campaignId === campaign.id
       ),
@@ -213,6 +256,7 @@ export class PaymentService {
       creatives: CampaignCreativeDto[];
     }
   ) {
+    this.validateCreativeMediaUrls(data.creatives);
     if (
       data.targetPlacements.some(
         (target) => !isValidCampaignTargetPlacement(target)
@@ -268,6 +312,7 @@ export class PaymentService {
             body: creative.body?.trim() || null,
             ctaLabel: creative.ctaLabel?.trim() || null,
             ctaUrl: creative.ctaUrl?.trim() || null,
+            mediaUrl: this.getCreativeMediaUrl(creative),
             imageUrl: creative.imageUrl?.trim() || null,
           })
         )
@@ -369,11 +414,19 @@ export class PaymentService {
       .filter((campaign) => campaign.startsAt <= now && campaign.endsAt >= now)
       .map((campaign) => ({
         ...campaign,
-        creative:
-          creatives.find((creative) => creative.campaignId === campaign.id) ||
-          null,
+        creative: (() => {
+          const creative = creatives.find(
+            (candidate) => candidate.campaignId === campaign.id
+          );
+          const mediaUrl = creative && this.getCreativeMediaUrl(creative);
+          return creative && mediaUrl ? { ...creative, mediaUrl } : null;
+        })(),
       }))
-      .filter((campaign) => campaign.creative !== null);
+      .filter(
+        (campaign) =>
+          campaign.creative !== null &&
+          this.isUsableMediaUrl(campaign.creative.mediaUrl)
+      );
   }
 
   async getEligiblePlaybackCampaigns(input: {
@@ -428,7 +481,8 @@ export class PaymentService {
         const creative = creatives.find(
           (candidate) => candidate.campaignId === campaign.id
         );
-        if (!target || !creative?.imageUrl) {
+        const mediaUrl = creative && this.getCreativeMediaUrl(creative);
+        if (!target || !mediaUrl || !this.isUsableMediaUrl(mediaUrl)) {
           return null;
         }
         return {
@@ -442,12 +496,13 @@ export class PaymentService {
             target.targetType === 'channel'
               ? 'channel-anchor'
               : 'community-anchor',
-          mediaUrl: creative.imageUrl,
+          mediaUrl,
           creative: {
             headline: creative.headline,
             body: creative.body,
             ctaLabel: creative.ctaLabel,
             ctaUrl: creative.ctaUrl,
+            mediaUrl,
             imageUrl: creative.imageUrl,
           },
         };

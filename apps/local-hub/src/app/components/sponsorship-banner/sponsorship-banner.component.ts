@@ -21,19 +21,29 @@ import {
     >
       @for (sponsor of campaigns(); track sponsor.id) {
       <div class="sponsor-item">
-        @if (sponsor.creative.body || sponsor.creative.headline) {
+        @if ( sponsor.creative.body || sponsor.creative.headline ||
+        sponsor.creative.mediaUrl || sponsor.creative.imageUrl ||
+        sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl ) {
         <div class="sponsor-content">
           <span class="sponsored-label">Sponsored</span>
           <p class="ad-text">
             {{ sponsor.creative.headline || sponsor.name
             }}{{ sponsor.creative.body ? ' — ' + sponsor.creative.body : '' }}
           </p>
-          @if (sponsor.creative.imageUrl) {
+          @if (sponsor.creative.mediaUrl || sponsor.creative.imageUrl) {
           <img
-            [src]="sponsor.creative.imageUrl"
+            [src]="sponsor.creative.mediaUrl || sponsor.creative.imageUrl"
             alt="Sponsored content"
             class="ad-image"
           />
+          } @if (sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl) {
+          <a
+            class="ad-cta"
+            [href]="sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ sponsor.creative.ctaLabel || 'Learn more' }}</a
+          >
           }
         </div>
         }

@@ -33,6 +33,9 @@ export class AdvertisingCampaignCreative {
   ctaUrl: string | null;
 
   @Column({ type: 'varchar', nullable: true })
+  mediaUrl: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
   imageUrl: string | null;
 
   @CreateDateColumn()

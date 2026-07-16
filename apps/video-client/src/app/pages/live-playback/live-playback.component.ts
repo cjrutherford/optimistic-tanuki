@@ -15,6 +15,8 @@ import {
 } from '@optimistic-tanuki/ui-models';
 import { VideoService } from '../../services/video.service';
 import { LiveMediaTransportService } from '../../services/live-media-transport.service';
+import { requestLivePlaybackLocation } from './live-playback-location.helper';
+import type { LivePlaybackLocation } from './live-playback-location.helper';
 
 type PlaybackState =
   | 'loading'
@@ -23,6 +25,7 @@ type PlaybackState =
   | 'live'
   | 'ended'
   | 'offline'
+  | 'location-required'
   | 'error';
 
 @Component({
@@ -61,6 +64,9 @@ type PlaybackState =
           </ng-container>
           <p *ngSwitchCase="'ended'">This live session has ended.</p>
           <p *ngSwitchCase="'offline'">This channel is currently off air.</p>
+          <p *ngSwitchCase="'location-required'">
+            {{ locationMessage }}
+          </p>
           <p *ngSwitchCase="'error'">The live handoff could not be loaded.</p>
         </ng-container>
         <video
@@ -128,6 +134,8 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
   mediaTransport: LiveMediaTransportDto | null = null;
   slugOrId = '';
   state: PlaybackState = 'loading';
+  locationMessage =
+    'Allow location access in your browser to watch this local live session.';
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -168,42 +176,92 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
         }
 
         this.state = 'connecting';
-        this.videoService.issueLiveToken(slugOrId).subscribe({
-          next: (token) => {
-            if (token.status !== 'ready' || !token.token) {
-              this.state = 'ended';
-              return;
-            }
+        void requestLivePlaybackLocation().then((location) => {
+          if (location.status !== 'available') {
+            this.state = 'location-required';
+            this.locationMessage =
+              location.reason === 'denied'
+                ? 'Allow location access in your browser to watch this local live session.'
+                : 'This browser cannot provide location access, so the local live session cannot be loaded.';
+            return;
+          }
 
-            this.videoService
-              .validateLiveToken(slugOrId, token.token)
-              .subscribe({
-                next: (validation) => {
-                  if (!validation.valid) {
-                    this.state = 'ended';
-                    return;
-                  }
-                  this.token = {
-                    ...token,
-                    playbackUrl: validation.playbackUrl ?? token.playbackUrl,
-                    expiresAt: validation.expiresAt ?? token.expiresAt,
-                  };
-                  this.mediaTransport =
-                    validation.mediaTransport ?? token.mediaTransport ?? null;
-                  if (!this.mediaTransport) {
-                    this.state = 'live';
-                    return;
-                  }
-                  void this.connectLiveTransport(this.mediaTransport);
-                },
-                error: () => (this.state = 'error'),
-              });
-          },
-          error: () => (this.state = 'error'),
+          this.requestLiveToken(slugOrId, {
+            viewerLat: location.viewerLat,
+            viewerLng: location.viewerLng,
+          });
         });
       },
       error: () => (this.state = 'error'),
     });
+  }
+
+  private requestLiveToken(
+    slugOrId: string,
+    viewerLocation: LivePlaybackLocation
+  ): void {
+    this.videoService.issueLiveToken(slugOrId, viewerLocation).subscribe({
+      next: (token) => {
+        if (token.status !== 'ready' || !token.token) {
+          if (token.unavailableReason) {
+            this.state = 'location-required';
+            this.locationMessage = this.getLocalityMessage(
+              token.unavailableReason
+            );
+          } else {
+            this.state = 'ended';
+          }
+          return;
+        }
+
+        this.videoService
+          .validateLiveToken(slugOrId, token.token, viewerLocation)
+          .subscribe({
+            next: (validation) => {
+              if (!validation.valid) {
+                if (validation.reason) {
+                  this.state = 'location-required';
+                  this.locationMessage = this.getLocalityMessage(
+                    validation.reason
+                  );
+                  return;
+                }
+                this.state = 'ended';
+                return;
+              }
+              this.token = {
+                ...token,
+                playbackUrl: validation.playbackUrl ?? token.playbackUrl,
+                expiresAt: validation.expiresAt ?? token.expiresAt,
+              };
+              this.mediaTransport =
+                validation.mediaTransport ?? token.mediaTransport ?? null;
+              if (!this.mediaTransport) {
+                this.state = 'live';
+                return;
+              }
+              void this.connectLiveTransport(this.mediaTransport);
+            },
+            error: () => (this.state = 'error'),
+          });
+      },
+      error: () => (this.state = 'error'),
+    });
+  }
+
+  private getLocalityMessage(reason: string): string {
+    switch (reason) {
+      case 'channel-anchor-unavailable':
+        return 'This live channel has no location anchor configured yet.';
+      case 'outside-anchor-radius':
+        return 'This live session is only available near the channel location.';
+      case 'invalid-viewer-location':
+        return 'Your browser returned an invalid location. Reload and try again.';
+      case 'viewer-location-mismatch':
+        return 'Your browser location changed. Reload the live session to try again.';
+      default:
+        return 'Allow location access in your browser to watch this local live session.';
+    }
   }
 
   private async connectLiveTransport(

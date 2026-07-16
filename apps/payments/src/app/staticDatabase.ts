@@ -17,6 +17,7 @@ import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
 import { Initial1774396807253 } from '../../migrations/1774396807253-initial';
 import { BusinessPageAnchorColumns1782648600000 } from '../../migrations/1782648600000-business-page-anchor-columns';
 import { ReplaceLegacySponsorshipsWithCampaigns1783510400000 } from '../../migrations/1783510400000-replace-legacy-sponsorships-with-campaigns';
+import { AdvertisingCampaignMediaUrl1785000000000 } from '../../migrations/1785000000000-advertising-campaign-media-url';
 
 const config = yaml.load(
   fs.readFileSync(path.resolve(__dirname, '../assets/config.yaml'), 'utf8')
@@ -54,6 +55,7 @@ const migrations = [
   Initial1774396807253,
   BusinessPageAnchorColumns1782648600000,
   ReplaceLegacySponsorshipsWithCampaigns1783510400000,
+  AdvertisingCampaignMediaUrl1785000000000,
 ];
 
 const staticSource = new DataSource({

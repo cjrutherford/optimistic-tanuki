@@ -11,6 +11,16 @@ describe('LivePlaybackComponent', () => {
   let liveMediaTransport: jest.Mocked<LiveMediaTransportService>;
 
   beforeEach(async () => {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (success: PositionCallback) =>
+          success({
+            coords: { latitude: 32.0809, longitude: -81.0912 },
+          } as GeolocationPosition),
+      },
+    });
+
     const videoServiceSpy = {
       getChannelFeed: jest.fn(),
       issueLiveToken: jest.fn(),
@@ -72,10 +82,14 @@ describe('LivePlaybackComponent', () => {
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(videoService.issueLiveToken).toHaveBeenCalledWith('ot-live');
+    expect(videoService.issueLiveToken).toHaveBeenCalledWith('ot-live', {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+    });
     expect(videoService.validateLiveToken).toHaveBeenCalledWith(
       'ot-live',
-      'signed-token'
+      'signed-token',
+      { viewerLat: 32.0809, viewerLng: -81.0912 }
     );
     expect(fixture.nativeElement.textContent).toContain('Live now');
     expect(fixture.nativeElement.querySelector('video')?.src).toBe(
@@ -151,6 +165,53 @@ describe('LivePlaybackComponent', () => {
 
     expect(fixture.nativeElement.textContent).toContain(
       'This live session has ended.'
+    );
+  });
+
+  it('shows an actionable message and does not request a token when location is denied', async () => {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (
+          _success: PositionCallback,
+          error: PositionErrorCallback
+        ) =>
+          error({
+            code: 1,
+            message: 'Permission denied',
+          } as GeolocationPositionError),
+      },
+    });
+    videoService.getChannelFeed.mockReturnValue(
+      of({ currentMode: 'live', liveHandoff: { status: 'ready' } } as any)
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(videoService.issueLiveToken).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain(
+      'Allow location access in your browser to watch this local live session.'
+    );
+  });
+
+  it('shows an actionable message and does not request a token when location is unavailable', async () => {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: undefined,
+    });
+    videoService.getChannelFeed.mockReturnValue(
+      of({ currentMode: 'live', liveHandoff: { status: 'ready' } } as any)
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(videoService.issueLiveToken).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain(
+      'This browser cannot provide location access, so the local live session cannot be loaded.'
     );
   });
 

@@ -237,6 +237,44 @@ describe('BusinessApiService site config requests', () => {
     request.flush([]);
   });
 
+  it('normalizes legacy owner campaign imageUrl responses to mediaUrl', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'owner-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+      })
+    );
+    localStorage.setItem('business-site:token', 'owner-token');
+    initTestingModule();
+
+    let campaigns: any;
+    service.getOwnerAdvertisingCampaigns().subscribe((result) => {
+      campaigns = result;
+    });
+
+    const request = httpMock.expectOne(
+      '/api/payments/advertising-campaigns/owner'
+    );
+    request.flush([
+      {
+        id: 'campaign-1',
+        creatives: [
+          {
+            placementType: 'on-page',
+            imageUrl: 'https://cdn.example.com/legacy.jpg',
+          },
+        ],
+      },
+    ]);
+
+    expect(campaigns[0].creatives[0].mediaUrl).toBe(
+      'https://cdn.example.com/legacy.jpg'
+    );
+  });
+
   it('updates an owner business page with owner auth headers', () => {
     TestBed.resetTestingModule();
     localStorage.setItem(

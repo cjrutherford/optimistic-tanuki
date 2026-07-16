@@ -17,6 +17,7 @@ import {
   LivePlaybackTokenValidationDto,
   UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
+import type { LivePlaybackLocation } from '../pages/live-playback/live-playback-location.helper';
 
 @Injectable({
   providedIn: 'root',
@@ -143,20 +144,24 @@ export class VideoService {
     );
   }
 
-  issueLiveToken(slugOrId: string): Observable<LivePlaybackTokenDto> {
+  issueLiveToken(
+    slugOrId: string,
+    viewerLocation: LivePlaybackLocation
+  ): Observable<LivePlaybackTokenDto> {
     return this.http.post<LivePlaybackTokenDto>(
       `${this.API_URL}/channels/${slugOrId}/live/token`,
-      {}
+      viewerLocation
     );
   }
 
   validateLiveToken(
     slugOrId: string,
-    token: string
+    token: string,
+    viewerLocation: LivePlaybackLocation
   ): Observable<LivePlaybackTokenValidationDto> {
     return this.http.post<LivePlaybackTokenValidationDto>(
       `${this.API_URL}/channels/${slugOrId}/live/token/validate`,
-      { token }
+      { token, ...viewerLocation }
     );
   }
 

@@ -41,7 +41,13 @@ export class PlaylistGenerator {
       };
     }
 
-    if (input.ad?.mediaUrl && input.scheduledBlockId) {
+    const adCanInterruptSource =
+      input.ad?.mediaUrl &&
+      ((input.ad.placementType === 'pre-roll' && input.scheduledBlockId) ||
+        (input.ad.placementType === 'mid-roll' && input.scheduledBlockId) ||
+        (input.ad.placementType === 'post-roll' && input.replayVideoId));
+
+    if (adCanInterruptSource) {
       return {
         kind: 'ad',
         placementType: input.ad.placementType,

@@ -164,6 +164,15 @@ type TargetType = 'channel' | 'community';
                   [(ngModel)]="creativeDrafts[placement].ctaUrl"
                   [name]="placement + '-cta-url'"
               /></label>
+              <label
+                >Media URL (HTTPS)
+                <input
+                  type="url"
+                  [(ngModel)]="creativeDrafts[placement].mediaUrl"
+                  [name]="placement + '-media-url'"
+                  placeholder="https://cdn.example.com/ad.jpg"
+                />
+              </label>
             </fieldset>
             <p class="error" *ngIf="message()">{{ message() }}</p>
             <otui-button type="submit">{{
@@ -346,7 +355,13 @@ export class BusinessOwnerAdCampaignPageComponent {
   budget: number | null = null;
   creativeDrafts: Record<
     Placement,
-    { headline: string; body: string; ctaLabel: string; ctaUrl: string }
+    {
+      headline: string;
+      body: string;
+      ctaLabel: string;
+      ctaUrl: string;
+      mediaUrl: string;
+    }
   > = this.emptyCreatives();
   startsAt = new Date().toISOString().slice(0, 10);
   endsAt = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
@@ -410,6 +425,16 @@ export class BusinessOwnerAdCampaignPageComponent {
       );
       return;
     }
+    const invalidMediaPlacement = this.selectedPlacements().find(
+      (placementType) =>
+        !this.isValidMediaUrl(this.creativeDrafts[placementType].mediaUrl)
+    );
+    if (invalidMediaPlacement) {
+      this.message.set(
+        `Media URL for ${invalidMediaPlacement} must be an absolute HTTPS URL.`
+      );
+      return;
+    }
     const payload = {
       businessPageId: this.businessPageId,
       name: this.name,
@@ -461,6 +486,7 @@ export class BusinessOwnerAdCampaignPageComponent {
         body: creative.body ?? '',
         ctaLabel: creative.ctaLabel ?? '',
         ctaUrl: creative.ctaUrl ?? '',
+        mediaUrl: creative.mediaUrl ?? creative.imageUrl ?? '',
       };
     this.message.set('');
   }
@@ -485,13 +511,27 @@ export class BusinessOwnerAdCampaignPageComponent {
       BusinessOwnerAdCampaignPageComponent.placementsForTarget('channel').map(
         (placement) => [
           placement,
-          { headline: '', body: '', ctaLabel: '', ctaUrl: '' },
+          { headline: '', body: '', ctaLabel: '', ctaUrl: '', mediaUrl: '' },
         ]
       )
     ) as Record<
       Placement,
-      { headline: string; body: string; ctaLabel: string; ctaUrl: string }
+      {
+        headline: string;
+        body: string;
+        ctaLabel: string;
+        ctaUrl: string;
+        mediaUrl: string;
+      }
     >;
+  }
+  private isValidMediaUrl(value: string): boolean {
+    if (!value.trim()) return true;
+    try {
+      return new URL(value).protocol === 'https:';
+    } catch {
+      return false;
+    }
   }
   private async reload() {
     const [businessPages, channels, campaigns] = await Promise.all([

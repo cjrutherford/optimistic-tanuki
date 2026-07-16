@@ -88,19 +88,31 @@ community/channel target and an on-page creative, are rendered.
    is not yet attached rather than showing a broken player.
 6. Stop the live session in `My Channel`, refresh the live route, and confirm
    the viewer sees the ended/offline state and no token is issued.
-7. For a running live session, submit the returned token to
+7. Allow browser location access. For a running live session, submit the token
+   with the same latitude and longitude to
    `POST /api/videos/channels/<channel-slug>/live/token/validate` and confirm
    it is valid. Change one character in the token and confirm validation fails.
 
 For API-level validation, use the public feed endpoint followed by:
 
 ```bash
-curl -X POST http://localhost:3000/api/videos/channels/<channel-slug>/live/token
+curl -X POST http://localhost:3000/api/videos/channels/<channel-slug>/live/token \
+  -H 'content-type: application/json' \
+  -d '{"viewerLat":32.0809,"viewerLng":-81.0912}'
 ```
 
-The token endpoint returns `status: ready` only for an active live session;
-scheduled and inactive channels return `status: unavailable` with null token
-and expiry fields.
+The token endpoint returns `status: ready` only for an active live session
+inside its channel-anchor radius. Use the same coordinate pair when validating:
+
+```bash
+curl -X POST http://localhost:3000/api/videos/channels/<channel-slug>/live/token/validate \
+  -H 'content-type: application/json' \
+  -d '{"token":"<issued-token>","viewerLat":32.0809,"viewerLng":-81.0912}'
+```
+
+Scheduled and inactive channels return `status: unavailable` with null token
+and expiry fields. This is browser-coordinate enforcement only; it is not
+anti-spoofing.
 
 Set `LIVE_PLAYBACK_TOKEN_SECRET` in production. The validation endpoint is the
 media-gateway contract; it verifies signature, expiry, requested community, and
