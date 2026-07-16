@@ -49,6 +49,8 @@ describe('AppController', () => {
     } as any;
     voteService = {
       create: jest.fn(),
+      castVote: jest.fn(),
+      removeVoteByPostAndProfile: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
@@ -179,6 +181,7 @@ describe('AppController', () => {
             blockUser: jest.fn(),
             unblockUser: jest.fn(),
             getBlockedUsers: jest.fn(),
+            getBlockersOf: jest.fn().mockResolvedValue([]),
             isUserBlocked: jest.fn(),
             muteUser: jest.fn(),
             unmuteUser: jest.fn(),
@@ -337,32 +340,52 @@ describe('AppController', () => {
   });
 
   it('should upvote a post', async () => {
-    voteService.create.mockResolvedValue('upvoted');
-    const result = await controller.upvotePost('1', 'u1');
-    expect(result).toBe('upvoted');
-    expect(voteService.create).toHaveBeenCalledWith({
+    voteService.castVote.mockResolvedValue({
+      vote: 'upvoted',
+      created: true,
+      changed: true,
+    } as any);
+    const result = await controller.upvotePost({
       postId: '1',
       value: 1,
       userId: 'u1',
-    });
+      profileId: 'p1',
+    } as any);
+    expect(result).toBe('upvoted');
+    expect(voteService.castVote).toHaveBeenCalledWith('1', 'p1', 'u1', 1);
   });
 
   it('should downvote a post', async () => {
-    voteService.create.mockResolvedValue('downvoted');
-    const result = await controller.downvotePost('1', 'u1');
-    expect(result).toBe('downvoted');
-    expect(voteService.create).toHaveBeenCalledWith({
+    voteService.castVote.mockResolvedValue({
+      vote: 'downvoted',
+      created: true,
+      changed: true,
+    } as any);
+    const result = await controller.downvotePost({
       postId: '1',
       value: -1,
       userId: 'u1',
-    });
+      profileId: 'p1',
+    } as any);
+    expect(result).toBe('downvoted');
+    expect(voteService.castVote).toHaveBeenCalledWith('1', 'p1', 'u1', -1);
   });
 
   it('should unvote a post', async () => {
-    voteService.remove.mockResolvedValue('unvoted');
-    const result = await controller.unvotePost(1);
-    expect(result).toBe('unvoted');
-    expect(voteService.remove).toHaveBeenCalledWith(1);
+    voteService.removeVoteByPostAndProfile.mockResolvedValue({
+      success: true,
+    } as any);
+    const result = await controller.unvotePost({
+      postId: '1',
+      value: 0,
+      userId: 'u1',
+      profileId: 'p1',
+    } as any);
+    expect(result).toEqual({ success: true });
+    expect(voteService.removeVoteByPostAndProfile).toHaveBeenCalledWith(
+      '1',
+      'p1'
+    );
   });
 
   it('should get votes for a post', async () => {
@@ -525,10 +548,8 @@ describe('AppController', () => {
     });
   });
 
-  it('filters posts authored by blocked profiles from post search results', async () => {
-    postService.findAll.mockResolvedValue([
-      { id: 'post-1', title: 'Post 1', profileId: 'blocked-1' } as any,
-    ]);
+  it('excludes blocked authors from post search results via the visibility scope', async () => {
+    postService.findAll.mockResolvedValue([]);
     voteService.findAll.mockResolvedValue([]);
     commentService.findAll.mockResolvedValue([]);
     attachmentService.findAll.mockResolvedValue([]);
@@ -538,14 +559,19 @@ describe('AppController', () => {
       { blockedId: 'blocked-1' },
     ]);
 
-    const result = await controller.findAllPosts(
-      {} as any,
-      {} as any,
-      'viewer-1'
-    );
+    await controller.findAllPosts({} as any, {} as any, 'viewer-1');
 
     expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
-    expect(result).toEqual([]);
+    expect(privacyService.getBlockersOf).toHaveBeenCalledWith('viewer-1');
+
+    // Blocked-author exclusion is pushed into the query rather than filtered
+    // in JS: findAll receives a scoped where-array whose public branch NOT INs
+    // the blocked author.
+    const where = postService.findAll.mock.calls[0][0]?.where as any[];
+    expect(Array.isArray(where)).toBe(true);
+    const publicBranch = where.find((b) => b.visibility === 'public');
+    expect(publicBranch.profileId?.type).toBe('not');
+    expect(publicBranch.profileId?.value).toEqual(['blocked-1']);
   });
 
   it('filters posts authored by blocked profiles from community feed results', async () => {

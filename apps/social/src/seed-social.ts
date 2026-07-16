@@ -284,36 +284,19 @@ async function bootstrap() {
       // Handle both 'token' and 'newToken' properties
       token = data?.token || data?.newToken;
 
-      // Login response may only contain the token, we need to fetch user details
-      if (!userId || !profileId) {
+      // Login response may only contain the token, we need to fetch user details.
+      // There is no /authentication/me route on the gateway, so decode the
+      // userId directly from the JWT token payload instead.
+      if ((!userId || !profileId) && token) {
         logger.log(
-          'Login response missing userId/profileId, fetching from token...'
+          'Login response missing userId/profileId, decoding from token...'
         );
-        try {
-          // Try to get current user info from the authentication service
-          const meResponse = await httpClient.get('/authentication/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          logger.log(`Me response: ${JSON.stringify(meResponse.data)}`);
-
-          const meData = meResponse.data?.data || meResponse.data;
-          userId = meData?.userId || meData?.id || userId;
-        } catch (e: any) {
-          logger.warn(
-            `Could not fetch /authentication/me: ${
-              e?.response?.data?.message || e.message
-            }`
-          );
-        }
-      }
-
-      // If still no userId, try to decode from token (basic JWT decode)
-      if (!userId && token) {
         try {
           const tokenParts = token.split('.');
           if (tokenParts.length === 3) {
             const payload = JSON.parse(atob(tokenParts[1]));
-            userId = payload?.sub || payload?.userId || payload?.user_id;
+            userId =
+              payload?.sub || payload?.userId || payload?.user_id || userId;
             logger.log(`Extracted userId from token: ${userId}`);
           }
         } catch (e) {
@@ -619,7 +602,6 @@ async function bootstrap() {
           content: postData.content,
           profileId: publicUser.profileId,
           appScope: appScope,
-          visibility: 'public',
         },
         { headers: { Authorization: `Bearer ${publicUser.token}` } }
       );

@@ -56,6 +56,14 @@ import {
 } from '../../decorators/permissions.decorator';
 import { Throttle } from '@nestjs/throttler';
 
+// IMPORTANT: overrides must be keyed to a throttler NAME configured in the
+// gateway's ThrottlerModule (`short`/`medium`/`long` in app.module.ts). The
+// guard only consults metadata for configured names, so `{ default: ... }`
+// is silently ignored here. We override `long` (the 60s window throttler).
+const VOTE_THROTTLE = {
+  long: { limit: 20, ttl: 60000 }, // 20 votes per minute
+};
+
 @UseGuards(AuthGuard, PermissionsGuard)
 @ApiTags('social')
 @Controller('social')
@@ -111,10 +119,11 @@ export class SocialController {
   })
   @Post('vote')
   @RequirePermissions('social.vote.create')
-  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 votes per minute
+  @Throttle(VOTE_THROTTLE)
   async vote(@User() user: UserDetails, @Body() voteDto: CreateVoteDto) {
     this.l.debug('Vote Received. Vote DTO: ' + JSON.stringify(voteDto));
     voteDto.userId = user.userId;
+    voteDto.profileId = user.profileId;
     const commandMap = {
       '-1': VoteCommands.DOWNVOTE,
       '0': VoteCommands.UNVOTE,
@@ -266,9 +275,15 @@ export class SocialController {
     type: PostDto,
   })
   @Get('post/:id')
-  async getPost(@Param('id') id: string): Promise<PostDto> {
+  async getPost(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ): Promise<PostDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id, viewerProfileId: user?.profileId }
+      )
     );
   }
 
@@ -280,9 +295,15 @@ export class SocialController {
     type: PostDto,
   })
   @Get('post/:id/shared')
-  async getSharedPost(@Param('id') id: string): Promise<PostDto> {
+  async getSharedPost(
+    @Param('id') id: string,
+    @User() user?: UserDetails
+  ): Promise<PostDto> {
     return await firstValueFrom(
-      this.socialClient.send({ cmd: PostCommands.FIND }, { id })
+      this.socialClient.send(
+        { cmd: PostCommands.FIND },
+        { id, viewerProfileId: user?.profileId }
+      )
     );
   }
 

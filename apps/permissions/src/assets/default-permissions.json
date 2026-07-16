@@ -5137,6 +5137,11 @@
     },
     {
       "role": "local_hub_member",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
       "permission": "community.join",
       "permissionAppScope": "local-hub"
     },
@@ -5148,6 +5153,11 @@
     {
       "role": "local_hub_member",
       "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.create",
       "permissionAppScope": "local-hub"
     },
     {

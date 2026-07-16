@@ -8,7 +8,10 @@ import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { MarketingEnrichmentServer } from './app/services/marketing-enrichment.server';
+import {
+  LlmConceptResult,
+  MarketingEnrichmentServer,
+} from './app/services/marketing-enrichment.server';
 import { CampaignConcept, GenerationRequest } from './app/types';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
@@ -17,6 +20,66 @@ const app = express();
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const enrichmentServer = new MarketingEnrichmentServer();
+
+type LlmEndpoint = 'enrich' | 'generate';
+
+interface EndpointUsageCounter {
+  calls: number;
+  applied: number;
+  failed: number;
+  promptTokens: number;
+  completionTokens: number;
+  lastModel: string | null;
+}
+
+// Per-process observability only. These counters reset on restart and are not
+// a billing source of truth; they surface token usage for operators/tests.
+const usageCounters: Record<LlmEndpoint, EndpointUsageCounter> = {
+  enrich: {
+    calls: 0,
+    applied: 0,
+    failed: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    lastModel: null,
+  },
+  generate: {
+    calls: 0,
+    applied: 0,
+    failed: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    lastModel: null,
+  },
+};
+
+const recordUsage = (endpoint: LlmEndpoint, result: LlmConceptResult): void => {
+  const counter = usageCounters[endpoint];
+  counter.calls += 1;
+  if (result.applied) {
+    counter.applied += 1;
+  } else {
+    counter.failed += 1;
+  }
+  if (result.usage) {
+    counter.promptTokens += result.usage.promptTokens;
+    counter.completionTokens += result.usage.completionTokens;
+    counter.lastModel = result.usage.model;
+  }
+
+  console.info(
+    JSON.stringify({
+      event: 'marketing-generator.llm-usage',
+      endpoint,
+      model: result.usage?.model ?? null,
+      promptTokens: result.usage?.promptTokens ?? 0,
+      completionTokens: result.usage?.completionTokens ?? 0,
+      totalDurationMs: result.usage?.totalDurationMs ?? 0,
+      applied: result.applied,
+      failureReason: result.failureReason ?? null,
+    })
+  );
+};
 
 const applyPublicAppSecurityHeaders: express.RequestHandler = (
   req,
@@ -84,13 +147,39 @@ app.post('/api/marketing-generator/enrich', async (req, res) => {
     return;
   }
 
-  const concepts = await enrichmentServer.enrich(body.request, body.concepts);
+  const result = await enrichmentServer.enrich(body.request, body.concepts);
+  recordUsage('enrich', result);
   res.json({
-    concepts,
-    enrichmentApplied: concepts.some(
-      (concept) => concept.generationMode === 'hybrid'
-    ),
+    concepts: result.concepts,
+    enrichmentApplied: result.applied,
+    usage: result.usage,
   });
+});
+
+app.post('/api/marketing-generator/generate', async (req, res) => {
+  const body = req.body as {
+    request?: GenerationRequest;
+    concepts?: CampaignConcept[];
+  };
+
+  if (!body?.request || !Array.isArray(body.concepts)) {
+    res.status(400).json({
+      error: 'Invalid generation payload.',
+    });
+    return;
+  }
+
+  const result = await enrichmentServer.generate(body.request, body.concepts);
+  recordUsage('generate', result);
+  res.json({
+    concepts: result.concepts,
+    generationApplied: result.applied,
+    usage: result.usage,
+  });
+});
+
+app.get('/api/marketing-generator/usage', (_req, res) => {
+  res.json(usageCounters);
 });
 
 app.use(

@@ -112,6 +112,12 @@ interface EditorSurface {
                 : 'native channel output only'
             }}
           </li>
+          <li *ngIf="latestGenerationUsage() as usage">
+            Token usage: {{ usage.promptTokens }} prompt /
+            {{ usage.completionTokens }} completion{{
+              usage.model ? ' · ' + usage.model : ''
+            }}
+          </li>
         </ul>
       </article>
     </section>
@@ -1758,26 +1764,26 @@ export class ResultsPageComponent {
     typeof (this.state as { currentWorkspaceId?: unknown })
       .currentWorkspaceId === 'function'
       ? (
-        this.state as { currentWorkspaceId: () => string }
-      ).currentWorkspaceId()
+          this.state as { currentWorkspaceId: () => string }
+        ).currentWorkspaceId()
       : ''
   );
   protected readonly workspaceStatus = computed<MarketingWorkspaceStatus>(() =>
     typeof (this.state as { workspaceStatus?: unknown }).workspaceStatus ===
-      'function'
+    'function'
       ? (
-        this.state as {
-          workspaceStatus: () => MarketingWorkspaceStatus;
-        }
-      ).workspaceStatus()
+          this.state as {
+            workspaceStatus: () => MarketingWorkspaceStatus;
+          }
+        ).workspaceStatus()
       : {
-        storageLabel: 'Browser storage only',
-        currentWorkspaceName: this.currentWorkspaceName(),
-        workspaceCount: this.workspaces().length,
-        currentVersionCount: this.workspaceVersions().length,
-        conceptCount: this.concepts().length,
-        lastSavedAt: '',
-      }
+          storageLabel: 'Browser storage only',
+          currentWorkspaceName: this.currentWorkspaceName(),
+          workspaceCount: this.workspaces().length,
+          currentVersionCount: this.workspaceVersions().length,
+          conceptCount: this.concepts().length,
+          lastSavedAt: '',
+        }
   );
   protected readonly request = cloneRequest(this.state.request());
   protected readonly personas = AUDIENCE_PERSONAS;
@@ -1847,6 +1853,37 @@ export class ResultsPageComponent {
   protected readonly selectedConceptFeedback = computed(() =>
     this.insights.feedbackSummaryForConcept(this.selectedConcept()?.id || '')
   );
+  protected readonly latestGenerationUsage = computed<{
+    promptTokens: number;
+    completionTokens: number;
+    model: string;
+  } | null>(() => {
+    const events = this.insights.events();
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const event = events[index];
+      if (
+        event.type !== 'generation_requested' &&
+        event.type !== 'generation_regenerated'
+      ) {
+        continue;
+      }
+
+      const metadata = event.metadata;
+      if (
+        metadata &&
+        typeof metadata['promptTokens'] === 'number' &&
+        typeof metadata['completionTokens'] === 'number'
+      ) {
+        return {
+          promptTokens: metadata['promptTokens'],
+          completionTokens: metadata['completionTokens'],
+          model: typeof metadata['model'] === 'string' ? metadata['model'] : '',
+        };
+      }
+    }
+
+    return null;
+  });
   protected readonly editorSurfaces = computed<EditorSurface[]>(() => {
     const concept = this.selectedConcept();
     const channelSurfaces = concept.channelOutputs.map((output) =>
@@ -1994,11 +2031,11 @@ export class ResultsPageComponent {
       channelOutputs: concept.channelOutputs.map((output) =>
         output.id === outputId
           ? {
-            ...output,
-            blocks: output.blocks.map((block) =>
-              block.id === blockId ? { ...block, value } : block
-            ),
-          }
+              ...output,
+              blocks: output.blocks.map((block) =>
+                block.id === blockId ? { ...block, value } : block
+              ),
+            }
           : output
       ),
     }));
@@ -2047,18 +2084,18 @@ export class ResultsPageComponent {
       materialOutputs: concept.materialOutputs.map((asset) =>
         asset.id === materialId
           ? {
-            ...asset,
-            surfaces: asset.surfaces.map((surface) =>
-              surface.id === surfaceId
-                ? {
-                  ...surface,
-                  textBlocks: surface.textBlocks.map((block) =>
-                    block.id === blockId ? { ...block, value } : block
-                  ),
-                }
-                : surface
-            ),
-          }
+              ...asset,
+              surfaces: asset.surfaces.map((surface) =>
+                surface.id === surfaceId
+                  ? {
+                      ...surface,
+                      textBlocks: surface.textBlocks.map((block) =>
+                        block.id === blockId ? { ...block, value } : block
+                      ),
+                    }
+                  : surface
+              ),
+            }
           : asset
       ),
     }));
@@ -2093,27 +2130,40 @@ export class ResultsPageComponent {
 
   async regenerate(): Promise<void> {
     const normalizedRequest = this.normalizedRequest();
+    const regeneratedConceptId = this.selectedConcept().id;
     this.state.setRequest(normalizedRequest);
-    this.logEvent('generation_regenerated', {
-      conceptId: this.selectedConcept().id,
-      metadata: { channel: normalizedRequest.channel },
-    });
     const baseConcepts = await this.generator.generateConcepts(
       normalizedRequest
     );
-    const enrichmentResult = normalizedRequest.includeAiPolish
-      ? await this.enrichmentApi.enrichConcepts(normalizedRequest, baseConcepts)
+    const generationResult = normalizedRequest.includeAiPolish
+      ? await this.enrichmentApi.generateConcepts(
+          normalizedRequest,
+          baseConcepts
+        )
       : null;
-    const concepts = enrichmentResult
+    const concepts = generationResult
       ? this.applyProvenance(
-        enrichmentResult.concepts,
-        true,
-        enrichmentResult.enrichmentApplied
-      )
+          generationResult.concepts,
+          true,
+          generationResult.generationApplied
+        )
       : this.applyProvenance(baseConcepts, false, false);
     this.state.setConcepts(concepts);
     this.selectedId.set(concepts[0]?.id ?? '');
     this.copiedMessage.set('');
+    this.logEvent('generation_regenerated', {
+      conceptId: regeneratedConceptId,
+      metadata: {
+        channel: normalizedRequest.channel,
+        ...(generationResult?.usage
+          ? {
+              promptTokens: generationResult.usage.promptTokens,
+              completionTokens: generationResult.usage.completionTokens,
+              model: generationResult.usage.model,
+            }
+          : {}),
+      },
+    });
   }
 
   async copyConcept(): Promise<void> {
@@ -2297,8 +2347,8 @@ export class ResultsPageComponent {
       type: string;
       surface: 'channel' | 'material' | 'bundle';
     }> = [
-        { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
-      ];
+      { path: `${concept.id}.md`, type: 'text/markdown', surface: 'bundle' },
+    ];
     const channelFiles = concept.channelOutputs.flatMap((output) => [
       {
         path: `${output.id}.html`,
@@ -2324,18 +2374,18 @@ export class ResultsPageComponent {
       type: string;
       surface: 'channel' | 'material' | 'bundle';
     }> = [
-        ...exportFiles,
-        ...channelFiles.map(({ path, type, surface }) => ({
-          path,
-          type,
-          surface,
-        })),
-        ...assetFiles.map(({ path, type, surface }) => ({
-          path,
-          type,
-          surface,
-        })),
-      ];
+      ...exportFiles,
+      ...channelFiles.map(({ path, type, surface }) => ({
+        path,
+        type,
+        surface,
+      })),
+      ...assetFiles.map(({ path, type, surface }) => ({
+        path,
+        type,
+        surface,
+      })),
+    ];
     const markdown = [
       `# ${concept.headline}`,
       `Provenance: ${this.provenanceLabel(concept.generationProvenance)}`,
@@ -2399,22 +2449,23 @@ export class ResultsPageComponent {
         `
 <section class="surface-section">
   <h2>${this.escapeHtml(surface.label)}</h2>
-  ${surface.imageSlots.length
-            ? `<div class="image-export-grid">
+  ${
+    surface.imageSlots.length
+      ? `<div class="image-export-grid">
   ${surface.imageSlots
-              .map((slot) => this.buildImageExportHtml(slot))
-              .join('\n')}
+    .map((slot) => this.buildImageExportHtml(slot))
+    .join('\n')}
 </div>`
-            : ''
-          }
+      : ''
+  }
   ${surface.textBlocks
-            .map(
-              (block) => `<div class="text-block ${block.role}">
+    .map(
+      (block) => `<div class="text-block ${block.role}">
     <span class="block-label">${this.escapeHtml(block.label)}</span>
     <div class="block-copy">${this.sanitizeRichTextHtml(block.value)}</div>
   </div>`
-            )
-            .join('\n')}
+    )
+    .join('\n')}
 </section>`.trim()
       )
       .join('\n');
@@ -2438,8 +2489,8 @@ export class ResultsPageComponent {
         border-radius: 24px;
         padding: 2rem;
         background: linear-gradient(180deg, ${this.escapeHtml(
-      this.request.brand.accentColor
-    )}22, transparent 24%);
+          this.request.brand.accentColor
+        )}22, transparent 24%);
         box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
       }
       h1, h2 { margin: 0 0 1rem; }
@@ -2500,8 +2551,8 @@ export class ResultsPageComponent {
         display: grid;
         align-content: end;
         background: linear-gradient(135deg, ${this.escapeHtml(
-      this.request.brand.primaryColor
-    )}22, ${this.escapeHtml(this.request.brand.accentColor)}22);
+          this.request.brand.primaryColor
+        )}22, ${this.escapeHtml(this.request.brand.accentColor)}22);
       }
       .image-export-meta {
         display: grid;
@@ -2517,8 +2568,8 @@ export class ResultsPageComponent {
   <body>
     <article class="shell">
       <div class="meta">${this.escapeHtml(
-      this.request.brand.businessName || 'Signal Foundry'
-    )}</div>
+        this.request.brand.businessName || 'Signal Foundry'
+      )}</div>
       <h1>${this.escapeHtml(asset.label)}</h1>
       ${payload}
     </article>
@@ -2577,10 +2628,11 @@ export class ResultsPageComponent {
         gap: 0.45rem;
         padding: 1rem;
         border-radius: 18px;
-        background: ${output.type === 'social-campaign'
-        ? 'linear-gradient(155deg, #111827, #1f2937)'
-        : '#fff7ed'
-      };
+        background: ${
+          output.type === 'social-campaign'
+            ? 'linear-gradient(155deg, #111827, #1f2937)'
+            : '#fff7ed'
+        };
         color: ${output.type === 'social-campaign' ? '#f8fafc' : '#111827'};
       }
       .channel-block.cta .channel-copy {
@@ -2598,10 +2650,11 @@ export class ResultsPageComponent {
         font-size: 0.78rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
-        color: ${output.type === 'social-campaign'
-        ? 'rgba(248, 250, 252, 0.72)'
-        : '#92400e'
-      };
+        color: ${
+          output.type === 'social-campaign'
+            ? 'rgba(248, 250, 252, 0.72)'
+            : '#92400e'
+        };
       }
       .channel-block.hero .channel-copy,
       .channel-block.subject .channel-copy,
@@ -2629,13 +2682,14 @@ export class ResultsPageComponent {
   ): string {
     const imageSrc = this.safeImageUrl(slot.imageUrl, slot.imageBase64);
     return `<article class="image-export-card">
-  ${imageSrc
-        ? `<img src="${imageSrc}" alt="${this.escapeHtml(slot.alt)}" />`
-        : `<div class="image-export-fallback">
+  ${
+    imageSrc
+      ? `<img src="${imageSrc}" alt="${this.escapeHtml(slot.alt)}" />`
+      : `<div class="image-export-fallback">
     <strong>${this.escapeHtml(slot.alt || 'Image placeholder')}</strong>
     <p>${this.escapeHtml(slot.prompt)}</p>
   </div>`
-      }
+  }
   <div class="image-export-meta">
     <p><strong>Alt:</strong> ${this.escapeHtml(slot.alt)}</p>
     <p><strong>Status:</strong> ${this.escapeHtml(slot.status)}</p>
@@ -2699,6 +2753,8 @@ export class ResultsPageComponent {
 
   provenanceLabel(provenance: GenerationProvenance | undefined): string {
     switch (provenance) {
+      case 'ai-generated':
+        return 'AI-generated';
       case 'ai-enriched':
         return 'AI enriched';
       case 'ai-fallback':
@@ -2710,6 +2766,8 @@ export class ResultsPageComponent {
 
   provenanceDescription(provenance: GenerationProvenance | undefined): string {
     switch (provenance) {
+      case 'ai-generated':
+        return 'The local LLM authored this copy from the brief and it was schema-validated before merging into the workbench.';
       case 'ai-enriched':
         return 'Hybrid assistance shaped this concept and the workbench is carrying the enriched copy forward.';
       case 'ai-fallback':
@@ -2756,8 +2814,8 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : concept.workflowStatus === 'archived'
-              ? 'archived'
-              : 'candidate',
+            ? 'archived'
+            : 'candidate',
       }))
     );
   }
@@ -2779,15 +2837,16 @@ export class ResultsPageComponent {
           concept.id === conceptId
             ? ('selected' as const)
             : loserIds.includes(concept.id)
-              ? ('archived' as const)
-              : concept.workflowStatus === 'shortlisted'
-                ? 'shortlisted'
-                : 'candidate',
+            ? ('archived' as const)
+            : concept.workflowStatus === 'shortlisted'
+            ? 'shortlisted'
+            : 'candidate',
       }))
     );
     this.compareConceptIds.set([]);
     this.state.setDecisionSummary(
-      `Winner chosen: ${winner.headline} over ${loserIds.length
+      `Winner chosen: ${winner.headline} over ${
+        loserIds.length
       } compared option${loserIds.length === 1 ? '' : 's'}.`
     );
     this.logEvent('compare_winner_selected', { conceptId });
@@ -2807,12 +2866,12 @@ export class ResultsPageComponent {
       this.state.concepts().map((concept) =>
         concept.id === conceptId
           ? {
-            ...concept,
-            workflowStatus:
-              concept.workflowStatus === 'shortlisted'
-                ? ('candidate' as const)
-                : ('shortlisted' as const),
-          }
+              ...concept,
+              workflowStatus:
+                concept.workflowStatus === 'shortlisted'
+                  ? ('candidate' as const)
+                  : ('shortlisted' as const),
+            }
           : concept
       )
     );
@@ -2856,7 +2915,8 @@ export class ResultsPageComponent {
       (
         this.state as { saveWorkspaceVersion: (name?: string) => void }
       ).saveWorkspaceVersion(
-        `${this.currentWorkspaceName()} snapshot ${this.workspaceVersions().length + 1
+        `${this.currentWorkspaceName()} snapshot ${
+          this.workspaceVersions().length + 1
         }`
       );
       this.logEvent('workspace_version_saved', {
@@ -2878,8 +2938,8 @@ export class ResultsPageComponent {
       this.workspaceName.set(currentWorkspace?.name || 'Current Workspace');
       this.selectedId.set(
         currentWorkspace?.selectedConceptId ||
-        this.state.concepts()[0]?.id ||
-        ''
+          this.state.concepts()[0]?.id ||
+          ''
       );
       this.compareConceptIds.set([]);
       this.copiedMessage.set('Workspace version restored.');
@@ -3075,18 +3135,18 @@ export class ResultsPageComponent {
       materialOutputs: concept.materialOutputs.map((asset) =>
         asset.id === materialId
           ? {
-            ...asset,
-            surfaces: asset.surfaces.map((surface) =>
-              surface.id === surfaceId
-                ? {
-                  ...surface,
-                  imageSlots: surface.imageSlots.map((slot) =>
-                    slot.id === slotId ? { ...slot, ...updates } : slot
-                  ),
-                }
-                : surface
-            ),
-          }
+              ...asset,
+              surfaces: asset.surfaces.map((surface) =>
+                surface.id === surfaceId
+                  ? {
+                      ...surface,
+                      imageSlots: surface.imageSlots.map((slot) =>
+                        slot.id === slotId ? { ...slot, ...updates } : slot
+                      ),
+                    }
+                  : surface
+              ),
+            }
           : asset
       ),
     }));
@@ -3099,8 +3159,8 @@ export class ResultsPageComponent {
         output.type === 'landing-page'
           ? 'web'
           : output.type === 'email-sequence'
-            ? 'email'
-            : 'social',
+          ? 'email'
+          : 'social',
       title: output.label,
       subtitle: output.type,
       description: output.summary,
@@ -3163,7 +3223,8 @@ export class ResultsPageComponent {
         ),
         ...surface.imageSlots.map(
           (slot) =>
-            `Image: ${slot.alt} | ${slot.status} | ${slot.imageUrl || slot.prompt
+            `Image: ${slot.alt} | ${slot.status} | ${
+              slot.imageUrl || slot.prompt
             }`
         ),
       ]),
@@ -3253,17 +3314,19 @@ export class ResultsPageComponent {
   private applyProvenance(
     concepts: CampaignConcept[],
     includeAiPolish: boolean,
-    enrichmentApplied: boolean
+    generationApplied: boolean
   ): CampaignConcept[] {
     return concepts.map((concept) => ({
       ...concept,
       generationProvenance: !includeAiPolish
         ? ('template-only' as const)
-        : enrichmentApplied && concept.generationMode === 'hybrid'
-          ? ('ai-enriched' as const)
-          : enrichmentApplied
-            ? ('template-only' as const)
-            : ('ai-fallback' as const),
+        : generationApplied && concept.generationMode === 'llm'
+        ? ('ai-generated' as const)
+        : generationApplied && concept.generationMode === 'hybrid'
+        ? ('ai-enriched' as const)
+        : generationApplied
+        ? ('template-only' as const)
+        : ('ai-fallback' as const),
     }));
   }
 
@@ -3280,8 +3343,8 @@ export class ResultsPageComponent {
     return typeof (this.state as { currentWorkspace?: unknown })
       .currentWorkspace === 'function'
       ? (
-        this.state as { currentWorkspace: () => MarketingWorkspace | null }
-      ).currentWorkspace()
+          this.state as { currentWorkspace: () => MarketingWorkspace | null }
+        ).currentWorkspace()
       : null;
   }
 

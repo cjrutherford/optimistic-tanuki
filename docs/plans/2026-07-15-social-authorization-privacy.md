@@ -1,7 +1,7 @@
 ---
 title: Social Authorization & Privacy — Enforcement Patterns
 date: 2026-07-15
-status: proposed
+status: implemented (2026-07-16 — all three phases; see notes at end)
 summary: Worked-out authorization and privacy patterns for the Social domain (audit Domain 4), closing the search privacy leak, vote duplication, and untrusted identity, using the same defense-in-depth convention established for project-planning.
 ---
 
