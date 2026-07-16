@@ -20,6 +20,7 @@ describe('MessagesComponent', () => {
     onConversations: jest.Mock;
     onMessage: jest.Mock;
     getConversations: jest.Mock;
+    sendMessage: jest.Mock;
     destroy: jest.Mock;
   };
 
@@ -33,6 +34,7 @@ describe('MessagesComponent', () => {
       onConversations: jest.fn(),
       onMessage: jest.fn(),
       getConversations: jest.fn(),
+      sendMessage: jest.fn(),
       destroy: jest.fn(),
     };
 
@@ -102,17 +104,7 @@ describe('MessagesComponent', () => {
     expect(chatUi.layout).toBe('embedded');
   });
 
-  it('sends outgoing messages to the other conversation participants', async () => {
-    chatService.sendMessage.mockResolvedValue({
-      id: 'message-1',
-      conversationId: 'conversation-1',
-      senderId: 'profile-1',
-      content: 'hello world',
-      type: 'chat',
-      recipients: ['other-profile'],
-      createdAt: new Date('2026-07-05T18:20:00.000Z'),
-    });
-
+  it('sends outgoing messages to the other conversation participants over the socket', async () => {
     component.chatConversations.set([
       {
         id: 'conversation-1',
@@ -128,47 +120,39 @@ describe('MessagesComponent', () => {
       content: 'hello world',
     });
 
-    expect(chatService.sendMessage).toHaveBeenCalledWith({
+    expect(socketChatService.sendMessage).toHaveBeenCalledWith({
       conversationId: 'conversation-1',
       content: 'hello world',
       senderId: 'profile-1',
-      recipientIds: ['other-profile'],
+      recipientId: ['other-profile'],
+      type: 'chat',
     });
-    expect(component.chatConversations()[0].messages).toHaveLength(1);
-    expect(component.chatConversations()[0].messages[0].content).toBe(
-      'hello world'
-    );
+    expect(chatService.sendMessage).not.toHaveBeenCalled();
   });
 
-  it('appends an outgoing message even when the API response omits conversationId', async () => {
-    chatService.sendMessage.mockResolvedValue({
-      id: 'message-2',
-      senderId: 'profile-1',
-      content: 'fallback conversation id',
-      type: 'chat',
-      recipients: ['other-profile'],
-      createdAt: new Date('2026-07-05T18:25:00.000Z'),
-    });
+  it('attaches fetched participant profiles to rehydrated conversations', async () => {
+    const http = TestBed.inject(HttpClient) as unknown as { post: jest.Mock };
+    http.post.mockReturnValue(
+      of([
+        { id: 'profile-1', profileName: 'Alice', profilePic: 'alice.png' },
+        { id: 'other-profile', profileName: 'Bob', profilePic: 'bob.png' },
+      ])
+    );
+    chatService.getMessages.mockResolvedValue([]);
 
-    component.chatConversations.set([
+    await (component as any).handleConversationsLoaded([
       {
         id: 'conversation-1',
         participants: ['profile-1', 'other-profile'],
-        messages: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ]);
 
-    await component.handleMessageSubmitted({
-      conversationId: 'conversation-1',
-      content: 'fallback conversation id',
-    });
-
-    expect(component.chatConversations()[0].messages).toHaveLength(1);
-    expect(component.chatConversations()[0].messages[0].conversationId).toBe(
-      'conversation-1'
-    );
+    expect(component.chatConversations()[0].participantProfiles).toEqual([
+      { id: 'profile-1', name: 'Alice', profilePic: 'alice.png' },
+      { id: 'other-profile', name: 'Bob', profilePic: 'bob.png' },
+    ]);
   });
 
   it('appends incoming socket messages to the matching conversation', () => {

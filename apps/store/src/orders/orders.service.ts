@@ -18,9 +18,10 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto): Promise<OrderEntity> {
-    let total = 0;
+    let totalCents = 0;
 
-    // Calculate total and create order items
+    // Calculate total and create order items using integer cent arithmetic
+    // to avoid floating-point accumulation error across multiple line items.
     const orderItems: OrderItemEntity[] = [];
     for (const item of createOrderDto.items) {
       const product = await this.productRepository.findOne({
@@ -33,17 +34,21 @@ export class OrdersService {
       const orderItem = this.orderItemRepository.create({
         productId: item.productId,
         quantity: item.quantity,
-        price: product.price,
+        unitPriceCents: product.priceCents,
       });
       orderItems.push(orderItem);
-      total += Number(product.price) * item.quantity;
+      totalCents += product.priceCents * item.quantity;
+    }
+
+    if (totalCents < 0) {
+      throw new Error('Order total cannot be negative');
     }
 
     // Create order
     const order = this.orderRepository.create({
       userId: createOrderDto.userId,
       status: 'pending',
-      total,
+      totalCents,
       currency: 'USD',
       items: orderItems,
     });

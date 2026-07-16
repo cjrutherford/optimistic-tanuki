@@ -12,6 +12,10 @@ export class DonationsService {
   ) {}
 
   async create(createDonationDto: CreateDonationDto): Promise<DonationEntity> {
+    if (createDonationDto.amountCents < 0) {
+      throw new Error('Donation amount cannot be negative');
+    }
+
     const donation = this.donationRepository.create({
       ...createDonationDto,
       status: 'pending',

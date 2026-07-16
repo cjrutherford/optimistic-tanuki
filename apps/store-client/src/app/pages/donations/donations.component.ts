@@ -26,18 +26,26 @@ export class DonationsComponent {
     this.error = null;
     this.success = null;
 
-    this.storeService.createDonation(donation).subscribe({
-      next: () => {
-        this.success = `Thank you for your donation of $${donation.amount.toFixed(
-          2
-        )}!`;
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Error creating donation:', err);
-        this.error = 'Failed to process donation. Please try again.';
-        this.loading = false;
-      },
-    });
+    // The donation form collects a dollar amount; convert to integer cents
+    // before it hits the backend, which stores donation.amountCents.
+    this.storeService
+      .createDonation({
+        amountCents: Math.round(donation.amount * 100),
+        message: donation.message,
+        anonymous: donation.anonymous,
+      })
+      .subscribe({
+        next: () => {
+          this.success = `Thank you for your donation of $${donation.amount.toFixed(
+            2
+          )}!`;
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Error creating donation:', err);
+          this.error = 'Failed to process donation. Please try again.';
+          this.loading = false;
+        },
+      });
   }
 }

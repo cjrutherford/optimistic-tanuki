@@ -1,4 +1,10 @@
-import { APIRequestContext, expect, Page, test } from '@playwright/test';
+import {
+  APIRequestContext,
+  expect,
+  Page,
+  TestInfo,
+  test,
+} from '@playwright/test';
 
 const PASSWORD = 'TestPassword123!';
 
@@ -12,6 +18,16 @@ const USERS = {
     profileName: 'Bob Smith',
   },
 } as const;
+
+type SeedUser = (typeof USERS)[keyof typeof USERS] & {
+  firstName: string;
+  lastName: string;
+};
+
+const SEEDED_USERS: SeedUser[] = [
+  { ...USERS.alice, firstName: 'Alice', lastName: 'Johnson' },
+  { ...USERS.bob, firstName: 'Bob', lastName: 'Smith' },
+];
 
 type BootstrappedUser = {
   token: string;
@@ -27,12 +43,116 @@ type BootstrappedUser = {
   }>;
 };
 
+type BrowserDiagnostics = {
+  attach: () => Promise<void>;
+  webSockets: string[];
+};
+
+function collectBrowserDiagnostics(
+  page: Page,
+  label: string,
+  testInfo: TestInfo
+): BrowserDiagnostics {
+  const consoleMessages: string[] = [];
+  const pageErrors: string[] = [];
+  const failedRequests: string[] = [];
+  const failedResponses: Array<Record<string, unknown>> = [];
+  const webSockets: string[] = [];
+
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') {
+      consoleMessages.push(`${message.type()}: ${message.text()}`);
+    }
+  });
+  page.on('pageerror', (error) =>
+    pageErrors.push(error.stack || error.message)
+  );
+  page.on('requestfailed', (request) => {
+    failedRequests.push(
+      `${request.method()} ${request.url()} - ${
+        request.failure()?.errorText ?? 'unknown failure'
+      }`
+    );
+  });
+  page.on('websocket', (socket) => webSockets.push(socket.url()));
+  page.on('response', async (response) => {
+    if (response.status() < 400) {
+      return;
+    }
+
+    let body = '';
+    try {
+      body = (await response.text()).slice(0, 4_000);
+    } catch {
+      body = '<response body unavailable>';
+    }
+    failedResponses.push({
+      method: response.request().method(),
+      status: response.status(),
+      url: response.url(),
+      body,
+    });
+    console.error(
+      `[${label}] HTTP ${response.status()} ${response
+        .request()
+        .method()} ${response.url()} ${body}`
+    );
+  });
+
+  return {
+    webSockets,
+    attach: async () => {
+      await testInfo.attach(`${label}-browser-diagnostics`, {
+        contentType: 'application/json',
+        body: Buffer.from(
+          JSON.stringify(
+            {
+              consoleMessages,
+              pageErrors,
+              failedRequests,
+              failedResponses,
+              webSockets,
+            },
+            null,
+            2
+          )
+        ),
+      });
+    },
+  };
+}
+
+async function ensureSeededUser(request: APIRequestContext, user: SeedUser) {
+  const response = await request.post('/api/authentication/register', {
+    headers: { 'X-ot-appscope': 'client-interface' },
+    data: {
+      email: user.email,
+      fn: user.firstName,
+      ln: user.lastName,
+      password: PASSWORD,
+      confirm: PASSWORD,
+      bio: 'Playwright chat test participant',
+    },
+  });
+
+  const responseBody = await response.text();
+  const alreadyExists =
+    response.status() === 409 ||
+    (response.status() === 500 && /user already exists/i.test(responseBody));
+
+  expect(
+    response.ok() || alreadyExists,
+    `Unable to seed ${user.email}: ${response.status()} ${responseBody}`
+  ).toBeTruthy();
+}
+
 async function bootstrapAuth(
   request: APIRequestContext,
   page: Page,
   email: string
 ): Promise<BootstrappedUser> {
   const loginResponse = await request.post('/api/authentication/login', {
+    headers: { 'X-ot-appscope': 'client-interface' },
     data: {
       email,
       password: PASSWORD,
@@ -49,6 +169,7 @@ async function bootstrapAuth(
   const profilesResponse = await request.get('/api/profile', {
     headers: {
       Authorization: `Bearer ${token}`,
+      'X-ot-appscope': 'client-interface',
     },
   });
   expect(profilesResponse.ok()).toBeTruthy();
@@ -105,6 +226,7 @@ async function getOrCreateConversation(
     {
       headers: {
         Authorization: `Bearer ${token}`,
+        'X-ot-appscope': 'client-interface',
       },
       data: {
         participantIds,
@@ -134,7 +256,18 @@ async function openConversation(page: Page, expectedContactName: string) {
 async function sendMessage(page: Page, text: string) {
   await page.locator('textarea.compose-textarea').click();
   await page.locator('textarea.compose-textarea').fill(text);
-  await page.locator('otui-button.send-button button').click();
+  const sendButton = page.locator('otui-button.send-button button');
+  await expect(sendButton).toBeEnabled({ timeout: 5_000 });
+  const hitTargetIsInsideButton = await sendButton.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const hitTarget = document.elementFromPoint(x, y);
+    return !!hitTarget && button.contains(hitTarget);
+  });
+  expect(hitTargetIsInsideButton).toBeTruthy();
+  await sendButton.click({ timeout: 5_000 });
+  await expect(page.locator('textarea.compose-textarea')).toHaveValue('');
 }
 
 async function expectMessageVisible(page: Page, text: string) {
@@ -145,44 +278,71 @@ async function expectMessageVisible(page: Page, text: string) {
   });
 }
 
+test.use({
+  screenshot: 'only-on-failure',
+  trace: 'on',
+  video: 'on',
+});
+
 test.describe('Chat workflow', () => {
-  test('seeded participants can load and exchange messages', async ({
+  test('@chat-debug seeded participants can load and exchange messages', async ({
     browser,
     request,
-  }) => {
+  }, testInfo) => {
+    test.setTimeout(60_000);
+    await Promise.all(
+      SEEDED_USERS.map((user) => ensureSeededUser(request, user))
+    );
+
     const aliceContext = await browser.newContext();
     const bobContext = await browser.newContext();
     const alicePage = await aliceContext.newPage();
     const bobPage = await bobContext.newPage();
+    const aliceDiagnostics = collectBrowserDiagnostics(
+      alicePage,
+      'alice',
+      testInfo
+    );
+    const bobDiagnostics = collectBrowserDiagnostics(bobPage, 'bob', testInfo);
 
-    const alice = await bootstrapAuth(request, alicePage, USERS.alice.email);
-    const bob = await bootstrapAuth(request, bobPage, USERS.bob.email);
+    try {
+      const alice = await bootstrapAuth(request, alicePage, USERS.alice.email);
+      const bob = await bootstrapAuth(request, bobPage, USERS.bob.email);
 
-    await getOrCreateConversation(request, alice.token, [
-      alice.profile.id,
-      bob.profile.id,
-    ]);
+      await getOrCreateConversation(request, alice.token, [
+        alice.profile.id,
+        bob.profile.id,
+      ]);
 
-    await openConversation(alicePage, USERS.bob.profileName);
-    await openConversation(bobPage, USERS.alice.profileName);
+      await openConversation(alicePage, USERS.bob.profileName);
+      await openConversation(bobPage, USERS.alice.profileName);
+      await expect
+        .poll(() => aliceDiagnostics.webSockets.length)
+        .toBeGreaterThan(0);
+      await expect
+        .poll(() => bobDiagnostics.webSockets.length)
+        .toBeGreaterThan(0);
 
-    const aliceMessage = `Alice to Bob ${Date.now()}`;
-    await sendMessage(alicePage, aliceMessage);
-    await expectMessageVisible(alicePage, aliceMessage);
+      const aliceMessage = `Alice to Bob ${Date.now()}`;
+      await sendMessage(alicePage, aliceMessage);
+      await expectMessageVisible(alicePage, aliceMessage);
+      await expectMessageVisible(bobPage, aliceMessage);
 
-    await bobPage.reload({ waitUntil: 'domcontentloaded' });
-    await openConversation(bobPage, USERS.alice.profileName);
-    await expectMessageVisible(bobPage, aliceMessage);
+      await bobPage.reload({ waitUntil: 'domcontentloaded' });
+      await openConversation(bobPage, USERS.alice.profileName);
+      await expectMessageVisible(bobPage, aliceMessage);
 
-    const bobMessage = `Bob to Alice ${Date.now()}`;
-    await sendMessage(bobPage, bobMessage);
-    await expectMessageVisible(bobPage, bobMessage);
+      const bobMessage = `Bob to Alice ${Date.now()}`;
+      await sendMessage(bobPage, bobMessage);
+      await expectMessageVisible(bobPage, bobMessage);
+      await expectMessageVisible(alicePage, bobMessage);
 
-    await alicePage.reload({ waitUntil: 'domcontentloaded' });
-    await openConversation(alicePage, USERS.bob.profileName);
-    await expectMessageVisible(alicePage, bobMessage);
-
-    await aliceContext.close();
-    await bobContext.close();
+      await alicePage.reload({ waitUntil: 'domcontentloaded' });
+      await openConversation(alicePage, USERS.bob.profileName);
+      await expectMessageVisible(alicePage, bobMessage);
+    } finally {
+      await Promise.all([aliceDiagnostics.attach(), bobDiagnostics.attach()]);
+      await Promise.all([aliceContext.close(), bobContext.close()]);
+    }
   });
 });

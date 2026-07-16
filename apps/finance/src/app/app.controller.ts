@@ -10,6 +10,15 @@ import {
   FinanceTenantCommands,
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
+  FinCommanderPlanCommands,
+  FinCommanderGoalCommands,
+  FinCommanderScenarioCommands,
+  CreateFinCommanderPlanDto,
+  UpdateFinCommanderPlanDto,
+  CreateFinCommanderGoalDto,
+  UpdateFinCommanderGoalDto,
+  CreateFinCommanderScenarioDto,
+  UpdateFinCommanderScenarioDto,
 } from '@optimistic-tanuki/constants';
 import {
   BankConnectionCreateDto,
@@ -47,12 +56,18 @@ import {
   RecurringItem,
   FinancialInvoice,
   FinancialCheckoutSession,
+  FinCommanderPlanEntity,
+  FinCommanderGoalEntity,
+  FinCommanderScenarioEntity,
 } from '../entities';
 import { extractFinanceScope, FinanceScope } from './services/finance-scope';
 import { RecurringItemService } from './services/recurring-item.service';
 import { FinanceTenantService } from './services/finance-tenant.service';
 import { BankConnectionService } from './services/bank-connection.service';
 import { FinancialUtilitiesService } from './services/financial-utilities.service';
+import { FinCommanderPlanService } from './services/fin-commander-plan.service';
+import { FinCommanderGoalService } from './services/fin-commander-goal.service';
+import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 
 @Controller()
 export class AppController {
@@ -65,7 +80,10 @@ export class AppController {
     private readonly recurringItemService: RecurringItemService,
     private readonly financeTenantService: FinanceTenantService,
     private readonly bankConnectionService: BankConnectionService,
-    private readonly financialUtilitiesService: FinancialUtilitiesService
+    private readonly financialUtilitiesService: FinancialUtilitiesService,
+    private readonly finCommanderPlanService: FinCommanderPlanService,
+    private readonly finCommanderGoalService: FinCommanderGoalService,
+    private readonly finCommanderScenarioService: FinCommanderScenarioService
   ) {}
 
   private extractFindManyOptions<T>(
@@ -566,6 +584,164 @@ export class AppController {
   async listTenantMembers(@Payload() payload?: FinanceScope) {
     return await this.financeTenantService.listMembers(
       extractFinanceScope((payload as Record<string, unknown>) ?? {}) ?? {}
+    );
+  }
+
+  // Fin Commander plan endpoints
+  @MessagePattern({ cmd: FinCommanderPlanCommands.CREATE })
+  async createFinCommanderPlan(@Payload() data: CreateFinCommanderPlanDto) {
+    return await this.finCommanderPlanService.create(
+      await this.withResolvedTenant(data)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderPlanCommands.FIND_MANY })
+  async findAllFinCommanderPlans(
+    @Payload()
+    payload?: FindManyOptions<FinCommanderPlanEntity> & FinanceScope
+  ) {
+    return await this.finCommanderPlanService.findAll(
+      extractFinanceScope(payload as Record<string, unknown>),
+      this.extractFindManyOptions(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderPlanCommands.FIND })
+  async findOneFinCommanderPlan(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderPlanService.findOne(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderPlanCommands.UPDATE })
+  async updateFinCommanderPlan(
+    @Payload()
+    payload: { id: string; data: UpdateFinCommanderPlanDto } & FinanceScope
+  ) {
+    return await this.finCommanderPlanService.update(
+      payload.id,
+      payload.data,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderPlanCommands.DELETE })
+  async removeFinCommanderPlan(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderPlanService.remove(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  // Fin Commander goal endpoints
+  @MessagePattern({ cmd: FinCommanderGoalCommands.CREATE })
+  async createFinCommanderGoal(@Payload() data: CreateFinCommanderGoalDto) {
+    return await this.finCommanderGoalService.create(
+      await this.withResolvedTenant(data)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.FIND_MANY })
+  async findAllFinCommanderGoals(
+    @Payload()
+    payload?: FindManyOptions<FinCommanderGoalEntity> & FinanceScope
+  ) {
+    return await this.finCommanderGoalService.findAll(
+      extractFinanceScope(payload as Record<string, unknown>),
+      this.extractFindManyOptions(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.FIND })
+  async findOneFinCommanderGoal(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderGoalService.findOne(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.UPDATE })
+  async updateFinCommanderGoal(
+    @Payload()
+    payload: { id: string; data: UpdateFinCommanderGoalDto } & FinanceScope
+  ) {
+    return await this.finCommanderGoalService.update(
+      payload.id,
+      payload.data,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.DELETE })
+  async removeFinCommanderGoal(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderGoalService.remove(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  // Fin Commander scenario endpoints
+  @MessagePattern({ cmd: FinCommanderScenarioCommands.CREATE })
+  async createFinCommanderScenario(
+    @Payload() data: CreateFinCommanderScenarioDto
+  ) {
+    return await this.finCommanderScenarioService.create(
+      await this.withResolvedTenant(data)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderScenarioCommands.FIND_MANY })
+  async findAllFinCommanderScenarios(
+    @Payload()
+    payload?: FindManyOptions<FinCommanderScenarioEntity> & FinanceScope
+  ) {
+    return await this.finCommanderScenarioService.findAll(
+      extractFinanceScope(payload as Record<string, unknown>),
+      this.extractFindManyOptions(payload)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderScenarioCommands.FIND })
+  async findOneFinCommanderScenario(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderScenarioService.findOne(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderScenarioCommands.UPDATE })
+  async updateFinCommanderScenario(
+    @Payload()
+    payload: {
+      id: string;
+      data: UpdateFinCommanderScenarioDto;
+    } & FinanceScope
+  ) {
+    return await this.finCommanderScenarioService.update(
+      payload.id,
+      payload.data,
+      extractFinanceScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderScenarioCommands.DELETE })
+  async removeFinCommanderScenario(
+    @Payload() payload: { id: string } & FinanceScope
+  ) {
+    return await this.finCommanderScenarioService.remove(
+      payload.id,
+      extractFinanceScope(payload as Record<string, unknown>)
     );
   }
 }

@@ -7,8 +7,9 @@ import {
 import { dirname, resolve } from 'node:path';
 
 import { createProxyMiddleware } from 'http-proxy-middleware';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import { fileURLToPath } from 'node:url';
+import { createSocketIoProxyOptions } from './server-proxy';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -48,11 +49,7 @@ app.use(
 
 app.use(
   '/socket.io',
-  createProxyMiddleware({
-    target: gatewayWsUrl,
-    ws: true,
-    changeOrigin: true,
-  })
+  createProxyMiddleware(createSocketIoProxyOptions(gatewayWsUrl))
 );
 app.use(
   '/chat',
@@ -87,6 +84,19 @@ app.use('/**', (req, res, next) => {
       response ? writeResponseToNodeResponse(response, res) : next()
     )
     .catch(next);
+});
+
+/**
+ * Keep track of errors for debugging purposes.
+ */
+
+app.use((err: unknown, req: Request, _res: Response, next: NextFunction) => {
+  console.error('Unhandled exception in Express server', {
+    url: req.url,
+    ip: req.ip,
+    err,
+  });
+  next(err);
 });
 
 /**

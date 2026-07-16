@@ -705,4 +705,61 @@ describe('AuthenticationController', () => {
       HttpException
     );
   });
+
+  describe('credential-endpoint rate limiting', () => {
+    // The gateway ThrottlerModule configures named throttlers
+    // ('short'/'medium'/'long'), and ThrottlerGuard only honors @Throttle
+    // metadata keyed to a configured name. A `{ default: ... }` override is
+    // silently ignored, which is exactly the regression these tests catch.
+    const CONFIGURED_THROTTLER_NAME = 'long';
+    const limitFor = (handler: unknown): number | undefined =>
+      Reflect.getMetadata(
+        `THROTTLER:LIMIT${CONFIGURED_THROTTLER_NAME}`,
+        handler as object
+      );
+
+    const protectedHandlers: Array<[string, unknown, number]> = [
+      ['loginUser', AuthenticationController.prototype.loginUser, 10],
+      [
+        'confirmPasswordReset',
+        AuthenticationController.prototype.confirmPasswordReset,
+        10,
+      ],
+      ['resetPassword', AuthenticationController.prototype.resetPassword, 10],
+      ['enableMfa', AuthenticationController.prototype.enableMfa, 10],
+      ['validateMfa', AuthenticationController.prototype.validateMfa, 10],
+      [
+        'confirmEmailVerification',
+        AuthenticationController.prototype.confirmEmailVerification,
+        20,
+      ],
+      [
+        'confirmMagicLink',
+        AuthenticationController.prototype.confirmMagicLink,
+        20,
+      ],
+      [
+        'requestEmailAction',
+        AuthenticationController.prototype.requestEmailAction,
+        5,
+      ],
+      ['registerUser', AuthenticationController.prototype.registerUser, 100],
+    ];
+
+    it.each(protectedHandlers)(
+      '%s declares a strict limit on the configured "long" throttler',
+      (_name, handler, expectedLimit) => {
+        expect(limitFor(handler)).toBe(expectedLimit);
+      }
+    );
+
+    it('does not rely on an unconfigured "default" throttler for login', () => {
+      expect(
+        Reflect.getMetadata(
+          'THROTTLER:LIMITdefault',
+          AuthenticationController.prototype.loginUser
+        )
+      ).toBeUndefined();
+    });
+  });
 });

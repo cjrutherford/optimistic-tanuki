@@ -11,10 +11,14 @@ import { BankConnection } from '../entities/bank-connection.entity';
 import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
 import { FinancialInvoice } from '../entities/financial-invoice.entity';
 import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
+import { FinCommanderPlanEntity } from '../entities/fin-commander-plan.entity';
+import { FinCommanderGoalEntity } from '../entities/fin-commander-goal.entity';
+import { FinCommanderScenarioEntity } from '../entities/fin-commander-scenario.entity';
 import * as path from 'path';
 import { AddFinanceTenantType1760613363000 } from '../migrations/add-finance-tenant-type.migration';
 import { BankConnections1771000000000 } from '../migrations/1771000000000-bank-connections';
 import { FinancialUtilities1771500000000 } from '../migrations/1771500000000-financial-utilities';
+import { FinCommander1772000000000 } from '../migrations/1772000000000-fin-commander';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -30,6 +34,9 @@ const loadDatabase = (config: ConfigService) => {
     LinkedBankAccount,
     FinancialInvoice,
     FinancialCheckoutSession,
+    FinCommanderPlanEntity,
+    FinCommanderGoalEntity,
+    FinCommanderScenarioEntity,
   ];
   const ormConfig: PostgresConnectionOptions = {
     type: 'postgres',
@@ -43,6 +50,7 @@ const loadDatabase = (config: ConfigService) => {
       AddFinanceTenantType1760613363000,
       BankConnections1771000000000,
       FinancialUtilities1771500000000,
+      FinCommander1772000000000,
       path.resolve(__dirname, '../migrations/*.js'),
     ],
     migrationsRun: true,

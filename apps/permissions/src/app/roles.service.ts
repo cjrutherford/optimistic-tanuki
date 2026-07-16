@@ -472,7 +472,7 @@ export class RolesService {
     }
 
     for (const assignment of assignments) {
-      this.l.debug('Checking assignment:', assignment);
+      // this.l.debug('Checking assignment:', assignment);
 
       if (
         !assignment.role.permissions ||
@@ -486,12 +486,12 @@ export class RolesService {
 
       for (const p of assignment.role.permissions) {
         if (permissionName === 'public') continue;
-        this.l.debug('Evaluating permission:', p.name, p.appScope);
-        this.l.debug('Against permissionName:', permissionName);
-        this.l.debug('Against targetId:', targetId);
-        this.l.debug('Against assignment.targetId:', assignment.targetId);
-        this.l.debug('Against appScopeId:', appScopeId);
-        this.l.debug('Against profileAppScope:', profileAppScope);
+        // this.l.debug('Evaluating permission:', p.name, p.appScope);
+        // this.l.debug('Against permissionName:', permissionName);
+        // this.l.debug('Against targetId:', targetId);
+        // this.l.debug('Against assignment.targetId:', assignment.targetId);
+        // this.l.debug('Against appScopeId:', appScopeId);
+        // this.l.debug('Against profileAppScope:', profileAppScope);
 
         const nameMatch =
           p.name === permissionName || p.action === permissionName;
@@ -511,12 +511,11 @@ export class RolesService {
         }
 
         if (!targetMatch) {
-          this.l.debug(
-            `Permission ${p.name || p.action} rejected - targetId mismatch ` +
-              `(expected: ${targetId}, assignmentTarget: ${
-                assignment.targetId || 'none'
-              }, permissionTarget: ${p.targetId || 'none'})`
-          );
+          // this.l.debug(
+          //   `Permission ${p.name || p.action} rejected - targetId mismatch ` +
+          //   `(expected: ${targetId}, assignmentTarget: ${assignment.targetId || 'none'
+          //   }, permissionTarget: ${p.targetId || 'none'})`
+          // );
           continue;
         }
 

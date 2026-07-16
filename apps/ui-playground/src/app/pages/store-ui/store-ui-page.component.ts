@@ -95,7 +95,7 @@ export class StoreUiPageComponent {
     id: '1',
     name: 'Sample Product',
     description: 'A great product for the playground demo.',
-    price: 29.99,
+    priceCents: 2999,
     imageUrl: '',
     stock: 10,
     type: 'digital',
@@ -105,7 +105,7 @@ export class StoreUiPageComponent {
     {
       id: '1',
       name: 'Product 1',
-      price: 19.99,
+      priceCents: 1999,
       imageUrl: '',
       stock: 5,
       type: 'physical',
@@ -113,7 +113,7 @@ export class StoreUiPageComponent {
     {
       id: '2',
       name: 'Product 2',
-      price: 39.99,
+      priceCents: 3999,
       imageUrl: '',
       stock: 3,
       type: 'digital',
@@ -121,7 +121,7 @@ export class StoreUiPageComponent {
   ];
 
   readonly sampleCartItems = [
-    { productId: '1', name: 'Product 1', price: 19.99, quantity: 2 },
+    { productId: '1', name: 'Product 1', priceCents: 1999, quantity: 2 },
   ];
 
   readonly elements: PlaygroundElement[] = [

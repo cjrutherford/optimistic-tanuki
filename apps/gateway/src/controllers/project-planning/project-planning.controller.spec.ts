@@ -53,6 +53,10 @@ describe('ProjectPlanningController', () => {
     iat: 1234567890,
   };
 
+  // The gateway always forwards the authenticated profile id so the
+  // project-planning service can enforce ownership. Assert it is present.
+  const requestingUserId = mockUser.profileId;
+
   beforeEach(async () => {
     projectPlanningService = {
       send: jest.fn().mockImplementation(() => of({})),
@@ -83,27 +87,27 @@ describe('ProjectPlanningController', () => {
   });
 
   it('should find a project by id', async () => {
-    await controller.findProjectById('1');
+    await controller.findProjectById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all projects', async () => {
-    await controller.findAllProjects();
+  it('should find all projects scoped to the caller', async () => {
+    await controller.findAllProjects(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
-  it('should query projects', async () => {
+  it('should query projects scoped to the caller', async () => {
     const query: QueryProjectDto = { name: 'Test' };
-    await controller.queryProjects(query);
+    await controller.queryProjects(mockUser, query);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.FIND_ALL },
-      query
+      { ...query, requestingUserId }
     );
   });
 
@@ -129,40 +133,40 @@ describe('ProjectPlanningController', () => {
     await controller.updateProject(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a project', async () => {
-    await controller.deleteProject('1');
+    await controller.deleteProject(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectCommands.DELETE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
   it('should find a change by id', async () => {
-    await controller.findChangeById('1');
+    await controller.findChangeById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all changes', async () => {
-    await controller.findAllChanges();
+  it('should find all changes scoped to the caller', async () => {
+    await controller.findAllChanges(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
-  it('should query changes', async () => {
+  it('should query changes scoped to the caller', async () => {
     const query: QueryChangeDto = { changeDescription: 'Test' };
-    await controller.queryChanges(query);
+    await controller.queryChanges(mockUser, query);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.FIND_ALL },
-      query
+      { ...query, requestingUserId }
     );
   });
 
@@ -179,7 +183,7 @@ describe('ProjectPlanningController', () => {
     await controller.createChange(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
     );
   });
 
@@ -188,40 +192,40 @@ describe('ProjectPlanningController', () => {
     await controller.updateChange(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a change', async () => {
-    await controller.deleteChange('1');
+    await controller.deleteChange(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ChangeCommands.REMOVE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
   it('should find a journal by id', async () => {
-    await controller.findJournalById('1');
+    await controller.findJournalById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all journals', async () => {
-    await controller.findAllJournals();
+  it('should find all journals scoped to the caller', async () => {
+    await controller.findAllJournals(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
-  it('should query journals', async () => {
+  it('should query journals scoped to the caller', async () => {
     const query: QueryProjectJournalDto = { content: 'Test' };
-    await controller.queryJournals(query);
+    await controller.queryJournals(mockUser, query);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.FIND_ALL },
-      query
+      { ...query, requestingUserId }
     );
   });
 
@@ -234,7 +238,7 @@ describe('ProjectPlanningController', () => {
     await controller.createJournal(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
     );
   });
 
@@ -243,40 +247,40 @@ describe('ProjectPlanningController', () => {
     await controller.updateJournal(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a journal', async () => {
-    await controller.deleteJournal('1');
+    await controller.deleteJournal(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: ProjectJournalCommands.REMOVE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
   it('should find a risk by id', async () => {
-    await controller.findRiskById('1');
+    await controller.findRiskById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all risks', async () => {
-    await controller.findAllRisks();
+  it('should find all risks scoped to the caller', async () => {
+    await controller.findAllRisks(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
-  it('should query risks', async () => {
+  it('should query risks scoped to the caller', async () => {
     const query: QueryRiskDto = { name: 'Test' };
-    await controller.queryRisks(query);
+    await controller.queryRisks(mockUser, query);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.FIND_ALL },
-      query
+      { ...query, requestingUserId }
     );
   });
 
@@ -293,7 +297,7 @@ describe('ProjectPlanningController', () => {
     await controller.createRisk(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
     );
   });
 
@@ -302,40 +306,40 @@ describe('ProjectPlanningController', () => {
     await controller.updateRisk(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a risk', async () => {
-    await controller.deleteRisk('1');
+    await controller.deleteRisk(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: RiskCommands.DELETE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
   it('should find a task by id', async () => {
-    await controller.findTaskById('1');
+    await controller.findTaskById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all tasks', async () => {
-    await controller.findAllTasks();
+  it('should find all tasks scoped to the caller', async () => {
+    await controller.findAllTasks(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
-  it('should query tasks', async () => {
+  it('should query tasks scoped to the caller', async () => {
     const query: QueryTaskDto = { title: 'Test' };
-    await controller.queryTasks(query);
+    await controller.queryTasks(mockUser, query);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.FIND_ALL },
-      query
+      { ...query, requestingUserId }
     );
   });
 
@@ -351,7 +355,7 @@ describe('ProjectPlanningController', () => {
     await controller.createTask(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
     );
   });
 
@@ -360,31 +364,31 @@ describe('ProjectPlanningController', () => {
     await controller.updateTask(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a task', async () => {
-    await controller.deleteTask('1');
+    await controller.deleteTask(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TaskCommands.DELETE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
   it('should find a timer by id', async () => {
-    await controller.findTimerById('1');
+    await controller.findTimerById(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.FIND_ONE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 
-  it('should find all timers', async () => {
-    await controller.findAllTimers();
+  it('should find all timers scoped to the caller', async () => {
+    await controller.findAllTimers(mockUser);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.FIND_ALL },
-      {}
+      { requestingUserId }
     );
   });
 
@@ -393,7 +397,7 @@ describe('ProjectPlanningController', () => {
     await controller.createTimer(mockUser, createDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.CREATE },
-      { ...createDto, createdBy: mockUser.profileId }
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
     );
   });
 
@@ -402,15 +406,15 @@ describe('ProjectPlanningController', () => {
     await controller.updateTimer(mockUser, updateDto);
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.UPDATE },
-      { ...updateDto, updatedBy: mockUser.profileId }
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
     );
   });
 
   it('should delete a timer', async () => {
-    await controller.deleteTimer('1');
+    await controller.deleteTimer(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.DELETE },
-      { id: '1' }
+      { id: '1', requestingUserId }
     );
   });
 });

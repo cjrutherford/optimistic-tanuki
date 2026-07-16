@@ -97,6 +97,12 @@ spec:
                   name: optimistic-tanuki-secrets
                   key: JWT_SECRET
                   optional: true
+            - name: LEMON_SQUEEZY_WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: LEMON_SQUEEZY_WEBHOOK_SECRET
+                  optional: true
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:

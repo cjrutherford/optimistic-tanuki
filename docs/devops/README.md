@@ -13,6 +13,7 @@ This directory contains the infrastructure and deployment docs for the active re
 - [Docker Compose](docker-compose.md) - Local development with Docker Compose
 - [Manual Docker Stacks](manual-docker-stacks.md) - Repo-level pnpm Docker scripts and the Compose flows behind them
 - [ArgoCD](argocd.md) - GitOps deployment with the parameterized Argo application
+- [Secrets Management](secrets-management.md) - How real secret values are provided per environment, and the Tailscale OAuth credential rotation required by a past leak
 
 ## Quick Reference
 

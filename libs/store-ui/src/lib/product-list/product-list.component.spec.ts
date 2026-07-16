@@ -7,8 +7,20 @@ describe('ProductListComponent', () => {
   let fixture: ComponentFixture<ProductListComponent>;
 
   const mockProducts: Product[] = [
-    { id: '1', name: 'Product 1', price: 99.99, stock: 10, type: 'physical' },
-    { id: '2', name: 'Product 2', price: 149.99, stock: 5, type: 'digital' },
+    {
+      id: '1',
+      name: 'Product 1',
+      priceCents: 9999,
+      stock: 10,
+      type: 'physical',
+    },
+    {
+      id: '2',
+      name: 'Product 2',
+      priceCents: 14999,
+      stock: 5,
+      type: 'digital',
+    },
   ];
 
   beforeEach(async () => {

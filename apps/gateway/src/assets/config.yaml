@@ -109,6 +109,12 @@ auth:
   jwtSecret: |
     c3VwZXJzZWNyZXRzdHJpbmc=
 
+# Lemon Squeezy webhook signing secret. Leave empty in source; the
+# LEMON_SQUEEZY_WEBHOOK_SECRET environment variable supplies the real value.
+# Webhooks are rejected (fail closed) when this is not configured.
+payments:
+  webhookSecret: ${LEMON_SQUEEZY_WEBHOOK_SECRET}
+
 # Shared OAuth bridge credentials. Built-in defaults supply provider endpoints
 # and scopes; unresolved placeholders are treated as missing so non-empty
 # environment values can provide the final override.

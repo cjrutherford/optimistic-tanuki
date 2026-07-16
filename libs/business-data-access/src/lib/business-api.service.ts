@@ -28,7 +28,7 @@ export interface BusinessStoreProduct {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  priceCents: number;
   type: string;
   active: boolean;
   stock: number;

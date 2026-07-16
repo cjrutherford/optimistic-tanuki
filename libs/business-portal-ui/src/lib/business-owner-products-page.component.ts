@@ -162,7 +162,7 @@ type ProductForm = {
                 <strong>{{ product.name }}</strong>
                 <p>{{ product.description || 'No description provided.' }}</p>
                 <small
-                  >{{ '$' + formatPrice(product.price) }} ·
+                  >{{ '$' + formatPrice(product.priceCents / 100) }} ·
                   {{ product.type }}</small
                 >
               </div>
@@ -406,7 +406,7 @@ export class BusinessOwnerProductsPageComponent {
       id: product.id,
       name: product.name,
       description: product.description ?? '',
-      price: product.price,
+      price: product.priceCents / 100,
       type: product.type,
       imageUrl: product.imageUrl ?? '',
       stock: product.stock,

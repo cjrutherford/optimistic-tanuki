@@ -47,7 +47,7 @@ describe('StoreOverviewComponent', () => {
       of([
         {
           id: 'don-1',
-          amount: 20,
+          amountCents: 2000,
           currency: 'USD',
           anonymous: false,
           status: 'completed',
@@ -101,7 +101,7 @@ describe('StoreOverviewComponent', () => {
           id: 'order-1',
           userId: 'user-3',
           status: 'pending',
-          total: 75,
+          totalCents: 7500,
           currency: 'USD',
           items: [
             {
@@ -109,7 +109,7 @@ describe('StoreOverviewComponent', () => {
               orderId: 'order-1',
               productId: 'prod-1',
               quantity: 2,
-              price: 37.5,
+              unitPriceCents: 3750,
             },
           ],
           createdAt: new Date('2026-07-02T10:00:00.000Z'),
@@ -119,7 +119,7 @@ describe('StoreOverviewComponent', () => {
           id: 'order-2',
           userId: 'user-4',
           status: 'processing',
-          total: 125,
+          totalCents: 12500,
           currency: 'USD',
           items: [
             {
@@ -127,7 +127,7 @@ describe('StoreOverviewComponent', () => {
               orderId: 'order-2',
               productId: 'prod-2',
               quantity: 1,
-              price: 125,
+              unitPriceCents: 12500,
             },
           ],
           createdAt: new Date('2026-07-03T10:00:00.000Z'),
@@ -141,7 +141,7 @@ describe('StoreOverviewComponent', () => {
           id: 'prod-1',
           name: 'Strategy Session',
           description: '',
-          price: 150,
+          priceCents: 15000,
           type: 'service',
           stock: 0,
           active: true,
@@ -181,7 +181,7 @@ describe('StoreOverviewComponent', () => {
           id,
           userId: id === 'order-1' ? 'user-3' : 'user-4',
           status: dto.status,
-          total: id === 'order-1' ? 75 : 125,
+          totalCents: id === 'order-1' ? 7500 : 12500,
           currency: 'USD',
           items:
             id === 'order-1'
@@ -191,7 +191,7 @@ describe('StoreOverviewComponent', () => {
                     orderId: 'order-1',
                     productId: 'prod-1',
                     quantity: 2,
-                    price: 37.5,
+                    unitPriceCents: 3750,
                   },
                 ]
               : [
@@ -200,7 +200,7 @@ describe('StoreOverviewComponent', () => {
                     orderId: 'order-2',
                     productId: 'prod-2',
                     quantity: 1,
-                    price: 125,
+                    unitPriceCents: 12500,
                   },
                 ],
           createdAt: new Date('2026-07-02T10:00:00.000Z'),

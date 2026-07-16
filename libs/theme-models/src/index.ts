@@ -7,6 +7,9 @@ export * from './lib/personalities';
 // Export canonical product → personality mapping
 export * from './lib/product-personalities';
 
+// Export distinctiveness metric (Workstream C1)
+export * from './lib/personality-distinctiveness';
+
 // Export utility functions
 export * from './lib/color-utils';
 export * from './lib/color-harmony';

@@ -428,7 +428,8 @@ describe('AppController', () => {
         'Test User',
         undefined,
         undefined,
-        undefined
+        undefined,
+        false
       );
       expect(response).toEqual({
         message: 'OAuth login successful',

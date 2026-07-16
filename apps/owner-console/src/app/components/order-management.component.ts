@@ -58,13 +58,13 @@ export class OrderManagementComponent implements OnInit {
       valueGetter: (params) => this.getTotalItems(params.data),
     },
     {
-      field: 'total',
+      field: 'totalCents',
       headerName: 'Total',
       minWidth: 130,
       valueFormatter: (params) =>
-        `${params.data?.currency ?? 'USD'} $${Number(params.value ?? 0).toFixed(
-          2
-        )}`,
+        `${params.data?.currency ?? 'USD'} $${(
+          Number(params.value ?? 0) / 100
+        ).toFixed(2)}`,
     },
     {
       field: 'status',

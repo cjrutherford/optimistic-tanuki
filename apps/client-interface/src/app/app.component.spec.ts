@@ -174,6 +174,7 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
+    expect(app.workspaceSummary()).toBeNull();
     expect(app.suppressFixedChatOverlays()).toBe(true);
     expect(compiled.querySelector('.chat-floating-button')).toBeNull();
     expect(compiled.querySelector('hai-about-tag')).toBeNull();
@@ -182,5 +183,20 @@ describe('AppComponent', () => {
       configurable: true,
       value: originalWidth,
     });
+  });
+
+  it('suppresses fixed chat overlays on the desktop messages workspace', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    fixture.detectChanges();
+
+    app.isAuthenticated.set(true);
+    app.currentPath.set('/messages');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(app.suppressFixedChatOverlays()).toBe(true);
+    expect(compiled.querySelector('.chat-floating-button')).toBeNull();
+    expect(compiled.querySelector('hai-about-tag')).toBeNull();
   });
 });

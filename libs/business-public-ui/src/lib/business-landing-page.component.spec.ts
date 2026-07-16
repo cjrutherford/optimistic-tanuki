@@ -55,7 +55,7 @@ describe('BusinessLandingPageComponent', () => {
           id: 'product-1',
           name: 'Collector Print',
           description: 'Archival print release.',
-          price: 48,
+          priceCents: 4800,
           type: 'physical',
           active: true,
           stock: 6,

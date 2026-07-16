@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
-  IsNumber,
+  IsInt,
+  Min,
   IsOptional,
   IsString,
   IsUUID,
@@ -12,9 +13,13 @@ export class CreateDonationDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
-  @ApiProperty({ description: 'Amount of the dontation' })
-  @IsNumber()
-  amount!: number;
+  @ApiProperty({
+    description: 'Amount of the donation in integer cents',
+    example: 1000,
+  })
+  @IsInt()
+  @Min(0)
+  amountCents!: number;
   @ApiProperty({ description: 'Currency of the donation', required: false })
   @IsOptional()
   @IsString()

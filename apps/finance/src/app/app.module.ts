@@ -16,6 +16,9 @@ import { BankConnection } from '../entities/bank-connection.entity';
 import { LinkedBankAccount } from '../entities/linked-bank-account.entity';
 import { FinancialInvoice } from '../entities/financial-invoice.entity';
 import { FinancialCheckoutSession } from '../entities/financial-checkout-session.entity';
+import { FinCommanderPlanEntity } from '../entities/fin-commander-plan.entity';
+import { FinCommanderGoalEntity } from '../entities/fin-commander-goal.entity';
+import { FinCommanderScenarioEntity } from '../entities/fin-commander-scenario.entity';
 import { DataSource } from 'typeorm';
 import { AccountService } from './services/account.service';
 import { TransactionService } from './services/transaction.service';
@@ -27,6 +30,9 @@ import { FinanceTenantService } from './services/finance-tenant.service';
 import { BankConnectionService } from './services/bank-connection.service';
 import { PlaidBankProviderService } from './services/plaid-bank-provider.service';
 import { FinancialUtilitiesService } from './services/financial-utilities.service';
+import { FinCommanderPlanService } from './services/fin-commander-plan.service';
+import { FinCommanderGoalService } from './services/fin-commander-goal.service';
+import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 
 @Module({
   imports: [
@@ -51,6 +57,9 @@ import { FinancialUtilitiesService } from './services/financial-utilities.servic
     BankConnectionService,
     PlaidBankProviderService,
     FinancialUtilitiesService,
+    FinCommanderPlanService,
+    FinCommanderGoalService,
+    FinCommanderScenarioService,
     {
       provide: getRepositoryToken(Account),
       useFactory: (ds: DataSource) => ds.getRepository(Account),
@@ -105,6 +114,22 @@ import { FinancialUtilitiesService } from './services/financial-utilities.servic
       provide: getRepositoryToken(FinancialCheckoutSession),
       useFactory: (ds: DataSource) =>
         ds.getRepository(FinancialCheckoutSession),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinCommanderPlanEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(FinCommanderPlanEntity),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinCommanderGoalEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(FinCommanderGoalEntity),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinCommanderScenarioEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(FinCommanderScenarioEntity),
       inject: ['FINANCE_CONNECTION'],
     },
   ],

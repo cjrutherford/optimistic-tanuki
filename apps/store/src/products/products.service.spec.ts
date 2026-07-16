@@ -42,7 +42,7 @@ describe('ProductsService', () => {
       const dto: CreateProductDto = {
         name: 'Test Product',
         description: 'Test Description',
-        price: 99.99,
+        priceCents: 9999,
         type: 'physical',
         stock: 10,
       };
@@ -92,7 +92,7 @@ describe('ProductsService', () => {
     it('should update a product', async () => {
       const dto: UpdateProductDto = {
         name: 'Updated Product',
-        price: 149.99,
+        priceCents: 14999,
       };
 
       const mockProduct = { id: '1', ...dto };

@@ -211,7 +211,7 @@ const REQUIRED_SCOPE = 'business-site';
               </span>
             </div>
             <div class="service-meta">
-              <span>Price: {{ product.price | currency }}</span>
+              <span>Price: {{ product.priceCents / 100 | currency }}</span>
               <span>Status: {{ product.active ? 'Active' : 'Inactive' }}</span>
               <span>Type: {{ product.type }}</span>
             </div>
@@ -560,7 +560,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
       );
     }
 
-    if (serviceProducts.some((product) => Number(product.price) <= 0)) {
+    if (serviceProducts.some((product) => Number(product.priceCents) <= 0)) {
       issues.push(
         'Every store service product should have a price greater than zero.'
       );
@@ -659,7 +659,7 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   }
 
   isPublishReady(product: BusinessStoreProduct): boolean {
-    return !!product.description?.trim() && Number(product.price) > 0;
+    return !!product.description?.trim() && Number(product.priceCents) > 0;
   }
 
   save(): void {

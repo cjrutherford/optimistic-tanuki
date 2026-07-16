@@ -28,8 +28,10 @@ describe('personality presentation contract', () => {
     expect(bold?.presentation.border.widthValue).toBe('3px');
     expect(bold?.presentation.border.radiusValue).toBe('8px');
     expect(bold?.presentation.shadow.value).toBe('4px 4px 0px rgba(0,0,0,0.2)');
+    // familyValue is derived from bold's heading font (fonts.heading.family),
+    // not authored independently — see personality-fonts.spec.ts.
     expect(bold?.presentation.typography.familyValue).toBe(
-      "'Inter', -apple-system, sans-serif"
+      'Poppins, system-ui, sans-serif'
     );
     expect(bold?.presentation.typography.weightValue).toBe('700');
     expect(bold?.presentation.animation.duration).toBe('0.3s');

@@ -19,7 +19,7 @@ describe('OrderManagementComponent', () => {
           id: 'order-1',
           userId: 'user-1',
           status: 'pending',
-          total: 75,
+          totalCents: 7500,
           currency: 'USD',
           items: [
             {
@@ -27,7 +27,7 @@ describe('OrderManagementComponent', () => {
               orderId: 'order-1',
               productId: 'product-1',
               quantity: 2,
-              price: 37.5,
+              unitPriceCents: 3750,
             },
           ],
           createdAt: new Date(),

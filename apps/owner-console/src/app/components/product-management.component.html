@@ -173,7 +173,7 @@
         <tr *ngFor="let product of filteredProducts">
           <td>{{ product.name }}</td>
           <td>{{ product.type }}</td>
-          <td>\${{ formatPrice(product.price) }}</td>
+          <td>\${{ formatPrice(product.priceCents) }}</td>
           <td>{{ product.stock }}</td>
           <td>
             <span

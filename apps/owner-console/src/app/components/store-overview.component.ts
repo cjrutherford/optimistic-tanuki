@@ -167,9 +167,9 @@ export class StoreOverviewComponent implements OnInit {
     });
   }
 
-  get totalDonations(): number {
+  get totalDonationsCents(): number {
     return this.donations.reduce(
-      (sum, donation) => sum + Number(donation.amount),
+      (sum, donation) => sum + Number(donation.amountCents),
       0
     );
   }
@@ -206,7 +206,8 @@ export class StoreOverviewComponent implements OnInit {
 
   get publishReadyServiceProducts(): Product[] {
     return this.serviceProducts.filter(
-      (product) => !!product.description?.trim() && Number(product.price) > 0
+      (product) =>
+        !!product.description?.trim() && Number(product.priceCents) > 0
     );
   }
 
@@ -225,7 +226,9 @@ export class StoreOverviewComponent implements OnInit {
       issues.push('Service products need public-facing descriptions.');
     }
 
-    if (this.serviceProducts.some((product) => Number(product.price) <= 0)) {
+    if (
+      this.serviceProducts.some((product) => Number(product.priceCents) <= 0)
+    ) {
       issues.push('Service products need pricing greater than zero.');
     }
 
@@ -551,9 +554,9 @@ export class StoreOverviewComponent implements OnInit {
     return item.title;
   }
 
-  orderValueTotal(): number {
+  orderValueTotalCents(): number {
     return this.fulfillmentBacklog.reduce(
-      (sum, order) => sum + Number(order.total),
+      (sum, order) => sum + Number(order.totalCents),
       0
     );
   }

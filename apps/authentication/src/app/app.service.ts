@@ -55,6 +55,52 @@ export class AppService {
     );
   }
 
+  private maxFailedLogins(): number {
+    const raw = Number(this.configService.get('AUTH_MAX_FAILED_LOGINS'));
+    return Number.isFinite(raw) && raw > 0 ? raw : 5;
+  }
+
+  private lockoutDurationMs(): number {
+    const raw = Number(this.configService.get('AUTH_LOCKOUT_MINUTES'));
+    const minutes = Number.isFinite(raw) && raw > 0 ? raw : 15;
+    return minutes * 60_000;
+  }
+
+  private assertNotLocked(user: UserEntity): void {
+    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+      const minutes = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60_000
+      );
+      this.l.warn(`Login blocked for locked account: userId=${user.id}`);
+      throw new RpcException(
+        `ACCOUNT_LOCKED: Too many failed login attempts. Try again in ${minutes} minute(s).`
+      );
+    }
+  }
+
+  private async registerFailedLogin(user: UserEntity): Promise<void> {
+    const maxAttempts = this.maxFailedLogins();
+    const nextCount = (user.failedLoginCount ?? 0) + 1;
+    const patch: Partial<UserEntity> = { failedLoginCount: nextCount };
+    if (nextCount >= maxAttempts) {
+      patch.failedLoginCount = 0;
+      patch.lockedUntil = new Date(Date.now() + this.lockoutDurationMs());
+      this.l.warn(
+        `Account locked after ${nextCount} failed login attempts: userId=${user.id}`
+      );
+    }
+    await this.userRepo.update(user.id, patch);
+  }
+
+  private async clearFailedLogins(user: UserEntity): Promise<void> {
+    if ((user.failedLoginCount ?? 0) > 0 || user.lockedUntil) {
+      await this.userRepo.update(user.id, {
+        failedLoginCount: 0,
+        lockedUntil: null,
+      });
+    }
+  }
+
   async getUserIdFromEmail(email: string): Promise<string> {
     try {
       const normalizedEmail = this.normalizeEmail(email);
@@ -91,6 +137,9 @@ export class AppService {
         throw new RpcException('User not found');
       }
 
+      // Per-account brute-force protection: reject while the account is locked.
+      this.assertNotLocked(user);
+
       if (!user.emailVerifiedAt && this.autoVerifyEmailsEnabled()) {
         user.emailVerifiedAt = new Date();
         await this.userRepo.save(user);
@@ -109,14 +158,19 @@ export class AppService {
       );
 
       if (!valid) {
+        await this.registerFailedLogin(user);
         throw new RpcException('Invalid password');
       }
 
       try {
         this.mfaService.assertLoginToken(totpSecret, mfa);
       } catch (e) {
+        await this.registerFailedLogin(user);
         throw new RpcException((e as Error).message);
       }
+
+      // Successful authentication clears any accumulated failed attempts.
+      await this.clearFailedLogins(user);
 
       const tk = this.tokenIssuerService.issueForUser(
         {

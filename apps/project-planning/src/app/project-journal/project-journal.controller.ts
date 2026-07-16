@@ -13,30 +13,52 @@ export class ProjectJournalController {
   constructor(private readonly projectJournalService: ProjectJournalService) {}
 
   @MessagePattern({ cmd: ProjectJournalCommands.CREATE })
-  async create(@Payload() createProjectJournalDto: CreateProjectJournalDto) {
-    return await this.projectJournalService.create(createProjectJournalDto);
+  async create(
+    @Payload()
+    createProjectJournalDto: CreateProjectJournalDto & {
+      requestingUserId?: string;
+    }
+  ) {
+    const { requestingUserId, ...dto } = createProjectJournalDto;
+    return await this.projectJournalService.create(dto, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectJournalCommands.FIND_ALL })
-  async findAll(@Payload() query: QueryProjectJournalDto) {
-    return await this.projectJournalService.findAll(query);
+  async findAll(
+    @Payload() query: QueryProjectJournalDto & { requestingUserId?: string }
+  ) {
+    const { requestingUserId, ...q } = query;
+    return await this.projectJournalService.findAll(q, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectJournalCommands.FIND_ONE })
-  async findOne(@Payload() id: string) {
-    return await this.projectJournalService.findOne(id);
+  async findOne(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.projectJournalService.findOne(id, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectJournalCommands.UPDATE })
-  async update(@Payload() updateProjectJournalDto: UpdateProjectJournalDto) {
+  async update(
+    @Payload()
+    updateProjectJournalDto: UpdateProjectJournalDto & {
+      requestingUserId?: string;
+    }
+  ) {
+    const { requestingUserId, ...dto } = updateProjectJournalDto;
     return await this.projectJournalService.update(
-      updateProjectJournalDto.id,
-      updateProjectJournalDto
+      dto.id,
+      dto,
+      requestingUserId
     );
   }
 
   @MessagePattern({ cmd: ProjectJournalCommands.REMOVE })
-  async remove(@Payload('id') id: string) {
-    return await this.projectJournalService.remove(id);
+  async remove(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.projectJournalService.remove(id, requestingUserId);
   }
 }

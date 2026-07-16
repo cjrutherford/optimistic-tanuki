@@ -359,6 +359,71 @@ describe('AppService', () => {
         expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
       );
     });
+
+    it('records a failed attempt without locking below the threshold', async () => {
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue({ ...mockUser, failedLoginCount: 1 } as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(false as any);
+      const updateSpy = jest
+        .spyOn(userRepo, 'update')
+        .mockResolvedValue(undefined as any);
+
+      await expectRpcError(
+        service.login('test@example.com', 'wrong'),
+        'Invalid password'
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith('someUserId', {
+        failedLoginCount: 2,
+      });
+    });
+
+    it('locks the account after too many failed password attempts', async () => {
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue({ ...mockUser, failedLoginCount: 4 } as any);
+      jest
+        .spyOn(saltedHashService, 'validateHash')
+        .mockReturnValue(false as any);
+      const updateSpy = jest
+        .spyOn(userRepo, 'update')
+        .mockResolvedValue(undefined as any);
+
+      await expectRpcError(
+        service.login('test@example.com', 'wrong'),
+        'Invalid password'
+      );
+
+      expect(updateSpy).toHaveBeenCalledWith(
+        'someUserId',
+        expect.objectContaining({
+          failedLoginCount: 0,
+          lockedUntil: expect.any(Date),
+        })
+      );
+    });
+
+    it('rejects login while the account is locked', async () => {
+      const lockedUntil = new Date(Date.now() + 10 * 60_000);
+      jest
+        .spyOn(userRepo, 'findOne')
+        .mockResolvedValue({ ...mockUser, lockedUntil } as any);
+      const validateSpy = jest.spyOn(saltedHashService, 'validateHash');
+
+      let rejected: unknown;
+      try {
+        await service.login('test@example.com', 'password');
+      } catch (error) {
+        rejected = error;
+      }
+
+      expect(rejected).toBeInstanceOf(RpcException);
+      expect((rejected as RpcException).message).toContain('ACCOUNT_LOCKED');
+      expect(validateSpy).not.toHaveBeenCalled();
+    });
   });
 
   describe('registerUser', () => {

@@ -18,6 +18,11 @@ import {
 } from 'typeorm';
 import { Project } from '../entities/project.entity';
 import { TaskTag } from '../entities/task-tag.entity';
+import {
+  assertFound,
+  assertProjectAccess,
+  getAccessibleProjectIds,
+} from '../common/project-access.util';
 
 @Injectable()
 export class TaskService {
@@ -30,13 +35,16 @@ export class TaskService {
     private readonly taskTagRepository: Repository<TaskTag>
   ) {}
 
-  async create(createTaskDto: CreateTaskDto) {
+  async create(createTaskDto: CreateTaskDto, requestingUserId?: string) {
     console.log('Creating task with DTO:', createTaskDto);
     const project = await this.projectRepository.findOne({
       where: { id: createTaskDto.projectId },
     });
     if (!project) {
       throw new Error('Project not found');
+    }
+    if (requestingUserId) {
+      assertProjectAccess(project, requestingUserId);
     }
 
     let tags: TaskTag[] = [];
@@ -61,7 +69,7 @@ export class TaskService {
     return await this.taskRepository.save(task);
   }
 
-  async findAll(query: QueryTaskDto) {
+  async findAll(query: QueryTaskDto, requestingUserId?: string) {
     const where: FindOptionsWhere<Task> = {
       deletedAt: IsNull(),
     };
@@ -72,7 +80,25 @@ export class TaskService {
       where.description = Like(`%${query.description}%`);
     }
 
-    if (query.projectId) {
+    // Scope to projects the caller can access. If a specific project is
+    // requested it must be one of them; otherwise restrict to all of them.
+    if (requestingUserId) {
+      const accessibleProjectIds = await getAccessibleProjectIds(
+        this.projectRepository,
+        requestingUserId
+      );
+      if (query.projectId) {
+        if (!accessibleProjectIds.includes(query.projectId)) {
+          return [];
+        }
+        where.project = { id: query.projectId };
+      } else {
+        if (accessibleProjectIds.length === 0) {
+          return [];
+        }
+        where.project = { id: In(accessibleProjectIds) };
+      }
+    } else if (query.projectId) {
       where.project = {
         id: query.projectId,
       };
@@ -119,21 +145,36 @@ export class TaskService {
     return tasks;
   }
 
-  async findOne(id: string) {
-    return await this.taskRepository.findOne({
+  async findOne(id: string, requestingUserId?: string) {
+    const task = await this.taskRepository.findOne({
       where: { id },
       relations: ['tags', 'timeEntries', 'project'],
     });
+
+    if (requestingUserId) {
+      assertFound(task, `Task with id ${id} not found`);
+      assertProjectAccess(task.project, requestingUserId);
+    }
+
+    return task;
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto) {
+  async update(
+    id: string,
+    updateTaskDto: UpdateTaskDto,
+    requestingUserId?: string
+  ) {
     const task = await this.taskRepository.findOne({
       where: { id: id },
-      relations: ['tags'],
+      relations: ['tags', 'project'],
     });
 
     if (!task) {
       throw new Error('Task not found');
+    }
+
+    if (requestingUserId) {
+      assertProjectAccess(task.project, requestingUserId);
     }
 
     // Handle tag updates
@@ -166,7 +207,15 @@ export class TaskService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestingUserId?: string) {
+    if (requestingUserId) {
+      const task = await this.taskRepository.findOne({
+        where: { id },
+        relations: ['project'],
+      });
+      assertFound(task, `Task with id ${id} not found`);
+      assertProjectAccess(task.project, requestingUserId);
+    }
     return await this.taskRepository.update(id, { deletedAt: new Date() });
   }
 }

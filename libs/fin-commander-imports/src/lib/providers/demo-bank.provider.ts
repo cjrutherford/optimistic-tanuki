@@ -22,7 +22,8 @@ export const demoBankImportProvider: FinCommanderImportProvider = {
       transactions: [
         {
           postedOn: '2026-04-09',
-          amount: 128.42,
+          // $128.42 in integer cents.
+          amountCents: 12842,
           type: 'debit' as const,
           category: 'Groceries',
           description: 'River Market',
@@ -30,7 +31,8 @@ export const demoBankImportProvider: FinCommanderImportProvider = {
         },
         {
           postedOn: '2026-04-10',
-          amount: 2400,
+          // $2,400.00 in integer cents.
+          amountCents: 240000,
           type: 'credit' as const,
           category: 'Income',
           description: 'Client retainer',

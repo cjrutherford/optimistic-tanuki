@@ -2518,6 +2518,114 @@
       "appScope": "finance"
     },
     {
+      "name": "finance.fin-commander-plan.create",
+      "description": "Create a Fin Commander plan",
+      "active": true,
+      "resource": "finance.fin-commander-plan",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-plan.read",
+      "description": "Read a Fin Commander plan",
+      "active": true,
+      "resource": "finance.fin-commander-plan",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-plan.update",
+      "description": "Update a Fin Commander plan",
+      "active": true,
+      "resource": "finance.fin-commander-plan",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-plan.delete",
+      "description": "Delete a Fin Commander plan",
+      "active": true,
+      "resource": "finance.fin-commander-plan",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-goal.create",
+      "description": "Create a Fin Commander goal",
+      "active": true,
+      "resource": "finance.fin-commander-goal",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-goal.read",
+      "description": "Read a Fin Commander goal",
+      "active": true,
+      "resource": "finance.fin-commander-goal",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-goal.update",
+      "description": "Update a Fin Commander goal",
+      "active": true,
+      "resource": "finance.fin-commander-goal",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-goal.delete",
+      "description": "Delete a Fin Commander goal",
+      "active": true,
+      "resource": "finance.fin-commander-goal",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-scenario.create",
+      "description": "Create a Fin Commander scenario",
+      "active": true,
+      "resource": "finance.fin-commander-scenario",
+      "action": "create",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-scenario.read",
+      "description": "Read a Fin Commander scenario",
+      "active": true,
+      "resource": "finance.fin-commander-scenario",
+      "action": "read",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-scenario.update",
+      "description": "Update a Fin Commander scenario",
+      "active": true,
+      "resource": "finance.fin-commander-scenario",
+      "action": "update",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
+      "name": "finance.fin-commander-scenario.delete",
+      "description": "Delete a Fin Commander scenario",
+      "active": true,
+      "resource": "finance.fin-commander-scenario",
+      "action": "delete",
+      "targetId": null,
+      "appScope": "finance"
+    },
+    {
       "name": "videos.channel.create",
       "description": "Create a video channel community",
       "active": true,
@@ -5955,6 +6063,201 @@
     {
       "role": "finance_admin",
       "permission": "finance.member.manage",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-plan.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-plan.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-plan.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-plan.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-goal.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-goal.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-goal.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-goal.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-scenario.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-scenario.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-scenario.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_member",
+      "permission": "finance.fin-commander-scenario.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.fin-commander-plan.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.fin-commander-goal.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_bookkeeper",
+      "permission": "finance.fin-commander-scenario.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-plan.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-plan.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-plan.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-plan.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-goal.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-goal.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-goal.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-goal.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-scenario.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-scenario.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-scenario.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_manager",
+      "permission": "finance.fin-commander-scenario.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-plan.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-plan.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-plan.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-plan.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-goal.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-goal.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-goal.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-goal.delete",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-scenario.create",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-scenario.read",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-scenario.update",
+      "permissionAppScope": "finance"
+    },
+    {
+      "role": "finance_admin",
+      "permission": "finance.fin-commander-scenario.delete",
       "permissionAppScope": "finance"
     },
     {

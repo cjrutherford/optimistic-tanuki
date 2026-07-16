@@ -15,7 +15,7 @@ describe('CatalogComponent', () => {
       id: '1',
       name: 'Test Product',
       description: 'Test Description',
-      price: 99.99,
+      priceCents: 9999,
       type: 'physical',
       stock: 10,
       active: true,

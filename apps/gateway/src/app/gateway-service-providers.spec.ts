@@ -55,6 +55,35 @@ describe('gateway service providers', () => {
     expect(proxy).not.toBeInstanceOf(DisabledClientProxy);
   });
 
+  it('creates TCP proxies pointed at the configured host and port', () => {
+    const composition = normalizeGatewayComposition(
+      {
+        enabledServices: ['authentication'],
+      },
+      ['authentication', 'store']
+    );
+    const providers = createGatewayServiceProviders(composition);
+    const authProvider = providers.find(
+      (provider) => provider.provide === ServiceTokens.AUTHENTICATION_SERVICE
+    );
+    const configService = {
+      get: jest.fn().mockReturnValue({
+        host: 'authentication',
+        port: 3001,
+      }),
+    } as unknown as ConfigService;
+
+    const proxy = authProvider!.useFactory!(configService) as unknown as {
+      host: string;
+      port: number;
+    };
+
+    // The TCP client is lazy (no socket opened until connect()), so we can
+    // safely assert it was pointed at the configured host/port.
+    expect(proxy.host).toBe('authentication');
+    expect(proxy.port).toBe(3001);
+  });
+
   it('registers only project-planning MCP tools when only project-planning is enabled', () => {
     const composition = normalizeGatewayComposition(
       {

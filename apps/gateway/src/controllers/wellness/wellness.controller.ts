@@ -22,6 +22,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { User } from '../../decorators/user.decorator';
+import { LongRunning } from '../../decorators/request-timeout.decorator';
 
 @ApiTags('wellness')
 @Controller('wellness')
@@ -39,6 +40,7 @@ export class WellnessController {
   }
 
   @Post('ai/prompt')
+  @LongRunning()
   @ApiOperation({ summary: 'Generate an AI wellness prompt' })
   @ApiResponse({ status: 200, description: 'AI prompt generated successfully' })
   async generateAiPrompt(
@@ -67,6 +69,7 @@ export class WellnessController {
   }
 
   @Post('ai/context')
+  @LongRunning()
   @ApiOperation({ summary: 'Get wellness context description' })
   @ApiResponse({ status: 200, description: 'Context description returned' })
   async getWellnessContext(@Body() data: { contextType: string }) {
@@ -87,6 +90,7 @@ export class WellnessController {
   }
 
   @Post('ai/affirmation')
+  @LongRunning()
   @ApiOperation({ summary: 'Get AI affirmation suggestion' })
   @ApiResponse({ status: 200, description: 'Affirmation suggestion returned' })
   async getAffirmationSuggestion(@Body() data: { userGoals?: string[] }) {
@@ -107,6 +111,7 @@ export class WellnessController {
   }
 
   @Post('ai/mindful-activity')
+  @LongRunning()
   @ApiOperation({ summary: 'Get AI mindful activity suggestion' })
   @ApiResponse({ status: 200, description: 'Activity suggestion returned' })
   async getMindfulActivitySuggestion(
@@ -129,6 +134,7 @@ export class WellnessController {
   }
 
   @Post('ai/gratitude-analysis')
+  @LongRunning()
   @ApiOperation({ summary: 'Get AI gratitude analysis' })
   @ApiResponse({ status: 200, description: 'Gratitude analysis returned' })
   async analyzeGratitude(@Body() data: { gratitudeEntry: string }) {
@@ -149,6 +155,7 @@ export class WellnessController {
   }
 
   @Post('ai/judgment-reflection')
+  @LongRunning()
   @ApiOperation({ summary: 'Get AI judgment reflection' })
   @ApiResponse({ status: 200, description: 'Judgment reflection returned' })
   async reflectJudgment(@Body() data: { judgment: string }) {

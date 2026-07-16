@@ -13,8 +13,8 @@ export class DonationEntity {
   @Column({ type: 'uuid', nullable: true })
   userId: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount: number;
+  @Column({ type: 'int' })
+  amountCents: number;
 
   @Column({ type: 'varchar', length: 3, default: 'USD' })
   currency: string;

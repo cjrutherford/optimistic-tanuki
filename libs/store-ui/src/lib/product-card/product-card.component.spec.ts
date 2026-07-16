@@ -9,7 +9,7 @@ describe('ProductCardComponent', () => {
     id: '1',
     name: 'Test Product',
     description: 'Test Description',
-    price: 99.99,
+    priceCents: 9999,
     stock: 10,
     type: 'physical',
     imageUrl: 'test.jpg',

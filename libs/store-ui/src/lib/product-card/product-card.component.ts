@@ -10,7 +10,7 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  priceCents: number;
   imageUrl?: string;
   stock: number;
   type: string;
@@ -36,9 +36,10 @@ export class ProductCardComponent extends Themeable {
     }
   }
 
-  parsePrice(price: number | string): string {
-    const priceNumber = typeof price === 'string' ? parseFloat(price) : price;
-    return priceNumber.toFixed(2);
+  parsePrice(priceCents: number | string): string {
+    const centsNumber =
+      typeof priceCents === 'string' ? parseInt(priceCents, 10) : priceCents;
+    return (centsNumber / 100).toFixed(2);
   }
 
   // Concrete implementation required by Themeable

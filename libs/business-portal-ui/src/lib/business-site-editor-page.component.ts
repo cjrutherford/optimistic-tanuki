@@ -1603,7 +1603,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
                   <label>
                     Price
                     <lib-text-input
-                      [ngModel]="'' + product.price"
+                      [ngModel]="'' + product.priceCents / 100"
                       [disabled]="true"
                     ></lib-text-input>
                   </label>

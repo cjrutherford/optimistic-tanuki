@@ -315,7 +315,7 @@ export class OperatorQueueService {
       );
     }
 
-    if (products.some((product) => Number(product.price) <= 0)) {
+    if (products.some((product) => Number(product.priceCents) <= 0)) {
       issues.push(
         'Every store service product should have a price greater than zero.'
       );

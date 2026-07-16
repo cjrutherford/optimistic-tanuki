@@ -37,7 +37,8 @@ import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { CacheProviderFactory } from '../auth/cache/cache-provider.factory';
 import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { RequestTimeoutInterceptor } from '../interceptors/request-timeout.interceptor';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
@@ -349,6 +350,13 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      // Enforce a uniform request timeout across every gateway route so a
+      // slow/hung microservice cannot hang requests indefinitely. Streaming,
+      // WebSocket and LLM routes are handled via @LongRunning/@RequestTimeout.
+      provide: APP_INTERCEPTOR,
+      useClass: RequestTimeoutInterceptor,
     },
     {
       provide: GATEWAY_APP_REGISTRY,

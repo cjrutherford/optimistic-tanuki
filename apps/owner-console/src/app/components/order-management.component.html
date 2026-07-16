@@ -77,8 +77,10 @@
             <tr *ngFor="let item of selectedOrder.items">
               <td>{{ item.product?.name || item.productId }}</td>
               <td>{{ item.quantity }}</td>
-              <td>\${{ item.price.toFixed(2) }}</td>
-              <td>\${{ (item.price * item.quantity).toFixed(2) }}</td>
+              <td>\${{ (item.unitPriceCents / 100).toFixed(2) }}</td>
+              <td>
+                \${{ ((item.unitPriceCents * item.quantity) / 100).toFixed(2) }}
+              </td>
             </tr>
           </tbody>
           <tfoot>
@@ -87,7 +89,7 @@
               <td>
                 <strong
                   >{{ selectedOrder.currency }} \${{
-                    selectedOrder.total.toFixed(2)
+                    (selectedOrder.totalCents / 100).toFixed(2)
                   }}</strong
                 >
               </td>

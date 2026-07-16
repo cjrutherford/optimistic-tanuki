@@ -30,7 +30,8 @@ export class OAuthService {
     displayName: string,
     accessToken?: string,
     refreshToken?: string,
-    profileId?: string
+    profileId?: string,
+    emailVerified = false
   ) {
     try {
       // Check if the provider is enabled and properly configured
@@ -71,6 +72,20 @@ export class OAuthService {
         });
 
         if (existingUser) {
+          // Account-takeover guard: only auto-link when the provider asserts
+          // the email is verified. Otherwise an attacker who controls an
+          // unverified provider account with a victim's email could seize the
+          // existing platform account.
+          if (!emailVerified) {
+            const providerLabel = this.getProviderDisplayName(provider);
+            this.l.warn(
+              `Refused OAuth auto-link: provider=${provider} did not verify email for existing userId=${existingUser.id}`
+            );
+            throw new RpcException(
+              `We found an existing account for ${email}, but ${providerLabel} did not confirm you own this email address. Please sign in with your password, then link ${providerLabel} from your account settings.`
+            );
+          }
+
           // Auto-link the provider to the existing user
           await this.oauthRepo.save({
             provider,
@@ -81,6 +96,11 @@ export class OAuthService {
             refreshToken,
             userId: existingUser.id,
           });
+
+          // Audit trail: a verified-email auto-link just occurred.
+          this.l.log(
+            `OAuth auto-link: linked verified ${provider} identity (${providerUserId}) to existing userId=${existingUser.id}`
+          );
 
           return await this.issueTokenForUser(existingUser, profileId);
         }

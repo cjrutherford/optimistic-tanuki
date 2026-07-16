@@ -263,6 +263,9 @@ export type Config = {
   auth?: {
     jwtSecret?: string;
   };
+  payments?: {
+    webhookSecret?: string;
+  };
   oauth?: GatewayOAuthConfig;
   permissions?: {
     cache?: PermissionsCacheConfig;
@@ -310,6 +313,18 @@ export const loadConfig = (): Config => {
       jwtSecret: process.env.JWT_SECRET,
     };
   }
+
+  // Resolve the Lemon Squeezy webhook signing secret from the environment,
+  // falling back to the yaml value. Unresolved placeholders (e.g. an
+  // unset ${LEMON_SQUEEZY_WEBHOOK_SECRET}) are treated as missing so the
+  // webhook receiver fails closed instead of trusting a placeholder string.
+  const webhookSecret =
+    envValue('LEMON_SQUEEZY_WEBHOOK_SECRET') ??
+    configValue(config.payments?.webhookSecret);
+  config.payments = {
+    ...config.payments,
+    webhookSecret,
+  };
 
   config.oauth = mergeOAuthConfig(config.oauth);
 

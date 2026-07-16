@@ -4,7 +4,8 @@ import {
   IsArray,
   ValidateNested,
   IsOptional,
-  IsNumber,
+  IsInt,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -13,8 +14,9 @@ export class CreateOrderItemDto {
   @IsString()
   productId!: string;
 
-  @ApiProperty({ description: 'The quantity of the product' })
-  @IsNumber()
+  @ApiProperty({ description: 'The quantity of the product', example: 1 })
+  @IsInt()
+  @Min(1)
   quantity!: number;
 }
 export class CreateOrderDto {

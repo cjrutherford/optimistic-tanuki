@@ -41,7 +41,10 @@
     <article class="stat-card">
       <span class="stat-label">Fulfillment backlog</span>
       <strong class="stat-value">{{ fulfillmentBacklog.length }}</strong>
-      <p>${{ orderValueTotal().toFixed(2) }} waiting across active orders.</p>
+      <p>
+        ${{ (orderValueTotalCents() / 100).toFixed(2) }} waiting across active
+        orders.
+      </p>
     </article>
 
     <article class="stat-card">
@@ -56,7 +59,7 @@
     <article class="stat-card">
       <span class="stat-label">Recurring revenue</span>
       <strong class="stat-value">{{ activeSubscriptions }}</strong>
-      <p>${{ totalDonations.toFixed(2) }} in tracked donations.</p>
+      <p>${{ (totalDonationsCents / 100).toFixed(2) }} in tracked donations.</p>
     </article>
   </section>
 
@@ -312,7 +315,11 @@
         <tbody>
           <tr *ngFor="let donation of donations.slice(0, 10)">
             <td>{{ donation.createdAt | date : 'short' }}</td>
-            <td>{{ donation.currency }} ${{ donation.amount.toFixed(2) }}</td>
+            <td>
+              {{ donation.currency }} ${{
+                (donation.amountCents / 100).toFixed(2)
+              }}
+            </td>
             <td>
               <span *ngIf="donation.anonymous">Anonymous</span>
               <span *ngIf="!donation.anonymous && donation.message">{{

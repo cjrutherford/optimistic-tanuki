@@ -6,7 +6,7 @@ export interface Product {
   id: string;
   name: string;
   description?: string;
-  price: number;
+  priceCents: number;
   type: string;
   imageUrl?: string;
   stock: number;
@@ -18,7 +18,7 @@ export interface Product {
 export interface CartItem {
   productId: string;
   name: string;
-  price: number;
+  priceCents: number;
   quantity: number;
   imageUrl?: string;
 }
@@ -27,7 +27,7 @@ export interface Order {
   id?: string;
   userId: string;
   items: OrderItem[];
-  total: number;
+  totalCents: number;
   currency: string;
   status?: string;
 }
@@ -35,11 +35,15 @@ export interface Order {
 export interface OrderItem {
   productId: string;
   quantity: number;
-  price: number;
+  unitPriceCents: number;
 }
 
-export interface DonationRequest {
-  amount: number;
+// Backend-facing donation payload; amountCents mirrors CreateDonationDto.
+// The donation form (DonationRequest from @optimistic-tanuki/store-ui)
+// collects a dollar amount, which callers must convert before invoking
+// createDonation.
+export interface CreateDonationRequest {
+  amountCents: number;
   message?: string;
   anonymous: boolean;
   currency?: string;
@@ -114,7 +118,7 @@ export class StoreService {
   }
 
   // Donation operations
-  createDonation(donation: DonationRequest): Observable<any> {
+  createDonation(donation: CreateDonationRequest): Observable<any> {
     return this.http.post(`${this.API_URL}/donations`, {
       ...donation,
       currency: donation.currency || 'USD',

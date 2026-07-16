@@ -12,8 +12,9 @@ const seedGoals: FinCommanderGoal[] = [
     id: 'goal-existing',
     planId: 'plan-1',
     name: 'Emergency Fund',
-    targetAmount: 10_000,
-    currentAmount: 2_500,
+    // $10,000.00 and $2,500.00 in integer cents.
+    targetAmountCents: 1_000_000,
+    currentAmountCents: 250_000,
     dueDate: '2026-12-31',
     strategy: 'Auto-transfer $500/month',
   },

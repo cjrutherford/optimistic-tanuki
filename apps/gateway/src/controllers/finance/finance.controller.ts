@@ -27,6 +27,18 @@ import {
   FinanceTenantCommands,
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
+  FinCommanderPlanCommands,
+  FinCommanderGoalCommands,
+  FinCommanderScenarioCommands,
+  FinCommanderPlanDto,
+  UpdateFinCommanderPlanDto,
+  FinCommanderGoalDto,
+  UpdateFinCommanderGoalDto,
+  FinCommanderScenarioDto,
+  UpdateFinCommanderScenarioDto,
+  CreateFinCommanderPlanDto,
+  CreateFinCommanderGoalDto,
+  CreateFinCommanderScenarioDto,
 } from '@optimistic-tanuki/constants';
 import {
   AccountDto,
@@ -1347,6 +1359,387 @@ export class FinanceController {
     return await this.sendFinanceCommand(
       { cmd: FinanceTenantCommands.LIST_TENANT_MEMBERS },
       this.getScope(user, appScope, tenantId)
+    );
+  }
+
+  // Fin Commander plan endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Create a Fin Commander plan' })
+  @ApiResponse({
+    status: 201,
+    description: 'The plan has been successfully created.',
+    type: FinCommanderPlanDto,
+  })
+  @Post('fin-commander/plan')
+  @RequirePermissions('finance.fin-commander-plan.create')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async createFinCommanderPlan(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() planDto: Record<string, unknown>
+  ) {
+    const payload = {
+      ...(planDto as Partial<CreateFinCommanderPlanDto>),
+      ...this.getScope(user, appScope, tenantId),
+    } as CreateFinCommanderPlanDto;
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderPlanCommands.CREATE },
+      payload
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'List Fin Commander plans' })
+  @ApiResponse({
+    status: 200,
+    description: 'The plans have been successfully retrieved.',
+    type: [FinCommanderPlanDto],
+  })
+  @Get('fin-commander/plans')
+  @RequirePermissions('finance.fin-commander-plan.read')
+  async listFinCommanderPlans(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderPlanDto[]> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderPlanCommands.FIND_MANY },
+      this.getScope(user, appScope, tenantId)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Get a Fin Commander plan by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The plan has been successfully retrieved.',
+    type: FinCommanderPlanDto,
+  })
+  @Get('fin-commander/plan/:id')
+  @RequirePermissions('finance.fin-commander-plan.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getFinCommanderPlan(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderPlanDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderPlanCommands.FIND },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Update a Fin Commander plan by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The plan has been successfully updated.',
+    type: FinCommanderPlanDto,
+  })
+  @Put('fin-commander/plan/:id')
+  @RequirePermissions('finance.fin-commander-plan.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async updateFinCommanderPlan(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() updatePlanDto: UpdateFinCommanderPlanDto
+  ): Promise<FinCommanderPlanDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderPlanCommands.UPDATE },
+      {
+        id,
+        data: updatePlanDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Delete a Fin Commander plan by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The plan has been successfully deleted.',
+  })
+  @Delete('fin-commander/plan/:id')
+  @RequirePermissions('finance.fin-commander-plan.delete')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async deleteFinCommanderPlan(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<void> {
+    return await firstValueFrom(
+      this.financeClient.send(
+        { cmd: FinCommanderPlanCommands.DELETE },
+        { id, ...this.getScope(user, appScope, tenantId) }
+      ),
+      { defaultValue: undefined }
+    );
+  }
+
+  // Fin Commander goal endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Create a Fin Commander goal' })
+  @ApiResponse({
+    status: 201,
+    description: 'The goal has been successfully created.',
+    type: FinCommanderGoalDto,
+  })
+  @Post('fin-commander/plan/:planId/goal')
+  @RequirePermissions('finance.fin-commander-goal.create')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  async createFinCommanderGoal(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() goalDto: Record<string, unknown>
+  ) {
+    const payload = {
+      ...(goalDto as Partial<CreateFinCommanderGoalDto>),
+      planId,
+      ...this.getScope(user, appScope, tenantId),
+    } as CreateFinCommanderGoalDto;
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.CREATE },
+      payload
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'List Fin Commander goals for a plan' })
+  @ApiResponse({
+    status: 200,
+    description: 'The goals have been successfully retrieved.',
+    type: [FinCommanderGoalDto],
+  })
+  @Get('fin-commander/plan/:planId/goals')
+  @RequirePermissions('finance.fin-commander-goal.read')
+  async listFinCommanderGoals(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderGoalDto[]> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FIND_MANY },
+      { ...this.getScope(user, appScope, tenantId), where: { planId } }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Get a Fin Commander goal by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The goal has been successfully retrieved.',
+    type: FinCommanderGoalDto,
+  })
+  @Get('fin-commander/goal/:id')
+  @RequirePermissions('finance.fin-commander-goal.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getFinCommanderGoal(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderGoalDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FIND },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Update a Fin Commander goal by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The goal has been successfully updated.',
+    type: FinCommanderGoalDto,
+  })
+  @Put('fin-commander/goal/:id')
+  @RequirePermissions('finance.fin-commander-goal.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async updateFinCommanderGoal(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() updateGoalDto: UpdateFinCommanderGoalDto
+  ): Promise<FinCommanderGoalDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.UPDATE },
+      {
+        id,
+        data: updateGoalDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Delete a Fin Commander goal by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The goal has been successfully deleted.',
+  })
+  @Delete('fin-commander/goal/:id')
+  @RequirePermissions('finance.fin-commander-goal.delete')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async deleteFinCommanderGoal(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<void> {
+    return await firstValueFrom(
+      this.financeClient.send(
+        { cmd: FinCommanderGoalCommands.DELETE },
+        { id, ...this.getScope(user, appScope, tenantId) }
+      ),
+      { defaultValue: undefined }
+    );
+  }
+
+  // Fin Commander scenario endpoints
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Create a Fin Commander scenario' })
+  @ApiResponse({
+    status: 201,
+    description: 'The scenario has been successfully created.',
+    type: FinCommanderScenarioDto,
+  })
+  @Post('fin-commander/plan/:planId/scenario')
+  @RequirePermissions('finance.fin-commander-scenario.create')
+  @Throttle({ default: { limit: 20, ttl: 60000 } })
+  async createFinCommanderScenario(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() scenarioDto: Record<string, unknown>
+  ) {
+    const payload = {
+      ...(scenarioDto as Partial<CreateFinCommanderScenarioDto>),
+      planId,
+      ...this.getScope(user, appScope, tenantId),
+    } as CreateFinCommanderScenarioDto;
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderScenarioCommands.CREATE },
+      payload
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'List Fin Commander scenarios for a plan' })
+  @ApiResponse({
+    status: 200,
+    description: 'The scenarios have been successfully retrieved.',
+    type: [FinCommanderScenarioDto],
+  })
+  @Get('fin-commander/plan/:planId/scenarios')
+  @RequirePermissions('finance.fin-commander-scenario.read')
+  async listFinCommanderScenarios(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderScenarioDto[]> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderScenarioCommands.FIND_MANY },
+      { ...this.getScope(user, appScope, tenantId), where: { planId } }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Get a Fin Commander scenario by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The scenario has been successfully retrieved.',
+    type: FinCommanderScenarioDto,
+  })
+  @Get('fin-commander/scenario/:id')
+  @RequirePermissions('finance.fin-commander-scenario.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getFinCommanderScenario(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<FinCommanderScenarioDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderScenarioCommands.FIND },
+      { id, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Update a Fin Commander scenario by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The scenario has been successfully updated.',
+    type: FinCommanderScenarioDto,
+  })
+  @Put('fin-commander/scenario/:id')
+  @RequirePermissions('finance.fin-commander-scenario.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async updateFinCommanderScenario(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() updateScenarioDto: UpdateFinCommanderScenarioDto
+  ): Promise<FinCommanderScenarioDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderScenarioCommands.UPDATE },
+      {
+        id,
+        data: updateScenarioDto,
+        ...this.getScope(user, appScope, tenantId),
+      }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Delete a Fin Commander scenario by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'The scenario has been successfully deleted.',
+  })
+  @Delete('fin-commander/scenario/:id')
+  @RequirePermissions('finance.fin-commander-scenario.delete')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async deleteFinCommanderScenario(
+    @User() user,
+    @Param('id') id: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ): Promise<void> {
+    return await firstValueFrom(
+      this.financeClient.send(
+        { cmd: FinCommanderScenarioCommands.DELETE },
+        { id, ...this.getScope(user, appScope, tenantId) }
+      ),
+      { defaultValue: undefined }
     );
   }
 }

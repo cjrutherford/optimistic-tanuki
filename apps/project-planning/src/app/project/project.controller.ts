@@ -18,25 +18,35 @@ export class ProjectController {
   }
 
   @MessagePattern({ cmd: ProjectCommands.FIND_ALL })
-  async findAll(@Payload() query: QueryProjectDto) {
-    return await this.projectService.findAll(query);
+  async findAll(
+    @Payload() query: QueryProjectDto & { requestingUserId?: string }
+  ) {
+    const { requestingUserId, ...q } = query;
+    return await this.projectService.findAll(q, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectCommands.FIND_ONE })
-  async findOne(@Payload('id') id: string) {
-    return await this.projectService.findOne(id);
+  async findOne(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.projectService.findOne(id, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectCommands.UPDATE })
-  async update(@Payload() updateProjectDto: UpdateProjectDto) {
-    return await this.projectService.update(
-      updateProjectDto.id,
-      updateProjectDto
-    );
+  async update(
+    @Payload()
+    updateProjectDto: UpdateProjectDto & { requestingUserId?: string }
+  ) {
+    const { requestingUserId, ...dto } = updateProjectDto;
+    return await this.projectService.update(dto.id, dto, requestingUserId);
   }
 
   @MessagePattern({ cmd: ProjectCommands.REMOVE })
-  async remove(@Payload() id: string) {
-    return await this.projectService.remove(id);
+  async remove(
+    @Payload('id') id: string,
+    @Payload('requestingUserId') requestingUserId?: string
+  ) {
+    return await this.projectService.remove(id, requestingUserId);
   }
 }
