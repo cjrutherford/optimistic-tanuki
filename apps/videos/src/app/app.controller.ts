@@ -81,8 +81,14 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VideoCommands.FIND_ONE_VIDEO })
-  async findOneVideo(@Payload() id: string) {
-    return this.videoService.findOne(id);
+  async findOneVideo(
+    @Payload() payload: string | { id: string; viewerProfileId?: string }
+  ) {
+    const { id, viewerProfileId } =
+      typeof payload === 'string'
+        ? { id: payload, viewerProfileId: undefined }
+        : payload;
+    return this.videoService.findOneVisible(id, viewerProfileId);
   }
 
   @MessagePattern({ cmd: VideoCommands.FIND_VIDEOS_BY_CHANNEL })

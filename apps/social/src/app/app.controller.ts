@@ -525,18 +525,37 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: CommentCommands.FIND_MANY })
-  async findAllComments(@Payload() data: SearchCommentDto) {
-    const options = transformSearchCommentDtoToFindOptions(data);
-    return await this.commentService.findAll(options);
+  async findAllComments(
+    @Payload() data: SearchCommentDto & { viewerProfileId?: string }
+  ) {
+    const { viewerProfileId, ...criteria } = data;
+    const options = transformSearchCommentDtoToFindOptions(criteria);
+
+    // Comments inherit their parent post's visibility: a comment is only
+    // returned if the viewer is entitled to see the post it belongs to
+    // (same rule as findAllPosts/findOnePost). Anonymous callers get the
+    // unscoped anonymous branch of visiblePostWhere (public/visible/
+    // unscheduled only).
+    const scope: PostVisibilityScope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+
+    return await this.commentService.findAllVisible(options, scope);
   }
 
   @MessagePattern({ cmd: CommentCommands.FIND })
   async findOneComment(
     @Payload('id') id: string,
-    @Payload('options') options?: SearchCommentDto
+    @Payload('options') options?: SearchCommentDto,
+    @Payload('viewerProfileId') viewerProfileId?: string
   ) {
     const search = transformSearchCommentDtoToFindOptions(options);
-    return await this.commentService.findOne(id, search);
+
+    const scope: PostVisibilityScope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+
+    return await this.commentService.findOneVisible(id, search, scope);
   }
 
   @MessagePattern({ cmd: CommentCommands.UPDATE })

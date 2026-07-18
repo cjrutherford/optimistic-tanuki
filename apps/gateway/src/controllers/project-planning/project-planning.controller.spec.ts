@@ -7,6 +7,8 @@ import {
   RiskCommands,
   ServiceTokens,
   TaskCommands,
+  TaskNoteCommands,
+  TaskTimeEntryCommands,
   TimerCommands,
 } from '@optimistic-tanuki/constants';
 import { of } from 'rxjs';
@@ -18,17 +20,23 @@ import {
   CreateProjectJournalDto,
   CreateRiskDto,
   CreateTaskDto,
+  CreateTaskNoteDto,
+  CreateTaskTimeEntryDto,
   CreateTimerDto,
   QueryChangeDto,
   QueryProjectDto,
   QueryProjectJournalDto,
   QueryRiskDto,
   QueryTaskDto,
+  QueryTaskNoteDto,
+  QueryTaskTimeEntryDto,
   UpdateChangeDto,
   UpdateProjectDto,
   UpdateProjectJournalDto,
   UpdateRiskDto,
   UpdateTaskDto,
+  UpdateTaskNoteDto,
+  UpdateTaskTimeEntryDto,
   UpdateTimerDto,
   RiskImpact,
   RiskLikelihood,
@@ -414,6 +422,116 @@ describe('ProjectPlanningController', () => {
     await controller.deleteTimer(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
       { cmd: TimerCommands.DELETE },
+      { id: '1', requestingUserId }
+    );
+  });
+
+  it('should find a task note by id', async () => {
+    await controller.findTaskNoteById(mockUser, '1');
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.FIND_ONE },
+      { id: '1', requestingUserId }
+    );
+  });
+
+  it('should find all task notes scoped to the caller', async () => {
+    await controller.findAllTaskNotes(mockUser);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.FIND_ALL },
+      { requestingUserId }
+    );
+  });
+
+  it('should query task notes scoped to the caller', async () => {
+    const query: QueryTaskNoteDto = { taskId: 't1' };
+    await controller.queryTaskNotes(mockUser, query);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.FIND_ALL },
+      { ...query, requestingUserId }
+    );
+  });
+
+  it('should create a task note', async () => {
+    const createDto: CreateTaskNoteDto = {
+      profileId: 'ignored-client-value',
+      taskId: 't1',
+      content: 'note body',
+    };
+    await controller.createTaskNote(mockUser, createDto);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.CREATE },
+      { ...createDto, profileId: mockUser.profileId, requestingUserId }
+    );
+  });
+
+  it('should update a task note', async () => {
+    const updateDto: UpdateTaskNoteDto = { id: '1', content: 'updated' };
+    await controller.updateTaskNote(mockUser, updateDto);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.UPDATE },
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
+    );
+  });
+
+  it('should delete a task note', async () => {
+    await controller.deleteTaskNote(mockUser, '1');
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskNoteCommands.REMOVE },
+      { id: '1', requestingUserId }
+    );
+  });
+
+  it('should find a task time entry by id', async () => {
+    await controller.findTaskTimeEntryById(mockUser, '1');
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.FIND_ONE },
+      { id: '1', requestingUserId }
+    );
+  });
+
+  it('should find all task time entries scoped to the caller', async () => {
+    await controller.findAllTaskTimeEntries(mockUser);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.FIND_ALL },
+      { requestingUserId }
+    );
+  });
+
+  it('should query task time entries scoped to the caller', async () => {
+    const query: QueryTaskTimeEntryDto = { taskId: 't1' };
+    await controller.queryTaskTimeEntries(mockUser, query);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.FIND_ALL },
+      { ...query, requestingUserId }
+    );
+  });
+
+  it('should create a task time entry', async () => {
+    const createDto: CreateTaskTimeEntryDto = {
+      taskId: 't1',
+      createdBy: 'ignored-client-value',
+      startTime: new Date(),
+    };
+    await controller.createTaskTimeEntry(mockUser, createDto);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.CREATE },
+      { ...createDto, createdBy: mockUser.profileId, requestingUserId }
+    );
+  });
+
+  it('should update a task time entry', async () => {
+    const updateDto: UpdateTaskTimeEntryDto = { id: '1' };
+    await controller.updateTaskTimeEntry(mockUser, updateDto);
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.UPDATE },
+      { ...updateDto, updatedBy: mockUser.profileId, requestingUserId }
+    );
+  });
+
+  it('should delete a task time entry', async () => {
+    await controller.deleteTaskTimeEntry(mockUser, '1');
+    expect(projectPlanningService.send).toHaveBeenCalledWith(
+      { cmd: TaskTimeEntryCommands.REMOVE },
       { id: '1', requestingUserId }
     );
   });

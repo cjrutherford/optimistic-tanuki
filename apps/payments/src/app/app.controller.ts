@@ -96,20 +96,25 @@ export class AppController {
   ) {
     return this.paymentService.confirmOutOfPlatformPayment(
       data.paymentId,
+      data.userId,
       data.proofImageUrl
     );
   }
 
   @MessagePattern({ cmd: PaymentCommands.RELEASE_FUNDS })
-  async releaseFunds(@Payload() data: { paymentId: string; sellerId: string }) {
-    return this.paymentService.releaseFunds(data.paymentId);
+  async releaseFunds(@Payload() data: { paymentId: string; userId: string }) {
+    return this.paymentService.releaseFunds(data.paymentId, data.userId);
   }
 
   @MessagePattern({ cmd: PaymentCommands.DISPUTE_PAYMENT })
   async disputePayment(
     @Payload() data: { paymentId: string; userId: string; reason: string }
   ) {
-    return this.paymentService.disputePayment(data.paymentId, data.reason);
+    return this.paymentService.disputePayment(
+      data.paymentId,
+      data.userId,
+      data.reason
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_PAYMENT })

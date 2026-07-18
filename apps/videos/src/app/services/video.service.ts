@@ -52,6 +52,42 @@ export class VideoService {
     });
   }
 
+  /**
+   * Viewer-scoped single-video lookup for the public `GET videos/:id` route.
+   *
+   * `public` and `unlisted` videos are fetchable by anyone who has the id
+   * (unlisted-by-direct-link is intentional). `private` videos are only
+   * returned to their owner — the profile that owns the video's channel.
+   * A private video requested by anyone else resolves to `null`, which the
+   * gateway surfaces as a 404 so a private id is indistinguishable from a
+   * non-existent one (no existence oracle).
+   *
+   * `viewerProfileId` MUST come from the gateway's signature-verified auth
+   * context, never from an unverified token claim.
+   */
+  async findOneVisible(
+    id: string,
+    viewerProfileId?: string
+  ): Promise<Video | null> {
+    const video = await this.videoRepository.findOne({
+      where: { id },
+      relations: ['channel', 'views'],
+    });
+
+    if (!video) {
+      return null;
+    }
+
+    if (
+      video.visibility === 'private' &&
+      (!viewerProfileId || video.channel?.profileId !== viewerProfileId)
+    ) {
+      return null;
+    }
+
+    return video;
+  }
+
   async findByChannel(channelId: string): Promise<Video[]> {
     return this.videoRepository.find({
       where: { channelId },

@@ -169,6 +169,48 @@ describe('PostController', () => {
     });
   });
 
+  describe('getPost', () => {
+    it('returns a published post regardless of viewer identity', async () => {
+      mockBlogService.send.mockReturnValue(of(mockPublishedPost));
+
+      const result = await controller.getPost(
+        'post-1',
+        {},
+        'digital-homestead'
+      );
+
+      expect(result).toEqual(mockPublishedPost);
+    });
+
+    it('forwards the guard-verified profileId for the draft-read permission check', async () => {
+      mockBlogService.send.mockReturnValue(of(mockPost));
+      const checkPermission = (controller as any).permissionsProxy
+        .checkPermission as jest.Mock;
+
+      const req = { user: { profileId: 'profile-1' } };
+      const result = await controller.getPost(
+        'post-1',
+        req,
+        'digital-homestead'
+      );
+
+      expect(checkPermission).toHaveBeenCalledWith(
+        'profile-1',
+        'blog.post.read',
+        'digital-homestead'
+      );
+      expect(result).toEqual(mockPost);
+    });
+
+    it('rejects a draft read when req.user is absent (anonymous or forged token)', async () => {
+      mockBlogService.send.mockReturnValue(of(mockPost));
+
+      await expect(
+        controller.getPost('post-1', {}, 'digital-homestead')
+      ).rejects.toThrow(HttpException);
+    });
+  });
+
   describe('publishPost', () => {
     it('should publish a draft post', async () => {
       mockBlogService.send.mockReturnValue(of(mockPublishedPost));

@@ -617,9 +617,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task note found' })
   @RequirePermissions('project-planning.task-note.read')
   @Get('task-notes/:id')
-  async findTaskNoteById(@Param('id') id: string) {
+  async findTaskNoteById(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.FIND_ONE }, id)
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ONE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -627,9 +630,12 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task notes retrieved' })
   @RequirePermissions('project-planning.task-note.read')
   @Get('task-notes')
-  async findAllTaskNotes() {
+  async findAllTaskNotes(@User() user: UserDetails) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.FIND_ALL }, {})
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.FIND_ALL },
+        { requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -637,11 +643,14 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task notes retrieved' })
   @RequirePermissions('project-planning.task-note.read')
   @Post('task-notes/query')
-  async queryTaskNotes(@Body() query: QueryTaskNoteDto) {
+  async queryTaskNotes(
+    @User() user: UserDetails,
+    @Body() query: QueryTaskNoteDto
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskNoteCommands.FIND_ALL },
-        query
+        { ...query, requestingUserId: user.profileId }
       )
     );
   }
@@ -660,7 +669,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskNoteCommands.CREATE },
-        { ...createTaskNoteDto, profileId: user.profileId }
+        {
+          ...createTaskNoteDto,
+          profileId: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -679,7 +692,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskNoteCommands.UPDATE },
-        { ...updateTaskNoteDto, updatedBy: user.profileId }
+        {
+          ...updateTaskNoteDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -691,9 +708,12 @@ export class ProjectPlanningController {
   })
   @RequirePermissions('project-planning.task-note.delete')
   @Delete('task-notes/:id')
-  async deleteTaskNote(@Param('id') id: string) {
+  async deleteTaskNote(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
-      this.projectPlanningService.send({ cmd: TaskNoteCommands.REMOVE }, id)
+      this.projectPlanningService.send(
+        { cmd: TaskNoteCommands.REMOVE },
+        { id, requestingUserId: user.profileId }
+      )
     );
   }
 
@@ -702,11 +722,14 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task time entry found' })
   @RequirePermissions('project-planning.task-time-entry.read')
   @Get('task-time-entries/:id')
-  async findTaskTimeEntryById(@Param('id') id: string) {
+  async findTaskTimeEntryById(
+    @User() user: UserDetails,
+    @Param('id') id: string
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.FIND_ONE },
-        id
+        { id, requestingUserId: user.profileId }
       )
     );
   }
@@ -715,11 +738,11 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task time entries retrieved' })
   @RequirePermissions('project-planning.task-time-entry.read')
   @Get('task-time-entries')
-  async findAllTaskTimeEntries() {
+  async findAllTaskTimeEntries(@User() user: UserDetails) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.FIND_ALL },
-        {}
+        { requestingUserId: user.profileId }
       )
     );
   }
@@ -728,11 +751,14 @@ export class ProjectPlanningController {
   @ApiResponse({ status: 200, description: 'Task time entries retrieved' })
   @RequirePermissions('project-planning.task-time-entry.read')
   @Post('task-time-entries/query')
-  async queryTaskTimeEntries(@Body() query: QueryTaskTimeEntryDto) {
+  async queryTaskTimeEntries(
+    @User() user: UserDetails,
+    @Body() query: QueryTaskTimeEntryDto
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.FIND_ALL },
-        query
+        { ...query, requestingUserId: user.profileId }
       )
     );
   }
@@ -751,7 +777,11 @@ export class ProjectPlanningController {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.CREATE },
-        { ...createTaskTimeEntryDto, createdBy: user.profileId }
+        {
+          ...createTaskTimeEntryDto,
+          createdBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -764,12 +794,17 @@ export class ProjectPlanningController {
   @RequirePermissions('project-planning.task-time-entry.update')
   @Patch('task-time-entries')
   async updateTaskTimeEntry(
+    @User() user: UserDetails,
     @Body() updateTaskTimeEntryDto: UpdateTaskTimeEntryDto
   ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.UPDATE },
-        updateTaskTimeEntryDto
+        {
+          ...updateTaskTimeEntryDto,
+          updatedBy: user.profileId,
+          requestingUserId: user.profileId,
+        }
       )
     );
   }
@@ -781,11 +816,14 @@ export class ProjectPlanningController {
   })
   @RequirePermissions('project-planning.task-time-entry.delete')
   @Delete('task-time-entries/:id')
-  async deleteTaskTimeEntry(@Param('id') id: string) {
+  async deleteTaskTimeEntry(
+    @User() user: UserDetails,
+    @Param('id') id: string
+  ) {
     return await firstValueFrom(
       this.projectPlanningService.send(
         { cmd: TaskTimeEntryCommands.REMOVE },
-        id
+        { id, requestingUserId: user.profileId }
       )
     );
   }

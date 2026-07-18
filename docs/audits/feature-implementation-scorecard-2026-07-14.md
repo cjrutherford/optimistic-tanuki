@@ -1,5 +1,10 @@
 # Feature & Implementation Scorecard — 2026-07-14
 
+> **This is the baseline audit.** A follow-up re-evaluation after the remediation batches —
+> with a new 11th Design Quality domain — is at
+> [feature-implementation-scorecard-2026-07-16.md](./feature-implementation-scorecard-2026-07-16.md).
+> This document is preserved unchanged as the historical baseline.
+
 Realistic due-diligence evaluation of the repository's feature domains. Each domain was
 evaluated by an independent first-pass reviewer (score /10 plus sub-scores), then the
 load-bearing claims were verified by a second validation pass against the actual code.

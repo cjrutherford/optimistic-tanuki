@@ -9,6 +9,7 @@ describe('AppController video limit handling', () => {
       markProcessing: jest.fn(),
       completeProcessing: jest.fn(),
       failProcessing: jest.fn(),
+      findOneVisible: jest.fn(),
     };
 
     const controller = new AppController(
@@ -21,6 +22,31 @@ describe('AppController video limit handling', () => {
 
     return { controller, videoService };
   };
+
+  it('passes the viewer profile id through on single-video lookup', async () => {
+    const { controller, videoService } = createController();
+
+    await controller.findOneVideo({
+      id: 'video-1',
+      viewerProfileId: 'viewer-9',
+    });
+
+    expect(videoService.findOneVisible).toHaveBeenCalledWith(
+      'video-1',
+      'viewer-9'
+    );
+  });
+
+  it('tolerates a bare string id payload on single-video lookup', async () => {
+    const { controller, videoService } = createController();
+
+    await controller.findOneVideo('video-1' as never);
+
+    expect(videoService.findOneVisible).toHaveBeenCalledWith(
+      'video-1',
+      undefined
+    );
+  });
 
   it('passes undefined to recommended videos when payload is empty', async () => {
     const { controller, videoService } = createController();

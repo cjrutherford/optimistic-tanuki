@@ -1,6 +1,23 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import {
+  Repository,
+  Between,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  EntityManager,
+} from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom } from 'rxjs';
+import {
+  ClassifiedCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { Donation } from '../../entities/donation.entity';
 import { ClassifiedPayment } from '../../entities/classified-payment.entity';
 import { SellerWallet } from '../../entities/seller-wallet.entity';
@@ -76,7 +93,9 @@ export class PaymentService {
     private readonly lsProductRepository: Repository<LemonSqueezyProduct>,
     @Inject(PAYMENT_PROVIDER_ADAPTER)
     private readonly providerAdapter: BillingProviderAdapter,
-    private readonly billingReconciliationService: BillingReconciliationService
+    private readonly billingReconciliationService: BillingReconciliationService,
+    @Inject(ServiceTokens.CLASSIFIEDS_SERVICE)
+    private readonly classifiedsClient: ClientProxy
   ) {}
 
   async getDonationGoal(month?: number | string, year?: number | string) {
@@ -191,10 +210,59 @@ export class PaymentService {
     sellerId?: string,
     offerId?: string
   ) {
-    const feeBreakdown = calculateNetAmount(amount || 0);
+    let resolvedAmount: number;
+    let resolvedSellerId: string | undefined;
+
+    if (offerId) {
+      // Offer-derived path: in practice every caller that has an accepted
+      // offer creates the payment via OfferService.acceptOffer (which
+      // derives amount/sellerId from the offer itself and never calls this
+      // method). No current caller invokes createClassifiedPayment with an
+      // offerId, but the parameter is kept for API compatibility. Since
+      // this branch is not on the direct-purchase path being hardened here,
+      // it retains its existing (client-supplied) behavior rather than
+      // silently ignoring an offerId nobody exercises today.
+      resolvedAmount = amount || 0;
+      resolvedSellerId = sellerId;
+    } else {
+      // Direct-purchase path: never trust a client-supplied amount/sellerId.
+      // Derive both from the actual classified ad so a caller cannot set an
+      // arbitrary price or redirect funds to an arbitrary seller.
+      const ad = await firstValueFrom(
+        this.classifiedsClient.send(
+          { cmd: ClassifiedCommands.FIND_BY_ID },
+          { id: classifiedId }
+        )
+      );
+
+      if (!ad) {
+        throw new BadRequestException('Classified ad not found');
+      }
+
+      if (ad.status !== 'active') {
+        throw new BadRequestException(
+          `Classified ad is not available for purchase (status: ${ad.status})`
+        );
+      }
+
+      resolvedAmount = Number(ad.price);
+      resolvedSellerId = ad.userId;
+
+      // Guard against a self-owned ad carrying a nonsensical price (zero,
+      // negative, or non-numeric). Without this, calculateNetAmount would
+      // derive a negative sellerReceivesAmount, which creditSellerWallet
+      // would apply as a debit against the seller's own wallet on release.
+      if (!Number.isFinite(resolvedAmount) || resolvedAmount <= 0) {
+        throw new BadRequestException(
+          'Classified ad price must be a positive amount'
+        );
+      }
+    }
+
+    const feeBreakdown = calculateNetAmount(resolvedAmount);
     const payment = this.classifiedPaymentRepository.create({
       buyerId,
-      sellerId,
+      sellerId: resolvedSellerId,
       classifiedId,
       offerId,
       paymentMethod: paymentMethod as any,
@@ -207,13 +275,67 @@ export class PaymentService {
     return this.classifiedPaymentRepository.save(payment);
   }
 
-  async confirmOutOfPlatformPayment(paymentId: string, proofImageUrl?: string) {
+  /**
+   * Participant check shared by the classified-payment action handlers below.
+   * The caller must be either the buyer or the seller on the payment. The
+   * narrower single-party rule for each action (e.g. "only the buyer may
+   * confirm out-of-platform payment", "only the seller may release funds")
+   * is genuinely ambiguous in this codebase today (the release route is
+   * labeled "Confirm payment received and release funds" and has
+   * historically been invoked with the caller's id sent as `sellerId`), so
+   * this deliberately requires participation by either party rather than a
+   * stricter rule that risks locking out a legitimate caller. Narrowing to
+   * a single-party rule per action is a product decision left for follow-up.
+   */
+  private assertPaymentParticipant(
+    payment: ClassifiedPayment,
+    callerId: string,
+    action: string
+  ) {
+    if (callerId !== payment.buyerId && callerId !== payment.sellerId) {
+      throw new BadRequestException(
+        `You can only ${action} for payments you are a party to`
+      );
+    }
+  }
+
+  // Classified-payment state machine (enforced by the three handlers below):
+  //
+  //   pending ──confirmOutOfPlatformPayment──> confirmed ──releaseFunds──> released
+  //      │                                        │
+  //      └──────────────disputePayment─────────────┘
+  //                          │
+  //                          v
+  //                      disputed
+  //
+  // `refunded` and `cancelled` are set outside these handlers and are
+  // terminal here. Allowed transitions:
+  //   confirmOutOfPlatformPayment: pending -> confirmed
+  //   releaseFunds:                confirmed -> released (released -> released is a no-op)
+  //   disputePayment:               pending -> disputed, confirmed -> disputed
+  // Any other starting status is refused with BadRequestException so a
+  // participant cannot thrash the payment back into an earlier state (e.g.
+  // dispute a confirmed payment, then re-confirm it to bypass the
+  // disputed/refunded/cancelled guard in releaseFunds).
+  async confirmOutOfPlatformPayment(
+    paymentId: string,
+    callerId: string,
+    proofImageUrl?: string
+  ) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
 
     if (!payment) {
       return { success: false, message: 'Payment not found' };
+    }
+
+    this.assertPaymentParticipant(payment, callerId, 'confirm payment');
+
+    if (payment.status !== 'pending') {
+      throw new BadRequestException(
+        `Cannot confirm payment with status: ${payment.status}`
+      );
     }
 
     payment.status = 'confirmed';
@@ -225,7 +347,7 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async releaseFunds(paymentId: string) {
+  async releaseFunds(paymentId: string, callerId: string) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
@@ -233,6 +355,8 @@ export class PaymentService {
     if (!payment) {
       return { success: false, message: 'Payment not found' };
     }
+
+    this.assertPaymentParticipant(payment, callerId, 'release funds');
 
     if (!payment.sellerId) {
       return {
@@ -241,28 +365,111 @@ export class PaymentService {
       };
     }
 
-    payment.status = 'released';
-    payment.releasedAt = new Date();
+    // Idempotency guard (fast path): a payment that is already released is
+    // reported as a harmless no-op success rather than an error. This is
+    // just an early friendly-response check — it is NOT what prevents a
+    // double credit under concurrency (two calls can both pass this check
+    // before either has written). The actual concurrency guard is the
+    // atomic conditional UPDATE below.
+    if (payment.status === 'released') {
+      return { success: true, payment, alreadyReleased: true };
+    }
 
-    await this.classifiedPaymentRepository.save(payment);
+    // Only a payment the buyer has actually confirmed may be released.
+    // Every other non-terminal status (pending) and every terminal status
+    // (disputed/refunded/cancelled) is refused: releasing from `pending`
+    // would let a seller self-release before the buyer ever confirmed
+    // receipt, and releasing from a terminal status would be a
+    // financial-integrity bug in its own right.
+    if (payment.status !== 'confirmed') {
+      throw new BadRequestException(
+        `Cannot release funds for payment with status: ${payment.status}`
+      );
+    }
 
-    await this.creditSellerWallet(
-      payment.sellerId,
-      Number(payment.sellerReceivesAmount),
-      paymentId,
-      `Payment release for classified: ${payment.classifiedId}`
+    // Atomic conditional transition + credit, in one DB transaction: the
+    // conditional UPDATE only affects a row when it is still in `confirmed`
+    // at the moment it runs (closing the double-credit race — see below),
+    // and the wallet credit happens inside the SAME transaction as that
+    // UPDATE. If creditSellerWallet throws for any reason (transient DB
+    // error, constraint violation, connection drop), the whole transaction
+    // rolls back, so the status flip to `released` is undone and the
+    // payment is left `confirmed` — safely retryable. Without this, a
+    // credit failure after a committed UPDATE would durably release the
+    // payment with no credit, and the idempotency fast-path above
+    // (`status === 'released'` -> no-op) would make that loss unrecoverable.
+    const releasedAt = new Date();
+    let affected = 0;
+
+    await this.classifiedPaymentRepository.manager.transaction(
+      async (manager) => {
+        // Two concurrent releaseFunds calls both read the payment as
+        // `confirmed` above (a classic check-then-act race). Only one of
+        // the two UPDATEs below, run inside its own transaction, will find
+        // a matching row and flip it to `released` — the other affects
+        // zero rows. Crediting the wallet is gated on having actually
+        // performed the transition (affected === 1), so exactly one of the
+        // two calls credits the seller.
+        const updateResult = await manager
+          .createQueryBuilder()
+          .update(ClassifiedPayment)
+          .set({ status: 'released', releasedAt })
+          .where('id = :id', { id: paymentId })
+          .andWhere('status = :expected', { expected: 'confirmed' })
+          .execute();
+
+        affected = updateResult.affected ?? 0;
+
+        if (affected === 1) {
+          await this.creditSellerWallet(
+            payment.sellerId,
+            Number(payment.sellerReceivesAmount),
+            paymentId,
+            `Payment release for classified: ${payment.classifiedId}`,
+            manager
+          );
+        }
+      }
     );
+
+    if (affected !== 1) {
+      // Lost the race (or the row changed between our read and the
+      // UPDATE): re-read to report the correct friendly outcome instead of
+      // crediting a second time.
+      const current = await this.classifiedPaymentRepository.findOne({
+        where: { id: paymentId },
+      });
+
+      if (current?.status === 'released') {
+        return { success: true, payment: current, alreadyReleased: true };
+      }
+
+      throw new BadRequestException(
+        `Cannot release funds for payment with status: ${current?.status}`
+      );
+    }
+
+    payment.status = 'released';
+    payment.releasedAt = releasedAt;
 
     return { success: true, payment };
   }
 
-  async disputePayment(paymentId: string, reason: string) {
+  async disputePayment(paymentId: string, callerId: string, reason: string) {
     const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
 
     if (!payment) {
       return { success: false, message: 'Payment not found' };
+    }
+
+    this.assertPaymentParticipant(payment, callerId, 'dispute payment');
+
+    if (payment.status !== 'pending' && payment.status !== 'confirmed') {
+      throw new BadRequestException(
+        `Cannot dispute payment with status: ${payment.status}`
+      );
     }
 
     payment.status = 'disputed';
@@ -488,20 +695,23 @@ export class PaymentService {
     };
   }
 
-  async getOrCreateSellerWallet(sellerId: string): Promise<SellerWallet> {
-    let wallet = await this.sellerWalletRepository.findOne({
+  async getOrCreateSellerWallet(
+    sellerId: string,
+    walletRepository: Repository<SellerWallet> = this.sellerWalletRepository
+  ): Promise<SellerWallet> {
+    let wallet = await walletRepository.findOne({
       where: { sellerId },
     });
 
     if (!wallet) {
-      wallet = this.sellerWalletRepository.create({
+      wallet = walletRepository.create({
         sellerId,
         availableBalance: 0,
         pendingBalance: 0,
         totalEarned: 0,
         totalPaidOut: 0,
       });
-      wallet = await this.sellerWalletRepository.save(wallet);
+      wallet = await walletRepository.save(wallet);
     }
 
     return wallet;
@@ -532,13 +742,29 @@ export class PaymentService {
     sellerId: string,
     amount: number,
     paymentId: string,
-    description: string
+    description: string,
+    manager?: EntityManager
   ): Promise<SellerWallet> {
-    const wallet = await this.getOrCreateSellerWallet(sellerId);
+    // When called from inside releaseFunds' transaction, use the
+    // transactional EntityManager's repositories so the wallet credit and
+    // the transaction-ledger insert commit/rollback atomically together
+    // with the payment status flip. When called standalone (no manager),
+    // fall back to the injected repositories as before.
+    const walletRepository = manager
+      ? manager.getRepository(SellerWallet)
+      : this.sellerWalletRepository;
+    const transactionRepository = manager
+      ? manager.getRepository(Transaction)
+      : this.transactionRepository;
+
+    const wallet = await this.getOrCreateSellerWallet(
+      sellerId,
+      walletRepository
+    );
     wallet.availableBalance = Number(wallet.availableBalance) + amount;
     wallet.totalEarned = Number(wallet.totalEarned) + amount;
 
-    const transaction = this.transactionRepository.create({
+    const transaction = transactionRepository.create({
       type: 'payout',
       direction: 'incoming',
       amount,
@@ -550,9 +776,9 @@ export class PaymentService {
       referenceId: paymentId,
       userId: sellerId,
     });
-    await this.transactionRepository.save(transaction);
+    await transactionRepository.save(transaction);
 
-    return this.sellerWalletRepository.save(wallet);
+    return walletRepository.save(wallet);
   }
 
   async createPayoutRequest(
@@ -563,14 +789,36 @@ export class PaymentService {
     bankAccountLast4?: string,
     bankRoutingLast4?: string
   ): Promise<PayoutRequest> {
+    // Ensure a wallet row exists before attempting the debit below. This
+    // read-then-maybe-create is itself racy on first use, but it is
+    // idempotent (it only creates a zero-balance row), so a lost race here
+    // just means the atomic debit below correctly fails with insufficient
+    // funds rather than allowing an over-withdrawal.
     const wallet = await this.getOrCreateSellerWallet(sellerId);
 
-    if (Number(wallet.availableBalance) < amount) {
+    // Atomic conditional debit: this UPDATE only affects a row when the
+    // wallet's availableBalance is still >= amount at the moment it runs.
+    // Two concurrent createPayoutRequest calls for the same seller both
+    // reading the same pre-debit balance can no longer both pass a
+    // check-then-act gate — only one UPDATE can find a matching row and
+    // debit it, closing the over-withdrawal race that the old
+    // read-compare-then-save pattern allowed.
+    const updateResult = await this.sellerWalletRepository
+      .createQueryBuilder()
+      .update(SellerWallet)
+      .set({
+        availableBalance: () => '"availableBalance" - :amount',
+      })
+      .where('sellerId = :sellerId', { sellerId })
+      .andWhere('"availableBalance" >= :amount', { amount })
+      .setParameter('amount', amount)
+      .execute();
+
+    const affected = updateResult.affected ?? 0;
+
+    if (affected !== 1) {
       throw new Error('Insufficient funds for payout');
     }
-
-    wallet.availableBalance = Number(wallet.availableBalance) - amount;
-    await this.sellerWalletRepository.save(wallet);
 
     const payoutRequest = this.payoutRequestRepository.create({
       sellerId,
@@ -610,15 +858,52 @@ export class PaymentService {
       throw new Error('Only pending payouts can be cancelled');
     }
 
-    const wallet = await this.getOrCreateSellerWallet(sellerId);
-    wallet.availableBalance =
-      Number(wallet.availableBalance) + Number(payoutRequest.amount);
-    await this.sellerWalletRepository.save(wallet);
+    // Atomic status transition + wallet refund, in one DB transaction, using
+    // the same pattern as releaseFunds: the conditional UPDATE below only
+    // affects a row when the payout is still `pending` at the moment it
+    // runs. Two concurrent cancelPayoutRequest calls for the same payout
+    // request can no longer both pass a check-then-act status check and
+    // both credit the wallet back (a double-refund) — only one UPDATE can
+    // find a matching row, and the refund is gated on affected === 1.
+    let affected = 0;
+
+    await this.payoutRequestRepository.manager.transaction(async (manager) => {
+      const payoutRepo = manager.getRepository(PayoutRequest);
+      const walletRepo = manager.getRepository(SellerWallet);
+
+      const updateResult = await payoutRepo
+        .createQueryBuilder()
+        .update(PayoutRequest)
+        .set({ status: 'cancelled' })
+        .where('id = :id', { id: payoutRequestId })
+        .andWhere('sellerId = :sellerId', { sellerId })
+        .andWhere('status = :expected', { expected: 'pending' })
+        .execute();
+
+      affected = updateResult.affected ?? 0;
+
+      if (affected === 1) {
+        const wallet = await this.getOrCreateSellerWallet(sellerId, walletRepo);
+        wallet.availableBalance =
+          Number(wallet.availableBalance) + Number(payoutRequest.amount);
+        await walletRepo.save(wallet);
+      }
+    });
+
+    if (affected !== 1) {
+      throw new Error('Only pending payouts can be cancelled');
+    }
 
     payoutRequest.status = 'cancelled';
-    return this.payoutRequestRepository.save(payoutRequest);
+    return payoutRequest;
   }
 
+  // NOTE: processPayout has no gateway route today (grepped apps/gateway/src
+  // — PROCESS_PAYOUT is not wired up), so it's currently unreachable from
+  // HTTP. It still uses the same read-then-write check-then-act pattern that
+  // createPayoutRequest/cancelPayoutRequest were hardened against (see the
+  // atomic conditional UPDATE + affected-row gate there). If an admin
+  // surface is ever added for this, apply the same treatment here first.
   async processPayout(
     payoutRequestId: string,
     adminId: string,
@@ -652,6 +937,11 @@ export class PaymentService {
     return this.payoutRequestRepository.save(payoutRequest);
   }
 
+  // NOTE: same as processPayout above — rejectPayout has no gateway route
+  // today (REJECT_PAYOUT is not wired up), so the read-then-write status
+  // check + wallet refund below is unreachable from HTTP, but carries the
+  // same double-refund race that cancelPayoutRequest was hardened against.
+  // Apply the same atomic-update treatment here before exposing it.
   async rejectPayout(
     payoutRequestId: string,
     adminId: string,

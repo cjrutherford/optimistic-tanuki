@@ -146,7 +146,7 @@ describe('ContactController', () => {
     };
     leadService.send.mockReturnValue(of({ id: 'lead-1' }));
 
-    await controller.createContact(dto, user as any);
+    await controller.createContact(dto, { user } as any);
 
     expect(leadService.send).toHaveBeenCalledWith(
       { cmd: LeadCommands.CREATE },
@@ -173,6 +173,31 @@ describe('ContactController', () => {
     expect(profileService.send).toHaveBeenCalledWith(
       { cmd: ProfileCommands.GetAll },
       { where: { appScope: 'global' } }
+    );
+  });
+
+  it('attributes the lead to an anonymous placeholder when req.user is absent (anonymous or forged token)', async () => {
+    const dto: any = {
+      name: 'Test',
+      email: 'test@example.com',
+      subject: 'General',
+      message: 'This is a valid lead message.',
+      appScope: 'hai',
+    };
+    leadService.send.mockReturnValue(of({ id: 'lead-1' }));
+
+    // No req at all (mirrors an anonymous submitter, or a caller whose
+    // forged/invalid-signature token AuthGuard silently ignored on this
+    // public route) — the lead must NOT be attributed to a forged identity.
+    await controller.createContact(dto, undefined);
+
+    expect(leadService.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        context: expect.objectContaining({
+          userId: 'public-contact:hai',
+        }),
+      })
     );
   });
 

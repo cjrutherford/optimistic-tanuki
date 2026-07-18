@@ -3,8 +3,44 @@ import { CreateCommentDto, UpdateCommentDto } from '@optimistic-tanuki/models';
 import { Comment } from '../../entities/comment.entity';
 import { CommentService } from './comment.service';
 import { Post } from '../../entities/post.entity';
-import { Repository } from 'typeorm';
+import { FindOperator, Repository } from 'typeorm';
 import { RpcException } from '@nestjs/microservices';
+import { PostVisibilityScope } from '../common/post-visibility.util';
+
+function evalOperator(value: unknown, op: FindOperator<any>): boolean {
+  switch (op.type) {
+    case 'in':
+      return Array.isArray(op.value) && op.value.includes(value);
+    case 'not':
+      return Array.isArray(op.value)
+        ? !op.value.includes(value)
+        : value !== op.value;
+    default:
+      throw new Error(`unsupported FindOperator type: ${op.type}`);
+  }
+}
+
+function matchesBranch(entity: any, branch: Record<string, any>): boolean {
+  return Object.entries(branch).every(([key, cond]) => {
+    const value = entity ? entity[key] : undefined;
+    if (cond instanceof FindOperator) {
+      return evalOperator(value, cond);
+    }
+    if (cond && typeof cond === 'object') {
+      return matchesBranch(value, cond);
+    }
+    return value === cond;
+  });
+}
+
+function matchesWhere(
+  entity: any,
+  where: Record<string, any> | Record<string, any>[] | undefined
+): boolean {
+  if (!where) return true;
+  const branches = Array.isArray(where) ? where : [where];
+  return branches.some((branch) => matchesBranch(entity, branch));
+}
 
 describe('CommentService', () => {
   let service: CommentService;
@@ -131,6 +167,158 @@ describe('CommentService', () => {
       await service.findOne('c1', { where: { userId: 'u1' } });
       expect(commentRepo.findOne).toHaveBeenCalledWith({
         where: { userId: 'u1', id: 'c1', moderationStatus: 'visible' },
+      });
+    });
+  });
+
+  describe('post-visibility enforcement (findAllVisible / findOneVisible)', () => {
+    const followersPost = {
+      id: 'p-followers',
+      visibility: 'followers',
+      moderationStatus: 'visible',
+      isScheduled: false,
+      profileId: 'author-1',
+    };
+    const hiddenPost = {
+      id: 'p-hidden',
+      visibility: 'public',
+      moderationStatus: 'hidden',
+      isScheduled: false,
+      profileId: 'author-2',
+    };
+    const scheduledPost = {
+      id: 'p-scheduled',
+      visibility: 'public',
+      moderationStatus: 'visible',
+      isScheduled: true,
+      profileId: 'author-3',
+    };
+    const publicPost = {
+      id: 'p-public',
+      visibility: 'public',
+      moderationStatus: 'visible',
+      isScheduled: false,
+      profileId: 'author-4',
+    };
+
+    const comments = [
+      { id: 'c-followers', moderationStatus: 'visible', post: followersPost },
+      { id: 'c-hidden-post', moderationStatus: 'visible', post: hiddenPost },
+      {
+        id: 'c-scheduled-post',
+        moderationStatus: 'visible',
+        post: scheduledPost,
+      },
+      { id: 'c-public', moderationStatus: 'visible', post: publicPost },
+      { id: 'c-hidden-comment', moderationStatus: 'hidden', post: publicPost },
+    ] as unknown as Comment[];
+
+    beforeEach(() => {
+      (commentRepo.find as jest.Mock).mockImplementation(async (options: any) =>
+        comments.filter((c) => matchesWhere(c, options?.where))
+      );
+      (commentRepo.findOne as jest.Mock).mockImplementation(
+        async (options: any) =>
+          comments.find((c) => matchesWhere(c, options?.where))
+      );
+    });
+
+    it('does not return a comment on a followers-only post to a non-follower', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'viewer-1',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).not.toContain('c-followers');
+    });
+
+    it('returns a comment on a followers-only post to a follower', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'viewer-2',
+        followedProfileIds: ['author-1'],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).toContain('c-followers');
+    });
+
+    it('returns a comment on a followers-only post to the post author', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'author-1',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).toContain('c-followers');
+    });
+
+    it('excludes comments on a moderator-hidden post from a normal viewer', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'viewer-1',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).not.toContain('c-hidden-post');
+    });
+
+    it('excludes comments on an unpublished scheduled post from a normal viewer', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'viewer-1',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).not.toContain('c-scheduled-post');
+    });
+
+    it('gives an anonymous viewer only public-post comments', async () => {
+      const scope: PostVisibilityScope = {
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).toEqual(['c-public']);
+    });
+
+    it('still applies the comment moderation filter on top of post visibility', async () => {
+      const scope: PostVisibilityScope = {
+        viewerProfileId: 'viewer-1',
+        followedProfileIds: [],
+        blockedProfileIds: [],
+      };
+      const result = await service.findAllVisible(undefined, scope);
+      expect(result.map((c) => c.id)).not.toContain('c-hidden-comment');
+    });
+
+    describe('findOneVisible', () => {
+      it('returns undefined when the parent post is not visible to the viewer', async () => {
+        const scope: PostVisibilityScope = {
+          viewerProfileId: 'viewer-1',
+          followedProfileIds: [],
+          blockedProfileIds: [],
+        };
+        const result = await service.findOneVisible(
+          'c-followers',
+          undefined,
+          scope
+        );
+        expect(result).toBeUndefined();
+      });
+
+      it('returns the comment when the parent post is visible to the viewer', async () => {
+        const scope: PostVisibilityScope = {
+          viewerProfileId: 'viewer-2',
+          followedProfileIds: ['author-1'],
+          blockedProfileIds: [],
+        };
+        const result = await service.findOneVisible(
+          'c-followers',
+          undefined,
+          scope
+        );
+        expect(result?.id).toBe('c-followers');
       });
     });
   });

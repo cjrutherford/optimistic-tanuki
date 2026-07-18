@@ -3,11 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { OAuthController } from './oauth.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { HttpException, Logger } from '@nestjs/common';
+import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { of } from 'rxjs';
 import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { AuthCommands } from '@optimistic-tanuki/constants';
 import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { AuthGuard } from '../../auth/auth.guard';
 
 describe('OAuthController', () => {
   let controller: OAuthController;
@@ -81,7 +83,10 @@ describe('OAuthController', () => {
         },
         Logger,
       ],
-    }).compile();
+    })
+      .overrideGuard(AuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<OAuthController>(OAuthController);
   });
@@ -264,7 +269,7 @@ describe('OAuthController', () => {
         provider: 'google' as any,
         providerUserId: 'google-123',
       };
-      const result = await controller.linkProvider(linkRequest, user);
+      const result = await controller.linkProvider(linkRequest, { user });
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.LinkProvider },
@@ -290,9 +295,9 @@ describe('OAuthController', () => {
         provider: 'google' as any,
         providerUserId: 'google-123',
       };
-      await expect(controller.linkProvider(linkRequest, user)).rejects.toThrow(
-        HttpException
-      );
+      await expect(
+        controller.linkProvider(linkRequest, { user })
+      ).rejects.toThrow(HttpException);
     });
   });
 
@@ -313,7 +318,7 @@ describe('OAuthController', () => {
         iat: 0,
       };
       const unlinkRequest = { provider: 'google' as any };
-      const result = await controller.unlinkProvider(unlinkRequest, user);
+      const result = await controller.unlinkProvider(unlinkRequest, { user });
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.UnlinkProvider },
@@ -337,7 +342,7 @@ describe('OAuthController', () => {
       };
       const unlinkRequest = { provider: 'google' as any };
       await expect(
-        controller.unlinkProvider(unlinkRequest, user)
+        controller.unlinkProvider(unlinkRequest, { user })
       ).rejects.toThrow(HttpException);
     });
   });
@@ -359,7 +364,7 @@ describe('OAuthController', () => {
         exp: 0,
         iat: 0,
       };
-      const result = await controller.getLinkedProviders(user);
+      const result = await controller.getLinkedProviders({ user });
 
       expect(authClient.send).toHaveBeenCalledWith(
         { cmd: AuthCommands.GetLinkedProviders },
@@ -381,9 +386,37 @@ describe('OAuthController', () => {
         exp: 0,
         iat: 0,
       };
-      await expect(controller.getLinkedProviders(user)).rejects.toThrow(
+      await expect(controller.getLinkedProviders({ user })).rejects.toThrow(
         HttpException
       );
+    });
+  });
+
+  describe('account-mutating identity routes require AuthGuard', () => {
+    // These routes used to have NO guard at all (not even @Public()), so an
+    // unsigned/forged JWT read via the unverified `@User()` decorator could
+    // link/unlink providers or list linked providers for an arbitrary victim.
+    // AuthGuard must now be present so a bad signature is rejected with 401
+    // before the handler (and its guard-verified `request.user`) ever runs.
+    it('guards link/unlink/providers with AuthGuard', () => {
+      expect(
+        Reflect.getMetadata(
+          GUARDS_METADATA,
+          OAuthController.prototype.linkProvider
+        )
+      ).toEqual(expect.arrayContaining([AuthGuard]));
+      expect(
+        Reflect.getMetadata(
+          GUARDS_METADATA,
+          OAuthController.prototype.unlinkProvider
+        )
+      ).toEqual(expect.arrayContaining([AuthGuard]));
+      expect(
+        Reflect.getMetadata(
+          GUARDS_METADATA,
+          OAuthController.prototype.getLinkedProviders
+        )
+      ).toEqual(expect.arrayContaining([AuthGuard]));
     });
   });
 });

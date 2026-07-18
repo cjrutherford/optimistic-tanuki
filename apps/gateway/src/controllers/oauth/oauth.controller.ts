@@ -10,6 +10,7 @@ import {
   Query,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
@@ -40,7 +41,7 @@ import {
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { Public } from '../../decorators/public.decorator';
-import { User, UserDetails } from '../../decorators/user.decorator';
+import { AuthGuard } from '../../auth/auth.guard';
 import {
   RoleInitBuilder,
   RoleInitService,
@@ -371,6 +372,13 @@ export class OAuthController {
     }
   }
 
+  // Not @Public(): this mutates account state, so AuthGuard MUST reject an
+  // anonymous or invalid-signature request before the handler runs. The
+  // acting identity is read from the guard-verified `request.user` — never
+  // from the `@User()` decorator, which decodes the token WITHOUT verifying
+  // its signature and would let a forged userId link a provider onto an
+  // arbitrary victim's account.
+  @UseGuards(AuthGuard)
   @Post('link')
   @ApiBearerAuth()
   @ApiOperation({
@@ -382,16 +390,17 @@ export class OAuthController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async linkProvider(
     @Body() data: Omit<LinkProviderRequest, 'userId'>,
-    @User() user: UserDetails
+    @Req() req: { user: { userId: string } }
   ) {
     try {
+      const userId = req.user.userId;
       this.logger.debug(
-        `Linking provider=${data.provider} to userId=${user.userId}`
+        `Linking provider=${data.provider} to userId=${userId}`
       );
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.LinkProvider },
-          { ...data, userId: user.userId }
+          { ...data, userId }
         )
       );
     } catch (error) {
@@ -403,6 +412,11 @@ export class OAuthController {
     }
   }
 
+  // Not @Public(): this mutates account state, so AuthGuard MUST reject an
+  // anonymous or invalid-signature request before the handler runs. See
+  // linkProvider above for why identity comes from `request.user`, not
+  // `@User()`.
+  @UseGuards(AuthGuard)
   @Post('unlink')
   @ApiBearerAuth()
   @ApiOperation({
@@ -414,16 +428,17 @@ export class OAuthController {
   @ApiResponse({ status: 500, description: 'Internal server error.' })
   async unlinkProvider(
     @Body() data: Omit<UnlinkProviderRequest, 'userId'>,
-    @User() user: UserDetails
+    @Req() req: { user: { userId: string } }
   ) {
     try {
+      const userId = req.user.userId;
       this.logger.debug(
-        `Unlinking provider=${data.provider} from userId=${user.userId}`
+        `Unlinking provider=${data.provider} from userId=${userId}`
       );
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.UnlinkProvider },
-          { ...data, userId: user.userId }
+          { ...data, userId }
         )
       );
     } catch (error) {
@@ -435,6 +450,11 @@ export class OAuthController {
     }
   }
 
+  // Not @Public(): reveals which providers are linked to an account, so
+  // AuthGuard MUST reject an anonymous or invalid-signature request before
+  // the handler runs. See linkProvider above for why identity comes from
+  // `request.user`, not `@User()`.
+  @UseGuards(AuthGuard)
   @Get('providers')
   @ApiBearerAuth()
   @ApiOperation({
@@ -447,13 +467,14 @@ export class OAuthController {
     description: 'Linked providers retrieved successfully.',
   })
   @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async getLinkedProviders(@User() user: UserDetails) {
+  async getLinkedProviders(@Req() req: { user: { userId: string } }) {
     try {
-      this.logger.debug(`Getting linked providers for userId=${user.userId}`);
+      const userId = req.user.userId;
+      this.logger.debug(`Getting linked providers for userId=${userId}`);
       return await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.GetLinkedProviders },
-          { userId: user.userId }
+          { userId }
         )
       );
     } catch (error) {

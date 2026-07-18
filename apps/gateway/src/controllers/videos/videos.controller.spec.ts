@@ -75,6 +75,28 @@ describe('VideosController', () => {
     );
   });
 
+  it('forwards the guard-verified viewer profile id on single-video lookup', async () => {
+    const req = { user: { profileId: 'viewer-9' } } as any;
+
+    await expect(controller.findOneVideo(req, 'video-1')).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.FIND_ONE_VIDEO },
+      { id: 'video-1', viewerProfileId: 'viewer-9' }
+    );
+  });
+
+  it('forwards an undefined viewer id for anonymous single-video lookup', async () => {
+    const req = {} as any;
+
+    await expect(controller.findOneVideo(req, 'video-1')).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.FIND_ONE_VIDEO },
+      { id: 'video-1', viewerProfileId: undefined }
+    );
+  });
+
   it('forwards processing-complete updates for internal worker callbacks', async () => {
     await expect(
       controller.completeVideoProcessing('video-1', {

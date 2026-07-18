@@ -11,6 +11,9 @@ services:
     transport: TCP
     host: ot_profile
     port: 3002
+  classifieds:
+    host: ot_classifieds
+    port: 3017
 lemonSqueezy:
   default:
     apiKey: ''

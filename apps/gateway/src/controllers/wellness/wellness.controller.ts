@@ -7,10 +7,12 @@ import {
   Body,
   Param,
   Query,
+  Req,
   Inject,
   HttpException,
   HttpStatus,
   Logger,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -21,8 +23,9 @@ import {
   WellnessAiCommands,
 } from '@optimistic-tanuki/constants';
 import { AppScope } from '../../decorators/appscope.decorator';
-import { User } from '../../decorators/user.decorator';
 import { LongRunning } from '../../decorators/request-timeout.decorator';
+import { AuthGuard } from '../../auth/auth.guard';
+import { Public } from '../../decorators/public.decorator';
 
 @ApiTags('wellness')
 @Controller('wellness')
@@ -175,6 +178,15 @@ export class WellnessController {
     }
   }
 
+  // Public so `?publicOnly=true` browsing works with no token at all, but
+  // AuthGuard now runs to OPTIONALLY attach a signature-verified
+  // `request.user` when a valid token is present. The owning userId comes
+  // from that guard-verified context — never from the `@User()` decorator,
+  // which decodes the token WITHOUT verifying its signature (and, separately,
+  // ignored the `'userId'` selector entirely, handing back the whole raw
+  // payload) and would let a forged userId attribute an entry to a victim.
+  @Public()
+  @UseGuards(AuthGuard)
   @Post('daily-four')
   @ApiOperation({ summary: 'Create a Daily Four entry' })
   @ApiResponse({ status: 201, description: 'Entry created successfully' })
@@ -187,10 +199,11 @@ export class WellnessController {
       plannedPleasurable: string;
       public?: boolean;
     },
-    @User('userId') userId: string,
+    @Req() req: { user?: { userId?: string } },
     @AppScope() appScope: string
   ) {
     try {
+      const userId = req.user?.userId;
       this.logger.log(
         `Creating DailyFour for user ${userId} in scope ${appScope}`
       );
@@ -209,10 +222,14 @@ export class WellnessController {
     }
   }
 
+  // Public + guard-verified-optional identity, same rationale as
+  // createDailyFour above.
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('daily-four')
   @ApiOperation({ summary: 'Get Daily Four entries' })
   async getDailyFour(
-    @User('userId') userId: string,
+    @Req() req: { user?: { userId?: string } },
     @Query('publicOnly') publicOnly?: string
   ) {
     try {
@@ -227,7 +244,7 @@ export class WellnessController {
       return await firstValueFrom(
         this.wellnessClient.send(
           { cmd: WellnessCommands.GET_DAILY_FOUR_BY_USER },
-          userId
+          req.user?.userId
         )
       );
     } catch (error) {
@@ -287,6 +304,10 @@ export class WellnessController {
     }
   }
 
+  // Public + guard-verified-optional identity, same rationale as
+  // createDailyFour above.
+  @Public()
+  @UseGuards(AuthGuard)
   @Post('daily-six')
   @ApiOperation({ summary: 'Create a Daily Six entry' })
   @ApiResponse({ status: 201, description: 'Entry created successfully' })
@@ -300,10 +321,11 @@ export class WellnessController {
       gratitude: string;
       public?: boolean;
     },
-    @User('userId') userId: string,
+    @Req() req: { user?: { userId?: string } },
     @AppScope() appScope: string
   ) {
     try {
+      const userId = req.user?.userId;
       this.logger.log(
         `Creating DailySix for user ${userId} in scope ${appScope}`
       );
@@ -322,10 +344,14 @@ export class WellnessController {
     }
   }
 
+  // Public + guard-verified-optional identity, same rationale as
+  // createDailyFour above.
+  @Public()
+  @UseGuards(AuthGuard)
   @Get('daily-six')
   @ApiOperation({ summary: 'Get Daily Six entries' })
   async getDailySix(
-    @User('userId') userId: string,
+    @Req() req: { user?: { userId?: string } },
     @Query('publicOnly') publicOnly?: string
   ) {
     try {
@@ -340,7 +366,7 @@ export class WellnessController {
       return await firstValueFrom(
         this.wellnessClient.send(
           { cmd: WellnessCommands.GET_DAILY_SIX_BY_USER },
-          userId
+          req.user?.userId
         )
       );
     } catch (error) {

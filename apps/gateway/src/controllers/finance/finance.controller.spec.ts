@@ -13,6 +13,7 @@ import {
   FinanceTenantCommands,
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
+  FinCommanderPlanCommands,
 } from '@optimistic-tanuki/constants';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 
@@ -405,6 +406,36 @@ describe('FinanceController', () => {
         invoiceId: 'invoice-1',
         amount: 250,
         customerName: 'Acme Bakery',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      })
+    );
+  });
+
+  it('forwards the server-derived profileId alongside the client-supplied tenant header on fin-commander plan creation', async () => {
+    financeClient.send.mockReturnValue(of({ id: 'plan-1' }));
+
+    await (controller as any).createFinCommanderPlan(
+      { userId: 'user-1', profileId: 'profile-1' } as any,
+      'finance',
+      'tenant-1',
+      { name: 'Runway plan' }
+    );
+
+    // The finance microservice is the authority on whether profile-1
+    // actually belongs to tenant-1 (see finance-tenant.service.ts
+    // assertTenantAccess) — the gateway's job is only to forward both
+    // the authenticated profileId and the client-controlled tenant
+    // header so the microservice chokepoint can verify membership.
+    // A client cannot spoof profileId (it's derived from the auth
+    // token), only tenantId, which is exactly the vector the
+    // service-side check closes.
+    expect(financeClient.send).toHaveBeenCalledWith(
+      { cmd: FinCommanderPlanCommands.CREATE },
+      expect.objectContaining({
+        name: 'Runway plan',
         userId: 'user-1',
         profileId: 'profile-1',
         tenantId: 'tenant-1',

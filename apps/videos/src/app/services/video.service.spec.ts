@@ -93,3 +93,59 @@ describe('VideoService processing lifecycle', () => {
     );
   });
 });
+
+describe('VideoService.findOneVisible visibility scoping', () => {
+  let videoRepository: jest.Mocked<Repository<Video>>;
+  let channelRepository: jest.Mocked<Repository<Channel>>;
+  let service: VideoService;
+
+  const videoWith = (
+    visibility: Video['visibility'],
+    ownerProfileId: string
+  ): Video =>
+    ({
+      id: 'video-1',
+      visibility,
+      channel: { id: 'channel-1', profileId: ownerProfileId } as Channel,
+    } as Video);
+
+  beforeEach(() => {
+    videoRepository = {
+      findOne: jest.fn(),
+    } as unknown as jest.Mocked<Repository<Video>>;
+    channelRepository = {} as unknown as jest.Mocked<Repository<Channel>>;
+    service = new VideoService(videoRepository, channelRepository);
+  });
+
+  it('returns a public video to an anonymous viewer', async () => {
+    videoRepository.findOne.mockResolvedValue(videoWith('public', 'owner-1'));
+    expect(await service.findOneVisible('video-1')).not.toBeNull();
+  });
+
+  it('returns an unlisted video to anyone with the id (by-link access)', async () => {
+    videoRepository.findOne.mockResolvedValue(videoWith('unlisted', 'owner-1'));
+    expect(
+      await service.findOneVisible('video-1', 'someone-else')
+    ).not.toBeNull();
+  });
+
+  it('hides a private video from an anonymous viewer', async () => {
+    videoRepository.findOne.mockResolvedValue(videoWith('private', 'owner-1'));
+    expect(await service.findOneVisible('video-1')).toBeNull();
+  });
+
+  it('hides a private video from a non-owner', async () => {
+    videoRepository.findOne.mockResolvedValue(videoWith('private', 'owner-1'));
+    expect(await service.findOneVisible('video-1', 'attacker-2')).toBeNull();
+  });
+
+  it('returns a private video to its owner', async () => {
+    videoRepository.findOne.mockResolvedValue(videoWith('private', 'owner-1'));
+    expect(await service.findOneVisible('video-1', 'owner-1')).not.toBeNull();
+  });
+
+  it('returns null for a missing video', async () => {
+    videoRepository.findOne.mockResolvedValue(null);
+    expect(await service.findOneVisible('missing', 'owner-1')).toBeNull();
+  });
+});

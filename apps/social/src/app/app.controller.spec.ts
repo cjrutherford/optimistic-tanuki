@@ -67,6 +67,8 @@ describe('AppController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
+      findAllVisible: jest.fn(),
+      findOneVisible: jest.fn(),
       update: jest.fn(),
       remove: jest.fn(),
     } as any;
@@ -405,17 +407,65 @@ describe('AppController', () => {
   });
 
   it('should find all comments', async () => {
-    commentService.findAll.mockResolvedValue(['comment']);
+    commentService.findAllVisible.mockResolvedValue(['comment']);
     const result = await controller.findAllComments({} as any);
     expect(result).toEqual(['comment']);
-    expect(commentService.findAll).toHaveBeenCalled();
+    expect(commentService.findAllVisible).toHaveBeenCalledWith(
+      expect.anything(),
+      { followedProfileIds: [], blockedProfileIds: [] }
+    );
   });
 
   it('should find one comment', async () => {
-    commentService.findOne.mockResolvedValue('comment');
+    commentService.findOneVisible.mockResolvedValue('comment');
     const result = await controller.findOneComment('1', {} as any);
     expect(result).toBe('comment');
-    expect(commentService.findOne).toHaveBeenCalled();
+    expect(commentService.findOneVisible).toHaveBeenCalledWith(
+      '1',
+      expect.anything(),
+      { followedProfileIds: [], blockedProfileIds: [] }
+    );
+  });
+
+  it('scopes findAllComments to the viewer via buildPostVisibilityScope when viewerProfileId is provided', async () => {
+    commentService.findAllVisible.mockResolvedValue([]);
+    followService.getFollowing.mockResolvedValue([
+      { followeeId: 'author-1' } as any,
+    ]);
+    const privacyService = (controller as any).privacyService;
+    privacyService.getBlockedUsers.mockResolvedValue([]);
+
+    await controller.findAllComments({
+      postId: 'p1',
+      viewerProfileId: 'viewer-1',
+    } as any);
+
+    expect(followService.getFollowing).toHaveBeenCalledWith('viewer-1');
+    expect(privacyService.getBlockedUsers).toHaveBeenCalledWith('viewer-1');
+    expect(privacyService.getBlockersOf).toHaveBeenCalledWith('viewer-1');
+    expect(commentService.findAllVisible).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        viewerProfileId: 'viewer-1',
+        followedProfileIds: ['author-1'],
+      })
+    );
+  });
+
+  it('scopes findOneComment to the viewer via buildPostVisibilityScope when viewerProfileId is provided', async () => {
+    commentService.findOneVisible.mockResolvedValue(undefined);
+    followService.getFollowing.mockResolvedValue([]);
+    const privacyService = (controller as any).privacyService;
+    privacyService.getBlockedUsers.mockResolvedValue([]);
+
+    const result = await controller.findOneComment('c1', {} as any, 'viewer-1');
+
+    expect(result).toBeUndefined();
+    expect(commentService.findOneVisible).toHaveBeenCalledWith(
+      'c1',
+      expect.anything(),
+      expect.objectContaining({ viewerProfileId: 'viewer-1' })
+    );
   });
 
   it('should update a comment', async () => {

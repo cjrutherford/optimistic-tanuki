@@ -12,7 +12,7 @@ import {
   FinanceTenantDto,
   FinanceTenantMemberDto,
 } from '@optimistic-tanuki/models';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { FinanceTenant } from '../../entities/finance-tenant.entity';
 import { FinanceTenantMember } from '../../entities/finance-tenant-member.entity';
 import { FinanceScope } from './finance-scope';
@@ -69,8 +69,18 @@ export class FinanceTenantService {
     };
   }
 
+  /**
+   * Resolves the tenant a scope should act on. Tries the profile's *owned*
+   * tenant(s) first (existing, deterministic oldest-first behavior). If
+   * none is owned, falls back to a tenant the profile is an *active
+   * member* of — this keeps `resolveTenant` consistent with
+   * `assertTenantAccess`'s owner-or-active-member model, so a legitimate
+   * non-owner member doesn't get a false 404 from `getCurrentTenant` /
+   * `listMembers` / the create-fallback in `withResolvedTenant` after
+   * having already passed the tenant-access chokepoint.
+   */
   private async resolveTenant(scope: FinanceScope): Promise<FinanceTenant> {
-    const tenant = await this.tenantRepo.findOne({
+    const ownedTenant = await this.tenantRepo.findOne({
       where: {
         ...(scope.tenantId ? { id: scope.tenantId } : {}),
         ...(scope.profileId ? { profileId: scope.profileId } : {}),
@@ -82,11 +92,81 @@ export class FinanceTenantService {
       },
     });
 
-    if (!tenant) {
-      throw new NotFoundException('Active finance tenant not found');
+    if (ownedTenant) {
+      return ownedTenant;
     }
 
-    return tenant;
+    if (scope.profileId) {
+      const memberTenant = await this.resolveMemberTenant(scope);
+      if (memberTenant) {
+        return memberTenant;
+      }
+    }
+
+    throw new NotFoundException('Active finance tenant not found');
+  }
+
+  private async resolveMemberTenant(
+    scope: FinanceScope
+  ): Promise<FinanceTenant | null> {
+    const memberships =
+      (await this.tenantMemberRepo.find({
+        where: {
+          profileId: scope.profileId,
+          isActive: true,
+          ...(scope.tenantId ? { tenantId: scope.tenantId } : {}),
+        },
+      })) ?? [];
+
+    if (!memberships.length) {
+      return null;
+    }
+
+    const tenantIds = memberships.map((membership) => membership.tenantId);
+
+    return this.tenantRepo.findOne({
+      where: {
+        id: In(tenantIds),
+        ...(scope.appScope ? { appScope: scope.appScope } : {}),
+        isActive: true,
+      },
+      order: {
+        createdAt: 'ASC',
+      },
+    });
+  }
+
+  /**
+   * Verifies that a profile is allowed to act within a given finance
+   * tenant, either because it owns the tenant or because it holds an
+   * active membership on it. This is the server-side chokepoint that
+   * closes the cross-tenant hole left open by trusting the client-supplied
+   * `x-finance-tenant-id` header: every handler that resolves a scope with
+   * both a tenantId and a profileId must call this before using the scope.
+   *
+   * A nonexistent tenant and a tenant the profile has no relationship to
+   * are treated identically (404), so the response never confirms whether
+   * a given tenant id exists to a caller who has no access to it.
+   */
+  async assertTenantAccess(profileId: string, tenantId: string): Promise<void> {
+    try {
+      const [ownedTenant, membership] = await Promise.all([
+        this.tenantRepo.findOne({
+          where: { id: tenantId, profileId, isActive: true },
+        }),
+        this.tenantMemberRepo.findOne({
+          where: { tenantId, profileId, isActive: true },
+        }),
+      ]);
+
+      if (!ownedTenant && !membership) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
   }
 
   async getCurrentTenant(scope: FinanceScope): Promise<FinanceTenantDto> {

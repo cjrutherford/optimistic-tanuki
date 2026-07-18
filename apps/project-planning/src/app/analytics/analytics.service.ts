@@ -13,6 +13,14 @@ import { TaskTimeEntry } from '../entities/task-time-entry.entity';
 import { TaskTag } from '../entities/task-tag.entity';
 import { Project } from '../entities/project.entity';
 
+/**
+ * SECURITY: this service performs NO ownership/membership checks — with no
+ * `projectId` filter it aggregates data across every project in the system.
+ * It is intentionally NOT wired into the gateway (`AnalyticsCommands` has no
+ * HTTP route). Before exposing it externally, add `requestingUserId` scoping
+ * via the helpers in ../common/project-access.util.ts, mirroring the other
+ * entity services.
+ */
 @Injectable()
 export class AnalyticsService {
   constructor(

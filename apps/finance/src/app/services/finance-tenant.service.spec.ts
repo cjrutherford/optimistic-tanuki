@@ -68,6 +68,47 @@ describe('FinanceTenantService', () => {
     });
   });
 
+  it('resolves an active non-owner member to their tenant instead of 404ing (regression guard)', async () => {
+    // No owned tenant for this profile — resolveTenant's first (owner)
+    // lookup must miss so the membership fallback kicks in.
+    tenantRepo.findOne.mockResolvedValueOnce(null);
+    tenantMemberRepo.find.mockResolvedValue([
+      {
+        id: 'member-1',
+        tenantId: 'tenant-9',
+        profileId: 'member-profile',
+        role: 'finance_member',
+        isActive: true,
+      },
+    ] as FinanceTenantMember[]);
+    tenantRepo.findOne.mockResolvedValueOnce({
+      id: 'tenant-9',
+      name: 'Someone else’s Household',
+      profileId: 'owner-profile',
+      appScope: 'finance',
+    } as FinanceTenant);
+
+    const tenant = await service.getCurrentTenant({
+      tenantId: 'tenant-9',
+      profileId: 'member-profile',
+      appScope: 'finance',
+    });
+
+    expect(tenantMemberRepo.find).toHaveBeenCalledWith({
+      where: {
+        profileId: 'member-profile',
+        isActive: true,
+        tenantId: 'tenant-9',
+      },
+    });
+    expect(tenant).toEqual({
+      id: 'tenant-9',
+      name: 'Someone else’s Household',
+      profileId: 'owner-profile',
+      appScope: 'finance',
+    });
+  });
+
   it('lists members only for the active tenant', async () => {
     tenantRepo.findOne.mockResolvedValue({
       id: 'tenant-1',
@@ -277,5 +318,88 @@ describe('FinanceTenantService', () => {
           error: 'Internal Server Error',
         });
       });
+  });
+
+  describe('assertTenantAccess', () => {
+    it('allows the profile that owns the tenant', async () => {
+      tenantRepo.findOne.mockResolvedValue({
+        id: 'tenant-1',
+        name: 'Household',
+        profileId: 'profile-1',
+        appScope: 'finance',
+      } as FinanceTenant);
+      tenantMemberRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.assertTenantAccess('profile-1', 'tenant-1')
+      ).resolves.toBeUndefined();
+
+      expect(tenantRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'tenant-1', profileId: 'profile-1', isActive: true },
+      });
+      expect(tenantMemberRepo.findOne).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', profileId: 'profile-1', isActive: true },
+      });
+    });
+
+    it('allows a profile with an active membership on a tenant it does not own', async () => {
+      tenantRepo.findOne.mockResolvedValue(null);
+      tenantMemberRepo.findOne.mockResolvedValue({
+        id: 'member-1',
+        tenantId: 'tenant-1',
+        profileId: 'profile-2',
+        role: 'finance_member',
+        isActive: true,
+      } as FinanceTenantMember);
+
+      await expect(
+        service.assertTenantAccess('profile-2', 'tenant-1')
+      ).resolves.toBeUndefined();
+    });
+
+    it('denies a profile whose membership on the tenant is inactive', async () => {
+      tenantRepo.findOne.mockResolvedValue(null);
+      tenantMemberRepo.findOne.mockResolvedValue(null);
+
+      const promise = service.assertTenantAccess('profile-2', 'tenant-1');
+
+      await expect(promise).rejects.toBeInstanceOf(RpcException);
+      await expect(promise).rejects.toMatchObject({
+        error: {
+          statusCode: 404,
+          message: 'Finance tenant not found or access denied',
+          error: 'Not Found',
+        },
+      });
+
+      expect(tenantMemberRepo.findOne).toHaveBeenCalledWith({
+        where: { tenantId: 'tenant-1', profileId: 'profile-2', isActive: true },
+      });
+    });
+
+    it('denies a profile with no relationship to the tenant', async () => {
+      tenantRepo.findOne.mockResolvedValue(null);
+      tenantMemberRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.assertTenantAccess('profile-3', 'tenant-1')
+      ).rejects.toMatchObject({ constructor: RpcException });
+    });
+
+    it('denies access to a tenant that does not exist, indistinguishably from access-denied', async () => {
+      tenantRepo.findOne.mockResolvedValue(null);
+      tenantMemberRepo.findOne.mockResolvedValue(null);
+
+      const promise = service.assertTenantAccess('profile-1', 'unknown-tenant');
+
+      await expect(promise).rejects.toBeInstanceOf(RpcException);
+      await expect(promise).rejects.toMatchObject({
+        error: {
+          statusCode: 404,
+          message: 'Finance tenant not found or access denied',
+          error: 'Not Found',
+        },
+      });
+    });
   });
 });

@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -185,12 +186,19 @@ export class PostController {
 
   /**
    * Get a single post by ID (public for published, protected for drafts)
+   *
+   * Public so anonymous readers can view published posts, but the class-level
+   * AuthGuard still runs to OPTIONALLY attach a signature-verified
+   * `request.user` when a valid token is present. The draft-read permission
+   * check below MUST use that guard-verified profileId — never the raw
+   * `@User()` decode, which does not verify the token's signature and would
+   * let a forged `profileId` (e.g. copied from an admin) unlock drafts.
    */
   @Get('/:id')
   @Public()
   async getPost(
     @Param('id') id: string,
-    @User() user: UserDetails,
+    @Req() req: { user?: { profileId?: string } },
     @Headers('x-ot-appscope') appScope: string
   ) {
     try {
@@ -204,12 +212,13 @@ export class PostController {
 
       // If it's a draft, check permissions
       if (post.isDraft) {
-        if (!user || !user.profileId) {
+        const profileId = req.user?.profileId;
+        if (!profileId) {
           throw new HttpException('Post not found', 404);
         }
 
         const canReadDrafts = await this.permissionsProxy.checkPermission(
-          user.profileId,
+          profileId,
           'blog.post.read',
           appScope || 'digital-homestead'
         );

@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Req,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -161,11 +162,24 @@ export class VideosController {
     );
   }
 
+  // Public so anonymous viewers and unlisted-by-link work, but AuthGuard still
+  // runs to OPTIONALLY attach a signature-verified `request.user` when a valid
+  // token is present. We read the viewer id from that guard-verified context —
+  // never from the `@User()` decorator, which decodes the token WITHOUT
+  // verifying its signature and would let a forged `profileId` unlock another
+  // owner's private video. Private videos are filtered server-side by owner.
   @Public()
+  @UseGuards(AuthGuard)
   @Get(':id')
-  async findOneVideo(@Param('id') id: string) {
+  async findOneVideo(
+    @Req() req: { user?: { profileId?: string } },
+    @Param('id') id: string
+  ) {
     return await firstValueFrom(
-      this.videosService.send({ cmd: VideoCommands.FIND_ONE_VIDEO }, id)
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_ONE_VIDEO },
+        { id, viewerProfileId: req.user?.profileId }
+      )
     );
   }
 
