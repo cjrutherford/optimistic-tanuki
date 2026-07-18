@@ -85,15 +85,67 @@ describe('LivePlaybackComponent', () => {
     expect(videoService.issueLiveToken).toHaveBeenCalledWith('ot-live', {
       viewerLat: 32.0809,
       viewerLng: -81.0912,
+      viewerSessionId: expect.any(String),
+      viewerAccuracyMeters: undefined,
+      observedAt: expect.any(String),
     });
+    const issueLocation = videoService.issueLiveToken.mock.calls[0][1];
     expect(videoService.validateLiveToken).toHaveBeenCalledWith(
       'ot-live',
       'signed-token',
-      { viewerLat: 32.0809, viewerLng: -81.0912 }
+      issueLocation
     );
     expect(fixture.nativeElement.textContent).toContain('Live now');
     expect(fixture.nativeElement.querySelector('video')?.src).toBe(
       'https://media.example/live.m3u8'
+    );
+  });
+
+  it('shows suspicious locality information without blocking live playback', async () => {
+    videoService.getChannelFeed.mockReturnValue(
+      of({ currentMode: 'live', liveHandoff: { status: 'ready' } } as any)
+    );
+    videoService.issueLiveToken.mockReturnValue(
+      of({
+        status: 'ready',
+        token: 'signed-token',
+        sessionId: 'session-1',
+        playbackUrl: null,
+        expiresAt: null,
+        localityTrust: {
+          status: 'suspicious',
+          confidenceScore: 20,
+          reasons: ['rapid-displacement'],
+          observedAt: '2026-07-18T18:00:00.000Z',
+          action: 'observe',
+        },
+      } as any)
+    );
+    videoService.validateLiveToken.mockReturnValue(
+      of({
+        valid: true,
+        sessionId: 'session-1',
+        playbackUrl: 'https://media.example/live.m3u8',
+        localityTrust: {
+          status: 'suspicious',
+          confidenceScore: 20,
+          reasons: ['rapid-displacement'],
+          observedAt: '2026-07-18T18:00:00.000Z',
+          action: 'observe',
+        },
+      } as any)
+    );
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Live now');
+    expect(fixture.nativeElement.textContent).toContain(
+      'Locality signals need review'
+    );
+    expect(fixture.nativeElement.textContent).not.toContain(
+      'This live session has ended.'
     );
   });
 

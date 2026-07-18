@@ -92,17 +92,23 @@ community/channel target and an on-page creative, are rendered.
    with the same latitude and longitude to
    `POST /api/videos/channels/<channel-slug>/live/token/validate` and confirm
    it is valid. Change one character in the token and confirm validation fails.
+8. The live handoff now sends an opaque browser session identifier, accuracy,
+   and observation timestamp. These are recorded only for trust assessment:
+   a `suspicious` response displays an informational message and does not
+   interrupt playback.
 
 For API-level validation, use the public feed endpoint followed by:
 
 ```bash
 curl -X POST http://localhost:3000/api/videos/channels/<channel-slug>/live/token \
   -H 'content-type: application/json' \
-  -d '{"viewerLat":32.0809,"viewerLng":-81.0912}'
+  -d '{"viewerLat":32.0809,"viewerLng":-81.0912,"viewerSessionId":"evaluator-session","viewerAccuracyMeters":15,"observedAt":"2026-07-18T18:00:00.000Z"}'
 ```
 
 The token endpoint returns `status: ready` only for an active live session
-inside its channel-anchor radius. Use the same coordinate pair when validating:
+inside its channel-anchor radius. A returned `localityTrust` object is
+observe-only in this slice and does not alter that decision. Use the same
+coordinate pair and telemetry values when validating:
 
 ```bash
 curl -X POST http://localhost:3000/api/videos/channels/<channel-slug>/live/token/validate \

@@ -357,7 +357,14 @@ export class VideosController {
   @Post('channels/:slugOrId/live/token')
   async issueLiveToken(
     @Param('slugOrId') slugOrId: string,
-    @Body() body: { viewerLat?: number; viewerLng?: number }
+    @Body()
+    body: {
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
   ) {
     const channel = await firstValueFrom(
       this.videosService.send(
@@ -368,7 +375,14 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
-        { ...body, communityId: channel.communityId }
+        {
+          communityId: channel.communityId,
+          viewerLat: body.viewerLat,
+          viewerLng: body.viewerLng,
+          viewerSessionId: body.viewerSessionId,
+          viewerAccuracyMeters: body.viewerAccuracyMeters,
+          observedAt: body.observedAt,
+        }
       )
     );
   }
@@ -378,7 +392,14 @@ export class VideosController {
   async validateLiveToken(
     @Param('slugOrId') slugOrId: string,
     @Body()
-    body: { token: string; viewerLat?: number; viewerLng?: number }
+    body: {
+      token: string;
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
   ) {
     const channel = await firstValueFrom(
       this.videosService.send(
@@ -389,7 +410,15 @@ export class VideosController {
     return await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.VALIDATE_LIVE_TOKEN },
-        { ...body, communityId: channel.communityId }
+        {
+          communityId: channel.communityId,
+          token: body.token,
+          viewerLat: body.viewerLat,
+          viewerLng: body.viewerLng,
+          viewerSessionId: body.viewerSessionId,
+          viewerAccuracyMeters: body.viewerAccuracyMeters,
+          observedAt: body.observedAt,
+        }
       )
     );
   }

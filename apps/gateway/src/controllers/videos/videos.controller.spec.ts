@@ -158,7 +158,12 @@ describe('VideosController', () => {
       controller.issueLiveToken('ot-live', {
         viewerLat: 32.0809,
         viewerLng: -81.0912,
-      })
+        viewerSessionId: 'viewer-session-1',
+        viewerAccuracyMeters: 12,
+        observedAt: '2026-07-08T18:00:00.000Z',
+        communityId: 'other-community',
+        unexpected: 'not-forwarded',
+      } as any)
     ).resolves.toEqual({
       status: 'ready',
       sessionId: 'session-1',
@@ -167,7 +172,14 @@ describe('VideosController', () => {
 
     expect(videosService.send).toHaveBeenLastCalledWith(
       { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
-      { communityId: 'community-1', viewerLat: 32.0809, viewerLng: -81.0912 }
+      {
+        communityId: 'community-1',
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+        viewerSessionId: 'viewer-session-1',
+        viewerAccuracyMeters: 12,
+        observedAt: '2026-07-08T18:00:00.000Z',
+      }
     );
   });
 
@@ -204,7 +216,12 @@ describe('VideosController', () => {
         token: 'signed-token',
         viewerLat: 32.0809,
         viewerLng: -81.0912,
-      })
+        viewerSessionId: 'viewer-session-1',
+        viewerAccuracyMeters: 12,
+        observedAt: '2026-07-08T18:00:00.000Z',
+        communityId: 'other-community',
+        unexpected: 'not-forwarded',
+      } as any)
     ).resolves.toEqual({ valid: true, sessionId: 'session-1' });
 
     expect(videosService.send).toHaveBeenLastCalledWith(
@@ -214,6 +231,9 @@ describe('VideosController', () => {
         token: 'signed-token',
         viewerLat: 32.0809,
         viewerLng: -81.0912,
+        viewerSessionId: 'viewer-session-1',
+        viewerAccuracyMeters: 12,
+        observedAt: '2026-07-08T18:00:00.000Z',
       }
     );
   });

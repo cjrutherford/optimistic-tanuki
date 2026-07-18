@@ -732,6 +732,27 @@ services:
         'main.js',
       ]
 
+  locality:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/locality:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
   store:
     build:
       context: .
@@ -1293,6 +1314,8 @@ services:
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-secret}
     depends_on:
       livekit:
+        condition: service_started
+      locality:
         condition: service_started
     command:
       [

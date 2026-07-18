@@ -739,7 +739,7 @@ the media delivery and locality trust work that follows.
 
 ### Slice 20: Proof-of-locality and anti-spoofing foundations
 
-**Status:** Planned
+**Status:** Done
 
 **Goal:** Start the locality trust model without overcommitting to the full QR
 system immediately.
@@ -749,6 +749,14 @@ Deliverables:
 - telemetry validation primitives
 - reputation/locality confidence model shape
 - policy hooks for suspicious location changes
+
+Implementation in progress July 18, 2026: a standalone `locality` TCP service
+records browser-session observations for live playback and returns
+`unverified`, `observed`, or `suspicious` assessments. Videos includes the
+assessment in signed handoff claims and responses; Gateway and MetroCast pass
+the opaque session telemetry through. This is explicitly observe-only:
+suspicious assessments and service failures never alter issuance, validation,
+or playback. QR verification and any enforcement remain Slice 21+ decisions.
 
 ### Slice 21: QR and local engagement mechanics
 

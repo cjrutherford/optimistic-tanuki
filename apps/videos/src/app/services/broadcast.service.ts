@@ -1,7 +1,10 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
+import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
+import { LocalityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   ChannelFeedDto,
   CreateProgramBlockDto,
@@ -9,6 +12,7 @@ import {
   LivePlaybackTokenDto,
   LivePlaybackTokenValidationDto,
   LiveSessionDto,
+  LocalityAssessmentDto,
   ProgramBlockDto,
   StartLiveSessionDto,
 } from '@optimistic-tanuki/models';
@@ -29,11 +33,16 @@ interface LiveTokenClaims {
   nonce: string;
   viewerLat: number;
   viewerLng: number;
+  viewerSessionId?: string;
+  localityTrust?: LocalityAssessmentDto;
 }
 
 interface ViewerLocation {
   viewerLat?: number;
   viewerLng?: number;
+  viewerSessionId?: string;
+  viewerAccuracyMeters?: number;
+  observedAt?: string;
 }
 
 @Injectable()
@@ -50,7 +59,10 @@ export class BroadcastService {
     private readonly channelRepository: Repository<Channel>,
     @Optional()
     @InjectRepository(PlaylistDecisionHistory)
-    private readonly playlistHistoryRepository?: Repository<PlaylistDecisionHistory>
+    private readonly playlistHistoryRepository?: Repository<PlaylistDecisionHistory>,
+    @Optional()
+    @Inject(ServiceTokens.LOCALITY_SERVICE)
+    private readonly localityClient?: ClientProxy
   ) {}
 
   async getFeedByCommunityId(
@@ -260,6 +272,8 @@ export class BroadcastService {
       return this.unavailableLiveToken(localityFailure);
     }
 
+    const localityTrust = await this.observeLocality(viewerLocation);
+
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
     return {
       status: 'ready',
@@ -279,8 +293,11 @@ export class BroadcastService {
         nonce: randomUUID(),
         viewerLat: viewerLocation.viewerLat!,
         viewerLng: viewerLocation.viewerLng!,
+        viewerSessionId: viewerLocation.viewerSessionId,
+        localityTrust,
       }),
       expiresAt,
+      localityTrust,
     };
   }
 
@@ -340,6 +357,12 @@ export class BroadcastService {
       return { valid: false };
     }
 
+    const localityTrust = await this.observeLocality({
+      ...viewerLocation,
+      // Preserve the telemetry subject that received the signed handoff.
+      viewerSessionId: claims.viewerSessionId ?? viewerLocation.viewerSessionId,
+    });
+
     return {
       valid: true,
       sessionId: session.id,
@@ -350,7 +373,58 @@ export class BroadcastService {
         expiresAt: new Date(claims.expiresAt * 1000),
       }),
       expiresAt: new Date(claims.expiresAt * 1000),
+      localityTrust,
     };
+  }
+
+  private async observeLocality(
+    viewerLocation: ViewerLocation
+  ): Promise<LocalityAssessmentDto> {
+    const observedAt = viewerLocation.observedAt ?? new Date().toISOString();
+    if (!viewerLocation.viewerSessionId?.trim()) {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-subject-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
+    if (!this.localityClient) {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
+
+    try {
+      return await firstValueFrom(
+        this.localityClient.send<LocalityAssessmentDto>(
+          { cmd: LocalityCommands.RECORD_LOCALITY_OBSERVATION },
+          {
+            subjectId: viewerLocation.viewerSessionId,
+            source: 'live-playback',
+            lat: viewerLocation.viewerLat,
+            lng: viewerLocation.viewerLng,
+            ...(viewerLocation.viewerAccuracyMeters === undefined
+              ? {}
+              : { accuracyMeters: viewerLocation.viewerAccuracyMeters }),
+            observedAt,
+          }
+        )
+      );
+    } catch {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
   }
 
   private unavailableLiveToken(

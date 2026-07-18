@@ -190,6 +190,7 @@ export interface LivePlaybackTokenDto {
   playbackUrl: string | null;
   mediaTransport?: LiveMediaTransportDto | null;
   expiresAt: Date | null;
+  localityTrust?: LocalityTrustDto;
   unavailableReason?:
     | 'viewer-location-required'
     | 'invalid-viewer-location'
@@ -203,12 +204,21 @@ export interface LivePlaybackTokenValidationDto {
   playbackUrl?: string | null;
   mediaTransport?: LiveMediaTransportDto | null;
   expiresAt?: Date;
+  localityTrust?: LocalityTrustDto;
   reason?:
     | 'viewer-location-required'
     | 'invalid-viewer-location'
     | 'channel-anchor-unavailable'
     | 'outside-anchor-radius'
     | 'viewer-location-mismatch';
+}
+
+export interface LocalityTrustDto {
+  status: 'unverified' | 'observed' | 'suspicious';
+  confidenceScore: number;
+  reasons: string[];
+  observedAt: string | null;
+  action: 'observe';
 }
 
 export interface LiveMediaTransportDto {

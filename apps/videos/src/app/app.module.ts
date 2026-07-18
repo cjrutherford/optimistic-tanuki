@@ -85,6 +85,17 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
         }),
     },
     {
+      provide: ServiceTokens.LOCALITY_SERVICE,
+      useFactory: () =>
+        ClientProxyFactory.create({
+          transport: Transport.TCP,
+          options: {
+            host: process.env['LOCALITY_HOST'] || 'locality',
+            port: Number.parseInt(process.env['LOCALITY_PORT'] || '3024', 10),
+          },
+        }),
+    },
+    {
       provide: getRepositoryToken(Channel),
       useFactory: (ds: DataSource) => ds.getRepository(Channel),
       inject: ['VIDEOS_CONNECTION'],

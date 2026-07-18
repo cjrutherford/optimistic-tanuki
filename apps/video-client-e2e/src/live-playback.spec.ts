@@ -27,10 +27,16 @@ test.describe('Live playback handoff', () => {
       route.fulfill({ json: feed })
     );
     await page.route('**/api/videos/channels/ot-live/live/token', (route) => {
-      expect(route.request().postDataJSON()).toEqual({
+      const payload = route.request().postDataJSON();
+      expect(payload).toEqual({
         viewerLat: viewerLocation.latitude,
         viewerLng: viewerLocation.longitude,
+        viewerSessionId: expect.any(String),
+        viewerAccuracyMeters: expect.any(Number),
+        observedAt: expect.any(String),
       });
+      expect(payload.viewerSessionId).toBeTruthy();
+      (page as any).__viewerSessionId = payload.viewerSessionId;
       return route.fulfill({
         json: {
           status: 'ready',
@@ -44,11 +50,16 @@ test.describe('Live playback handoff', () => {
     await page.route(
       '**/api/videos/channels/ot-live/live/token/validate',
       (route) => {
-        expect(route.request().postDataJSON()).toEqual({
+        const payload = route.request().postDataJSON();
+        expect(payload).toEqual({
           token: 'signed-token',
           viewerLat: viewerLocation.latitude,
           viewerLng: viewerLocation.longitude,
+          viewerSessionId: expect.any(String),
+          viewerAccuracyMeters: expect.any(Number),
+          observedAt: expect.any(String),
         });
+        expect(payload.viewerSessionId).toBe((page as any).__viewerSessionId);
         return route.fulfill({
           json: {
             valid: true,
@@ -69,6 +80,49 @@ test.describe('Live playback handoff', () => {
     );
   });
 
+  test('renders suspicious locality as informational while keeping playback live', async ({
+    page,
+  }) => {
+    await page.route('**/api/videos/channels/ot-live/feed', (route) =>
+      route.fulfill({ json: feed })
+    );
+    await page.route('**/api/videos/channels/ot-live/live/token', (route) =>
+      route.fulfill({
+        json: {
+          status: 'ready',
+          token: 'signed-token',
+          sessionId: 'session-1',
+          playbackUrl: null,
+          expiresAt: null,
+          localityTrust: {
+            status: 'suspicious',
+            reasons: ['rapid-displacement'],
+          },
+        },
+      })
+    );
+    await page.route(
+      '**/api/videos/channels/ot-live/live/token/validate',
+      (route) =>
+        route.fulfill({
+          json: {
+            valid: true,
+            sessionId: 'session-1',
+            playbackUrl: 'https://media.example/live.m3u8',
+            localityTrust: {
+              status: 'suspicious',
+              reasons: ['rapid-displacement'],
+            },
+          },
+        })
+    );
+
+    await page.goto('/watch/live/ot-live');
+
+    await expect(page.getByText('Live now')).toBeVisible();
+    await expect(page.getByText('Locality signals need review')).toBeVisible();
+  });
+
   test('renders the ended state when signed-token validation fails', async ({
     page,
   }) => {
@@ -76,10 +130,12 @@ test.describe('Live playback handoff', () => {
       route.fulfill({ json: feed })
     );
     await page.route('**/api/videos/channels/ot-live/live/token', (route) => {
-      expect(route.request().postDataJSON()).toEqual({
-        viewerLat: viewerLocation.latitude,
-        viewerLng: viewerLocation.longitude,
-      });
+      expect(route.request().postDataJSON()).toEqual(
+        expect.objectContaining({
+          viewerLat: viewerLocation.latitude,
+          viewerLng: viewerLocation.longitude,
+        })
+      );
       return route.fulfill({
         json: {
           status: 'ready',
@@ -93,11 +149,13 @@ test.describe('Live playback handoff', () => {
     await page.route(
       '**/api/videos/channels/ot-live/live/token/validate',
       (route) => {
-        expect(route.request().postDataJSON()).toEqual({
-          token: 'expired-token',
-          viewerLat: viewerLocation.latitude,
-          viewerLng: viewerLocation.longitude,
-        });
+        expect(route.request().postDataJSON()).toEqual(
+          expect.objectContaining({
+            token: 'expired-token',
+            viewerLat: viewerLocation.latitude,
+            viewerLng: viewerLocation.longitude,
+          })
+        );
         return route.fulfill({ json: { valid: false } });
       }
     );

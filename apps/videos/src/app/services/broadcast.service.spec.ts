@@ -6,6 +6,8 @@ import { LiveSession } from '../../entities/live-session.entity';
 import { LiveMediaTransportService } from './live-media-transport.service';
 import { PlaylistDecisionHistory } from '../../entities/playlist-decision-history.entity';
 import { Channel } from '../../entities/channel.entity';
+import { ClientProxy } from '@nestjs/microservices';
+import { of, throwError } from 'rxjs';
 
 describe('BroadcastService', () => {
   let service: BroadcastService;
@@ -16,6 +18,7 @@ describe('BroadcastService', () => {
   let playlistHistoryRepository: jest.Mocked<
     Partial<Repository<PlaylistDecisionHistory>>
   >;
+  let localityClient: jest.Mocked<Partial<ClientProxy>>;
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(new Date('2026-07-08T18:00:00.000Z'));
@@ -45,6 +48,9 @@ describe('BroadcastService', () => {
       create: jest.fn((input) => input as PlaylistDecisionHistory),
       save: jest.fn(async (input) => input as PlaylistDecisionHistory),
     } as unknown as jest.Mocked<Partial<Repository<PlaylistDecisionHistory>>>;
+    localityClient = {
+      send: jest.fn(),
+    } as unknown as jest.Mocked<Partial<ClientProxy>>;
 
     service = new BroadcastService(
       feedRepository as Repository<ChannelFeed>,
@@ -52,7 +58,8 @@ describe('BroadcastService', () => {
       sessionRepository as Repository<LiveSession>,
       new LiveMediaTransportService(),
       channelRepository as Repository<Channel>,
-      playlistHistoryRepository as Repository<PlaylistDecisionHistory>
+      playlistHistoryRepository as Repository<PlaylistDecisionHistory>,
+      localityClient as unknown as ClientProxy
     );
   });
 
@@ -377,6 +384,170 @@ describe('BroadcastService', () => {
     );
     expect(result.expiresAt!.getTime()).toBe(
       new Date('2026-07-08T18:05:00.000Z').getTime()
+    );
+  });
+
+  it('returns an observed locality assessment while issuing a ready token', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+      liveSourceUrl: 'https://media.example/live.m3u8',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+    localityClient.send!.mockReturnValue(
+      of({
+        status: 'observed',
+        confidenceScore: 80,
+        reasons: ['first-observation'],
+        observedAt: '2026-07-08T18:00:00.000Z',
+        action: 'observe',
+      })
+    );
+
+    const result = await service.issueLiveToken('community-1', {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+      viewerSessionId: 'viewer-session-1',
+      viewerAccuracyMeters: 12,
+      observedAt: '2026-07-08T18:00:00.000Z',
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        status: 'ready',
+        localityTrust: {
+          status: 'observed',
+          confidenceScore: 80,
+          reasons: ['first-observation'],
+          observedAt: '2026-07-08T18:00:00.000Z',
+          action: 'observe',
+        },
+      })
+    );
+    expect(localityClient.send).toHaveBeenCalledWith(
+      { cmd: 'record-locality-observation' },
+      {
+        subjectId: 'viewer-session-1',
+        source: 'live-playback',
+        lat: 32.0809,
+        lng: -81.0912,
+        accuracyMeters: 12,
+        observedAt: '2026-07-08T18:00:00.000Z',
+      }
+    );
+
+    const [, encodedClaims] = result.token!.split('.');
+    expect(
+      JSON.parse(Buffer.from(encodedClaims, 'base64url').toString())
+    ).toEqual(expect.objectContaining({ localityTrust: result.localityTrust }));
+  });
+
+  it('keeps a token ready and valid when locality assessment is suspicious', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+      endedAt: null,
+      liveSourceUrl: 'https://media.example/live.m3u8',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+    localityClient.send!.mockReturnValue(
+      of({
+        status: 'suspicious',
+        confidenceScore: 20,
+        reasons: ['rapid-displacement'],
+        observedAt: '2026-07-08T18:00:00.000Z',
+        action: 'observe',
+      })
+    );
+
+    const viewerLocation = {
+      viewerLat: 32.0809,
+      viewerLng: -81.0912,
+      viewerSessionId: 'viewer-session-1',
+      observedAt: '2026-07-08T18:00:00.000Z',
+    };
+    const issued = await service.issueLiveToken('community-1', viewerLocation);
+    const validated = await service.validateLiveToken(
+      'community-1',
+      issued.token!,
+      { ...viewerLocation, viewerSessionId: 'substituted-viewer-session' }
+    );
+
+    expect(issued).toEqual(
+      expect.objectContaining({
+        status: 'ready',
+        localityTrust: expect.objectContaining({ status: 'suspicious' }),
+      })
+    );
+    expect(validated).toEqual(
+      expect.objectContaining({
+        valid: true,
+        localityTrust: expect.objectContaining({ status: 'suspicious' }),
+      })
+    );
+    expect(localityClient.send).toHaveBeenLastCalledWith(
+      { cmd: 'record-locality-observation' },
+      expect.objectContaining({ subjectId: 'viewer-session-1' })
+    );
+  });
+
+  it('keeps issuing a ready token when the locality client fails', async () => {
+    feedRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      currentMode: 'live',
+      activeLiveSessionId: 'session-1',
+    } as ChannelFeed);
+    sessionRepository.findOne!.mockResolvedValue({
+      id: 'session-1',
+      communityId: 'community-1',
+      status: 'live',
+    } as LiveSession);
+    channelRepository.findOne!.mockResolvedValue({
+      communityId: 'community-1',
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    } as Channel);
+    localityClient.send!.mockReturnValue(
+      throwError(() => new Error('locality unavailable'))
+    );
+
+    await expect(
+      service.issueLiveToken('community-1', {
+        viewerLat: 32.0809,
+        viewerLng: -81.0912,
+        viewerSessionId: 'viewer-session-1',
+      })
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'ready',
+        localityTrust: {
+          status: 'unverified',
+          confidenceScore: 0,
+          reasons: ['telemetry-unavailable'],
+          observedAt: '2026-07-08T18:00:00.000Z',
+          action: 'observe',
+        },
+      })
     );
   });
 

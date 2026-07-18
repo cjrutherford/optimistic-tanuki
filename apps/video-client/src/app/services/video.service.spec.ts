@@ -12,7 +12,13 @@ import {
   UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
 
-const viewerLocation = { viewerLat: 32.0809, viewerLng: -81.0912 };
+const viewerLocation = {
+  viewerLat: 32.0809,
+  viewerLng: -81.0912,
+  viewerSessionId: 'opaque-viewer-session',
+  viewerAccuracyMeters: 18,
+  observedAt: '2026-07-18T18:00:00.000Z',
+};
 
 describe('VideoService', () => {
   let service: VideoService;

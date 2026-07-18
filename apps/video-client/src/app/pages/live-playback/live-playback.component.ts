@@ -46,6 +46,9 @@ type PlaybackState =
           <p *ngSwitchCase="'connecting'">Connecting to the live session...</p>
           <ng-container *ngSwitchCase="'live'">
             <p class="status-live">Live now</p>
+            <p *ngIf="localityTrustSuspicious" class="status-info">
+              Locality signals need review. Playback continues.
+            </p>
             <video
               *ngIf="token?.playbackUrl"
               data-testid="hls-player"
@@ -113,6 +116,9 @@ type PlaybackState =
         color: #63e6be;
         font-weight: 700;
       }
+      .status-info {
+        color: #ffd166;
+      }
       video {
         width: 100%;
         margin-top: 1rem;
@@ -136,6 +142,7 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
   state: PlaybackState = 'loading';
   locationMessage =
     'Allow location access in your browser to watch this local live session.';
+  localityTrustSuspicious = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -186,10 +193,8 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
             return;
           }
 
-          this.requestLiveToken(slugOrId, {
-            viewerLat: location.viewerLat,
-            viewerLng: location.viewerLng,
-          });
+          const { status: _status, ...viewerLocation } = location;
+          this.requestLiveToken(slugOrId, viewerLocation);
         });
       },
       error: () => (this.state = 'error'),
@@ -202,6 +207,8 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
   ): void {
     this.videoService.issueLiveToken(slugOrId, viewerLocation).subscribe({
       next: (token) => {
+        this.localityTrustSuspicious =
+          token.localityTrust?.status === 'suspicious';
         if (token.status !== 'ready' || !token.token) {
           if (token.unavailableReason) {
             this.state = 'location-required';
@@ -218,6 +225,9 @@ export class LivePlaybackComponent implements OnInit, OnDestroy {
           .validateLiveToken(slugOrId, token.token, viewerLocation)
           .subscribe({
             next: (validation) => {
+              this.localityTrustSuspicious =
+                this.localityTrustSuspicious ||
+                validation.localityTrust?.status === 'suspicious';
               if (!validation.valid) {
                 if (validation.reason) {
                   this.state = 'location-required';

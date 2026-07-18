@@ -227,6 +227,9 @@ export class AppController {
       communityId: string;
       viewerLat?: number;
       viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
     }
   ) {
     return this.broadcastService.issueLiveToken(payload.communityId, payload);
@@ -240,6 +243,9 @@ export class AppController {
       token: string;
       viewerLat?: number;
       viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
     }
   ) {
     return this.broadcastService.validateLiveToken(

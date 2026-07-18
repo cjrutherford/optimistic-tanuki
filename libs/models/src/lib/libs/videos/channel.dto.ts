@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { LocalityAssessmentDto } from '../locality-trust.dto';
 import {
   IsString,
   IsUUID,
@@ -293,6 +294,9 @@ export class LivePlaybackTokenDto {
   expiresAt: Date | null;
 
   @ApiProperty({ required: false })
+  localityTrust?: LocalityAssessmentDto;
+
+  @ApiProperty({ required: false })
   unavailableReason?:
     | 'viewer-location-required'
     | 'invalid-viewer-location'
@@ -315,6 +319,9 @@ export class LivePlaybackTokenValidationDto {
 
   @ApiProperty({ required: false })
   expiresAt?: Date;
+
+  @ApiProperty({ required: false })
+  localityTrust?: LocalityAssessmentDto;
 
   @ApiProperty({ required: false })
   reason?:
