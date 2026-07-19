@@ -1,3 +1,9 @@
+<!-- Workstream C2: reference integration of the reusable page-background
+     delivery mechanism. Replaces the `--page-background-pattern` layer that
+     used to be painted directly on `body` in styles.scss (removed there to
+     avoid painting the same pattern twice). -->
+<lib-personality-backdrop />
+
 @if (isBrowser) {
 <div class="motion-background" aria-hidden="true">
   <otui-pulse-rings
