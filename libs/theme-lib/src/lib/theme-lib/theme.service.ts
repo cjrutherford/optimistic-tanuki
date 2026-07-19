@@ -8,7 +8,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 
 // Legacy utilities (migration/compatibility only)
-import { generateComplementaryColor } from './color-utils';
+import { generateComplementaryColor, hexToRgb } from './color-utils';
 import { ThemeColors, ColorPalette, DesignTokens } from './theme.interface';
 import { PREDEFINED_PALETTES } from './theme-palettes';
 import {
@@ -37,7 +37,8 @@ import {
 } from '@optimistic-tanuki/theme-models';
 import {
   generateThemeResponsiveColors,
-  generateShadowColor,
+  generateShadowTintColor,
+  resolveShadowOpacity,
   generatePageBackgroundPattern,
 } from './color-harmony';
 import { FontLoadingService } from './font-loading.service';
@@ -47,6 +48,221 @@ import { GradientFactory } from './gradient-factory';
  * Storage key for personality themes
  */
 const PERSONALITY_THEME_KEY = 'optimistic-tanuki-personality-theme';
+
+/** A resolved `rgba(...)`/`rgb(...)` builder, closed over a fixed tint. */
+type TintFn = (opacity: number) => string;
+
+function clampOpacity(opacity: number): number {
+  return Math.max(0, Math.min(1, opacity));
+}
+
+/**
+ * Generate personality-specific shadow tokens (Workstream B1 + B2, 2026-07-18
+ * personality-styles-refactor plan; joint with the 07-14 plan's B2).
+ *
+ * `--shadow-sm/md/lg/xl` are resolved to literal CSS shadow strings at
+ * generation time (not composed from `var(--shadow-color)` /
+ * `var(--shadow-opacity)` via `color-mix`/similar) so they keep working as
+ * plain CSS values wherever they're consumed. `shadowTintRgb` and
+ * `shadowOpacity` are the SAME values emitted as `--shadow-color` /
+ * `--shadow-opacity` (see `generatePersonalityCSSVariables`), so those
+ * contracts can never drift apart (Workstream B1).
+ *
+ * Workstream B2 adds a SHAPE dimension on top of the tint:
+ * `personality.tokens.shadowProfile` selects a genuinely different
+ * silhouette, not just a differently-scaled version of the same soft
+ * stacked blur —
+ *
+ * - `layered` (default/fallback): the original soft stacked blur.
+ * - `diffuse`: large blur radii, reduced opacity, no offset — an ambient
+ *   glow rather than a directional drop (soft-touch, elegant).
+ * - `hard-offset`: 0-blur solid offset that grows with size — brutalist
+ *   (architect).
+ * - `neon`: outer glow built from the PRIMARY color, not the neutral/tinted
+ *   shadow color — the one profile that deliberately ignores
+ *   `shadowTintRgb` in favor of `primaryColor`, since a "neon" glow reads as
+ *   the brand color (electric).
+ * - `technical`: tight small offsets plus a crisp 1px ring at a lower alpha
+ *   — instrument-panel feel (control-center, foundation).
+ * - `minimal`: hairline ring only, collapsing to `none` when the
+ *   personality's authored `shadowOpacity` is 0 (minimal).
+ * - `playful-drop`: pronounced vertical offset with modest blur — a
+ *   saturated, bouncy drop rather than a soft ambient lift (bold, playful).
+ *
+ * `--personality-box-shadow` / `--personality-card-shadow`
+ * (`generatePersonalityCSSVariables`) are derived from this SAME function's
+ * `md` / `lg` output rather than a second hand-authored literal — see the
+ * doc comment on `PersonalityPresentation.shadow` in `theme-models`. This
+ * function is exported (not a private class method) specifically so tests
+ * and other callers can verify that single-source relationship directly.
+ */
+export function generatePersonalityShadows(
+  personality: Personality,
+  shadowTintRgb: { r: number; g: number; b: number },
+  shadowOpacity: number,
+  primaryColor: string
+): DesignTokens['shadows'] {
+  const multiplier = personality.tokens.shadowMultiplier;
+  const tint: TintFn = (opacity) =>
+    `rgba(${shadowTintRgb.r}, ${shadowTintRgb.g}, ${
+      shadowTintRgb.b
+    }, ${clampOpacity(opacity)})`;
+
+  switch (personality.tokens.shadowProfile) {
+    case 'diffuse':
+      return generateDiffuseShadows(tint, shadowOpacity, multiplier);
+    case 'hard-offset':
+      return generateHardOffsetShadows(tint, shadowOpacity, multiplier);
+    case 'neon':
+      return generateNeonShadows(primaryColor, shadowOpacity, multiplier);
+    case 'technical':
+      return generateTechnicalShadows(tint, shadowOpacity, multiplier);
+    case 'minimal':
+      return generateMinimalShadows(tint, shadowOpacity);
+    case 'playful-drop':
+      return generatePlayfulDropShadows(tint, shadowOpacity, multiplier);
+    case 'layered':
+    default:
+      return generateLayeredShadows(tint, shadowOpacity, multiplier);
+  }
+}
+
+/** `layered`: the original soft stacked blur (default/fallback shape). */
+function generateLayeredShadows(
+  tint: TintFn,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const c = tint(opacity);
+  return {
+    none: 'none',
+    sm: `0 1px 2px 0 ${c}`,
+    md: `0 4px ${6 * m}px -1px ${c}, 0 2px ${4 * m}px -1px ${c}`,
+    lg: `0 10px ${15 * m}px -3px ${c}, 0 4px ${6 * m}px -2px ${c}`,
+    xl: `0 20px ${25 * m}px -5px ${c}, 0 10px ${10 * m}px -5px ${c}`,
+  };
+}
+
+/** `diffuse`: large blur, reduced opacity, no offset — an ambient glow. */
+function generateDiffuseShadows(
+  tint: TintFn,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const c = tint(opacity * 0.6);
+  return {
+    none: 'none',
+    sm: `0 0 ${8 * m}px 0 ${c}`,
+    md: `0 0 ${20 * m}px 0 ${c}`,
+    lg: `0 0 ${36 * m}px 0 ${c}`,
+    xl: `0 0 ${56 * m}px 0 ${c}`,
+  };
+}
+
+/** `hard-offset`: 0-blur solid offset, growing with size — brutalist. */
+function generateHardOffsetShadows(
+  tint: TintFn,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const c = tint(opacity);
+  return {
+    none: 'none',
+    sm: `${2 * m}px ${2 * m}px 0px ${c}`,
+    md: `${4 * m}px ${4 * m}px 0px ${c}`,
+    lg: `${6 * m}px ${6 * m}px 0px ${c}`,
+    xl: `${10 * m}px ${10 * m}px 0px ${c}`,
+  };
+}
+
+/**
+ * `neon`: outer glow using the PRIMARY color (not the neutral/tinted shadow
+ * color) — a neon glow reads as the brand color, not a shadow tint.
+ */
+function generateNeonShadows(
+  primaryColor: string,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const primaryRgb = hexToRgb(primaryColor) ?? { r: 0, g: 0, b: 0 };
+  const glow: TintFn = (a) =>
+    `rgba(${primaryRgb.r}, ${primaryRgb.g}, ${primaryRgb.b}, ${clampOpacity(
+      a
+    )})`;
+  return {
+    none: 'none',
+    sm: `0 0 ${4 * m}px 0 ${glow(opacity)}`,
+    md: `0 0 ${12 * m}px 0 ${glow(opacity)}, 0 0 ${4 * m}px 0 ${glow(
+      opacity * 1.4
+    )}`,
+    lg: `0 0 ${24 * m}px 0 ${glow(opacity)}, 0 0 ${8 * m}px 0 ${glow(
+      opacity * 1.4
+    )}`,
+    xl: `0 0 ${40 * m}px 0 ${glow(opacity)}, 0 0 ${14 * m}px 0 ${glow(
+      opacity * 1.6
+    )}`,
+  };
+}
+
+/**
+ * `technical`: tight small offsets plus a crisp 1px ring at a lower alpha —
+ * instrument-panel feel.
+ */
+function generateTechnicalShadows(
+  tint: TintFn,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const c = tint(opacity);
+  const ring = tint(opacity * 0.8);
+  return {
+    none: 'none',
+    sm: `0 1px 1px 0 ${c}, 0 0 0 1px ${ring}`,
+    md: `0 1px ${2 * m}px 0 ${c}, 0 0 0 1px ${ring}`,
+    lg: `0 2px ${4 * m}px 0 ${c}, 0 0 0 1px ${ring}`,
+    xl: `0 4px ${8 * m}px 0 ${c}, 0 0 0 1px ${ring}`,
+  };
+}
+
+/**
+ * `minimal`: hairline ring only, collapsing to `none` when the personality's
+ * authored `shadowOpacity` is 0 — minimal still respects intensity, it just
+ * never renders a directional/blurred shadow.
+ */
+function generateMinimalShadows(
+  tint: TintFn,
+  opacity: number
+): DesignTokens['shadows'] {
+  if (opacity <= 0) {
+    return { none: 'none', sm: 'none', md: 'none', lg: 'none', xl: 'none' };
+  }
+  return {
+    none: 'none',
+    sm: 'none',
+    md: `0 0 0 1px ${tint(opacity)}`,
+    lg: `0 0 0 1px ${tint(opacity)}`,
+    xl: `0 0 0 1px ${tint(Math.min(1, opacity * 1.5))}`,
+  };
+}
+
+/**
+ * `playful-drop`: pronounced vertical offset, modest blur — a saturated,
+ * bouncy drop rather than a soft ambient lift.
+ */
+function generatePlayfulDropShadows(
+  tint: TintFn,
+  opacity: number,
+  m: number
+): DesignTokens['shadows'] {
+  const c = tint(opacity);
+  return {
+    none: 'none',
+    sm: `0 ${3 * m}px ${4 * m}px 0 ${c}`,
+    md: `0 ${6 * m}px ${8 * m}px 0 ${c}`,
+    lg: `0 ${10 * m}px ${14 * m}px 0 ${c}`,
+    xl: `0 ${16 * m}px ${20 * m}px 0 ${c}`,
+  };
+}
 
 @Injectable({
   providedIn: 'root',
@@ -520,11 +736,14 @@ export class ThemeService {
       shadeCurve
     );
 
-    // Generate theme-responsive background/foreground colors
+    // Generate theme-responsive background/foreground colors. The surface
+    // auto-clamp (Workstream E3) needs the personality's actual required
+    // contrast ratio (4.5 or 7), not a hardcoded default.
     const themeColors = generateThemeResponsiveColors(
       config.primaryColor,
       personality.colorGeneration,
-      mode
+      mode,
+      personality.contrast.minimumRatio
     );
 
     // Apply contrast adjustments to foreground
@@ -537,11 +756,30 @@ export class ThemeService {
         )
       : themeColors.foreground;
 
-    // Generate shadow color
-    const shadowColor = generateShadowColor(
+    // Generate the shadow tint (RGB only, no baked alpha — see B1) and the
+    // single, mode-scaled opacity that both the `--shadow-*` tokens and the
+    // `--shadow-color`/`--shadow-opacity` variables are built from.
+    const shadowTintRgb = generateShadowTintColor(
       config.primaryColor,
       personality.colorGeneration.shadowTint,
       mode
+    );
+    const shadowOpacity = resolveShadowOpacity(
+      personality.colorGeneration.shadowOpacity,
+      mode
+    );
+
+    // Generate the profile-aware shadow tokens ONCE (Workstream B2/B3). Both
+    // the `--shadow-sm/md/lg/xl` tokens (via `generatePersonalityTokens`)
+    // AND `--personality-box-shadow`/`--personality-card-shadow` (via
+    // `generatePersonalityCSSVariables`) are built from this SAME output, so
+    // the two shadow contracts can never disagree — see
+    // `generatePersonalityShadows`'s doc comment.
+    const shadows = generatePersonalityShadows(
+      personality,
+      shadowTintRgb,
+      shadowOpacity,
+      colors.primary
     );
 
     // Build personality colors
@@ -592,7 +830,9 @@ export class ThemeService {
       personalityColors,
       mode,
       themeColors.overlay,
-      shadowColor
+      shadowTintRgb,
+      shadowOpacity,
+      shadows
     );
 
     // Build generated theme
@@ -600,7 +840,7 @@ export class ThemeService {
       personality,
       config: { ...config },
       colors: personalityColors,
-      tokens: this.generatePersonalityTokens(personality),
+      tokens: this.generatePersonalityTokens(personality, shadows),
       cssVariables,
       fonts: personality.fonts,
       isValid: contrastValidation.isValid,
@@ -626,7 +866,9 @@ export class ThemeService {
     colors: PersonalityColors,
     mode: 'light' | 'dark',
     overlay: string,
-    shadowColor: string
+    shadowTintRgb: { r: number; g: number; b: number },
+    shadowOpacity: number,
+    shadows: DesignTokens['shadows']
   ): Record<string, string> {
     const variables: Record<string, string> = {};
 
@@ -742,8 +984,17 @@ export class ThemeService {
         personality.presentation.border.widthValue;
       variables['--personality-border-radius'] =
         personality.presentation.border.radiusValue;
+      // Workstream B2/B3 (2026-07-18 refactor plan): derived from the SAME
+      // profile-aware `generatePersonalityShadows()` output that produces
+      // `--shadow-sm/md/lg/xl` (see that function's doc comment and
+      // `PersonalityPresentation.shadow`'s doc comment in theme-models) —
+      // not read from the static `presentation.shadow.value` literal. This
+      // keeps the two shadow contracts (17 consumers incl. common-ui
+      // buttons vs. ~120 `--shadow-*` consumers) from disagreeing the way
+      // fonts once did. The static literal is retained only as a fallback
+      // if shadow generation is ever unavailable.
       variables['--personality-box-shadow'] =
-        personality.presentation.shadow.value;
+        shadows?.md ?? personality.presentation.shadow.value;
       // Derived from personality.fonts (single source of truth); always agrees
       // with --font-heading. See personalities.ts withDerivedFontFamilies().
       if (personality.presentation.typography.familyValue) {
@@ -766,8 +1017,10 @@ export class ThemeService {
         personality.presentation.components.card.borderRadius;
       variables['--personality-card-padding'] =
         personality.presentation.components.card.padding;
+      // Same single-source rule as --personality-box-shadow above, using the
+      // `lg` step (cards sit at a higher elevation than buttons/inputs).
       variables['--personality-card-shadow'] =
-        personality.presentation.components.card.boxShadow;
+        shadows?.lg ?? personality.presentation.components.card.boxShadow;
       variables['--personality-input-radius'] =
         personality.presentation.components.input.borderRadius;
       variables['--personality-input-border-width'] =
@@ -786,26 +1039,82 @@ export class ThemeService {
         mode
       );
 
-      // Encode SVG for use as data URI
-      const encodedPattern = encodeURIComponent(svgPattern)
-        .replace(/'/g, '%27')
-        .replace(/"/g, '%22')
-        .replace(/%/g, '%25')
-        .replace(/</g, '%3C')
-        .replace(/>/g, '%3E')
-        .replace(/#/g, '%23')
-        .replace(/\s+/g, ' ');
+      // Encode SVG for use as a data URI (C0 fix). `encodeURIComponent`
+      // already percent-encodes `"`, `<`, `>`, `#`, `%`, and whitespace; the
+      // only character it deliberately leaves unescaped that is unsafe
+      // inside a `url("...")` value is `'`. The previous five-way
+      // `.replace()` chain re-escaped every percent sign the encoder had
+      // just produced (turning `%3C` into `%253C`), so a single
+      // `decodeURIComponent` pass on the emitted value yielded the LITERAL
+      // text `%3Csvg...` instead of `<svg...>` — invalid, unrenderable SVG.
+      const encodedPattern = encodeURIComponent(svgPattern).replace(
+        /'/g,
+        '%27'
+      );
 
       variables[
         '--page-background-pattern'
       ] = `url("data:image/svg+xml,${encodedPattern}")`;
+    } else {
+      // Stale-variable guard (Workstream C3, 2026-07-18 refactor plan).
+      // `applyPersonalityTheme()` below only SETS whatever properties this
+      // record contains — it never diffs against what the PREVIOUS
+      // personality emitted. Before this explicit clear, switching from a
+      // personality that declares a `pageBackground` (e.g. `control-center`)
+      // to one that doesn't (e.g. `classic`) left the old
+      // `--page-background-pattern` value stuck as an inline style on
+      // `document.documentElement` forever — a stale pattern would keep
+      // rendering under a personality that declares none. Per the CSSOM
+      // spec, `CSSStyleDeclaration.setProperty(prop, '')` is defined to
+      // behave as `removeProperty(prop)`, so emitting `''` here actually
+      // clears the previous value rather than merely no-op-ing.
+      variables['--page-background-pattern'] = '';
     }
 
-    // Shadow color (theme-responsive)
-    variables['--shadow-color'] = shadowColor;
-    variables['--shadow-opacity'] = String(
-      personality.colorGeneration.shadowOpacity
-    );
+    // Surface texture (theme-responsive) — Workstream C3. Same delivery
+    // mechanism as `--page-background-pattern` above (same
+    // `generatePageBackgroundPattern` + single-`encodeURIComponent` encode
+    // path), emitted as its own variable so a personality can vary its page
+    // backdrop and its card-level texture independently. Uses the texture's
+    // OWN authored opacity (`surfaceTexture.opacity`, capped at 0.05 —
+    // tighter than `pageBackground`'s 0.08 cap, since this paints under
+    // running text) rather than `pageBackgroundOpacity`.
+    if (personality.surfaceTexture) {
+      const svgTexture = generatePageBackgroundPattern(
+        this.personalityConfig.primaryColor,
+        personality.surfaceTexture.pattern,
+        personality.surfaceTexture.usePrimaryTint,
+        personality.surfaceTexture.opacity,
+        mode
+      );
+
+      const encodedTexture = encodeURIComponent(svgTexture).replace(
+        /'/g,
+        '%27'
+      );
+
+      variables[
+        '--surface-texture'
+      ] = `url("data:image/svg+xml,${encodedTexture}")`;
+    } else {
+      // Same stale-variable hazard as `--page-background-pattern` above (and
+      // the same fix): without this, switching soft-touch -> classic would
+      // leave soft-touch's paper-grain texture painted under classic's flat
+      // surface forever.
+      variables['--surface-texture'] = '';
+    }
+
+    // Shadow color (theme-responsive) — Workstream B1. `--shadow-color` is
+    // the resolved tint ONLY (an opaque `rgb()`, no alpha of its own);
+    // `--shadow-opacity` is the single, mode-scaled opacity
+    // (`personality.colorGeneration.shadowOpacity` via `resolveShadowOpacity`)
+    // that both this pair AND the generated `--shadow-sm/md/lg/xl` tokens
+    // (see `generatePersonalityShadows`) are built from. There is exactly
+    // one opacity source now — do not reintroduce a second baked-in alpha.
+    variables[
+      '--shadow-color'
+    ] = `rgb(${shadowTintRgb.r}, ${shadowTintRgb.g}, ${shadowTintRgb.b})`;
+    variables['--shadow-opacity'] = String(shadowOpacity);
 
     return variables;
   }
@@ -813,7 +1122,10 @@ export class ThemeService {
   /**
    * Generate personality-aware design tokens
    */
-  private generatePersonalityTokens(personality: Personality): DesignTokens {
+  private generatePersonalityTokens(
+    personality: Personality,
+    shadows: DesignTokens['shadows']
+  ): DesignTokens {
     const multiplier = personality.tokens.spacingMultiplier;
 
     return {
@@ -825,38 +1137,10 @@ export class ThemeService {
         xl: `${32 * multiplier}px`,
         xxl: `${48 * multiplier}px`,
       },
-      shadows: this.generatePersonalityShadows(personality),
+      shadows,
       borderRadius: this.generatePersonalityBorderRadius(personality),
       fontSize: DEFAULT_DESIGN_TOKENS.fontSize,
       zIndex: DEFAULT_DESIGN_TOKENS.zIndex,
-    };
-  }
-
-  /**
-   * Generate personality-specific shadows
-   */
-  private generatePersonalityShadows(
-    personality: Personality
-  ): DesignTokens['shadows'] {
-    const multiplier = personality.tokens.shadowMultiplier;
-    const opacity = personality.colorGeneration.shadowOpacity;
-
-    // Shadow color will be set dynamically via CSS variables
-    // Use a neutral shadow for the initial definition
-    const shadowColor = `rgba(0, 0, 0, ${opacity})`;
-
-    return {
-      none: 'none',
-      sm: `0 1px 2px 0 ${shadowColor}`,
-      md: `0 4px ${6 * multiplier}px -1px ${shadowColor}, 0 2px ${
-        4 * multiplier
-      }px -1px ${shadowColor}`,
-      lg: `0 10px ${15 * multiplier}px -3px ${shadowColor}, 0 4px ${
-        6 * multiplier
-      }px -2px ${shadowColor}`,
-      xl: `0 20px ${25 * multiplier}px -5px ${shadowColor}, 0 10px ${
-        10 * multiplier
-      }px -5px ${shadowColor}`,
     };
   }
 
@@ -897,13 +1181,18 @@ export class ThemeService {
           full: '50%',
         };
       case 'pill':
+        // Bounded, multiplier-scaled radii: emitting 9999px at every size made
+        // any container using --border-radius-md/lg/xl a stadium shape that
+        // clips corner content (and full: 50% turned non-square elements into
+        // ellipses). Pill identity is carried by the largest base scale of any
+        // style plus the true-pill `full` value for chips/buttons.
         return {
           none: '0',
-          sm: '9999px',
-          md: '9999px',
-          lg: '9999px',
-          xl: '9999px',
-          full: '50%',
+          sm: `${10 * multiplier}px`,
+          md: `${18 * multiplier}px`,
+          lg: `${26 * multiplier}px`,
+          xl: `${36 * multiplier}px`,
+          full: '9999px',
         };
       default:
         return DEFAULT_DESIGN_TOKENS.borderRadius;

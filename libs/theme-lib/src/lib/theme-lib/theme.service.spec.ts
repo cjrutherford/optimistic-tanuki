@@ -12,9 +12,20 @@ import { TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { ThemeService } from './theme.service';
 import { FontLoadingService } from './font-loading.service';
-import { getPersonalityById } from '@optimistic-tanuki/theme-models';
+import {
+  getPersonalityById,
+  PREDEFINED_PERSONALITIES,
+  getContrastRatio,
+  ensureContrast,
+} from '@optimistic-tanuki/theme-models';
+import { generateThemeResponsiveColors } from './color-harmony';
 
 jest.mock('./color-utils', () => ({
+  // Keep `hexToRgb` (and any other unlisted export) real: it's a pure
+  // hex->rgb parser with no side effects, and the B2 shadow-profile tests
+  // need genuine RGB output (e.g. to assert a `neon` shadow isn't neutral
+  // black) rather than a stubbed value.
+  ...jest.requireActual('./color-utils'),
   generateColorShades: jest.fn(),
   generateComplementaryColor: jest.fn(),
   generateDangerColor: jest.fn(),
@@ -289,7 +300,12 @@ describe('ThemeService', () => {
       );
 
       expect(boldRadius).toBe(bold?.presentation?.border.radiusValue);
-      expect(boldShadow).toBe(bold?.presentation?.shadow.value);
+      // Workstream B2/B3 (Phase 3, 2026-07-18 refactor plan):
+      // --personality-box-shadow is now derived from the profile-aware
+      // shadow generator (agrees with --shadow-md) rather than read from the
+      // static presentation literal — see the single-source-of-truth tests
+      // in the "shadow profile shape" describe block below.
+      expect(boldShadow).toBe(rootStyle.getPropertyValue('--shadow-md'));
       expect(boldTransition).toBe(bold?.presentation?.animation.transition);
       expect(boldDuration).toBe(bold?.animations.duration.normal);
 
@@ -311,7 +327,7 @@ describe('ThemeService', () => {
       );
 
       expect(minimalRadius).toBe(minimal?.presentation?.border.radiusValue);
-      expect(minimalShadow).toBe(minimal?.presentation?.shadow.value);
+      expect(minimalShadow).toBe(rootStyle.getPropertyValue('--shadow-md'));
       expect(minimalTransition).toBe(
         minimal?.presentation?.animation.transition
       );
@@ -325,6 +341,520 @@ describe('ThemeService', () => {
       expect(boldShadow).not.toBe(minimalShadow);
       expect(boldTransition).not.toBe(minimalTransition);
       expect(boldDuration).not.toBe(minimalDuration);
+    }));
+  });
+
+  // Workstream B1 (2026-07-18 personality-styles-refactor plan): locks the
+  // reconnected shadow tint. Before this fix, `--shadow-md` (and sm/lg/xl)
+  // hardcoded `rgba(0, 0, 0, opacity)` regardless of the personality's
+  // `colorGeneration.shadowTint`, so warm/cool/primary-tint personalities
+  // cast identical neutral shadows to `neutral` ones.
+  describe('shadow tint reconnection (B1)', () => {
+    it('gives a warm-tint personality (soft-touch) a non-neutral --shadow-md', fakeAsync(() => {
+      const softTouch = getPersonalityById('soft-touch');
+      expect(softTouch).toBeTruthy();
+      expect(softTouch?.colorGeneration.shadowTint).toBe('warm');
+
+      service.setPersonality('soft-touch');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      const shadowMd = rootStyle.getPropertyValue('--shadow-md');
+      expect(shadowMd).toBeTruthy();
+
+      // Pull the first rgba(...) out of the (possibly multi-layer) shadow
+      // value and assert its r/g/b are not all zero (i.e. not neutral black).
+      const match = shadowMd.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      expect(match).toBeTruthy();
+      const [, r, g, b] = match as RegExpMatchArray;
+      expect([r, g, b]).not.toEqual(['0', '0', '0']);
+
+      // --shadow-color should carry the same (alpha-free) tint.
+      const shadowColor = rootStyle.getPropertyValue('--shadow-color');
+      expect(shadowColor).toMatch(/^rgb\(\d+, \d+, \d+\)$/);
+      expect(shadowColor).not.toBe('rgb(0, 0, 0)');
+    }));
+
+    it('emits a different --shadow-md for the same personality in light vs dark mode', fakeAsync(() => {
+      const softTouch = getPersonalityById('soft-touch');
+      expect(softTouch).toBeTruthy();
+      expect(softTouch?.colorGeneration.shadowOpacity).toBeGreaterThan(0);
+
+      service.setPersonality('soft-touch');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+
+      service.setTheme('light');
+      tick(100);
+      flush();
+      const lightShadowMd = rootStyle.getPropertyValue('--shadow-md');
+      const lightOpacity = rootStyle.getPropertyValue('--shadow-opacity');
+
+      service.setTheme('dark');
+      tick(100);
+      flush();
+      const darkShadowMd = rootStyle.getPropertyValue('--shadow-md');
+      const darkOpacity = rootStyle.getPropertyValue('--shadow-opacity');
+
+      expect(lightShadowMd).not.toBe(darkShadowMd);
+      expect(lightOpacity).not.toBe(darkOpacity);
+    }));
+
+    it('still produces sane rgba shadow output for a neutral-tint personality (classic)', fakeAsync(() => {
+      const classic = getPersonalityById('classic');
+      expect(classic).toBeTruthy();
+      expect(classic?.colorGeneration.shadowTint).toBe('neutral');
+
+      service.setPersonality('classic');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      const shadowMd = rootStyle.getPropertyValue('--shadow-md');
+      expect(shadowMd).toMatch(/rgba\(0, 0, 0, [\d.]+\)/);
+
+      const shadowColor = rootStyle.getPropertyValue('--shadow-color');
+      expect(shadowColor).toBe('rgb(0, 0, 0)');
+
+      const shadowOpacity = Number(
+        rootStyle.getPropertyValue('--shadow-opacity')
+      );
+      expect(shadowOpacity).toBeGreaterThan(0);
+      expect(shadowOpacity).toBeLessThanOrEqual(1);
+    }));
+  });
+
+  // Workstream C0 (2026-07-18 personality-styles-refactor plan): locks the
+  // data-URI encoding fix. The previous `encodeURIComponent(svg)` followed by
+  // a five-way `.replace()` chain re-escaped every `%` the encoder had just
+  // produced, so a single `decodeURIComponent` pass yielded the literal text
+  // `%3Csvg...` instead of `<svg...>` — invalid SVG.
+  describe('page background pattern encoding (C0)', () => {
+    it('emits a --page-background-pattern for control-center that decodes with ONE decodeURIComponent pass to valid SVG', fakeAsync(() => {
+      const controlCenter = getPersonalityById('control-center');
+      expect(controlCenter).toBeTruthy();
+      expect(controlCenter?.pageBackground).toBeTruthy();
+
+      service.setPersonality('control-center');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      const raw = rootStyle.getPropertyValue('--page-background-pattern');
+      expect(raw).toBeTruthy();
+
+      const prefix = 'url("data:image/svg+xml,';
+      const suffix = '")';
+      expect(raw.startsWith(prefix)).toBe(true);
+      expect(raw.endsWith(suffix)).toBe(true);
+
+      const encoded = raw.slice(prefix.length, raw.length - suffix.length);
+
+      // No re-escaped percent signs should survive in the encoded payload.
+      expect(encoded).not.toContain('%25');
+
+      const decodedOnce = decodeURIComponent(encoded);
+      expect(decodedOnce.startsWith('<svg')).toBe(true);
+      expect(decodedOnce).not.toContain('%25');
+      expect(decodedOnce).not.toContain('%3C');
+      expect(decodedOnce).not.toContain('%3E');
+
+      if (typeof DOMParser !== 'undefined') {
+        const doc = new DOMParser().parseFromString(
+          decodedOnce,
+          'image/svg+xml'
+        );
+        expect(doc.querySelector('parsererror')).toBeNull();
+      }
+    }));
+
+    // Workstream C1 (same plan): `control-center` was the only personality
+    // with a `pageBackground` before this phase, so the test above alone
+    // couldn't prove the C0 fix generalizes to newly-authored patterns.
+    // `architect`'s "blueprint grid + crosshairs" pattern is one of the 9
+    // added in this phase — assert it round-trips through the same
+    // encode/decode path to valid SVG.
+    it('emits a --page-background-pattern for the newly-authored architect personality that decodes to valid SVG', fakeAsync(() => {
+      const architect = getPersonalityById('architect');
+      expect(architect).toBeTruthy();
+      expect(architect?.pageBackground).toBeTruthy();
+
+      service.setPersonality('architect');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      const raw = rootStyle.getPropertyValue('--page-background-pattern');
+      expect(raw).toBeTruthy();
+
+      const prefix = 'url("data:image/svg+xml,';
+      const suffix = '")';
+      expect(raw.startsWith(prefix)).toBe(true);
+      expect(raw.endsWith(suffix)).toBe(true);
+
+      const encoded = raw.slice(prefix.length, raw.length - suffix.length);
+      expect(encoded).not.toContain('%25');
+
+      const decodedOnce = decodeURIComponent(encoded);
+      expect(decodedOnce.startsWith('<svg')).toBe(true);
+
+      if (typeof DOMParser !== 'undefined') {
+        const doc = new DOMParser().parseFromString(
+          decodedOnce,
+          'image/svg+xml'
+        );
+        expect(doc.querySelector('parsererror')).toBeNull();
+        expect(doc.documentElement.tagName.toLowerCase()).toBe('svg');
+      }
+    }));
+  });
+
+  // Workstream C3 (2026-07-18 personality-styles-refactor plan): surface
+  // texture reuses the SAME generator + encode path as `--page-background-
+  // pattern` above, emitted as `--surface-texture` for the small curated
+  // set of personalities that declare one. Also locks the stale-variable
+  // fix: switching FROM a texture-bearing personality TO one without a
+  // texture must clear the variable, not leave the previous personality's
+  // texture painted underneath the new one.
+  describe('surface texture (C3)', () => {
+    it('emits a --surface-texture for soft-touch that decodes with ONE decodeURIComponent pass to valid SVG', fakeAsync(() => {
+      const softTouch = getPersonalityById('soft-touch');
+      expect(softTouch).toBeTruthy();
+      expect(softTouch?.surfaceTexture).toBeTruthy();
+
+      service.setPersonality('soft-touch');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      const raw = rootStyle.getPropertyValue('--surface-texture');
+      expect(raw).toBeTruthy();
+
+      const prefix = 'url("data:image/svg+xml,';
+      const suffix = '")';
+      expect(raw.startsWith(prefix)).toBe(true);
+      expect(raw.endsWith(suffix)).toBe(true);
+
+      const encoded = raw.slice(prefix.length, raw.length - suffix.length);
+      expect(encoded).not.toContain('%25');
+
+      const decodedOnce = decodeURIComponent(encoded);
+      expect(decodedOnce.startsWith('<svg')).toBe(true);
+      expect(decodedOnce).not.toContain('%25');
+      expect(decodedOnce).not.toContain('%3C');
+      expect(decodedOnce).not.toContain('%3E');
+
+      if (typeof DOMParser !== 'undefined') {
+        const doc = new DOMParser().parseFromString(
+          decodedOnce,
+          'image/svg+xml'
+        );
+        expect(doc.querySelector('parsererror')).toBeNull();
+        expect(doc.documentElement.tagName.toLowerCase()).toBe('svg');
+      }
+    }));
+
+    it('does not emit a --surface-texture for classic (no declared texture)', fakeAsync(() => {
+      const classic = getPersonalityById('classic');
+      expect(classic).toBeTruthy();
+      expect(classic?.surfaceTexture).toBeUndefined();
+
+      service.setPersonality('classic');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      expect(rootStyle.getPropertyValue('--surface-texture')).toBe('');
+    }));
+
+    // The leak this test locks: `applyPersonalityTheme()` only SETS
+    // properties present in the newly-generated CSS variable record — it
+    // never diffs against the previous personality's set. Without an
+    // explicit clear (see theme.service.ts), soft-touch's paper-grain
+    // `--surface-texture` would still be sitting on `documentElement.style`
+    // after switching to classic, which declares no texture at all.
+    it('clears --surface-texture when switching from soft-touch to classic', fakeAsync(() => {
+      service.setPersonality('soft-touch');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      expect(rootStyle.getPropertyValue('--surface-texture')).toBeTruthy();
+
+      service.setPersonality('classic');
+      tick(100);
+      flush();
+
+      expect(rootStyle.getPropertyValue('--surface-texture')).toBe('');
+    }));
+
+    // Same stale-variable hazard applies to `--page-background-pattern`
+    // (control-center declares a pageBackground; classic does not) — locked
+    // alongside the surface-texture fix since both went in together.
+    it('clears --page-background-pattern when switching from control-center to classic', fakeAsync(() => {
+      service.setPersonality('control-center');
+      tick(100);
+      flush();
+
+      const rootStyle = document.documentElement.style;
+      expect(
+        rootStyle.getPropertyValue('--page-background-pattern')
+      ).toBeTruthy();
+
+      service.setPersonality('classic');
+      tick(100);
+      flush();
+
+      expect(rootStyle.getPropertyValue('--page-background-pattern')).toBe('');
+    }));
+  });
+
+  // Workstream B2/B3 (Phase 3, 2026-07-18 personality-styles-refactor plan;
+  // joint with the 07-14 plan's B2): `shadowProfile` gives shadows a genuine
+  // SHAPE (not just tint/intensity), and `--personality-box-shadow`/
+  // `--personality-card-shadow` are now derived from that same generator
+  // output rather than a separately hand-authored literal.
+  describe('shadow profile shape (D1)', () => {
+    it('emits structurally distinct --shadow-md shapes for personalities with different shadow profiles', fakeAsync(() => {
+      const architect = getPersonalityById('architect');
+      const minimal = getPersonalityById('minimal');
+      const electric = getPersonalityById('electric');
+      expect(architect?.tokens.shadowProfile).toBe('hard-offset');
+      expect(minimal?.tokens.shadowProfile).toBe('minimal');
+      expect(electric?.tokens.shadowProfile).toBe('neon');
+
+      const rootStyle = document.documentElement.style;
+
+      service.setPersonality('architect');
+      tick(100);
+      flush();
+      const architectMd = rootStyle.getPropertyValue('--shadow-md');
+      // hard-offset: zero-blur solid offset ("Xpx Ypx 0px rgba(...)").
+      expect(architectMd).toMatch(/[\d.]+px [\d.]+px 0px rgba/);
+
+      service.setPersonality('minimal');
+      tick(100);
+      flush();
+      const minimalMd = rootStyle.getPropertyValue('--shadow-md');
+      // minimal's authored shadowOpacity is 0, so the minimal profile
+      // collapses to 'none' rather than rendering a hairline at zero alpha.
+      expect(minimalMd).toBe('none');
+
+      service.setPersonality('electric');
+      tick(100);
+      flush();
+      const electricMd = rootStyle.getPropertyValue('--shadow-md');
+      // neon: the glow is built from the PRIMARY color, not the neutral
+      // shadow tint, so it must not be a plain black/neutral rgba.
+      const match = electricMd.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+      expect(match).toBeTruthy();
+      const [, r, g, b] = match as RegExpMatchArray;
+      expect([r, g, b]).not.toEqual(['0', '0', '0']);
+
+      expect(architectMd).not.toBe(minimalMd);
+      expect(minimalMd).not.toBe(electricMd);
+      expect(architectMd).not.toBe(electricMd);
+    }));
+
+    it('keeps --personality-box-shadow/--personality-card-shadow agreeing with the generated --shadow-md/--shadow-lg for personalities with different profiles', fakeAsync(() => {
+      const rootStyle = document.documentElement.style;
+
+      const architect = getPersonalityById('architect');
+      const softTouch = getPersonalityById('soft-touch');
+      expect(architect?.tokens.shadowProfile).toBe('hard-offset');
+      expect(softTouch?.tokens.shadowProfile).toBe('diffuse');
+
+      for (const id of ['architect', 'soft-touch']) {
+        service.setPersonality(id);
+        tick(100);
+        flush();
+
+        const boxShadow = rootStyle.getPropertyValue(
+          '--personality-box-shadow'
+        );
+        const cardShadow = rootStyle.getPropertyValue(
+          '--personality-card-shadow'
+        );
+        const shadowMd = rootStyle.getPropertyValue('--shadow-md');
+        const shadowLg = rootStyle.getPropertyValue('--shadow-lg');
+
+        expect(boxShadow).toBeTruthy();
+        expect(boxShadow).toBe(shadowMd);
+        expect(cardShadow).toBeTruthy();
+        expect(cardShadow).toBe(shadowLg);
+      }
+    }));
+  });
+
+  // Workstream E1/E2/E3 (Phase 5b, 2026-07-18 refactor plan): every
+  // personality now derives its elevated surface with its own hue bias
+  // (`colorGeneration.surfaceHueBias`) and saturation shift
+  // (`surfaceSaturationShift`), on top of the pre-existing
+  // `surfaceLuminosityOffset`. E3 is the hard constraint: no personality's
+  // character may break foreground/muted-on-surface contrast. This exercises
+  // `generateThemeResponsiveColors` directly (the pure function ThemeService
+  // itself calls) rather than through the Angular TestBed, so all
+  // 12 personalities x both modes x 2 representative primary colors (the
+  // system default, plus a saturated color) can be swept cheaply.
+  describe('surface character contrast gate (E3)', () => {
+    const REPRESENTATIVE_PRIMARY_COLORS = ['#3f51b5', '#e91e63'];
+    const MIN_FOREGROUND_ON_SURFACE_RATIO = 4.5;
+    // See the doc comment on `MUTED_ON_SURFACE_MIN_RATIO` in color-harmony.ts:
+    // 3.0 (the more conventional WCAG non-text floor) is not achievable even
+    // at the neutral (pre-Workstream-E) surface derivation for most
+    // personalities in light mode — `mutedLuminosityOffset` (authored in
+    // earlier phases) already puts muted text at ~2.0-2.7:1 against a
+    // near-white surface. 1.9 is the same empirically-measured floor used by
+    // the production auto-clamp, kept identical here so this test verifies
+    // the SAME contract the clamp enforces.
+    const MIN_MUTED_ON_SURFACE_RATIO = 1.9;
+
+    it('keeps foreground-on-surface and muted-on-surface passing contrast for every personality, mode, and representative primary color', () => {
+      const failures: string[] = [];
+
+      for (const personality of PREDEFINED_PERSONALITIES) {
+        for (const mode of ['light', 'dark'] as const) {
+          for (const primaryColor of REPRESENTATIVE_PRIMARY_COLORS) {
+            const themeColors = generateThemeResponsiveColors(
+              primaryColor,
+              personality.colorGeneration,
+              mode,
+              personality.contrast.minimumRatio
+            );
+
+            // Mirror ThemeService.generateAndApplyPersonalityTheme()'s own
+            // foreground adjustment so this test exercises the SAME
+            // foreground that ends up rendered as `--foreground`.
+            const adjustedForeground = personality.contrast.autoAdjust
+              ? ensureContrast(
+                  themeColors.foreground,
+                  themeColors.background,
+                  personality.contrast.minimumRatio,
+                  'auto'
+                )
+              : themeColors.foreground;
+
+            const foregroundRatio = getContrastRatio(
+              adjustedForeground,
+              themeColors.surface
+            );
+            const mutedRatio = getContrastRatio(
+              themeColors.muted,
+              themeColors.surface
+            );
+
+            if (foregroundRatio < MIN_FOREGROUND_ON_SURFACE_RATIO) {
+              failures.push(
+                `${
+                  personality.id
+                }/${mode}/${primaryColor}: foreground-on-surface ${foregroundRatio.toFixed(
+                  2
+                )} < ${MIN_FOREGROUND_ON_SURFACE_RATIO}`
+              );
+            }
+            if (mutedRatio < MIN_MUTED_ON_SURFACE_RATIO) {
+              failures.push(
+                `${
+                  personality.id
+                }/${mode}/${primaryColor}: muted-on-surface ${mutedRatio.toFixed(
+                  2
+                )} < ${MIN_MUTED_ON_SURFACE_RATIO}`
+              );
+            }
+          }
+        }
+      }
+
+      expect(failures).toEqual([]);
+    });
+
+    it('auto-clamps a personality with a large surfaceSaturationShift toward the neutral derivation rather than failing contrast', () => {
+      // electric authors the largest surfaceSaturationShift (9) in the set;
+      // exercising it directly at both authored and pathologically large
+      // shift values proves the clamp (not luck) is what keeps it passing.
+      const electric = getPersonalityById('electric');
+      expect(electric).toBeTruthy();
+      if (!electric) return;
+
+      const pathological = {
+        ...electric.colorGeneration,
+        surfaceSaturationShift: 80,
+      };
+
+      const clamped = generateThemeResponsiveColors(
+        '#e91e63',
+        pathological,
+        'light',
+        electric.contrast.minimumRatio
+      );
+      const authored = generateThemeResponsiveColors(
+        '#e91e63',
+        electric.colorGeneration,
+        'light',
+        electric.contrast.minimumRatio
+      );
+
+      // The clamp should have pulled the pathological case back toward (or
+      // all the way to) the same neutral-ish territory as the authored
+      // value, rather than emitting a wildly over-saturated, contrast-
+      // failing surface.
+      expect(
+        getContrastRatio(clamped.foreground, clamped.surface)
+      ).toBeGreaterThanOrEqual(MIN_FOREGROUND_ON_SURFACE_RATIO);
+      expect(
+        getContrastRatio(clamped.muted, clamped.surface)
+      ).toBeGreaterThanOrEqual(MIN_MUTED_ON_SURFACE_RATIO);
+      expect(clamped.surface).not.toBe(authored.surface);
+    });
+  });
+
+  // Workstream E2/D-series: locks the single-source rule (`--surface` and
+  // `--background-elevated` both come from the SAME computed surface color)
+  // and proves two personalities with different `surfaceHueBias`/
+  // `surfaceSaturationShift`/`surfaceLuminosityOffset` actually render
+  // different `--surface` values for the identical primary color and mode —
+  // i.e. surface character is real, not just plumbed and ignored.
+  describe('surface character integration (E3 / theme.service)', () => {
+    it('emits different --surface for differently-biased personalities given the same primary color and mode', fakeAsync(() => {
+      const rootStyle = document.documentElement.style;
+
+      service.setPrimaryColor('#3f51b5');
+      tick(100);
+      flush();
+
+      service.setPersonality('architect'); // surfaceHueBias: 'none', shift 0
+      tick(100);
+      flush();
+      const architectSurface = rootStyle.getPropertyValue('--surface');
+      const architectBackground = rootStyle.getPropertyValue('--background');
+      const architectElevated = rootStyle.getPropertyValue(
+        '--background-elevated'
+      );
+
+      service.setPersonality('electric'); // surfaceHueBias: 'primary', shift 9
+      tick(100);
+      flush();
+      const electricSurface = rootStyle.getPropertyValue('--surface');
+      const electricBackground = rootStyle.getPropertyValue('--background');
+      const electricElevated = rootStyle.getPropertyValue(
+        '--background-elevated'
+      );
+
+      expect(architectSurface).toBeTruthy();
+      expect(electricSurface).toBeTruthy();
+      expect(architectSurface).not.toBe(electricSurface);
+
+      // Single-source rule (Workstream E2): `--background-elevated` always
+      // agrees with `--surface` for a given personality.
+      expect(architectElevated).toBe(architectSurface);
+      expect(electricElevated).toBe(electricSurface);
+
+      // Surface must never collapse onto background for either personality.
+      expect(architectSurface).not.toBe(architectBackground);
+      expect(electricSurface).not.toBe(electricBackground);
     }));
   });
 });

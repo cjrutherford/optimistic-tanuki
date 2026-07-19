@@ -10,6 +10,7 @@ import {
   SpacingScale,
   BorderRadiusStyle,
   ShadowIntensity,
+  PersonalityShadowProfile,
   TypographyStyle,
   AnimationSpeed,
   IconStyle,
@@ -51,6 +52,7 @@ export const classicPersonality: Personality = {
     borderWidth: '1px',
     shadowIntensity: 'medium' as ShadowIntensity,
     shadowMultiplier: 1,
+    shadowProfile: 'layered' as PersonalityShadowProfile,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.5,
     letterSpacing: 'normal',
@@ -106,7 +108,16 @@ export const classicPersonality: Personality = {
     shadowTint: 'neutral',
     shadowOpacity: 0.1,
     pageBackgroundOpacity: 0.05,
+    // Classic's surface is the neutral default every other personality's
+    // character is judged against (Workstream E1) — untinted, unshifted.
+    surfaceHueBias: 'none',
+    surfaceSaturationShift: 0,
   },
+
+  // No `pageBackground`: flat is Classic's identity. It is the original,
+  // neutral Optimistic Tanuki aesthetic — a page-level pattern would dilute
+  // the "balanced, versatile default" character the personality exists to
+  // provide. Intentional, not an oversight (Workstream C1).
 
   mobile: {
     spacingMultiplier: 0.875,
@@ -157,6 +168,7 @@ export const minimalPersonality: Personality = {
     borderWidth: '0.5px',
     shadowIntensity: 'none' as ShadowIntensity,
     shadowMultiplier: 0.6,
+    shadowProfile: 'minimal' as PersonalityShadowProfile,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.6,
     letterSpacing: '0.01em',
@@ -200,7 +212,7 @@ export const minimalPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 98,
-    surfaceLuminosityOffset: -2,
+    surfaceLuminosityOffset: -1,
     foregroundContrast: 94,
     secondaryLuminosityOffset: 40,
     mutedLuminosityOffset: 58,
@@ -210,6 +222,17 @@ export const minimalPersonality: Personality = {
     shadowTint: 'neutral',
     shadowOpacity: 0,
     pageBackgroundOpacity: 0.02,
+    // Minimal barely lifts off the background at all (Workstream E1) — the
+    // smallest luminosity offset in the set — and stays fully untinted.
+    surfaceHueBias: 'none',
+    surfaceSaturationShift: 0,
+  },
+
+  // Ultra-sparse dot lattice: a single small dot per large tile keeps the
+  // page nearly flat while still reading as intentional at very low opacity.
+  pageBackground: {
+    pattern: `<svg width="48" height="48" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="1" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -259,6 +282,7 @@ export const boldPersonality: Personality = {
     borderWidth: '2px',
     shadowIntensity: 'dramatic' as ShadowIntensity,
     shadowMultiplier: 1.5,
+    shadowProfile: 'playful-drop' as PersonalityShadowProfile,
     typography: 'friendly' as TypographyStyle,
     lineHeight: 1.4,
     letterSpacing: '-0.01em',
@@ -302,7 +326,7 @@ export const boldPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 98,
-    surfaceLuminosityOffset: -3,
+    surfaceLuminosityOffset: -5,
     foregroundContrast: 90,
     secondaryLuminosityOffset: 38,
     mutedLuminosityOffset: 52,
@@ -312,6 +336,18 @@ export const boldPersonality: Personality = {
     shadowTint: 'primary-tint',
     shadowOpacity: 0.15,
     pageBackgroundOpacity: 0.08,
+    // Bold makes "a strong visual statement" — a deeper surface lift and a
+    // primary-tinted surface to match its primary-tinted shadow (Workstream
+    // E1).
+    surfaceHueBias: 'primary',
+    surfaceSaturationShift: 6,
+  },
+
+  // Wide diagonal bands, primary-tinted: the statement-making, high-energy
+  // motif that matches Bold's "makes a strong visual statement" brief.
+  pageBackground: {
+    pattern: `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><path d="M0 40 L40 0 L40 14 L14 40 Z" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
   },
 
   mobile: {
@@ -362,6 +398,7 @@ export const softPersonality: Personality = {
     borderWidth: '1px',
     shadowIntensity: 'subtle' as ShadowIntensity,
     shadowMultiplier: 0.6,
+    shadowProfile: 'layered' as PersonalityShadowProfile,
     typography: 'elegant' as TypographyStyle,
     lineHeight: 1.7,
     letterSpacing: '0.02em',
@@ -405,7 +442,7 @@ export const softPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 99,
-    surfaceLuminosityOffset: -1,
+    surfaceLuminosityOffset: -2,
     foregroundContrast: 88,
     secondaryLuminosityOffset: 42,
     mutedLuminosityOffset: 60,
@@ -415,6 +452,17 @@ export const softPersonality: Personality = {
     shadowTint: 'primary-tint',
     shadowOpacity: 0.06,
     pageBackgroundOpacity: 0.03,
+    // Gentle pastel warmth carries through to the surface, not just the
+    // shadow (Workstream E1) — a soft warm-leaning lift.
+    surfaceHueBias: 'warm',
+    surfaceSaturationShift: 4,
+  },
+
+  // Large soft blobs, echoing the pastel/gentle "airy" brief without any
+  // hard edges.
+  pageBackground: {
+    pattern: `<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><ellipse cx="15" cy="15" rx="14" ry="10" fill="currentColor"/><ellipse cx="45" cy="45" rx="14" ry="10" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -464,6 +512,7 @@ export const professionalPersonality: Personality = {
     borderWidth: '1px',
     shadowIntensity: 'medium' as ShadowIntensity,
     shadowMultiplier: 0.9,
+    shadowProfile: 'layered' as PersonalityShadowProfile,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.5,
     letterSpacing: 'normal',
@@ -507,7 +556,7 @@ export const professionalPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 98,
-    surfaceLuminosityOffset: -2,
+    surfaceLuminosityOffset: -3,
     foregroundContrast: 88,
     secondaryLuminosityOffset: 35,
     mutedLuminosityOffset: 50,
@@ -516,7 +565,18 @@ export const professionalPersonality: Personality = {
     darkModeSaturationBoost: 3,
     shadowTint: 'warm',
     shadowOpacity: 0.06,
-    pageBackgroundOpacity: 0.04,
+    pageBackgroundOpacity: 0.03,
+    // A cool, steely surface reads as conservative/trustworthy (Workstream
+    // E1) — a modest lift, not a loud one.
+    surfaceHueBias: 'cool',
+    surfaceSaturationShift: 3,
+  },
+
+  // Fine pinstripe: a conservative, enterprise-appropriate texture at the
+  // lowest opacity in the set.
+  pageBackground: {
+    pattern: `<svg width="8" height="8" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="1" height="8" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -565,6 +625,7 @@ export const playfulPersonality: Personality = {
     borderWidth: '2px',
     shadowIntensity: 'dramatic' as ShadowIntensity,
     shadowMultiplier: 1.3,
+    shadowProfile: 'playful-drop' as PersonalityShadowProfile,
     typography: 'playful' as TypographyStyle,
     lineHeight: 1.5,
     letterSpacing: '0.01em',
@@ -608,7 +669,7 @@ export const playfulPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 98,
-    surfaceLuminosityOffset: -4,
+    surfaceLuminosityOffset: -7,
     foregroundContrast: 95,
     secondaryLuminosityOffset: 45,
     mutedLuminosityOffset: 62,
@@ -618,6 +679,18 @@ export const playfulPersonality: Personality = {
     shadowTint: 'cool',
     shadowOpacity: 0.2,
     pageBackgroundOpacity: 0.06,
+    // The most dramatic surface lift in the set (Workstream E1) — matches
+    // playful's dramatic shadow intensity — with a warm-leaning tint for the
+    // "energetic, varied, creative" brief.
+    surfaceHueBias: 'warm',
+    surfaceSaturationShift: 8,
+  },
+
+  // Scattered circles / confetti: varied sizes and positions for the
+  // "energetic, varied, creative" brief.
+  pageBackground: {
+    pattern: `<svg width="36" height="36" xmlns="http://www.w3.org/2000/svg"><circle cx="6" cy="8" r="2" fill="currentColor"/><circle cx="22" cy="4" r="1.5" fill="currentColor"/><circle cx="30" cy="18" r="2.5" fill="currentColor"/><circle cx="12" cy="26" r="1.5" fill="currentColor"/><circle cx="26" cy="30" r="2" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -667,6 +740,7 @@ export const elegantPersonality: Personality = {
     borderWidth: '3px',
     shadowIntensity: 'subtle' as ShadowIntensity,
     shadowMultiplier: 0.8,
+    shadowProfile: 'diffuse' as PersonalityShadowProfile,
     typography: 'elegant' as TypographyStyle,
     lineHeight: 1.65,
     letterSpacing: '0.02em',
@@ -716,7 +790,7 @@ export const elegantPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 96,
-    surfaceLuminosityOffset: -3,
+    surfaceLuminosityOffset: -4,
     foregroundContrast: 90,
     secondaryLuminosityOffset: 40,
     mutedLuminosityOffset: 55,
@@ -726,6 +800,17 @@ export const elegantPersonality: Personality = {
     shadowTint: 'neutral',
     shadowOpacity: 0.25,
     pageBackgroundOpacity: 0.05,
+    // A cool, subtle surface tint reads as refined rather than warm/cozy
+    // (Workstream E1) — sophistication over comfort.
+    surfaceHueBias: 'cool',
+    surfaceSaturationShift: 3,
+  },
+
+  // Thin flourish lines: slender, rotated slivers evoking a hand-drawn
+  // calligraphic flourish rather than a rigid grid.
+  pageBackground: {
+    pattern: `<svg width="50" height="50" xmlns="http://www.w3.org/2000/svg"><ellipse cx="25" cy="12" rx="20" ry="1" fill="currentColor" transform="rotate(-8 25 12)"/><ellipse cx="25" cy="38" rx="20" ry="1" fill="currentColor" transform="rotate(8 25 38)"/></svg>`,
+    usePrimaryTint: false,
   },
 
   mobile: {
@@ -776,6 +861,7 @@ export const architectPersonality: Personality = {
     borderWidth: '3px',
     shadowIntensity: 'dramatic' as ShadowIntensity,
     shadowMultiplier: 1.2,
+    shadowProfile: 'hard-offset' as PersonalityShadowProfile,
     typography: 'modern' as TypographyStyle,
     lineHeight: 1.4,
     letterSpacing: '0.05em',
@@ -819,7 +905,7 @@ export const architectPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 99,
-    surfaceLuminosityOffset: -2,
+    surfaceLuminosityOffset: -5,
     foregroundContrast: 88,
     secondaryLuminosityOffset: 38,
     mutedLuminosityOffset: 52,
@@ -828,7 +914,32 @@ export const architectPersonality: Personality = {
     darkModeSaturationBoost: 12,
     shadowTint: 'warm',
     shadowOpacity: 0.06,
-    pageBackgroundOpacity: 0.04,
+    pageBackgroundOpacity: 0.05,
+    // Flat, untinted raw paper (Workstream E1) — architect's surface carries
+    // NO hue character at all, only a dramatic (brutalist) luminosity lift;
+    // the identity is structural (hard-offset shadows, thick borders), not
+    // chromatic.
+    surfaceHueBias: 'none',
+    surfaceSaturationShift: 0,
+  },
+
+  // Blueprint grid + crosshairs, untinted: thin filled rules (not
+  // `<pattern>`-indirected, so the runtime fill substitution actually
+  // controls their opacity) form a technical drafting grid with a small
+  // crosshair registration mark.
+  pageBackground: {
+    pattern: `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="24" height="0.5" fill="currentColor"/><rect x="0" y="0" width="0.5" height="24" fill="currentColor"/><rect x="11" y="9" width="2" height="0.5" fill="currentColor"/><rect x="11.75" y="8.25" width="0.5" height="2" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+  },
+
+  // Surface texture (Workstream C3): a very sparse blueprint cross-hatch —
+  // wider tile and thinner rules than the page-background grid above, so the
+  // card surface reads as "drafting paper under text" rather than repeating
+  // the exact same motif at the same density on top of it.
+  surfaceTexture: {
+    pattern: `<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="40" height="0.5" fill="currentColor"/><rect x="0" y="0" width="0.5" height="40" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+    opacity: 0.03,
   },
 
   mobile: {
@@ -878,11 +989,16 @@ export const softTouchPersonality: Personality = {
     spacingScale: 'comfortable' as SpacingScale,
     spacingMultiplier: 1.15,
     borderRadius: 'pill' as BorderRadiusStyle,
-    borderRadiusMultiplier: 1.75,
+    // Capped at 1.25 (was 1.75): pill radii are already the most aggressive
+    // style, and the compounded multiplier produced container radii large
+    // enough to clip corner content. Pill identity lives in the style +
+    // button/full radii, not in oversized surface radii.
+    borderRadiusMultiplier: 1.25,
     borderStyle: 'thin' as BorderStyle,
     borderWidth: '1.5px',
     shadowIntensity: 'medium' as ShadowIntensity,
     shadowMultiplier: 1.1,
+    shadowProfile: 'diffuse' as PersonalityShadowProfile,
     typography: 'friendly' as TypographyStyle,
     lineHeight: 1.6,
     letterSpacing: '0em',
@@ -926,7 +1042,7 @@ export const softTouchPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 97,
-    surfaceLuminosityOffset: -2,
+    surfaceLuminosityOffset: -3,
     foregroundContrast: 90,
     secondaryLuminosityOffset: 42,
     mutedLuminosityOffset: 58,
@@ -935,12 +1051,36 @@ export const softTouchPersonality: Personality = {
     darkModeSaturationBoost: 9,
     shadowTint: 'warm',
     shadowOpacity: 0.14,
-    pageBackgroundOpacity: 0.05,
+    pageBackgroundOpacity: 0.04,
+    // Warm tactile "paper" surface (Workstream E1) — the strongest warm bias
+    // in the set, matching its warm shadow tint and "grounded, warm,
+    // tactile" identity.
+    surfaceHueBias: 'warm',
+    surfaceSaturationShift: 7,
+  },
+
+  // Paper-grain noise: a small irregular speckle field, evoking the
+  // "warm tactile paper" identity without reading as a repeating grid.
+  pageBackground: {
+    pattern: `<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><circle cx="2" cy="3" r="0.4" fill="currentColor"/><circle cx="9" cy="6" r="0.5" fill="currentColor"/><circle cx="13" cy="2" r="0.3" fill="currentColor"/><circle cx="5" cy="11" r="0.4" fill="currentColor"/><circle cx="12" cy="13" r="0.5" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+  },
+
+  // Surface texture (Workstream C3): fine paper-grain speckle — a smaller,
+  // denser tile than the page-background noise above, read up close on a
+  // card surface as the same "warm tactile paper" identity carried onto the
+  // element that actually holds text.
+  surfaceTexture: {
+    pattern: `<svg width="8" height="8" xmlns="http://www.w3.org/2000/svg"><circle cx="1" cy="1" r="0.3" fill="currentColor"/><circle cx="5" cy="3" r="0.25" fill="currentColor"/><circle cx="3" cy="6" r="0.3" fill="currentColor"/><circle cx="7" cy="7" r="0.25" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+    opacity: 0.04,
   },
 
   mobile: {
     spacingMultiplier: 0.9,
-    borderRadiusMultiplier: 1.5,
+    // Mobile surfaces are smaller, so radii clip sooner — no extra
+    // amplification on top of the (already capped) base multiplier.
+    borderRadiusMultiplier: 1.0,
     shadowReduction: 0.4,
     fontScale: 0.95,
     touchTargetSize: '48px',
@@ -986,6 +1126,7 @@ export const electricPersonality: Personality = {
     borderWidth: '2px',
     shadowIntensity: 'dramatic' as ShadowIntensity,
     shadowMultiplier: 1.4,
+    shadowProfile: 'neon' as PersonalityShadowProfile,
     typography: 'playful' as TypographyStyle,
     lineHeight: 1.45,
     letterSpacing: '0em',
@@ -1029,7 +1170,7 @@ export const electricPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 99,
-    surfaceLuminosityOffset: -2,
+    surfaceLuminosityOffset: -6,
     foregroundContrast: 90,
     secondaryLuminosityOffset: 40,
     mutedLuminosityOffset: 55,
@@ -1039,6 +1180,30 @@ export const electricPersonality: Personality = {
     shadowTint: 'primary-tint',
     shadowOpacity: 0.1,
     pageBackgroundOpacity: 0.06,
+    // A faint but clearly primary-tinted surface lift (Workstream E1) — the
+    // strongest saturation shift in the set, matching electric's
+    // primary-tinted shadow and "vibrant kinetic" identity.
+    surfaceHueBias: 'primary',
+    surfaceSaturationShift: 9,
+  },
+
+  // Angular circuit traces, primary-tinted: right-angle rules with small
+  // pad circles at their ends, echoing the "vibrant kinetic" tech-social
+  // brief (a PCB trace, not an organic line).
+  pageBackground: {
+    pattern: `<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="12" height="1.5" fill="currentColor"/><rect x="14.5" y="4" width="1.5" height="10" fill="currentColor"/><rect x="14.5" y="12.5" width="10" height="1.5" fill="currentColor"/><circle cx="4" cy="4.75" r="1.5" fill="currentColor"/><circle cx="24" cy="13.25" r="1.5" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+  },
+
+  // Surface texture (Workstream C3): a single faint angular accent tucked in
+  // one corner of each tile — a small "circuit trace corner", not the full
+  // multi-segment page-background trace, so a card reads as accented rather
+  // than wallpapered. Primary-tinted like the page background, matching the
+  // "vibrant kinetic" identity.
+  surfaceTexture: {
+    pattern: `<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="6" height="1" fill="currentColor"/><rect x="0" y="0" width="1" height="6" fill="currentColor"/></svg>`,
+    usePrimaryTint: true,
+    opacity: 0.04,
   },
 
   mobile: {
@@ -1090,6 +1255,7 @@ export const controlCenterPersonality: Personality = {
     borderWidth: '1px',
     shadowIntensity: 'medium' as ShadowIntensity,
     shadowMultiplier: 0.7,
+    shadowProfile: 'technical' as PersonalityShadowProfile,
     typography: 'modern' as TypographyStyle,
     lineHeight: 1.5,
     letterSpacing: '0.02em',
@@ -1133,7 +1299,7 @@ export const controlCenterPersonality: Personality = {
 
   colorGeneration: {
     backgroundLuminosity: 97,
-    surfaceLuminosityOffset: -3,
+    surfaceLuminosityOffset: -4,
     foregroundContrast: 92,
     secondaryLuminosityOffset: 38,
     mutedLuminosityOffset: 54,
@@ -1143,11 +1309,36 @@ export const controlCenterPersonality: Personality = {
     shadowTint: 'cool',
     shadowOpacity: 0.12,
     pageBackgroundOpacity: 0.05,
+    // A cool, technical instrument-panel surface (Workstream E1) — matches
+    // its cool shadow tint and precise/technical identity.
+    surfaceHueBias: 'cool',
+    surfaceSaturationShift: 4,
   },
 
+  // Fine 20x20 instrument-panel grid, authored as direct filled shapes with
+  // NO `<defs>`/`<pattern>`/`url(#...)` indirection (carry-over fix from
+  // Phase 5, Workstream E's Task 4): `generatePageBackgroundPattern`
+  // (theme-lib) rewrites every `fill="..."` attribute wholesale to the
+  // computed tint color, so a `<rect fill="url(#grid)"/>` referencing a
+  // `<defs>` pattern gets its `fill` overwritten while the `<pattern>`
+  // definition itself is left orphaned and unreferenced — the grid never
+  // rendered, only a flat wash. Direct edge rules (top/left of each 20x20
+  // tile) tile into the same visual grid density without any indirection,
+  // plus a small center via/dot distinguishing it from architect's
+  // crosshair-style blueprint grid.
   pageBackground: {
-    pattern: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M0 10 L20 10 M10 0 L10 20" stroke="currentColor" stroke-width="0.5" fill="none" opacity="0.5"/></pattern></defs><rect width="20" height="20" fill="url(#grid)"/></svg>`,
+    pattern: `<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="20" height="0.6" fill="currentColor"/><rect x="0" y="0" width="0.6" height="20" fill="currentColor"/><rect x="9.5" y="9.5" width="1" height="1" fill="currentColor"/></svg>`,
     usePrimaryTint: false,
+  },
+
+  // Surface texture (Workstream C3): 1px horizontal scanlines on a ~4px
+  // pitch — a CRT/monitor-panel texture distinct from the page-background's
+  // instrument-panel grid, echoing the "technical dashboard" identity on the
+  // element that actually holds readouts.
+  surfaceTexture: {
+    pattern: `<svg width="4" height="4" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="4" height="1" fill="currentColor"/></svg>`,
+    usePrimaryTint: false,
+    opacity: 0.03,
   },
 
   mobile: {
@@ -1198,6 +1389,7 @@ export const foundationPersonality: Personality = {
     borderWidth: '0px',
     shadowIntensity: 'none' as ShadowIntensity,
     shadowMultiplier: 0.5,
+    shadowProfile: 'technical' as PersonalityShadowProfile,
     typography: 'clean' as TypographyStyle,
     lineHeight: 1.5,
     letterSpacing: 'normal',
@@ -1252,7 +1444,16 @@ export const foundationPersonality: Personality = {
     darkModeSaturationBoost: 1,
     shadowTint: 'neutral',
     shadowOpacity: 0.05,
+    // 0 opacity is intentional (not "not yet authored"): Foundation is the
+    // base-infrastructure personality — maximum clarity with zero visual
+    // noise is the point, so it stays without a `pageBackground` block.
     pageBackgroundOpacity: 0,
+    // Barely lifts (Workstream E1, matches minimal's smallest offset) with
+    // only a faint cool technical lean — Foundation's "maximum clarity,
+    // zero visual noise" identity keeps this the most restrained tint in
+    // the set alongside control-center's family.
+    surfaceHueBias: 'cool',
+    surfaceSaturationShift: 2,
   },
 
   mobile: {
@@ -1491,7 +1692,11 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       widthValue: '2px',
       radiusValue: '9999px',
     },
-    shadow: { style: 'neon', value: '0 0 10px rgba(0,0,0,0.15)' },
+    // Was 'neon' — playful is assigned the 'playful-drop' shadow profile
+    // (Workstream B2), not 'neon' (electric only). 'dramatic' is the nearest
+    // existing PersonalityShadowStyle value consistent with a saturated,
+    // pronounced drop shadow.
+    shadow: { style: 'dramatic', value: '0 0 10px rgba(0,0,0,0.15)' },
     typography: {
       fontFamily: 'display',
       headingFamily: 'display',
@@ -1673,8 +1878,13 @@ const PRESENTATION_BY_ID: Record<string, PersonalityPresentation> = {
       radius: 'pill',
       styleValue: 'solid',
       widthValue: '1.5px',
-      radiusValue: '9999px',
+      // Generic element radius — bounded so arbitrary containers don't clip.
+      // True pill (9999px) is reserved for buttons below, where single-line
+      // padded labels can't be clipped by the rounding.
+      radiusValue: '24px',
     },
+    // 'glow' stays consistent with the assigned 'diffuse' shadow profile
+    // (large blur, low opacity, warm tint) — no change needed here.
     shadow: { style: 'glow', value: '0 10px 26px rgba(0,0,0,0.14)' },
     typography: {
       fontFamily: 'serif',
