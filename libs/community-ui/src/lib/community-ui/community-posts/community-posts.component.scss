@@ -1,6 +1,7 @@
 // ============================================
 // Community Posts — Personality-Aware Styling
 // ============================================
+@use 'personality' as p;
 
 :host {
   display: block;
@@ -33,7 +34,7 @@
     margin-bottom: -40px;
     position: relative;
     z-index: 1;
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
 
     @media (max-width: 640px) {
       height: 100px;
@@ -86,7 +87,7 @@
       object-fit: cover;
       border: 3px solid var(--local-background);
       background: var(--local-background);
-      box-shadow: var(--shadow-md);
+      @include p.shadow('md');
 
       @media (max-width: 640px) {
         width: 60px;
@@ -163,8 +164,7 @@
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  transition: color var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(color, 'fast');
 
   @media (max-width: 640px) {
     padding: var(--spacing-xs) var(--spacing-sm);
@@ -269,7 +269,7 @@
 // Minimal: flat banner, clean tabs, no shadows
 :host-context([data-personality='minimal']) {
   .community-banner {
-    box-shadow: none;
+    @include p.shadow('none');
     border-radius: var(--border-radius-sm);
     .banner-placeholder {
       background: color-mix(
@@ -318,7 +318,7 @@
 // Bold: dramatic banner shadow, thick tab underline, bold typography
 :host-context([data-personality='bold']) {
   .community-banner {
-    box-shadow: var(--shadow-xl);
+    @include p.shadow('xl');
   }
   .community-info h2 {
     font-weight: 900;
@@ -338,7 +338,7 @@
 :host-context([data-personality='playful']) {
   .community-banner {
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     .banner-placeholder {
       background: linear-gradient(
         135deg,
@@ -350,8 +350,7 @@
   }
   .logo-image {
     border-radius: var(--border-radius-xl) !important;
-    transition: transform var(--animation-duration-normal, 0.3s)
-      var(--animation-easing, ease);
+    @include p.personality-transition(transform, 'normal');
     &:hover {
       transform: scale(1.05) rotate(-2deg);
     }
@@ -394,7 +393,7 @@
 :host-context([data-personality='soft-touch']) {
   .community-banner {
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
     .banner-placeholder {
       background: linear-gradient(
         135deg,
@@ -413,7 +412,7 @@
     border-radius: var(--border-radius-full);
     &.active {
       background: var(--local-background);
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
       &::after {
         display: none;
       }
@@ -460,13 +459,13 @@
 
 :host-context([data-personality='architect']) {
   .community-banner {
-    box-shadow: var(--shadow-xl);
+    @include p.shadow('xl');
   }
 }
 
 :host-context([data-personality='control-center']) {
   .community-banner {
-    box-shadow: none;
+    @include p.shadow('none');
     border: 1px solid var(--local-borderColor);
   }
 }

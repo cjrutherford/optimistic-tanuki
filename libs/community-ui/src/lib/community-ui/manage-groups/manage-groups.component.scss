@@ -1,6 +1,7 @@
 // ============================================
 // Manage Groups — Personality-Aware Styling
 // ============================================
+@use 'personality' as p;
 
 :host {
   display: block;
@@ -67,11 +68,8 @@
   background: var(--local-background);
   border: var(--border-width, 1px) solid var(--local-borderColor);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease);
+  @include p.shadow('sm');
+  @include p.personality-transition((box-shadow, transform), 'fast');
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -85,7 +83,7 @@
   }
 
   &:hover {
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
   }
 }
 
@@ -161,8 +159,7 @@
   border-radius: var(--border-radius-full);
   color: var(--local-accent);
   font-weight: 500;
-  transition: background var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(background, 'fast');
 
   &:hover {
     background: color-mix(in srgb, var(--local-accent) 18%, transparent);
@@ -230,9 +227,9 @@
 // Minimal: borderless cards, flat tags
 :host-context([data-personality='minimal']) {
   .card-content {
-    box-shadow: none;
+    @include p.shadow('none');
     &:hover {
-      box-shadow: none;
+      @include p.shadow('none');
       border-color: var(--local-accent);
     }
   }
@@ -264,11 +261,11 @@
 // Bold: thick accent left border, heavy shadows
 :host-context([data-personality='bold']) {
   .card-content {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-left: 4px solid var(--local-accent);
     &:hover {
       transform: translateY(-2px);
-      box-shadow: var(--shadow-xl);
+      @include p.shadow('xl');
     }
   }
   .group-header h3 {
@@ -290,10 +287,10 @@
       var(--local-background),
       color-mix(in srgb, var(--local-accent) 5%, var(--local-background))
     );
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     &:hover {
       transform: translateY(-3px) rotate(-0.3deg);
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
   .tag {
@@ -313,7 +310,7 @@
 :host-context([data-personality='electric']) {
   .card-content {
     border-color: color-mix(in srgb, var(--local-accent) 25%, transparent);
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     &:hover {
       box-shadow: var(--shadow-lg),
         0 0 20px color-mix(in srgb, var(--local-accent) 15%, transparent);
@@ -337,9 +334,9 @@
       var(--local-accent)
     );
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
     &:hover {
-      box-shadow: var(--shadow-md);
+      @include p.shadow('md');
     }
   }
   .tag {
@@ -390,17 +387,17 @@
 
 :host-context([data-personality='architect']) {
   .card-content {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-top: 3px solid var(--local-accent);
     &:hover {
-      box-shadow: var(--shadow-xl);
+      @include p.shadow('xl');
     }
   }
 }
 
 :host-context([data-personality='control-center']) {
   .card-content {
-    box-shadow: none;
+    @include p.shadow('none');
   }
   .groups-list {
     gap: var(--spacing-sm);

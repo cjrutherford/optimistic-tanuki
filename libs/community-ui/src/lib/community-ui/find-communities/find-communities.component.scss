@@ -1,6 +1,7 @@
 // ============================================
 // Find Communities — Personality-Aware Styling
 // ============================================
+@use 'personality' as p;
 
 :host {
   display: block;
@@ -156,8 +157,7 @@
   font-size: var(--font-size-sm, 0.9rem);
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(all, 'fast');
   color: var(--local-complement);
 
   @media (max-width: 640px) {
@@ -176,7 +176,7 @@
     background: var(--local-accent);
     color: var(--primary-foreground);
     border-color: var(--local-accent);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
 }
 
@@ -204,11 +204,8 @@
   background: var(--local-background-gradient);
   border: var(--border-width, 1px) solid var(--local-borderColor);
   border-radius: var(--border-radius-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease);
+  @include p.shadow('sm');
+  @include p.personality-transition((box-shadow, transform), 'fast');
 
   @media (max-width: 640px) {
     padding: var(--spacing-md);
@@ -216,7 +213,7 @@
   }
 
   &:hover {
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
   }
 
   h3 {
@@ -321,8 +318,7 @@
   border-radius: var(--border-radius-full);
   color: var(--local-accent);
   font-weight: 500;
-  transition: background var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(background, 'fast');
 
   @media (max-width: 640px) {
     font-size: 0.65rem;
@@ -435,10 +431,10 @@
 // Minimal: borderless cards, no shadows, clean
 :host-context([data-personality='minimal']) {
   .card-content {
-    box-shadow: none;
+    @include p.shadow('none');
     border-color: var(--local-borderColor);
     &:hover {
-      box-shadow: none;
+      @include p.shadow('none');
       border-color: var(--local-accent);
     }
   }
@@ -449,7 +445,7 @@
     border-radius: var(--border-radius-sm);
   }
   .toggle-btn.active {
-    box-shadow: none;
+    @include p.shadow('none');
   }
 }
 
@@ -480,11 +476,11 @@
 // Bold: heavy shadows, thick accent left border on cards
 :host-context([data-personality='bold']) {
   .card-content {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-left: 4px solid var(--local-accent);
     &:hover {
       transform: translateY(-2px);
-      box-shadow: var(--shadow-xl);
+      @include p.shadow('xl');
     }
   }
   .card-content h3 {
@@ -496,7 +492,7 @@
     font-weight: 600;
   }
   .toggle-btn.active {
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     font-weight: 700;
   }
 }
@@ -510,10 +506,10 @@
       color-mix(in srgb, var(--local-accent) 5%, var(--local-background))
     );
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     &:hover {
       transform: translateY(-4px) rotate(-0.5deg);
-      box-shadow: var(--shadow-lg);
+      @include p.shadow('lg');
     }
   }
   .tag {
@@ -539,7 +535,7 @@
 :host-context([data-personality='electric']) {
   .card-content {
     border-color: color-mix(in srgb, var(--local-accent) 30%, transparent);
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     &:hover {
       box-shadow: var(--shadow-lg),
         0 0 20px color-mix(in srgb, var(--local-accent) 15%, transparent);
@@ -566,10 +562,10 @@
       var(--local-background) 95%,
       var(--local-accent)
     );
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
     border-radius: var(--border-radius-xl);
     &:hover {
-      box-shadow: var(--shadow-md);
+      @include p.shadow('md');
     }
   }
   .tag {
@@ -627,17 +623,17 @@
 
 :host-context([data-personality='architect']) {
   .card-content {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-top: 3px solid var(--local-accent);
     &:hover {
-      box-shadow: var(--shadow-xl);
+      @include p.shadow('xl');
     }
   }
 }
 
 :host-context([data-personality='control-center']) {
   .card-content {
-    box-shadow: none;
+    @include p.shadow('none');
   }
   .communities-grid {
     gap: var(--spacing-sm);
