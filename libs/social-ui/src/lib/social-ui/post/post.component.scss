@@ -4,6 +4,7 @@
 // ============================================
 
 @use '../../styles/mixins' as *;
+@use 'personality' as p;
 
 .post-container {
   width: 100%;
@@ -35,22 +36,25 @@
         align-items: center;
         gap: var(--spacing-xs, 6px);
         padding: var(--spacing-xs, 4px) var(--spacing-sm, 12px);
-        background: var(
-          --gradient-primary,
-          var(--primary-gradient, var(--primary))
-        );
+        // `--gradient-primary`/`--primary-gradient` were never emitted by
+        // ThemeService (grep confirms zero occurrences anywhere else in the
+        // repo, past or present) — this always silently fell through to
+        // `var(--primary)`, i.e. was never actually a gradient. Collapsed to
+        // the one value that's ever rendered.
+        background: var(--primary);
         color: var(--primary-foreground, #fff);
-        border-radius: 10px;
+        border-radius: var(--border-radius-md, 10px);
         font-size: 0.75rem;
         font-weight: 600;
         margin-left: var(--spacing-xs, 4px);
-        box-shadow: var(--shadow-md);
-        animation: social-pulse 3s ease-in-out infinite;
+        @include p.shadow('md');
+        animation: social-pulse var(--animation-duration-slow, 3s) ease-in-out
+          infinite;
 
         .community-logo {
           width: 16px;
           height: 16px;
-          border-radius: 4px;
+          border-radius: var(--border-radius-sm, 4px);
           object-fit: cover;
         }
 
@@ -85,7 +89,7 @@
         display: inline-block;
         margin-left: 8px;
         padding: 2px 8px;
-        border-radius: 999px;
+        border-radius: var(--border-radius-full, 999px);
         background: color-mix(in srgb, var(--primary) 16%, transparent);
         color: var(--primary);
         font-size: 0.75rem;
@@ -129,10 +133,7 @@
           border-radius: var(--border-radius-md, 16px);
           border: var(--border-width, 2px) solid
             color-mix(in srgb, var(--primary) 30%, transparent);
-          box-shadow: var(
-            --shadow-md,
-            0 4px 20px color-mix(in srgb, var(--primary) 15%, transparent)
-          );
+          @include p.shadow('md');
         }
 
         img[height] {
@@ -145,7 +146,7 @@
           font-weight: 500;
           border-bottom: var(--border-width, 2px) solid
             color-mix(in srgb, var(--primary) 30%, transparent);
-          transition: all 200ms ease;
+          @include p.personality-transition(all, 'fast');
 
           &:hover {
             border-bottom-style: solid;
@@ -164,7 +165,7 @@
       .edit-content {
         width: 100%;
         border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
-        border-radius: 12px;
+        border-radius: var(--border-radius-lg, 12px);
         padding: 12px;
         font: inherit;
         color: var(--foreground);
@@ -202,14 +203,11 @@
         border-radius: var(--border-radius-md, 16px);
         border: var(--border-width, 2px) solid
           color-mix(in srgb, var(--primary) 30%, transparent);
-        transition: all 300ms var(--animation-easing, ease);
+        @include p.personality-transition(all, 'normal');
 
         &:hover {
           transform: scale(1.02);
-          box-shadow: var(
-            --shadow-lg,
-            0 8px 30px color-mix(in srgb, var(--primary) 20%, transparent)
-          );
+          @include p.shadow('lg');
         }
       }
     }
@@ -231,14 +229,14 @@
         color: var(--primary);
         text-decoration: none;
         font-weight: 500;
-        transition: all 200ms ease;
+        @include p.personality-transition(all, 'fast');
         display: inline-flex;
         align-items: center;
         gap: 6px;
 
         &::before {
           content: '→';
-          transition: transform 200ms ease;
+          @include p.personality-transition(transform, 'fast');
         }
 
         &:hover {
@@ -253,7 +251,7 @@
         &:focus-visible {
           outline: 2px solid var(--primary);
           outline-offset: 3px;
-          border-radius: 4px;
+          border-radius: var(--border-radius-sm, 4px);
         }
       }
     }
@@ -294,39 +292,18 @@
   }
 }
 
-// Post card variant
-.post-container.electric-card {
-  background: var(
-    --card,
-    linear-gradient(
-      180deg,
-      var(--background) 0%,
-      color-mix(in srgb, var(--primary) 5%, var(--background)) 100%
-    )
-  );
-  border-radius: var(--border-radius-lg, 20px);
-  padding: 24px;
-  border: var(--border-width, 2px) solid
-    color-mix(in srgb, var(--primary) 30%, transparent);
-  box-shadow: var(
-    --shadow-md,
-    0 8px 32px color-mix(in srgb, var(--primary) 10%, transparent)
-  );
-  transition: all 300ms var(--animation-easing, ease);
-
-  &:hover {
-    border-color: color-mix(in srgb, var(--primary) 60%, transparent);
-    box-shadow: var(
-      --shadow-lg,
-      0 12px 48px color-mix(in srgb, var(--primary) 20%, transparent)
-    );
-    transform: translateY(-2px);
-  }
-}
+// `.post-container.electric-card` used to live here as a "post card variant"
+// with its own hardcoded background/radius/shadow. Deleted (2026-07 batch 6
+// personality token adoption): the `electric-card` class is never applied —
+// `post.component.html` renders `<otui-card class="post-container">` and no
+// template, story, or `.ts` file in this repo ever adds `electric-card`
+// (verified via `grep -rn "electric-card" libs --include=*.ts --include=*.html`
+// — zero matches). `otui-card`'s own SCSS already supplies the personality-
+// driven radius/shadow/hover behavior this dead block was duplicating.
 
 // Highlight animation for new posts
 .post-container.new-post {
-  animation: social-shimmer 2s ease-in-out;
+  animation: social-shimmer var(--animation-duration-slow, 2s) ease-in-out;
 
   &::before {
     content: '';
@@ -341,7 +318,8 @@
       var(--secondary),
       var(--tertiary, var(--secondary))
     );
-    border-radius: 20px 20px 0 0;
+    border-radius: var(--border-radius-lg, 20px) var(--border-radius-lg, 20px) 0
+      0;
   }
 }
 
@@ -355,9 +333,27 @@
 // ============================================
 // Personality-Specific Post Enhancements
 // ============================================
+// Usage-map note (2026-07 batch 6): `.post-container` is a class applied
+// directly to the `<otui-card>` HOST element (see post.component.html) —
+// `otui-card`'s own `.card` styling (personality-driven radius/shadow via
+// `--personality-card-radius`/`--personality-card-shadow`) targets an INNER
+// `<div class="card">` in ITS OWN template (see
+// `card.component.html`/`.scss`, no `:host` rule there), a different box.
+// So these overrides are not duplicating styling already applied to the
+// same element; they're this component's own decoration of the outer host.
+// The `border-radius` literals for architect (0px) and control-center (4px)
+// exactly match `--personality-card-radius` for those personalities (see
+// `personalities.ts` PRESENTATION_BY_ID[...].components.card.borderRadius);
+// soft-touch's (20px) does too. Converted those three to reference the real
+// personality var (fallback preserves the identical rendered value) per
+// checklist item 3. playful (16px) and minimal (4px) do NOT match their
+// personality's card default (24px and 0px respectively) — deliberate
+// post-specific deviations, kept as literals (batch 5's conservative
+// "exact-match-only" rule: only wire up the var where it reproduces the
+// same rendered result).
 
 body.personality-architect .post-container {
-  border-radius: 0;
+  border-radius: var(--personality-card-radius, 0);
   border-width: 2px;
 
   &:hover {
@@ -380,7 +376,8 @@ body.personality-minimal .post-container {
   box-shadow: none;
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--shadow-color, #000) 8%, transparent);
   }
 }
 
@@ -391,16 +388,17 @@ body.personality-electric .post-container {
 }
 
 body.personality-soft-touch .post-container {
-  border-radius: 20px;
+  border-radius: var(--personality-card-radius, 20px);
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 12px 24px
+      color-mix(in srgb, var(--shadow-color, #000) 10%, transparent);
   }
 }
 
 body.personality-control-center .post-container {
-  border-radius: 4px;
+  border-radius: var(--personality-card-radius, 4px);
 
   &:hover {
     box-shadow: inset 0 0 0 1px var(--primary);
@@ -420,7 +418,10 @@ body.personality-control-center .post-container {
   font-size: 14px;
 
   &:hover {
-    background: var(--dropdown-hover-bg, rgba(0, 0, 0, 0.05));
+    background: var(
+      --dropdown-hover-bg,
+      color-mix(in srgb, var(--foreground) 5%, transparent)
+    );
   }
 }
 
@@ -432,10 +433,11 @@ body.personality-control-center .post-container {
     position: absolute;
     left: 100%;
     top: 0;
-    background: var(--dropdown-bg, #fff);
-    border: 1px solid var(--dropdown-border, #ccc);
+    background: var(--dropdown-bg, var(--background));
+    border: 1px solid var(--dropdown-border, var(--border));
     min-width: 150px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px
+      color-mix(in srgb, var(--shadow-color, #000) 15%, transparent);
   }
 
   &:hover .submenu {

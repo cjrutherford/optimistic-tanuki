@@ -1,16 +1,13 @@
 /* Responsive attachment grid with theme variables */
+@use 'personality' as p;
+
+// 2026-07 batch 6 legacy-var migration: `--accent`/`--complement` -> the
+// contract's `--primary`/`--secondary` (see the refactor plan's Decisions;
+// ThemeService never emits `--accent`/`--complement`).
 .attachments-container {
   margin: var(--spacing-sm, 8px);
   padding: var(--spacing-sm, 8px);
-  font-family: var(
-    --font-body,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif
-  );
+  font-family: var(--font-body, system-ui, sans-serif);
 }
 
 .attachment-grid {
@@ -32,20 +29,20 @@
 }
 
 .attachment-item {
-  border: 1px solid var(--complement, #c0af4b);
+  border: 1px solid var(--secondary);
   padding: var(--spacing-sm, 8px);
   text-align: center;
   border-radius: var(--border-radius-md, 4px);
-  background-color: var(--background, #ffffff);
-  transition: all 0.15s ease-in-out;
+  background-color: var(--background, #fff);
+  @include p.personality-transition(all, 'fast');
 
   &:hover {
-    border-color: var(--accent, #3f51b5);
-    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    border-color: var(--primary);
+    @include p.shadow('md');
   }
 
   &:focus-visible {
-    outline: 2px solid var(--accent, #3f51b5);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 }
@@ -54,7 +51,7 @@
   margin: var(--spacing-sm, 8px);
 
   &:focus-visible {
-    outline: 2px solid var(--accent, #3f51b5);
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
   }
 }
@@ -62,10 +59,18 @@
 // ============================================
 // Personality-Specific Attachment Enhancements
 // ============================================
+// Usage-map note (2026-07 batch 6): architect (0px) and soft-touch (20px)
+// below are EXACT matches for `--personality-card-radius` at those
+// personalities (see `personalities.ts` PRESENTATION_BY_ID[...]
+// .components.card.borderRadius) — converted to reference the real var.
+// playful (16px vs contract 24px), minimal (2px vs contract 0px), and
+// control-center (2px vs contract 4px) do NOT match — deliberate
+// attachment-specific deviations, kept as literals (batch 5's conservative
+// "exact-match-only" rule).
 
 body.personality-architect {
   .attachment-item {
-    border-radius: 0;
+    border-radius: var(--personality-card-radius, 0);
     &:hover {
       box-shadow: 4px 4px 0 var(--primary);
       transform: translate(-2px, -2px);
@@ -88,7 +93,8 @@ body.personality-minimal {
     border-width: 1px;
     box-shadow: none;
     &:hover {
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 2px 6px
+        color-mix(in srgb, var(--shadow-color, #000) 4%, transparent);
     }
   }
 }
@@ -103,10 +109,11 @@ body.personality-electric {
 
 body.personality-soft-touch {
   .attachment-item {
-    border-radius: 20px;
+    border-radius: var(--personality-card-radius, 20px);
     &:hover {
       transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 8px 20px
+        color-mix(in srgb, var(--shadow-color, #000) 10%, transparent);
     }
   }
 }
