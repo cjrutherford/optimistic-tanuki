@@ -4,14 +4,14 @@
   gap: 0.5rem;
 
   .tag {
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: color-mix(in srgb, var(--foreground) 10%, transparent);
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--border-radius-md, 4px);
     font-size: 0.875rem;
-    color: var(--text-secondary, #ccc);
+    color: var(--foreground-secondary, #ccc);
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.2);
+      background-color: color-mix(in srgb, var(--foreground) 20%, transparent);
       cursor: pointer;
     }
   }

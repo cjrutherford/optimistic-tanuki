@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .carousel {
   position: relative;
   overflow: hidden;
@@ -8,7 +10,7 @@
   display: flex;
   flex-direction: row;
   gap: var(--spacing-md, 16px);
-  transition: transform 0.5s ease;
+  @include p.personality-transition(transform, 'slow');
 }
 
 .carousel-item {
@@ -31,12 +33,12 @@
   justify-content: center;
   cursor: pointer;
   z-index: var(--z-index-dropdown, 100);
-  transition: all 0.2s ease;
+  @include p.personality-transition(all);
   color: var(--foreground);
-  box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+  @include p.shadow('md');
 
   &:hover {
-    background: var(--accent);
+    background: var(--primary);
     color: var(--primary-foreground, white);
     transform: translateY(-50%) scale(1.1);
   }

@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
   height: 100%;
@@ -13,7 +15,7 @@
   border: 1px solid var(--border);
   border-radius: min(var(--border-radius-lg, 16px), 16px);
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
 }
 
 .messenger-container.mobile-layout {
@@ -75,15 +77,14 @@
   padding: 12px 16px;
   min-height: 48px;
   cursor: pointer;
-  transition: background-color var(--animation-duration-fast, 200ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(background-color, 'fast');
 
   &:hover {
-    background-color: color-mix(in srgb, var(--complement) 10%, transparent);
+    background-color: color-mix(in srgb, var(--secondary) 10%, transparent);
   }
 
   &:active {
-    background-color: color-mix(in srgb, var(--accent) 10%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
   }
 }
 

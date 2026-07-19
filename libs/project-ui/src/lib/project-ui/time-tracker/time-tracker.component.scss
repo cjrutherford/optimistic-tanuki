@@ -3,9 +3,9 @@
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  border: 1px solid var(--border-color, #e0e0e0);
-  border-radius: 8px;
-  background: var(--surface-color, #f9f9f9);
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: var(--border-radius-lg, 8px);
+  background: var(--surface, #f9f9f9);
 
   .time-display {
     display: flex;
@@ -20,7 +20,7 @@
 
       .label {
         font-size: 0.75rem;
-        color: var(--text-secondary, #666);
+        color: var(--muted-foreground, #666);
         font-weight: 500;
       }
 
@@ -35,7 +35,7 @@
           'Courier New',
           monospace
         );
-        color: var(--text-primary, #333);
+        color: var(--foreground, #333);
       }
     }
 

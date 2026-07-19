@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .contact-bubble {
   position: relative;
   display: flex;
@@ -6,9 +8,9 @@
   padding: 8px;
   border-radius: var(--border-radius-md, 8px);
   background-color: var(--surface, var(--background));
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
   cursor: pointer;
-  transition: background-color var(--animation-duration-normal, 0.3s) ease;
+  @include p.personality-transition(background-color, 'normal');
   border: 1px solid transparent;
 
   &:hover {
@@ -27,7 +29,7 @@
   .contact-avatar {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: var(--border-radius-full, 50%);
     object-fit: cover;
   }
 
@@ -50,7 +52,7 @@
     background: var(--surface, var(--background));
     border-radius: var(--border-radius-md, 8px);
     padding: 8px;
-    box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.12));
+    @include p.shadow('md');
     border: 1px solid var(--border);
     z-index: 10;
     white-space: nowrap;
