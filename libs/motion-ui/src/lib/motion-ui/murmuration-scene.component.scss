@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -32,7 +34,7 @@
       color-mix(in srgb, var(--background) 84%, black 4%),
       color-mix(in srgb, var(--surface, var(--background)) 92%, transparent)
     );
-  box-shadow: var(--personality-card-shadow, 0 18px 40px rgba(0, 0, 0, 0.12));
+  @include p.shadow('lg');
   isolation: isolate;
 }
 
@@ -62,7 +64,7 @@
 }
 
 .murmuration-orbit {
-  border-radius: 999px;
+  border-radius: var(--border-radius-full, 999px);
   border: 1px solid color-mix(in srgb, var(--primary) 16%, transparent);
   filter: blur(0.2px);
   transform-origin: center;

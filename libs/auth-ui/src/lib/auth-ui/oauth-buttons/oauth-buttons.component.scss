@@ -17,12 +17,15 @@
 .divider-line {
   flex: 1;
   height: 1px;
-  background: var(--local-complement, #ccc);
+  // Neutral hairline divider, not a brand accent — `--border` matches the
+  // rendered #ccc fallback's role better than the legacy `--complement`
+  // (secondary brand color) it was aliased to.
+  background: var(--border, #ccc);
 }
 
 .divider-text {
   font-size: 0.85rem;
-  color: var(--local-complement, #999);
+  color: var(--muted-foreground, #999);
   white-space: nowrap;
 }
 

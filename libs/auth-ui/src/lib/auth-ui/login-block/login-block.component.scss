@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .login-container {
   display: flex;
   padding: 0;
@@ -6,10 +8,12 @@
   justify-content: center;
 }
 .card-outer {
-  background: var(--border-gradient);
+  // `--border-gradient` was never emitted by ThemeService (naming drift from
+  // the contract's actual `--gradient-border`); source from the real token.
+  background: var(--gradient-border, var(--primary));
   padding: 6px;
-  border-radius: var(--border-radius-md, 8px);
-  box-shadow: var(--shadow-md, 0 4px 8px var(--complement));
+  border-radius: var(--border-radius-lg, 8px);
+  @include p.shadow('md');
 }
 .card-inner {
   display: flex;
@@ -18,8 +22,8 @@
   justify-content: center;
   padding: 20px;
   background: var(--background);
-  border-radius: var(--border-radius-md, 8px);
-  box-shadow: var(--shadow-md, 0 4px 8px var(--complement));
+  border-radius: var(--border-radius-lg, 8px);
+  @include p.shadow('md');
   @media (max-width: 640px) {
     flex-direction: column;
   }
@@ -113,12 +117,12 @@ body.personality-control-center .card-inner {
     appearance: none;
     border: 0;
     background: transparent;
-    color: var(--local-foreground);
+    color: var(--foreground);
     cursor: pointer;
     font: inherit;
     padding: 0.35rem 0;
     text-decoration: underline;
-    text-decoration-color: var(--local-accent);
+    text-decoration-color: var(--primary);
     text-underline-offset: 0.25rem;
   }
 
