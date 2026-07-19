@@ -1,4 +1,5 @@
 @use '../../styles/mixins' as *;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Select Component
@@ -20,14 +21,17 @@
   color: var(--foreground);
   background: var(--surface, var(--background));
   background-color: transparent;
-  border: var(--border-width, 0.5px) solid
+  border: var(--personality-input-border-width, 0.5px) solid
     color-mix(in srgb, var(--primary) 15%, transparent);
-  border-radius: var(--border-radius-md, 8px);
+  border-radius: var(--personality-input-radius, var(--border-radius-md, 8px));
   outline: none;
   cursor: pointer;
-  transition: all var(--animation-duration-normal, 250ms)
-    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
-  box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
+  @include p.personality-transition(all, 'normal');
+  box-shadow: var(
+    --shadow-sm,
+    inset 0 1px 2px
+      color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+  );
   appearance: none;
   // Note: SVG stroke color in data URI cannot use CSS custom properties.
   // The personality system will override this at runtime via JavaScript if needed.
@@ -42,7 +46,11 @@
 
   &:focus {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
-    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+    box-shadow: var(
+        --shadow-sm,
+        inset 0 1px 2px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
       var(
         --shadow-lg,
         0 8px 24px color-mix(in srgb, var(--primary) 12%, transparent)
@@ -63,7 +71,12 @@
     box-shadow: none;
   }
 
-  // Firefox specific
+  // Firefox specific. Exception: `#000` here is not a themed color — this is
+  // the standard `color: transparent; text-shadow: 0 0 0 #000;` trick to
+  // suppress Firefox's native dotted focus ring on <select>. The shadow sits
+  // at a zero offset behind fully transparent text, so it never paints
+  // visibly; the literal value is inert by design and there is nothing to
+  // tokenize.
   &:-moz-focusring {
     color: transparent;
     text-shadow: 0 0 0 #000;
@@ -81,18 +94,26 @@
     font-family: var(--font-body, system-ui, sans-serif);
     font-size: 0.9375rem;
     padding: 10px 16px;
-    border-radius: 8px;
+    border-radius: var(--border-radius-sm, 8px);
   }
 
   // Error state
   &.has-error {
     border-color: color-mix(in srgb, var(--danger) 50%, transparent);
     background: color-mix(in srgb, var(--danger) 6%, var(--background));
-    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+    box-shadow: var(
+        --shadow-sm,
+        inset 0 1px 2px
+          color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+      ),
       0 4px 16px color-mix(in srgb, var(--danger) 10%, transparent);
 
     &:focus {
-      box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03)),
+      box-shadow: var(
+          --shadow-sm,
+          inset 0 1px 2px
+            color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+        ),
         0 8px 24px color-mix(in srgb, var(--danger) 15%, transparent);
     }
   }
@@ -146,16 +167,22 @@
     left: 0;
     right: 0;
     background: var(--background);
-    border: var(--border-width, 0.5px) solid
+    border: var(--personality-input-border-width, 0.5px) solid
       color-mix(in srgb, var(--primary) 15%, transparent);
-    border-radius: var(--border-radius-md, 16px);
-    box-shadow: var(--shadow-lg, 0 10px 40px rgba(0, 0, 0, 0.1));
+    border-radius: var(
+      --personality-card-radius,
+      var(--border-radius-md, 16px)
+    );
+    box-shadow: var(
+      --shadow-lg,
+      0 10px 40px color-mix(in srgb, var(--shadow-color, #000) 10%, transparent)
+    );
     overflow: hidden;
     z-index: 100;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-8px);
-    transition: all 200ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+    @include p.personality-transition(all, 'fast');
 
     &.open {
       opacity: 1;
@@ -169,7 +196,7 @@
       font-size: 0.9375rem;
       color: var(--foreground);
       cursor: pointer;
-      transition: background var(--animation-duration-fast, 150ms) ease;
+      @include p.personality-transition(background, 'fast');
 
       &:hover {
         background: color-mix(in srgb, var(--primary) 8%, transparent);
@@ -188,7 +215,7 @@
 .form-control-select[multiple] {
   padding-right: 20px;
   background-image: none;
-  border-radius: var(--border-radius-md, 16px);
+  border-radius: var(--personality-input-radius, var(--border-radius-md, 16px));
   overflow-y: auto;
   max-height: 200px;
 
@@ -211,10 +238,15 @@
 // ============================================
 // Personality-Specific Select Enhancements
 // ============================================
+// The base `.form-control-select` border-radius above already reads
+// `--personality-input-radius`. Only the blocks below whose literal radius
+// was an EXACT match for that contract value (architect: 0px,
+// control-center: 4px) had their radius line removed as truly redundant.
+// playful (12px), minimal (2px), and soft-touch (20px) are kept hardcoded
+// because the contract's own input radius for those personalities (16px /
+// 0px / 18px) differs enough to be a visible change, not a no-op.
 
 body.personality-architect .form-control-select {
-  border-radius: 0;
-
   &:focus {
     border-width: 2px;
     box-shadow: 4px 4px 0 var(--primary);
@@ -227,6 +259,8 @@ body.personality-playful .form-control-select {
 
 body.personality-minimal .form-control-select {
   border-radius: 2px;
+  // Deliberately thinner than the contract's own minimal input border-width
+  // (1px) — "minimal" wants a near-invisible line, not just a bit less bold.
   border-width: 0.5px;
 }
 
@@ -235,7 +269,6 @@ body.personality-soft-touch .form-control-select {
 }
 
 body.personality-control-center .form-control-select {
-  border-radius: 4px;
   font-family: var(--font-mono);
 }
 
