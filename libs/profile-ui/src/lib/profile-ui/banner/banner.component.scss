@@ -7,6 +7,9 @@
   justify-content: flex-start;
   margin: 0;
   padding: 0;
+  // Deliberate: sits over an arbitrary user photo behind the dark scrim
+  // below and must stay legible regardless of the active theme, so it is
+  // not routed through --foreground.
   color: white;
 }
 .filter-layer {
@@ -14,14 +17,15 @@
   height: 100%;
   padding: 20px;
   margin: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  // Same scrim role as theme-ui/persona-ui's modal overlays.
+  background-color: var(--background-overlay, rgba(0, 0, 0, 0.5));
 }
 
 .profile-image {
   width: 60px;
   height: 60px;
-  border-radius: 50%;
-  border: 1px solid white;
+  border-radius: var(--border-radius-full, 50%);
+  border: 1px solid var(--background, white);
   margin-right: 10px;
 }
 
