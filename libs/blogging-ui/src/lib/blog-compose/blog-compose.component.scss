@@ -118,7 +118,7 @@ button {
   transition: border-color 0.15s ease-in-out;
 
   &.dragover {
-    ::after {
+    &::after {
       content: 'Drop files to upload';
       position: absolute;
       top: var(--spacing-md, 16px);
