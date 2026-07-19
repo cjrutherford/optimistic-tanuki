@@ -1,0 +1,67 @@
+// ============================================================================
+// Personality shadow & transition contract
+// ----------------------------------------------------------------------------
+// This partial defines NO shadow values of its own. It is a thin, documented
+// wrapper over the CSS custom properties emitted at runtime by theme-lib's
+// ThemeService (see theme.service.ts `generatePersonalityShadows()` and the
+// `--animation-duration-*` / `--animation-easing` block) — the service is the
+// single source of truth for every personality's shadow and motion data.
+// Consuming components get a typo-proof, self-documenting call site instead
+// of hand-rolled `var(--shadow-md)` strings scattered across component SCSS.
+//
+// Variable contract (emitted per personality + mode by ThemeService):
+//
+//   --shadow-none / --shadow-sm / --shadow-md / --shadow-lg / --shadow-xl
+//       Fully-resolved `box-shadow` values (offset + blur + spread + color),
+//       already tinted per the personality's `shadowTint` and scaled for the
+//       active light/dark mode.
+//
+//   --shadow-color
+//       The alpha-free rgb tint used to build the `--shadow-*` values above
+//       (neutral black, or a primary/warm/cool tint depending on the active
+//       personality's `colorGeneration.shadowTint`).
+//
+//   --shadow-opacity
+//       The single mode-scaled opacity applied to `--shadow-color`. There is
+//       exactly one opacity source in the contract — do not additionally
+//       apply alpha when composing with `--shadow-color` in a component.
+//
+//   --animation-duration-fast / --animation-duration-normal /
+//   --animation-duration-slow
+//       Personality-scaled durations for transitions and animations.
+//
+//   --animation-easing
+//       The active personality's timing function.
+//
+// Import via the workspace `stylePreprocessorOptions.includePaths` mechanism
+// (see `nx.json` targetDefaults and `libs/theme-styles/README.md`):
+//
+//   @use 'personality' as p;
+//
+//   .card {
+//     @include p.shadow('md');
+//
+//     &:hover {
+//       @include p.shadow('lg');
+//       @include p.personality-transition(box-shadow);
+//     }
+//   }
+// ============================================================================
+
+/// Emit a `box-shadow` declaration for one of the theme service's resolved
+/// shadow sizes. `$size` must match one of the emitted `--shadow-*` suffixes:
+/// 'none' | 'sm' | 'md' | 'lg' | 'xl'.
+@mixin shadow($size: 'md') {
+  box-shadow: var(--shadow-#{$size});
+}
+
+/// Emit a personality-aware `transition` for the given CSS property (or
+/// comma-separated property list), driven entirely by the theme service's
+/// `--animation-duration-*` / `--animation-easing` variables. `$speed` must
+/// match one of the emitted `--animation-duration-*` suffixes:
+/// 'fast' | 'normal' | 'slow'.
+@mixin personality-transition($properties: transform, $speed: 'fast') {
+  transition-property: $properties;
+  transition-duration: var(--animation-duration-#{$speed});
+  transition-timing-function: var(--animation-easing);
+}

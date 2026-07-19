@@ -1,6 +1,5 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Card Component
@@ -13,6 +12,7 @@
     var(--personality-border-style, solid) var(--border);
   border-radius: var(--personality-card-radius, var(--border-radius-lg, 8px));
   background: var(--background-elevated, var(--surface, var(--background)));
+  @include p.surface-texture();
   color: var(--foreground);
   font-family: var(--personality-font-family, var(--font-body, system-ui));
   overflow: hidden;
@@ -24,7 +24,7 @@
   );
 
   &:hover {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     transform: translateY(-2px);
   }
 

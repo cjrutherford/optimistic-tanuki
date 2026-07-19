@@ -33,7 +33,12 @@
     "@angular-devkit/build-angular:application": {
       "cache": true,
       "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "inputs": ["production", "^production"],
+      "options": {
+        "stylePreprocessorOptions": {
+          "includePaths": ["libs/theme-styles/src/lib"]
+        }
+      }
     },
     "@nx/eslint:lint": {
       "cache": true,
@@ -67,6 +72,20 @@
         "{projectRoot}/tsconfig.storybook.json"
       ]
     },
+    "@storybook/angular:build-storybook": {
+      "options": {
+        "stylePreprocessorOptions": {
+          "includePaths": ["libs/theme-styles/src/lib"]
+        }
+      }
+    },
+    "@storybook/angular:start-storybook": {
+      "options": {
+        "stylePreprocessorOptions": {
+          "includePaths": ["libs/theme-styles/src/lib"]
+        }
+      }
+    },
     "@angular-devkit/build-angular:browser": {
       "cache": true,
       "dependsOn": ["^build"],
@@ -78,7 +97,12 @@
     "@angular/build:application": {
       "cache": true,
       "dependsOn": ["^build"],
-      "inputs": ["production", "^production"]
+      "inputs": ["production", "^production"],
+      "options": {
+        "stylePreprocessorOptions": {
+          "includePaths": ["libs/theme-styles/src/lib"]
+        }
+      }
     },
     "@nx/angular:ng-packagr-lite": {
       "cache": true,
