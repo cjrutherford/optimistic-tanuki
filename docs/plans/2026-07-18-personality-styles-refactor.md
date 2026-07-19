@@ -1,7 +1,7 @@
 ---
 title: Personality Styles — Consolidation & Background/Shadow Variation Plan
 date: 2026-07-18
-status: proposed
+status: in progress — phases 1–6 implemented (C3 landed 2026-07-18)
 summary: Refactoring plan to remove the dead per-lib personality SCSS estate, fix two broken pipelines (shadow tint and page-background encoding), and give every personality a distinct page background and shadow identity — reviewed by fact-check and architecture subagent passes.
 ---
 
@@ -290,6 +290,62 @@ is explicitly out of scope (future work).
 card-level texture (paper grain for soft-touch, scanlines for control-center),
 consumed by common-ui `card` via a shared partial. Only after C1/C2 prove out;
 same opacity/contrast guards.
+_Status: implemented (2026-07-18)._ `Personality.surfaceTexture?` (pattern,
+usePrimaryTint, opacity) ships for a small curated set of four —
+`soft-touch` (paper-grain speckle), `control-center` (1px scanlines, ~4px
+pitch), `architect` (sparse blueprint cross-hatch), `electric` (angular
+circuit-trace corner, primary-tinted) — every other personality
+intentionally declares none; absence is the default, not a gap. Authored
+opacity is capped at **0.05** (tighter than `pageBackground`'s 0.08, since
+this paints under running text), enforced in
+`personality-surface-textures.spec.ts` alongside an exact-set check so an
+accidental addition/removal is a deliberate, reviewed change. `ThemeService`
+emits `--surface-texture` through the SAME `generatePageBackgroundPattern` +
+single-`encodeURIComponent` path as `--page-background-pattern`, and both
+variables are now explicitly cleared when the incoming personality declares
+none — fixing a stale-variable leak in `applyPersonalityTheme()` that
+affected `--page-background-pattern` too (it only ever `setProperty`s the
+current personality's variables and never diffs against the previous one).
+`libs/theme-styles/src/lib/personality/_surfaces.scss` wraps the contract
+(`surface-texture()` mixin, with `prefers-contrast: more` /
+`forced-colors: active` guards), consumed by common-ui `card`.
+
+### Workstream E — Vary surface treatment per personality (related objective, added 2026-07-18)
+
+Surfaces are the highest-leverage token not yet varying: `var(--surface` appears
+in ~198 files, yet the only per-personality surface parameter is
+`colorGeneration.surfaceLuminosityOffset` — and it clusters hard (7 of 12
+personalities use −2; full range is only −1 to −4). Every personality's cards,
+panels, and inputs sit on a near-identical neutral lift off the background.
+There is also an existing per-personality `gradients.surface` (emitted via the
+GradientFactory) that most surfaces never use.
+
+**E1. Extend `ColorGenerationConfig` with surface character.** Add
+`surfaceSaturationShift` (neutral ↔ tinted surfaces) and `surfaceHueBias`
+(`none | primary | warm | cool` — mirroring the existing `shadowTint`
+vocabulary) so `generateThemeResponsiveColors()` can derive surfaces with
+per-personality character: e.g. architect gets flat untinted paper, soft-touch
+a warm-biased surface, electric a faint primary-tinted lift, control-center a
+cooler technical panel. Spread `surfaceLuminosityOffset` deliberately (target
+≥ 6 unique values across 12) — elevation contrast is itself a personality
+trait (dramatic personalities lift more; minimal barely at all).
+
+**E2. Keep the derivation chain intact.** Surfaces stay derived from primary
+color + mode inside `generateThemeResponsiveColors()` (`color-harmony.ts:453`)
+— no hand-authored surface hexes. `--surface`, `--background-elevated`, and the
+existing `gradients.surface` must all derive from the same computed surface so
+the three never disagree (same single-source rule as B2's shadows).
+
+**E3. Contrast is the hard constraint.** `--surface` is a text background in
+most of its ~198 consumer files: every personality × mode must keep
+foreground-on-surface and muted-on-surface ratios passing the existing
+contrast harness (`validateThemeContrast`), auto-clamping tint/saturation
+before failing. Test-enforced alongside D-series specs; surface dimensions
+join the distinctiveness metric with D3's re-seeding.
+
+Relationship to C3: E varies the surface _color values_; C3 (stretch) layers
+optional _texture_ on top. E is independent of C and can land with Phase 3's
+design pass or as its own pass.
 
 ### Workstream D — Tests, stories, docs
 
@@ -323,6 +379,7 @@ same opacity/contrast guards.
 | 3     | B2, B3, D1, D3                 | Shadow vocabulary (design-led; joint with 07-14 B2)                                | ~1.5–2 days  |
 | 4     | A2, A3                         | Import mechanism + curated partials, landed with their first real consumer (B3/C2) | ~0.5 day     |
 | 5     | C1, C2, D2                     | Background authoring (design-led) + backdrop component                             | ~2 days      |
+| 5b    | E1–E3                          | Surface variation (design-led; contrast-gated; parallel to Phase 5)                | ~1–1.5 days  |
 | 6     | D4, D5, C3                     | Stories, docs, stretch texture                                                     | ~1 day       |
 
 Phase 1 and 2 are independent and can ship immediately, in either order.
@@ -361,6 +418,9 @@ A2/A3 deliberately land _with_ their first consumer rather than speculatively.
 - `--page-background-pattern` decodes to valid SVG (test-enforced) and 10 of 12
   personalities render a distinct, theme-responsive page background; the 2 flat
   ones are documented as intentional.
+- Surfaces vary by personality: ≥ 6 unique `surfaceLuminosityOffset` values and
+  per-personality hue/saturation character, with every foreground-on-surface
+  pair passing the contrast harness in both modes (test-enforced).
 - No new libraries; the one new component (`PersonalityBackdropComponent`) lives
   in theme-ui; shared SCSS lives in theme-styles behind a working, documented
   import mechanism.
