@@ -1,40 +1,49 @@
 @use '../../styles/mixins' as *;
+@use 'personality' as p;
 
 .tile {
   padding: 0;
   margin: 0;
-  @include pulse-animation(16s, (var(--accent), var(--complement)));
+  @include pulse-animation(16s, (var(--primary), var(--secondary)));
   .filter {
     margin: 5px;
     padding: 2rem 2rem;
     width: 100%;
     height: 100%;
     position: relative;
-    background: var(--background-filter, rgba(255, 255, 255, 0.5));
-    @include border-radius-standard(var(--border-radius, 4px));
-    @include pulse-animation(16s, (var(--accent), var(--complement)));
+    background: var(
+      --background-filter,
+      color-mix(in srgb, var(--background) 50%, transparent)
+    );
+    @include border-radius-standard(
+      var(--border-radius, var(--border-radius-md, 4px))
+    );
+    @include pulse-animation(16s, (var(--primary), var(--secondary)));
     :hover {
       background: var(
         --hover-background-filter,
-        var(--background-filter, rgba(255, 255, 255, 0.5))
+        var(
+          --background-filter,
+          color-mix(in srgb, var(--background) 50%, transparent)
+        )
       );
-      @include transition-base(background, var(--transition-duration, 0.3s));
+      @include p.personality-transition(background, 'normal');
     }
   }
 }
 .default {
-  @include border-base(4px, solid, var(--accent, #b1baec));
+  @include border-base(4px, solid, var(--primary));
   @include border-radius-standard(8px);
   @include flex-column;
   justify-content: center;
   align-items: center;
-  @include transition-base(box-shadow, 0.3s);
-  background: var(--background-gradient, #5969c3);
-  @include pulse-animation(16s, (var(--accent), var(--complement)));
-  color: var(--foreground, #fff);
+  @include p.personality-transition(box-shadow, 'normal');
+  background: var(--background-gradient, var(--primary));
+  @include pulse-animation(16s, (var(--primary), var(--secondary)));
+  color: var(--primary-foreground, #fff);
   @include box-shadow-multi-glow(
-    var(--accent),
-    var(--complement),
+    var(--primary),
+    var(--secondary),
     20px,
     8px,
     20px,
@@ -46,25 +55,25 @@
   @include flex-row;
   align-items: center;
   justify-content: space-between;
-  @include transition-base(box-shadow, 0.3s);
+  @include p.personality-transition(box-shadow, 'normal');
   background: var(--background, #5969c3);
-  @include box-shadow-glow(var(--accent), 6px, 10px);
-  box-shadow: 4px 4px 6px 10px var(--accent),
+  @include box-shadow-glow(var(--primary), 6px, 10px);
+  box-shadow: 4px 4px 6px 10px var(--primary),
     inset 0 2px 12px 0 rgba(0, 0, 0, 0.15);
 }
 
 .tile:hover {
-  @include box-shadow-inset(var(--accent), 1em, 0);
-  box-shadow: inset 1px 2px 1em var(--accent), 2px 4px 8px 6px var(--complement);
+  @include box-shadow-inset(var(--primary), 1em, 0);
+  box-shadow: inset 1px 2px 1em var(--primary), 2px 4px 8px 6px var(--secondary);
 }
 
 .tile.light-mode {
-  background-color: var(--accent, #b1baec);
+  background-color: color-mix(in srgb, var(--primary) 50%, white);
   color: var(--foreground, #000);
 }
 
 .tile.dark-mode {
-  background-color: var(--accent-shade-darken-50, #313a6c);
+  background-color: color-mix(in srgb, var(--primary) 50%, black);
   color: var(--foreground, #fff);
 }
 
@@ -94,15 +103,17 @@
 :host {
   display: block;
   box-sizing: border-box;
-  @include border-radius-standard(var(--border-radius, 1em));
+  @include border-radius-standard(
+    var(--border-radius, var(--border-radius-lg, 1em))
+  );
   @include border-base(
     var(--border-width, 2px),
     solid,
-    var(--border-color, transparent)
+    var(--border-color, var(--border, transparent))
   );
   background: var(--background, #fff);
   color: var(--foreground, #222);
-  @include transition-base(box-shadow, var(--transition-duration, 0.3s));
+  @include p.personality-transition(box-shadow, 'normal');
   position: relative;
   overflow: hidden;
 }

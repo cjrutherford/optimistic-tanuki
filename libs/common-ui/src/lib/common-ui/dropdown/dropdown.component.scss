@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .dropdown-container {
   position: relative;
   display: inline-block;
@@ -8,20 +10,20 @@
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  border: 1px solid var(--dropdown-border, var(--border, #ccc));
-  border-radius: 8px;
-  background: var(--dropdown-bg, var(--surface, #fff));
-  color: var(--foreground, #212121);
+  border: 1px solid var(--dropdown-border, var(--border));
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--dropdown-bg, var(--surface));
+  color: var(--foreground);
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  @include p.personality-transition(all, 'fast');
 
   &:hover:not(.disabled) {
     background: var(--dropdown-hover-bg, rgba(0, 0, 0, 0.05));
   }
 
   &.active {
-    border-color: var(--accent, #3f51b5);
+    border-color: var(--primary);
   }
 
   &.disabled {
@@ -38,7 +40,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
+  @include p.personality-transition(transform, 'fast');
 
   &.open {
     transform: rotate(180deg);
@@ -51,9 +53,9 @@
   left: 0;
   min-width: 180px;
   padding: 4px;
-  background: var(--dropdown-bg, var(--surface, #fff));
-  border: 1px solid var(--dropdown-border, var(--border, #ccc));
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  background: var(--dropdown-bg, var(--surface));
+  border: 1px solid var(--dropdown-border, var(--border));
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-lg, 0 4px 12px rgba(0, 0, 0, 0.15));
+  z-index: var(--z-index-dropdown, 1000);
 }

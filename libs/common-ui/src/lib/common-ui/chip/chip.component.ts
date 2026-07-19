@@ -20,16 +20,12 @@ export class ChipComponent extends Themeable {
   @Input() disabled = false;
   @Output() delete = new EventEmitter<void>();
 
-  override applyTheme(colors: ThemeColors): void {
-    this.setLocalCSSVariables({
-      'chip-primary-bg': `${colors.accent}20`,
-      'chip-primary-color': colors.accent,
-      'chip-secondary-bg': `${colors.complementary}20`,
-      'chip-secondary-color': colors.complementary,
-      'chip-success-bg': colors.success,
-      'chip-warning-bg': colors.warning,
-      'chip-error-bg': colors.danger,
-    });
+  // Chip colors now read the shared personality contract vars directly in
+  // SCSS (--primary/--secondary/--success/--warning/--danger); the old
+  // per-instance `--chip-*` CSS var mirroring these same global values has
+  // been removed as redundant. Themeable still requires this hook.
+  override applyTheme(_colors: ThemeColors): void {
+    // no-op: chip styling is fully driven by global contract vars.
   }
 
   onDelete(event: Event): void {

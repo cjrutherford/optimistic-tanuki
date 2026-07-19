@@ -1,12 +1,17 @@
+// NOTE: not currently wired into any component's styleUrls — TooltipDirective
+// (../common-ui/tooltip/tooltip.directive.ts) appends a `.otui-tooltip` div to
+// document.body but has no styleUrls, so this partial is presently orphaned.
+// Tokenized as part of Batch 1 per the plan; wiring it up is a functional
+// change outside this pass's scope (flagged in the batch report).
 .otui-tooltip {
-  padding: 6px 12px;
-  background: var(--tooltip-bg, var(--background, #fff));
-  color: var(--tooltip-color, var(--foreground, #212121));
-  border: 1px solid var(--tooltip-border, var(--border, #ccc));
-  border-radius: 4px;
+  padding: var(--spacing-xs, 6px) var(--spacing-sm, 12px);
+  background: var(--tooltip-bg, var(--background));
+  color: var(--tooltip-color, var(--foreground));
+  border: 1px solid var(--tooltip-border, var(--border));
+  border-radius: var(--border-radius-sm, 4px);
   font-size: 12px;
   white-space: nowrap;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 9999;
+  box-shadow: var(--shadow-md, 0 2px 8px rgba(0, 0, 0, 0.15));
+  z-index: var(--z-index-tooltip, 9999);
 }

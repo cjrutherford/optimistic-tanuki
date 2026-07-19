@@ -1,26 +1,27 @@
 // Glass/gradient/variant styling for breadcrumb
+@use 'personality' as p;
+
 .breadcrumb {
   display: flex;
   list-style: none;
   padding: 10px;
   margin: 10px;
-  border-radius: 8px;
-  background: var(--background, #222);
-  border: 1px solid var(--border-color, #b1baec);
-  box-shadow: 0 2px 10px var(--accent, #b1baec);
-  transition: box-shadow 0.3s, background 0.3s;
+  border-radius: var(--border-radius-md, 8px);
+  background: var(--background);
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 60%, transparent);
+  @include p.personality-transition('box-shadow, background', 'normal');
   &.glass {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
-    box-shadow: 0 4px 24px var(--accent, #b1baec);
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--primary) 60%, transparent);
   }
   &.gradient {
-    background: linear-gradient(
-      120deg,
-      var(--accent, #b1baec),
-      var(--complement, #919ee4)
+    background: var(
+      --gradient-primary,
+      linear-gradient(120deg, var(--primary), var(--secondary))
     );
-    color: var(--foreground, #fff);
+    color: var(--primary-foreground, #fff);
   }
   &.sm {
     font-size: 0.9rem;
@@ -37,18 +38,18 @@
 }
 .breadcrumb-item a {
   text-decoration: none;
-  color: var(--foreground, #fff);
+  color: var(--foreground);
 }
 .breadcrumb-item a:hover {
   text-decoration: underline;
 }
 .popup {
   position: absolute;
-  background: var(--background, #333);
-  border: 1px solid var(--border-color, #b1baec);
+  background: var(--background);
+  border: 1px solid var(--border);
   padding: 0.5rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  box-shadow: var(--shadow-md, 0 4px 8px rgba(0, 0, 0, 0.2));
+  border-radius: var(--border-radius-md, 8px);
 }
 .popup ul {
   list-style: none;
