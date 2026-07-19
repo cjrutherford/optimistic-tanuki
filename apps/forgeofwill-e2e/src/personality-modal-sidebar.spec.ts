@@ -65,14 +65,6 @@ test.describe('Personality Rendering - Forge of Will', () => {
   test('should render personality-specific CSS variables', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
-
-    const borderRadiusStyle = await page.evaluate(() => {
-      return getComputedStyle(document.body)
-        .getPropertyValue('--personality-border-radius-style')
-        .trim();
-    });
-
-    console.log(`Border radius style: "${borderRadiusStyle}"`);
   });
 
   test('should apply distinct border-radius for different personalities', async ({

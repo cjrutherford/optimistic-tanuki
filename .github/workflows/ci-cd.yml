@@ -241,6 +241,9 @@ jobs:
       - name: Client UI heuristics
         run: pnpm run ui:heuristics:ci
 
+      - name: No personality SCSS drift
+        run: pnpm run check:no-personality-scss
+
       - name: Run Go deployment inventory tests
         working-directory: tools/admin-env-wizard
         run: |
