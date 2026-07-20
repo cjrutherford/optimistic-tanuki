@@ -38,4 +38,30 @@ describe('BusinessCardComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('renders the business name and description from the business input', () => {
+    const nameEl: HTMLElement = fixture.nativeElement.querySelector(
+      '.business-card__name'
+    );
+    const descriptionEl: HTMLElement = fixture.nativeElement.querySelector(
+      '.business-card__description'
+    );
+
+    expect(nameEl.textContent).toContain('Test Business');
+    expect(descriptionEl.textContent).toContain('A test business');
+  });
+
+  it('omits the description element when the business has no description', () => {
+    componentRef.setInput('business', {
+      ...mockBusiness,
+      description: undefined,
+    });
+    fixture.detectChanges();
+
+    const descriptionEl: HTMLElement = fixture.nativeElement.querySelector(
+      '.business-card__description'
+    );
+
+    expect(descriptionEl).toBeNull();
+  });
 });
