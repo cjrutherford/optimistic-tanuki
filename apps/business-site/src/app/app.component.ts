@@ -118,6 +118,13 @@ type TopNavLink = {
         </div>
       </header>
 
+      @if (configLoadError()) {
+      <div class="config-load-error" role="status">
+        We couldn't refresh this business's configuration. Showing the most
+        recently available details.
+      </div>
+      }
+
       <main class="page-shell">
         <router-outlet></router-outlet>
       </main>
@@ -166,6 +173,16 @@ type TopNavLink = {
       .topbar:has(.topnav a:hover) {
         box-shadow: 0 4px 20px
           color-mix(in srgb, var(--primary) 4%, transparent);
+      }
+
+      .config-load-error {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.85rem;
+        text-align: center;
+        color: color-mix(in srgb, var(--danger, #991b1b) 90%, black);
+        background: color-mix(in srgb, var(--danger, #fee2e2) 16%, transparent);
+        border-bottom: 1px solid
+          color-mix(in srgb, var(--danger, #991b1b) 30%, transparent);
       }
 
       .brand {
@@ -352,6 +369,12 @@ type TopNavLink = {
 export class AppComponent {
   readonly site = signal<BusinessSiteConfig>(DEFAULT_TRAINER_SITE_CONFIG);
   readonly configId = signal<string | null>(null);
+  /**
+   * Truthy when the most recent business-site config fetch failed and the
+   * store fell back to defaults, so we can tell that apart from a feature
+   * that is genuinely turned off.
+   */
+  readonly configLoadError = signal<string | null>(null);
   readonly currentTheme = signal<'light' | 'dark'>('light');
   readonly auth = inject(BusinessAuthService);
   readonly isClientAuthenticated = this.auth.isClientAuthenticated;
@@ -486,6 +509,7 @@ export class AppComponent {
       const site = mergeBusinessSiteConfig(this.siteConfig.site());
       this.site.set(site);
       this.configId.set(this.siteConfig.configId());
+      this.configLoadError.set(this.siteConfig.loadError?.() ?? null);
       this.syncRouteTheme(site);
     });
 
