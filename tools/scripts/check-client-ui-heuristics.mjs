@@ -31,6 +31,20 @@ function getFlagValue(name) {
 const allowlistPath = getFlagValue('--allowlist');
 const writeAllowlistPath = getFlagValue('--write-allowlist');
 
+function isFullyIgnoredDirectory(directory) {
+  // A directory that ships its own `.gitignore` containing only `*` is
+  // declaring "everything under here is generated, don't touch it" (e.g.
+  // compodoc output under apps/ui-playground/public/generated/compodoc/).
+  // walk() has no other way to know that, since it isn't gitignore-aware --
+  // it only skips node_modules and dotfile-prefixed directories by name.
+  try {
+    const marker = readFileSync(join(directory, '.gitignore'), 'utf8').trim();
+    return marker === '*';
+  } catch {
+    return false;
+  }
+}
+
 function walk(directory) {
   const entries = readdirSync(directory, { withFileTypes: true });
   const files = [];
@@ -40,6 +54,9 @@ function walk(directory) {
 
     if (entry.isDirectory()) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
+        continue;
+      }
+      if (isFullyIgnoredDirectory(fullPath)) {
         continue;
       }
       files.push(...walk(fullPath));

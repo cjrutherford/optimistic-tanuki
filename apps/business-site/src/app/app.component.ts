@@ -175,10 +175,10 @@ type TopNavLink = {
         padding: 0.6rem 1.5rem;
         font-size: 0.85rem;
         text-align: center;
-        color: color-mix(in srgb, var(--danger, #991b1b) 90%, black);
-        background: color-mix(in srgb, var(--danger, #fee2e2) 16%, transparent);
+        color: color-mix(in srgb, var(--danger) 90%, var(--foreground));
+        background: color-mix(in srgb, var(--danger) 16%, transparent);
         border-bottom: 1px solid
-          color-mix(in srgb, var(--danger, #991b1b) 30%, transparent);
+          color-mix(in srgb, var(--danger) 30%, transparent);
       }
 
       .brand {
