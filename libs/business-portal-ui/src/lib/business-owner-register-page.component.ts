@@ -93,7 +93,7 @@ import { EMPTY, catchError, switchMap } from 'rxjs';
       }
       .lede {
         margin: 0 0 1rem;
-        color: var(--muted, #64748b);
+        color: var(--muted);
       }
       .form {
         display: grid;
@@ -123,10 +123,10 @@ import { EMPTY, catchError, switchMap } from 'rxjs';
         font-size: 0.88rem;
       }
       .error {
-        color: var(--destructive, #e11d48);
+        color: var(--danger);
       }
       .success {
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
     `,
   ],

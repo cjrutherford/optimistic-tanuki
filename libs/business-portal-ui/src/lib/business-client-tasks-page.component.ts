@@ -118,12 +118,8 @@ import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
         border-radius: 999px;
         font-size: 0.78rem;
         font-weight: 700;
-        color: var(--primary, #1f7a63);
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 10%,
-          transparent
-        );
+        color: var(--primary);
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
       }
     `,
   ],

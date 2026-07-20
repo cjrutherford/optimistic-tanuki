@@ -104,7 +104,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
 
       .support-copy,
@@ -134,8 +134,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       }
 
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
 
       .cta-secondary {

@@ -206,13 +206,13 @@ type ProductForm = {
         border-radius: 1.5rem;
         background: radial-gradient(
             circle at top left,
-            color-mix(in srgb, var(--primary, #1f7a63) 14%, transparent),
+            color-mix(in srgb, var(--primary) 14%, transparent),
             transparent 38%
           ),
           linear-gradient(
             135deg,
-            color-mix(in srgb, var(--primary, #1f7a63) 8%, white),
-            var(--background, #fff)
+            color-mix(in srgb, var(--primary) 8%, white),
+            var(--background)
           );
       }
       .headline-copy {
@@ -229,7 +229,7 @@ type ProductForm = {
       .headline-body {
         margin: 0;
         max-width: 54ch;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
       }
       .workspace-grid {
         display: grid;
@@ -241,8 +241,8 @@ type ProductForm = {
       .list-card {
         padding: 1.15rem;
         border-radius: 1.35rem;
-        background: var(--background, #fff);
-        border: 1px solid var(--border, #e2e8f0);
+        background: var(--background);
+        border: 1px solid var(--border);
       }
       .section-head {
         display: grid;
@@ -263,20 +263,16 @@ type ProductForm = {
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       .section-count {
         padding: 0.35rem 0.65rem;
         border-radius: 999px;
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(
-          in srgb,
-          var(--foreground, #0f172a) 5%,
-          transparent
-        );
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--foreground) 5%, transparent);
         font-size: 0.78rem;
         font-weight: 700;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
       }
       .product-form {
         display: grid;
@@ -287,7 +283,7 @@ type ProductForm = {
         gap: 0.35rem;
         font-weight: 600;
         font-size: 0.9rem;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
       label.full {
         grid-column: 1 / -1;
@@ -313,8 +309,8 @@ type ProductForm = {
         gap: 1rem;
         padding: 0.95rem 1rem;
         border-radius: 1rem;
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(in srgb, var(--background, #fff) 96%, white);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 96%, white);
         align-items: start;
       }
       .product-main {
@@ -323,15 +319,15 @@ type ProductForm = {
       }
       .product-main strong {
         font-weight: 700;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
       .product-main p {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         font-size: 0.92rem;
       }
       .product-main small {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         font-weight: 600;
       }
       .row-actions {
@@ -342,7 +338,7 @@ type ProductForm = {
 
       .row-view-link {
         align-self: center;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-size: 0.9rem;
         font-weight: 800;
         text-decoration: none;
@@ -354,7 +350,7 @@ type ProductForm = {
 
       .empty {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
       }
       @media (max-width: 980px) {
         .workspace-grid {

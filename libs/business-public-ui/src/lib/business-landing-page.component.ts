@@ -773,10 +773,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         .section-shell.preview-section-selected::after {
         border-color: color-mix(
           in srgb,
-          var(--primary, #1f7a63) 72%,
-          var(--surface, var(--background, #ffffff))
+          var(--primary) 72%,
+          var(--surface, var(--background))
         );
-        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, transparent);
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
       }
 
       .landing-shell {
@@ -844,7 +844,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         );
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 92%,
+          var(--surface, var(--background)) 92%,
           transparent 8%
         );
         backdrop-filter: blur(8px);
@@ -853,7 +853,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .landing-page-root.embedded-preview .section-surface {
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 86%,
+          var(--surface, var(--background)) 86%,
           transparent 14%
         );
       }
@@ -956,7 +956,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
 
       h1,
@@ -970,7 +970,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           sans-serif
         );
         font-weight: 700;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       h1 {
@@ -992,14 +992,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .lede {
         font-size: 1.15rem;
         line-height: 1.55;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 82%, transparent);
+        color: color-mix(in srgb, var(--foreground) 82%, transparent);
       }
 
       .body,
       .offer p,
       .testimonial p,
       .contact p {
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         line-height: 1.6;
       }
 
@@ -1028,8 +1028,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       }
 
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
         box-shadow: 0 6px 18px
           color-mix(in srgb, var(--primary) 24%, transparent);
       }
@@ -1037,11 +1037,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .cta-primary:hover {
         box-shadow: 0 10px 28px
           color-mix(in srgb, var(--primary) 32%, transparent);
-        background: color-mix(
-          in srgb,
-          var(--primary) 88%,
-          var(--foreground, #0f172a)
-        );
+        background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
       }
 
       .cta-secondary {
@@ -1072,12 +1068,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         color: white;
         background: linear-gradient(
           135deg,
-          var(--primary, #1f7a63),
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 55%,
-            var(--foreground, #0f172a)
-          )
+          var(--primary),
+          color-mix(in srgb, var(--primary) 55%, var(--foreground))
         );
         box-shadow: 0 4px 12px
           color-mix(in srgb, var(--primary) 30%, transparent);
@@ -1086,7 +1078,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .credential-list {
         margin: 0;
         padding-left: 1.1rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         font-size: 0.92rem;
         line-height: 1.7;
       }
@@ -1112,10 +1104,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border-radius: var(--personality-button-radius, 999px);
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 82%,
-          var(--primary, #1f7a63) 18%
+          var(--surface, var(--background)) 82%,
+          var(--primary) 18%
         );
-        color: color-mix(in srgb, var(--foreground, #0f172a) 88%, transparent);
+        color: color-mix(in srgb, var(--foreground) 88%, transparent);
         font-size: 0.85rem;
         font-weight: 600;
         border: var(--personality-border-width, 1px) solid var(--border);
@@ -1169,7 +1161,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .testimonial footer span {
         font-size: 0.82rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 58%, transparent);
+        color: color-mix(in srgb, var(--foreground) 58%, transparent);
       }
 
       .offer-stack {
@@ -1287,8 +1279,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border: var(--personality-border-width, 1px) solid var(--border);
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 84%,
-          var(--background, #ffffff)
+          var(--surface, var(--background)) 84%,
+          var(--background)
         );
       }
 
@@ -1302,7 +1294,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .media-figure figcaption,
       .gallery-item figcaption {
         padding: 0.8rem 0.95rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 68%, transparent);
+        color: color-mix(in srgb, var(--foreground) 68%, transparent);
         font-size: 0.86rem;
         line-height: 1.5;
       }
@@ -1361,11 +1353,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         padding: 1rem 1.1rem;
         border-radius: 1.1rem;
         border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
       }
 
       .contact-media {

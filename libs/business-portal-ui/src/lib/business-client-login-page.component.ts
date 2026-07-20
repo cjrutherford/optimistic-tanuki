@@ -90,7 +90,7 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         color: inherit;
       }
       .error {
-        color: var(--destructive, #e11d48);
+        color: var(--danger);
         margin: 0;
         font-size: 0.88rem;
       }

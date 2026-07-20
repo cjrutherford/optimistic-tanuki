@@ -65,7 +65,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
       h2,
       h3 {
@@ -83,7 +83,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         gap: 1rem;
         margin: 0;
         padding-left: 1.1rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 74%, transparent);
+        color: color-mix(in srgb, var(--foreground) 74%, transparent);
       }
       .actions {
         display: flex;
@@ -102,8 +102,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 700;
       }
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
       .cta-secondary {
         border: var(--personality-border-width, 1px) solid var(--border);
