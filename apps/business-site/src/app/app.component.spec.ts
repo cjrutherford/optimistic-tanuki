@@ -93,7 +93,7 @@ describe('AppComponent', () => {
       theme: {
         ...DEFAULT_BUSINESS_SITE_CONFIG.theme,
         mode: 'dark' as const,
-        personalityId: 'bold-minimal',
+        personalityId: 'elegant',
         primaryColor: '#123456',
       },
     };
@@ -131,7 +131,7 @@ describe('AppComponent', () => {
     fixture.detectChanges();
 
     expect(themeService.setTheme).toHaveBeenCalledWith('dark');
-    expect(themeService.setPersonality).toHaveBeenCalledWith('bold-minimal');
+    expect(themeService.setPersonality).toHaveBeenCalledWith('elegant');
     expect(themeService.setPrimaryColor).toHaveBeenCalledWith('#123456');
   });
 
