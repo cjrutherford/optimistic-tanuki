@@ -10,7 +10,7 @@ import {
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { filter } from 'rxjs';
 import {
-  DEFAULT_TRAINER_SITE_CONFIG,
+  DEFAULT_BUSINESS_SITE_CONFIG,
   BusinessAuthService,
   BusinessSiteConfig,
   BusinessSiteConfigStore,
@@ -367,7 +367,7 @@ type TopNavLink = {
   ],
 })
 export class AppComponent {
-  readonly site = signal<BusinessSiteConfig>(DEFAULT_TRAINER_SITE_CONFIG);
+  readonly site = signal<BusinessSiteConfig>(DEFAULT_BUSINESS_SITE_CONFIG);
   readonly configId = signal<string | null>(null);
   /**
    * Truthy when the most recent business-site config fetch failed and the

@@ -5,12 +5,9 @@ import { businessHttpInterceptor } from './lib/business-http.interceptor';
 import { BusinessSiteConfigStore } from './lib/business-site-config.store';
 
 export { DEFAULT_BUSINESS_SITE_CONFIG };
-export { DEFAULT_BUSINESS_SITE_CONFIG as DEFAULT_TRAINER_SITE_CONFIG };
 export { BusinessSiteConfigStore };
 export { BusinessApiService };
-export { BusinessApiService as TrainerApiService };
 export { BusinessAuthService };
-export { BusinessAuthService as TrainerAuthService };
 export { businessHttpInterceptor };
 export {
   cloneBusinessSiteConfig,
@@ -23,7 +20,6 @@ export {
   configDocumentToBusinessSiteConfig,
 } from './lib/business-site-blocks';
 export type { BusinessSiteConfig } from './lib/business-site.config';
-export type { BusinessSiteConfig as TrainerSiteConfig } from './lib/business-site.config';
 
 export type {
   BusinessFeatures,
