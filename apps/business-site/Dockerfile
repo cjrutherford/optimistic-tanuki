@@ -55,7 +55,14 @@ RUN echo '#!/bin/sh' > /docker-entrypoint.sh && \
     echo 'exec "$@"' >> /docker-entrypoint.sh && \
     chmod +x /docker-entrypoint.sh
 
+RUN chown -R node:node /app/dist/apps/business-site/browser
+
+USER node
+
 EXPOSE 4000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/ || exit 1
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
