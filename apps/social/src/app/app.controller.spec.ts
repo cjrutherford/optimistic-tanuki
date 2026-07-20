@@ -20,6 +20,7 @@ import { PollService } from './services/poll.service';
 import { PostShareService } from './services/post-share.service';
 import { EventService } from './services/event.service';
 import { LinkService } from './services/link.service';
+import { SocialTelosService } from './services/social-telos.service';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
 describe('AppController', () => {
@@ -30,6 +31,7 @@ describe('AppController', () => {
   let commentService: jest.Mocked<CommentService>;
   let followService: jest.Mocked<FollowService>;
   let socialComponentService: jest.Mocked<SocialComponentService>;
+  let socialTelosService: jest.Mocked<SocialTelosService>;
 
   beforeEach(async () => {
     postService = {
@@ -274,6 +276,12 @@ describe('AppController', () => {
           },
         },
         {
+          provide: SocialTelosService,
+          useValue: {
+            getProfileFacts: jest.fn(),
+          },
+        },
+        {
           provide: ServiceTokens.PROFILE_SERVICE,
           useValue: { send: jest.fn() },
         },
@@ -281,6 +289,7 @@ describe('AppController', () => {
     }).compile();
 
     controller = module.get<AppController>(AppController);
+    socialTelosService = module.get(SocialTelosService);
   });
 
   it('should be defined', () => {
@@ -309,6 +318,29 @@ describe('AppController', () => {
     const result = await controller.findOnePost('1');
     expect(result).toEqual({ id: 1 });
     expect(postService.findOne).toHaveBeenCalledWith('1', {});
+  });
+
+  it('should get social telos facts for a profile', async () => {
+    socialTelosService.getProfileFacts.mockResolvedValue([
+      {
+        sourceType: 'social:summary',
+        sourceId: 'profile-1',
+        content: 'Social summary',
+      },
+    ]);
+
+    const result = await controller.getProfileTelosFacts('profile-1');
+
+    expect(socialTelosService.getProfileFacts).toHaveBeenCalledWith(
+      'profile-1'
+    );
+    expect(result).toEqual([
+      {
+        sourceType: 'social:summary',
+        sourceId: 'profile-1',
+        content: 'Social summary',
+      },
+    ]);
   });
 
   it('should update a post', async () => {

@@ -1,12 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import {
-  TabsComponent,
-  ListComponent,
-  ButtonComponent,
-  CardComponent,
-} from '@optimistic-tanuki/common-ui';
+import { TabsComponent } from '@optimistic-tanuki/common-ui';
 import {
   ActivityService,
   ActivityItem,
@@ -17,14 +12,7 @@ import { ProfileService } from '../../profile.service';
 @Component({
   selector: 'app-activity-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    TabsComponent,
-    ListComponent,
-    ButtonComponent,
-    CardComponent,
-  ],
+  imports: [CommonModule, RouterModule, TabsComponent],
   template: `
     <div class="activity-page">
       <header class="page-header">

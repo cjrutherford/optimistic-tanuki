@@ -18,3 +18,7 @@ export const ClassifiedCommands = {
   FEATURE: 'classified.feature',
   UNFEATURE: 'classified.unfeature',
 };
+
+export const ClassifiedTelosCommands = {
+  GET_PROFILE_FACTS: 'classified.getProfileFacts',
+};

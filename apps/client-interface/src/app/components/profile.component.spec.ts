@@ -62,6 +62,10 @@ describe('ProfileComponent', () => {
       createProfile: jest.fn(),
       updateProfile: jest.fn(),
       getProfileById: jest.fn(),
+      getProfileTelos: jest.fn().mockResolvedValue(null),
+      loadCharacterSheetConfig: jest
+        .fn()
+        .mockResolvedValue({ enabled: false, skin: 'fantasy' }),
       getDisplayProfile: jest.fn().mockReturnValue(of(mockProfile)),
       ...profileOverrides,
     };

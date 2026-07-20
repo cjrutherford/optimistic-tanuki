@@ -19,6 +19,12 @@
     </div>
   </div>
 </div>
+
+<lib-character-sheet
+  [enabled]="characterSheetEnabled()"
+  [skin]="characterSheetSkin()"
+  [profileTelos]="profileTelos()"
+></lib-character-sheet>
 } @else {
 <div class="no-profiles">
   <lib-banner message="You don't have a profile yet"></lib-banner>

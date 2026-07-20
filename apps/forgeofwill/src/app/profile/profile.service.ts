@@ -2,15 +2,22 @@ import {
   AssetDto,
   CreateAssetDto,
   CreateProfileDto,
+  ProfileTelosDto,
   ProfileDto,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
 import { Injectable, signal } from '@angular/core';
 import { firstValueFrom, forkJoin, map, switchMap } from 'rxjs';
+import { type CharacterSheetSkin } from '@optimistic-tanuki/profile-ui';
 
 import { AuthStateService } from '../auth-state.service';
 import { HttpClient } from '@angular/common/http';
 import { UpdateAttachmentDto } from '@optimistic-tanuki/social-ui';
+
+type CharacterSheetConfig = {
+  enabled: boolean;
+  skin: CharacterSheetSkin;
+};
 
 @Injectable({
   providedIn: 'root',
@@ -19,6 +26,9 @@ export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
+  currentProfileTelos = signal<ProfileTelosDto | null>(null);
+  isCharacterSheetEnabled = signal(false);
+  characterSheetSkin = signal<CharacterSheetSkin>('fantasy');
 
   // Client-side cache for profiles with TTL
   private profileCache = new Map<
@@ -219,6 +229,38 @@ export class ProfileService {
     if (this.hasStorage()) {
       localStorage.setItem('selectedProfile', JSON.stringify(profile));
     }
+  }
+
+  async getProfileTelos(profileId?: string): Promise<ProfileTelosDto | null> {
+    const resolvedProfileId = profileId || this.getCurrentUserProfile()?.id;
+    if (!resolvedProfileId) {
+      this.currentProfileTelos.set(null);
+      return null;
+    }
+
+    const telos = await firstValueFrom(
+      this.http.get<ProfileTelosDto>(`/api/profile/${resolvedProfileId}/telos`)
+    );
+    this.currentProfileTelos.set(telos);
+    return telos;
+  }
+
+  async loadCharacterSheetConfig(): Promise<CharacterSheetConfig> {
+    const config = await firstValueFrom(
+      this.http.get<{ features?: Record<string, any> }>(
+        '/api/app-config/by-name/forgeofwill'
+      )
+    );
+    const characterSheetConfig =
+      config?.features?.['profile']?.['characterSheet'];
+    const enabled = characterSheetConfig?.['enabled'] === true;
+    const skin: CharacterSheetSkin =
+      characterSheetConfig?.['skin'] === 'grounded' ? 'grounded' : 'fantasy';
+
+    this.isCharacterSheetEnabled.set(enabled);
+    this.characterSheetSkin.set(skin);
+
+    return { enabled, skin };
   }
 
   getFileExtensionFromDataUrl(dataUrl: string | null | undefined): string {

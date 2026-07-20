@@ -211,3 +211,7 @@ export const ScheduledPostCommands = {
   FIND_MANY: 'FIND_MANY_SCHEDULED_POST',
   PUBLISH: 'PUBLISH_SCHEDULED_POST',
 };
+
+export const SocialTelosCommands = {
+  GET_PROFILE_FACTS: 'GET_SOCIAL_PROFILE_TELOS_FACTS',
+};

@@ -1,18 +1,25 @@
 import { Controller, Logger } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
-import { ClassifiedCommands } from '@optimistic-tanuki/constants';
+import {
+  ClassifiedCommands,
+  ClassifiedTelosCommands,
+} from '@optimistic-tanuki/constants';
 import {
   ClassifiedsService,
   CreateClassifiedAdDto,
   UpdateClassifiedAdDto,
   SearchClassifiedsDto,
 } from './classifieds.service';
+import { ClassifiedsTelosService } from './classifieds-telos.service';
 
 @Controller()
 export class ClassifiedsController {
   private readonly logger = new Logger(ClassifiedsController.name);
 
-  constructor(private readonly classifiedsService: ClassifiedsService) {}
+  constructor(
+    private readonly classifiedsService: ClassifiedsService,
+    private readonly classifiedsTelosService: ClassifiedsTelosService
+  ) {}
 
   @MessagePattern({ cmd: ClassifiedCommands.CREATE })
   async create(
@@ -94,5 +101,10 @@ export class ClassifiedsController {
   @MessagePattern({ cmd: ClassifiedCommands.UNFEATURE })
   async unfeature(@Payload() data: { id: string }) {
     return this.classifiedsService.unfeature(data.id);
+  }
+
+  @MessagePattern({ cmd: ClassifiedTelosCommands.GET_PROFILE_FACTS })
+  async getProfileFacts(@Payload() data: { profileId: string }) {
+    return this.classifiedsTelosService.getProfileFacts(data.profileId);
   }
 }

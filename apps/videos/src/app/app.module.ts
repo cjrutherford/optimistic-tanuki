@@ -23,6 +23,7 @@ import { BroadcastService } from './services/broadcast.service';
 import { VideoProcessingService } from './services/video-processing.service';
 import { VIDEO_PROCESSING_CONFIG } from './services/video-processing.service';
 import { VideoTranscodeClientService } from './services/video-transcode-client.service';
+import { VideoTelosService } from './services/video-telos.service';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 
@@ -46,6 +47,7 @@ import { ServiceTokens } from '@optimistic-tanuki/constants';
     SubscriptionService,
     VideoViewService,
     BroadcastService,
+    VideoTelosService,
     VideoProcessingService,
     VideoTranscodeClientService,
     {

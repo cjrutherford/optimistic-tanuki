@@ -13,7 +13,6 @@ import {
   HeadingComponent,
   ButtonComponent,
 } from '@optimistic-tanuki/common-ui';
-import { TextInputComponent } from '@optimistic-tanuki/form-ui';
 import { ModalComponent } from '@optimistic-tanuki/common-ui';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import {
@@ -36,7 +35,6 @@ import {
     CardComponent,
     HeadingComponent,
     ButtonComponent,
-    TextInputComponent,
     ModalComponent,
   ],
   templateUrl: './community-members.component.html',
