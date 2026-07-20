@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Setup kubectl
-        uses: azure/k8s-set-context@v4
+        uses: azure/k8s-set-context@v5
         with:
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
