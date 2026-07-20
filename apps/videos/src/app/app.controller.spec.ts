@@ -9,6 +9,9 @@ describe('AppController video limit handling', () => {
       markProcessing: jest.fn(),
       completeProcessing: jest.fn(),
       failProcessing: jest.fn(),
+      getProcessingOverview: jest.fn(),
+      retryProcessing: jest.fn(),
+      retryFailedProcessing: jest.fn(),
       findOneVisible: jest.fn(),
     };
 
@@ -121,5 +124,39 @@ describe('AppController video limit handling', () => {
       'video-1',
       'ffmpeg failed'
     );
+  });
+
+  it('returns the processing overview from the video service', async () => {
+    const { controller, videoService } = createController();
+    const overview = { processing: 2, ready: 4, failed: 1 };
+    videoService.getProcessingOverview.mockResolvedValue(overview);
+
+    await expect(controller.getVideoProcessingOverview()).resolves.toEqual(
+      overview
+    );
+
+    expect(videoService.getProcessingOverview).toHaveBeenCalledWith();
+  });
+
+  it('retries processing for the supplied video id', async () => {
+    const { controller, videoService } = createController();
+    videoService.retryProcessing.mockResolvedValue({ id: 'video-1' });
+
+    await expect(controller.retryVideoProcessing('video-1')).resolves.toEqual({
+      id: 'video-1',
+    });
+
+    expect(videoService.retryProcessing).toHaveBeenCalledWith('video-1');
+  });
+
+  it('retries all failed processing jobs', async () => {
+    const { controller, videoService } = createController();
+    videoService.retryFailedProcessing.mockResolvedValue({ queued: 3 });
+
+    await expect(controller.retryFailedVideoProcessing()).resolves.toEqual({
+      queued: 3,
+    });
+
+    expect(videoService.retryFailedProcessing).toHaveBeenCalledWith();
   });
 });

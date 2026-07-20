@@ -172,6 +172,33 @@ wait_for_chat_collector() {
   return 1
 }
 
+wait_for_videos() {
+  attempts="${1:-60}"
+  delay_seconds="${2:-2}"
+
+  echo "Waiting for videos TCP service..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    if docker compose ${COMPOSE_FILES} exec -T videos node -e '
+      const net = require("node:net");
+      const socket = net.createConnection({ host: "127.0.0.1", port: 3022 });
+      socket.once("connect", () => socket.end());
+      socket.once("close", () => process.exit(0));
+      socket.once("error", () => process.exit(1));
+      setTimeout(() => process.exit(1), 1000).unref();
+    ' >/dev/null 2>&1; then
+      echo "videos is ready."
+      return 0
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "videos did not become ready in time." >&2
+  return 1
+}
+
 refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 refresh_service permissions
@@ -219,6 +246,7 @@ run_seed_with_media_volume_from_image() {
 }
 
 refresh_service videos
+wait_for_videos
 run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js
 # Optional: clear videos db before seeding to avoid duplicate slug issues
 # docker exec db psql -U postgres -d ot_videos -c "DELETE FROM video; DELETE FROM channel;"

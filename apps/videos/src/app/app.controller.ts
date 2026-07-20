@@ -156,6 +156,21 @@ export class AppController {
     return this.videoService.failProcessing(payload.id, payload.error);
   }
 
+  @MessagePattern({ cmd: VideoCommands.GET_VIDEO_PROCESSING_OVERVIEW })
+  async getVideoProcessingOverview() {
+    return this.videoService.getProcessingOverview();
+  }
+
+  @MessagePattern({ cmd: VideoCommands.RETRY_VIDEO_PROCESSING })
+  async retryVideoProcessing(@Payload() id: string) {
+    return this.videoService.retryProcessing(id);
+  }
+
+  @MessagePattern({ cmd: VideoCommands.RETRY_FAILED_VIDEO_PROCESSING })
+  async retryFailedVideoProcessing() {
+    return this.videoService.retryFailedProcessing();
+  }
+
   // Subscription endpoints
   @MessagePattern({ cmd: VideoCommands.SUBSCRIBE_TO_CHANNEL })
   async subscribeToChannel(

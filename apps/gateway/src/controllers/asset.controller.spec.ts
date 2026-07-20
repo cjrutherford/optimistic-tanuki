@@ -9,6 +9,8 @@ import { PermissionsGuard } from '../guards/permissions.guard';
 import { Reflector } from '@nestjs/core';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
 import { ICacheProvider } from '../auth/cache/cache-provider.interface';
+import { ConfigService } from '@nestjs/config';
+import { Readable, Writable } from 'node:stream';
 
 describe('AssetController', () => {
   let controller: AssetController;
@@ -34,6 +36,18 @@ describe('AssetController', () => {
           useValue: { send: jest.fn().mockResolvedValue(of({})) },
         },
         { provide: JwtService, useValue: { verify: jest.fn() } },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) =>
+              key === 'ASSETS_INTERNAL_MEDIA_URL'
+                ? 'http://assets:3006'
+                : key === 'ASSETS_INTERNAL_MEDIA_TOKEN'
+                ? 'gateway-secret'
+                : undefined
+            ),
+          },
+        },
         Logger,
         Reflector,
         {
@@ -109,22 +123,51 @@ describe('AssetController', () => {
     );
   });
 
-  it('should get an asset by id', async () => {
-    const mockRes = {
-      setHeader: jest.fn(),
-      send: jest.fn(),
-      status: jest.fn().mockReturnThis(),
-    } as any;
-    assetService.send.mockReturnValue(of('data:image/png;base64,dGVzdA=='));
+  it('proxies a byte-range media response without using the TCP asset read command', async () => {
+    const mockRes = Object.assign(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      }),
+      {
+        setHeader: jest.fn(),
+        send: jest.fn(),
+        status: jest.fn(),
+      }
+    ) as any;
+    mockRes.status.mockReturnValue(mockRes);
+    const body = Readable.toWeb(Readable.from(Buffer.from('video-bytes')));
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue(
+      new Response(body as unknown as BodyInit, {
+        status: 206,
+        headers: {
+          'content-type': 'video/mp4',
+          'content-length': '11',
+          'content-range': 'bytes 0-10/100',
+          'accept-ranges': 'bytes',
+        },
+      })
+    );
 
-    await controller.getAssetById('1', mockRes);
+    await controller.getAssetById('1', mockRes, 'bytes=0-10');
 
-    expect(assetService.send).toHaveBeenCalledWith(
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'http://assets:3006/internal/media/1',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          'X-Internal-Media-Token': 'gateway-secret',
+          Range: 'bytes=0-10',
+        }),
+      })
+    );
+    expect(assetService.send).not.toHaveBeenCalledWith(
       { cmd: AssetCommands.READ },
       { id: '1' }
     );
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
-    expect(mockRes.send).toHaveBeenCalled();
+    expect(mockRes.status).toHaveBeenCalledWith(206);
+    expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'video/mp4');
+    fetchSpy.mockRestore();
   });
 
   it('should list assets by profile and type', async () => {

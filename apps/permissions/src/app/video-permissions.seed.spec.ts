@@ -114,6 +114,51 @@ describe('video-client permission seeds', () => {
     ).toBe(true);
   });
 
+  it('grants Owner Console owners video processing access in their own scope', () => {
+    expect(
+      seedData.permissions.some(
+        (entry: { name: string; appScope: string }) =>
+          entry.name === 'videos.video.update' &&
+          entry.appScope === 'owner-console'
+      )
+    ).toBe(true);
+
+    expect(
+      seedData.role_permissions.some(
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
+          entry.role === 'owner_console_owner' &&
+          entry.permission === 'videos.video.update' &&
+          entry.permissionAppScope === 'owner-console'
+      )
+    ).toBe(true);
+  });
+
+  it('grants global owners video processing access for Owner Console operations', () => {
+    expect(
+      seedData.permissions.some(
+        (entry: { name: string; appScope: string }) =>
+          entry.name === 'videos.video.update' && entry.appScope === 'global'
+      )
+    ).toBe(true);
+
+    expect(
+      seedData.role_permissions.some(
+        (entry: {
+          role: string;
+          permission: string;
+          permissionAppScope: string;
+        }) =>
+          entry.role === 'owner' &&
+          entry.permission === 'videos.video.update' &&
+          entry.permissionAppScope === 'global'
+      )
+    ).toBe(true);
+  });
+
   it('keeps the shell seed script aligned with the video-client permission model', () => {
     expect(shellSeed).toContain("('video-client', 'Video platform");
     expect(shellSeed).toContain("('video_client_member'");

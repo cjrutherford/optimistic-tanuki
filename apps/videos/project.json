@@ -5,15 +5,18 @@
   "projectType": "application",
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/videos"
+        "webpackConfig": "apps/videos/webpack.config.js",
+        "outputPath": "dist/apps/videos",
+        "deleteOutputPath": false
       },
       "configurations": {
         "development": {
-          "args": ["--node-env=development"]
+          "optimization": false
+        },
+        "production": {
+          "optimization": true
         }
       }
     },

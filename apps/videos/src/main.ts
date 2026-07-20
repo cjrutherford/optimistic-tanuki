@@ -8,13 +8,12 @@ import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 
 import { AppModule } from './app/app.module';
-import { ConfigService } from '@nestjs/config';
+import loadConfig from './config';
 
 async function bootstrap() {
-  const configApp = await NestFactory.createApplicationContext(AppModule);
-  const config = configApp.get(ConfigService);
-  const port = config.get<number>('listenPort') || 3016;
-  await configApp.close();
+  // Do not spin up a temporary Nest application just to read configuration:
+  // lifecycle hooks on that context would start a second processing queue.
+  const port = loadConfig().listenPort || 3016;
   const app = await NestFactory.createMicroservice<MicroserviceOptions>(
     AppModule,
     {

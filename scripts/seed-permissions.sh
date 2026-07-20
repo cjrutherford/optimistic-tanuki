@@ -292,7 +292,8 @@ VALUES
   ('task.create', 'Create task (global)', 'task', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
   ('task.read', 'Read task (global)', 'task', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
   ('task.update', 'Update task (global)', 'task', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
-  ('task.delete', 'Delete task (global)', 'task', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global'))
+  ('task.delete', 'Delete task (global)', 'task', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('videos.video.update', 'Monitor and retry video processing (global owner)', 'videos.video', 'update', NULL, (SELECT id FROM app_scope WHERE name='global'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Forgeofwill scope permissions
@@ -446,8 +447,27 @@ INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
-WHERE r.name IN ('owner_console_owner', 'global_admin', 'system_admin')
+WHERE r.name IN ('owner', 'owner_console_owner', 'global_admin', 'system_admin')
   AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='global')
+ON CONFLICT DO NOTHING;
+
+-- Owner Console video processing operations
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+SELECT 'videos.video.update', 'Monitor and retry video processing', 'videos.video', 'update', NULL, scope.id
+FROM app_scope scope
+WHERE scope.name = 'owner-console'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM permission existing
+    WHERE existing.name = 'videos.video.update'
+      AND existing."appScopeId" = scope.id
+  );
+
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name = 'videos.video.update'
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='owner-console')
+WHERE r.name = 'owner_console_owner'
 ON CONFLICT DO NOTHING;
 
 -- standard_user (global scope) - basic read/write permissions

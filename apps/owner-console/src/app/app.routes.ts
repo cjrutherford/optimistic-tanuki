@@ -82,6 +82,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'video-processing',
+        loadComponent: () =>
+          import('./components/video-processing-monitor.component').then(
+            (m) => m.VideoProcessingMonitorComponent
+          ),
+      },
+      {
         path: 'control-center',
         loadComponent: () =>
           import('./components/admin-control-center.component').then(

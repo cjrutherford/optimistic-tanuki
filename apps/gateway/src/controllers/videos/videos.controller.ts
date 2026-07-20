@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Inject,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -151,6 +152,39 @@ export class VideosController {
     );
   }
 
+  @RequirePermissions('videos.video.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Get('processing/overview')
+  async getProcessingOverview() {
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.GET_VIDEO_PROCESSING_OVERVIEW },
+        {}
+      )
+    );
+  }
+
+  @RequirePermissions('videos.video.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post('processing/retry-failed')
+  async retryFailedProcessing() {
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.RETRY_FAILED_VIDEO_PROCESSING },
+        {}
+      )
+    );
+  }
+
+  @RequirePermissions('videos.video.update')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @Post(':id/retry-processing')
+  async retryProcessing(@Param('id') id: string) {
+    return await firstValueFrom(
+      this.videosService.send({ cmd: VideoCommands.RETRY_VIDEO_PROCESSING }, id)
+    );
+  }
+
   @Public()
   @Get('channel/:channelId')
   async findVideosByChannel(@Param('channelId') channelId: string) {
@@ -175,12 +209,18 @@ export class VideosController {
     @Req() req: { user?: { profileId?: string } },
     @Param('id') id: string
   ) {
-    return await firstValueFrom(
+    const video = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.FIND_ONE_VIDEO },
         { id, viewerProfileId: req.user?.profileId }
       )
     );
+
+    if (!video) {
+      throw new NotFoundException('Video not found');
+    }
+
+    return video;
   }
 
   @RequirePermissions('videos.video.update')

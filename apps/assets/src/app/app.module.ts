@@ -3,6 +3,8 @@ import { LoggerModule } from '@optimistic-tanuki/logger';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { InternalMediaController } from './internal-media.controller';
+import { InternalMediaService } from './internal-media.service';
 import { DatabaseModule } from '@optimistic-tanuki/database';
 import {
   StorageModule,
@@ -63,9 +65,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, InternalMediaController],
   providers: [
     AppService,
+    InternalMediaService,
     FileValidationService,
     VirusScanService,
     {
