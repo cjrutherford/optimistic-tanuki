@@ -1,19 +1,6 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
-import { map } from 'rxjs';
+import { createFeatureGuard } from './feature-guard.factory';
 
-export const invoicesFeatureGuard: CanActivateFn = () => {
-  const siteConfig = inject(BusinessSiteConfigStore);
-  const router = inject(Router);
-
-  return siteConfig
-    .fetch()
-    .pipe(
-      map((site) =>
-        site.features.invoices.enabled
-          ? true
-          : router.createUrlTree(['/client/dashboard'])
-      )
-    );
-};
+export const invoicesFeatureGuard = createFeatureGuard({
+  isFeatureEnabled: (site) => site.features.invoices.enabled,
+  redirectTo: ['/client/dashboard'],
+});
