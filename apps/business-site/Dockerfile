@@ -11,7 +11,6 @@ COPY tsconfig*.json ./
 COPY nx.json ./
 COPY libs ./libs
 COPY apps/business-site ./apps/business-site
-COPY docs/guides/business-site-evaluator-guide.html ./docs/guides/business-site-evaluator-guide.html
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build business-site --configuration=production
@@ -26,7 +25,6 @@ ARG GIT_SHA=unknown
 ENV NODE_ENV=production
 ENV PORT=4000
 ENV GIT_SHA=${GIT_SHA}
-ENV EVALUATOR_GUIDE_PATH=/app/docs/guides/business-site-evaluator-guide.html
 ENV RUN_BUSINESS_SITE_SEED_ON_STARTUP=false
 
 COPY --from=builder /usr/src/app/package.json ./
@@ -39,7 +37,6 @@ COPY --from=builder /usr/src/app/dist/apps/business-site ./dist/apps/business-si
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-business.mjs /app/seed-business.mjs
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/seed-trainer.mjs
 
-COPY --from=builder /usr/src/app/docs/guides/business-site-evaluator-guide.html /app/docs/guides/business-site-evaluator-guide.html
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-trainer.mjs /app/apps/business-site/src/seed-trainer.mjs
 COPY --from=builder /usr/src/app/apps/business-site/src/seed-business.mjs /app/apps/business-site/src/seed-business.mjs
 COPY --from=builder /usr/src/app/apps/business-site/src/sample-tenants.mjs /app/sample-tenants.mjs

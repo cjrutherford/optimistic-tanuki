@@ -9,6 +9,7 @@ import express from 'express';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isEvaluatorGuideEnabled } from './server-evaluator-guide';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -73,14 +74,16 @@ app.use(
   })
 );
 
-app.get(['/eval', '/eval/'], async (req, res, next) => {
-  try {
-    const guide = await readFile(evaluatorGuidePath, 'utf8');
-    res.type('html').send(guide);
-  } catch (error) {
-    next(error);
-  }
-});
+if (isEvaluatorGuideEnabled()) {
+  app.get(['/eval', '/eval/'], async (req, res, next) => {
+    try {
+      const guide = await readFile(evaluatorGuidePath, 'utf8');
+      res.type('html').send(guide);
+    } catch (error) {
+      next(error);
+    }
+  });
+}
 
 app.use(express.json({ limit: '1mb' }));
 
