@@ -32,14 +32,17 @@ const allowlistPath = getFlagValue('--allowlist');
 const writeAllowlistPath = getFlagValue('--write-allowlist');
 
 function isFullyIgnoredDirectory(directory) {
-  // A directory that ships its own `.gitignore` containing only `*` is
+  // A directory that ships its own `.gitignore` with a bare `*` line is
   // declaring "everything under here is generated, don't touch it" (e.g.
   // compodoc output under apps/ui-playground/public/generated/compodoc/).
-  // walk() has no other way to know that, since it isn't gitignore-aware --
+  // The common form also has a `!.gitignore` exception line so the marker
+  // itself stays tracked -- that doesn't change the directory's meaning,
+  // so check line-by-line rather than requiring the whole file to be `*`.
+  // walk() has no other way to know this, since it isn't gitignore-aware --
   // it only skips node_modules and dotfile-prefixed directories by name.
   try {
-    const marker = readFileSync(join(directory, '.gitignore'), 'utf8').trim();
-    return marker === '*';
+    const content = readFileSync(join(directory, '.gitignore'), 'utf8');
+    return content.split('\n').some((line) => line.trim() === '*');
   } catch {
     return false;
   }
