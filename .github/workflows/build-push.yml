@@ -100,7 +100,7 @@ jobs:
 
       - name: Restore Docker plan cache
         id: restore-plan
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: tmp/docker-workflow/services.plan.json
           key: docker-plan-${{ github.sha }}-build-push
@@ -164,7 +164,7 @@ jobs:
 
       - name: Save Docker plan cache
         if: steps.restore-plan.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: tmp/docker-workflow/services.plan.json
           key: docker-plan-${{ github.sha }}-build-push
