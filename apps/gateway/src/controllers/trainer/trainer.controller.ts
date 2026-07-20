@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpException,
   Inject,
@@ -892,7 +893,17 @@ export class TrainerController {
     const slugOwnerUserId = normalizedSlug
       ? await this.loadOwnerUserIdForSlug(normalizedSlug)
       : null;
-    const ownerId = slugOwnerUserId || user.userId;
+
+    // A slug is only a convenience lookup for the caller's own business.
+    // It must never let one authenticated owner view another tenant's
+    // leads/bookings by guessing or copying a slug that isn't theirs.
+    if (normalizedSlug && slugOwnerUserId && slugOwnerUserId !== user.userId) {
+      throw new ForbiddenException(
+        'You do not have access to this business site.'
+      );
+    }
+
+    const ownerId = user.userId;
     const leads = (await this.loadBusinessLeads(normalizedSlug)).leads;
     const bookings = await this.loadOwnerAppointments(ownerId);
 
@@ -1171,6 +1182,7 @@ export class TrainerController {
       this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
         id: payload.configId,
         config,
+        requesterProfileId: user.profileId,
       })
     );
   }
@@ -1234,6 +1246,7 @@ export class TrainerController {
       this.storeService.send(TrainerConfigCommands.UPDATE_CONFIG, {
         id: payload.configId,
         config: nextConfig,
+        requesterProfileId: user.profileId,
       })
     );
   }
