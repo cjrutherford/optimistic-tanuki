@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import {
@@ -229,9 +233,11 @@ export class AppointmentsService {
 
   async approve(
     id: string,
-    approveDto: ApproveAppointmentDto
+    approveDto: ApproveAppointmentDto,
+    requesterOwnerId?: string
   ): Promise<AppointmentEntity> {
     const appointment = await this.findOne(id);
+    this.assertOwnership(appointment?.ownerId, requesterOwnerId);
 
     // Calculate duration in hours
     const startTime = new Date(appointment.startTime);
@@ -294,17 +300,29 @@ export class AppointmentsService {
     return this.findOne(id);
   }
 
-  async complete(id: string): Promise<AppointmentEntity> {
+  async complete(
+    id: string,
+    requesterOwnerId?: string
+  ): Promise<AppointmentEntity> {
+    if (requesterOwnerId) {
+      const appointment = await this.findOne(id);
+      this.assertOwnership(appointment?.ownerId, requesterOwnerId);
+    }
     await this.appointmentRepository.update(id, { status: 'completed' });
     return this.findOne(id);
   }
 
-  async generateInvoice(id: string): Promise<InvoiceEntity> {
+  async generateInvoice(
+    id: string,
+    requesterOwnerId?: string
+  ): Promise<InvoiceEntity> {
     const appointment = await this.findOne(id);
 
     if (!appointment) {
       throw new Error('Appointment not found');
     }
+
+    this.assertOwnership(appointment.ownerId, requesterOwnerId);
 
     if (appointment.status !== 'completed') {
       throw new Error('Can only generate invoices for completed appointments');
@@ -350,5 +368,20 @@ export class AppointmentsService {
     return this.invoiceRepository.findOne({
       where: { id },
     });
+  }
+
+  private assertOwnership(
+    entityOwnerId: string | null | undefined,
+    requesterOwnerId?: string
+  ): void {
+    if (
+      requesterOwnerId &&
+      entityOwnerId &&
+      entityOwnerId !== requesterOwnerId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this booking.'
+      );
+    }
   }
 }

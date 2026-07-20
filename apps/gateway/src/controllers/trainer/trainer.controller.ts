@@ -1038,12 +1038,14 @@ export class TrainerController {
   @Put('owner/availabilities/:id')
   updateOwnerAvailability(
     @Param('id') id: string,
-    @Body() payload: UpdateAvailabilityDto
+    @Body() payload: UpdateAvailabilityDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(AvailabilityCommands.UPDATE_AVAILABILITY, {
         id,
         updateAvailabilityDto: payload,
+        requesterOwnerId: user.userId,
       })
     );
   }
@@ -1051,9 +1053,12 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('owner/availabilities/:id')
-  removeOwnerAvailability(@Param('id') id: string) {
+  removeOwnerAvailability(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, id)
+      this.storeService.send(AvailabilityCommands.REMOVE_AVAILABILITY, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 
@@ -1092,7 +1097,8 @@ export class TrainerController {
   @Put('owner/availability-overrides/:id')
   updateOwnerAvailabilityOverride(
     @Param('id') id: string,
-    @Body() payload: UpdateAvailabilityOverrideDto
+    @Body() payload: UpdateAvailabilityOverrideDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(
@@ -1100,6 +1106,7 @@ export class TrainerController {
         {
           id,
           updateAvailabilityOverrideDto: payload,
+          requesterOwnerId: user.userId,
         }
       )
     );
@@ -1108,11 +1115,14 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Delete('owner/availability-overrides/:id')
-  removeOwnerAvailabilityOverride(@Param('id') id: string) {
+  removeOwnerAvailabilityOverride(
+    @Param('id') id: string,
+    @User() user: UserDetails
+  ) {
     return firstValueFrom(
       this.storeService.send(
         AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
-        id
+        { id, requesterOwnerId: user.userId }
       )
     );
   }
@@ -1122,12 +1132,14 @@ export class TrainerController {
   @Put('owner/bookings/:id/approve')
   approveBooking(
     @Param('id') id: string,
-    @Body() payload: ApproveAppointmentDto
+    @Body() payload: ApproveAppointmentDto,
+    @User() user: UserDetails
   ) {
     return firstValueFrom(
       this.storeService.send(AppointmentCommands.APPROVE_APPOINTMENT, {
         id,
         approveAppointmentDto: payload,
+        requesterOwnerId: user.userId,
       })
     );
   }
@@ -1135,18 +1147,24 @@ export class TrainerController {
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Put('owner/bookings/:id/complete')
-  completeBooking(@Param('id') id: string) {
+  completeBooking(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.COMPLETE_APPOINTMENT, id)
+      this.storeService.send(AppointmentCommands.COMPLETE_APPOINTMENT, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 
   @RequirePermissions('app-config.update')
   @UseGuards(AuthGuard, PermissionsGuard)
   @Post('owner/bookings/:id/invoice')
-  generateInvoice(@Param('id') id: string) {
+  generateInvoice(@Param('id') id: string, @User() user: UserDetails) {
     return firstValueFrom(
-      this.storeService.send(AppointmentCommands.GENERATE_INVOICE, id)
+      this.storeService.send(AppointmentCommands.GENERATE_INVOICE, {
+        id,
+        requesterOwnerId: user.userId,
+      })
     );
   }
 

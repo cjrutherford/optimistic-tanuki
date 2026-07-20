@@ -2028,6 +2028,98 @@ describe('TrainerController', () => {
     }
   });
 
+  it('scopes booking approve/complete/invoice operations to the authenticated owner', async () => {
+    const storeClient = { send: jest.fn(() => of({ id: 'booking-1' })) } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.approveBooking('booking-1', { notes: 'ok' } as any, owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.APPROVE_APPOINTMENT,
+      {
+        id: 'booking-1',
+        approveAppointmentDto: { notes: 'ok' },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.completeBooking('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.COMPLETE_APPOINTMENT,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.generateInvoice('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.GENERATE_INVOICE,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+  });
+
+  it('scopes availability and availability-override mutations to the authenticated owner', async () => {
+    const storeClient = {
+      send: jest.fn(() => of({ id: 'availability-1' })),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.updateOwnerAvailability(
+      'availability-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY,
+      {
+        id: 'availability-1',
+        updateAvailabilityDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailability('availability-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY,
+      { id: 'availability-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.updateOwnerAvailabilityOverride(
+      'override-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE,
+      {
+        id: 'override-1',
+        updateAvailabilityOverrideDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailabilityOverride('override-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
+      { id: 'override-1', requesterOwnerId: 'owner-user-1' }
+    );
+  });
+
   it('protects site-config updates with owner permissions', () => {
     const updateSiteConfig = TrainerController.prototype.updateSiteConfig;
 
