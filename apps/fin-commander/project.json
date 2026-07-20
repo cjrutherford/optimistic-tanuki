@@ -27,8 +27,7 @@
         "server": "apps/fin-commander/src/main.server.ts",
         "ssr": {
           "entry": "apps/fin-commander/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

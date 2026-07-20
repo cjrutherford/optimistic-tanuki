@@ -26,6 +26,11 @@ const SEED_USERS = [
   ...DEV_BUSINESS_TENANT_PRESETS.map((tenant) => tenant.owner),
   ...WORKFLOW_CLIENT_USERS,
 ];
+const DEV_BUSINESS_LOCALITY_SLUGS = [
+  'savannah-ga',
+  'savannah-starland-district',
+  'augusta-ga',
+];
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -67,9 +72,17 @@ async function bootstrap() {
     password: process.env.POSTGRES_PASSWORD || 'postgres',
     database: process.env.STORE_DB || 'ot_store',
   });
+  const paymentsDb = new PgClient({
+    host: process.env.POSTGRES_HOST || 'db',
+    port: Number(process.env.POSTGRES_PORT || 5432),
+    user: process.env.POSTGRES_USER || 'postgres',
+    password: process.env.POSTGRES_PASSWORD || 'postgres',
+    database: process.env.PAYMENTS_DB || 'ot_payments',
+  });
 
   await permissionsDb.connect();
   await storeDb.connect();
+  await paymentsDb.connect();
 
   // Test connectivity
   try {
@@ -251,6 +264,145 @@ async function bootstrap() {
     });
   }
 
+  async function loadCommunityAnchor(slug) {
+    const { status, data } = await fetchJson(
+      `${GATEWAY_URL}/communities/slug/${slug}`
+    );
+    if (status >= 400 || !data?.id) {
+      throw new Error(`Could not resolve community slug ${slug}`);
+    }
+
+    return {
+      id: data.id,
+      slug: data.slug || slug,
+      lat: Number(data.lat),
+      lng: Number(data.lng),
+    };
+  }
+
+  function withOffset(anchor, index) {
+    const offset = 0.0025 + index * 0.0015;
+    return {
+      lat: Number((anchor.lat + offset).toFixed(6)),
+      lng: Number((anchor.lng - offset).toFixed(6)),
+    };
+  }
+
+  async function upsertBusinessPageSeed(tenant, owner, locality, index) {
+    const coordinates = withOffset(locality, index);
+    const description =
+      tenant.brand?.longBio ||
+      tenant.brand?.intro ||
+      tenant.owner?.bio ||
+      tenant.businessType;
+
+    const result = await paymentsDb.query(
+      `
+        INSERT INTO "business_pages" (
+          "communityId",
+          "ownerId",
+          "name",
+          "description",
+          "website",
+          "phone",
+          "email",
+          "address",
+          "tier",
+          "subscriptionStatus",
+          "isFeatured",
+          "anchorLat",
+          "anchorLng",
+          "updatedAt"
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          $6,
+          $7,
+          $8,
+          $9,
+          'active',
+          true,
+          $10,
+          $11,
+          NOW()
+        )
+        ON CONFLICT ("communityId") DO UPDATE SET
+          "ownerId" = EXCLUDED."ownerId",
+          "name" = EXCLUDED."name",
+          "description" = EXCLUDED."description",
+          "website" = EXCLUDED."website",
+          "phone" = EXCLUDED."phone",
+          "email" = EXCLUDED."email",
+          "address" = EXCLUDED."address",
+          "tier" = EXCLUDED."tier",
+          "subscriptionStatus" = EXCLUDED."subscriptionStatus",
+          "isFeatured" = EXCLUDED."isFeatured",
+          "anchorLat" = EXCLUDED."anchorLat",
+          "anchorLng" = EXCLUDED."anchorLng",
+          "updatedAt" = NOW()
+        RETURNING "id", "communityId"
+      `,
+      [
+        locality.id,
+        owner.userId,
+        tenant.brand.businessName,
+        description,
+        `https://${tenant.site.slug}.local`,
+        tenant.contact.phone,
+        tenant.contact.email,
+        `${locality.slug.replace(/-/g, ' ')}, local service area`,
+        index === 0 ? 'enterprise' : 'pro',
+        coordinates.lat,
+        coordinates.lng,
+      ]
+    );
+
+    return result.rows[0];
+  }
+
+  async function seedAdvertisingCampaign(
+    tenant,
+    owner,
+    businessPage,
+    locality
+  ) {
+    const campaignName = `${tenant.brand.businessName} local launch`;
+
+    await paymentsDb.query(
+      `
+        DELETE FROM "advertising_campaigns"
+        WHERE "businessPageId" = $1
+      `,
+      [businessPage.id]
+    );
+
+    const campaign = await paymentsDb.query(
+      `INSERT INTO "advertising_campaigns" ("businessPageId", "userId", "name", "status", "startsAt", "endsAt")
+       VALUES ($1, $2, $3, 'active', NOW(), NOW() + INTERVAL '90 days') RETURNING "id"`,
+      [businessPage.id, owner.userId, campaignName]
+    );
+    const campaignId = campaign.rows[0].id;
+    await paymentsDb.query(
+      `INSERT INTO "advertising_campaign_creatives" ("campaignId", "placementType", "headline", "body", "ctaLabel", "ctaUrl")
+       VALUES ($1, 'on-page', $2, $3, 'Learn more', $4)`,
+      [
+        campaignId,
+        tenant.brand.businessName,
+        tenant.brand.tagline,
+        `https://${tenant.site.slug}.local`,
+      ]
+    );
+    await paymentsDb.query(
+      `INSERT INTO "advertising_campaign_target_placements" ("campaignId", "targetType", "targetId", "placementType")
+       VALUES ($1, 'community', $2, 'on-page')`,
+      [campaignId, locality.id]
+    );
+  }
+
   async function assignRole(profileId, roleName) {
     const result = await permissionsDb.query(
       `
@@ -416,7 +568,11 @@ async function bootstrap() {
   logger.log(`=== Business User Seed Complete ===`);
   logger.log(`Successfully authenticated ${authenticatedUsers.length} users`);
 
-  for (const tenant of DEV_BUSINESS_TENANT_PRESETS) {
+  const localityAnchors = await Promise.all(
+    DEV_BUSINESS_LOCALITY_SLUGS.map((slug) => loadCommunityAnchor(slug))
+  );
+
+  for (const [index, tenant] of DEV_BUSINESS_TENANT_PRESETS.entries()) {
     const owner = authenticatedUsers.find(
       (user) => user.email === tenant.owner.email
     );
@@ -427,6 +583,18 @@ async function bootstrap() {
       continue;
     }
     await upsertBusinessSiteConfig(tenant, owner.profileId, owner.userId);
+    const businessPage = await upsertBusinessPageSeed(
+      tenant,
+      owner,
+      localityAnchors[index % localityAnchors.length],
+      index
+    );
+    await seedAdvertisingCampaign(
+      tenant,
+      owner,
+      businessPage,
+      localityAnchors[index % localityAnchors.length]
+    );
     logger.log(`Hosted tenant ready at /sites/${tenant.site.slug}`);
   }
 
@@ -460,6 +628,7 @@ async function bootstrap() {
 
   await permissionsDb.end();
   await storeDb.end();
+  await paymentsDb.end();
 }
 
 bootstrap().catch((err) => {

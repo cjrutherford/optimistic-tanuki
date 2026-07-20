@@ -22,7 +22,9 @@ describe('BusinessSiteEditorPageComponent', () => {
   const listAssets = jest.fn();
   const getStoreProducts = jest.fn();
   const getOwnerProducts = jest.fn();
+  const getOwnerBusinessPages = jest.fn();
   const getOffers = jest.fn();
+  const updateOwnerBusinessPage = jest.fn();
   const httpPost = jest.fn();
   const setTheme = jest.fn();
   const setPrimaryColor = jest.fn();
@@ -136,6 +138,29 @@ describe('BusinessSiteEditorPageComponent', () => {
         },
       ])
     );
+    getOwnerBusinessPages.mockReturnValue(
+      of([
+        {
+          id: 'business-page-1',
+          communityId: 'community-1',
+          name: 'North Star Advisory',
+          anchorLat: 32.0809,
+          anchorLng: -81.0912,
+        },
+      ])
+    );
+    updateOwnerBusinessPage.mockReturnValue(
+      of({
+        success: true,
+        businessPage: {
+          id: 'business-page-1',
+          communityId: 'community-1',
+          name: 'North Star Advisory',
+          anchorLat: 33.1,
+          anchorLng: -84.4,
+        },
+      })
+    );
     getOffers.mockReturnValue(of([]));
     listAssets.mockReturnValue(
       of([
@@ -161,7 +186,9 @@ describe('BusinessSiteEditorPageComponent', () => {
             updateSiteConfig,
             getStoreProducts,
             getOwnerProducts,
+            getOwnerBusinessPages,
             getOffers,
+            updateOwnerBusinessPage,
             listAssets,
           },
         },
@@ -265,6 +292,27 @@ describe('BusinessSiteEditorPageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Manage products in workspace'
     );
+  });
+
+  it('loads and saves the owner business locality anchor from the contact panel', async () => {
+    const { fixture, component } = createComponent();
+
+    await Promise.resolve();
+    fixture.detectChanges();
+    component.selectOwnerBusinessPage('business-page-1');
+    component.togglePanel('contact');
+    fixture.detectChanges();
+    component.ownerBusinessAnchorLat = '33.1';
+    component.ownerBusinessAnchorLng = '-84.4';
+
+    component.saveOwnerBusinessAnchor();
+
+    expect(getOwnerBusinessPages).toHaveBeenCalled();
+    expect(updateOwnerBusinessPage).toHaveBeenCalledWith('business-page-1', {
+      anchorLat: 33.1,
+      anchorLng: -84.4,
+    });
+    expect(fixture.nativeElement.textContent).toContain('Locality Anchor');
   });
 
   it('reorders landing sections with stable sequential order values', () => {

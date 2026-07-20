@@ -1,0 +1,45 @@
+- Local Network:
+    - Towne Square:
+        href: http://127.0.0.1:8087
+        icon: http://127.0.0.1:8087/favicon.ico
+        description: Local social network
+    - MetroCast:
+        href: http://127.0.0.1:8093
+        icon: http://127.0.0.1:8093/favicon.ico
+        description: Local video and streaming
+    - Studio:
+        href: http://127.0.0.1:8094
+        icon: http://127.0.0.1:8094/favicon.ico
+        description: Business and creator operations
+    - Owner Console:
+        href: http://127.0.0.1:8084
+        icon: http://127.0.0.1:8084/favicon.ico
+        description: Platform administration
+
+- Platform Services:
+    - Gateway:
+        href: http://127.0.0.1:3000/api-docs
+        icon: mdi-api
+        description: API and service gateway
+    - Videos:
+        href: http://127.0.0.1:3022
+        icon: mdi-play-box
+        description: Channel, feed, and playback service
+    - Payments:
+        href: http://127.0.0.1:3004
+        icon: mdi-credit-card
+        description: Business inventory and payments
+    - Social:
+        href: http://127.0.0.1:3003
+        icon: mdi-account-group
+        description: Communities and social posts
+
+- Development Tools:
+    - UI Playground:
+        href: http://127.0.0.1:8100
+        icon: mdi-view-dashboard-outline
+        description: Shared component library
+    - Admin API:
+        href: http://127.0.0.1:8098
+        icon: mdi-shield-crown-outline
+        description: Platform bootstrap and administration

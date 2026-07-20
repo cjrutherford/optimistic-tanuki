@@ -213,6 +213,111 @@ describe('BusinessApiService site config requests', () => {
     request.flush([]);
   });
 
+  it('loads owner business pages with owner auth headers', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'owner-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        email: 'owner@example.com',
+      })
+    );
+    localStorage.setItem('business-site:token', 'owner-token');
+    initTestingModule();
+
+    service.getOwnerBusinessPages().subscribe();
+
+    const request = httpMock.expectOne('/api/payments/business/owner');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer owner-token'
+    );
+    request.flush([]);
+  });
+
+  it('normalizes legacy owner campaign imageUrl responses to mediaUrl', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'owner-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+      })
+    );
+    localStorage.setItem('business-site:token', 'owner-token');
+    initTestingModule();
+
+    let campaigns: any;
+    service.getOwnerAdvertisingCampaigns().subscribe((result) => {
+      campaigns = result;
+    });
+
+    const request = httpMock.expectOne(
+      '/api/payments/advertising-campaigns/owner'
+    );
+    request.flush([
+      {
+        id: 'campaign-1',
+        creatives: [
+          {
+            placementType: 'on-page',
+            imageUrl: 'https://cdn.example.com/legacy.jpg',
+          },
+        ],
+      },
+    ]);
+
+    expect(campaigns[0].creatives[0].mediaUrl).toBe(
+      'https://cdn.example.com/legacy.jpg'
+    );
+  });
+
+  it('updates an owner business page with owner auth headers', () => {
+    TestBed.resetTestingModule();
+    localStorage.setItem(
+      'business-site:user',
+      JSON.stringify({
+        token: 'owner-token',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        email: 'owner@example.com',
+      })
+    );
+    localStorage.setItem('business-site:token', 'owner-token');
+    initTestingModule();
+
+    service
+      .updateOwnerBusinessPage('business-1', {
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
+      })
+      .subscribe();
+
+    const request = httpMock.expectOne(
+      '/api/payments/business/owner/business-1'
+    );
+    expect(request.request.method).toBe('PATCH');
+    expect(request.request.headers.get('Authorization')).toBe(
+      'Bearer owner-token'
+    );
+    expect(request.request.body).toEqual({
+      anchorLat: 32.0809,
+      anchorLng: -81.0912,
+    });
+    request.flush({
+      success: true,
+      businessPage: {
+        id: 'business-1',
+        communityId: 'community-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
+      },
+    });
+  });
+
   it('approves owner bookings with the default hourly rate and workspace note', () => {
     service.approveBooking('booking-1').subscribe();
 

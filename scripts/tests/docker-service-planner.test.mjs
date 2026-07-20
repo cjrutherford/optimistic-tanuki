@@ -174,6 +174,27 @@ test('createComposeBuildPlan respects selected service filters', async () => {
   assert.ok(!('client-interface' in plan.services));
 });
 
+test('createComposeBuildPlan reruns db-setup when migration inputs change', async () => {
+  const workspaceRoot = makeComposeFixture();
+  const firstPlan = await createComposeBuildPlan({
+    workspaceRoot,
+    composeFile: 'docker-compose.yaml',
+  });
+
+  const changedPlan = await createComposeBuildPlan({
+    workspaceRoot,
+    composeFile: 'docker-compose.yaml',
+    previousState: firstPlan.state,
+    changedFiles: ['apps/authentication/migrations/123-add-column.ts'],
+  });
+
+  assert.match(
+    changedPlan.reasons['db-setup'] || '',
+    /migration-inputs-changed/
+  );
+  assert.ok(changedPlan.restartServices.includes('db-setup'));
+});
+
 test('resolve-docker-changes excludes non-buildable compose services from unchanged apps', () => {
   const planFile = path.join(
     os.tmpdir(),
@@ -260,6 +281,35 @@ test('docker-build-batched.sh defaults to batch size 10', () => {
   assert.match(result.stdout, /Batch size: 10/);
 });
 
+test('docker-build-batched.sh re-execs under bash when invoked through sh', () => {
+  const bakeFile = path.join(os.tmpdir(), `docker-bake-sh-${process.pid}.json`);
+  fs.writeFileSync(
+    bakeFile,
+    JSON.stringify({
+      target: {
+        'db-setup': {},
+        authentication: {},
+      },
+    })
+  );
+
+  const result = spawnSync(
+    'sh',
+    ['scripts/docker-build-batched.sh', '--dry-run'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_BAKE_FILE: bakeFile,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  assert.match(result.stdout, /Batch size: 10/);
+});
+
 test('docker-build-batched.sh accepts explicit service filters', () => {
   const bakeFile = path.join(
     os.tmpdir(),
@@ -315,6 +365,7 @@ test('docker-start-phased.sh dry run still executes the full phased startup path
 
   assert.equal(result.status, 0, result.stderr || result.stdout);
   assert.match(result.stdout, /Phase 1: Infrastructure/);
+  assert.match(result.stdout, /up -d --force-recreate .*db-setup/);
   assert.match(result.stdout, /Startup complete/);
 });
 
@@ -426,6 +477,60 @@ exit 0
   );
 });
 
+test('docker-start-phased.sh reruns db-setup during incremental restart plans', () => {
+  const tempRoot = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'docker-start-phased-db-setup-')
+  );
+  const dockerLogPath = path.join(tempRoot, 'docker.log');
+  const fakeBinDir = path.join(tempRoot, 'bin');
+  const planFile = path.join(tempRoot, 'plan.json');
+
+  fs.mkdirSync(fakeBinDir, { recursive: true });
+  writeFile(
+    path.join(fakeBinDir, 'docker'),
+    `#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\\n' "$*" >> "${dockerLogPath}"
+if [[ "$*" == *" ps --services --filter status=running" ]]; then
+  printf 'postgres\\nredis\\nauthentication\\ngateway\\n'
+  exit 0
+fi
+if [[ "$*" == *" ps" ]]; then
+  printf 'NAME STATUS\\n'
+  exit 0
+fi
+exit 0
+`
+  );
+  fs.chmodSync(path.join(fakeBinDir, 'docker'), 0o755);
+  fs.writeFileSync(
+    planFile,
+    JSON.stringify({
+      restartServices: ['db-setup', 'payments'],
+    })
+  );
+
+  const result = spawnSync(
+    'bash',
+    ['scripts/docker-start-phased.sh', 'docker-compose.dev.yaml', '0'],
+    {
+      cwd: repoRoot,
+      env: {
+        ...process.env,
+        DOCKER_BUILD_PLAN_FILE: planFile,
+        PATH: `${fakeBinDir}:${process.env.PATH}`,
+      },
+      encoding: 'utf8',
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const log = fs.readFileSync(dockerLogPath, 'utf8');
+  assert.match(log, /up -d .*db-setup/);
+  assert.match(log, /wait db-setup/);
+  assert.match(log, /up -d --no-deps .*payments/);
+});
+
 test('dev-seed.sh does not rely on docker compose run one-off containers', () => {
   const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
   const script = fs.readFileSync(scriptPath, 'utf8');
@@ -444,14 +549,39 @@ test('docker:dev stays incremental while docker:dev:bootstrap owns seeding', () 
   assert.match(packageJson.scripts['docker:dev:bootstrap'], /docker:dev:seed/);
 });
 
-test('dev-seed.sh refreshes videos before seeding it', () => {
+test('slice checkpoint wrapper runs docker:dev before docker:dev:bootstrap', () => {
+  const scriptPath = path.join(
+    repoRoot,
+    'scripts',
+    'verify-dev-slice-checkpoint.sh'
+  );
+  const script = fs.readFileSync(scriptPath, 'utf8');
+
+  assert.match(script, /pnpm run docker:dev/);
+  assert.match(script, /pnpm run docker:dev:bootstrap/);
+
+  const devIndex = script.indexOf('pnpm run docker:dev');
+  const bootstrapIndex = script.indexOf('pnpm run docker:dev:bootstrap');
+  assert.ok(
+    devIndex < bootstrapIndex,
+    'expected incremental docker:dev to run before docker:dev:bootstrap'
+  );
+});
+
+test('dev-seed.sh builds and refreshes videos before seeding it', () => {
   const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
   const script = fs.readFileSync(scriptPath, 'utf8');
+  const buildIndex = script.indexOf('build_dist_app videos');
   const refreshIndex = script.indexOf('refresh_service videos');
   const seedIndex = script.indexOf(
     'run_seed_with_media_volume videos "${APP_RUNTIME_DIR}" node ./dist/apps/videos/seed-videos.js'
   );
 
+  assert.notEqual(
+    buildIndex,
+    -1,
+    'expected videos dist build command to exist'
+  );
   assert.notEqual(
     refreshIndex,
     -1,
@@ -459,8 +589,48 @@ test('dev-seed.sh refreshes videos before seeding it', () => {
   );
   assert.notEqual(seedIndex, -1, 'expected videos seed command to exist');
   assert.ok(
+    buildIndex < refreshIndex,
+    'expected videos build to happen before videos refresh'
+  );
+  assert.ok(
     refreshIndex < seedIndex,
     'expected videos refresh to happen before videos seed'
+  );
+});
+
+test('dev-seed.sh refreshes workspace-mounted app containers before seeding them', () => {
+  const scriptPath = path.join(repoRoot, 'scripts', 'dev-seed.sh');
+  const script = fs.readFileSync(scriptPath, 'utf8');
+
+  const ownerRefreshIndex = script.indexOf('refresh_service owner-console');
+  const ownerSeedIndex = script.indexOf(
+    'run_seed_from_workspace_env owner-console "/app/apps/owner-console" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-owner.mjs'
+  );
+  const businessRefreshIndex = script.indexOf('refresh_service business-site');
+  const businessSeedIndex = script.indexOf(
+    'run_seed_from_workspace_env business-site "/app/apps/business-site" GATEWAY_URL "${GATEWAY_API_URL}" node ./src/seed-business.mjs'
+  );
+
+  assert.notEqual(
+    ownerRefreshIndex,
+    -1,
+    'expected owner-console to be refreshed before seeding'
+  );
+  assert.notEqual(ownerSeedIndex, -1, 'expected owner-console seed command');
+  assert.ok(
+    ownerRefreshIndex < ownerSeedIndex,
+    'expected owner-console refresh before owner-console seed'
+  );
+
+  assert.notEqual(
+    businessRefreshIndex,
+    -1,
+    'expected business-site to be refreshed before seeding'
+  );
+  assert.notEqual(businessSeedIndex, -1, 'expected business-site seed command');
+  assert.ok(
+    businessRefreshIndex < businessSeedIndex,
+    'expected business-site refresh before business-site seed'
   );
 });
 

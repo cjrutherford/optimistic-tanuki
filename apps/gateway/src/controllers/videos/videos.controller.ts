@@ -296,12 +296,19 @@ export class VideosController {
         slugOrId
       )
     );
-    return await firstValueFrom(
+    const feed = await firstValueFrom(
       this.videosService.send(
         { cmd: VideoCommands.GET_CHANNEL_FEED },
         channel.communityId
       )
     );
+    if (feed?.liveHandoff) {
+      feed.liveHandoff = {
+        ...feed.liveHandoff,
+        playbackPath: `/watch/live/${channel.communitySlug ?? channel.id}`,
+      };
+    }
+    return feed;
   }
 
   @Public()
@@ -341,6 +348,76 @@ export class VideosController {
           ...createProgramBlockDto,
           communityId: channel.communityId,
           channelId: channel.id,
+        }
+      )
+    );
+  }
+
+  @Public()
+  @Post('channels/:slugOrId/live/token')
+  async issueLiveToken(
+    @Param('slugOrId') slugOrId: string,
+    @Body()
+    body: {
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
+  ) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId
+      )
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.ISSUE_LIVE_TOKEN },
+        {
+          communityId: channel.communityId,
+          viewerLat: body.viewerLat,
+          viewerLng: body.viewerLng,
+          viewerSessionId: body.viewerSessionId,
+          viewerAccuracyMeters: body.viewerAccuracyMeters,
+          observedAt: body.observedAt,
+        }
+      )
+    );
+  }
+
+  @Public()
+  @Post('channels/:slugOrId/live/token/validate')
+  async validateLiveToken(
+    @Param('slugOrId') slugOrId: string,
+    @Body()
+    body: {
+      token: string;
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
+  ) {
+    const channel = await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.FIND_CHANNEL_BY_SLUG_OR_ID },
+        slugOrId
+      )
+    );
+    return await firstValueFrom(
+      this.videosService.send(
+        { cmd: VideoCommands.VALIDATE_LIVE_TOKEN },
+        {
+          communityId: channel.communityId,
+          token: body.token,
+          viewerLat: body.viewerLat,
+          viewerLng: body.viewerLng,
+          viewerSessionId: body.viewerSessionId,
+          viewerAccuracyMeters: body.viewerAccuracyMeters,
+          observedAt: body.observedAt,
         }
       )
     );

@@ -1,0 +1,13 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:v1.11.0
+    container_name: ot_homepage
+    ports:
+      - '${HOMEPAGE_PORT:-8099}:3000'
+    volumes:
+      - ./homepage:/app/config
+      - ./homepage/logs:/app/config/logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: '*'
+    restart: unless-stopped

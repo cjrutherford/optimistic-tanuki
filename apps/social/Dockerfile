@@ -4,7 +4,6 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig*.json nx.json ./
 COPY libs/ ./libs/
 COPY apps/social/ ./apps/social/
-COPY apps/local-hub/src/data/seed-cities.json ./apps/local-hub/src/data/seed-cities.json
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile
 RUN pnpm exec nx build social --configuration=development
 

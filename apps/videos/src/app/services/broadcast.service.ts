@@ -1,17 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
+import { ClientProxy } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import { randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
+import { firstValueFrom } from 'rxjs';
 import { Repository } from 'typeorm';
+import { LocalityCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   ChannelFeedDto,
   CreateProgramBlockDto,
+  LiveHandoffDto,
+  LivePlaybackTokenDto,
+  LivePlaybackTokenValidationDto,
   LiveSessionDto,
+  LocalityAssessmentDto,
   ProgramBlockDto,
   StartLiveSessionDto,
 } from '@optimistic-tanuki/models';
 import { ChannelFeed } from '../../entities/channel-feed.entity';
 import { LiveSession } from '../../entities/live-session.entity';
 import { ProgramBlock } from '../../entities/program-block.entity';
+import { PlaylistDecisionHistory } from '../../entities/playlist-decision-history.entity';
+import { Channel } from '../../entities/channel.entity';
+import { LiveMediaTransportService } from './live-media-transport.service';
+import type { PlaylistDecision } from './playlist-generator.service';
+
+interface LiveTokenClaims {
+  audience: 'metrocast-live';
+  communityId: string;
+  sessionId: string;
+  expiresAt: number;
+  issuedAt: number;
+  nonce: string;
+  viewerLat: number;
+  viewerLng: number;
+  viewerSessionId?: string;
+  localityTrust?: LocalityAssessmentDto;
+}
+
+interface ViewerLocation {
+  viewerLat?: number;
+  viewerLng?: number;
+  viewerSessionId?: string;
+  viewerAccuracyMeters?: number;
+  observedAt?: string;
+}
 
 @Injectable()
 export class BroadcastService {
@@ -21,22 +53,96 @@ export class BroadcastService {
     @InjectRepository(ProgramBlock)
     private readonly blockRepository: Repository<ProgramBlock>,
     @InjectRepository(LiveSession)
-    private readonly sessionRepository: Repository<LiveSession>
+    private readonly sessionRepository: Repository<LiveSession>,
+    private readonly liveMediaTransport: LiveMediaTransportService,
+    @InjectRepository(Channel)
+    private readonly channelRepository: Repository<Channel>,
+    @Optional()
+    @InjectRepository(PlaylistDecisionHistory)
+    private readonly playlistHistoryRepository?: Repository<PlaylistDecisionHistory>,
+    @Optional()
+    @Inject(ServiceTokens.LOCALITY_SERVICE)
+    private readonly localityClient?: ClientProxy
   ) {}
 
   async getFeedByCommunityId(
     communityId: string
   ): Promise<ChannelFeedDto | null> {
-    return this.feedRepository.findOne({ where: { communityId } });
+    const feed = await this.feedRepository.findOne({ where: { communityId } });
+    if (!feed) {
+      return null;
+    }
+
+    const resolvedFeed = await this.resolveFeedState(feed);
+    return this.hydrateFeedDto(resolvedFeed);
   }
 
   async getScheduleByCommunityId(
     communityId: string
   ): Promise<ProgramBlockDto[]> {
-    return this.blockRepository.find({
-      where: { communityId },
-      order: { startsAt: 'ASC' },
+    return this.loadResolvedBlocks(communityId);
+  }
+
+  async refreshAllFeeds(now = new Date()): Promise<ChannelFeedDto[]> {
+    const feeds = await this.feedRepository.find({
+      order: { communityId: 'ASC' },
     });
+    const refreshedFeeds: ChannelFeedDto[] = [];
+
+    for (const feed of feeds) {
+      const resolvedFeed = await this.resolveFeedState(feed, now);
+      refreshedFeeds.push(await this.hydrateFeedDto(resolvedFeed));
+    }
+
+    return refreshedFeeds;
+  }
+
+  async persistPlaylistDecision(
+    feedId: string,
+    decision: PlaylistDecision,
+    decidedAt = new Date()
+  ): Promise<void> {
+    const feed = await this.feedRepository.findOne({ where: { id: feedId } });
+    if (!feed) {
+      return;
+    }
+
+    if (
+      feed.activePlaylistKind === decision.kind &&
+      feed.activePlaylistReason === decision.reason &&
+      feed.activePlaylistSessionId === (decision.sessionId ?? null) &&
+      feed.activePlaylistBlockId === (decision.blockId ?? null) &&
+      feed.activePlaylistVideoId === (decision.videoId ?? null) &&
+      feed.activePlaylistPlacementType === (decision.placementType ?? null) &&
+      feed.activePlaylistMediaUrl === (decision.mediaUrl ?? null)
+    ) {
+      return;
+    }
+
+    feed.activePlaylistKind = decision.kind;
+    feed.activePlaylistReason = decision.reason;
+    feed.activePlaylistSessionId = decision.sessionId ?? null;
+    feed.activePlaylistBlockId = decision.blockId ?? null;
+    feed.activePlaylistVideoId = decision.videoId ?? null;
+    feed.activePlaylistPlacementType = decision.placementType ?? null;
+    feed.activePlaylistMediaUrl = decision.mediaUrl ?? null;
+    feed.activePlaylistDecidedAt = decidedAt;
+    await this.feedRepository.save(feed);
+    if (this.playlistHistoryRepository) {
+      await this.playlistHistoryRepository.save(
+        this.playlistHistoryRepository.create({
+          feedId,
+          kind: decision.kind,
+          reason: decision.reason,
+          sessionId: decision.sessionId ?? null,
+          blockId: decision.blockId ?? null,
+          videoId: decision.videoId ?? null,
+          placementType: decision.placementType ?? null,
+          mediaUrl: decision.mediaUrl ?? null,
+          decidedAt,
+        })
+      );
+    }
   }
 
   async createProgramBlock(
@@ -124,12 +230,531 @@ export class BroadcastService {
     session.endedAt = now;
     const savedSession = await this.sessionRepository.save(session);
 
-    feed.currentMode = 'offline';
     feed.activeLiveSessionId = null;
-    feed.lastTransitionAt = now;
-    await this.feedRepository.save(feed);
+    await this.resolveFeedState(feed, now);
 
     return savedSession;
+  }
+
+  async issueLiveToken(
+    communityId: string,
+    viewerLocation: ViewerLocation = {}
+  ): Promise<LivePlaybackTokenDto> {
+    const feed = await this.feedRepository.findOne({ where: { communityId } });
+    if (!feed?.activeLiveSessionId || feed.currentMode !== 'live') {
+      return {
+        status: 'unavailable',
+        sessionId: null,
+        playbackUrl: null,
+        token: null,
+        expiresAt: null,
+      };
+    }
+
+    const session = await this.sessionRepository.findOne({
+      where: { id: feed.activeLiveSessionId },
+    });
+    if (!session || session.status !== 'live' || session.endedAt) {
+      return {
+        status: 'unavailable',
+        sessionId: null,
+        playbackUrl: null,
+        token: null,
+        expiresAt: null,
+      };
+    }
+
+    const localityFailure = await this.liveLocalityFailure(
+      communityId,
+      viewerLocation
+    );
+    if (localityFailure) {
+      return this.unavailableLiveToken(localityFailure);
+    }
+
+    const localityTrust = await this.observeLocality(viewerLocation);
+
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    return {
+      status: 'ready',
+      sessionId: session.id,
+      playbackUrl: session.liveSourceUrl ?? null,
+      mediaTransport: this.liveMediaTransport.createConnection({
+        communityId,
+        sessionId: session.id,
+        expiresAt,
+      }),
+      token: this.signLiveToken({
+        audience: 'metrocast-live',
+        communityId,
+        sessionId: session.id,
+        expiresAt: Math.floor(expiresAt.getTime() / 1000),
+        issuedAt: Math.floor(Date.now() / 1000),
+        nonce: randomUUID(),
+        viewerLat: viewerLocation.viewerLat!,
+        viewerLng: viewerLocation.viewerLng!,
+        viewerSessionId: viewerLocation.viewerSessionId,
+        localityTrust,
+      }),
+      expiresAt,
+      localityTrust,
+    };
+  }
+
+  async validateLiveToken(
+    communityId: string,
+    token: string,
+    viewerLocation: ViewerLocation = {}
+  ): Promise<LivePlaybackTokenValidationDto> {
+    const claims = this.readLiveToken(token);
+    if (
+      !claims ||
+      claims.audience !== 'metrocast-live' ||
+      claims.communityId !== communityId ||
+      claims.expiresAt <= Math.floor(Date.now() / 1000)
+    ) {
+      return { valid: false };
+    }
+
+    if (
+      !Number.isFinite(viewerLocation.viewerLat) ||
+      !Number.isFinite(viewerLocation.viewerLng)
+    ) {
+      return { valid: false, reason: 'viewer-location-required' };
+    }
+    if (!this.hasValidCoordinates(viewerLocation)) {
+      return { valid: false, reason: 'invalid-viewer-location' };
+    }
+
+    if (
+      claims.viewerLat !== viewerLocation.viewerLat ||
+      claims.viewerLng !== viewerLocation.viewerLng
+    ) {
+      return { valid: false, reason: 'viewer-location-mismatch' };
+    }
+
+    const localityFailure = await this.liveLocalityFailure(
+      communityId,
+      viewerLocation
+    );
+    if (localityFailure) {
+      return { valid: false, reason: localityFailure };
+    }
+
+    const feed = await this.feedRepository.findOne({ where: { communityId } });
+    if (
+      !feed ||
+      feed.currentMode !== 'live' ||
+      feed.activeLiveSessionId !== claims.sessionId
+    ) {
+      return { valid: false };
+    }
+
+    const session = await this.sessionRepository.findOne({
+      where: { id: claims.sessionId },
+    });
+    if (!session || session.status !== 'live' || session.endedAt) {
+      return { valid: false };
+    }
+
+    const localityTrust = await this.observeLocality({
+      ...viewerLocation,
+      // Preserve the telemetry subject that received the signed handoff.
+      viewerSessionId: claims.viewerSessionId ?? viewerLocation.viewerSessionId,
+    });
+
+    return {
+      valid: true,
+      sessionId: session.id,
+      playbackUrl: session.liveSourceUrl ?? null,
+      mediaTransport: this.liveMediaTransport.createConnection({
+        communityId,
+        sessionId: session.id,
+        expiresAt: new Date(claims.expiresAt * 1000),
+      }),
+      expiresAt: new Date(claims.expiresAt * 1000),
+      localityTrust,
+    };
+  }
+
+  private async observeLocality(
+    viewerLocation: ViewerLocation
+  ): Promise<LocalityAssessmentDto> {
+    const observedAt = viewerLocation.observedAt ?? new Date().toISOString();
+    if (!viewerLocation.viewerSessionId?.trim()) {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-subject-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
+    if (!this.localityClient) {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
+
+    try {
+      return await firstValueFrom(
+        this.localityClient.send<LocalityAssessmentDto>(
+          { cmd: LocalityCommands.RECORD_LOCALITY_OBSERVATION },
+          {
+            subjectId: viewerLocation.viewerSessionId,
+            source: 'live-playback',
+            lat: viewerLocation.viewerLat,
+            lng: viewerLocation.viewerLng,
+            ...(viewerLocation.viewerAccuracyMeters === undefined
+              ? {}
+              : { accuracyMeters: viewerLocation.viewerAccuracyMeters }),
+            observedAt,
+          }
+        )
+      );
+    } catch {
+      return {
+        status: 'unverified',
+        confidenceScore: 0,
+        reasons: ['telemetry-unavailable'],
+        observedAt,
+        action: 'observe',
+      };
+    }
+  }
+
+  private unavailableLiveToken(
+    unavailableReason: NonNullable<LivePlaybackTokenDto['unavailableReason']>
+  ): LivePlaybackTokenDto {
+    return {
+      status: 'unavailable',
+      sessionId: null,
+      playbackUrl: null,
+      token: null,
+      expiresAt: null,
+      unavailableReason,
+    };
+  }
+
+  private async liveLocalityFailure(
+    communityId: string,
+    viewerLocation: ViewerLocation
+  ): Promise<NonNullable<LivePlaybackTokenDto['unavailableReason']> | null> {
+    if (
+      !Number.isFinite(viewerLocation.viewerLat) ||
+      !Number.isFinite(viewerLocation.viewerLng)
+    ) {
+      return 'viewer-location-required';
+    }
+    if (!this.hasValidCoordinates(viewerLocation)) {
+      return 'invalid-viewer-location';
+    }
+
+    const channel = await this.channelRepository.findOne({
+      where: { communityId },
+    });
+    if (!channel || !this.hasValidCoordinates(channel)) {
+      return 'channel-anchor-unavailable';
+    }
+
+    const distanceKm = this.distanceKm(
+      viewerLocation.viewerLat!,
+      viewerLocation.viewerLng!,
+      channel.anchorLat!,
+      channel.anchorLng!
+    );
+    return distanceKm <= this.livePlaybackMaxDistanceKm()
+      ? null
+      : 'outside-anchor-radius';
+  }
+
+  private hasValidCoordinates(coordinates: {
+    viewerLat?: number;
+    viewerLng?: number;
+    anchorLat?: number | null;
+    anchorLng?: number | null;
+  }): boolean {
+    const lat = coordinates.viewerLat ?? coordinates.anchorLat;
+    const lng = coordinates.viewerLng ?? coordinates.anchorLng;
+    return (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat! >= -90 &&
+      lat! <= 90 &&
+      lng! >= -180 &&
+      lng! <= 180
+    );
+  }
+
+  private livePlaybackMaxDistanceKm(): number {
+    const configured = Number.parseFloat(
+      process.env['LIVE_PLAYBACK_MAX_DISTANCE_KM'] || '50'
+    );
+    return Number.isFinite(configured) && configured > 0 ? configured : 50;
+  }
+
+  private distanceKm(
+    lat1: number,
+    lng1: number,
+    lat2: number,
+    lng2: number
+  ): number {
+    const toRadians = (value: number) => (value * Math.PI) / 180;
+    const earthRadiusKm = 6371;
+    const latitudeDelta = toRadians(lat2 - lat1);
+    const longitudeDelta = toRadians(lng2 - lng1);
+    const a =
+      Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(toRadians(lat1)) *
+        Math.cos(toRadians(lat2)) *
+        Math.sin(longitudeDelta / 2) ** 2;
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  private signLiveToken(claims: LiveTokenClaims): string {
+    const header = Buffer.from(
+      JSON.stringify({ alg: 'HS256', typ: 'OT-LIVE' })
+    ).toString('base64url');
+    const payload = Buffer.from(JSON.stringify(claims)).toString('base64url');
+    const unsignedToken = `${header}.${payload}`;
+    const signature = createHmac('sha256', this.liveTokenSecret())
+      .update(unsignedToken)
+      .digest('base64url');
+    return `${unsignedToken}.${signature}`;
+  }
+
+  private readLiveToken(token: string): LiveTokenClaims | null {
+    const [header, payload, signature, ...extra] = token.split('.');
+    if (!header || !payload || !signature || extra.length > 0) {
+      return null;
+    }
+
+    const expectedSignature = createHmac('sha256', this.liveTokenSecret())
+      .update(`${header}.${payload}`)
+      .digest('base64url');
+    const provided = Buffer.from(signature);
+    const expected = Buffer.from(expectedSignature);
+    if (
+      provided.length !== expected.length ||
+      !timingSafeEqual(provided, expected)
+    ) {
+      return null;
+    }
+
+    try {
+      const claims = JSON.parse(
+        Buffer.from(payload, 'base64url').toString('utf8')
+      ) as LiveTokenClaims;
+      return this.isLiveTokenClaims(claims) ? claims : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private liveTokenSecret(): string {
+    const configuredSecret =
+      process.env['LIVE_PLAYBACK_TOKEN_SECRET'] || process.env['JWT_SECRET'];
+    if (configuredSecret) {
+      return configuredSecret;
+    }
+    if (process.env['NODE_ENV'] === 'production') {
+      throw new Error(
+        'LIVE_PLAYBACK_TOKEN_SECRET must be configured in production'
+      );
+    }
+    return 'development-only-live-playback-token-secret';
+  }
+
+  private isLiveTokenClaims(value: unknown): value is LiveTokenClaims {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const claims = value as Partial<LiveTokenClaims>;
+    return (
+      claims.audience === 'metrocast-live' &&
+      typeof claims.communityId === 'string' &&
+      typeof claims.sessionId === 'string' &&
+      typeof claims.expiresAt === 'number' &&
+      typeof claims.issuedAt === 'number' &&
+      typeof claims.nonce === 'string'
+    );
+  }
+
+  private async resolveFeedState(
+    feed: ChannelFeed,
+    now = new Date()
+  ): Promise<ChannelFeed> {
+    if (feed.activeLiveSessionId) {
+      const session = await this.sessionRepository.findOne({
+        where: { id: feed.activeLiveSessionId },
+      });
+      if (session?.status === 'live' && !session.endedAt) {
+        return feed;
+      }
+
+      feed.activeLiveSessionId = null;
+    }
+
+    const blocks = await this.loadResolvedBlocks(feed.communityId, now);
+    const liveBlock = blocks.find((block) => block.status === 'live') ?? null;
+    const replayBlock =
+      liveBlock === null
+        ? [...blocks]
+            .reverse()
+            .find(
+              (block) =>
+                block.blockType === 'prerecorded' &&
+                !!block.videoId &&
+                block.status === 'completed'
+            ) ?? null
+        : null;
+
+    if (liveBlock) {
+      feed.currentMode = 'scheduled';
+      feed.activeProgramBlockId = liveBlock.id;
+      feed.activeVideoId = liveBlock.videoId ?? null;
+    } else if (replayBlock) {
+      feed.currentMode = 'replay';
+      feed.activeProgramBlockId = replayBlock.id;
+      feed.activeVideoId = replayBlock.videoId ?? null;
+    } else {
+      feed.currentMode = 'offline';
+      feed.activeProgramBlockId = null;
+      feed.activeVideoId = null;
+    }
+
+    feed.lastTransitionAt = now;
+    return this.feedRepository.save(feed);
+  }
+
+  private async hydrateFeedDto(feed: ChannelFeed): Promise<ChannelFeedDto> {
+    const activeLiveSession = feed.activeLiveSessionId
+      ? await this.sessionRepository.findOne({
+          where: { id: feed.activeLiveSessionId },
+        })
+      : null;
+
+    return {
+      ...feed,
+      activePlaylistItem: {
+        kind: feed.activePlaylistKind,
+        reason: feed.activePlaylistReason,
+        sessionId: feed.activePlaylistSessionId,
+        blockId: feed.activePlaylistBlockId,
+        videoId: feed.activePlaylistVideoId,
+        placementType: feed.activePlaylistPlacementType,
+        mediaUrl: feed.activePlaylistMediaUrl,
+        decidedAt: feed.activePlaylistDecidedAt,
+      },
+      activeLiveSession,
+      liveHandoff: this.buildLiveHandoff(feed, activeLiveSession),
+    };
+  }
+
+  private buildLiveHandoff(
+    feed: ChannelFeed,
+    activeLiveSession: LiveSession | null
+  ): LiveHandoffDto {
+    if (feed.currentMode === 'live' && activeLiveSession?.status === 'live') {
+      return {
+        status: 'ready',
+        playbackPath: null,
+        requiresAuth: false,
+        tokenContract: 'gateway-token-exchange',
+        localityPolicy: 'unverified-anchor-radius',
+      };
+    }
+
+    if (feed.currentMode === 'scheduled') {
+      return {
+        status: 'standby',
+        playbackPath: null,
+        requiresAuth: false,
+        tokenContract: 'gateway-token-exchange',
+        localityPolicy: 'unverified-anchor-radius',
+      };
+    }
+
+    if (feed.currentMode === 'replay') {
+      return {
+        status: 'ended',
+        playbackPath: null,
+        requiresAuth: false,
+        tokenContract: 'none',
+        localityPolicy: 'none',
+      };
+    }
+
+    return {
+      status: 'idle',
+      playbackPath: null,
+      requiresAuth: false,
+      tokenContract: 'none',
+      localityPolicy: 'none',
+    };
+  }
+
+  private async loadResolvedBlocks(
+    communityId: string,
+    now = new Date()
+  ): Promise<ProgramBlock[]> {
+    const blocks = await this.blockRepository.find({
+      where: { communityId },
+      order: { startsAt: 'ASC' },
+    });
+    const changedBlocks: ProgramBlock[] = [];
+
+    for (const block of blocks) {
+      const nextStatus = this.resolveBlockStatus(block, now);
+      if (block.status !== nextStatus) {
+        block.status = nextStatus;
+
+        if (nextStatus === 'live' && !block.actualStartAt) {
+          block.actualStartAt = now;
+        }
+        if (nextStatus === 'completed' && !block.actualEndAt) {
+          block.actualEndAt = now;
+        }
+
+        changedBlocks.push(block);
+      }
+    }
+
+    for (const block of changedBlocks) {
+      await this.blockRepository.save(block);
+    }
+
+    return blocks;
+  }
+
+  private resolveBlockStatus(
+    block: ProgramBlock,
+    now: Date
+  ): ProgramBlock['status'] {
+    if (block.status === 'cancelled' || block.status === 'interrupted') {
+      return block.status;
+    }
+
+    const startsAt =
+      block.startsAt instanceof Date
+        ? block.startsAt
+        : new Date(block.startsAt);
+    const endsAt =
+      block.endsAt instanceof Date ? block.endsAt : new Date(block.endsAt);
+
+    if (now >= endsAt) {
+      return 'completed';
+    }
+
+    if (now >= startsAt && now < endsAt) {
+      return 'live';
+    }
+
+    return 'scheduled';
   }
 
   private async ensureFeed(input: {

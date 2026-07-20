@@ -216,7 +216,7 @@ services:
       dockerfile: ./apps/ui-playground/Dockerfile
     image: cjrutherford/optimistic_tanuki_ui-playground:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${UI_PLAYGROUND_PORT:-4310}:4000'
+      - '${UI_PLAYGROUND_PORT:-8100}:4000'
     environment:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 4000
@@ -704,6 +704,24 @@ services:
       db-setup: # Ensures db-setup is completed before starting permissions
         condition: service_completed_successfully
     # Command will be inherited from Dockerfile\'s CMD
+  locality:
+    container_name: ot_locality
+    build:
+      context: .
+      dockerfile: ./apps/locality/Dockerfile
+    image: cjrutherford/optimistic_tanuki_locality:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LOCALITY_PORT:-3024}:3024'
+    environment:
+      <<: *service_db_env
+      DATABASE_NAME: ot_locality
+      DB_NAME: ot_locality
+      POSTGRES_DB: ot_locality
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
   project-planning:
     container_name: ot_project_planning
     build:
@@ -918,6 +936,9 @@ services:
       LOCAL_STORAGE_PATH: /usr/src/app/storage
       VIDEO_TRANSCODER_HOST: ${VIDEO_TRANSCODER_HOST:-video-transcoder-worker}
       VIDEO_TRANSCODER_PORT: ${VIDEO_TRANSCODER_PORT:-3023}
+      LIVEKIT_URL: ${LIVEKIT_URL:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - ${VIDEO_SEED_SOURCE_HOST_PATH:-/mnt/valhalla/media/TV}:${VIDEO_SEED_SOURCE_DIR:-/mnt/valhalla/media/TV}:ro
       - ${ASSETS_HOST_PATH:-/mnt/valhalla/media/tanuki-assets}:/usr/src/app/storage
@@ -928,6 +949,8 @@ services:
       db-setup:
         condition: service_completed_successfully
       assets:
+        condition: service_started
+      locality:
         condition: service_started
       video-transcoder-worker:
         condition: service_started

@@ -64,6 +64,22 @@ export class AppController {
     return this.channelService.update(payload.id, payload.updateChannelDto);
   }
 
+  @MessagePattern({ cmd: VideoCommands.ASSIGN_CHANNEL_BUSINESS_PAGE })
+  async assignChannelBusinessPage(
+    @Payload()
+    payload: {
+      channelId: string;
+      userId: string;
+      businessPageId: string | null;
+    }
+  ) {
+    return this.channelService.assignBusinessPage(
+      payload.channelId,
+      payload.userId,
+      payload.businessPageId
+    );
+  }
+
   @MessagePattern({ cmd: VideoCommands.DELETE_CHANNEL })
   async deleteChannel(@Payload() id: string) {
     return this.channelService.remove(id);
@@ -202,6 +218,41 @@ export class AppController {
   @MessagePattern({ cmd: VideoCommands.STOP_LIVE_SESSION })
   async stopLiveSession(@Payload() dto: StopLiveSessionDto) {
     return this.broadcastService.stopLiveSession(dto.communityId);
+  }
+
+  @MessagePattern({ cmd: VideoCommands.ISSUE_LIVE_TOKEN })
+  async issueLiveToken(
+    @Payload()
+    payload: {
+      communityId: string;
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
+  ) {
+    return this.broadcastService.issueLiveToken(payload.communityId, payload);
+  }
+
+  @MessagePattern({ cmd: VideoCommands.VALIDATE_LIVE_TOKEN })
+  async validateLiveToken(
+    @Payload()
+    payload: {
+      communityId: string;
+      token: string;
+      viewerLat?: number;
+      viewerLng?: number;
+      viewerSessionId?: string;
+      viewerAccuracyMeters?: number;
+      observedAt?: string;
+    }
+  ) {
+    return this.broadcastService.validateLiveToken(
+      payload.communityId,
+      payload.token,
+      payload
+    );
   }
 
   // Video view endpoints

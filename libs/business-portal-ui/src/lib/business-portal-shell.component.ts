@@ -216,6 +216,7 @@ export class BusinessPortalShellComponent {
           { path: this.ownerPath('clients'), label: 'Clients' },
           { path: this.ownerPath('availability'), label: 'Availability' },
           { path: this.ownerPath('products'), label: 'Products' },
+          { path: this.ownerPath('campaigns'), label: 'Campaigns' },
           ...(this.siteConfig.site().features.invoices.enabled
             ? [
                 {

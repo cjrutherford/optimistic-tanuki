@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import { ɵsetAngularAppEngineManifest } from '@angular/ssr';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
 import { dirname, resolve } from 'node:path';
@@ -13,7 +14,12 @@ const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+const angularApp = import(
+  new URL('./angular-app-engine-manifest.mjs', import.meta.url).href
+).then(({ default: manifest }) => {
+  ɵsetAngularAppEngineManifest(manifest);
+  return new AngularNodeAppEngine();
+});
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
@@ -76,9 +82,11 @@ app.use(
 
 app.use('/**', (req, res, next) => {
   angularApp
-    .handle(req, {
-      url: getRequestUrl(req),
-    })
+    .then((engine) =>
+      engine.handle(req, {
+        url: getRequestUrl(req),
+      })
+    )
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next()
     )

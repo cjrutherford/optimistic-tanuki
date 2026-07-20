@@ -4,6 +4,7 @@ import {
   isMainModule,
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
+import { ɵsetAngularAppEngineManifest } from '@angular/ssr';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import express from 'express';
 import { readFile } from 'node:fs/promises';
@@ -17,7 +18,12 @@ const evaluatorGuidePath = resolve(
     '/app/docs/guides/business-site-evaluator-guide.html'
 );
 const app = express();
-const angularApp = new AngularNodeAppEngine();
+const angularApp = import(
+  new URL('./angular-app-engine-manifest.mjs', import.meta.url).href
+).then(({ default: manifest }) => {
+  ɵsetAngularAppEngineManifest(manifest);
+  return new AngularNodeAppEngine();
+});
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayOrigin = new URL(gatewayUrl).origin;
 const gatewayHost = new URL(gatewayUrl).host;
@@ -92,11 +98,11 @@ app.use(
     changeOrigin: true,
     on: {
       proxyReq: (proxyReq, req) => {
-        fixRequestBody(proxyReq, req);
         proxyReq.setHeader('host', gatewayHost);
         if (req.headers.origin) {
           proxyReq.setHeader('origin', gatewayOrigin);
         }
+        fixRequestBody(proxyReq, req);
       },
     },
   })
@@ -104,7 +110,7 @@ app.use(
 
 app.use('/**', (req, res, next) => {
   angularApp
-    .handle(req)
+    .then((engine) => engine.handle(req))
     .then((response) =>
       response ? writeResponseToNodeResponse(response, res) : next()
     )

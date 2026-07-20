@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { LocalityAssessmentDto } from '../locality-trust.dto';
 import {
   IsString,
   IsUUID,
@@ -8,6 +9,9 @@ import {
   IsNotEmpty,
   IsInt,
   IsBoolean,
+  IsNumber,
+  Min,
+  Max,
 } from 'class-validator';
 
 export class CreateChannelDto {
@@ -37,6 +41,11 @@ export class CreateChannelDto {
   @IsString()
   @IsUUID()
   userId: string;
+
+  @ApiProperty({ description: 'Optional owned business page', required: false })
+  @IsOptional()
+  @IsUUID()
+  businessPageId?: string;
 
   @ApiProperty({
     description: 'Banner asset ID',
@@ -88,6 +97,28 @@ export class CreateChannelDto {
   @IsOptional()
   @IsString()
   timezone?: string;
+
+  @ApiProperty({
+    description: 'Latitude for this channel anchor',
+    required: false,
+    example: 32.0809,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  anchorLat?: number;
+
+  @ApiProperty({
+    description: 'Longitude for this channel anchor',
+    required: false,
+    example: -81.0912,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  anchorLng?: number;
 }
 
 export class UpdateChannelDto {
@@ -103,6 +134,11 @@ export class UpdateChannelDto {
   @IsString()
   @MaxLength(5000)
   description?: string;
+
+  @ApiProperty({ description: 'Optional owned business page', required: false })
+  @IsOptional()
+  @IsUUID()
+  businessPageId?: string | null;
 
   @ApiProperty({ description: 'Banner asset ID', required: false })
   @IsOptional()
@@ -129,6 +165,20 @@ export class UpdateChannelDto {
   @IsOptional()
   @IsString()
   timezone?: string;
+
+  @ApiProperty({ description: 'Channel anchor latitude', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  anchorLat?: number;
+
+  @ApiProperty({ description: 'Channel anchor longitude', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  anchorLng?: number;
 }
 
 export class ChannelDto {
@@ -146,6 +196,9 @@ export class ChannelDto {
 
   @ApiProperty({ description: 'User ID' })
   userId: string;
+
+  @ApiProperty({ description: 'Optional owned business page' })
+  businessPageId?: string | null;
 
   @ApiProperty({ description: 'Banner asset ID' })
   bannerAssetId?: string;
@@ -174,11 +227,173 @@ export class ChannelDto {
   @ApiProperty({ description: 'Channel community timezone' })
   timezone?: string;
 
+  @ApiProperty({ description: 'Channel anchor latitude' })
+  anchorLat?: number;
+
+  @ApiProperty({ description: 'Channel anchor longitude' })
+  anchorLng?: number;
+
   @ApiProperty({ description: 'Created at timestamp' })
   createdAt: Date;
 
   @ApiProperty({ description: 'Updated at timestamp' })
   updatedAt: Date;
+}
+
+export class LiveHandoffDto {
+  @ApiProperty({ example: 'ready' })
+  status: 'idle' | 'standby' | 'ready' | 'ended';
+
+  @ApiProperty({ required: false, example: '/watch/live/ot-live' })
+  playbackPath?: string | null;
+
+  @ApiProperty()
+  requiresAuth: boolean;
+
+  @ApiProperty({ example: 'gateway-token-exchange' })
+  tokenContract: 'none' | 'gateway-token-exchange';
+
+  @ApiProperty({ example: 'unverified-anchor-radius' })
+  localityPolicy: 'none' | 'unverified-anchor-radius';
+}
+
+export class LiveMediaTransportDto {
+  @ApiProperty({ example: 'livekit' })
+  type: 'livekit';
+
+  @ApiProperty({ example: 'wss://live.example.com' })
+  serverUrl: string;
+
+  @ApiProperty({ example: 'metrocast-community-session' })
+  roomName: string;
+
+  @ApiProperty()
+  token: string;
+
+  @ApiProperty()
+  expiresAt: Date;
+}
+
+export class LivePlaybackTokenDto {
+  @ApiProperty({ example: 'ready' })
+  status: 'ready' | 'unavailable';
+
+  @ApiProperty({ required: false })
+  token: string | null;
+
+  @ApiProperty({ required: false })
+  sessionId: string | null;
+
+  @ApiProperty({ required: false })
+  playbackUrl: string | null;
+
+  @ApiProperty({ required: false, type: () => LiveMediaTransportDto })
+  mediaTransport?: LiveMediaTransportDto | null;
+
+  @ApiProperty({ required: false })
+  expiresAt: Date | null;
+
+  @ApiProperty({ required: false })
+  localityTrust?: LocalityAssessmentDto;
+
+  @ApiProperty({ required: false })
+  unavailableReason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius';
+}
+
+export class LivePlaybackTokenValidationDto {
+  @ApiProperty()
+  valid: boolean;
+
+  @ApiProperty({ required: false })
+  sessionId?: string;
+
+  @ApiProperty({ required: false })
+  playbackUrl?: string | null;
+
+  @ApiProperty({ required: false, type: () => LiveMediaTransportDto })
+  mediaTransport?: LiveMediaTransportDto | null;
+
+  @ApiProperty({ required: false })
+  expiresAt?: Date;
+
+  @ApiProperty({ required: false })
+  localityTrust?: LocalityAssessmentDto;
+
+  @ApiProperty({ required: false })
+  reason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius'
+    | 'viewer-location-mismatch';
+}
+
+export class LiveSessionDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  communityId: string;
+
+  @ApiProperty({ required: false })
+  channelId?: string | null;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({ required: false })
+  description?: string;
+
+  @ApiProperty({ example: 'live' })
+  status: 'live' | 'ended';
+
+  @ApiProperty()
+  startedByUserId: string;
+
+  @ApiProperty()
+  startedByProfileId: string;
+
+  @ApiProperty()
+  startedAt: Date;
+
+  @ApiProperty({ required: false })
+  endedAt?: Date | null;
+
+  @ApiProperty({ required: false })
+  thumbnailAssetId?: string | null;
+
+  @ApiProperty({ required: false })
+  liveSourceUrl?: string | null;
+}
+
+export class PlaylistItemDto {
+  @ApiProperty({ example: 'scheduled' })
+  kind: 'live' | 'scheduled' | 'rerun' | 'ad' | 'filler' | 'offline';
+
+  @ApiProperty()
+  reason: string;
+
+  @ApiProperty({ required: false })
+  sessionId?: string | null;
+
+  @ApiProperty({ required: false })
+  blockId?: string | null;
+
+  @ApiProperty({ required: false })
+  videoId?: string | null;
+
+  @ApiProperty({ required: false })
+  placementType?: 'pre-roll' | 'mid-roll' | 'post-roll' | null;
+
+  @ApiProperty({ required: false })
+  mediaUrl?: string | null;
+
+  @ApiProperty({ required: false })
+  decidedAt?: Date | null;
 }
 
 export class ChannelFeedDto {
@@ -195,7 +410,7 @@ export class ChannelFeedDto {
   timezone: string;
 
   @ApiProperty({ example: 'scheduled' })
-  currentMode: 'offline' | 'scheduled' | 'live';
+  currentMode: 'offline' | 'scheduled' | 'live' | 'replay';
 
   @ApiProperty({ required: false })
   activeProgramBlockId?: string | null;
@@ -205,6 +420,15 @@ export class ChannelFeedDto {
 
   @ApiProperty({ required: false })
   activeVideoId?: string | null;
+
+  @ApiProperty({ required: false, type: () => PlaylistItemDto })
+  activePlaylistItem?: PlaylistItemDto | null;
+
+  @ApiProperty({ required: false, type: () => LiveSessionDto })
+  activeLiveSession?: LiveSessionDto | null;
+
+  @ApiProperty({ required: false, type: () => LiveHandoffDto })
+  liveHandoff?: LiveHandoffDto | null;
 
   @ApiProperty()
   lastTransitionAt: Date;
@@ -367,42 +591,4 @@ export class StopLiveSessionDto {
   @ApiProperty()
   @IsUUID()
   communityId: string;
-}
-
-export class LiveSessionDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  communityId: string;
-
-  @ApiProperty({ required: false })
-  channelId?: string | null;
-
-  @ApiProperty()
-  title: string;
-
-  @ApiProperty({ required: false })
-  description?: string;
-
-  @ApiProperty({ example: 'live' })
-  status: 'live' | 'ended';
-
-  @ApiProperty()
-  startedByUserId: string;
-
-  @ApiProperty()
-  startedByProfileId: string;
-
-  @ApiProperty()
-  startedAt: Date;
-
-  @ApiProperty({ required: false })
-  endedAt?: Date | null;
-
-  @ApiProperty({ required: false })
-  thumbnailAssetId?: string | null;
-
-  @ApiProperty({ required: false })
-  liveSourceUrl?: string | null;
 }

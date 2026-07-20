@@ -258,7 +258,7 @@ services:
     volumes:
       - ./dist/apps/ui-playground/browser:/usr/share/nginx/html:ro
     ports:
-      - '4310:4000'
+      - '${UI_PLAYGROUND_PORT:-8100}:4000'
     environment:
       - NODE_ENV=development
       - GATEWAY_URL=http://gateway:3000
@@ -717,6 +717,27 @@ services:
       dockerfile: ./docker/dev/node-runtime.Dockerfile
     volumes:
       - ./dist/apps/permissions:/usr/src/app
+      - /usr/src/app/node_modules
+    command:
+      [
+        'dumb-init',
+        './node_modules/.bin/nodemon',
+        '--watch',
+        '/usr/src/app',
+        '--ext',
+        'js,json',
+        '--exec',
+        'node',
+        '-L',
+        'main.js',
+      ]
+
+  locality:
+    build:
+      context: .
+      dockerfile: ./docker/dev/node-runtime.Dockerfile
+    volumes:
+      - ./dist/apps/locality:/usr/src/app
       - /usr/src/app/node_modules
     command:
       [
@@ -1267,6 +1288,14 @@ services:
     environment:
       - NODE_ENV=development
 
+  livekit:
+    image: livekit/livekit-server:v1.13.3
+    command: --dev --bind 0.0.0.0
+    ports:
+      - '${LIVEKIT_PORT:-7880}:7880'
+      - '${LIVEKIT_RTC_TCP_PORT:-7881}:7881'
+      - '${LIVEKIT_RTC_UDP_PORT:-7882}:7882/udp'
+
   videos:
     container_name: ot_videos
     build:
@@ -1280,6 +1309,14 @@ services:
       - /mnt/valhalla/media:/media:ro
     environment:
       - VIDEO_SEED_SOURCE_DIR=/media/Tv
+      - LIVEKIT_URL=${LIVEKIT_PUBLIC_URL:-ws://127.0.0.1:7880}
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-devkey}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-secret}
+    depends_on:
+      livekit:
+        condition: service_started
+      locality:
+        condition: service_started
     command:
       [
         'dumb-init',

@@ -14,7 +14,9 @@ import { SellerWallet } from '../entities/seller-wallet.entity';
 import { PayoutRequest } from '../entities/payout-request.entity';
 import { BusinessPage } from '../entities/business-page.entity';
 import { BusinessTheme } from '../entities/business-theme.entity';
-import { CommunitySponsorship } from '../entities/community-sponsorship.entity';
+import { AdvertisingCampaign } from '../entities/advertising-campaign.entity';
+import { AdvertisingCampaignCreative } from '../entities/advertising-campaign-creative.entity';
+import { AdvertisingCampaignTargetPlacement } from '../entities/advertising-campaign-target-placement.entity';
 import { Transaction } from '../entities/transaction.entity';
 import { Offer } from '../entities/offer.entity';
 import { LemonSqueezyProduct } from '../entities/lemon-squeezy-product.entity';
@@ -68,8 +70,20 @@ import { BillingReconciliationService } from './services/billing-reconciliation.
       inject: ['PAYMENTS_CONNECTION'],
     },
     {
-      provide: getRepositoryToken(CommunitySponsorship),
-      useFactory: (ds: DataSource) => ds.getRepository(CommunitySponsorship),
+      provide: getRepositoryToken(AdvertisingCampaign),
+      useFactory: (ds: DataSource) => ds.getRepository(AdvertisingCampaign),
+      inject: ['PAYMENTS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AdvertisingCampaignCreative),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AdvertisingCampaignCreative),
+      inject: ['PAYMENTS_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AdvertisingCampaignTargetPlacement),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(AdvertisingCampaignTargetPlacement),
       inject: ['PAYMENTS_CONNECTION'],
     },
     {

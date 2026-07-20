@@ -44,9 +44,7 @@ export class ChannelService {
   }
 
   async findAll(): Promise<Channel[]> {
-    return this.channelRepository.find({
-      relations: ['videos', 'subscriptions', 'feed'],
-    });
+    return this.channelRepository.find({});
   }
 
   async findOne(id: string): Promise<Channel> {
@@ -96,6 +94,23 @@ export class ChannelService {
       updatedAt: new Date(),
     });
     return this.findOne(id);
+  }
+
+  async assignBusinessPage(
+    channelId: string,
+    userId: string,
+    businessPageId: string | null
+  ): Promise<Channel> {
+    const channel = await this.findOne(channelId);
+    if (!channel || channel.userId !== userId) {
+      throw new Error('Channel not found or not owned by user');
+    }
+
+    await this.channelRepository.update(channelId, {
+      businessPageId,
+      updatedAt: new Date(),
+    });
+    return this.findOne(channelId);
   }
 
   async remove(id: string): Promise<void> {

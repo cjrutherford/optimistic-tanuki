@@ -21,12 +21,29 @@ export const appRoutes: Route[] = [
       import('./pages/cities/cities.component').then((m) => m.CitiesComponent),
   },
   {
+    path: 'localities',
+    loadComponent: () =>
+      import('./pages/cities/cities.component').then((m) => m.CitiesComponent),
+  },
+  {
     path: 'city/:slug',
     loadComponent: () =>
       import('./pages/city/city.component').then((m) => m.CityComponent),
   },
   {
+    path: 'locality/:slug',
+    loadComponent: () =>
+      import('./pages/city/city.component').then((m) => m.CityComponent),
+  },
+  {
     path: 'city/:slug/classifieds',
+    loadComponent: () =>
+      import('./pages/classifieds/classifieds.component').then(
+        (m) => m.ClassifiedsComponent
+      ),
+  },
+  {
+    path: 'locality/:slug/classifieds',
     loadComponent: () =>
       import('./pages/classifieds/classifieds.component').then(
         (m) => m.ClassifiedsComponent
@@ -42,7 +59,23 @@ export const appRoutes: Route[] = [
     data: { openForm: true },
   },
   {
+    path: 'locality/:slug/classifieds/new',
+    loadComponent: () =>
+      import('./pages/classifieds/classifieds.component').then(
+        (m) => m.ClassifiedsComponent
+      ),
+    canActivate: [MemberGuard],
+    data: { openForm: true },
+  },
+  {
     path: 'city/:slug/classifieds/:id',
+    loadComponent: () =>
+      import('./pages/classified-detail/classified-detail.component').then(
+        (m) => m.ClassifiedDetailComponent
+      ),
+  },
+  {
+    path: 'locality/:slug/classifieds/:id',
     loadComponent: () =>
       import('./pages/classified-detail/classified-detail.component').then(
         (m) => m.ClassifiedDetailComponent

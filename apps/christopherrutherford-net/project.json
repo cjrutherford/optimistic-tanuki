@@ -27,8 +27,7 @@
         "server": "apps/christopherrutherford-net/src/main.server.ts",
         "ssr": {
           "entry": "apps/christopherrutherford-net/src/server.ts"
-        },
-        "outputMode": "server"
+        }
       },
       "configurations": {
         "production": {

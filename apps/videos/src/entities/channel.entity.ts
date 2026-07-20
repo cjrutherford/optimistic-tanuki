@@ -26,6 +26,9 @@ export class Channel {
   @Column()
   userId: string;
 
+  @Column({ type: 'uuid', nullable: true })
+  businessPageId: string | null;
+
   @Column({ unique: true })
   communityId: string;
 
@@ -46,6 +49,12 @@ export class Channel {
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   timezone: string | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  anchorLat: number | null;
+
+  @Column({ type: 'double precision', nullable: true })
+  anchorLng: number | null;
 
   @Column({ nullable: true })
   bannerAssetId: string;

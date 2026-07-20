@@ -8,6 +8,7 @@ export { CommentDto } from './comment.dto';
 export { CreateCommentDto } from './createcomment.dto';
 export { CreateLinkDto } from './createlink.dto';
 export { CreatePostDto } from './createpost.dto';
+export { CrossAppCardDto } from './cross-app-card.dto';
 export { CreateVoteDto } from './createvote.dto';
 export { QueryFollowsDto, UpdateFollowDto } from './follow.dto';
 export { PostDto } from './post.dto';

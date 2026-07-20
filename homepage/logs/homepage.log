@@ -1,0 +1,17 @@
+[2026-07-10T14:22:52.109Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.798Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.801Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.804Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.867Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.886Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.898Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.900Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.902Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.971Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:52.995Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:22:55.366Z] error: Host validation failed for: nirvana.tail5a4a0.ts.net:8099. Hint: Set the HOMEPAGE_ALLOWED_HOSTS environment variable to allow requests from this host / port.
+[2026-07-10T14:26:36.201Z] info: docker.yaml was copied to the config folder
+[2026-07-10T14:27:11.220Z] info: bookmarks.yaml was copied to the config folder
+[2026-07-10T14:27:11.221Z] info: proxmox.yaml was copied to the config folder
+[2026-07-10T14:27:11.236Z] info: widgets.yaml was copied to the config folder
+[2026-07-10T14:27:11.236Z] info: custom.css was copied to the config folder

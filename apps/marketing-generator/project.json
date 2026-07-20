@@ -32,8 +32,7 @@
         "ssr": {
           "entry": "apps/marketing-generator/src/server.ts"
         },
-        "prerender": false,
-        "outputMode": "server"
+        "prerender": false
       },
       "configurations": {
         "production": {

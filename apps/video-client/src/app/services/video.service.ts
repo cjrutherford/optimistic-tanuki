@@ -13,7 +13,11 @@ import {
   LiveSessionDto,
   ProgramBlockDto,
   StartLiveSessionDto,
+  LivePlaybackTokenDto,
+  LivePlaybackTokenValidationDto,
+  UpdateChannelDto,
 } from '@optimistic-tanuki/ui-models';
+import type { LivePlaybackLocation } from '../pages/live-playback/live-playback-location.helper';
 
 @Injectable({
   providedIn: 'root',
@@ -95,6 +99,12 @@ export class VideoService {
     );
   }
 
+  updateChannel(id: string, channel: UpdateChannelDto): Promise<ChannelDto> {
+    return firstValueFrom(
+      this.http.put<ChannelDto>(`${this.API_URL}/channels/${id}`, channel)
+    );
+  }
+
   getChannelFeed(slugOrId: string): Observable<ChannelFeedDto> {
     return this.http.get<ChannelFeedDto>(
       `${this.API_URL}/channels/${slugOrId}/feed`
@@ -131,6 +141,27 @@ export class VideoService {
     return this.http.post<LiveSessionDto | null>(
       `${this.API_URL}/channels/${slugOrId}/live/stop`,
       {}
+    );
+  }
+
+  issueLiveToken(
+    slugOrId: string,
+    viewerLocation: LivePlaybackLocation
+  ): Observable<LivePlaybackTokenDto> {
+    return this.http.post<LivePlaybackTokenDto>(
+      `${this.API_URL}/channels/${slugOrId}/live/token`,
+      viewerLocation
+    );
+  }
+
+  validateLiveToken(
+    slugOrId: string,
+    token: string,
+    viewerLocation: LivePlaybackLocation
+  ): Observable<LivePlaybackTokenValidationDto> {
+    return this.http.post<LivePlaybackTokenValidationDto>(
+      `${this.API_URL}/channels/${slugOrId}/live/token/validate`,
+      { token, ...viewerLocation }
     );
   }
 

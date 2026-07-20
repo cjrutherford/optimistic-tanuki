@@ -78,6 +78,7 @@ describe('BusinessPortalShellComponent', () => {
       { path: '/owner/clients', label: 'Clients' },
       { path: '/owner/availability', label: 'Availability' },
       { path: '/owner/products', label: 'Products' },
+      { path: '/owner/campaigns', label: 'Campaigns' },
       { path: '/owner/site', label: 'Site Editor' },
     ]);
   });
@@ -91,6 +92,7 @@ describe('BusinessPortalShellComponent', () => {
       { path: '/owner/clients', label: 'Clients' },
       { path: '/owner/availability', label: 'Availability' },
       { path: '/owner/products', label: 'Products' },
+      { path: '/owner/campaigns', label: 'Campaigns' },
       { path: '/owner/finance/business/invoices', label: 'Invoices' },
       { path: '/owner/finance/business/checkout', label: 'Checkout' },
       { path: '/owner/finance/business/payments', label: 'Payments' },
@@ -126,6 +128,10 @@ describe('BusinessPortalShellComponent', () => {
       {
         path: '/sites/steady-hand-contracting/owner/products',
         label: 'Products',
+      },
+      {
+        path: '/sites/steady-hand-contracting/owner/campaigns',
+        label: 'Campaigns',
       },
       {
         path: '/sites/steady-hand-contracting/owner/site',

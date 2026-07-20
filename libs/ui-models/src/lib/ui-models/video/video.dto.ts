@@ -50,6 +50,8 @@ export interface ChannelDto {
   userId: string;
   communityId: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   appScope?: string;
   memberCount?: number;
@@ -113,6 +115,8 @@ export interface CreateChannelDto {
   userId: string;
   communityId?: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   timezone?: string;
   bannerAssetId?: string;
@@ -127,6 +131,8 @@ export interface UpdateChannelDto {
   name?: string;
   description?: string;
   communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
   joinPolicy?: string;
   timezone?: string;
   bannerAssetId?: string;
@@ -148,11 +154,79 @@ export interface ChannelFeedDto {
   channelId: string;
   communityId: string;
   timezone: string;
-  currentMode: 'offline' | 'scheduled' | 'live';
+  currentMode: 'offline' | 'scheduled' | 'live' | 'replay';
   activeProgramBlockId?: string | null;
   activeLiveSessionId?: string | null;
   activeVideoId?: string | null;
+  activePlaylistItem?: PlaylistItemDto | null;
+  activeLiveSession?: LiveSessionDto | null;
+  liveHandoff?: LiveHandoffDto | null;
   lastTransitionAt: Date;
+}
+
+export interface PlaylistItemDto {
+  kind: 'live' | 'scheduled' | 'rerun' | 'ad' | 'filler' | 'offline';
+  reason: string;
+  sessionId?: string | null;
+  blockId?: string | null;
+  videoId?: string | null;
+  placementType?: 'pre-roll' | 'mid-roll' | 'post-roll' | null;
+  mediaUrl?: string | null;
+  decidedAt?: Date | null;
+}
+
+export interface LiveHandoffDto {
+  status: 'idle' | 'standby' | 'ready' | 'ended';
+  playbackPath?: string | null;
+  requiresAuth: boolean;
+  tokenContract: 'none' | 'gateway-token-exchange';
+  localityPolicy: 'none' | 'unverified-anchor-radius';
+}
+
+export interface LivePlaybackTokenDto {
+  status: 'ready' | 'unavailable';
+  token: string | null;
+  sessionId: string | null;
+  playbackUrl: string | null;
+  mediaTransport?: LiveMediaTransportDto | null;
+  expiresAt: Date | null;
+  localityTrust?: LocalityTrustDto;
+  unavailableReason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius';
+}
+
+export interface LivePlaybackTokenValidationDto {
+  valid: boolean;
+  sessionId?: string;
+  playbackUrl?: string | null;
+  mediaTransport?: LiveMediaTransportDto | null;
+  expiresAt?: Date;
+  localityTrust?: LocalityTrustDto;
+  reason?:
+    | 'viewer-location-required'
+    | 'invalid-viewer-location'
+    | 'channel-anchor-unavailable'
+    | 'outside-anchor-radius'
+    | 'viewer-location-mismatch';
+}
+
+export interface LocalityTrustDto {
+  status: 'unverified' | 'observed' | 'suspicious';
+  confidenceScore: number;
+  reasons: string[];
+  observedAt: string | null;
+  action: 'observe';
+}
+
+export interface LiveMediaTransportDto {
+  type: 'livekit';
+  serverUrl: string;
+  roomName: string;
+  token: string;
+  expiresAt: Date;
 }
 
 export interface CreateProgramBlockDto {

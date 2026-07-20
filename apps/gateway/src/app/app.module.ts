@@ -66,6 +66,7 @@ import { DonationsController } from '../controllers/donations/donations.controll
 import { LeadsController } from '../controllers/leads/leads.controller';
 import { HardwareController } from '../controllers/hardware/hardware.controller';
 import { TrainerController } from '../controllers/trainer/trainer.controller';
+import { LocalityDiscoveryController } from '../controllers/locality/locality-discovery.controller';
 import {
   GATEWAY_APP_REGISTRY,
   GATEWAY_NAVIGATION_LINKS,
@@ -222,6 +223,11 @@ const controllerEntries: Array<ValueComposableEntry<any>> =
         id: 'communities',
         requiredServices: ['social', 'permissions'],
         value: CommunitiesController,
+      },
+      {
+        id: 'locality-discovery',
+        requiredServices: ['social', 'payments', 'videos'],
+        value: LocalityDiscoveryController,
       },
       {
         id: 'notifications',

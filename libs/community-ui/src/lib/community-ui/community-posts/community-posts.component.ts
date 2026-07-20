@@ -19,6 +19,7 @@ import { CommunityService } from '../services/community.service';
 import { CommunityDto } from '../models';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { AppRegistration } from '@optimistic-tanuki/app-registry-backend';
 
 @Component({
   selector: 'lib-community-posts',
@@ -56,6 +57,7 @@ export class CommunityPostsComponent extends Variantable {
   community = signal<CommunityDto | null>(null);
   posts = signal<PostDto[]>([]);
   profiles = signal<{ [key: string]: PostProfileStub }>({});
+  crossAppLinks = signal<{ [postId: string]: string }>({});
   loading = signal(true);
   error = signal<string | null>(null);
   activeTab = signal<'posts' | 'create' | 'manage'>('posts');
@@ -227,6 +229,7 @@ export class CommunityPostsComponent extends Variantable {
       const posts = await this.communityService.getCommunityPosts(communityId);
       this.posts.set(posts);
       await this.loadProfiles(posts);
+      await this.loadCrossAppLinks(posts);
       await this.loadReactionData(posts);
     } catch (err) {
       console.error('Error loading posts:', err);
@@ -337,6 +340,56 @@ export class CommunityPostsComponent extends Variantable {
       this.profiles.set(profileMap);
     } catch (err) {
       console.error('Error loading profiles:', err);
+    }
+  }
+
+  private async loadCrossAppLinks(posts: PostDto[]) {
+    const crossAppPosts = posts.filter(
+      (post) => !!post.crossAppCard?.targetPath
+    );
+    if (crossAppPosts.length === 0) {
+      this.crossAppLinks.set({});
+      return;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<any>('/api/registry/apps')
+      );
+      const apps: AppRegistration[] =
+        response?.data?.apps ?? response?.apps ?? [];
+      const links: { [postId: string]: string } = {};
+
+      for (const post of crossAppPosts) {
+        const card = post.crossAppCard;
+        if (!card?.targetPath) {
+          continue;
+        }
+
+        if (/^https?:\/\//.test(card.targetPath)) {
+          links[post.id] = card.targetPath;
+          continue;
+        }
+
+        const appBaseUrl = apps.find(
+          (app) => app.appId === card.appId
+        )?.uiBaseUrl;
+        links[post.id] = appBaseUrl
+          ? new URL(card.targetPath, `${appBaseUrl}/`).toString()
+          : card.targetPath;
+      }
+
+      this.crossAppLinks.set(links);
+    } catch (err) {
+      console.error('Error loading app registry for cross-app links:', err);
+      this.crossAppLinks.set(
+        Object.fromEntries(
+          crossAppPosts.map((post) => [
+            post.id,
+            post.crossAppCard?.targetPath as string,
+          ])
+        )
+      );
     }
   }
 
@@ -492,6 +545,10 @@ export class CommunityPostsComponent extends Variantable {
       comm.slug ||
       (comm.name ? comm.name.toLowerCase().replace(/\s+/g, '-') : '');
     return `/c/${slug}/post/${postId}`;
+  }
+
+  getCrossAppHref(postId: string): string | null {
+    return this.crossAppLinks()[postId] ?? null;
   }
 
   onCommentAdded(event: {

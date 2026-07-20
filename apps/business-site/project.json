@@ -33,8 +33,7 @@
         "ssr": {
           "entry": "apps/business-site/src/server.ts"
         },
-        "prerender": false,
-        "outputMode": "server"
+        "prerender": false
       },
       "configurations": {
         "production": {

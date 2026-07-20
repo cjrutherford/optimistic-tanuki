@@ -9,6 +9,7 @@ import {
   deriveChannelName,
   deriveVideoTitle,
   getRelativeImportPath,
+  parseSeedCoordinate,
   resolveFirstExistingSeedVideoDirectory,
 } from './seed-videos.helpers';
 
@@ -119,5 +120,12 @@ describe('seed video helpers', () => {
         exists
       )
     ).toBe('/media/TV');
+  });
+
+  it('parses numeric community coordinates from strings and numbers', () => {
+    expect(parseSeedCoordinate('32.080900')).toBeCloseTo(32.0809);
+    expect(parseSeedCoordinate(-81.0912)).toBeCloseTo(-81.0912);
+    expect(parseSeedCoordinate('')).toBeNull();
+    expect(parseSeedCoordinate('not-a-number')).toBeNull();
   });
 });

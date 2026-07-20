@@ -9,6 +9,7 @@ import {
   SeedRequestOptions,
   SeedUserCredentials,
   subscribeToChannelThroughApi,
+  updateChannelThroughApi,
   uploadAssetThroughApi,
 } from './seed-videos.http';
 
@@ -16,12 +17,14 @@ describe('seed video HTTP helpers', () => {
   let httpClient: {
     get: jest.Mock<Promise<unknown>, [string, SeedRequestOptions?]>;
     post: jest.Mock<Promise<unknown>, [string, unknown, SeedRequestOptions?]>;
+    put: jest.Mock<Promise<unknown>, [string, unknown, SeedRequestOptions?]>;
   };
 
   beforeEach(() => {
     httpClient = {
       post: jest.fn(),
       get: jest.fn(),
+      put: jest.fn(),
     };
   });
 
@@ -184,6 +187,8 @@ describe('seed video HTTP helpers', () => {
           'Imported during bootstrap from the local TV media library.',
         userId: 'user-1',
         profileId: 'profile-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
       }
     );
 
@@ -216,6 +221,8 @@ describe('seed video HTTP helpers', () => {
           'Imported during bootstrap from the local TV media library.',
         userId: 'user-1',
         profileId: 'profile-1',
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
       },
       { headers: { Authorization: 'Bearer token-1' } }
     );
@@ -234,6 +241,31 @@ describe('seed video HTTP helpers', () => {
     expect(asset).toEqual({ id: assetId });
     expect(channel).toEqual({ id: channelId });
     expect(video).toEqual({ id: videoId });
+  });
+
+  it('updates existing channels through the gateway route', async () => {
+    const channelId = '22222222-2222-4222-8222-222222222222';
+    httpClient.put.mockResolvedValueOnce({ id: channelId });
+
+    const channel = await updateChannelThroughApi(
+      httpClient as any,
+      'token-1',
+      channelId,
+      {
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
+      }
+    );
+
+    expect(httpClient.put).toHaveBeenCalledWith(
+      `/videos/channels/${channelId}`,
+      {
+        anchorLat: 32.0809,
+        anchorLng: -81.0912,
+      },
+      { headers: { Authorization: 'Bearer token-1' } }
+    );
+    expect(channel).toEqual({ id: channelId });
   });
 
   it('rejects asset uploads that do not return a UUID id', async () => {

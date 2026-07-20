@@ -2,7 +2,7 @@ import { Component, Input, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   PaymentService,
-  CommunitySponsorship,
+  OnPageAdvertisingCampaign,
 } from '../../services/payment.service';
 
 @Component({
@@ -12,29 +12,40 @@ import {
   template: `
     @if (loading()) {
     <div class="sponsorship-skeleton"></div>
-    } @else if (sponsorships().length > 0) {
+    } @else if (campaigns().length > 0) {
     <div
       class="sponsorship-banner"
       [class.banner]="type === 'banner'"
       [class.sticky]="type === 'sticky'"
       [class.featured]="type === 'featured'"
     >
-      @for (sponsor of sponsorships(); track sponsor.id) {
+      @for (sponsor of campaigns(); track sponsor.id) {
       <div class="sponsor-item">
-        @if (sponsor.adContent) {
+        @if ( sponsor.creative.body || sponsor.creative.headline ||
+        sponsor.creative.mediaUrl || sponsor.creative.imageUrl ||
+        sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl ) {
         <div class="sponsor-content">
           <span class="sponsored-label">Sponsored</span>
-          <p class="ad-text">{{ sponsor.adContent }}</p>
-          @if (sponsor.adImageUrl) {
+          <p class="ad-text">
+            {{ sponsor.creative.headline || sponsor.name
+            }}{{ sponsor.creative.body ? ' — ' + sponsor.creative.body : '' }}
+          </p>
+          @if (sponsor.creative.mediaUrl || sponsor.creative.imageUrl) {
           <img
-            [src]="sponsor.adImageUrl"
+            [src]="sponsor.creative.mediaUrl || sponsor.creative.imageUrl"
             alt="Sponsored content"
             class="ad-image"
           />
+          } @if (sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl) {
+          <a
+            class="ad-cta"
+            [href]="sponsor.creative.ctaUrl || sponsor.creative.businessSiteUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ sponsor.creative.ctaLabel || 'Learn more' }}</a
+          >
           }
         </div>
-        } @if (sponsor.type === 'featured') {
-        <div class="featured-badge"><span>⭐</span> Featured Partner</div>
         }
       </div>
       }
@@ -149,17 +160,17 @@ export class SponsorshipBannerComponent implements OnInit {
 
   private paymentService = inject(PaymentService);
 
-  sponsorships = signal<CommunitySponsorship[]>([]);
+  campaigns = signal<OnPageAdvertisingCampaign[]>([]);
   loading = signal(true);
 
   async ngOnInit(): Promise<void> {
     if (!this.communityId) return;
 
     try {
-      const sponsorships = await this.paymentService.getActiveSponsorships(
+      const campaigns = await this.paymentService.getEligibleOnPageCampaigns(
         this.communityId
       );
-      this.sponsorships.set(sponsorships);
+      this.campaigns.set(campaigns);
     } catch (err) {
       console.error('Failed to load sponsorships:', err);
     } finally {

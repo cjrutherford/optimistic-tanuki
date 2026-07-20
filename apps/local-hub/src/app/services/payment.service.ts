@@ -64,6 +64,8 @@ export interface BusinessPage {
   phone?: string;
   email?: string;
   address?: string;
+  anchorLat?: number | null;
+  anchorLng?: number | null;
   tier: 'basic' | 'pro' | 'enterprise';
   stripeSubscriptionId?: string;
   status: 'active' | 'past-due' | 'canceled' | 'trial';
@@ -75,18 +77,18 @@ export interface BusinessPage {
   updatedAt: string;
 }
 
-export interface CommunitySponsorship {
+export interface OnPageAdvertisingCampaign {
   id: string;
-  communityId: string;
-  sponsorUserId: string;
-  type: 'sticky-ad' | 'banner' | 'featured';
-  amount: number;
-  currency: string;
-  status: 'active' | 'expired' | 'cancelled';
-  adContent?: string;
-  adImageUrl?: string;
-  paidAt: string;
-  expiresAt: string;
+  name: string;
+  creative: {
+    headline?: string | null;
+    body?: string | null;
+    ctaLabel?: string | null;
+    ctaUrl?: string | null;
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+    businessSiteUrl?: string | null;
+  };
 }
 
 export interface Transaction {
@@ -510,38 +512,26 @@ export class PaymentService {
     }
   }
 
-  async createSponsorship(
-    communityId: string,
-    type: string,
-    adContent?: string
-  ): Promise<{ checkoutUrl: string }> {
-    this.begin();
-    try {
-      const result = await firstValueFrom(
-        this.http.post<{ checkoutUrl: string }>(
-          `${this.baseUrl}/sponsorship/checkout`,
-          { communityId, type, adContent }
-        )
-      );
-      this.end();
-      return result;
-    } catch (err) {
-      return this.fail(err);
-    }
-  }
-
-  async getActiveSponsorships(
+  async getEligibleOnPageCampaigns(
     communityId: string
-  ): Promise<CommunitySponsorship[]> {
+  ): Promise<OnPageAdvertisingCampaign[]> {
     this.begin();
     try {
       const result = await firstValueFrom(
-        this.http.get<CommunitySponsorship[]>(
-          `${this.baseUrl}/sponsorship/${communityId}/active`
+        this.http.get<OnPageAdvertisingCampaign[]>(
+          `${this.baseUrl}/advertising-campaigns/eligible/on-page`,
+          { params: { communityId } }
         )
       );
       this.end();
-      return result;
+      return result.map((campaign) => ({
+        ...campaign,
+        creative: {
+          ...campaign.creative,
+          mediaUrl:
+            campaign.creative.mediaUrl ?? campaign.creative.imageUrl ?? null,
+        },
+      }));
     } catch (err) {
       return this.fail(err);
     }
@@ -561,21 +551,6 @@ export class PaymentService {
       const result = await firstValueFrom(
         this.http.get<BusinessPage[]>(
           `${this.baseUrl}/business/city/${cityId}${query}`
-        )
-      );
-      this.end();
-      return result;
-    } catch (err) {
-      return this.fail(err);
-    }
-  }
-
-  async getUserSponsorships(): Promise<CommunitySponsorship[]> {
-    this.begin();
-    try {
-      const result = await firstValueFrom(
-        this.http.get<CommunitySponsorship[]>(
-          `${this.baseUrl}/sponsorship/user`
         )
       );
       this.end();

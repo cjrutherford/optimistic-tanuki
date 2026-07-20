@@ -10,7 +10,7 @@
       <h2>Oops!</h2>
       <p>{{ error() }}</p>
       <button class="btn btn-primary" (click)="navigateToCities()">
-        Browse All Cities
+        Browse All Localities
       </button>
     </div>
   </div>
@@ -37,7 +37,7 @@
     <div class="hero-content">
       <button class="back-link" (click)="navigateToCities()">
         <otui-icon name="arrow-back" [size]="20"></otui-icon>
-        All Cities
+        All Localities
       </button>
 
       <div class="hero-text">
@@ -372,6 +372,34 @@
                     (ngModelChange)="businessAddress = $event"
                   />
                 </div>
+                <div class="field-group">
+                  <label class="field-label" for="business-anchor-lat"
+                    >Anchor Latitude</label
+                  >
+                  <input
+                    id="business-anchor-lat"
+                    class="input"
+                    type="number"
+                    step="0.000001"
+                    [ngModel]="businessAnchorLat"
+                    (ngModelChange)="businessAnchorLat = $event"
+                    placeholder="32.0809"
+                  />
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="business-anchor-lng"
+                    >Anchor Longitude</label
+                  >
+                  <input
+                    id="business-anchor-lng"
+                    class="input"
+                    type="number"
+                    step="0.000001"
+                    [ngModel]="businessAnchorLng"
+                    (ngModelChange)="businessAnchorLng = $event"
+                    placeholder="-81.0912"
+                  />
+                </div>
               </div>
               <div class="modal-actions">
                 <button
@@ -385,72 +413,6 @@
               </div>
             </otui-modal>
             } }
-          </article>
-
-          <article class="support-card">
-            <h2 class="section-title">Sponsor This Community</h2>
-            <p class="support-copy">
-              Sponsorships increase visibility for your business and contribute
-              to this community's support goal.
-            </p>
-            <button
-              class="btn btn-primary"
-              (click)="showSponsorshipModal.set(true)"
-            >
-              Sponsor Community
-            </button>
-
-            <otui-modal
-              [visible]="showSponsorshipModal()"
-              heading="Sponsor This Community"
-              [closable]="true"
-              (close)="showSponsorshipModal.set(false)"
-              size="md"
-            >
-              <div class="form-grid">
-                <div class="field-group">
-                  <label class="field-label" for="sponsorship-type">Type</label>
-                  <select
-                    id="sponsorship-type"
-                    class="input"
-                    [ngModel]="selectedSponsorshipType()"
-                    (ngModelChange)="selectedSponsorshipType.set($event)"
-                  >
-                    <option value="banner">Banner</option>
-                    <option value="sticky-ad">Sticky Ad</option>
-                    <option value="featured">Featured</option>
-                  </select>
-                </div>
-                <div class="field-group field-group-full">
-                  <label class="field-label" for="ad-content">Ad Copy</label>
-                  <textarea
-                    id="ad-content"
-                    rows="3"
-                    class="input"
-                    [ngModel]="sponsorshipAdContent"
-                    (ngModelChange)="sponsorshipAdContent = $event"
-                    placeholder="Tell this community about your offer"
-                  ></textarea>
-                </div>
-              </div>
-              <div class="modal-actions">
-                <button
-                  class="btn btn-primary"
-                  (click)="startSponsorshipCheckout()"
-                  [disabled]="sponsorshipCheckoutInProgress()"
-                >
-                  @if (sponsorshipCheckoutInProgress()) { Starting checkout... }
-                  @else { Sponsor Community }
-                </button>
-              </div>
-            </otui-modal>
-
-            @if (activeSponsorships().length > 0) {
-            <div class="active-sponsorship-note">
-              {{ activeSponsorships().length }} active sponsorship(s) currently
-              supporting this community.
-            </div>
-            }
           </article>
         </div>
 

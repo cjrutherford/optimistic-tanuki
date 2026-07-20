@@ -5,6 +5,11 @@ export type SeedHttpClient = {
     body: unknown,
     options?: SeedRequestOptions
   ) => Promise<unknown>;
+  put: (
+    path: string,
+    body: unknown,
+    options?: SeedRequestOptions
+  ) => Promise<unknown>;
 };
 
 export type SeedRequestOptions = {
@@ -31,6 +36,8 @@ export type SeedChannel = {
   name: string;
   profileId: string;
   userId: string;
+  anchorLat?: number | null;
+  anchorLng?: number | null;
   createdAt?: string;
 };
 
@@ -55,6 +62,10 @@ type CreateChannelInput = {
   description: string;
   userId: string;
   profileId: string;
+  communityId?: string;
+  communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
 };
 
 type CreateVideoInput = {
@@ -64,6 +75,14 @@ type CreateVideoInput = {
   assetId: string;
   visibility: 'public' | 'private' | 'unlisted';
   thumbnailAssetId?: string;
+};
+
+type UpdateChannelInput = {
+  name?: string;
+  description?: string;
+  communitySlug?: string;
+  anchorLat?: number;
+  anchorLng?: number;
 };
 
 export async function ensureSeedUserSession(params: {
@@ -194,6 +213,19 @@ export async function createVideoThroughApi(
   );
 }
 
+export async function updateChannelThroughApi(
+  httpClient: SeedHttpClient,
+  token: string,
+  channelId: string,
+  input: UpdateChannelInput
+): Promise<{ id: string }> {
+  return unwrapResponse<{ id: string }>(
+    await httpClient.put(`/videos/channels/${channelId}`, input, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+  );
+}
+
 export async function listUserChannelsThroughApi(
   httpClient: SeedHttpClient,
   token: string,
@@ -248,11 +280,13 @@ export function createHttpClient(
       request('GET', baseUrl, path, undefined, defaultHeaders, options),
     post: (path, body, options) =>
       request('POST', baseUrl, path, body, defaultHeaders, options),
+    put: (path, body, options) =>
+      request('PUT', baseUrl, path, body, defaultHeaders, options),
   };
 }
 
 async function request(
-  method: 'GET' | 'POST',
+  method: 'GET' | 'POST' | 'PUT',
   baseUrl: string,
   path: string,
   body: unknown,

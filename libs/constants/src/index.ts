@@ -92,6 +92,7 @@ export {
 } from './lib/libs/forum';
 
 export { VideoCommands } from './lib/libs/videos';
+export { LocalityCommands } from './lib/libs/locality';
 
 export { WellnessCommands } from './lib/libs/wellness';
 

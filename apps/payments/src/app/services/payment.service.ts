@@ -1,6 +1,12 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
+import {
+  CampaignCreativeDto,
+  CampaignLifecycleStatus,
+  CampaignTargetPlacementDto,
+  isValidCampaignTargetPlacement,
+} from '@optimistic-tanuki/models';
 import { Donation } from '../../entities/donation.entity';
 import { ClassifiedPayment } from '../../entities/classified-payment.entity';
 import { SellerWallet } from '../../entities/seller-wallet.entity';
@@ -9,10 +15,9 @@ import {
   BusinessPage,
   BusinessTier,
 } from '../../entities/business-page.entity';
-import {
-  CommunitySponsorship,
-  SponsorshipType,
-} from '../../entities/community-sponsorship.entity';
+import { AdvertisingCampaign } from '../../entities/advertising-campaign.entity';
+import { AdvertisingCampaignCreative } from '../../entities/advertising-campaign-creative.entity';
+import { AdvertisingCampaignTargetPlacement } from '../../entities/advertising-campaign-target-placement.entity';
 import { Transaction } from '../../entities/transaction.entity';
 import { LemonSqueezyProduct } from '../../entities/lemon-squeezy-product.entity';
 import { calculateNetAmount } from '../utils/platform-fee.util';
@@ -26,6 +31,44 @@ import { BillingReconciliationService } from './billing-reconciliation.service';
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
+
+  private getCreativeMediaUrl(creative: {
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+  }) {
+    const mediaUrl = creative.mediaUrl?.trim() || null;
+    const legacyImageUrl = creative.imageUrl?.trim() || null;
+    return mediaUrl || legacyImageUrl;
+  }
+
+  private validateCreativeMediaUrl(creative: {
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+  }) {
+    const mediaUrl = creative.mediaUrl?.trim() || null;
+    if (mediaUrl !== null && !this.isUsableMediaUrl(mediaUrl)) {
+      throw new Error('Creative mediaUrl must be an absolute HTTPS URL');
+    }
+    return this.getCreativeMediaUrl(creative);
+  }
+
+  private validateCreativeMediaUrls(
+    creatives: Array<{ mediaUrl?: string | null; imageUrl?: string | null }>
+  ) {
+    creatives.forEach((creative) => this.validateCreativeMediaUrl(creative));
+  }
+
+  private isUsableMediaUrl(url?: string | null) {
+    if (!url) {
+      return false;
+    }
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === 'https:' && parsed.hostname.length > 0;
+    } catch {
+      return false;
+    }
+  }
 
   private normalizeMonthYear(month?: number | string, year?: number | string) {
     const now = new Date();
@@ -68,16 +111,408 @@ export class PaymentService {
     private readonly payoutRequestRepository: Repository<PayoutRequest>,
     @InjectRepository(BusinessPage)
     private readonly businessPageRepository: Repository<BusinessPage>,
-    @InjectRepository(CommunitySponsorship)
-    private readonly sponsorshipRepository: Repository<CommunitySponsorship>,
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
     @InjectRepository(LemonSqueezyProduct)
     private readonly lsProductRepository: Repository<LemonSqueezyProduct>,
     @Inject(PAYMENT_PROVIDER_ADAPTER)
     private readonly providerAdapter: BillingProviderAdapter,
-    private readonly billingReconciliationService: BillingReconciliationService
+    private readonly billingReconciliationService: BillingReconciliationService,
+    @InjectRepository(AdvertisingCampaign)
+    private readonly campaignRepository?: Repository<AdvertisingCampaign>,
+    @InjectRepository(AdvertisingCampaignCreative)
+    private readonly campaignCreativeRepository?: Repository<AdvertisingCampaignCreative>,
+    @InjectRepository(AdvertisingCampaignTargetPlacement)
+    private readonly campaignTargetPlacementRepository?: Repository<AdvertisingCampaignTargetPlacement>
   ) {}
+
+  async createAdvertisingCampaign(
+    userId: string,
+    data: {
+      businessPageId: string;
+      name: string;
+      budget?: number | null;
+      startsAt: Date;
+      endsAt: Date;
+      targetPlacements: CampaignTargetPlacementDto[];
+      creatives: CampaignCreativeDto[];
+    }
+  ) {
+    this.validateCreativeMediaUrls(data.creatives);
+    if (
+      data.targetPlacements.some(
+        (target) => !isValidCampaignTargetPlacement(target)
+      )
+    ) {
+      throw new Error('Community targets only support on-page placement');
+    }
+    if (data.targetPlacements.length === 0) {
+      throw new Error('Campaign requires at least one target placement');
+    }
+    if (data.endsAt <= data.startsAt) {
+      throw new Error('Campaign end date must be after the start date');
+    }
+
+    const businessPage = await this.businessPageRepository.findOne({
+      where: { id: data.businessPageId, ownerId: userId },
+    });
+    if (!businessPage) {
+      throw new Error('Business page not found');
+    }
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+
+    const campaign = await this.campaignRepository.save(
+      this.campaignRepository.create({
+        businessPageId: businessPage.id,
+        userId,
+        name: data.name.trim(),
+        budget: data.budget ?? null,
+        startsAt: data.startsAt,
+        endsAt: data.endsAt,
+        status: 'draft' as CampaignLifecycleStatus,
+      })
+    );
+    await this.campaignCreativeRepository.save(
+      data.creatives.map((creative) =>
+        this.campaignCreativeRepository!.create({
+          campaignId: campaign.id,
+          placementType: creative.placementType,
+          headline: creative.headline?.trim() || null,
+          body: creative.body?.trim() || null,
+          ctaLabel: creative.ctaLabel?.trim() || null,
+          ctaUrl: creative.ctaUrl?.trim() || null,
+          mediaUrl: this.getCreativeMediaUrl(creative),
+          imageUrl: creative.imageUrl?.trim() || null,
+        })
+      )
+    );
+    await this.campaignTargetPlacementRepository.save(
+      data.targetPlacements.map((target) =>
+        this.campaignTargetPlacementRepository!.create({
+          campaignId: campaign.id,
+          targetType: target.targetType,
+          targetId: target.targetId,
+          placementType: target.placementType,
+        })
+      )
+    );
+    return campaign;
+  }
+
+  async getOwnerAdvertisingCampaigns(userId: string) {
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+    const campaigns = await this.campaignRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+    const campaignIds = campaigns.map((campaign) => campaign.id);
+    if (campaignIds.length === 0) {
+      return [];
+    }
+    const [creatives, targetPlacements] = await Promise.all([
+      this.campaignCreativeRepository.find({
+        where: { campaignId: In(campaignIds) },
+      }),
+      this.campaignTargetPlacementRepository.find({
+        where: { campaignId: In(campaignIds) },
+      }),
+    ]);
+    return campaigns.map((campaign) => ({
+      ...campaign,
+      creatives: creatives
+        .filter((creative) => creative.campaignId === campaign.id)
+        .map((creative) => ({
+          ...creative,
+          mediaUrl: this.getCreativeMediaUrl(creative),
+        })),
+      targetPlacements: targetPlacements.filter(
+        (target) => target.campaignId === campaign.id
+      ),
+    }));
+  }
+
+  async updateAdvertisingCampaign(
+    userId: string,
+    campaignId: string,
+    data: {
+      businessPageId: string;
+      name: string;
+      budget?: number | null;
+      startsAt: Date;
+      endsAt: Date;
+      targetPlacements: CampaignTargetPlacementDto[];
+      creatives: CampaignCreativeDto[];
+    }
+  ) {
+    this.validateCreativeMediaUrls(data.creatives);
+    if (
+      data.targetPlacements.some(
+        (target) => !isValidCampaignTargetPlacement(target)
+      )
+    ) {
+      throw new Error('Community targets only support on-page placement');
+    }
+    if (data.targetPlacements.length === 0) {
+      throw new Error('Campaign requires at least one target placement');
+    }
+    if (data.endsAt <= data.startsAt) {
+      throw new Error('Campaign end date must be after the start date');
+    }
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+    const [campaign, businessPage] = await Promise.all([
+      this.campaignRepository.findOne({ where: { id: campaignId, userId } }),
+      this.businessPageRepository.findOne({
+        where: { id: data.businessPageId, ownerId: userId },
+      }),
+    ]);
+    if (!campaign) {
+      throw new Error('Campaign not found');
+    }
+    if (!businessPage) {
+      throw new Error('Business page not found');
+    }
+
+    Object.assign(campaign, {
+      businessPageId: businessPage.id,
+      name: data.name.trim(),
+      budget: data.budget ?? null,
+      startsAt: data.startsAt,
+      endsAt: data.endsAt,
+      status: 'draft' as CampaignLifecycleStatus,
+    });
+    await Promise.all([
+      this.campaignCreativeRepository.delete({ campaignId }),
+      this.campaignTargetPlacementRepository.delete({ campaignId }),
+    ]);
+    await Promise.all([
+      this.campaignCreativeRepository.save(
+        data.creatives.map((creative) =>
+          this.campaignCreativeRepository!.create({
+            campaignId,
+            placementType: creative.placementType,
+            headline: creative.headline?.trim() || null,
+            body: creative.body?.trim() || null,
+            ctaLabel: creative.ctaLabel?.trim() || null,
+            ctaUrl: creative.ctaUrl?.trim() || null,
+            mediaUrl: this.getCreativeMediaUrl(creative),
+            imageUrl: creative.imageUrl?.trim() || null,
+          })
+        )
+      ),
+      this.campaignTargetPlacementRepository.save(
+        data.targetPlacements.map((target) =>
+          this.campaignTargetPlacementRepository!.create({
+            campaignId,
+            ...target,
+          })
+        )
+      ),
+    ]);
+    return this.campaignRepository.save(campaign);
+  }
+
+  async updateAdvertisingCampaignStatus(
+    userId: string,
+    campaignId: string,
+    status: CampaignLifecycleStatus
+  ) {
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+    const campaign = await this.campaignRepository.findOne({
+      where: { id: campaignId, userId },
+    });
+    if (!campaign) {
+      return { success: false, message: 'Campaign not found' };
+    }
+    if (status === 'active') {
+      const [creatives, targetPlacements] = await Promise.all([
+        this.campaignCreativeRepository.find({ where: { campaignId } }),
+        this.campaignTargetPlacementRepository.find({ where: { campaignId } }),
+      ]);
+      if (targetPlacements.length === 0) {
+        throw new Error('Campaign requires at least one target placement');
+      }
+      const missingCreative = targetPlacements.some(
+        (target) =>
+          !creatives.some(
+            (creative) => creative.placementType === target.placementType
+          )
+      );
+      if (missingCreative) {
+        throw new Error(
+          'Campaign requires creative for every selected placement type'
+        );
+      }
+    }
+    campaign.status = status;
+    return {
+      success: true,
+      campaign: await this.campaignRepository.save(campaign),
+    };
+  }
+
+  async getEligibleOnPageCampaigns(input: {
+    channelId?: string;
+    communityId?: string;
+  }) {
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+    const now = new Date();
+    const targets = await this.campaignTargetPlacementRepository.find({
+      where: { placementType: 'on-page' },
+    });
+    const matchingTargets = targets.filter(
+      (target) =>
+        (target.targetType === 'channel' &&
+          target.targetId === input.channelId) ||
+        (target.targetType === 'community' &&
+          target.targetId === input.communityId)
+    );
+    const campaignIds = [
+      ...new Set(matchingTargets.map((target) => target.campaignId)),
+    ];
+    if (campaignIds.length === 0) {
+      return [];
+    }
+    const [campaigns, creatives] = await Promise.all([
+      this.campaignRepository.find({
+        where: { id: In(campaignIds), status: 'active' },
+      }),
+      this.campaignCreativeRepository.find({
+        where: { campaignId: In(campaignIds), placementType: 'on-page' },
+      }),
+    ]);
+    return campaigns
+      .filter((campaign) => campaign.startsAt <= now && campaign.endsAt >= now)
+      .map((campaign) => ({
+        ...campaign,
+        creative: (() => {
+          const creative = creatives.find(
+            (candidate) => candidate.campaignId === campaign.id
+          );
+          const mediaUrl = creative && this.getCreativeMediaUrl(creative);
+          return creative && mediaUrl ? { ...creative, mediaUrl } : null;
+        })(),
+      }))
+      .filter(
+        (campaign) =>
+          campaign.creative !== null &&
+          this.isUsableMediaUrl(campaign.creative.mediaUrl)
+      );
+  }
+
+  async getEligiblePlaybackCampaigns(input: {
+    channelId?: string;
+    communityId?: string;
+    placementType: 'pre-roll' | 'mid-roll' | 'post-roll';
+  }) {
+    if (
+      !this.campaignRepository ||
+      !this.campaignCreativeRepository ||
+      !this.campaignTargetPlacementRepository
+    ) {
+      throw new Error('Campaign repositories are not configured');
+    }
+
+    const now = new Date();
+    const targets = await this.campaignTargetPlacementRepository.find({
+      where: { placementType: input.placementType },
+    });
+    const matchingTargets = targets.filter(
+      (target) =>
+        (target.targetType === 'channel' &&
+          target.targetId === input.channelId) ||
+        (target.targetType === 'community' &&
+          target.targetId === input.communityId)
+    );
+    const campaignIds = [
+      ...new Set(matchingTargets.map((target) => target.campaignId)),
+    ];
+    if (campaignIds.length === 0) {
+      return [];
+    }
+
+    const [campaigns, creatives] = await Promise.all([
+      this.campaignRepository.find({
+        where: { id: In(campaignIds), status: 'active' },
+      }),
+      this.campaignCreativeRepository.find({
+        where: {
+          campaignId: In(campaignIds),
+          placementType: input.placementType,
+        },
+      }),
+    ]);
+
+    return campaigns
+      .filter((campaign) => campaign.startsAt <= now && campaign.endsAt >= now)
+      .map((campaign) => {
+        const target = matchingTargets.find(
+          (candidate) => candidate.campaignId === campaign.id
+        );
+        const creative = creatives.find(
+          (candidate) => candidate.campaignId === campaign.id
+        );
+        const mediaUrl = creative && this.getCreativeMediaUrl(creative);
+        if (!target || !mediaUrl || !this.isUsableMediaUrl(mediaUrl)) {
+          return null;
+        }
+        return {
+          campaignId: campaign.id,
+          businessPageId: campaign.businessPageId,
+          campaignName: campaign.name,
+          placementType: input.placementType,
+          targetType: target.targetType,
+          targetId: target.targetId,
+          localityMatch:
+            target.targetType === 'channel'
+              ? 'channel-anchor'
+              : 'community-anchor',
+          mediaUrl,
+          creative: {
+            headline: creative.headline,
+            body: creative.body,
+            ctaLabel: creative.ctaLabel,
+            ctaUrl: creative.ctaUrl,
+            mediaUrl,
+            imageUrl: creative.imageUrl,
+          },
+        };
+      })
+      .filter(
+        (campaign): campaign is NonNullable<typeof campaign> =>
+          campaign !== null
+      )
+      .sort((left, right) => left.campaignId.localeCompare(right.campaignId));
+  }
 
   async getDonationGoal(month?: number | string, year?: number | string) {
     const period = this.normalizeMonthYear(month, year);
@@ -95,22 +530,11 @@ export class PaymentService {
     );
     const donorCount = new Set(donations.map((d) => d.userId)).size;
 
-    const activeSponsorships = await this.sponsorshipRepository.find({
-      where: {
-        status: 'active',
-      },
-    });
-
-    const sponsorshipAmount = activeSponsorships.reduce(
-      (sum, s) => sum + Number(s.amount),
-      0
-    );
-
     return {
       monthlyGoal: 5000,
-      currentAmount: currentAmount + sponsorshipAmount,
+      currentAmount,
       donorCount,
-      sponsorshipAmount,
+      sponsorshipAmount: 0,
       month: period.month,
       year: period.year,
     };
@@ -372,6 +796,20 @@ export class PaymentService {
     });
   }
 
+  async getOwnerBusinessPages(userId: string) {
+    return this.businessPageRepository.find({
+      where: { ownerId: userId },
+      order: { createdAt: 'ASC' },
+    });
+  }
+
+  async listActiveBusinessPages() {
+    return this.businessPageRepository.find({
+      where: { subscriptionStatus: 'active' },
+      order: { isFeatured: 'DESC', createdAt: 'ASC' },
+    });
+  }
+
   async updateBusinessPage(
     userId: string,
     communityId: string,
@@ -384,10 +822,42 @@ export class PaymentService {
       email?: string;
       address?: string;
       pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
     }
   ) {
     const businessPage = await this.businessPageRepository.findOne({
       where: { communityId, ownerId: userId },
+    });
+
+    if (!businessPage) {
+      return { success: false, message: 'Business page not found' };
+    }
+
+    Object.assign(businessPage, data);
+    await this.businessPageRepository.save(businessPage);
+
+    return { success: true, businessPage };
+  }
+
+  async updateOwnerBusinessPage(
+    userId: string,
+    businessPageId: string,
+    data: {
+      name?: string;
+      description?: string;
+      logoUrl?: string;
+      website?: string;
+      phone?: string;
+      email?: string;
+      address?: string;
+      pinnedPostId?: string;
+      anchorLat?: number;
+      anchorLng?: number;
+    }
+  ) {
+    const businessPage = await this.businessPageRepository.findOne({
+      where: { id: businessPageId, ownerId: userId },
     });
 
     if (!businessPage) {
@@ -413,66 +883,6 @@ export class PaymentService {
     await this.businessPageRepository.save(businessPage);
 
     return { success: true };
-  }
-
-  async createSponsorshipCheckout(
-    userId: string,
-    communityId: string,
-    type: string,
-    adContent: string | undefined,
-    appScope: string,
-    months: number = 1,
-    businessPageId?: string
-  ) {
-    const durationMs = months * 30 * 24 * 60 * 60 * 1000;
-    const sponsorship = this.sponsorshipRepository.create({
-      communityId,
-      businessPageId,
-      userId,
-      type: type as SponsorshipType,
-      adContent,
-      amount: 0,
-      status: 'pending',
-      startsAt: new Date(),
-      expiresAt: new Date(Date.now() + durationMs),
-      months,
-    });
-
-    const savedSponsorship = await this.sponsorshipRepository.save(sponsorship);
-
-    const checkout = await this.providerAdapter.createCheckoutSession({
-      appScope,
-      customData: {
-        sponsorship_id: savedSponsorship.id,
-        community_id: communityId,
-        user_id: userId,
-        type,
-      },
-    });
-
-    return {
-      checkoutUrl: checkout.checkoutUrl,
-      sponsorshipId: savedSponsorship.id,
-    };
-  }
-
-  async getActiveSponsorships(communityId: string) {
-    const now = new Date();
-    return this.sponsorshipRepository.find({
-      where: {
-        communityId,
-        status: 'active',
-        startsAt: LessThanOrEqual(now),
-        expiresAt: MoreThanOrEqual(now),
-      },
-    });
-  }
-
-  async getUserSponsorships(userId: string) {
-    return this.sponsorshipRepository.find({
-      where: { userId },
-      order: { createdAt: 'DESC' },
-    });
   }
 
   async getUserTransactions(userId: string) {
@@ -791,17 +1201,6 @@ export class PaymentService {
           if (businessPage) {
             businessPage.subscriptionStatus = 'cancelled';
             await this.businessPageRepository.save(businessPage);
-          }
-        }
-      } else if (eventType === 'order_created') {
-        const sponsorshipId = customData.sponsorship_id;
-        if (sponsorshipId) {
-          const sponsorship = await this.sponsorshipRepository.findOne({
-            where: { id: sponsorshipId },
-          });
-          if (sponsorship) {
-            sponsorship.status = 'active';
-            await this.sponsorshipRepository.save(sponsorship);
           }
         }
       }

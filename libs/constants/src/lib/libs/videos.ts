@@ -24,6 +24,7 @@ export const VideoCommands = {
   UPDATE_CHANNEL: 'update-channel',
   DELETE_CHANNEL: 'delete-channel',
   FIND_CHANNELS_BY_USER: 'find-channels-by-user',
+  ASSIGN_CHANNEL_BUSINESS_PAGE: 'assign-channel-business-page',
 
   // Channel subscription commands
   SUBSCRIBE_TO_CHANNEL: 'subscribe-to-channel',
@@ -39,6 +40,8 @@ export const VideoCommands = {
   DELETE_PROGRAM_BLOCK: 'delete-program-block',
   START_LIVE_SESSION: 'start-live-session',
   STOP_LIVE_SESSION: 'stop-live-session',
+  ISSUE_LIVE_TOKEN: 'issue-live-token',
+  VALIDATE_LIVE_TOKEN: 'validate-live-token',
 
   // Video view commands
   RECORD_VIDEO_VIEW: 'record-video-view',

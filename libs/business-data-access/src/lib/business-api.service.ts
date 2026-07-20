@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { LeadSource, LeadStatus } from '@optimistic-tanuki/models';
 import {
   Appointment,
@@ -87,6 +88,7 @@ export interface PublicBusinessSiteSummary {
   tagline: string;
   location: string;
   businessType: string;
+  ownerUserId?: string;
 }
 
 export interface CreateBusinessBookingRequest {
@@ -179,6 +181,72 @@ export interface BusinessAssetLibraryItem {
   profileId: string;
   url: string;
 }
+
+export interface OwnerBusinessPageRecord {
+  id: string;
+  communityId: string;
+  ownerId?: string;
+  name?: string;
+  description?: string;
+  address?: string;
+  subscriptionStatus?: string;
+  anchorLat?: number | null;
+  anchorLng?: number | null;
+}
+
+export interface SponsorChannelOption {
+  id: string;
+  name: string;
+  communitySlug?: string | null;
+}
+
+export type AdvertisingCampaignStatus =
+  | 'draft'
+  | 'active'
+  | 'paused'
+  | 'archived';
+export type AdvertisingCampaignPlacement =
+  | 'pre-roll'
+  | 'mid-roll'
+  | 'post-roll'
+  | 'on-page';
+
+export interface OwnerAdvertisingCampaignRecord {
+  id: string;
+  businessPageId: string;
+  name: string;
+  status: AdvertisingCampaignStatus;
+  budget?: number | null;
+  startsAt: string;
+  endsAt: string;
+  creatives: Array<{
+    placementType: AdvertisingCampaignPlacement;
+    headline?: string | null;
+    body?: string | null;
+    ctaLabel?: string | null;
+    ctaUrl?: string | null;
+    mediaUrl?: string | null;
+    imageUrl?: string | null;
+  }>;
+  targetPlacements: Array<{
+    targetType: 'channel' | 'community';
+    targetId: string;
+    placementType: AdvertisingCampaignPlacement;
+  }>;
+}
+
+export interface CreateOwnerAdvertisingCampaignDto {
+  businessPageId: string;
+  name: string;
+  budget?: number | null;
+  startsAt: string;
+  endsAt: string;
+  creatives: OwnerAdvertisingCampaignRecord['creatives'];
+  targetPlacements: OwnerAdvertisingCampaignRecord['targetPlacements'];
+}
+
+export type UpdateOwnerAdvertisingCampaignDto =
+  CreateOwnerAdvertisingCampaignDto;
 
 export type BusinessOwnerWorkflowBucket =
   | 'needs_response'
@@ -353,6 +421,111 @@ export class BusinessApiService {
         headers: this.authHeaders(),
         params: siteSlug ? { slug: siteSlug } : undefined,
       }
+    );
+  }
+
+  getOwnerBusinessPages(): Observable<OwnerBusinessPageRecord[]> {
+    return this.http.get<OwnerBusinessPageRecord[]>(
+      '/api/payments/business/owner',
+      {
+        headers: this.authHeaders(),
+      }
+    );
+  }
+
+  updateOwnerBusinessPage(
+    businessPageId: string,
+    payload: Partial<OwnerBusinessPageRecord>
+  ): Observable<{ success: boolean; businessPage: OwnerBusinessPageRecord }> {
+    return this.http.patch<{
+      success: boolean;
+      businessPage: OwnerBusinessPageRecord;
+    }>(`/api/payments/business/owner/${businessPageId}`, payload, {
+      headers: this.authHeaders(),
+    });
+  }
+
+  assignBusinessChannel(
+    businessPageId: string,
+    channelId: string
+  ): Observable<{ id: string; businessPageId?: string | null }> {
+    return this.http.patch<{ id: string; businessPageId?: string | null }>(
+      `/api/payments/business/owner/${businessPageId}/channel/${channelId}`,
+      {},
+      { headers: this.authHeaders() }
+    );
+  }
+
+  getSponsorChannels(): Observable<SponsorChannelOption[]> {
+    return this.http.get<SponsorChannelOption[]>('/api/videos/channels');
+  }
+
+  getOwnerAdvertisingCampaigns(): Observable<OwnerAdvertisingCampaignRecord[]> {
+    return this.http
+      .get<OwnerAdvertisingCampaignRecord[]>(
+        '/api/payments/advertising-campaigns/owner',
+        { headers: this.authHeaders() }
+      )
+      .pipe(
+        map((campaigns) =>
+          campaigns.map((campaign) => ({
+            ...campaign,
+            creatives: campaign.creatives.map((creative) => ({
+              ...creative,
+              mediaUrl: creative.mediaUrl ?? creative.imageUrl ?? null,
+            })),
+          }))
+        )
+      );
+  }
+
+  createAdvertisingCampaign(
+    payload: CreateOwnerAdvertisingCampaignDto
+  ): Observable<OwnerAdvertisingCampaignRecord> {
+    return this.http.post<OwnerAdvertisingCampaignRecord>(
+      '/api/payments/advertising-campaigns',
+      payload,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  updateAdvertisingCampaign(
+    campaignId: string,
+    payload: UpdateOwnerAdvertisingCampaignDto
+  ): Observable<OwnerAdvertisingCampaignRecord> {
+    return this.http.put<OwnerAdvertisingCampaignRecord>(
+      `/api/payments/advertising-campaigns/${campaignId}`,
+      payload,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  updateAdvertisingCampaignStatus(
+    campaignId: string,
+    status: AdvertisingCampaignStatus
+  ): Observable<{
+    success: boolean;
+    campaign: OwnerAdvertisingCampaignRecord;
+  }> {
+    return this.http.patch<{
+      success: boolean;
+      campaign: OwnerAdvertisingCampaignRecord;
+    }>(
+      `/api/payments/advertising-campaigns/${campaignId}/status`,
+      { status },
+      { headers: this.authHeaders() }
+    );
+  }
+
+  getEligibleOnPageCampaigns(options: {
+    channelId?: string;
+    communityId?: string;
+  }): Observable<OwnerAdvertisingCampaignRecord[]> {
+    const params = new URLSearchParams();
+    if (options.channelId) params.set('channelId', options.channelId);
+    if (options.communityId) params.set('communityId', options.communityId);
+    return this.http.get<OwnerAdvertisingCampaignRecord[]>(
+      `/api/payments/advertising-campaigns/eligible/on-page?${params.toString()}`
     );
   }
 
