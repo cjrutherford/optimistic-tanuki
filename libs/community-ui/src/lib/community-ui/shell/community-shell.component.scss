@@ -1,6 +1,7 @@
 // ============================================
 // Community Shell — Personality-Aware Styling
 // ============================================
+@use 'personality' as p;
 
 :host {
   display: block;
@@ -79,7 +80,7 @@
   height: fit-content;
   position: sticky;
   top: var(--spacing-md);
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
   transition: width var(--animation-duration-normal, 0.3s)
       var(--animation-easing, ease),
     min-width var(--animation-duration-normal, 0.3s)
@@ -133,10 +134,7 @@
       cursor: pointer;
       padding: var(--spacing-xs) var(--spacing-sm);
       border-radius: var(--border-radius-sm);
-      transition: background var(--animation-duration-fast, 0.15s)
-          var(--animation-easing, ease),
-        color var(--animation-duration-fast, 0.15s)
-          var(--animation-easing, ease);
+      @include p.personality-transition((background, color), 'fast');
 
       &:hover {
         background: color-mix(in srgb, var(--local-accent) 10%, transparent);
@@ -188,8 +186,7 @@
     border-radius: var(--border-radius-md);
     cursor: pointer;
     text-align: left;
-    transition: all var(--animation-duration-fast, 0.15s)
-      var(--animation-easing, ease);
+    @include p.personality-transition(all, 'fast');
     width: 100%;
 
     @media (max-width: 640px) {
@@ -313,8 +310,7 @@
   cursor: pointer;
   position: relative;
   white-space: nowrap;
-  transition: color var(--animation-duration-fast, 0.15s)
-    var(--animation-easing, ease);
+  @include p.personality-transition(color, 'fast');
 
   @media (max-width: 640px) {
     padding: var(--spacing-xs) var(--spacing-sm);
@@ -449,7 +445,7 @@
 // Minimal: borderless sidebar, no shadow, clean dividers
 :host-context([data-personality='minimal']) {
   .groups-sidebar {
-    box-shadow: none;
+    @include p.shadow('none');
     border-color: var(--local-borderColor);
     border-radius: var(--border-radius-sm);
   }
@@ -472,7 +468,7 @@
 :host-context([data-personality='elegant']) {
   .groups-sidebar {
     border-color: color-mix(in srgb, var(--local-accent) 15%, transparent);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
   .sidebar-header {
     border-bottom-color: color-mix(
@@ -507,13 +503,13 @@
 // Bold: heavy sidebar shadow, thick active indicator, strong typography
 :host-context([data-personality='bold']) {
   .groups-sidebar {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-color: var(--local-accent);
   }
   .group-item:hover {
     background: color-mix(in srgb, var(--local-accent) 12%, transparent);
     border-color: var(--local-accent);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
   .community-header h1 {
     font-weight: 900;
@@ -530,7 +526,7 @@
 :host-context([data-personality='playful']) {
   .groups-sidebar {
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-md);
+    @include p.shadow('md');
     background: linear-gradient(
       180deg,
       var(--local-background),
@@ -557,7 +553,7 @@
     border-radius: var(--border-radius-full);
     &.active {
       background: var(--local-background);
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
       &::after {
         display: none;
       }
@@ -593,7 +589,7 @@
       var(--local-accent)
     );
     border-radius: var(--border-radius-xl);
-    box-shadow: var(--shadow-sm);
+    @include p.shadow('sm');
   }
   .sidebar-header {
     border-bottom: none;
@@ -616,7 +612,7 @@
     border-radius: var(--border-radius-full);
     &.active {
       background: var(--local-background);
-      box-shadow: var(--shadow-sm);
+      @include p.shadow('sm');
       &::after {
         display: none;
       }
@@ -662,14 +658,14 @@
 
 :host-context([data-personality='architect']) {
   .groups-sidebar {
-    box-shadow: var(--shadow-lg);
+    @include p.shadow('lg');
     border-top: 3px solid var(--local-accent);
   }
 }
 
 :host-context([data-personality='control-center']) {
   .groups-sidebar {
-    box-shadow: none;
+    @include p.shadow('none');
     padding: var(--spacing-sm);
   }
   .community-shell {

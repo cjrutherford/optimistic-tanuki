@@ -292,7 +292,8 @@ VALUES
   ('task.create', 'Create task (global)', 'task', 'create', NULL, (SELECT id FROM app_scope WHERE name='global')),
   ('task.read', 'Read task (global)', 'task', 'read', NULL, (SELECT id FROM app_scope WHERE name='global')),
   ('task.update', 'Update task (global)', 'task', 'update', NULL, (SELECT id FROM app_scope WHERE name='global')),
-  ('task.delete', 'Delete task (global)', 'task', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global'))
+  ('task.delete', 'Delete task (global)', 'task', 'delete', NULL, (SELECT id FROM app_scope WHERE name='global')),
+  ('videos.video.update', 'Monitor and retry video processing (global owner)', 'videos.video', 'update', NULL, (SELECT id FROM app_scope WHERE name='global'))
 ON CONFLICT (name, "appScopeId") DO NOTHING;
 
 -- Forgeofwill scope permissions
@@ -318,6 +319,7 @@ VALUES
   ('community.join', 'Join community', 'community', 'join', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('community.leave', 'Leave community', 'community', 'leave', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('community.read', 'Read community', 'community', 'read', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
+  ('community.create', 'Create community', 'community', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('business.create', 'Create business page', 'business', 'create', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('business.update', 'Update business page', 'business', 'update', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
   ('election.vote', 'Vote in community elections', 'election', 'vote', NULL, (SELECT id FROM app_scope WHERE name='local-hub')),
@@ -445,8 +447,27 @@ INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
 FROM role r 
 CROSS JOIN permission p 
-WHERE r.name IN ('owner_console_owner', 'global_admin', 'system_admin')
+WHERE r.name IN ('owner', 'owner_console_owner', 'global_admin', 'system_admin')
   AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='global')
+ON CONFLICT DO NOTHING;
+
+-- Owner Console video processing operations
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+SELECT 'videos.video.update', 'Monitor and retry video processing', 'videos.video', 'update', NULL, scope.id
+FROM app_scope scope
+WHERE scope.name = 'owner-console'
+  AND NOT EXISTS (
+    SELECT 1
+    FROM permission existing
+    WHERE existing.name = 'videos.video.update'
+      AND existing."appScopeId" = scope.id
+  );
+
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name = 'videos.video.update'
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='owner-console')
+WHERE r.name = 'owner_console_owner'
 ON CONFLICT DO NOTHING;
 
 -- standard_user (global scope) - basic read/write permissions
@@ -627,6 +648,7 @@ FROM role r JOIN permission p ON p.name IN (
   'community.join',
   'community.leave',
   'community.read',
+  'community.create',
   'election.vote',
   'election.nominate',
   'social.follow',

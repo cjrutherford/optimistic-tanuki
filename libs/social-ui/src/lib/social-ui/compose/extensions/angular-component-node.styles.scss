@@ -1,27 +1,33 @@
 /* Angular Component Node Styles */
+@use 'personality' as p;
+
+// 2026-07 batch 6 legacy-var migration: `--local-accent`/`--local-complement`/
+// `--local-background`/`--local-foreground` were never bound anywhere in
+// this repo (grep for `style.--local-accent` etc. across
+// `libs/social-ui/**/*.ts` returns zero matches) — pure dead fallback tiers.
+// `--accent`/`--complement` are legacy names ThemeService never emits either
+// (see the plan's Decisions: migrate --accent -> --primary, --complement ->
+// --secondary). Collapsed every 3-tier `var(--local-X, var(--legacy-Y,
+// #hex))` chain down to the one real contract var per the Decisions mapping.
 .angular-component-container {
   position: relative;
   margin: var(--spacing-md, 16px) 0;
-  border: 2px solid var(--local-complement, var(--complement, #c0af4b));
+  border: var(--border-width, 2px) solid var(--secondary);
   border-radius: var(--border-radius-lg, 8px);
-  background: var(--local-background, var(--background, #ffffff));
-  transition: all 0.15s ease-in-out;
+  background: var(--background, #fff);
+  @include p.personality-transition(all, 'fast');
   cursor: pointer;
 
   &:hover {
-    border-color: var(--local-accent, var(--accent, #667eea));
-    box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+    border-color: var(--primary);
+    @include p.shadow('md');
     transform: translateY(-1px);
   }
 
   &.selected {
-    border-color: var(--local-accent, var(--accent, #667eea));
-    box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
-    background: color-mix(
-      in srgb,
-      var(--local-accent, var(--accent, #667eea)) 5%,
-      transparent
-    );
+    border-color: var(--primary);
+    @include p.shadow('lg');
+    background: color-mix(in srgb, var(--primary) 5%, transparent);
   }
 }
 
@@ -30,8 +36,8 @@
   align-items: center;
   justify-content: space-between;
   padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
-  background: var(--local-complement, var(--complement, #c0af4b));
-  color: var(--local-background, var(--background, #ffffff));
+  background: var(--secondary);
+  color: var(--background, #fff);
   border-radius: var(--border-radius-md, 4px) var(--border-radius-md, 4px) 0 0;
   font-size: var(--font-size-sm, 0.875rem);
   font-weight: 500;
@@ -49,15 +55,15 @@
     cursor: pointer;
     padding: var(--spacing-xs, 4px);
     border-radius: var(--border-radius-sm, 2px);
-    transition: background-color 0.15s ease-in-out;
+    @include p.personality-transition(background-color, 'fast');
     font-size: 14px;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
+      background: color-mix(in srgb, white 20%, transparent);
     }
 
     &:active {
-      background: rgba(255, 255, 255, 0.3);
+      background: color-mix(in srgb, white 30%, transparent);
     }
   }
 }
@@ -72,13 +78,13 @@
 
 .component-preview {
   text-align: center;
-  color: var(--local-foreground, var(--foreground, #333333));
+  color: var(--foreground, #333);
 
   h4 {
     margin: 0 0 var(--spacing-xs, 4px) 0;
     font-size: var(--font-size-lg, 1.125rem);
     font-weight: 600;
-    color: var(--local-accent, var(--accent, #667eea));
+    color: var(--primary);
   }
 
   p {
@@ -112,12 +118,8 @@
 }
 
 .angular-component-container.drag-over {
-  border-color: var(--local-accent, var(--accent, #667eea));
-  background: color-mix(
-    in srgb,
-    var(--local-accent, var(--accent, #667eea)) 10%,
-    transparent
-  );
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
 /* Animation for component insertion */
@@ -133,7 +135,7 @@
 }
 
 .angular-component-container.inserting {
-  animation: componentInsert 0.3s ease-out;
+  animation: componentInsert var(--animation-duration-normal, 0.3s) ease-out;
 }
 
 /* Responsive adjustments */

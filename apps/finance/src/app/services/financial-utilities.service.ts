@@ -133,15 +133,31 @@ export class FinancialUtilitiesService {
 
     const nextLines = input.lines ?? invoice.lines;
     const subtotal = this.invoiceTotal(nextLines);
-    Object.assign(invoice, {
-      ...input,
-      lines: nextLines,
-      subtotal,
-      total: subtotal,
-      customerEmail: input.customerEmail ?? invoice.customerEmail,
-      notes: input.notes ?? invoice.notes,
-      dueDate: input.dueDate ?? invoice.dueDate,
-    });
+
+    // Explicit allow-list: only the invoice's own editable fields may be
+    // written. tenantId/profileId/userId/id/appScope are never assigned
+    // from `input`, even if a caller manages to smuggle them in — the
+    // finance microservice installs no ValidationPipe of its own, so this
+    // is the only thing standing between a TCP caller and re-tenanting a
+    // row it otherwise legitimately owns.
+    if (input.customerName !== undefined) {
+      invoice.customerName = input.customerName;
+    }
+    if (input.customerEmail !== undefined) {
+      invoice.customerEmail = input.customerEmail;
+    }
+    if (input.currency !== undefined) {
+      invoice.currency = input.currency;
+    }
+    if (input.notes !== undefined) {
+      invoice.notes = input.notes;
+    }
+    if (input.dueDate !== undefined) {
+      invoice.dueDate = input.dueDate;
+    }
+    invoice.lines = nextLines;
+    invoice.subtotal = subtotal;
+    invoice.total = subtotal;
 
     return this.invoiceRepo.save(invoice);
   }

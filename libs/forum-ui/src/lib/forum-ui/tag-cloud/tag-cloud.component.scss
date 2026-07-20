@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -21,20 +23,18 @@
   font-size: var(--font-size-sm);
   font-family: var(--font-body, sans-serif);
   cursor: pointer;
-  transition: background-color var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease),
-    box-shadow var(--animation-duration-fast, 150ms)
-      var(--animation-easing, ease);
+  @include p.personality-transition(
+    (background-color, transform, box-shadow),
+    'fast'
+  );
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
   border: var(--border-width, 1px) solid transparent;
 
   &:hover {
-    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-    color: var(--accent);
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
     transform: translateY(-2px);
   }
 
@@ -63,7 +63,7 @@
     border-color: var(--border);
     border-radius: var(--border-radius-sm);
     &:hover {
-      border-color: var(--accent);
+      border-color: var(--primary);
       background-color: transparent;
     }
   }
@@ -72,11 +72,11 @@
 :host-context([data-personality='elegant']) {
   .tag {
     font-style: italic;
-    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
     background-color: transparent;
     &:hover {
-      border-color: var(--accent);
-      background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+      border-color: var(--primary);
+      background-color: color-mix(in srgb, var(--primary) 8%, transparent);
     }
   }
 }
@@ -88,12 +88,12 @@
     text-transform: uppercase;
     letter-spacing: 0.03em;
     border-radius: var(--border-radius-sm);
-    background-color: color-mix(in srgb, var(--accent) 15%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
     &:hover {
-      background-color: var(--accent);
+      background-color: var(--primary);
       color: var(--primary-foreground);
       transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
+      @include p.shadow('md');
     }
   }
 }
@@ -101,16 +101,13 @@
 :host-context([data-personality='playful']) {
   .tag {
     border-radius: var(--border-radius-full);
-    background: var(--gradient-primary, var(--primary-gradient, var(--accent)));
+    background: var(--gradient-primary);
     color: var(--primary-foreground);
     font-weight: 600;
     &:hover {
       transform: translateY(-3px) rotate(-2deg);
-      box-shadow: var(--shadow-md);
-      background: var(
-        --gradient-secondary,
-        var(--secondary-gradient, var(--complement))
-      );
+      @include p.shadow('md');
+      background: var(--gradient-secondary);
     }
     .count {
       background: color-mix(
@@ -124,10 +121,10 @@
 
 :host-context([data-personality='electric']) {
   .tag {
-    border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 30%, transparent);
     &:hover {
-      box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 40%, transparent);
-      border-color: var(--accent);
+      box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 40%, transparent);
+      border-color: var(--primary);
       transform: translateY(-2px);
     }
   }
@@ -137,10 +134,10 @@
 :host-context([data-personality='soft']),
 :host-context([data-personality='soft-touch']) {
   .tag {
-    background-color: color-mix(in srgb, var(--accent) 8%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 8%, transparent);
     border: none;
     &:hover {
-      background-color: color-mix(in srgb, var(--accent) 18%, transparent);
+      background-color: color-mix(in srgb, var(--primary) 18%, transparent);
       transform: translateY(-1px);
     }
   }
@@ -159,9 +156,9 @@
     border-color: var(--border);
     background-color: transparent;
     &:hover {
-      background-color: var(--accent);
+      background-color: var(--primary);
       color: var(--primary-foreground);
-      border-color: var(--accent);
+      border-color: var(--primary);
     }
   }
 }

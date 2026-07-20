@@ -177,6 +177,20 @@ describe('OperationsWorkspaceComponent', () => {
     }).compileComponents();
   });
 
+  it('links Operations to the video processing monitor', () => {
+    const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'Monitor video processing'
+    );
+    expect(
+      fixture.nativeElement.querySelector(
+        '[href="/dashboard/video-processing"]'
+      )
+    ).not.toBeNull();
+  });
+
   it('summarizes mutation coverage counts and exposes incomplete flows', () => {
     const fixture = TestBed.createComponent(OperationsWorkspaceComponent);
     fixture.componentInstance.ngOnInit();

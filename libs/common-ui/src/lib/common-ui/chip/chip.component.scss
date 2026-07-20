@@ -1,12 +1,14 @@
+@use 'personality' as p;
+
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px 12px;
-  border-radius: 16px;
+  border-radius: var(--border-radius-full, 16px);
   font-size: 13px;
   font-weight: 500;
-  transition: all 0.2s ease;
+  @include p.personality-transition(all, 'fast');
 
   &.disabled {
     opacity: 0.5;
@@ -14,28 +16,28 @@
   }
 
   &.chip-primary {
-    background: var(--chip-primary-bg, rgba(63, 81, 181, 0.15));
-    color: var(--chip-primary-color, #3f51b5);
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
   }
 
   &.chip-secondary {
-    background: var(--chip-secondary-bg, rgba(192, 175, 75, 0.15));
-    color: var(--chip-secondary-color, #c0af4b);
+    background: color-mix(in srgb, var(--secondary) 15%, transparent);
+    color: var(--secondary);
   }
 
   &.chip-success {
-    background: var(--chip-success-bg, #4caf50);
-    color: white;
+    background: var(--success, #4caf50);
+    color: var(--success-foreground, white);
   }
 
   &.chip-warning {
-    background: var(--chip-warning-bg, #ff9800);
-    color: black;
+    background: var(--warning, #ff9800);
+    color: var(--warning-foreground, black);
   }
 
   &.chip-error {
-    background: var(--chip-error-bg, #f44336);
-    color: white;
+    background: var(--danger, #f44336);
+    color: var(--danger-foreground, white);
   }
 }
 
@@ -53,7 +55,7 @@
   background: transparent;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  @include p.personality-transition(background-color, 'fast');
   padding: 0;
 
   &:hover:not(:disabled) {

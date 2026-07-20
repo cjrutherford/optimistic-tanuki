@@ -19,7 +19,6 @@ export const createChangeSchema = z.object({
   projectId: z.string().describe('The ID of the project for this change'),
   changeName: z.string().describe('The name of the change'),
   changeDescription: z.string().describe('A description of the change'),
-  userId: z.string().describe('The ID of the user creating the change'),
   changeStatus: z
     .nativeEnum(ChangeStatus)
     .optional()
@@ -58,7 +57,6 @@ export const createChangeSchema = z.object({
 
 export const updateChangeSchema = z.object({
   changeId: z.string().describe('The ID of the change to update'),
-  userId: z.string().describe('The ID of the user updating the change'),
   changeName: z.string().optional().describe('The new name of the change'),
   changeDescription: z
     .string()
@@ -123,18 +121,38 @@ export class ChangeMcpService {
     private readonly projectPlanningService: ClientProxy
   ) {}
 
+  /**
+   * Every MCP tool call gets the raw Express request as its third argument
+   * (mcp-nest invokes tools as `(args, context, rawExpressRequest)`). The
+   * McpAuthGuard wired into NestMcpModule.forRoot attaches `request.user`
+   * for every authenticated call, so identity must always be derived from
+   * there rather than from client-supplied tool arguments.
+   */
+  private requireRequestingUserId(request: any): string {
+    const profileId = request?.user?.profileId;
+    if (!profileId) {
+      throw new Error('Unauthenticated MCP call');
+    }
+    return profileId;
+  }
+
   @McpTool({
     name: 'list_changes',
     description: 'List all changes for a project',
     parameters: listChangesSchema,
   })
-  async listChanges({ projectId }: { projectId: string }) {
+  async listChanges(
+    { projectId }: { projectId: string },
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Listing changes for project ${projectId}`);
       const changes = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.FIND_ALL },
-          { projectId }
+          { projectId, requestingUserId }
         )
       );
       return {
@@ -153,19 +171,25 @@ export class ChangeMcpService {
     description: 'Create a new change for a project',
     parameters: createChangeSchema,
   })
-  async createChange(params: z.infer<typeof createChangeSchema>) {
+  async createChange(
+    params: z.infer<typeof createChangeSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(
         `MCP Tool: Creating change for project ${params.projectId}`
       );
-      const changeData: CreateChangeDto = {
+      const changeData: CreateChangeDto & { requestingUserId: string } = {
         projectId: params.projectId,
         changeType: params.changeType || Changetype.MODIFICATION,
         changeDescription: `${params.changeName}: ${params.changeDescription}`,
         changeStatus: params.changeStatus || ChangeStatus.PENDING,
         changeDate: new Date(),
-        requestor: params.userId,
-        approver: params.userId,
+        requestor: requestingUserId,
+        approver: requestingUserId,
+        requestingUserId,
       };
       const result = await firstValueFrom(
         this.projectPlanningService.send(
@@ -188,11 +212,25 @@ export class ChangeMcpService {
     description: 'Update an existing change',
     parameters: updateChangeSchema,
   })
-  async updateChange(params: z.infer<typeof updateChangeSchema>) {
+  async updateChange(
+    params: z.infer<typeof updateChangeSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Updating change ${params.changeId}`);
+      const { changeId, ...rest } = params;
       const result = await firstValueFrom(
-        this.projectPlanningService.send({ cmd: ChangeCommands.UPDATE }, params)
+        this.projectPlanningService.send(
+          { cmd: ChangeCommands.UPDATE },
+          {
+            id: changeId,
+            ...rest,
+            updatedBy: requestingUserId,
+            requestingUserId,
+          }
+        )
       );
       return {
         success: true,
@@ -209,13 +247,18 @@ export class ChangeMcpService {
     description: 'Delete a change',
     parameters: deleteChangeSchema,
   })
-  async deleteChange({ changeId }: { changeId: string }) {
+  async deleteChange(
+    { changeId }: { changeId: string },
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting change ${changeId}`);
       const result = await firstValueFrom(
         this.projectPlanningService.send(
-          { cmd: ChangeCommands.DELETE },
-          { changeId }
+          { cmd: ChangeCommands.REMOVE },
+          { id: changeId, requestingUserId }
         )
       );
       return {
@@ -233,15 +276,20 @@ export class ChangeMcpService {
     description: 'Query changes within a project by name, status, or priority',
     parameters: queryChangesSchema,
   })
-  async queryChanges(query: z.infer<typeof queryChangesSchema>) {
+  async queryChanges(
+    query: z.infer<typeof queryChangesSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(
         `MCP Tool: Querying changes for project ${query.projectId}`
       );
       const changes = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ChangeCommands.FIND_ALL },
-          query
+          { ...query, requestingUserId }
         )
       );
       return {

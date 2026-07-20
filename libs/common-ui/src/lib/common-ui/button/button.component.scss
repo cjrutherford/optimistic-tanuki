@@ -1,6 +1,4 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
 
 // ============================================
 // Personality-Driven Button Component
@@ -257,7 +255,7 @@ button {
 // ============================================
 
 // Architect personality - hard shadow shift
-:host-context(.personality-architec) button.primary,
+:host-context(.personality-architect) button.primary,
 body.personality-architect button.primary {
   &:hover:not(:disabled) {
     box-shadow: 4px 4px 0 var(--primary);

@@ -1,0 +1,7 @@
+// Curated personality SCSS surface. Only forwards what has a real consumer —
+// see `_shadows.scss` for the variable contract this wraps. Grow this file
+// deliberately as Workstreams B/C land new consumers; do not re-add the old
+// wholesale `personality-tokens.scss` / `personality-effects.scss` estate
+// (see docs/plans/2026-07-18-personality-styles-refactor.md, Workstream A).
+@forward 'shadows';
+@forward 'surfaces';

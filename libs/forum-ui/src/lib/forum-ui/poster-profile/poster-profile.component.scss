@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 :host {
   display: block;
 }
@@ -9,10 +11,9 @@
   padding: var(--spacing-md);
   border: var(--border-width, 1px) solid var(--border);
   border-radius: var(--border-radius-lg);
-  background-color: var(--card, var(--surface, var(--background)));
+  background-color: var(--surface);
   color: var(--foreground);
-  transition: box-shadow var(--animation-duration-fast, 150ms)
-    var(--animation-easing, ease);
+  @include p.personality-transition(box-shadow, 'fast');
 }
 
 .avatar-container {
@@ -26,7 +27,7 @@
     transparent
   );
   flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
+  @include p.shadow('sm');
 
   img {
     width: 100%;
@@ -44,7 +45,7 @@
     font-weight: bold;
     font-family: var(--font-heading, sans-serif);
     color: var(--muted-foreground);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
   }
 }
 
@@ -86,17 +87,13 @@
     }
 
     &.moderator {
-      background-color: color-mix(
-        in srgb,
-        var(--tertiary, var(--complement)) 15%,
-        transparent
-      );
-      color: var(--tertiary, var(--complement));
+      background-color: color-mix(in srgb, var(--tertiary) 15%, transparent);
+      color: var(--tertiary);
     }
 
     &.user {
-      background-color: color-mix(in srgb, var(--accent) 15%, transparent);
-      color: var(--accent);
+      background-color: color-mix(in srgb, var(--primary) 15%, transparent);
+      color: var(--primary);
     }
   }
 
@@ -162,10 +159,10 @@
 :host-context([data-personality='minimal']) {
   .poster-profile {
     border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .avatar-container {
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .stats-container {
     border-left-style: dashed;
@@ -174,7 +171,7 @@
 
 :host-context([data-personality='elegant']) {
   .poster-profile {
-    border-color: color-mix(in srgb, var(--accent) 20%, transparent);
+    border-color: color-mix(in srgb, var(--primary) 20%, transparent);
   }
   .profile-info .display-name {
     font-style: italic;
@@ -188,7 +185,7 @@
 // Creative
 :host-context([data-personality='bold']) {
   .poster-profile {
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--primary);
     border-radius: var(--border-radius-sm);
   }
   .role-badge {
@@ -204,21 +201,15 @@
 :host-context([data-personality='playful']) {
   .poster-profile {
     border-radius: var(--border-radius-xl);
-    background: var(
-      --gradient-surface,
-      var(--surface-gradient, var(--card, var(--background)))
-    );
+    background: var(--gradient-surface);
   }
   .avatar-container {
-    border: 3px solid var(--accent);
-    box-shadow: var(--shadow-md);
+    border: 3px solid var(--primary);
+    @include p.shadow('md');
   }
   .role-badge {
     border-radius: var(--border-radius-full);
-    background: var(
-      --gradient-primary,
-      var(--primary-gradient, var(--accent))
-    ) !important;
+    background: var(--gradient-primary) !important;
     color: var(--primary-foreground) !important;
   }
 }
@@ -226,10 +217,10 @@
 :host-context([data-personality='electric']) {
   .poster-profile:hover {
     box-shadow: var(--shadow-md),
-      0 0 12px color-mix(in srgb, var(--accent) 20%, transparent);
+      0 0 12px color-mix(in srgb, var(--primary) 20%, transparent);
   }
   .avatar-container {
-    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 30%, transparent);
   }
 }
 
@@ -238,11 +229,11 @@
 :host-context([data-personality='soft-touch']) {
   .poster-profile {
     border: none;
-    background-color: color-mix(in srgb, var(--accent) 6%, var(--background));
+    background-color: color-mix(in srgb, var(--primary) 6%, var(--background));
     border-radius: var(--border-radius-xl);
   }
   .avatar-container {
-    box-shadow: var(--shadow-none);
+    @include p.shadow('none');
   }
   .stats-container {
     border-left: none;
@@ -257,8 +248,8 @@
 :host-context([data-personality='architect']) {
   .poster-profile {
     border-radius: var(--border-radius-none);
-    box-shadow: var(--shadow-lg);
-    border-top: 3px solid var(--accent);
+    @include p.shadow('lg');
+    border-top: 3px solid var(--primary);
   }
 }
 

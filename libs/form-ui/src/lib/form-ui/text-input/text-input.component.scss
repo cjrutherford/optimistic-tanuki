@@ -1,6 +1,5 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Text Input Component
@@ -76,12 +75,11 @@
   font-size: 0.9375rem;
   color: var(--foreground);
   background: var(--surface, var(--background));
-  border: var(--border-width, 1px) solid var(--border);
-  border-radius: var(--border-radius-md, 8px);
+  border: var(--personality-input-border-width, 1px) solid var(--border);
+  border-radius: var(--personality-input-radius, var(--border-radius-md, 8px));
   outline: none;
-  transition: all var(--animation-duration-normal, 250ms)
-    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
-  box-shadow: var(--shadow-sm);
+  @include p.personality-transition(all, 'normal');
+  @include p.shadow('sm');
 
   @include reduced-motion {
     transition: none;
@@ -90,7 +88,10 @@
   &:focus {
     border-color: var(--primary);
     box-shadow: var(--shadow-md),
-      0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent);
+      var(
+        --personality-input-focus-style,
+        0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent)
+      );
     background: var(--background);
   }
 
@@ -136,7 +137,8 @@
   &.filled {
     background: var(--surface);
     border-color: transparent;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: inset 0 2px 4px
+      color-mix(in srgb, var(--shadow-color, #000) 4%, transparent);
 
     &:focus {
       background: var(--background);
@@ -190,7 +192,7 @@
     left: 16px;
     color: var(--muted, rgba(107, 114, 128, 0.5));
     pointer-events: none;
-    transition: color var(--animation-duration-fast, 200ms) ease;
+    @include p.personality-transition(color, 'fast');
 
     + .form-control {
       padding-left: 44px;
@@ -207,11 +209,11 @@
   display: flex;
   align-items: center;
   background: var(--surface, var(--background));
-  border: var(--border-width, 1px) solid
+  border: var(--personality-input-border-width, 1px) solid
     color-mix(in srgb, var(--primary) 15%, transparent);
-  border-radius: var(--border-radius-md, 8px);
+  border-radius: var(--personality-input-radius, var(--border-radius-md, 8px));
   overflow: hidden;
-  transition: all 250ms var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  @include p.personality-transition(all, 'normal');
 
   &:focus-within {
     border-color: color-mix(in srgb, var(--primary) 50%, transparent);
@@ -252,11 +254,18 @@
 // ============================================
 // Personality-Specific Input Enhancements
 // ============================================
+// The base `.form-control` border-radius above already reads
+// `--personality-input-radius`. Architect's and control-center's radius
+// lines were removed below as truly redundant (their literals — 0 and 4px —
+// are exact matches for the contract's input radius for those two
+// personalities). Every other block's literal radius (playful: 12px,
+// minimal: 2px, soft-touch: 20px, elegant: 6px) is kept because the
+// contract's own value for that personality (16px / 0px / 18px / 0px)
+// differs enough to make removal a visible regression rather than a no-op
+// cleanup.
 
 // Architect - sharp corners, hard focus
 body.personality-architect .form-control {
-  border-radius: 0;
-
   &:focus {
     border-width: 2px;
     box-shadow: 4px 4px 0 var(--primary);
@@ -305,7 +314,6 @@ body.personality-soft-touch .form-control {
 
 // Control Center - technical
 body.personality-control-center .form-control {
-  border-radius: 4px;
   font-family: var(--font-mono);
 
   &:focus {
@@ -335,7 +343,8 @@ body.personality-elegant .form-control {
 // Animated focus variant
 .form-control.animate-focus {
   &:focus {
-    animation: input-focus-pulse 0.3s ease-out;
+    animation: input-focus-pulse var(--animation-duration-normal, 300ms)
+      var(--animation-easing, ease-out);
   }
 }
 

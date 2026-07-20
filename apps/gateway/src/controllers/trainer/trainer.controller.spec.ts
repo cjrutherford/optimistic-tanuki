@@ -342,12 +342,7 @@ describe('TrainerController', () => {
 
     await expect(
       controller.getSiteConfig(undefined, {
-        userId: 'owner-user-handyman',
-        email: 'owner-handyman@localbusiness.test',
-        exp: 0,
-        iat: 0,
-        name: 'Luis Moreno',
-        profileId: 'owner-profile-handyman',
+        user: { profileId: 'owner-profile-handyman' },
       })
     ).resolves.toEqual({
       configId: 'cfg-handyman',
@@ -355,6 +350,32 @@ describe('TrainerController', () => {
         site: { slug: 'steady-hand-contracting', status: 'published' },
         brand: { businessName: 'Steady Hand Contracting' },
       },
+    });
+  });
+
+  it('forwards an undefined profileId for anonymous/forged site-config requests without a slug', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            profileId: undefined,
+            slug: undefined,
+          });
+
+          return of({ configId: null, config: null });
+        }
+
+        return of(null);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(controller.getSiteConfig(undefined, {})).resolves.toEqual({
+      configId: null,
+      config: null,
     });
   });
 
@@ -1327,6 +1348,48 @@ describe('TrainerController', () => {
           appScope: 'business-site',
         },
       }
+    );
+  });
+
+  it('attributes a business lead to the guard-verified identity when the payload omits one', async () => {
+    const storeClient = {
+      send: jest.fn((command: string) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          return of({
+            configId: 'cfg-1',
+            config: {
+              leadContext: {
+                profileId: 'owner-profile-1',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of(null);
+      }),
+    } as any;
+    const leadClient = {
+      send: jest.fn(() => of({ id: 'lead-1' })),
+    } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await controller.createLeadIntake(
+      {
+        name: 'Jordan Prospect',
+        email: 'jordan@example.com',
+        goal: 'Build a consistent routine',
+      },
+      { user: { userId: 'verified-user-1', profileId: 'verified-profile-1' } }
+    );
+
+    expect(leadClient.send).toHaveBeenCalledWith(
+      { cmd: LeadCommands.CREATE },
+      expect.objectContaining({
+        context: expect.objectContaining({
+          userId: 'verified-user-1',
+        }),
+      })
     );
   });
 

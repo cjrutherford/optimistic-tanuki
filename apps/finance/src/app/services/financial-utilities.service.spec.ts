@@ -191,6 +191,70 @@ describe('FinancialUtilitiesService', () => {
     );
   });
 
+  it('does not let updateInvoice mass-assign tenantId/profileId/userId/id from the input body', async () => {
+    const invoice = {
+      id: 'invoice-1',
+      invoiceNumber: 'FIN-20260602-0001',
+      userId: 'user-1',
+      profileId: 'profile-1',
+      tenantId: 'tenant-1',
+      appScope: 'finance',
+      workspace: 'business',
+      customerName: 'Acme Bakery',
+      customerEmail: 'ops@acme.test',
+      currency: 'USD',
+      lines: [{ description: 'Retainer', quantity: 1, unitAmount: 500 }],
+      subtotal: 500,
+      total: 500,
+      amountPaid: 0,
+      status: 'draft',
+      notes: null,
+      dueDate: null,
+    } as unknown as FinancialInvoice;
+
+    invoiceRepo.findOne.mockResolvedValue(invoice);
+    invoiceRepo.save.mockImplementation(
+      async (value) => value as FinancialInvoice
+    );
+
+    const updated = await service.updateInvoice(
+      'invoice-1',
+      {
+        customerName: 'Renamed Bakery',
+        // An attacker-controlled TCP payload could carry these extra keys
+        // since the finance microservice installs no ValidationPipe —
+        // none of them may reach the saved entity.
+        tenantId: 'attacker-tenant',
+        profileId: 'attacker-profile',
+        userId: 'attacker-user',
+        id: 'attacker-id',
+        appScope: 'attacker-scope',
+      } as never,
+      {
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
+    );
+
+    expect(updated.customerName).toBe('Renamed Bakery');
+    expect(updated.id).toBe('invoice-1');
+    expect(updated.tenantId).toBe('tenant-1');
+    expect(updated.profileId).toBe('profile-1');
+    expect(updated.userId).toBe('user-1');
+    expect(updated.appScope).toBe('finance');
+    expect(invoiceRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'invoice-1',
+        tenantId: 'tenant-1',
+        profileId: 'profile-1',
+        userId: 'user-1',
+        appScope: 'finance',
+      })
+    );
+  });
+
   it('creates checkout sessions linked to invoices and business workspace context', async () => {
     const invoice = {
       id: 'invoice-1',

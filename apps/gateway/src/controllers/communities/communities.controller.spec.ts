@@ -1,4 +1,7 @@
 import { GUARDS_METADATA } from '@nestjs/common/constants';
+import { of } from 'rxjs';
+import { ClientProxy } from '@nestjs/microservices';
+import { CommunityCommands } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import {
@@ -41,5 +44,36 @@ describe('Gateway CommunitiesController metadata', () => {
 
   it('protects manager appointment with explicit governance permissions', () => {
     expectMutationGuarded('appointManager', 'community.manage');
+  });
+});
+
+describe('CommunitiesController#getMyCommunities', () => {
+  let socialClient: jest.Mocked<ClientProxy>;
+  let controller: CommunitiesController;
+
+  beforeEach(() => {
+    socialClient = {
+      send: jest.fn().mockReturnValue(of([])),
+    } as unknown as jest.Mocked<ClientProxy>;
+    const permissionsClient = {} as ClientProxy;
+    controller = new CommunitiesController(socialClient, permissionsClient);
+  });
+
+  it('forwards the guard-verified userId when a valid token is present', async () => {
+    const req = { user: { userId: 'user-9' } };
+
+    await controller.getMyCommunities(req);
+
+    expect(socialClient.send).toHaveBeenCalledWith(
+      { cmd: CommunityCommands.GET_USER_COMMUNITIES },
+      { userId: 'user-9' }
+    );
+  });
+
+  it('returns no communities and never calls the service for an anonymous or forged-token request', async () => {
+    const result = await controller.getMyCommunities({});
+
+    expect(result).toEqual([]);
+    expect(socialClient.send).not.toHaveBeenCalled();
   });
 });

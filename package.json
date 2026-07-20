@@ -74,7 +74,9 @@
     "packages:sync": "node scripts/sync-public-packages.mjs",
     "packages:version": "node -e \"console.error('Public package versioning moved to the mirror repo.'); process.exit(1);\"",
     "packages:publish": "node -e \"console.error('Public package publishing moved to the mirror repo.'); process.exit(1);\"",
-    "catalog:check": "node scripts/validate-app-catalog.mjs"
+    "catalog:check": "node scripts/validate-app-catalog.mjs",
+    "check:no-personality-scss": "node tools/check-no-personality-scss.mjs",
+    "docs:personalities": "node scripts/generate-personality-matrix.mjs --write"
   },
   "private": true,
   "overrides": {},

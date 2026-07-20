@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .message-container {
   position: fixed;
   top: 2rem;
@@ -5,19 +7,19 @@
   // min-width: 150px;
   z-index: 1000;
   background: var(--background, #fff);
-  border: 4px solid var(--accent);
-  border-radius: 2rem;
-  box-shadow: 0 2px 12px var(--highlight);
+  border: 4px solid var(--primary);
+  border-radius: var(--personality-card-radius, var(--border-radius-xl, 2rem));
+  @include p.shadow('lg');
   padding: 1rem 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  transition: background 0.4s;
+  @include p.personality-transition(background, 'normal');
 
   .message {
     margin-bottom: 0.5rem;
-    border-radius: 5px;
+    border-radius: var(--border-radius-md, 5px);
     display: flex;
     flex-direction: row;
     align-items: center;

@@ -26,16 +26,16 @@
 
       // Buttons
       .fc-button {
-        background-color: var(--accent, #007bff);
-        border-color: var(--accent, #007bff);
-        color: var(--background, white);
+        background-color: var(--primary, #007bff);
+        border-color: var(--primary, #007bff);
+        color: var(--primary-foreground, white);
         padding: 0.375rem 0.75rem;
-        border-radius: 4px;
+        border-radius: var(--border-radius-sm, 4px);
         cursor: pointer;
 
         &:hover {
-          background-color: var(--complement, #0056b3);
-          border-color: var(--complement, #0056b3);
+          background-color: var(--secondary, #0056b3);
+          border-color: var(--secondary, #0056b3);
         }
 
         &:disabled {
@@ -45,25 +45,25 @@
       }
 
       .fc-button-active {
-        background-color: var(--complement, #0056b3) !important;
-        border-color: var(--complement, #0056b3) !important;
+        background-color: var(--secondary, #0056b3) !important;
+        border-color: var(--secondary, #0056b3) !important;
       }
 
       // Calendar grid
       .fc-scrollgrid {
-        border: 1px solid var(--complement, #ddd);
+        border: 1px solid var(--border, #ddd);
       }
 
       .fc-col-header-cell {
-        background: var(--background, #f8f9fa);
+        background: var(--surface, #f8f9fa);
         padding: 0.5rem;
-        border: 1px solid var(--complement, #ddd);
+        border: 1px solid var(--border, #ddd);
         font-weight: 600;
         color: var(--foreground, #212121);
       }
 
       .fc-daygrid-day {
-        border: 1px solid var(--complement, #ddd);
+        border: 1px solid var(--border, #ddd);
         background: var(--background, #ffffff);
       }
 
@@ -80,13 +80,13 @@
       // Events
       .fc-event {
         cursor: pointer;
-        border-radius: 4px;
+        border-radius: var(--border-radius-sm, 4px);
         padding: 2px 4px;
         margin: 1px 0;
       }
 
       .fc-daygrid-event {
-        border-radius: 4px;
+        border-radius: var(--border-radius-sm, 4px);
         padding: 2px 4px;
         margin: 2px;
       }
@@ -102,7 +102,7 @@
 
     .fc-event-custom {
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: var(--border-radius-sm, 4px);
       padding: 2px 4px;
     }
 
@@ -112,11 +112,14 @@
     }
 
     .fc-event-in-progress {
-      border-left: 4px solid var(--accent, #007bff);
+      border-left: 4px solid var(--primary, #007bff);
     }
 
+    // "todo" was on the legacy `--complement`'s teal fallback — that's a
+    // status/info role, not the brand secondary, so it maps to the
+    // semantic `--info` token instead of `--secondary`.
     .fc-event-todo {
-      border-left: 4px solid var(--complement, #17a2b8);
+      border-left: 4px solid var(--info, #17a2b8);
     }
 
     .fc-event-high-priority {

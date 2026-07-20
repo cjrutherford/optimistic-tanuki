@@ -305,7 +305,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.RELEASE_FUNDS },
         {
           paymentId,
-          sellerId: user.userId,
+          userId: user.userId,
         }
       )
     );
@@ -671,7 +671,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_WALLET },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }
@@ -688,7 +688,7 @@ export class PaymentsController {
       this.paymentsClient.send(
         { cmd: PaymentCommands.UPDATE_SELLER_PAYOUT_INFO },
         {
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
           bankAccountLast4: dto.bankAccountLast4,
@@ -710,7 +710,7 @@ export class PaymentsController {
       this.paymentsClient.send(
         { cmd: PaymentCommands.CREATE_PAYOUT_REQUEST },
         {
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
           amount: dto.amount,
           payoutMethod: dto.payoutMethod,
           payoutEmail: dto.payoutEmail,
@@ -729,7 +729,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_PAYOUT_REQUESTS },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }
@@ -747,7 +747,7 @@ export class PaymentsController {
         { cmd: PaymentCommands.CANCEL_PAYOUT_REQUEST },
         {
           payoutRequestId,
-          sellerId: user.profileId || user.userId,
+          sellerId: user.userId,
         }
       )
     );
@@ -761,7 +761,7 @@ export class PaymentsController {
     return await firstValueFrom(
       this.paymentsClient.send(
         { cmd: PaymentCommands.GET_SELLER_EARNINGS_SUMMARY },
-        { sellerId: user.profileId || user.userId }
+        { sellerId: user.userId }
       )
     );
   }

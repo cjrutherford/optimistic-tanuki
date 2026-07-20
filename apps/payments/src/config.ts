@@ -32,6 +32,10 @@ export type PaymentsConfigType = {
   };
   services?: {
     profile: TcpServiceConfig;
+    classifieds: {
+      host: string;
+      port: number;
+    };
   };
   lemonSqueezy: LemonSqueezyConfig;
 };
@@ -52,8 +56,26 @@ const loadConfig = () => {
     return process.env[key] || defaultValue;
   };
 
+  const classifiedsConfig = yamlConfig.services?.classifieds || {
+    host: 'localhost',
+    port: 3017,
+  };
+
   const finalConfig: PaymentsConfigType = {
     ...yamlConfig,
+    services: {
+      ...yamlConfig.services,
+      classifieds: {
+        host: envOverride('SERVICE_CLASSIFIEDS_HOST', classifiedsConfig.host),
+        port: parseInt(
+          envOverride(
+            'SERVICE_CLASSIFIEDS_PORT',
+            String(classifiedsConfig.port)
+          ),
+          10
+        ),
+      },
+    },
     lemonSqueezy: {
       default: {
         apiKey: envOverride('LEMON_SQUEEZY_API_KEY', defaultConfig.apiKey),

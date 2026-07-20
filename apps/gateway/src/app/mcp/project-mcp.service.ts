@@ -11,11 +11,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { z } from 'zod';
-import {
-  CreateProjectDto,
-  QueryProjectDto,
-  UpdateProjectDto,
-} from '@optimistic-tanuki/models';
+import { CreateProjectDto, UpdateProjectDto } from '@optimistic-tanuki/models';
 
 // Define Zod schemas for parameters
 const getProjectSchema = z.object({
@@ -25,7 +21,6 @@ const getProjectSchema = z.object({
 const createProjectSchema = z.object({
   name: z.string().describe('The name of the project'),
   description: z.string().describe('A description of the project'),
-  userId: z.string().describe('The ID of the user creating the project'),
   startDate: z
     .string()
     .optional()
@@ -39,13 +34,12 @@ const createProjectSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'Array of member IDs to add to the project. add the current user by default. (same is userId)'
+      'Array of member IDs to add to the project. The authenticated user is added automatically.'
     ),
 });
 
 const updateProjectSchema = z.object({
   projectId: z.string().describe('The ID of the project to update'),
-  userId: z.string().describe('The ID of the user updating the project'),
   name: z.string().optional().describe('The new name of the project'),
   description: z
     .string()
@@ -68,9 +62,7 @@ const deleteProjectSchema = z.object({
 });
 
 // Define Zod schemas outside the class
-export const listProjectsSchema = z.object({
-  userId: z.string().describe('The ID of the user whose projects to list'),
-});
+export const listProjectsSchema = z.object({});
 
 @Injectable()
 export class ProjectMcpService {
@@ -81,18 +73,40 @@ export class ProjectMcpService {
     private readonly projectPlanningService: ClientProxy
   ) {}
 
+  /**
+   * Every MCP tool call gets the raw Express request as its third argument
+   * (mcp-nest invokes tools as `(args, context, rawExpressRequest)`). The
+   * McpAuthGuard wired into NestMcpModule.forRoot attaches `request.user`
+   * for every authenticated call, so identity must always be derived from
+   * there rather than from client-supplied tool arguments.
+   */
+  private requireRequestingUserId(request: any): string {
+    const profileId = request?.user?.profileId;
+    if (!profileId) {
+      throw new Error('Unauthenticated MCP call');
+    }
+    return profileId;
+  }
+
   @McpTool({
     name: 'list_projects',
-    description: 'List all projects for a user',
+    description: 'List all projects for the authenticated user',
     parameters: listProjectsSchema,
   })
-  async listProjects({ userId }: z.infer<typeof listProjectsSchema>) {
+  async listProjects(
+    _args: z.infer<typeof listProjectsSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
-      this.logger.log(`MCP Tool: Listing projects for user ${userId}`);
+      const requestingUserId = this.requireRequestingUserId(request);
+      this.logger.log(
+        `MCP Tool: Listing projects for user ${requestingUserId}`
+      );
       const projects = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.FIND_ALL },
-          { owner: userId }
+          { requestingUserId }
         )
       );
       return {
@@ -111,13 +125,18 @@ export class ProjectMcpService {
     description: 'Get details of a specific project by ID',
     parameters: getProjectSchema,
   })
-  async getProject({ projectId }: z.infer<typeof getProjectSchema>) {
+  async getProject(
+    { projectId }: z.infer<typeof getProjectSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Getting project ${projectId}`);
       const project = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.FIND_ONE },
-          projectId
+          { id: projectId, requestingUserId }
         )
       );
       return {
@@ -137,9 +156,22 @@ export class ProjectMcpService {
     description:
       'Get the full context of a project including tasks, risks, changes, and journal entries',
   })
-  async getProjectContext(params: { projectId: string }) {
+  async getProjectContext(
+    params: { projectId: string },
+    _context: unknown,
+    request: any
+  ) {
     try {
       const { projectId } = params;
+      // @Resource handlers are invoked with an ADAPTED request whose `.raw`
+      // is the underlying Express request that the McpAuthGuard attached
+      // `user` to. Fall back to `request.user` for safety.
+      const user = request?.raw?.user ?? request?.user;
+      const requestingUserId = user?.profileId;
+      if (!requestingUserId) {
+        throw new Error('Unauthenticated MCP call');
+      }
+
       this.logger.log(`MCP Resource: Getting context for project ${projectId}`);
 
       const [project, tasks, risks, changes, journalEntries] =
@@ -147,13 +179,13 @@ export class ProjectMcpService {
           firstValueFrom(
             this.projectPlanningService.send(
               { cmd: ProjectCommands.FIND_ONE },
-              projectId
+              { id: projectId, requestingUserId }
             )
           ),
           firstValueFrom(
             this.projectPlanningService.send(
               { cmd: TaskCommands.FIND_ALL },
-              { projectId }
+              { projectId, requestingUserId }
             )
           ).catch((err) => {
             this.logger.warn(`Failed to fetch tasks for ${projectId}`, err);
@@ -162,7 +194,7 @@ export class ProjectMcpService {
           firstValueFrom(
             this.projectPlanningService.send(
               { cmd: RiskCommands.FIND_ALL },
-              { projectId }
+              { projectId, requestingUserId }
             )
           ).catch((err) => {
             this.logger.warn(`Failed to fetch risks for ${projectId}`, err);
@@ -171,7 +203,7 @@ export class ProjectMcpService {
           firstValueFrom(
             this.projectPlanningService.send(
               { cmd: ChangeCommands.FIND_ALL },
-              { projectId }
+              { projectId, requestingUserId }
             )
           ).catch((err) => {
             this.logger.warn(`Failed to fetch changes for ${projectId}`, err);
@@ -180,7 +212,7 @@ export class ProjectMcpService {
           firstValueFrom(
             this.projectPlanningService.send(
               { cmd: ProjectJournalCommands.FIND_ALL },
-              { projectId }
+              { projectId, requestingUserId }
             )
           ).catch((err) => {
             this.logger.warn(
@@ -215,26 +247,31 @@ export class ProjectMcpService {
     description: 'Create a new project',
     parameters: createProjectSchema,
   })
-  async createProject({
-    name,
-    description,
-    userId,
-    startDate,
-    status,
-    members = [],
-  }: z.infer<typeof createProjectSchema>) {
+  async createProject(
+    {
+      name,
+      description,
+      startDate,
+      status,
+      members = [],
+    }: z.infer<typeof createProjectSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(
-        `MCP Tool: Creating project "${name}" for user ${userId}`
+        `MCP Tool: Creating project "${name}" for user ${requestingUserId}`
       );
-      const projectData: CreateProjectDto = {
+      const projectData: CreateProjectDto & { requestingUserId: string } = {
         name,
         description,
-        owner: userId,
-        createdBy: userId,
+        owner: requestingUserId,
+        createdBy: requestingUserId,
         startDate: startDate ? new Date(startDate) : new Date(),
         status,
         members,
+        requestingUserId,
       };
 
       const project = await firstValueFrom(
@@ -260,18 +297,28 @@ export class ProjectMcpService {
     description: 'Update an existing project',
     parameters: updateProjectSchema,
   })
-  async updateProject({
-    projectId,
-    userId,
-    name,
-    description,
-    status,
-    endDate,
-  }: z.infer<typeof updateProjectSchema>) {
+  async updateProject(
+    {
+      projectId,
+      name,
+      description,
+      status,
+      endDate,
+    }: z.infer<typeof updateProjectSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Updating project ${projectId}`);
-      const updates: Partial<UpdateProjectDto> = {
+      const updates: Partial<UpdateProjectDto> & {
+        id: string;
+        updatedBy: string;
+        requestingUserId: string;
+      } = {
         id: projectId,
+        updatedBy: requestingUserId,
+        requestingUserId,
       };
 
       if (name) updates.name = name;
@@ -302,13 +349,18 @@ export class ProjectMcpService {
     description: 'Delete a project',
     parameters: deleteProjectSchema,
   })
-  async deleteProject({ projectId }: z.infer<typeof deleteProjectSchema>) {
+  async deleteProject(
+    { projectId }: z.infer<typeof deleteProjectSchema>,
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Deleting project ${projectId}`);
       await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.REMOVE },
-          { projectId }
+          { id: projectId, requestingUserId }
         )
       );
 
@@ -327,16 +379,20 @@ export class ProjectMcpService {
     description: 'Query projects by name',
     parameters: z.object({
       name: z.string().describe('The name of the project to query'),
-      userId: z.string().describe('The ID of the user whose projects to query'),
     }),
   })
-  async queryProjects(query: { name: string; userId: string }) {
+  async queryProjects(
+    query: { name: string },
+    _context: unknown,
+    request: any
+  ) {
     try {
+      const requestingUserId = this.requireRequestingUserId(request);
       this.logger.log(`MCP Tool: Querying projects with name ${query.name}`);
       const projects = await firstValueFrom(
         this.projectPlanningService.send(
           { cmd: ProjectCommands.FIND_ALL },
-          { ...query, owner: query.userId }
+          { ...query, requestingUserId }
         )
       );
       return {

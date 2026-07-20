@@ -1,11 +1,20 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Comment } from '../../entities/comment.entity';
-import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
+import {
+  Repository,
+  FindOneOptions,
+  FindManyOptions,
+  FindOptionsWhere,
+} from 'typeorm';
 import { CreateCommentDto, UpdateCommentDto } from '@optimistic-tanuki/models';
 import { RpcException } from '@nestjs/microservices';
 import { Post } from '../../entities/post.entity';
 import DOMPurify from 'isomorphic-dompurify';
+import {
+  PostVisibilityScope,
+  visiblePostWhere,
+} from '../common/post-visibility.util';
 
 @Injectable()
 export class CommentService {
@@ -69,6 +78,89 @@ export class CommentService {
       finalOptions.where = { id };
     }
     return await this.commentRepo.findOne(finalOptions);
+  }
+
+  /**
+   * Same as {@link findAll}, but additionally requires each comment's parent
+   * post to satisfy `scope` under {@link visiblePostWhere} — the same rule
+   * post reads are gated by. Prevents leaking comments on posts the caller
+   * cannot see (followers-only, moderator-hidden, unpublished scheduled,
+   * blocked author).
+   */
+  async findAllVisible(
+    options: FindManyOptions<Comment> | undefined,
+    scope: PostVisibilityScope
+  ): Promise<Comment[]> {
+    const scoped = this.withPostVisibility(options, scope);
+    if (!scoped) {
+      return [];
+    }
+    return await this.findAll(scoped);
+  }
+
+  /**
+   * Same as {@link findOne}, but returns undefined unless the comment's
+   * parent post satisfies `scope` (see {@link findAllVisible}).
+   */
+  async findOneVisible(
+    id: string,
+    options: FindOneOptions<Comment> | undefined,
+    scope: PostVisibilityScope
+  ): Promise<Comment> {
+    const scoped = this.withPostVisibility(options, scope);
+    if (!scoped) {
+      return undefined;
+    }
+    return await this.findOne(id, scoped);
+  }
+
+  private withPostVisibility<
+    T extends FindManyOptions<Comment> | FindOneOptions<Comment> | undefined
+  >(options: T, scope: PostVisibilityScope): T | undefined {
+    const normalized = { ...(options ?? {}) } as FindManyOptions<Comment> &
+      FindOneOptions<Comment>;
+    const where = normalized.where as
+      | FindOptionsWhere<Comment>
+      | FindOptionsWhere<Comment>[]
+      | undefined;
+    const entries = !where
+      ? [{} as FindOptionsWhere<Comment>]
+      : Array.isArray(where)
+      ? where
+      : [where];
+
+    const branches: FindOptionsWhere<Comment>[] = [];
+    for (const entry of entries) {
+      const { post, ...rest } = entry as FindOptionsWhere<Comment> & {
+        post?: FindOptionsWhere<Post>;
+      };
+      for (const postBranch of visiblePostWhere(scope, post)) {
+        branches.push({
+          ...rest,
+          post: postBranch,
+        } as FindOptionsWhere<Comment>);
+      }
+    }
+
+    if (branches.length === 0) {
+      return undefined;
+    }
+
+    normalized.where = branches.length === 1 ? branches[0] : branches;
+    normalized.relations = this.ensurePostRelation(normalized.relations);
+    return normalized as T;
+  }
+
+  private ensurePostRelation(
+    relations: FindManyOptions<Comment>['relations']
+  ): FindManyOptions<Comment>['relations'] {
+    if (!relations) {
+      return ['post'];
+    }
+    if (Array.isArray(relations)) {
+      return relations.includes('post') ? relations : [...relations, 'post'];
+    }
+    return { ...relations, post: true };
   }
 
   async update(id: string, updateCommentDto: UpdateCommentDto): Promise<void> {

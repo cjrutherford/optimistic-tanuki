@@ -10,7 +10,7 @@
       --metric-tile-border,
       color-mix(in oklab, var(--border, currentColor) 60%, transparent)
     );
-  border-radius: var(--metric-tile-radius, var(--radius-md, 12px));
+  border-radius: var(--metric-tile-radius, var(--border-radius-md, 12px));
 
   &__label {
     margin: 0;

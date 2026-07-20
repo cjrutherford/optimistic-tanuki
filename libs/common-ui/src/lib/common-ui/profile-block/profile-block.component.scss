@@ -2,15 +2,15 @@
   display: flex;
   align-items: center;
   background: var(--background, #222);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px var(--accent, #b1baec);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--primary) 60%, transparent);
   padding: 1rem;
   margin: 1rem 0;
   .profile-image {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    border: 2px solid var(--accent, #b1baec);
+    border: 2px solid var(--primary);
     margin-right: 1rem;
   }
   .profile-details {
@@ -28,10 +28,10 @@
       display: flex;
       gap: 0.5rem;
       button {
-        background: var(--accent, #b1baec);
-        color: var(--foreground, #fff);
+        background: var(--primary);
+        color: var(--primary-foreground, #fff);
         border: none;
-        border-radius: 4px;
+        border-radius: var(--border-radius-sm, 4px);
         padding: 0.5rem 1rem;
         cursor: pointer;
       }

@@ -129,3 +129,60 @@ describe('PaymentsController webhook signature verification', () => {
     expect(paymentsClient.send).not.toHaveBeenCalled();
   });
 });
+
+describe('PaymentsController classified payment identity forwarding', () => {
+  const user = { userId: 'caller-1', profileId: 'profile-1' } as any;
+
+  it('forwards the caller id as userId on the release route', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(of({ success: true }));
+
+    await (controller as any).confirmPaymentReceived(user, 'payment-1');
+
+    expect(paymentsClient.send).toHaveBeenCalledWith(
+      { cmd: PaymentCommands.RELEASE_FUNDS },
+      {
+        paymentId: 'payment-1',
+        userId: 'caller-1',
+      }
+    );
+  });
+
+  it('forwards the caller id as userId on the confirm route', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(of({ success: true }));
+
+    await (controller as any).confirmOutOfPlatformPayment(user, 'payment-1', {
+      proofImageUrl: 'proof.png',
+    });
+
+    expect(paymentsClient.send).toHaveBeenCalledWith(
+      { cmd: PaymentCommands.CONFIRM_OUT_OF_PLATFORM_PAYMENT },
+      {
+        paymentId: 'payment-1',
+        userId: 'caller-1',
+        proofImageUrl: 'proof.png',
+      }
+    );
+  });
+
+  it('forwards the caller id as userId on the dispute route', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(of({ success: true }));
+
+    await (controller as any).disputePayment(
+      user,
+      'payment-1',
+      'not as described'
+    );
+
+    expect(paymentsClient.send).toHaveBeenCalledWith(
+      { cmd: PaymentCommands.DISPUTE_PAYMENT },
+      {
+        paymentId: 'payment-1',
+        userId: 'caller-1',
+        reason: 'not as described',
+      }
+    );
+  });
+});

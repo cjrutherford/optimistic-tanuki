@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -77,16 +78,25 @@ export class CommunitiesController {
     }
   }
 
+  // Public so the route never 401s for an anonymous caller (it just returns
+  // no communities), but the class-level AuthGuard still runs to OPTIONALLY
+  // attach a signature-verified `request.user`. We read the userId from that
+  // guard-verified context — never from the `@User()` decorator, which
+  // decodes the token WITHOUT verifying its signature and would let a forged
+  // userId return another user's private community memberships.
   @Public()
   @Get('my')
   @ApiOperation({ summary: 'Get communities for current user' })
   @ApiResponse({ status: 200, description: 'Array of user communities.' })
-  async getMyCommunities(@User() user: UserDetails) {
+  async getMyCommunities(@Req() req: { user?: { userId?: string } }) {
     try {
+      if (!req.user?.userId) {
+        return [];
+      }
       return await firstValueFrom(
         this.socialClient.send(
           { cmd: CommunityCommands.GET_USER_COMMUNITIES },
-          { userId: user.userId }
+          { userId: req.user.userId }
         )
       );
     } catch (error) {

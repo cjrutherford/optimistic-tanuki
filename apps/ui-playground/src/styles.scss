@@ -55,12 +55,17 @@ body {
       color-mix(in srgb, var(--surface) 98%, var(--background)) 22%,
       var(--background)
     );
+  // Workstream C2 (2026-07-18 refactor plan): the personality page-
+  // background pattern is no longer painted here — it moved to
+  // `<lib-personality-backdrop />` in app.component.ts (theme-ui), a fixed
+  // layer behind the app content, so it isn't painted twice. This
+  // background-image now only carries the ambient primary-tint glow and
+  // base gradient wash.
   background-image: radial-gradient(
       circle at top,
       color-mix(in srgb, var(--primary) 16%, transparent),
       transparent 34%
     ),
-    var(--page-background-pattern, none),
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--background) 96%, white),

@@ -15,6 +15,9 @@ export const VideoCommands = {
   MARK_VIDEO_PROCESSING: 'mark-video-processing',
   COMPLETE_VIDEO_PROCESSING: 'complete-video-processing',
   FAIL_VIDEO_PROCESSING: 'fail-video-processing',
+  GET_VIDEO_PROCESSING_OVERVIEW: 'get-video-processing-overview',
+  RETRY_VIDEO_PROCESSING: 'retry-video-processing',
+  RETRY_FAILED_VIDEO_PROCESSING: 'retry-failed-video-processing',
 
   // Channel commands
   CREATE_CHANNEL: 'create-channel',

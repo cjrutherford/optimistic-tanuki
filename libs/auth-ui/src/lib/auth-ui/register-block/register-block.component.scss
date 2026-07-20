@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .register-container {
   // Changed from .login-container
   display: flex;
@@ -7,11 +9,12 @@
   justify-content: center;
 }
 .card-outer {
-  // Copied from login-block.component.scss
-  background: var(--border-gradient);
+  // Copied from login-block.component.scss; aligned to the same
+  // `--gradient-border` / `p.shadow('md')` sourcing so the two stay in sync.
+  background: var(--gradient-border, var(--primary));
   padding: 6px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px var(--complement);
+  border-radius: var(--border-radius-lg, 8px);
+  @include p.shadow('md');
   width: auto; // Adjust width as needed, login uses auto implicitly via card
 }
 .card-inner {
@@ -22,8 +25,11 @@
   justify-content: center;
   padding: 20px;
   background: var(--background);
-  border-radius: 8px; // Adjusted from 8px to match inner radius expectation
-  box-shadow: 0 4px 8px var(--complement); // Consider removing if outer provides shadow
+  border-radius: var(
+    --border-radius-lg,
+    8px
+  ); // matches inner radius expectation
+  @include p.shadow('md');
   @media (max-width: 640px) {
     flex-direction: column; // Ensure mobile responsiveness like login
   }

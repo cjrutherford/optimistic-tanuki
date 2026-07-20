@@ -62,6 +62,14 @@ export class CardComponent extends Variantable implements OnChanges {
   @Input() glassEffect = false;
   @Input() CardVariant: VariantType = 'default';
   @Input() variantOverrides?: VariantOptions;
+  /**
+   * Opt-in decorative surface texture (paper grain / scanlines / cross-hatch
+   * / circuit accent) rendered for the soft-touch, control-center, architect
+   * and electric personalities via `p.surface-texture()`. Defaults to off so
+   * dense surfaces (compose editors, etc.) stay clean; showcase cards can
+   * opt in explicitly.
+   */
+  @Input() textured = false;
 
   // Variant properties
   variant!: string;

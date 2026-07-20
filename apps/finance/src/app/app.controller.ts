@@ -98,6 +98,31 @@ export class AppController {
     return Object.keys(options).length ? options : undefined;
   }
 
+  /**
+   * Resolves the finance scope from a raw payload and, when the payload
+   * carries both a caller-controlled tenantId and a server-derived
+   * profileId, verifies the caller actually belongs to that tenant before
+   * the scope is used anywhere (where-clauses, create payloads, etc).
+   *
+   * When profileId is absent the call is treated as an internal/system
+   * call (seeds, service-to-service) and is left unscoped-trusted, matching
+   * the repo-wide "identity absent = trusted internal" convention.
+   */
+  private async resolveScope(
+    payload?: Record<string, unknown> | null
+  ): Promise<FinanceScope | undefined> {
+    const scope = extractFinanceScope(payload);
+
+    if (scope?.tenantId && scope?.profileId) {
+      await this.financeTenantService.assertTenantAccess(
+        scope.profileId,
+        scope.tenantId
+      );
+    }
+
+    return scope;
+  }
+
   private async withResolvedTenant<
     T extends {
       userId?: string;
@@ -107,6 +132,13 @@ export class AppController {
     }
   >(payload: T): Promise<T & { tenantId: string }> {
     if (payload.tenantId) {
+      if (payload.profileId) {
+        await this.financeTenantService.assertTenantAccess(
+          payload.profileId,
+          payload.tenantId
+        );
+      }
+
       return payload as T & { tenantId: string };
     }
 
@@ -136,7 +168,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<Account> & FinanceScope
   ) {
     return await this.accountService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -145,7 +177,7 @@ export class AppController {
   async findOneAccount(@Payload() payload: { id: string } & FinanceScope) {
     return await this.accountService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -156,7 +188,7 @@ export class AppController {
     return await this.accountService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -164,7 +196,7 @@ export class AppController {
   async removeAccount(@Payload() payload: { id: string } & FinanceScope) {
     return await this.accountService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -181,7 +213,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<Transaction> & FinanceScope
   ) {
     return await this.transactionService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -190,7 +222,7 @@ export class AppController {
   async findOneTransaction(@Payload() payload: { id: string } & FinanceScope) {
     return await this.transactionService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -202,7 +234,7 @@ export class AppController {
     return await this.transactionService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -210,19 +242,21 @@ export class AppController {
   async removeTransaction(@Payload() payload: { id: string } & FinanceScope) {
     return await this.transactionService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
   @MessagePattern({ cmd: FinanceBankingCommands.CREATE_CONNECTION })
   async createBankConnection(@Payload() payload: BankConnectionCreateDto) {
-    return this.bankConnectionService.createConnection(payload);
+    return this.bankConnectionService.createConnection(
+      await this.withResolvedTenant(payload)
+    );
   }
 
   @MessagePattern({ cmd: FinanceBankingCommands.LIST_CONNECTIONS })
   async listBankConnections(@Payload() payload: FinanceScope) {
     return this.bankConnectionService.listConnections(
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -236,7 +270,7 @@ export class AppController {
   ) {
     return this.bankConnectionService.syncConnection(
       payload.connectionId,
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       payload.transactions ?? []
     );
   }
@@ -247,7 +281,7 @@ export class AppController {
   ) {
     return this.bankConnectionService.disconnectConnection(
       payload.connectionId,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -255,6 +289,7 @@ export class AppController {
   async createBankLinkToken(
     @Payload() payload: BankConnectionLinkTokenDto & FinanceScope
   ) {
+    await this.resolveScope(payload as unknown as Record<string, unknown>);
     return this.bankConnectionService.createLinkToken(
       payload as BankConnectionLinkTokenDto & {
         userId: string;
@@ -268,7 +303,7 @@ export class AppController {
     @Payload() payload: BankConnectionExchangeDto & FinanceScope
   ) {
     return this.bankConnectionService.exchangePublicToken(
-      payload as BankConnectionExchangeDto & FinanceScope & { tenantId: string }
+      await this.withResolvedTenant(payload)
     );
   }
 
@@ -289,7 +324,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<FinancialInvoice> & FinanceScope
   ) {
     return this.financialUtilitiesService.listInvoices(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -298,7 +333,7 @@ export class AppController {
   async getFinancialInvoice(@Payload() payload: { id: string } & FinanceScope) {
     return this.financialUtilitiesService.getInvoice(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -310,7 +345,7 @@ export class AppController {
     return this.financialUtilitiesService.updateInvoice(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -320,7 +355,7 @@ export class AppController {
   ) {
     return this.financialUtilitiesService.sendInvoice(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -330,7 +365,7 @@ export class AppController {
   ) {
     return this.financialUtilitiesService.voidInvoice(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -345,7 +380,7 @@ export class AppController {
     return this.financialUtilitiesService.recordInvoicePayment(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -364,7 +399,7 @@ export class AppController {
     payload?: FindManyOptions<FinancialCheckoutSession> & FinanceScope
   ) {
     return this.financialUtilitiesService.listCheckoutSessions(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -375,7 +410,7 @@ export class AppController {
   ) {
     return this.financialUtilitiesService.getCheckoutSession(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -392,7 +427,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<InventoryItem> & FinanceScope
   ) {
     return await this.inventoryItemService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -403,7 +438,7 @@ export class AppController {
   ) {
     return await this.inventoryItemService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -415,7 +450,7 @@ export class AppController {
     return await this.inventoryItemService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -423,7 +458,7 @@ export class AppController {
   async removeInventoryItem(@Payload() payload: { id: string } & FinanceScope) {
     return await this.inventoryItemService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -438,7 +473,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<Budget> & FinanceScope
   ) {
     return await this.budgetService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -447,7 +482,7 @@ export class AppController {
   async findOneBudget(@Payload() payload: { id: string } & FinanceScope) {
     return await this.budgetService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -458,7 +493,7 @@ export class AppController {
     return await this.budgetService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -466,7 +501,7 @@ export class AppController {
   async removeBudget(@Payload() payload: { id: string } & FinanceScope) {
     return await this.budgetService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -482,7 +517,7 @@ export class AppController {
     @Payload() payload?: FindManyOptions<RecurringItem> & FinanceScope
   ) {
     return await this.recurringItemService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -493,7 +528,7 @@ export class AppController {
   ) {
     return await this.recurringItemService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -505,7 +540,7 @@ export class AppController {
     return await this.recurringItemService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -513,7 +548,7 @@ export class AppController {
   async removeRecurringItem(@Payload() payload: { id: string } & FinanceScope) {
     return await this.recurringItemService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -522,7 +557,7 @@ export class AppController {
     @Payload() payload: { workspace: FinanceWorkspace } & FinanceScope
   ) {
     return await this.financeSummaryService.getWorkspaceSummary(
-      extractFinanceScope(payload as Record<string, unknown>) ?? {},
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {},
       payload.workspace
     );
   }
@@ -532,7 +567,7 @@ export class AppController {
     @Payload() payload: { workspace: FinanceWorkspace } & FinanceScope
   ) {
     return await this.financeSummaryService.getWorkQueue(
-      extractFinanceScope(payload as Record<string, unknown>) ?? {},
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {},
       payload.workspace
     );
   }
@@ -540,7 +575,8 @@ export class AppController {
   @MessagePattern({ cmd: FinanceSummaryCommands.GET_ONBOARDING_STATE })
   async getOnboardingState(@Payload() payload?: FinanceScope) {
     return await this.financeSummaryService.getOnboardingState(
-      extractFinanceScope((payload as Record<string, unknown>) ?? {}) ?? {}
+      (await this.resolveScope((payload as Record<string, unknown>) ?? {})) ??
+        {}
     );
   }
 
@@ -550,7 +586,7 @@ export class AppController {
     payload: { data: BootstrapFinanceWorkspaceDto } & FinanceScope
   ) {
     return await this.financeSummaryService.bootstrap(
-      extractFinanceScope(payload as Record<string, unknown>) ?? {},
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {},
       payload.data
     );
   }
@@ -558,7 +594,8 @@ export class AppController {
   @MessagePattern({ cmd: FinanceTenantCommands.GET_CURRENT_TENANT })
   async getCurrentTenant(@Payload() payload?: FinanceScope) {
     return await this.financeTenantService.getCurrentTenant(
-      extractFinanceScope((payload as Record<string, unknown>) ?? {}) ?? {}
+      (await this.resolveScope((payload as Record<string, unknown>) ?? {})) ??
+        {}
     );
   }
 
@@ -576,14 +613,16 @@ export class AppController {
   @MessagePattern({ cmd: FinanceTenantCommands.LIST_TENANTS })
   async listTenants(@Payload() payload?: FinanceScope) {
     return await this.financeTenantService.listTenants(
-      extractFinanceScope((payload as Record<string, unknown>) ?? {}) ?? {}
+      (await this.resolveScope((payload as Record<string, unknown>) ?? {})) ??
+        {}
     );
   }
 
   @MessagePattern({ cmd: FinanceTenantCommands.LIST_TENANT_MEMBERS })
   async listTenantMembers(@Payload() payload?: FinanceScope) {
     return await this.financeTenantService.listMembers(
-      extractFinanceScope((payload as Record<string, unknown>) ?? {}) ?? {}
+      (await this.resolveScope((payload as Record<string, unknown>) ?? {})) ??
+        {}
     );
   }
 
@@ -601,7 +640,7 @@ export class AppController {
     payload?: FindManyOptions<FinCommanderPlanEntity> & FinanceScope
   ) {
     return await this.finCommanderPlanService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -612,7 +651,7 @@ export class AppController {
   ) {
     return await this.finCommanderPlanService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -624,7 +663,7 @@ export class AppController {
     return await this.finCommanderPlanService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -634,7 +673,7 @@ export class AppController {
   ) {
     return await this.finCommanderPlanService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -652,7 +691,7 @@ export class AppController {
     payload?: FindManyOptions<FinCommanderGoalEntity> & FinanceScope
   ) {
     return await this.finCommanderGoalService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -663,7 +702,7 @@ export class AppController {
   ) {
     return await this.finCommanderGoalService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -675,7 +714,7 @@ export class AppController {
     return await this.finCommanderGoalService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -685,7 +724,7 @@ export class AppController {
   ) {
     return await this.finCommanderGoalService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -705,7 +744,7 @@ export class AppController {
     payload?: FindManyOptions<FinCommanderScenarioEntity> & FinanceScope
   ) {
     return await this.finCommanderScenarioService.findAll(
-      extractFinanceScope(payload as Record<string, unknown>),
+      await this.resolveScope(payload as Record<string, unknown>),
       this.extractFindManyOptions(payload)
     );
   }
@@ -716,7 +755,7 @@ export class AppController {
   ) {
     return await this.finCommanderScenarioService.findOne(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -731,7 +770,7 @@ export class AppController {
     return await this.finCommanderScenarioService.update(
       payload.id,
       payload.data,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 
@@ -741,7 +780,7 @@ export class AppController {
   ) {
     return await this.finCommanderScenarioService.remove(
       payload.id,
-      extractFinanceScope(payload as Record<string, unknown>)
+      await this.resolveScope(payload as Record<string, unknown>)
     );
   }
 }

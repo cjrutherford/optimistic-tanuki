@@ -890,6 +890,8 @@ services:
       - APP_REGISTRY_PATH=/usr/src/app/config/app-registry.json
       - DEV_ALLOW_ALL_BROWSER_ORIGINS=true
       - GATEWAY_REQUEST_TIMEOUT_MS=${GATEWAY_REQUEST_TIMEOUT_MS:-30000}
+      - ASSETS_INTERNAL_MEDIA_URL=${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
+      - ASSETS_INTERNAL_MEDIA_TOKEN=${ASSETS_INTERNAL_MEDIA_TOKEN:-development-assets-media-token}
       - LEMON_SQUEEZY_WEBHOOK_SECRET=${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
@@ -1231,6 +1233,8 @@ services:
       - NODE_ENV=development
       - STORAGE_STRATEGY=local
       - LOCAL_STORAGE_PATH=/usr/src/app/storage
+      - ASSETS_INTERNAL_MEDIA_PORT=${ASSETS_INTERNAL_MEDIA_PORT:-3006}
+      - ASSETS_INTERNAL_MEDIA_TOKEN=${ASSETS_INTERNAL_MEDIA_TOKEN:-development-assets-media-token}
     depends_on:
       postgres:
         condition: service_healthy
@@ -1279,7 +1283,7 @@ services:
       - video-processing-data:/tmp/video-processing
       - /mnt/valhalla/media:/media:ro
     environment:
-      - VIDEO_SEED_SOURCE_DIR=/media/Tv
+      - VIDEO_SEED_SOURCE_DIR=/media/TV
     command:
       [
         'dumb-init',

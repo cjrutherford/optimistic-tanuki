@@ -1,3 +1,5 @@
+@use 'personality' as p;
+
 .nav-sidebar-card {
   display: grid;
   gap: 0.75rem;
@@ -39,13 +41,13 @@
   width: 100%;
   padding: 0.7rem 0.85rem;
   border: 1px solid color-mix(in srgb, var(--border, #cbd5e1) 40%, transparent);
-  border-radius: 12px;
+  border-radius: var(--border-radius-xl, 12px);
   background: color-mix(in srgb, var(--surface, white) 92%, transparent);
   color: var(--foreground, #0f172a);
   cursor: pointer;
   font: inherit;
   text-align: left;
-  transition: 180ms ease;
+  @include p.personality-transition(all, 'fast');
 }
 
 .nav-link.group {

@@ -1,12 +1,10 @@
+@use 'personality' as p;
+
 .participants {
   padding: 12px 18px;
   background: linear-gradient(
-    color-mix(in srgb, var(--local-accent, var(--accent)) 8%, transparent),
-    color-mix(
-      in srgb,
-      var(--local-complement, var(--complement)) 5%,
-      transparent
-    )
+    color-mix(in srgb, var(--primary) 8%, transparent),
+    color-mix(in srgb, var(--secondary) 5%, transparent)
   );
   display: flex;
   gap: 16px;
@@ -30,30 +28,29 @@
   justify-content: center;
   flex-direction: row;
   font-size: 0.85rem;
-  color: var(--local-foreground);
-  background: color-mix(
-    in srgb,
-    var(--local-complement, var(--complement)) 10%,
-    transparent
-  );
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--secondary) 10%, transparent);
+  // --local-border-color is the ancestor chat-window's live accent-tinted
+  // border (see chat-window.component.ts applyTheme()); --border is a safe
+  // generic fallback if this ever renders outside that tree.
   border: 1px solid var(--local-border-color, var(--border));
   border-radius: var(--border-radius-full, 20px);
   padding: 4px 12px 4px 4px;
   gap: 8px;
-  transition: all 0.2s ease;
+  @include p.personality-transition(all);
 
   &:hover {
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
-    border-color: var(--accent);
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    border-color: var(--primary);
   }
 
   img,
   lib-profile-photo {
     width: 28px;
     height: 28px;
-    border-radius: 50%;
+    border-radius: var(--border-radius-full, 50%);
     border: 2px solid var(--background);
-    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
+    @include p.shadow('sm');
   }
 
   .participant-name {
@@ -68,7 +65,7 @@
   .participant-status {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: var(--border-radius-full, 50%);
     background: var(--success);
     margin-left: auto;
   }

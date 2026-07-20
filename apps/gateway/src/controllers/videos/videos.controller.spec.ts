@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { NotFoundException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
 import { ServiceTokens, VideoCommands } from '@optimistic-tanuki/constants';
@@ -72,6 +73,63 @@ describe('VideosController', () => {
     expect(videosService.send).toHaveBeenCalledWith(
       { cmd: VideoCommands.FIND_TRENDING_VIDEOS },
       10
+    );
+  });
+
+  it('forwards the guard-verified viewer profile id on single-video lookup', async () => {
+    const req = { user: { profileId: 'viewer-9' } } as any;
+
+    await expect(controller.findOneVideo(req, 'video-1')).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.FIND_ONE_VIDEO },
+      { id: 'video-1', viewerProfileId: 'viewer-9' }
+    );
+  });
+
+  it('forwards an undefined viewer id for anonymous single-video lookup', async () => {
+    const req = {} as any;
+
+    await expect(controller.findOneVideo(req, 'video-1')).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.FIND_ONE_VIDEO },
+      { id: 'video-1', viewerProfileId: undefined }
+    );
+  });
+
+  it('returns not found when the videos service hides an unavailable video', async () => {
+    videosService.send.mockReturnValueOnce(of(null));
+
+    await expect(
+      controller.findOneVideo({}, 'processing-video')
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('forwards processing overview requests to the videos service', async () => {
+    await expect(controller.getProcessingOverview()).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.GET_VIDEO_PROCESSING_OVERVIEW },
+      {}
+    );
+  });
+
+  it('forwards an individual processing retry to the videos service', async () => {
+    await expect(controller.retryProcessing('video-1')).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.RETRY_VIDEO_PROCESSING },
+      'video-1'
+    );
+  });
+
+  it('forwards retrying all failed processing jobs to the videos service', async () => {
+    await expect(controller.retryFailedProcessing()).resolves.toEqual([]);
+
+    expect(videosService.send).toHaveBeenCalledWith(
+      { cmd: VideoCommands.RETRY_FAILED_VIDEO_PROCESSING },
+      {}
     );
   });
 

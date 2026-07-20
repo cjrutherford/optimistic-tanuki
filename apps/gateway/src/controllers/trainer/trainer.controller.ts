@@ -12,6 +12,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
@@ -680,19 +681,28 @@ export class TrainerController {
       }));
   }
 
+  // Public so an unauthenticated caller (or one browsing a specific site
+  // slug) can still load the config, but AuthGuard still runs to OPTIONALLY
+  // attach a signature-verified `request.user` when a valid token is
+  // present. We read the profileId from that guard-verified context — never
+  // from the `@User()` decorator, which decodes the token WITHOUT verifying
+  // its signature and would let a forged profileId return another owner's
+  // site config when no slug is given.
   @Public()
   @UseGuards(AuthGuard)
   @Get('site-config')
   async getSiteConfig(
     @Query('slug') slug?: string,
-    @User() user?: UserDetails | null
+    @Req() req?: { user?: { profileId?: string } }
   ) {
     try {
       const result = await firstValueFrom(
         this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
           configKey: 'default',
           slug: slug?.trim() || undefined,
-          profileId: slug?.trim() ? undefined : user?.profileId || undefined,
+          profileId: slug?.trim()
+            ? undefined
+            : req?.user?.profileId || undefined,
         })
       );
       if (!result || !result.config) {
@@ -725,12 +735,18 @@ export class TrainerController {
     });
   }
 
+  // Public so an anonymous business-site visitor can submit a lead, but
+  // AuthGuard still runs to OPTIONALLY attach a signature-verified
+  // `request.user`. The lead falls back to that guard-verified identity —
+  // never to the raw `@User()` decode, which does not verify the token's
+  // signature and would let a forged userId/profileId attribute the lead to
+  // an arbitrary victim.
   @Public()
   @UseGuards(AuthGuard)
   @Post('leads')
   async createLeadIntake(
     @Body() payload: BusinessLeadIntakeDto,
-    @User() user?: UserDetails | null
+    @Req() req?: { user?: { userId?: string; profileId?: string } }
   ) {
     const result = (await firstValueFrom(
       this.storeService.send(TrainerConfigCommands.GET_CONFIG, {
@@ -740,8 +756,8 @@ export class TrainerController {
     )) as { config?: Record<string, any> } | null;
     const leadContext = this.getBusinessLeadContext(result?.config);
     const linkedUserId =
-      payload.userId || user?.userId || 'anonymous-business-site';
-    const linkedProfileId = payload.profileId || user?.profileId || '';
+      payload.userId || req?.user?.userId || 'anonymous-business-site';
+    const linkedProfileId = payload.profileId || req?.user?.profileId || '';
     const dto: CreateLeadDto = {
       name: this.resolveBusinessLeadName(payload),
       email: payload.email,

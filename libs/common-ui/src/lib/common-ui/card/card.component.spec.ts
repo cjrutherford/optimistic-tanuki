@@ -168,4 +168,19 @@ describe('CardComponent', () => {
 
     expect(component.variant).toBe('gradient-glow');
   });
+
+  it('should default the textured input to false and not add the textured class', () => {
+    expect(component.textured).toBe(false);
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.classList.contains('textured')).toBe(false);
+  });
+
+  it('should add the textured class when the textured input is set', () => {
+    component.textured = true;
+    fixture.detectChanges();
+
+    const cardEl = fixture.nativeElement.querySelector('.card');
+    expect(cardEl.classList.contains('textured')).toBe(true);
+  });
 });

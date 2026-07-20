@@ -67,11 +67,22 @@ import {
   UpdateSocialComponentDto,
   QueryFollowsDto,
   UpdateFollowDto,
+  CreateVoteDto,
 } from '@optimistic-tanuki/models';
-import { postSearchDtoToFindManyOptions } from '../entities/post.entity';
+import { Post, postSearchDtoToFindManyOptions } from '../entities/post.entity';
+import {
+  PostVisibilityScope,
+  visiblePostWhere,
+} from './common/post-visibility.util';
 import { transformSearchCommentDtoToFindOptions } from '../entities/comment.entity';
 import { Attachment, toFindOptions } from '../entities/attachment.entity';
-import { FindManyOptions, FindOneOptions, FindOptions, In } from 'typeorm';
+import {
+  FindManyOptions,
+  FindOneOptions,
+  FindOptions,
+  FindOptionsWhere,
+  In,
+} from 'typeorm';
 import FollowService from './services/follow.service';
 import { NotificationService } from './services/notification.service';
 import { SearchService } from './services/search.service';
@@ -121,6 +132,24 @@ export class AppController {
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy
   ) {}
+
+  private async buildPostVisibilityScope(
+    viewerProfileId: string
+  ): Promise<PostVisibilityScope> {
+    const [following, blocked, blockers] = await Promise.all([
+      this.followService.getFollowing(viewerProfileId),
+      this.privacyService.getBlockedUsers(viewerProfileId),
+      this.privacyService.getBlockersOf(viewerProfileId),
+    ]);
+    return {
+      viewerProfileId,
+      followedProfileIds: (following || []).map((f) => f.followeeId),
+      blockedProfileIds: [
+        ...(blocked || []).map((b) => b.blockedId),
+        ...(blockers || []).map((b) => b.blockerId),
+      ],
+    };
+  }
 
   private extractMentions(text: string): string[] {
     if (!text) return [];
@@ -225,17 +254,20 @@ export class AppController {
         searchOptions.order = { [opts.orderBy]: opts.orderDirection || 'ASC' };
       }
     }
-    let posts = await this.postService.findAll(searchOptions);
 
+    // When the gateway forwards an authenticated viewer, push the shared
+    // visibility scope into the query: followers-only posts are hidden from
+    // non-followers, other authors' scheduled posts are excluded, and blocked
+    // authors (both directions) are dropped. This subsumes the previous
+    // post-query blocked-author JS filter. Absent viewer (internal/system
+    // call) stays un-scoped, mirroring the project-access convention.
     if (viewerProfileId) {
-      const blocked = await this.privacyService.getBlockedUsers(
-        viewerProfileId
-      );
-      const blockedIds = new Set(
-        (blocked || []).map((entry) => entry.blockedId)
-      );
-      posts = posts.filter((post) => !blockedIds.has(post.profileId));
+      const scope = await this.buildPostVisibilityScope(viewerProfileId);
+      const baseWhere = (searchOptions.where as FindOptionsWhere<Post>) ?? {};
+      searchOptions.where = visiblePostWhere(scope, baseWhere);
     }
+
+    const posts = await this.postService.findAll(searchOptions);
 
     for (const post of posts) {
       const votes = await this.voteService.findAll({
@@ -264,9 +296,21 @@ export class AppController {
   @MessagePattern({ cmd: PostCommands.FIND })
   async findOnePost(
     @Payload('id') id: string,
-    @Payload('options') options?: SearchPostDto
+    @Payload('options') options?: SearchPostDto,
+    @Payload('viewerProfileId') viewerProfileId?: string
   ) {
-    const search = options ? postSearchDtoToFindManyOptions(options) : {};
+    const search: FindOneOptions<Post> = options
+      ? (postSearchDtoToFindManyOptions(options) as FindOneOptions<Post>)
+      : {};
+
+    // When an authenticated viewer is forwarded, enforce the shared visibility
+    // scope on the fetch: a post the viewer may not see resolves to null.
+    if (viewerProfileId) {
+      const scope = await this.buildPostVisibilityScope(viewerProfileId);
+      const baseWhere = (search.where as FindOptionsWhere<Post>) ?? {};
+      search.where = visiblePostWhere(scope, baseWhere);
+    }
+
     return await this.postService.findOne(id, search);
   }
 
@@ -295,85 +339,84 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: VoteCommands.UPVOTE })
-  async upvotePost(
-    @Payload('id') id: string,
-    @Payload('userId') userId: string,
-    @Payload('profileId') profileId: string
-  ) {
-    const vote = await this.voteService.create({
-      postId: id,
-      value: 1,
-      userId,
+  async upvotePost(@Payload() voteDto: CreateVoteDto) {
+    const { postId, userId, profileId } = voteDto;
+    const { vote, changed } = await this.voteService.castVote(
+      postId,
       profileId,
-    });
+      userId,
+      1
+    );
 
-    // Create activity log
-    try {
-      await this.activityService.createActivity({
-        profileId,
-        type: 'like' as any,
-        description: 'You liked a post',
-        resourceId: id,
-        resourceType: 'post',
-      });
-    } catch (err) {
-      this.logger.warn('Failed to create activity log for upvote:', err);
-    }
-
-    // Get the post to find the author and send notification
-    try {
-      const post = await this.postService.findOne(id);
-      if (post && post.profileId && post.profileId !== profileId) {
-        await this.notificationService.queueNotification({
-          recipientId: post.profileId,
-          type: 'like',
-          title: 'New Like',
-          body: 'Someone liked your post',
-          senderId: profileId,
+    if (changed) {
+      // Create activity log
+      try {
+        await this.activityService.createActivity({
+          profileId,
+          type: 'like' as any,
+          description: 'You liked a post',
+          resourceId: postId,
           resourceType: 'post',
-          resourceId: id,
-          actionUrl: `/feed/post/${id}`,
         });
+      } catch (err) {
+        this.logger.warn('Failed to create activity log for upvote:', err);
       }
-    } catch (err) {
-      this.logger.warn('Failed to send notification for upvote:', err);
+
+      // Get the post to find the author and send notification
+      try {
+        const post = await this.postService.findOne(postId);
+        if (post && post.profileId && post.profileId !== profileId) {
+          await this.notificationService.queueNotification({
+            recipientId: post.profileId,
+            type: 'like',
+            title: 'New Like',
+            body: 'Someone liked your post',
+            senderId: profileId,
+            resourceType: 'post',
+            resourceId: postId,
+            actionUrl: `/feed/post/${postId}`,
+          });
+        }
+      } catch (err) {
+        this.logger.warn('Failed to send notification for upvote:', err);
+      }
     }
 
     return vote;
   }
 
   @MessagePattern({ cmd: VoteCommands.DOWNVOTE })
-  async downvotePost(
-    @Payload('id') id: string,
-    @Payload('userId') userId: string,
-    @Payload('profileId') profileId: string
-  ) {
-    const vote = await this.voteService.create({
-      postId: id,
-      value: -1,
-      userId,
+  async downvotePost(@Payload() voteDto: CreateVoteDto) {
+    const { postId, userId, profileId } = voteDto;
+    const { vote, changed } = await this.voteService.castVote(
+      postId,
       profileId,
-    });
+      userId,
+      -1
+    );
 
-    // Create activity log for downvote
-    try {
-      await this.activityService.createActivity({
-        profileId,
-        type: 'like' as any,
-        description: 'You downvoted a post',
-        resourceId: id,
-        resourceType: 'post',
-      });
-    } catch (err) {
-      this.logger.warn('Failed to create activity log for downvote:', err);
+    if (changed) {
+      // Create activity log for downvote
+      try {
+        await this.activityService.createActivity({
+          profileId,
+          type: 'like' as any,
+          description: 'You downvoted a post',
+          resourceId: postId,
+          resourceType: 'post',
+        });
+      } catch (err) {
+        this.logger.warn('Failed to create activity log for downvote:', err);
+      }
     }
 
     return vote;
   }
 
   @MessagePattern({ cmd: VoteCommands.UNVOTE })
-  async unvotePost(@Payload('id') id: string) {
-    return await this.voteService.remove(id);
+  async unvotePost(@Payload() voteDto: CreateVoteDto) {
+    const { postId, profileId } = voteDto;
+    return await this.voteService.removeVoteByPostAndProfile(postId, profileId);
   }
 
   @MessagePattern({ cmd: VoteCommands.GET })
@@ -482,18 +525,37 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: CommentCommands.FIND_MANY })
-  async findAllComments(@Payload() data: SearchCommentDto) {
-    const options = transformSearchCommentDtoToFindOptions(data);
-    return await this.commentService.findAll(options);
+  async findAllComments(
+    @Payload() data: SearchCommentDto & { viewerProfileId?: string }
+  ) {
+    const { viewerProfileId, ...criteria } = data;
+    const options = transformSearchCommentDtoToFindOptions(criteria);
+
+    // Comments inherit their parent post's visibility: a comment is only
+    // returned if the viewer is entitled to see the post it belongs to
+    // (same rule as findAllPosts/findOnePost). Anonymous callers get the
+    // unscoped anonymous branch of visiblePostWhere (public/visible/
+    // unscheduled only).
+    const scope: PostVisibilityScope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+
+    return await this.commentService.findAllVisible(options, scope);
   }
 
   @MessagePattern({ cmd: CommentCommands.FIND })
   async findOneComment(
     @Payload('id') id: string,
-    @Payload('options') options?: SearchCommentDto
+    @Payload('options') options?: SearchCommentDto,
+    @Payload('viewerProfileId') viewerProfileId?: string
   ) {
     const search = transformSearchCommentDtoToFindOptions(options);
-    return await this.commentService.findOne(id, search);
+
+    const scope: PostVisibilityScope = viewerProfileId
+      ? await this.buildPostVisibilityScope(viewerProfileId)
+      : { followedProfileIds: [], blockedProfileIds: [] };
+
+    return await this.commentService.findOneVisible(id, search, scope);
   }
 
   @MessagePattern({ cmd: CommentCommands.UPDATE })
@@ -1225,8 +1287,8 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: SearchCommands.GET_TRENDING })
-  async getTrending(@Payload() data: { limit: number }) {
-    return await this.searchService.getTrending(data.limit);
+  async getTrending(@Payload() data: { limit: number; profileId?: string }) {
+    return await this.searchService.getTrending(data.limit, data.profileId);
   }
 
   @MessagePattern({ cmd: SearchCommands.GET_SUGGESTED_USERS })

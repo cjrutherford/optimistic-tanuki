@@ -1,10 +1,24 @@
 /* istanbul ignore file */
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 import { Comment } from './comment.entity';
 import { Post } from './post.entity';
 
 @Entity()
+@Index('UQ_vote_post_profile', ['post', 'profileId'], {
+  unique: true,
+  where: '"postId" IS NOT NULL',
+})
+@Index('UQ_vote_comment_profile', ['comment', 'profileId'], {
+  unique: true,
+  where: '"commentId" IS NOT NULL',
+})
 export class Vote {
   @PrimaryGeneratedColumn()
   id: number;

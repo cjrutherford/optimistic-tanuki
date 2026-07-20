@@ -2634,6 +2634,22 @@
       "appScope": "video-client"
     },
     {
+      "name": "videos.video.update",
+      "description": "Monitor and retry video processing",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "videos.video.update",
+      "description": "Monitor and retry video processing (global owner)",
+      "active": true,
+      "resource": "videos.video",
+      "action": "update",
+      "appScope": "global"
+    },
+    {
       "name": "videos.channel.update",
       "description": "Update a video channel community",
       "active": true,
@@ -3307,6 +3323,11 @@
     },
     {
       "role": "owner_console_owner",
+      "permission": "videos.video.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
       "permission": "permissions.create",
       "permissionAppScope": "owner-console"
     },
@@ -3433,6 +3454,11 @@
     {
       "role": "owner",
       "permission": "profile.read",
+      "permissionAppScope": "global"
+    },
+    {
+      "role": "owner",
+      "permission": "videos.video.update",
       "permissionAppScope": "global"
     },
     {
@@ -5137,6 +5163,11 @@
     },
     {
       "role": "local_hub_member",
+      "permission": "social.post.create",
+      "permissionAppScope": "social"
+    },
+    {
+      "role": "local_hub_member",
       "permission": "community.join",
       "permissionAppScope": "local-hub"
     },
@@ -5148,6 +5179,11 @@
     {
       "role": "local_hub_member",
       "permission": "community.read",
+      "permissionAppScope": "local-hub"
+    },
+    {
+      "role": "local_hub_member",
+      "permission": "community.create",
       "permissionAppScope": "local-hub"
     },
     {

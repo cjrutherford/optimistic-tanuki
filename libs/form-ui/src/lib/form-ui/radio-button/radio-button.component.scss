@@ -1,6 +1,5 @@
 @use '../../styles/mixins' as *;
-@use '../../styles/personality-tokens' as *;
-@use '../../styles/personality-effects' as *;
+@use 'personality' as p;
 
 // ============================================
 // Personality-Driven Radio Button Component
@@ -75,13 +74,16 @@
     width: 22px;
     height: 22px;
     background: var(--surface, var(--background));
-    border: var(--border-width, 1.5px) solid
+    border: var(--personality-input-border-width, 1.5px) solid
       color-mix(in srgb, var(--primary) 20%, transparent);
     border-radius: 50%;
     position: relative;
-    transition: all var(--animation-duration-normal, 250ms)
-      var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
-    box-shadow: var(--shadow-sm, inset 0 1px 2px rgba(0, 0, 0, 0.03));
+    @include p.personality-transition(all, 'normal');
+    box-shadow: var(
+      --shadow-sm,
+      inset 0 1px 2px
+        color-mix(in srgb, var(--shadow-color, #000) 3%, transparent)
+    );
 
     @include reduced-motion {
       transition: none;
@@ -153,7 +155,7 @@
     font-size: 0.9375rem;
     color: var(--foreground-secondary, var(--foreground));
     line-height: 1.5;
-    transition: color var(--animation-duration-fast, 200ms) ease;
+    @include p.personality-transition(color, 'fast');
   }
 
   // Label hover
@@ -242,12 +244,11 @@ input:checked.form-radio.has-error ~ .radio-mark {
 // Radio card variant
 .form-radio.card-option {
   padding: var(--spacing-md, 16px) var(--spacing-lg, 20px);
-  border: var(--border-width, 1.5px) solid
+  border: var(--personality-input-border-width, 1.5px) solid
     color-mix(in srgb, var(--primary) 15%, transparent);
-  border-radius: var(--border-radius-md, 16px);
+  border-radius: var(--personality-card-radius, var(--border-radius-md, 16px));
   background: var(--surface, var(--background));
-  transition: all var(--animation-duration-normal, 250ms)
-    var(--animation-easing, cubic-bezier(0.4, 0, 0.2, 1));
+  @include p.personality-transition(all, 'normal');
 
   &:hover {
     border-color: color-mix(in srgb, var(--primary) 40%, transparent);
@@ -310,6 +311,12 @@ input:checked.form-radio.has-error ~ .radio-mark {
 // ============================================
 // Personality-Specific Radio Button Enhancements
 // ============================================
+// Unlike the rectangular controls in the other form-ui components, the
+// radio mark's un-decorated default is a circle (`border-radius: 50%`
+// above), so a personality override to a fixed radius here is always a
+// deliberate SHAPE statement (circle → square/rounded-square), not a
+// severity tweak the `--personality-input-radius` scalar could express —
+// these stay hardcoded on purpose.
 
 body.personality-architect .form-radio {
   .radio-mark {
@@ -325,12 +332,14 @@ body.personality-architect .form-radio {
 body.personality-playful .form-radio {
   .radio-mark {
     &::after {
-      animation: radio-pop 0.3s ease-out;
+      animation: radio-pop var(--animation-duration-normal, 300ms)
+        var(--animation-easing, ease-out);
     }
   }
 
   input:checked ~ .radio-mark {
-    animation: radio-pop 0.3s ease-out;
+    animation: radio-pop var(--animation-duration-normal, 300ms)
+      var(--animation-easing, ease-out);
   }
 }
 
@@ -342,10 +351,9 @@ body.personality-minimal .form-radio {
 }
 
 body.personality-soft-touch .form-radio {
-  .radio-mark {
-    border-radius: 50%;
-  }
-
+  // The radio mark is already circular by default; this block only adds the
+  // halo ring on the checked state (the `border-radius: 50%` no-op that used
+  // to live here has been removed).
   input:checked ~ .radio-mark {
     box-shadow: 0 0 0 5px var(--surface), 0 0 0 7px var(--primary);
   }

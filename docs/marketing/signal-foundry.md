@@ -36,6 +36,24 @@ Turn a structured brief into strategy directions, coordinated channel drafts, ma
 3. Refine the winning direction across web, email, social, and material formats.
 4. Export the campaign package and preserve history for future iteration.
 
+## Generation Modes
+
+Every concept starts from a deterministic six-angle template scaffold — the structure (ids,
+sections, channel blocks, material surfaces) that previews and exports depend on. An optional
+AI pass can then operate at one of two levels:
+
+- **AI authorship** — an LLM writes the creative copy (headline, subheadline, section bodies,
+  channel output blocks, material text, image prompts) directly from the brief into the
+  scaffold. Labeled `AI-generated` in the UI.
+- **AI enrichment** — a lighter LLM pass polishes the template output without full authorship.
+  Labeled `AI-enriched`.
+
+Every LLM response is schema-validated (zod) before it is merged into a concept. If the model
+is unreachable or returns an invalid payload, generation falls back to the template scaffold
+and is labeled honestly as `AI-fallback` rather than silently pretending the AI pass ran.
+Token usage (prompt and completion counts) is captured for every LLM call, aggregated per
+process, and surfaced in the UI and at `GET /api/marketing-generator/usage`.
+
 ## Proof
 
 - six-step brief covering offer, audience, strategy, outputs, brand, and review
@@ -43,6 +61,8 @@ Turn a structured brief into strategy directions, coordinated channel drafts, ma
 - coordinated bundles across web, email, and social channels
 - editable flyer, brochure, business-card, and web-ad materials with export support
 - workspace history, restore points, and local-first refinement telemetry
+- schema-validated AI authorship and enrichment passes with honest fallback labeling and
+  visible token-usage reporting
 
 ## Deployment Posture
 

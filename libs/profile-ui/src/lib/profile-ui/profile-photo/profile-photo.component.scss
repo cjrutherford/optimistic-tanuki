@@ -1,15 +1,14 @@
+@use 'personality' as p;
+
 .profile-photo {
-  border-radius: 50%;
-  border: var(--border-width, 2px) solid var(--accent, #3f51b5);
+  border-radius: var(--border-radius-full, 50%);
+  border: var(--border-width, 2px) solid var(--primary, #3f51b5);
   width: var(--size, 32px);
   height: var(--size, 32px);
   max-height: 150px;
   max-width: 150px;
   object-fit: cover;
-  transition: transform var(--animation-duration-normal, 0.3s)
-      var(--animation-easing, ease),
-    box-shadow var(--animation-duration-normal, 0.3s)
-      var(--animation-easing, ease);
+  @include p.personality-transition('transform, box-shadow', 'normal');
   position: relative;
 
   &:hover {
@@ -20,8 +19,7 @@
     cursor: pointer;
 
     &:hover {
-      box-shadow: 0 0 0 3px var(--accent, #3f51b5),
-        var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
+      box-shadow: 0 0 0 3px var(--primary, #3f51b5), var(--shadow-md);
     }
   }
 }
@@ -30,9 +28,9 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  background: var(--accent, #3f51b5);
-  color: white;
-  border-radius: 50%;
+  background: var(--primary, #3f51b5);
+  color: var(--primary-foreground, white);
+  border-radius: var(--border-radius-full, 50%);
   width: 18px;
   height: 18px;
   display: flex;
@@ -41,9 +39,7 @@
   border: var(--border-width, 2px) solid var(--background, white);
   opacity: 0;
   transform: scale(0.8);
-  transition: opacity var(--animation-duration-fast, 0.2s)
-      var(--animation-easing, ease),
-    transform var(--animation-duration-fast, 0.2s) var(--animation-easing, ease);
+  @include p.personality-transition('opacity, transform', 'fast');
   pointer-events: none;
 }
 
@@ -61,7 +57,7 @@ body.personality-architect {
   .profile-photo {
     border-radius: 0;
     &.clickable:hover {
-      box-shadow: 4px 4px 0 var(--accent);
+      box-shadow: 4px 4px 0 var(--primary);
     }
   }
 }
@@ -86,7 +82,8 @@ body.personality-soft-touch {
   .profile-photo {
     border-radius: var(--border-radius-full, 9999px);
     &:hover {
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 8px 20px
+        color-mix(in srgb, var(--shadow-color, #000) 15%, transparent);
     }
   }
 }
@@ -94,7 +91,7 @@ body.personality-soft-touch {
 body.personality-electric {
   .profile-photo {
     &.clickable:hover {
-      box-shadow: 0 0 20px var(--accent);
+      box-shadow: 0 0 20px var(--primary);
     }
   }
 }

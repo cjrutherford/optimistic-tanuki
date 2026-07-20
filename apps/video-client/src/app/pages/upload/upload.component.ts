@@ -423,6 +423,14 @@ import { PulseRingsComponent } from '@optimistic-tanuki/motion-ui';
   ],
 })
 export class UploadComponent {
+  /**
+   * Client-side upload ceiling. A guard here gives immediate feedback and
+   * avoids starting a doomed multi-hundred-megabyte upload; it is a UX
+   * convenience, not a security boundary (a server-side limit must still be
+   * enforced independently at the ingest path — see the video-domain audit).
+   */
+  static readonly MAX_VIDEO_FILE_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
+
   videoFile: File | null = null;
   thumbnailFile: File | null = null;
   channels: any[] = [];
@@ -462,6 +470,13 @@ export class UploadComponent {
   onVideoFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
+      if (file.size > UploadComponent.MAX_VIDEO_FILE_SIZE_BYTES) {
+        this.videoFile = null;
+        const limitGb =
+          UploadComponent.MAX_VIDEO_FILE_SIZE_BYTES / (1024 * 1024 * 1024);
+        this.error = `Video file is too large. The maximum size is ${limitGb} GB.`;
+        return;
+      }
       this.videoFile = file;
       this.error = null;
     }

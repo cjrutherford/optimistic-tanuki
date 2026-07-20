@@ -4,28 +4,29 @@
 }
 
 .grid > * {
-  border-radius: 8px;
-  transition: box-shadow 0.3s ease;
-  background-color: var(--accent-shade-darken-10, #5969c3);
-  border: 1px solid var(--accent-shade-lighten-50, #b1baec);
-  color: var(--foreground-color, #fff);
+  border-radius: var(--border-radius-md, 8px);
+  transition: box-shadow var(--animation-duration-normal, 0.3s)
+    var(--animation-easing, ease);
+  background-color: color-mix(in srgb, var(--primary) 90%, black);
+  border: 1px solid color-mix(in srgb, var(--primary) 50%, white);
+  color: var(--foreground, #fff);
 }
 
 .grid > *:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md, 0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
 .grid.light-mode > * {
-  background-color: var(--accent-shade-lighten-50, #b1baec);
-  color: var(--foreground-color, #000);
+  background-color: color-mix(in srgb, var(--primary) 50%, white);
+  color: var(--foreground, #000);
 }
 
 .grid.dark-mode > * {
-  background-color: var(--accent-shade-darken-50, #313a6c);
-  color: var(--foreground-color, #fff);
+  background-color: color-mix(in srgb, var(--primary) 50%, black);
+  color: var(--foreground, #fff);
 }
 
 .grid.fast-cycle-mode > * {
   background: var(--gradient-fastCycle);
-  color: var(--foreground-color, #fff);
+  color: var(--foreground, #fff);
 }

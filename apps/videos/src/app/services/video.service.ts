@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan } from 'typeorm';
+import { Repository, MoreThan, And, IsNull, Not } from 'typeorm';
 import {
   CreateVideoDto,
   UpdateVideoDto,
@@ -33,13 +33,13 @@ export class VideoService {
       communityId: createVideoDto.communityId ?? channel?.communityId,
     });
     const savedVideo = await this.videoRepository.save(video);
-    void this.videoProcessingService?.processVideo(savedVideo.id);
+    this.videoProcessingService?.enqueue(savedVideo.id);
     return savedVideo;
   }
 
   async findAll(): Promise<Video[]> {
     return this.videoRepository.find({
-      where: { visibility: 'public' },
+      where: this.publicReadyVideoWhere(),
       relations: ['channel'],
       order: { createdAt: 'DESC' },
     });
@@ -52,9 +52,52 @@ export class VideoService {
     });
   }
 
+  /**
+   * Viewer-scoped single-video lookup for the public `GET videos/:id` route.
+   *
+   * `public` and `unlisted` videos are fetchable by anyone who has the id
+   * (unlisted-by-direct-link is intentional). `private` videos are only
+   * returned to their owner — the profile that owns the video's channel.
+   * A private video requested by anyone else resolves to `null`, which the
+   * gateway surfaces as a 404 so a private id is indistinguishable from a
+   * non-existent one (no existence oracle).
+   *
+   * `viewerProfileId` MUST come from the gateway's signature-verified auth
+   * context, never from an unverified token claim.
+   */
+  async findOneVisible(
+    id: string,
+    viewerProfileId?: string
+  ): Promise<Video | null> {
+    const video = await this.videoRepository.findOne({
+      where: { id },
+      relations: ['channel', 'views'],
+    });
+
+    if (!video) {
+      return null;
+    }
+
+    if (
+      video.processingStatus !== VideoProcessingStatus.READY ||
+      !video.playbackAssetId
+    ) {
+      return null;
+    }
+
+    if (
+      video.visibility === 'private' &&
+      (!viewerProfileId || video.channel?.profileId !== viewerProfileId)
+    ) {
+      return null;
+    }
+
+    return video;
+  }
+
   async findByChannel(channelId: string): Promise<Video[]> {
     return this.videoRepository.find({
-      where: { channelId },
+      where: { ...this.publicReadyVideoWhere(), channelId },
       relations: ['channel'],
       order: { createdAt: 'DESC' },
     });
@@ -67,7 +110,7 @@ export class VideoService {
 
     return this.videoRepository.find({
       where: {
-        visibility: 'public',
+        ...this.publicReadyVideoWhere(),
         createdAt: MoreThan(thirtyDaysAgo),
       },
       relations: ['channel'],
@@ -83,7 +126,7 @@ export class VideoService {
 
     return this.videoRepository.find({
       where: {
-        visibility: 'public',
+        ...this.publicReadyVideoWhere(),
         createdAt: MoreThan(sevenDaysAgo),
       },
       relations: ['channel'],
@@ -102,6 +145,14 @@ export class VideoService {
       updatedAt: new Date(),
     });
     return this.findOne(id);
+  }
+
+  private publicReadyVideoWhere() {
+    return {
+      visibility: 'public' as const,
+      processingStatus: VideoProcessingStatus.READY,
+      playbackAssetId: And(Not(IsNull()), Not('')),
+    };
   }
 
   async incrementViewCount(id: string): Promise<void> {
@@ -127,6 +178,76 @@ export class VideoService {
       processingError: null,
       updatedAt: new Date(),
     });
+  }
+
+  async retryProcessing(id: string): Promise<void> {
+    const video = await this.findOneOrFail(id);
+
+    await this.videoRepository.update(id, {
+      processingStatus: VideoProcessingStatus.PENDING,
+      processingError: null,
+      updatedAt: new Date(),
+    });
+    this.videoProcessingService?.enqueue(video.id);
+  }
+
+  async getProcessingOverview(): Promise<{
+    totals: Record<VideoProcessingStatus, number>;
+    queue: {
+      activeJobs: number;
+      queuedJobs: number;
+      maxConcurrentJobs: number;
+    };
+    jobs: Array<{
+      id: string;
+      title: string;
+      processingStatus: VideoProcessingStatus;
+      processingError: string | null;
+      updatedAt: Date;
+    }>;
+  }> {
+    const videos = await this.videoRepository.find({
+      order: { updatedAt: 'DESC' },
+    });
+    const totals: Record<VideoProcessingStatus, number> = {
+      [VideoProcessingStatus.PENDING]: 0,
+      [VideoProcessingStatus.PROCESSING]: 0,
+      [VideoProcessingStatus.READY]: 0,
+      [VideoProcessingStatus.FAILED]: 0,
+    };
+
+    for (const video of videos) {
+      totals[video.processingStatus as VideoProcessingStatus] += 1;
+    }
+
+    return {
+      totals,
+      queue: this.videoProcessingService?.getQueueMetrics() ?? {
+        activeJobs: 0,
+        queuedJobs: 0,
+        maxConcurrentJobs: 0,
+      },
+      jobs: videos.slice(0, 50).map((video) => ({
+        id: video.id,
+        title: video.title,
+        processingStatus: video.processingStatus as VideoProcessingStatus,
+        processingError: video.processingError,
+        updatedAt: video.updatedAt,
+      })),
+    };
+  }
+
+  async retryFailedProcessing(): Promise<{ queued: number }> {
+    const failedVideos = await this.videoRepository.find({
+      where: { processingStatus: VideoProcessingStatus.FAILED },
+      order: { updatedAt: 'ASC' },
+    });
+
+    for (const video of failedVideos) {
+      await this.retryProcessing(video.id);
+    }
+
+    return { queued: failedVideos.length };
   }
 
   async completeProcessing(

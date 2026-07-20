@@ -134,118 +134,125 @@ export class AgGridUiComponent
       '<span class="ag-overlay-loading-center">Loading...</span>',
   };
 
+  /**
+   * Theme bridge: AG Grid v35 ships the "Theming API" (`themeQuartz.withParams()`),
+   * which accepts plain CSS strings for every color/font param (this is AG Grid's
+   * own documented mechanism for wiring in an app's CSS custom properties — see
+   * `ColorValue = string | {...}` in ag-grid-community's theming types). Rather
+   * than resolving personality colors to concrete hex in JS (the previous
+   * approach, sourced from `ThemeColors.accentShades`/`complementaryShades`
+   * arrays and duplicated by hand-rolled `isDark` branches), every color/font
+   * param below is a `var(--contract-token)` reference straight into the
+   * personality contract that `ThemeService` maintains on `documentElement`
+   * (see `theme.service.ts` `generatePersonalityCSSVariables()`). AG Grid emits
+   * these as literal CSS custom-property values in its generated stylesheet, so
+   * they cascade and repaint on personality/mode change for free — no
+   * `isDark` branch, no shade-array indexing, and no stale re-render needed.
+   *
+   * Numeric layout params (`spacing`, `cellHorizontalPadding`, `headerHeight`,
+   * `rowHeight`, `borderRadius`, `wrapperBorderRadius`) stay JS-computed from
+   * `personality.tokens` multipliers: AG Grid's Theming API types these as
+   * `LengthValue` (`number | string | {calc}`), but several *other* derived
+   * params in the pre-built theme parts do real arithmetic on them at theme
+   * definition time, so handing them an unresolved `var()` string is not
+   * something to risk on faith. `colors: ThemeColors` is retained for
+   * signature compatibility with `Themeable.applyTheme` even though its
+   * concrete hex fields are no longer read here.
+   */
   override applyTheme(colors: ThemeColors): void {
-    this.background = colors.background;
-    this.foreground = colors.foreground;
-    this.accent = colors.accent;
-    this.complement = colors.complementary;
-    this.borderColor = colors.complementaryShades[2][1];
+    this.background = 'var(--surface)';
+    this.foreground = 'var(--foreground)';
+    this.accent = 'var(--primary)';
+    this.complement = 'var(--secondary)';
+    this.borderColor = 'var(--border)';
 
     const personality = this.getActivePersonality();
     const personalityTokens = personality?.tokens;
     const spacingMultiplier = personalityTokens?.spacingMultiplier || 1;
     const borderRadiusMultiplier =
       personalityTokens?.borderRadiusMultiplier || 1;
-    const borderWidth = personalityTokens?.borderWidth || '1px';
 
-    // Create AG Grid theme using the new themeQuartz API
-    const isDark = this.theme === 'dark';
-
+    // Create AG Grid theme using the themeQuartz Theming API
     const newTheme = themeQuartz.withParams({
-      // Base colors
-      accentColor: colors.accent,
-      backgroundColor: colors.background,
-      foregroundColor: colors.foreground,
-      borderColor: colors.complementaryShades[2][1],
+      // Base colors — --ag-background-color -> --surface, --ag-foreground-color
+      // -> --foreground, --ag-border-color -> --border, accent/selection -> --primary
+      accentColor: 'var(--primary)',
+      backgroundColor: 'var(--surface)',
+      foregroundColor: 'var(--foreground)',
+      borderColor: 'var(--border)',
 
-      // Chrome colors (headers, tool panels, etc)
-      chromeBackgroundColor: isDark
-        ? colors.accentShades[9][1]
-        : colors.accentShades[0][1],
+      // Chrome colors (headers, tool panels, etc) — subtle primary tint over surface
+      chromeBackgroundColor:
+        'color-mix(in srgb, var(--surface) 92%, var(--primary) 8%)',
 
       // Header styling
-      headerBackgroundColor: isDark
-        ? colors.accentShades[8][1]
-        : colors.accentShades[2][1],
-      headerTextColor: colors.foreground,
-      headerCellHoverBackgroundColor: isDark
-        ? colors.accentShades[7][1]
-        : colors.accentShades[1][1],
+      headerBackgroundColor:
+        'color-mix(in srgb, var(--surface) 88%, var(--primary) 12%)',
+      headerTextColor: 'var(--foreground)',
+      headerCellHoverBackgroundColor:
+        'color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)',
 
       // Row styling
-      oddRowBackgroundColor: isDark
-        ? colors.accentShades[9][1]
-        : colors.accentShades[0][1],
-      rowHoverColor: isDark
-        ? colors.accentShades[7][1]
-        : colors.accentShades[1][1],
-      selectedRowBackgroundColor: isDark
-        ? colors.accentShades[6][1]
-        : colors.accentShades[2][1],
+      oddRowBackgroundColor:
+        'color-mix(in srgb, var(--surface) 94%, var(--primary) 6%)',
+      rowHoverColor:
+        'color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)',
+      selectedRowBackgroundColor:
+        'color-mix(in srgb, var(--surface) 82%, var(--primary) 18%)',
 
-      // Spacing
+      // Spacing (personality-driven multipliers; not color tokens)
       spacing: Math.max(4, Math.round(6 * spacingMultiplier)),
       cellHorizontalPadding: Math.max(8, Math.round(12 * spacingMultiplier)),
       headerHeight: Math.max(40, Math.round(48 * spacingMultiplier)),
       rowHeight: Math.max(36, Math.round(42 * spacingMultiplier)),
 
-      // Typography
+      // Typography — font-family -> --font-body
       fontSize: 14,
-      fontFamily:
-        personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
+      fontFamily: 'var(--font-body, var(--font-family-base, inherit))',
 
-      // Borders
+      // Borders (personality-driven multipliers; --border-radius-md already
+      // bakes in this same multiplier for CSS consumers, see 'border-radius'
+      // below, but AG Grid's numeric theme params need a resolved number)
       borderRadius: Math.max(2, Math.round(4 * borderRadiusMultiplier)),
       wrapperBorderRadius: Math.max(2, Math.round(4 * borderRadiusMultiplier)),
     });
 
     this.setLocalCSSVariables({
-      'header-background': isDark
-        ? colors.accentShades[8][1]
-        : colors.accentShades[2][1],
-      'header-hover-background': isDark
-        ? colors.accentShades[7][1]
-        : colors.accentShades[1][1],
-      'row-background': colors.background,
-      'row-alt-background': isDark
-        ? colors.accentShades[9][1]
-        : colors.accentShades[0][1],
-      'row-hover-background': isDark
-        ? colors.accentShades[7][1]
-        : colors.accentShades[1][1],
-      'row-selected-background': isDark
-        ? colors.accentShades[6][1]
-        : colors.accentShades[2][1],
-      'muted-foreground': colors.complementaryShades[6][1],
+      'header-background':
+        'color-mix(in srgb, var(--surface) 88%, var(--primary) 12%)',
+      'header-hover-background':
+        'color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)',
+      'row-background': 'var(--surface)',
+      'row-alt-background':
+        'color-mix(in srgb, var(--surface) 94%, var(--primary) 6%)',
+      'row-hover-background':
+        'color-mix(in srgb, var(--surface) 90%, var(--primary) 10%)',
+      'row-selected-background':
+        'color-mix(in srgb, var(--surface) 82%, var(--primary) 18%)',
+      'muted-foreground': 'var(--muted-foreground)',
       'grid-font-size': '14px',
-      'font-family':
-        personality?.fonts?.body?.family || 'var(--font-family-base, inherit)',
-      'border-radius': `calc(var(--border-radius-md, 8px) * ${borderRadiusMultiplier})`,
-      'border-width': borderWidth,
+      'font-family': 'var(--font-body, var(--font-family-base, inherit))',
+      // Single source of truth: `--border-radius-md` already incorporates the
+      // personality's borderRadiusMultiplier (see
+      // `theme.service.ts#generatePersonalityBorderRadius`), so re-multiplying
+      // it here (the previous `calc(... * borderRadiusMultiplier)`) was double
+      // application of the same scale factor.
+      'border-radius': 'var(--border-radius-md)',
+      'border-width': 'var(--personality-border-width, 1px)',
       shadow:
         this.resolveShadow(personality) ||
         'var(--shadow-sm, 0 1px 2px 0 rgba(0, 0, 0, 0.08))',
-      'transition-duration':
-        personality?.animations?.duration?.fast ||
-        'var(--animation-duration-fast, 150ms)',
-      easing:
-        personality?.animations?.easing || 'var(--animation-easing, ease)',
-      'action-button-background': colors.accent,
-      'action-button-foreground':
-        'var(--on-primary, var(--primary-foreground, #ffffff))',
-      'action-button-hover': isDark
-        ? colors.accentShades[5][1]
-        : colors.accentShades[6][1],
-      'action-delete-background': colors.danger,
-      'action-delete-hover': isDark
-        ? colors.dangerShades[5][1]
-        : colors.dangerShades[6][1],
-      'control-background': isDark
-        ? colors.accentShades[9][1]
-        : colors.background,
-      'control-foreground': colors.foreground,
-      'control-border': colors.complementaryShades[2][1],
-      'focus-ring': `color-mix(in srgb, ${colors.accent} 24%, transparent)`,
+      'transition-duration': 'var(--animation-duration-fast, 150ms)',
+      easing: 'var(--animation-easing, ease)',
+      'action-button-background': 'var(--primary)',
+      'action-button-foreground': 'var(--on-primary)',
+      'action-button-hover': 'color-mix(in srgb, var(--primary) 88%, black)',
+      'action-delete-background': 'var(--danger)',
+      'action-delete-hover': 'color-mix(in srgb, var(--danger) 88%, black)',
+      'control-background': 'var(--surface)',
+      'control-foreground': 'var(--foreground)',
+      'control-border': 'var(--border)',
+      'focus-ring': 'color-mix(in srgb, var(--primary) 24%, transparent)',
     });
 
     this.gridThemeSignal.set(newTheme);
@@ -256,7 +263,7 @@ export class AgGridUiComponent
       this.gridApi.refreshCells();
     }
 
-    console.log('AG Grid theme applied:', { theme: this.theme, isDark });
+    console.log('AG Grid theme applied:', { theme: this.theme });
   }
 
   /**

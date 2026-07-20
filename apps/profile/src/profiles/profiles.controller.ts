@@ -46,6 +46,19 @@ export class ProfilesController {
     return await this.profileService.findAll(query || {});
   }
 
+  @MessagePattern({ cmd: ProfileCommands.Search })
+  async searchProfiles(
+    @Payload()
+    data: {
+      query?: string;
+      excludeIds?: string[];
+      limit?: number;
+      offset?: number;
+    }
+  ) {
+    return await this.profileService.searchProfiles(data || {});
+  }
+
   @MessagePattern({ cmd: ProfileCommands.Update })
   async updateProfile(@Payload() data: UpdateProfileDto) {
     return await this.profileService.update(data.id, data);

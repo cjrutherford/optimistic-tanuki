@@ -11,6 +11,7 @@ import * as path from 'node:path';
 describe('VideoProcessingService', () => {
   const createService = (assetStorageRoot = '/asset-root') => {
     const videoRepository = {
+      find: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
     } as unknown as jest.Mocked<Repository<Video>>;
@@ -32,6 +33,44 @@ describe('VideoProcessingService', () => {
 
     return { service, videoRepository, assetsClient, transcodeClient };
   };
+
+  it('recovers pending and interrupted processing jobs through the bounded queue', async () => {
+    const { service, videoRepository } = createService();
+    const finishJobs: Array<() => void> = [];
+    jest.spyOn(service, 'processVideo').mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishJobs.push(resolve);
+        })
+    );
+    videoRepository.find.mockResolvedValue([
+      { id: 'pending-1' },
+      { id: 'processing-1' },
+      { id: 'pending-2' },
+    ] as Video[]);
+
+    await service.onApplicationBootstrap();
+
+    expect(videoRepository.find).toHaveBeenCalledWith({
+      where: [
+        { processingStatus: 'pending' },
+        { processingStatus: 'processing' },
+      ],
+      order: { updatedAt: 'ASC' },
+    });
+    expect(service.processVideo).toHaveBeenCalledTimes(2);
+    expect(service.getQueueMetrics()).toEqual({
+      activeJobs: 2,
+      queuedJobs: 1,
+      maxConcurrentJobs: 2,
+    });
+
+    for (const finish of finishJobs) {
+      finish();
+    }
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(service.processVideo).toHaveBeenCalledTimes(3);
+  });
 
   it('transcodes a source asset and persists mp4 plus hls playback assets', async () => {
     const workingDir = await fs.mkdtemp(
