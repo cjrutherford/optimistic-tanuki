@@ -1,12 +1,19 @@
 @use 'personality' as p;
+@use '../styles/motion-theme';
+
+@include motion-theme.motion-theme-tokens;
 
 :host {
   display: block;
 }
 
 .aurora-ribbon {
-  --motion-primary: color-mix(in srgb, var(--primary) 88%, white);
-  --motion-secondary: color-mix(in srgb, var(--secondary) 82%, white);
+  --motion-primary: color-mix(in srgb, var(--primary) 88%, var(--motion-tint));
+  --motion-secondary: color-mix(
+    in srgb,
+    var(--secondary) 82%,
+    var(--motion-tint)
+  );
   --motion-surface: color-mix(
     in srgb,
     var(--surface, var(--background)) 90%,
@@ -67,10 +74,10 @@
   background: linear-gradient(
     90deg,
     color-mix(in srgb, var(--motion-primary) 12%, transparent),
-    color-mix(in srgb, var(--motion-secondary) 70%, white),
+    color-mix(in srgb, var(--motion-secondary) 70%, var(--motion-tint)),
     color-mix(in srgb, var(--motion-primary) 32%, transparent)
   );
-  mix-blend-mode: screen;
+  mix-blend-mode: var(--motion-blend);
   animation: aurora-drift calc(18s / max(var(--aurora-speed), 0.2)) ease-in-out
     infinite alternate;
   animation-delay: calc(var(--layer-index) * -1.8s);

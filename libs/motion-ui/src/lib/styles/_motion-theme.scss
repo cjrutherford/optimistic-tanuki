@@ -1,0 +1,44 @@
+// Shared theme-adaptive tokens for the motion backgrounds.
+//
+// Several motion effects composite their highlight layer with
+// `mix-blend-mode: screen`. Screen is a lighten-only operation
+// (result = 1 - (1-a)(1-b)), so a white highlight over a light panel
+// resolves back to the panel colour and the effect disappears entirely.
+// That made every screen-blended motion background invisible on a light
+// theme while looking correct on a dark one.
+//
+// These tokens mirror the operation per theme instead of hard-coding the
+// dark-mode assumption:
+//
+//   --motion-blend  screen (dark)  -> multiply (light)
+//   --motion-tint   white  (dark)  -> var(--foreground) (light)
+//
+// ThemeService stamps `data-mode="light|dark"` on <html>, which is what
+// `:host-context()` keys off. Dark keeps the original values, so the
+// existing dark-mode design intent is preserved untouched.
+//
+// Include once at the top level of a component stylesheet -- it emits its
+// own `:host` rules and must not be nested inside one.
+@mixin motion-theme-tokens {
+  :host {
+    --motion-blend: screen;
+    --motion-tint: white;
+  }
+
+  :host-context(html[data-mode='light']) {
+    --motion-blend: multiply;
+    --motion-tint: var(--foreground);
+  }
+
+  // Every motion component already ships an `is-fallback` state that stops
+  // its animations, but nothing ever drove it from the OS setting -- the
+  // `reducedMotion` input defaults to false and is only set from site
+  // config, which also defaults to false. So a visitor who asked their OS
+  // for reduced motion still got the full animation. Honour the media
+  // query directly; this only ever engages for someone who opted in.
+  @media (prefers-reduced-motion: reduce) {
+    :host * {
+      animation: none !important;
+    }
+  }
+}

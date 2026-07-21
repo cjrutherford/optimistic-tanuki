@@ -1,4 +1,7 @@
 @use 'personality' as p;
+@use '../styles/motion-theme';
+
+@include motion-theme.motion-theme-tokens;
 
 :host {
   display: block;
@@ -14,7 +17,7 @@
     color-mix(in srgb, var(--secondary) 16%, var(--border, transparent));
   background: linear-gradient(
     155deg,
-    color-mix(in srgb, var(--background) 88%, white 3%),
+    color-mix(in srgb, var(--background) 88%, black 3%),
     color-mix(in srgb, var(--surface, var(--background)) 96%, transparent)
   );
   @include p.shadow('lg');
@@ -41,7 +44,7 @@
     ),
     radial-gradient(
       circle at 60% 72%,
-      color-mix(in srgb, white 10%, transparent),
+      color-mix(in srgb, var(--motion-tint) 10%, transparent),
       transparent 24%
     );
   opacity: calc(0.32 + (var(--fog-intensity) * 0.16));
@@ -51,13 +54,13 @@
   border-radius: var(--border-radius-full, 999px);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, white 18%, transparent),
+    color-mix(in srgb, var(--motion-tint) 18%, transparent),
     color-mix(in srgb, var(--secondary) 12%, transparent) 45%,
     transparent 72%
   );
   filter: blur(18px);
   opacity: calc(0.28 + (var(--fog-intensity) * 0.2));
-  mix-blend-mode: screen;
+  mix-blend-mode: var(--motion-blend);
   animation: fog-float ease-in-out infinite;
 }
 
@@ -68,7 +71,7 @@
   background: linear-gradient(
     110deg,
     transparent 14%,
-    color-mix(in srgb, white 16%, transparent) 36%,
+    color-mix(in srgb, var(--motion-tint) 16%, transparent) 36%,
     transparent 58%
   );
   opacity: calc(0.24 + (var(--fog-intensity) * 0.18));

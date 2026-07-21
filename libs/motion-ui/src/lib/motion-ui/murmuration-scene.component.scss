@@ -1,12 +1,19 @@
 @use 'personality' as p;
+@use '../styles/motion-theme';
+
+@include motion-theme.motion-theme-tokens;
 
 :host {
   display: block;
 }
 
 .murmuration-scene {
-  --motion-primary: color-mix(in srgb, var(--primary) 88%, white);
-  --motion-secondary: color-mix(in srgb, var(--secondary) 84%, white);
+  --motion-primary: color-mix(in srgb, var(--primary) 88%, var(--motion-tint));
+  --motion-secondary: color-mix(
+    in srgb,
+    var(--secondary) 84%,
+    var(--motion-tint)
+  );
   --motion-surface: color-mix(
     in srgb,
     var(--surface, var(--background)) 88%,
@@ -87,7 +94,7 @@
   width: 100%;
   height: 100%;
   display: block;
-  mix-blend-mode: screen;
+  mix-blend-mode: var(--motion-blend);
   transform: scale(1.04);
 }
 
