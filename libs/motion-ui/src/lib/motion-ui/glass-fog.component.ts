@@ -19,8 +19,8 @@ type FogBlob = {
 })
 export class GlassFogComponent {
   @Input() height = '24rem';
-  @Input() density = 4;
-  @Input() speed = 1;
+  @Input() density = 6;
+  @Input() speed = 1.4;
   @Input() intensity = 0.66;
   @Input() reducedMotion = false;
 

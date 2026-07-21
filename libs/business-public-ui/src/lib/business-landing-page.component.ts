@@ -28,6 +28,10 @@ import {
   SignalMeshComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
+// Deep import, not the barrel: the barrel pins every motion component into
+// one chunk, so pulling murmuration through it would drag three.js in with
+// the eagerly-used effects and defeat the @defer below.
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui/murmuration-scene';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 import { BusinessRichContentRendererComponent } from './business-rich-content-renderer.component';
@@ -42,6 +46,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
     ParallaxGridWarpComponent,
     AuroraRibbonComponent,
     GlassFogComponent,
+    MurmurationSceneComponent,
     PulseRingsComponent,
     SignalMeshComponent,
     TopographicDriftComponent,
@@ -56,68 +61,84 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       @case ('particle-veil') {
       <otui-particle-veil
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 18"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 28"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.65"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-particle-veil>
       } @case ('parallax-grid-warp') {
       <otui-parallax-grid-warp
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 8"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.7"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-parallax-grid-warp>
       } @case ('aurora-ribbon') {
       <otui-aurora-ribbon
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 3"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 5"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.72"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-aurora-ribbon>
       } @case ('glass-fog') {
       <otui-glass-fog
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 4"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.66"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-glass-fog>
       } @case ('pulse-rings') {
       <otui-pulse-rings
         [height]="motionHeight(motionConfig)"
-        [ringCount]="motionConfig.ringCount ?? 4"
-        [speed]="motionConfig.speed ?? 1"
+        [ringCount]="motionConfig.ringCount ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.7"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-pulse-rings>
       } @case ('signal-mesh') {
       <otui-signal-mesh
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 5"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.68"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-signal-mesh>
       } @case ('topographic-drift') {
       <otui-topographic-drift
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 8"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.64"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-topographic-drift>
       } @case ('shimmer-beam') {
       <otui-shimmer-beam
         [height]="motionHeight(motionConfig)"
-        [speed]="motionConfig.speed ?? 1"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.65"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
         [direction]="motionConfig.direction ?? 'diagonal'"
       ></otui-shimmer-beam>
-      } } }
+      } @case ('murmuration-scene') {
+      <!--
+        Deferred on purpose: this is the only motion kind backed by
+        three.js. Without @defer the whole WebGL runtime would be bundled
+        into the landing-page chunk that every visitor of every tenant
+        downloads, to serve the few sites that actually pick it. The
+        @defer block keeps it in its own chunk, fetched only when a
+        section really renders this kind.
+      -->
+      @defer (on immediate) {
+      <otui-murmuration-scene
+        [height]="motionHeight(motionConfig)"
+        [count]="motionConfig.density ?? 72"
+        [speed]="motionConfig.speed ?? 0.5"
+        [reducedMotion]="motionConfig.reducedMotion ?? false"
+      ></otui-murmuration-scene>
+      } } } }
     </ng-template>
 
     <ng-template #renderSection let-section>
@@ -1511,9 +1532,12 @@ export class BusinessLandingPageComponent {
       (!section.motion?.kind || section.motion.kind === 'none')
     ) {
       return {
+        // Density/speed track the shared defaults; intensity stays lower
+        // than the 0.65 default on purpose, since this sits directly behind
+        // the hero headline and has to stay readable underneath it.
         kind: 'particle-veil',
-        density: 18,
-        speed: 0.8,
+        density: 28,
+        speed: 1.4,
         intensity: 0.55,
         height: '100%',
         reducedMotion: false,

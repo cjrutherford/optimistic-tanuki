@@ -102,7 +102,8 @@ export type LandingSectionMotionKind =
   | 'pulse-rings'
   | 'signal-mesh'
   | 'topographic-drift'
-  | 'shimmer-beam';
+  | 'shimmer-beam'
+  | 'murmuration-scene';
 
 export interface LandingSectionMediaItem {
   sourceType: LandingSectionMediaSourceType;
