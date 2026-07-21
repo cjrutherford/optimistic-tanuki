@@ -26,6 +26,7 @@ import {
   cloneBusinessSiteConfig,
   configDocumentToBusinessSiteConfig,
   GridLayoutSlot,
+  injectSiteSlugSignal,
   LandingSection,
   LandingSectionMediaItem,
   LandingSectionMotionKind,
@@ -389,9 +390,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Theme & Appearance section -->
           <otui-card
             id="guided-design"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-1"
             [class.collapsed]="!isPanelExpanded('design')"
-            style="animation-delay: 0.06s"
           >
             <otui-button
               class="section-toggle-header"
@@ -421,9 +421,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Brand section -->
           <otui-card
             id="guided-business-info"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-2"
             [class.collapsed]="!isPanelExpanded('business-info')"
-            style="animation-delay: 0.12s"
           >
             <otui-button
               class="section-toggle-header"
@@ -488,9 +487,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Contact section -->
           <otui-card
             id="guided-contact"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-3"
             [class.collapsed]="!isPanelExpanded('contact')"
-            style="animation-delay: 0.18s"
           >
             <otui-button
               class="section-toggle-header"
@@ -518,9 +516,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <otui-card
             id="guided-features"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-4"
             [class.collapsed]="!isPanelExpanded('features')"
-            style="animation-delay: 0.21s"
           >
             <otui-button
               class="section-toggle-header"
@@ -663,9 +660,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <otui-card
             id="guided-services"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-5"
             [class.collapsed]="!isPanelExpanded('layout')"
-            style="animation-delay: 0.225s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1533,9 +1529,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           </otui-card>
 
           <otui-card
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-6"
             [class.collapsed]="!isPanelExpanded('offers')"
-            style="animation-delay: 0.235s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1660,9 +1655,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Client Portal copy section -->
           <otui-card
             id="guided-review"
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-7"
             [class.collapsed]="!isPanelExpanded('review')"
-            style="animation-delay: 0.24s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1707,9 +1701,8 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <!-- Testimonials section -->
           <otui-card
-            class="section-card entrance"
+            class="section-card entrance entrance-delay-8"
             [class.collapsed]="!isPanelExpanded('testimonials')"
-            style="animation-delay: 0.3s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1752,7 +1745,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <p class="status-msg error entrance">{{ errorMsg() }}</p>
           }
 
-          <div class="actions entrance" style="animation-delay: 0.36s">
+          <div class="actions entrance entrance-delay-9">
             <otui-button
               variant="primary"
               [disabled]="saving()"
@@ -1938,6 +1931,45 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
   `,
   styles: [
     `
+      /* Entrance animation delay steps. Kept as classes, not inline
+         attributes, so the CSP nonce applied to this <style> element
+         covers them. */
+      .entrance-delay-1 {
+        animation-delay: 0.06s;
+      }
+
+      .entrance-delay-2 {
+        animation-delay: 0.12s;
+      }
+
+      .entrance-delay-3 {
+        animation-delay: 0.18s;
+      }
+
+      .entrance-delay-4 {
+        animation-delay: 0.21s;
+      }
+
+      .entrance-delay-5 {
+        animation-delay: 0.225s;
+      }
+
+      .entrance-delay-6 {
+        animation-delay: 0.235s;
+      }
+
+      .entrance-delay-7 {
+        animation-delay: 0.24s;
+      }
+
+      .entrance-delay-8 {
+        animation-delay: 0.3s;
+      }
+
+      .entrance-delay-9 {
+        animation-delay: 0.36s;
+      }
+
       .editor-shell {
         display: grid;
         gap: 1.25rem;
@@ -3089,11 +3121,12 @@ export class BusinessSiteEditorPageComponent {
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   private readonly themeService = inject(ThemeService);
   private readonly route = inject(ActivatedRoute, { optional: true });
-  private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
+  private readonly siteSlug = injectSiteSlugSignal();
 
   ownerProductsLink(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', 'products']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', 'products']
       : ['/owner/products'];
   }
 
@@ -3388,7 +3421,7 @@ export class BusinessSiteEditorPageComponent {
     }
     this.onboardingMode.set(!!this.route?.snapshot.data['onboardingMode']);
 
-    this.siteConfig.fetch(false, this.siteSlug).subscribe({
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe({
       next: (site) => {
         this.loading.set(false);
         this.configId = this.siteConfig.configId();
@@ -5279,24 +5312,26 @@ export class BusinessSiteEditorPageComponent {
       payload.site.onboardingCompletedAt = new Date().toISOString();
     }
 
-    this.api.updateSiteConfig(this.configId, payload, this.siteSlug).subscribe({
-      next: (saved: any) => {
-        this.saving.set(false);
-        if (saved?.id && this.configId === null) {
-          this.configId = saved.id;
-        }
-        this.draft.set(payload);
-        this.successMsg.set('Site content saved successfully.');
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.errorMsg.set(
-          err?.error?.message ||
-            err?.message ||
-            'Save failed. Please try again.'
-        );
-      },
-    });
+    this.api
+      .updateSiteConfig(this.configId, payload, this.siteSlug())
+      .subscribe({
+        next: (saved: any) => {
+          this.saving.set(false);
+          if (saved?.id && this.configId === null) {
+            this.configId = saved.id;
+          }
+          this.draft.set(payload);
+          this.successMsg.set('Site content saved successfully.');
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.errorMsg.set(
+            err?.error?.message ||
+              err?.message ||
+              'Save failed. Please try again.'
+          );
+        },
+      });
   }
 
   reset(): void {
