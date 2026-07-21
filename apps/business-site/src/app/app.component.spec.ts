@@ -361,6 +361,62 @@ describe('AppComponent', () => {
     expect(clientLoginLink).toBeTruthy();
   });
 
+  it('keeps the hosted slug intact when the url carries a fragment or query', () => {
+    localStorage.clear();
+    const store = createStore({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      site: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.site,
+        slug: 'canopy-tree-service',
+      },
+    });
+    const trainerAuthService = {
+      isAuthenticated: jest.fn(() => false),
+      isClientAuthenticated: jest.fn(() => false),
+      clientUser: jest.fn(() => null),
+      logout: jest.fn(),
+      logoutClient: jest.fn(),
+    };
+
+    TestBed.configureTestingModule({
+      imports: [AppComponent],
+      providers: [
+        provideRouter([]),
+        { provide: BusinessSiteConfigStore, useValue: store },
+        { provide: BusinessAuthService, useValue: trainerAuthService },
+        { provide: ThemeService, useValue: createThemeService() },
+      ],
+    });
+
+    const fixture = TestBed.createComponent(AppComponent);
+    const component = fixture.componentInstance as AppComponent & {
+      currentUrl: { set: (url: string) => void };
+    };
+
+    // Router urls include the fragment, so a nav click to an in-page anchor
+    // lands here as `/sites/<slug>#results`. The slug must not absorb it —
+    // otherwise the next routerLink re-encodes `#` to `%23` and the
+    // corruption compounds on every subsequent click.
+    for (const url of [
+      '/sites/canopy-tree-service#results',
+      '/sites/canopy-tree-service#contact',
+      '/sites/canopy-tree-service?utm=x',
+      '/sites/canopy-tree-service/book#top',
+    ]) {
+      component.currentUrl.set(url);
+      fixture.detectChanges();
+
+      expect(component.topNavLinks()[0].route).toEqual([
+        '/sites',
+        'canopy-tree-service',
+      ]);
+      expect(component.brandHomeLink()).toEqual([
+        '/sites',
+        'canopy-tree-service',
+      ]);
+    }
+  });
+
   it('renders business-scoped owner auth links on hosted business routes', () => {
     localStorage.clear();
     const store = createStore({

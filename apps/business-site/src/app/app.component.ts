@@ -405,7 +405,12 @@ export class AppComponent {
   }
 
   private currentHostedSiteSlug(): string | null {
-    const match = this.currentUrl().match(/^\/sites\/([^/]+)/);
+    // Router urls carry the fragment and query string (e.g.
+    // `/sites/acme#contact`), so the slug capture has to stop at `#` and `?`
+    // as well as `/`. Matching plain `[^/]+` swallowed them into the slug,
+    // which then got re-encoded into the next routerLink — compounding on
+    // every nav click (`%23` -> `%2523`) and breaking tenant config lookup.
+    const match = this.currentUrl().match(/^\/sites\/([^/?#]+)/);
     return match?.[1] ?? null;
   }
 
