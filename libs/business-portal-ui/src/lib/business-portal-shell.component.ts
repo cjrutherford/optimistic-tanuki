@@ -29,7 +29,7 @@ import {
             [routerLink]="link.path"
             routerLinkActive="active"
             class="subnav-link"
-            [class]="'stagger-delay-' + (i % 12)"
+            [style.animation-delay]="0.06 * i + 's'"
             >{{ link.label }}</a
           >
           }
@@ -169,57 +169,6 @@ import {
         border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
         color: var(--primary);
         font-weight: 600;
-      }
-
-      /* Nav-link stagger delays. Kept as classes, not dynamic style
-         bindings, so the CSP nonce applied to this <style> element
-         covers them. */
-      .stagger-delay-0 {
-        animation-delay: 0s;
-      }
-
-      .stagger-delay-1 {
-        animation-delay: 0.06s;
-      }
-
-      .stagger-delay-2 {
-        animation-delay: 0.12s;
-      }
-
-      .stagger-delay-3 {
-        animation-delay: 0.18s;
-      }
-
-      .stagger-delay-4 {
-        animation-delay: 0.24s;
-      }
-
-      .stagger-delay-5 {
-        animation-delay: 0.3s;
-      }
-
-      .stagger-delay-6 {
-        animation-delay: 0.36s;
-      }
-
-      .stagger-delay-7 {
-        animation-delay: 0.42s;
-      }
-
-      .stagger-delay-8 {
-        animation-delay: 0.48s;
-      }
-
-      .stagger-delay-9 {
-        animation-delay: 0.54s;
-      }
-
-      .stagger-delay-10 {
-        animation-delay: 0.6s;
-      }
-
-      .stagger-delay-11 {
-        animation-delay: 0.66s;
       }
 
       .content-area {

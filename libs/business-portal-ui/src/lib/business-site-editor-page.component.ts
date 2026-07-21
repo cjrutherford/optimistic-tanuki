@@ -390,8 +390,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Theme & Appearance section -->
           <otui-card
             id="guided-design"
-            class="section-card entrance entrance-delay-1"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('design')"
+            style="animation-delay: 0.06s"
           >
             <otui-button
               class="section-toggle-header"
@@ -421,8 +422,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Brand section -->
           <otui-card
             id="guided-business-info"
-            class="section-card entrance entrance-delay-2"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('business-info')"
+            style="animation-delay: 0.12s"
           >
             <otui-button
               class="section-toggle-header"
@@ -487,8 +489,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Contact section -->
           <otui-card
             id="guided-contact"
-            class="section-card entrance entrance-delay-3"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('contact')"
+            style="animation-delay: 0.18s"
           >
             <otui-button
               class="section-toggle-header"
@@ -516,8 +519,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <otui-card
             id="guided-features"
-            class="section-card entrance entrance-delay-4"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('features')"
+            style="animation-delay: 0.21s"
           >
             <otui-button
               class="section-toggle-header"
@@ -660,8 +664,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <otui-card
             id="guided-services"
-            class="section-card entrance entrance-delay-5"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('layout')"
+            style="animation-delay: 0.225s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1529,8 +1534,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           </otui-card>
 
           <otui-card
-            class="section-card entrance entrance-delay-6"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('offers')"
+            style="animation-delay: 0.235s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1655,8 +1661,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <!-- Client Portal copy section -->
           <otui-card
             id="guided-review"
-            class="section-card entrance entrance-delay-7"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('review')"
+            style="animation-delay: 0.24s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1701,8 +1708,9 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
 
           <!-- Testimonials section -->
           <otui-card
-            class="section-card entrance entrance-delay-8"
+            class="section-card entrance"
             [class.collapsed]="!isPanelExpanded('testimonials')"
+            style="animation-delay: 0.3s"
           >
             <otui-button
               class="section-toggle-header"
@@ -1745,7 +1753,7 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
           <p class="status-msg error entrance">{{ errorMsg() }}</p>
           }
 
-          <div class="actions entrance entrance-delay-9">
+          <div class="actions entrance" style="animation-delay: 0.36s">
             <otui-button
               variant="primary"
               [disabled]="saving()"
@@ -1931,45 +1939,6 @@ const TESTIMONIAL_FIELDS: BlockFieldDefinition[] = [
   `,
   styles: [
     `
-      /* Entrance animation delay steps. Kept as classes, not inline
-         attributes, so the CSP nonce applied to this <style> element
-         covers them. */
-      .entrance-delay-1 {
-        animation-delay: 0.06s;
-      }
-
-      .entrance-delay-2 {
-        animation-delay: 0.12s;
-      }
-
-      .entrance-delay-3 {
-        animation-delay: 0.18s;
-      }
-
-      .entrance-delay-4 {
-        animation-delay: 0.21s;
-      }
-
-      .entrance-delay-5 {
-        animation-delay: 0.225s;
-      }
-
-      .entrance-delay-6 {
-        animation-delay: 0.235s;
-      }
-
-      .entrance-delay-7 {
-        animation-delay: 0.24s;
-      }
-
-      .entrance-delay-8 {
-        animation-delay: 0.3s;
-      }
-
-      .entrance-delay-9 {
-        animation-delay: 0.36s;
-      }
-
       .editor-shell {
         display: grid;
         gap: 1.25rem;
