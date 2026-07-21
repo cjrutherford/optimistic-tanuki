@@ -17,15 +17,6 @@
     />
   </head>
   <body>
-    <!--
-      The literal placeholder below is substituted server-side, per request,
-      for a cryptographically random nonce (see apps/business-site/src/server.ts
-      and apps/business-site/src/csp-nonce.ts). Angular's `CSP_NONCE` token
-      also reads this attribute by default, so both the build's critical-CSS
-      inliner and, after hydration, the browser's own style renderer discover
-      the same nonce automatically. Do not give this a real value here: it
-      must never be a static, build-time constant.
-    -->
-    <app-root ngCspNonce="__CSP_NONCE_PLACEHOLDER__"></app-root>
+    <app-root></app-root>
   </body>
 </html>
