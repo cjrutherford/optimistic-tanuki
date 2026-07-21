@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -46,6 +46,7 @@ describe('BusinessPortalShellComponent', () => {
                 get: (key: string) => (key === 'siteSlug' ? siteSlug : null),
               },
             },
+            paramMap: of(convertToParamMap(siteSlug ? { siteSlug } : {})),
           },
         },
         {

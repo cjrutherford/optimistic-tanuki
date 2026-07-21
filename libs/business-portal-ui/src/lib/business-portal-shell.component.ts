@@ -7,7 +7,10 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessSiteConfigStore,
+  injectSiteSlugSignal,
+} from '@optimistic-tanuki/business-data-access';
 
 @Component({
   selector: 'business-portal-shell',
@@ -230,18 +233,19 @@ export class BusinessPortalShellComponent {
   readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly siteSlug =
-    this.route.snapshot.paramMap?.get('siteSlug') ?? null;
+  private readonly siteSlug = injectSiteSlugSignal();
 
   private ownerPath(path?: string): string {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', path].filter(Boolean).join('/')
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', path].filter(Boolean).join('/')
       : ['/owner', path].filter(Boolean).join('/');
   }
 
   private clientPath(path?: string): string {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', path].filter(Boolean).join('/')
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', path].filter(Boolean).join('/')
       : ['/client', path].filter(Boolean).join('/');
   }
 
@@ -284,6 +288,6 @@ export class BusinessPortalShellComponent {
   );
 
   constructor() {
-    this.siteConfig.fetch(true, this.siteSlug).subscribe();
+    this.siteConfig.fetch(true, this.siteSlug()).subscribe();
   }
 }
