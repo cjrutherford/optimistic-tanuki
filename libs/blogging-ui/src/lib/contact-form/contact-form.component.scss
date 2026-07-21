@@ -27,6 +27,14 @@
   }
 }
 
+.flex-1 {
+  flex: 1;
+}
+
+.honeypot {
+  display: none;
+}
+
 @media screen and (max-width: 768px) {
   .row {
     flex-direction: column;
