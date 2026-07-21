@@ -7,7 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
@@ -16,6 +16,7 @@ import {
   LandingSectionMediaItem,
   LandingSectionMotionConfig,
   BusinessStoreProduct,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import {
   AuroraRibbonComponent,
@@ -139,7 +140,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             ></ng-container>
           </div>
           <div class="hero-content">
-            <div class="copy hero-panel entrance" style="animation-delay: 0.1s">
+            <div class="copy hero-panel entrance entrance-delay-1">
               <p class="eyebrow">{{ site().brand.businessName }}</p>
               @if (section.richContent?.content) {
               <business-rich-content-renderer
@@ -155,7 +156,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 <a class="cta-primary" [href]="section.ctaHref">{{
                   section.ctaLabel || 'Explore now'
                 }}</a>
-                } @else if (site().features.booking.enabled && siteSlug) {
+                } @else if (site().features.booking.enabled && siteSlug()) {
                 <a class="cta-primary" [routerLink]="bookingRoute()">{{
                   site().contact.consultationLabel
                 }}</a>
@@ -189,8 +190,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="about-section entrance section-surface"
-          style="animation-delay: 0.18s"
+          class="about-section entrance entrance-delay-2 section-surface"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -246,11 +246,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <section
-          class="entrance section-surface"
-          id="results"
-          style="animation-delay: 0.2s"
-        >
+        <section class="entrance entrance-delay-3 section-surface" id="results">
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
             <h2>
@@ -265,10 +261,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           }
           <div class="offer-stack">
             @for (offer of offers(); track offer.id; let i = $index) {
-            <div
-              class="offer entrance"
-              [style.animation-delay]="0.25 + i * 0.06 + 's'"
-            >
+            <div class="offer entrance" [class]="'offer-stagger-' + (i % 12)">
               <div class="offer-header">
                 <span class="offer-badge">{{ offer.serviceType }}</span>
                 <h3>{{ offer.label }}</h3>
@@ -282,7 +275,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               </div>
             </div>
             } @empty {
-            <div class="offer entrance" style="animation-delay: 0.25s">
+            <div class="offer entrance entrance-delay-4">
               <h3>Consultation-led services</h3>
               <p>
                 Availability-backed service options will appear here as the
@@ -313,9 +306,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="store-section entrance section-surface"
+          class="store-section entrance entrance-delay-5 section-surface"
           id="storefront"
-          style="animation-delay: 0.22s"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -368,10 +360,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <section
-          class="entrance section-surface"
-          style="animation-delay: 0.15s"
-        >
+        <section class="entrance entrance-delay-6 section-surface">
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
             <h2>Services that fit real schedules and still move the needle.</h2>
@@ -386,7 +375,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             testimonial.clientName; let i = $index) {
             <blockquote
               class="testimonial entrance"
-              [style.animation-delay]="0.2 + i * 0.08 + 's'"
+              [class]="'testimonial-stagger-' + (i % 12)"
             >
               <p>"{{ testimonial.quote }}"</p>
               <footer>
@@ -417,10 +406,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></ng-container>
         </div>
         }
-        <section
-          class="contact entrance section-surface"
-          style="animation-delay: 0.24s"
-        >
+        <section class="contact entrance entrance-delay-7 section-surface">
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
             <h2>Book the right starting point when you are ready.</h2>
@@ -431,10 +417,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></business-rich-content-renderer>
           }
           <div class="actions">
-            @if (siteSlug) {
+            @if (siteSlug()) {
             <a
               class="cta-primary"
-              [routerLink]="['/sites', siteSlug, 'book']"
+              [routerLink]="['/sites', siteSlug(), 'book']"
               >{{ site().contact.consultationLabel }}</a
             >
             }
@@ -461,9 +447,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="contact entrance section-surface"
+          class="contact entrance entrance-delay-8 section-surface"
           id="contact"
-          style="animation-delay: 0.3s"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -489,8 +474,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 <img
                   [src]="section.image?.src"
                   [alt]="section.image?.alt || section.title"
-                  [style.object-fit]="section.image?.fit ?? 'cover'"
-                  [style.object-position]="mediaObjectPosition(section.image)"
+                  [class]="
+                    'fit-' +
+                    (section.image?.fit ?? 'cover') +
+                    ' ' +
+                    mediaObjectPosition(section.image)
+                  "
                 />
                 @if (section.image?.caption) {
                 <figcaption>{{ section.image?.caption }}</figcaption>
@@ -554,9 +543,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="custom-section entrance section-surface"
+          class="custom-section entrance entrance-delay-9 section-surface"
           [attr.data-section-id]="section.id"
-          style="animation-delay: 0.22s"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -597,8 +585,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="image-section entrance section-surface"
-          style="animation-delay: 0.22s"
+          class="image-section entrance entrance-delay-10 section-surface"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -612,8 +599,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
             <img
               [src]="section.image?.src"
               [alt]="section.image?.alt || section.title"
-              [style.object-fit]="section.image?.fit ?? 'cover'"
-              [style.object-position]="mediaObjectPosition(section.image)"
+              [class]="
+                'fit-' +
+                (section.image?.fit ?? 'cover') +
+                ' ' +
+                mediaObjectPosition(section.image)
+              "
             />
             @if (section.image?.caption) {
             <figcaption>{{ section.image?.caption }}</figcaption>
@@ -642,8 +633,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         </div>
         }
         <section
-          class="gallery-section entrance section-surface"
-          style="animation-delay: 0.22s"
+          class="gallery-section entrance entrance-delay-11 section-surface"
         >
           <div class="section-head">
             <p class="eyebrow">{{ section.title }}</p>
@@ -652,9 +642,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           <div
             class="gallery-grid"
             [class.gallery-masonry]="section.gallery?.style === 'masonry'"
-            [style.grid-template-columns]="
-              'repeat(' + (section.gallery?.columns ?? 3) + ', minmax(0, 1fr))'
-            "
+            [class]="'grid-cols-' + (section.gallery?.columns ?? 3)"
           >
             @for (item of section.gallery?.items ?? []; track item.src + '-' +
             $index) { @if (item.src) {
@@ -665,8 +653,12 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
               <img
                 [src]="item.src"
                 [alt]="item.alt || section.title"
-                [style.object-fit]="item.fit ?? 'cover'"
-                [style.object-position]="mediaObjectPosition(item)"
+                [class]="
+                  'fit-' +
+                  (item.fit ?? 'cover') +
+                  ' ' +
+                  mediaObjectPosition(item)
+                "
               />
               @if (item.caption) {
               <figcaption>{{ item.caption }}</figcaption>
@@ -896,6 +888,154 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .entrance {
         opacity: 0;
         animation: entrance-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+
+      /*
+       * CSP note: a nonce-based style-src CSP does not cover inline style
+       * attributes (static or via property bindings), only style/link
+       * elements. Angular auto-applies the component nonce to the style
+       * block it generates for this component's styles array, so all
+       * per-value dynamic styling below is delivered as classes instead
+       * of inline attribute mutation.
+       */
+      .entrance-delay-1 {
+        animation-delay: 0.1s;
+      }
+
+      .entrance-delay-2 {
+        animation-delay: 0.18s;
+      }
+
+      .entrance-delay-3 {
+        animation-delay: 0.2s;
+      }
+
+      .entrance-delay-4 {
+        animation-delay: 0.25s;
+      }
+
+      .entrance-delay-5 {
+        animation-delay: 0.22s;
+      }
+
+      .entrance-delay-6 {
+        animation-delay: 0.15s;
+      }
+
+      .entrance-delay-7 {
+        animation-delay: 0.24s;
+      }
+
+      .entrance-delay-8 {
+        animation-delay: 0.3s;
+      }
+
+      .entrance-delay-9 {
+        animation-delay: 0.22s;
+      }
+
+      .entrance-delay-10 {
+        animation-delay: 0.22s;
+      }
+
+      .entrance-delay-11 {
+        animation-delay: 0.22s;
+      }
+
+      .offer-stagger-0 {
+        animation-delay: 0.25s;
+      }
+
+      .offer-stagger-1 {
+        animation-delay: 0.31s;
+      }
+
+      .offer-stagger-2 {
+        animation-delay: 0.37s;
+      }
+
+      .offer-stagger-3 {
+        animation-delay: 0.43s;
+      }
+
+      .offer-stagger-4 {
+        animation-delay: 0.49s;
+      }
+
+      .offer-stagger-5 {
+        animation-delay: 0.55s;
+      }
+
+      .offer-stagger-6 {
+        animation-delay: 0.61s;
+      }
+
+      .offer-stagger-7 {
+        animation-delay: 0.67s;
+      }
+
+      .offer-stagger-8 {
+        animation-delay: 0.73s;
+      }
+
+      .offer-stagger-9 {
+        animation-delay: 0.79s;
+      }
+
+      .offer-stagger-10 {
+        animation-delay: 0.85s;
+      }
+
+      .offer-stagger-11 {
+        animation-delay: 0.91s;
+      }
+
+      .testimonial-stagger-0 {
+        animation-delay: 0.2s;
+      }
+
+      .testimonial-stagger-1 {
+        animation-delay: 0.28s;
+      }
+
+      .testimonial-stagger-2 {
+        animation-delay: 0.36s;
+      }
+
+      .testimonial-stagger-3 {
+        animation-delay: 0.44s;
+      }
+
+      .testimonial-stagger-4 {
+        animation-delay: 0.52s;
+      }
+
+      .testimonial-stagger-5 {
+        animation-delay: 0.6s;
+      }
+
+      .testimonial-stagger-6 {
+        animation-delay: 0.68s;
+      }
+
+      .testimonial-stagger-7 {
+        animation-delay: 0.76s;
+      }
+
+      .testimonial-stagger-8 {
+        animation-delay: 0.84s;
+      }
+
+      .testimonial-stagger-9 {
+        animation-delay: 0.92s;
+      }
+
+      .testimonial-stagger-10 {
+        animation-delay: 1s;
+      }
+
+      .testimonial-stagger-11 {
+        animation-delay: 1.08s;
       }
 
       .hero {
@@ -1291,6 +1431,34 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         display: block;
       }
 
+      .fit-cover {
+        object-fit: cover;
+      }
+
+      .fit-contain {
+        object-fit: contain;
+      }
+
+      .focal-center {
+        object-position: center center;
+      }
+
+      .focal-top {
+        object-position: center top;
+      }
+
+      .focal-right {
+        object-position: right center;
+      }
+
+      .focal-bottom {
+        object-position: center bottom;
+      }
+
+      .focal-left {
+        object-position: left center;
+      }
+
       .media-figure figcaption,
       .gallery-item figcaption {
         padding: 0.8rem 0.95rem;
@@ -1302,6 +1470,18 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .gallery-grid {
         display: grid;
         gap: 0.85rem;
+      }
+
+      .grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .gallery-grid.gallery-masonry .gallery-item:nth-child(3n + 2) {
@@ -1408,15 +1588,14 @@ export class BusinessLandingPageComponent {
   @Output() sectionSelected = new EventEmitter<string>();
 
   private readonly api = inject(BusinessApiService);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   readonly site = this.siteConfig.site;
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   readonly activeLayout = computed(() => this.site().landingPage.layout);
   readonly layoutClass = computed(
     () => `layout-${this.site().landingPage.layout}`
   );
-  readonly offers = toSignal(this.api.getOffers(this.siteSlug), {
+  readonly offers = toSignal(this.api.getOffers(this.siteSlug()), {
     initialValue: [],
   });
   readonly storeProducts = toSignal(this.api.getStoreProducts(), {
@@ -1450,18 +1629,19 @@ export class BusinessLandingPageComponent {
   );
 
   clientPortalRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'login']
-      : ['/client'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'client', 'login'] : ['/client'];
   }
 
   bookingRoute(): string[] | null {
-    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : null;
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'book'] : null;
   }
 
   productViewHref(product: BusinessStoreProduct): string {
-    return this.siteSlug
-      ? `/sites/${this.siteSlug}/products/${product.id}`
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? `/sites/${siteSlug}/products/${product.id}`
       : `/products/${product.id}`;
   }
 
@@ -1531,12 +1711,12 @@ export class BusinessLandingPageComponent {
   mediaObjectPosition(item: LandingSectionMediaItem): string {
     return (
       {
-        center: 'center center',
-        top: 'center top',
-        right: 'right center',
-        bottom: 'center bottom',
-        left: 'left center',
-      }[item.focalPoint ?? 'center'] ?? 'center center'
+        center: 'focal-center',
+        top: 'focal-top',
+        right: 'focal-right',
+        bottom: 'focal-bottom',
+        left: 'focal-left',
+      }[item.focalPoint ?? 'center'] ?? 'focal-center'
     );
   }
 
@@ -1605,7 +1785,7 @@ export class BusinessLandingPageComponent {
   }
 
   constructor() {
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 
   submitContactForm(event: {
