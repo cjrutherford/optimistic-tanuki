@@ -741,6 +741,7 @@ describe('TrainerController', () => {
             appScope: 'business-site',
           },
         },
+        requesterProfileId: 'owner-profile-1',
       }
     );
   });
@@ -882,6 +883,7 @@ describe('TrainerController', () => {
             source: 'store',
           },
         },
+        requesterProfileId: 'owner-profile-1',
       }
     );
   });
@@ -1108,6 +1110,7 @@ describe('TrainerController', () => {
               source: 'store',
             },
           },
+          requesterProfileId: 'owner-profile-1',
         }
       );
     });
@@ -1800,7 +1803,7 @@ describe('TrainerController', () => {
     );
   });
 
-  it('loads owner workflow from the hosted tenant slug when provided', async () => {
+  it('loads owner workflow from the hosted tenant slug when the caller owns it', async () => {
     const storeClient = {
       send: jest.fn((command: any, payload: any) => {
         if (command === TrainerConfigCommands.GET_CONFIG) {
@@ -1844,6 +1847,49 @@ describe('TrainerController', () => {
     await expect(
       controller.getOwnerWorkflow(
         {
+          userId: 'owner-user-handyman',
+          email: 'owner@example.com',
+          exp: 0,
+          iat: 0,
+          name: 'Owner Example',
+          profileId: 'handyman-profile',
+        },
+        'steady-hand-contracting'
+      )
+    ).resolves.toEqual([]);
+  });
+
+  it('rejects owner workflow requests for a slug the caller does not own', async () => {
+    const storeClient = {
+      send: jest.fn((command: any, payload: any) => {
+        if (command === TrainerConfigCommands.GET_CONFIG) {
+          expect(payload).toEqual({
+            configKey: 'default',
+            slug: 'steady-hand-contracting',
+          });
+          return of({
+            config: {
+              site: {
+                slug: 'steady-hand-contracting',
+                ownerUserId: 'owner-user-handyman',
+              },
+              leadContext: {
+                profileId: 'handyman-profile',
+                appScope: 'business-site',
+              },
+            },
+          });
+        }
+
+        return of([]);
+      }),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+
+    await expect(
+      controller.getOwnerWorkflow(
+        {
           userId: 'owner-user-1',
           email: 'owner@example.com',
           exp: 0,
@@ -1853,7 +1899,13 @@ describe('TrainerController', () => {
         },
         'steady-hand-contracting'
       )
-    ).resolves.toEqual([]);
+    ).rejects.toThrow('You do not have access to this business site.');
+
+    expect(leadClient.send).not.toHaveBeenCalled();
+    expect(storeClient.send).not.toHaveBeenCalledWith(
+      AppointmentCommands.FIND_ALL_APPOINTMENTS,
+      expect.anything()
+    );
   });
 
   it('treats completed free consultations as active clients instead of invoice work', async () => {
@@ -1974,6 +2026,98 @@ describe('TrainerController', () => {
         permissions: ['app-config.update'],
       });
     }
+  });
+
+  it('scopes booking approve/complete/invoice operations to the authenticated owner', async () => {
+    const storeClient = { send: jest.fn(() => of({ id: 'booking-1' })) } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.approveBooking('booking-1', { notes: 'ok' } as any, owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.APPROVE_APPOINTMENT,
+      {
+        id: 'booking-1',
+        approveAppointmentDto: { notes: 'ok' },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.completeBooking('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.COMPLETE_APPOINTMENT,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.generateInvoice('booking-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AppointmentCommands.GENERATE_INVOICE,
+      { id: 'booking-1', requesterOwnerId: 'owner-user-1' }
+    );
+  });
+
+  it('scopes availability and availability-override mutations to the authenticated owner', async () => {
+    const storeClient = {
+      send: jest.fn(() => of({ id: 'availability-1' })),
+    } as any;
+    const leadClient = { send: jest.fn() } as any;
+    const controller = new TrainerController(storeClient, leadClient);
+    const owner = {
+      userId: 'owner-user-1',
+      email: 'owner@example.com',
+      exp: 0,
+      iat: 0,
+      name: 'Owner Example',
+      profileId: 'owner-profile-1',
+    };
+
+    await controller.updateOwnerAvailability(
+      'availability-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY,
+      {
+        id: 'availability-1',
+        updateAvailabilityDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailability('availability-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY,
+      { id: 'availability-1', requesterOwnerId: 'owner-user-1' }
+    );
+
+    await controller.updateOwnerAvailabilityOverride(
+      'override-1',
+      { hourlyRate: 200 } as any,
+      owner
+    );
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.UPDATE_AVAILABILITY_OVERRIDE,
+      {
+        id: 'override-1',
+        updateAvailabilityOverrideDto: { hourlyRate: 200 },
+        requesterOwnerId: 'owner-user-1',
+      }
+    );
+
+    await controller.removeOwnerAvailabilityOverride('override-1', owner);
+    expect(storeClient.send).toHaveBeenCalledWith(
+      AvailabilityCommands.REMOVE_AVAILABILITY_OVERRIDE,
+      { id: 'override-1', requesterOwnerId: 'owner-user-1' }
+    );
   });
 
   it('protects site-config updates with owner permissions', () => {

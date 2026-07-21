@@ -60,11 +60,13 @@ export class AppointmentsController {
     data: {
       id: string;
       approveAppointmentDto: ApproveAppointmentDto;
+      requesterOwnerId?: string;
     }
   ) {
     return this.appointmentsService.approve(
       data.id,
-      data.approveAppointmentDto
+      data.approveAppointmentDto,
+      data.requesterOwnerId
     );
   }
 
@@ -81,13 +83,25 @@ export class AppointmentsController {
   }
 
   @MessagePattern({ cmd: 'completeAppointment' })
-  complete(@Payload() id: string) {
-    return this.appointmentsService.complete(id);
+  complete(
+    @Payload() payload: string | { id: string; requesterOwnerId?: string }
+  ) {
+    const { id, requesterOwnerId } =
+      typeof payload === 'string'
+        ? { id: payload, requesterOwnerId: undefined }
+        : payload;
+    return this.appointmentsService.complete(id, requesterOwnerId);
   }
 
   @MessagePattern({ cmd: 'generateInvoice' })
-  generateInvoice(@Payload() id: string) {
-    return this.appointmentsService.generateInvoice(id);
+  generateInvoice(
+    @Payload() payload: string | { id: string; requesterOwnerId?: string }
+  ) {
+    const { id, requesterOwnerId } =
+      typeof payload === 'string'
+        ? { id: payload, requesterOwnerId: undefined }
+        : payload;
+    return this.appointmentsService.generateInvoice(id, requesterOwnerId);
   }
 
   @MessagePattern({ cmd: 'payInvoice' })

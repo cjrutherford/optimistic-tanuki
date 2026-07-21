@@ -1,4 +1,7 @@
 @use 'personality' as p;
+@use '../styles/motion-theme';
+
+@include motion-theme.motion-theme-tokens;
 
 :host {
   display: block;
@@ -68,7 +71,7 @@
   border-radius: var(--border-radius-full, 999px);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, white 44%, var(--secondary)) 0 30%,
+    color-mix(in srgb, var(--foreground) 49%, var(--secondary)) 0 30%,
     color-mix(in srgb, var(--primary) 72%, transparent) 58%,
     transparent 100%
   );

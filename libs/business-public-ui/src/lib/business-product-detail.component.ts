@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import {
   BusinessApiService,
   BusinessStoreProduct,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
@@ -81,7 +83,7 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
       .back-link {
         justify-self: start;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-weight: 700;
         text-decoration: none;
       }
@@ -96,8 +98,8 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
         gap: 1.5rem;
         padding: 1.25rem;
         border-radius: var(--personality-card-radius, 1.5rem);
-        border: 1px solid var(--border, #e2e8f0);
-        background: var(--background, #fff);
+        border: 1px solid var(--border);
+        background: var(--background);
         box-shadow: var(
           --personality-card-shadow,
           0 16px 40px rgba(15, 23, 42, 0.08)
@@ -111,7 +113,7 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
       .product-detail-media {
         overflow: hidden;
         border-radius: calc(var(--personality-card-radius, 1.5rem) - 0.35rem);
-        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, transparent);
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
       }
 
       .product-detail-media img {
@@ -138,14 +140,14 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
       .lede {
         margin: 0;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         font-size: 1.05rem;
         line-height: 1.6;
       }
 
       .eyebrow {
         margin: 0;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         font-size: 0.75rem;
         font-weight: 800;
         letter-spacing: 0.14em;
@@ -167,21 +169,17 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
       .product-stock {
         padding: 0.35rem 0.65rem;
         border-radius: 999px;
-        border: 1px solid var(--border, #e2e8f0);
-        background: color-mix(
-          in srgb,
-          var(--background, #fff) 88%,
-          transparent
-        );
-        color: var(--muted, #6b7280);
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--background) 88%, transparent);
+        color: var(--muted);
         font-size: 0.88rem;
         font-weight: 700;
       }
 
       .product-stock.out-of-stock {
-        color: #991b1b;
-        border-color: color-mix(in srgb, #991b1b 25%, var(--border, #e2e8f0));
-        background: color-mix(in srgb, #991b1b 7%, transparent);
+        color: var(--danger);
+        border-color: color-mix(in srgb, var(--danger) 25%, var(--border));
+        background: color-mix(in srgb, var(--danger) 7%, transparent);
       }
 
       .cta-primary {
@@ -192,7 +190,7 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
         min-height: 44px;
         padding: 0.75rem 1.2rem;
         border-radius: var(--personality-button-radius, 999px);
-        background: var(--primary, #1f7a63);
+        background: var(--primary);
         color: white;
         font-weight: 800;
         text-decoration: none;
@@ -213,21 +211,24 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 export class BusinessProductDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(BusinessApiService);
-  private readonly siteSlug = this.route.snapshot.paramMap.get('siteSlug');
-  private readonly productId = this.route.snapshot.paramMap.get('productId');
+  private readonly siteSlug = injectSiteSlugSignal();
+  private readonly productId = toSignal(
+    this.route.paramMap.pipe(map((params) => params.get('productId'))),
+    { initialValue: this.route.snapshot.paramMap.get('productId') }
+  );
   private readonly products = toSignal(this.api.getStoreProducts(), {
     initialValue: [],
   });
 
   readonly product = computed(() => {
-    const product = this.products().find((item) => item.id === this.productId);
+    const productId = this.productId();
+    const product = this.products().find((item) => item.id === productId);
     return product?.active && product.type !== 'service' ? product : null;
   });
 
   backRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug]
-      : ['/sites', 'my-business'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug] : ['/sites', 'my-business'];
   }
 
   productCard(product: BusinessStoreProduct) {

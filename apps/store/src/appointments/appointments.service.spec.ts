@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { AvailabilityOverrideMode } from '@optimistic-tanuki/models';
 import { AppointmentsService } from './appointments.service';
@@ -24,8 +24,15 @@ describe('AppointmentsService', () => {
           ({ id: 'booking-1', ...payload } as AppointmentEntity)
       ),
       find: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
     } as unknown as jest.Mocked<Repository<AppointmentEntity>>;
-    invoiceRepository = {} as jest.Mocked<Repository<InvoiceEntity>>;
+    invoiceRepository = {
+      create: jest.fn((payload) => payload as InvoiceEntity),
+      save: jest.fn(
+        async (payload) => ({ id: 'invoice-1', ...payload } as InvoiceEntity)
+      ),
+    } as unknown as jest.Mocked<Repository<InvoiceEntity>>;
     availabilityRepository = {
       find: jest.fn(),
     } as unknown as jest.Mocked<Repository<AvailabilityEntity>>;
@@ -245,5 +252,82 @@ describe('AppointmentsService', () => {
         status: 'pending',
       })
     );
+  });
+
+  describe('ownership enforcement', () => {
+    it('rejects approving a booking owned by a different owner', async () => {
+      appointmentRepository.findOne.mockResolvedValue({
+        id: 'booking-1',
+        ownerId: 'owner-1',
+        startTime: new Date('2026-05-10T14:00:00Z'),
+        endTime: new Date('2026-05-10T15:00:00Z'),
+        isFreeConsultation: false,
+      } as AppointmentEntity);
+
+      await expect(
+        service.approve('booking-1', { notes: 'ok' } as never, 'attacker-owner')
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects completing a booking owned by a different owner', async () => {
+      appointmentRepository.findOne.mockResolvedValue({
+        id: 'booking-1',
+        ownerId: 'owner-1',
+      } as AppointmentEntity);
+
+      await expect(
+        service.complete('booking-1', 'attacker-owner')
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('allows completing a booking without a requester owner id (internal/trusted callers)', async () => {
+      appointmentRepository.findOne.mockResolvedValue({
+        id: 'booking-1',
+        ownerId: 'owner-1',
+      } as AppointmentEntity);
+
+      await service.complete('booking-1');
+
+      expect(appointmentRepository.update).toHaveBeenCalledWith('booking-1', {
+        status: 'completed',
+      });
+    });
+
+    it('rejects generating an invoice for a booking owned by a different owner', async () => {
+      appointmentRepository.findOne.mockResolvedValue({
+        id: 'booking-1',
+        ownerId: 'owner-1',
+        status: 'completed',
+        isFreeConsultation: false,
+        totalCost: 150,
+      } as AppointmentEntity);
+
+      await expect(
+        service.generateInvoice('booking-1', 'attacker-owner')
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(invoiceRepository.save).not.toHaveBeenCalled();
+    });
+
+    it('allows the recorded owner to generate an invoice for their own completed booking', async () => {
+      appointmentRepository.findOne.mockResolvedValue({
+        id: 'booking-1',
+        ownerId: 'owner-1',
+        userId: 'client-1',
+        status: 'completed',
+        isFreeConsultation: false,
+        totalCost: 150,
+      } as AppointmentEntity);
+
+      await expect(
+        service.generateInvoice('booking-1', 'owner-1')
+      ).resolves.toEqual(
+        expect.objectContaining({ id: 'invoice-1', amount: 150 })
+      );
+    });
   });
 });

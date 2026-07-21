@@ -7,7 +7,7 @@ import { TestBed } from '@angular/core/testing';
 import { BusinessApiService } from './business-api.service';
 import { DEFAULT_BUSINESS_SITE_CONFIG } from './business-site.config';
 
-describe('BusinessApiService', () => {
+describe('BusinessApiService persisted auth token selection', () => {
   let service: BusinessApiService;
   let httpMock: HttpTestingController;
 

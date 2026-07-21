@@ -7,7 +7,10 @@ import {
   RouterLinkActive,
   RouterOutlet,
 } from '@angular/router';
-import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access';
+import {
+  BusinessSiteConfigStore,
+  injectSiteSlugSignal,
+} from '@optimistic-tanuki/business-data-access';
 
 @Component({
   selector: 'business-portal-shell',
@@ -75,7 +78,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         gap: 1.1rem;
         border: var(--personality-border-width, 1px) solid var(--border);
         border-radius: var(--personality-card-radius, 1.5rem);
-        background: color-mix(in srgb, var(--background, #ffffff) 96%, white);
+        background: color-mix(in srgb, var(--background) 96%, white);
         padding: var(--personality-card-padding, 1.5rem);
         box-shadow: var(
           --personality-card-shadow,
@@ -112,7 +115,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
 
       h1 {
@@ -125,7 +128,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         );
         font-size: clamp(1.4rem, 2.8vw, 2.2rem);
         font-weight: 700;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
         line-height: 1.15;
       }
 
@@ -142,7 +145,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
         border-radius: var(--personality-button-radius, 999px);
         text-decoration: none;
         border: var(--personality-border-width, 1px) solid var(--border);
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         font-size: 0.88rem;
         font-weight: 500;
         background: var(--background);
@@ -162,11 +165,7 @@ import { BusinessSiteConfigStore } from '@optimistic-tanuki/business-data-access
       }
 
       .subnav-link.active {
-        background: color-mix(
-          in srgb,
-          var(--primary, #1f7a63) 12%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--primary) 12%, transparent);
         border-color: color-mix(in srgb, var(--primary) 50%, var(--border));
         color: var(--primary);
         font-weight: 600;
@@ -183,18 +182,19 @@ export class BusinessPortalShellComponent {
   readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly siteSlug =
-    this.route.snapshot.paramMap?.get('siteSlug') ?? null;
+  private readonly siteSlug = injectSiteSlugSignal();
 
   private ownerPath(path?: string): string {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', path].filter(Boolean).join('/')
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'owner', path].filter(Boolean).join('/')
       : ['/owner', path].filter(Boolean).join('/');
   }
 
   private clientPath(path?: string): string {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', path].filter(Boolean).join('/')
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', path].filter(Boolean).join('/')
       : ['/client', path].filter(Boolean).join('/');
   }
 
@@ -237,6 +237,6 @@ export class BusinessPortalShellComponent {
   );
 
   constructor() {
-    this.siteConfig.fetch(true, this.siteSlug).subscribe();
+    this.siteConfig.fetch(true, this.siteSlug()).subscribe();
   }
 }

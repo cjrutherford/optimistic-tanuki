@@ -7,7 +7,7 @@ import {
   computed,
   inject,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
@@ -16,6 +16,7 @@ import {
   LandingSectionMediaItem,
   LandingSectionMotionConfig,
   BusinessStoreProduct,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import {
   AuroraRibbonComponent,
@@ -27,6 +28,10 @@ import {
   SignalMeshComponent,
   TopographicDriftComponent,
 } from '@optimistic-tanuki/motion-ui';
+// Deep import, not the barrel: the barrel pins every motion component into
+// one chunk, so pulling murmuration through it would drag three.js in with
+// the eagerly-used effects and defeat the @defer below.
+import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui/murmuration-scene';
 import { ContactFormComponent } from '@optimistic-tanuki/blogging-ui';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 import { BusinessRichContentRendererComponent } from './business-rich-content-renderer.component';
@@ -41,6 +46,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
     ParallaxGridWarpComponent,
     AuroraRibbonComponent,
     GlassFogComponent,
+    MurmurationSceneComponent,
     PulseRingsComponent,
     SignalMeshComponent,
     TopographicDriftComponent,
@@ -55,68 +61,84 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       @case ('particle-veil') {
       <otui-particle-veil
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 18"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 28"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.65"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-particle-veil>
       } @case ('parallax-grid-warp') {
       <otui-parallax-grid-warp
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 8"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.7"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-parallax-grid-warp>
       } @case ('aurora-ribbon') {
       <otui-aurora-ribbon
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 3"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 5"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.72"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-aurora-ribbon>
       } @case ('glass-fog') {
       <otui-glass-fog
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 4"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.66"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-glass-fog>
       } @case ('pulse-rings') {
       <otui-pulse-rings
         [height]="motionHeight(motionConfig)"
-        [ringCount]="motionConfig.ringCount ?? 4"
-        [speed]="motionConfig.speed ?? 1"
+        [ringCount]="motionConfig.ringCount ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.7"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-pulse-rings>
       } @case ('signal-mesh') {
       <otui-signal-mesh
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 5"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 6"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.68"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-signal-mesh>
       } @case ('topographic-drift') {
       <otui-topographic-drift
         [height]="motionHeight(motionConfig)"
-        [density]="motionConfig.density ?? 6"
-        [speed]="motionConfig.speed ?? 1"
+        [density]="motionConfig.density ?? 8"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.64"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
       ></otui-topographic-drift>
       } @case ('shimmer-beam') {
       <otui-shimmer-beam
         [height]="motionHeight(motionConfig)"
-        [speed]="motionConfig.speed ?? 1"
+        [speed]="motionConfig.speed ?? 1.4"
         [intensity]="motionConfig.intensity ?? 0.65"
         [reducedMotion]="motionConfig.reducedMotion ?? false"
         [direction]="motionConfig.direction ?? 'diagonal'"
       ></otui-shimmer-beam>
-      } } }
+      } @case ('murmuration-scene') {
+      <!--
+        Deferred on purpose: this is the only motion kind backed by
+        three.js. Without @defer the whole WebGL runtime would be bundled
+        into the landing-page chunk that every visitor of every tenant
+        downloads, to serve the few sites that actually pick it. The
+        @defer block keeps it in its own chunk, fetched only when a
+        section really renders this kind.
+      -->
+      @defer (on immediate) {
+      <otui-murmuration-scene
+        [height]="motionHeight(motionConfig)"
+        [count]="motionConfig.density ?? 72"
+        [speed]="motionConfig.speed ?? 0.5"
+        [reducedMotion]="motionConfig.reducedMotion ?? false"
+      ></otui-murmuration-scene>
+      } } } }
     </ng-template>
 
     <ng-template #renderSection let-section>
@@ -155,7 +177,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 <a class="cta-primary" [href]="section.ctaHref">{{
                   section.ctaLabel || 'Explore now'
                 }}</a>
-                } @else if (site().features.booking.enabled && siteSlug) {
+                } @else if (site().features.booking.enabled && siteSlug()) {
                 <a class="cta-primary" [routerLink]="bookingRoute()">{{
                   site().contact.consultationLabel
                 }}</a>
@@ -431,10 +453,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           ></business-rich-content-renderer>
           }
           <div class="actions">
-            @if (siteSlug) {
+            @if (siteSlug()) {
             <a
               class="cta-primary"
-              [routerLink]="['/sites', siteSlug, 'book']"
+              [routerLink]="['/sites', siteSlug(), 'book']"
               >{{ site().contact.consultationLabel }}</a
             >
             }
@@ -773,10 +795,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         .section-shell.preview-section-selected::after {
         border-color: color-mix(
           in srgb,
-          var(--primary, #1f7a63) 72%,
-          var(--surface, var(--background, #ffffff))
+          var(--primary) 72%,
+          var(--surface, var(--background))
         );
-        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, transparent);
+        background: color-mix(in srgb, var(--primary) 8%, transparent);
       }
 
       .landing-shell {
@@ -844,16 +866,15 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         );
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 92%,
-          transparent 8%
+          var(--surface, var(--background)) 96%,
+          transparent 4%
         );
-        backdrop-filter: blur(8px);
       }
 
       .landing-page-root.embedded-preview .section-surface {
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 86%,
+          var(--surface, var(--background)) 86%,
           transparent 14%
         );
       }
@@ -956,7 +977,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
 
       h1,
@@ -970,7 +991,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           sans-serif
         );
         font-weight: 700;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       h1 {
@@ -992,14 +1013,14 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .lede {
         font-size: 1.15rem;
         line-height: 1.55;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 82%, transparent);
+        color: color-mix(in srgb, var(--foreground) 82%, transparent);
       }
 
       .body,
       .offer p,
       .testimonial p,
       .contact p {
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         line-height: 1.6;
       }
 
@@ -1028,8 +1049,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       }
 
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
         box-shadow: 0 6px 18px
           color-mix(in srgb, var(--primary) 24%, transparent);
       }
@@ -1037,11 +1058,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .cta-primary:hover {
         box-shadow: 0 10px 28px
           color-mix(in srgb, var(--primary) 32%, transparent);
-        background: color-mix(
-          in srgb,
-          var(--primary) 88%,
-          var(--foreground, #0f172a)
-        );
+        background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
       }
 
       .cta-secondary {
@@ -1069,24 +1086,16 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         place-items: center;
         font-weight: 800;
         font-size: 1.1rem;
-        color: white;
-        background: linear-gradient(
-          135deg,
-          var(--primary, #1f7a63),
-          color-mix(
-            in srgb,
-            var(--primary, #1f7a63) 55%,
-            var(--foreground, #0f172a)
-          )
-        );
-        box-shadow: 0 4px 12px
-          color-mix(in srgb, var(--primary) 30%, transparent);
+        color: var(--primary-foreground, white);
+        background: var(--primary);
+        border: var(--personality-border-width, 1px) solid
+          color-mix(in srgb, var(--primary) 70%, var(--foreground));
       }
 
       .credential-list {
         margin: 0;
         padding-left: 1.1rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 72%, transparent);
+        color: color-mix(in srgb, var(--foreground) 72%, transparent);
         font-size: 0.92rem;
         line-height: 1.7;
       }
@@ -1112,10 +1121,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border-radius: var(--personality-button-radius, 999px);
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 82%,
-          var(--primary, #1f7a63) 18%
+          var(--surface, var(--background)) 82%,
+          var(--primary) 18%
         );
-        color: color-mix(in srgb, var(--foreground, #0f172a) 88%, transparent);
+        color: color-mix(in srgb, var(--foreground) 88%, transparent);
         font-size: 0.85rem;
         font-weight: 600;
         border: var(--personality-border-width, 1px) solid var(--border);
@@ -1169,7 +1178,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
 
       .testimonial footer span {
         font-size: 0.82rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 58%, transparent);
+        color: color-mix(in srgb, var(--foreground) 58%, transparent);
       }
 
       .offer-stack {
@@ -1287,8 +1296,8 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         border: var(--personality-border-width, 1px) solid var(--border);
         background: color-mix(
           in srgb,
-          var(--surface, var(--background, #ffffff)) 84%,
-          var(--background, #ffffff)
+          var(--surface, var(--background)) 84%,
+          var(--background)
         );
       }
 
@@ -1302,7 +1311,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
       .media-figure figcaption,
       .gallery-item figcaption {
         padding: 0.8rem 0.95rem;
-        color: color-mix(in srgb, var(--foreground, #0f172a) 68%, transparent);
+        color: color-mix(in srgb, var(--foreground) 68%, transparent);
         font-size: 0.86rem;
         line-height: 1.5;
       }
@@ -1361,11 +1370,7 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         padding: 1rem 1.1rem;
         border-radius: 1.1rem;
         border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-        background: color-mix(
-          in srgb,
-          var(--surface, #ffffff) 88%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
       }
 
       .contact-media {
@@ -1420,15 +1425,14 @@ export class BusinessLandingPageComponent {
   @Output() sectionSelected = new EventEmitter<string>();
 
   private readonly api = inject(BusinessApiService);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly siteConfig = inject(BusinessSiteConfigStore);
   readonly site = this.siteConfig.site;
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   readonly activeLayout = computed(() => this.site().landingPage.layout);
   readonly layoutClass = computed(
     () => `layout-${this.site().landingPage.layout}`
   );
-  readonly offers = toSignal(this.api.getOffers(this.siteSlug), {
+  readonly offers = toSignal(this.api.getOffers(this.siteSlug()), {
     initialValue: [],
   });
   readonly storeProducts = toSignal(this.api.getStoreProducts(), {
@@ -1462,18 +1466,19 @@ export class BusinessLandingPageComponent {
   );
 
   clientPortalRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'login']
-      : ['/client'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'client', 'login'] : ['/client'];
   }
 
   bookingRoute(): string[] | null {
-    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : null;
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'book'] : null;
   }
 
   productViewHref(product: BusinessStoreProduct): string {
-    return this.siteSlug
-      ? `/sites/${this.siteSlug}/products/${product.id}`
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? `/sites/${siteSlug}/products/${product.id}`
       : `/products/${product.id}`;
   }
 
@@ -1522,9 +1527,12 @@ export class BusinessLandingPageComponent {
       (!section.motion?.kind || section.motion.kind === 'none')
     ) {
       return {
+        // Density/speed track the shared defaults; intensity stays lower
+        // than the 0.65 default on purpose, since this sits directly behind
+        // the hero headline and has to stay readable underneath it.
         kind: 'particle-veil',
-        density: 18,
-        speed: 0.8,
+        density: 28,
+        speed: 1.4,
         intensity: 0.55,
         height: '100%',
         reducedMotion: false,
@@ -1617,7 +1625,7 @@ export class BusinessLandingPageComponent {
   }
 
   constructor() {
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 
   submitContactForm(event: {

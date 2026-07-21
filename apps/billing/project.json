@@ -11,22 +11,16 @@
   ],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/billing",
-        "packageJson": {
-          "dependencies": {
-            "pg": "^8.16.0"
-          }
-        }
+        "webpackConfig": "apps/billing/webpack.config.js",
+        "outputPath": "dist/apps/billing"
       },
       "configurations": {
-        "development": {
-          "args": ["--node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "serve": {
       "continuous": true,

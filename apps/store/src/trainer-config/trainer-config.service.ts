@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TrainerSiteConfigEntity } from './entities/trainer-site-config.entity';
@@ -126,13 +131,30 @@ export class TrainerConfigService {
 
   async updateConfig(
     id: string,
-    dto: TrainerSiteConfigDto
+    dto: TrainerSiteConfigDto,
+    requesterProfileId?: string
   ): Promise<TrainerSiteConfigEntity> {
     this.logger.log(`[TrainerConfigService] Updating config id: ${id}`);
     const config = await this.configRepository.findOne({ where: { id } });
     if (!config) {
       throw new NotFoundException(
         `Trainer site config with ID ${id} not found`
+      );
+    }
+
+    // A config's owner is recorded in leadContext.profileId at creation
+    // time. Once a config has a recorded owner, only that owner may
+    // mutate it -- callers must not be able to overwrite another
+    // tenant's site by supplying an arbitrary configId. Configs without
+    // a recorded owner (legacy/unclaimed rows) are left unrestricted.
+    const existingOwnerProfileId = config.leadContext?.profileId;
+    if (
+      requesterProfileId &&
+      existingOwnerProfileId &&
+      existingOwnerProfileId !== requesterProfileId
+    ) {
+      throw new ForbiddenException(
+        'You do not have permission to modify this business site configuration.'
       );
     }
 

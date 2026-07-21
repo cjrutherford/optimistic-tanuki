@@ -38,17 +38,25 @@ export class AvailabilitiesController {
     data: {
       id: string;
       updateAvailabilityDto: UpdateAvailabilityDto;
+      requesterOwnerId?: string;
     }
   ) {
     return this.availabilitiesService.update(
       data.id,
-      data.updateAvailabilityDto
+      data.updateAvailabilityDto,
+      data.requesterOwnerId
     );
   }
 
   @MessagePattern({ cmd: 'removeAvailability' })
-  remove(@Payload() id: string) {
-    return this.availabilitiesService.remove(id);
+  remove(
+    @Payload() payload: string | { id: string; requesterOwnerId?: string }
+  ) {
+    const { id, requesterOwnerId } =
+      typeof payload === 'string'
+        ? { id: payload, requesterOwnerId: undefined }
+        : payload;
+    return this.availabilitiesService.remove(id, requesterOwnerId);
   }
 
   @MessagePattern({ cmd: 'createAvailabilityOverride' })
@@ -77,16 +85,24 @@ export class AvailabilitiesController {
     data: {
       id: string;
       updateAvailabilityOverrideDto: UpdateAvailabilityOverrideDto;
+      requesterOwnerId?: string;
     }
   ) {
     return this.availabilitiesService.updateOverride(
       data.id,
-      data.updateAvailabilityOverrideDto
+      data.updateAvailabilityOverrideDto,
+      data.requesterOwnerId
     );
   }
 
   @MessagePattern({ cmd: 'removeAvailabilityOverride' })
-  removeOverride(@Payload() id: string) {
-    return this.availabilitiesService.removeOverride(id);
+  removeOverride(
+    @Payload() payload: string | { id: string; requesterOwnerId?: string }
+  ) {
+    const { id, requesterOwnerId } =
+      typeof payload === 'string'
+        ? { id: payload, requesterOwnerId: undefined }
+        : payload;
+    return this.availabilitiesService.removeOverride(id, requesterOwnerId);
   }
 }

@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute } from '@angular/router';
 import { switchMap, of } from 'rxjs';
 import {
   BusinessApiService,
   BusinessAuthService,
   BusinessSiteConfigStore,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -97,8 +97,7 @@ export class BusinessClientBillingPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   private readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly route = inject(ActivatedRoute, { optional: true });
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   private readonly clientId = computed(
     () => this.auth.clientUser()?.userId ?? ''
   );
@@ -108,7 +107,7 @@ export class BusinessClientBillingPageComponent {
   readonly bookings = toSignal(
     toObservable(this.clientId).pipe(
       switchMap((id) =>
-        id ? this.api.getClientBookings(this.siteSlug) : of([])
+        id ? this.api.getClientBookings(this.siteSlug()) : of([])
       )
     ),
     { initialValue: [] }
@@ -116,14 +115,14 @@ export class BusinessClientBillingPageComponent {
   readonly invoices = toSignal(
     toObservable(this.clientId).pipe(
       switchMap((id) =>
-        id ? this.api.getClientInvoices(this.siteSlug) : of([])
+        id ? this.api.getClientInvoices(this.siteSlug()) : of([])
       )
     ),
     { initialValue: [] }
   );
 
   constructor() {
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 
   payInvoice(id: string): void {
@@ -131,6 +130,6 @@ export class BusinessClientBillingPageComponent {
       return;
     }
 
-    this.api.payClientInvoice(id, this.siteSlug).subscribe();
+    this.api.payClientInvoice(id, this.siteSlug()).subscribe();
   }
 }

@@ -1,4 +1,7 @@
 @use 'personality' as p;
+@use '../styles/motion-theme';
+
+@include motion-theme.motion-theme-tokens;
 
 :host {
   display: block;
@@ -79,7 +82,7 @@
       color-mix(in srgb, var(--primary) 10%, transparent),
       transparent
     );
-  mix-blend-mode: screen;
+  mix-blend-mode: var(--motion-blend);
   opacity: calc(0.26 + (var(--warp-intensity) * 0.14));
   animation: warp-drift-slide calc(9s / max(var(--warp-speed), 0.25)) linear
     infinite;
@@ -92,7 +95,7 @@
   background: linear-gradient(
     180deg,
     transparent,
-    color-mix(in srgb, white 28%, var(--secondary)) 35%,
+    color-mix(in srgb, var(--foreground) 33%, var(--secondary)) 35%,
     transparent 80%
   );
   box-shadow: 0 0 16px color-mix(in srgb, var(--secondary) 18%, transparent);

@@ -243,4 +243,134 @@ describe('BusinessSiteConfigStore', () => {
     expect(store.site().site.slug).toBe('steady-hand-contracting');
     expect(store.site().brand.businessName).toBe('Steady Hand Contracting');
   });
+
+  it('clears loadError on a successful fetch after a prior failure', () => {
+    const getSiteConfigForSlug = jest
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('boom')));
+
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessSiteConfigStore,
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getSiteConfigForSlug,
+            getSiteConfig: jest.fn(),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: authStub(),
+        },
+      ],
+    });
+
+    const store = TestBed.inject(BusinessSiteConfigStore);
+
+    // The initial constructor-driven fetch fails synchronously.
+    expect(store.loadError()).toBe('boom');
+
+    const response$ = new Subject<SiteConfigResponse>();
+    getSiteConfigForSlug.mockReturnValueOnce(response$);
+
+    store.fetch(true, 'north-star-advisory').subscribe();
+
+    response$.next({
+      configId: 'cfg-1',
+      config: {
+        site: { slug: 'north-star-advisory' },
+      } as SiteConfigResponse['config'],
+    });
+    response$.complete();
+
+    expect(store.loadError()).toBeNull();
+    expect(store.configId()).toBe('cfg-1');
+  });
+
+  it('sets loadError when a fetch fails and does not touch loaded/site/configId beyond the existing fallback behavior', () => {
+    const getSiteConfigForSlug = jest
+      .fn()
+      .mockReturnValue(throwError(() => new Error('network down')));
+
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessSiteConfigStore,
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getSiteConfigForSlug,
+            getSiteConfig: jest.fn(),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: authStub(),
+        },
+      ],
+    });
+
+    const store = TestBed.inject(BusinessSiteConfigStore);
+
+    // Constructor already ran an initial fetch that failed synchronously.
+    expect(store.loadError()).toBe('network down');
+    expect(store.loaded()).toBe(true);
+    expect(store.configId()).toBeNull();
+    expect(store.site().brand.businessName).toBe('My Business');
+  });
+
+  it('does not let a stale error from a superseded slug clobber a newer successful load', () => {
+    const staleResponse$ = new Subject<SiteConfigResponse>();
+    const freshResponse$ = new Subject<SiteConfigResponse>();
+    const getSiteConfigForSlug = jest
+      .fn()
+      .mockReturnValueOnce(new Subject<SiteConfigResponse>().asObservable())
+      .mockReturnValueOnce(staleResponse$)
+      .mockReturnValueOnce(freshResponse$);
+
+    TestBed.configureTestingModule({
+      providers: [
+        BusinessSiteConfigStore,
+        {
+          provide: BusinessApiService,
+          useValue: {
+            getSiteConfigForSlug,
+            getSiteConfig: jest.fn(),
+          },
+        },
+        {
+          provide: BusinessAuthService,
+          useValue: authStub(),
+        },
+      ],
+    });
+
+    const store = TestBed.inject(BusinessSiteConfigStore);
+
+    // First fetch, for slug A, stays in flight.
+    store.fetch(false, 'slug-a').subscribe();
+    // Second fetch switches to slug B before A resolves, superseding it.
+    store.fetch(false, 'slug-b').subscribe();
+
+    // The newer slug-b request resolves successfully first.
+    freshResponse$.next({
+      configId: 'cfg-b',
+      config: {
+        site: { slug: 'slug-b' },
+        brand: { businessName: 'Slug B Business' },
+      } as SiteConfigResponse['config'],
+    });
+    freshResponse$.complete();
+
+    expect(store.loadError()).toBeNull();
+    expect(store.configId()).toBe('cfg-b');
+
+    // The stale slug-a request now errors out after the fact.
+    staleResponse$.error(new Error('stale network error'));
+
+    expect(store.loadError()).toBeNull();
+    expect(store.configId()).toBe('cfg-b');
+    expect(store.site().site.slug).toBe('slug-b');
+    expect(store.site().brand.businessName).toBe('Slug B Business');
+  });
 });

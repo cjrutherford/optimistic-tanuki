@@ -1,6 +1,10 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ActivatedRoute, provideRouter } from '@angular/router';
+import {
+  ActivatedRoute,
+  convertToParamMap,
+  provideRouter,
+} from '@angular/router';
 import { of } from 'rxjs';
 
 import {
@@ -76,6 +80,9 @@ describe('BusinessOwnerProductsPageComponent', () => {
                   key === 'siteSlug' ? 'steady-hand-contracting' : null,
               },
             },
+            paramMap: of(
+              convertToParamMap({ siteSlug: 'steady-hand-contracting' })
+            ),
           },
         },
         {

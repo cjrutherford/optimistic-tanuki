@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
+  injectSiteSlugSignal,
   mergeBusinessSiteConfig,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
@@ -135,11 +136,11 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         border-radius: var(--personality-border-radius, 1rem);
         font-weight: 800;
         font-size: 1.25rem;
-        color: white;
+        color: var(--primary-foreground);
         background: linear-gradient(
           135deg,
-          var(--primary, #1f7a63),
-          color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
+          var(--primary),
+          color-mix(in srgb, var(--primary) 55%, var(--foreground))
         );
         margin-bottom: 1rem;
       }
@@ -152,7 +153,7 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
       }
 
       p {
-        color: var(--muted, #6b7280);
+        color: var(--muted);
         margin: 0;
         font-size: 0.9rem;
       }
@@ -169,7 +170,7 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         margin-bottom: 1rem;
         padding: 0.35rem;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--primary, #1f7a63) 8%, white);
+        background: color-mix(in srgb, var(--primary) 8%, white);
       }
 
       .mode-switch button {
@@ -180,12 +181,12 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         font: inherit;
         font-weight: 700;
         cursor: pointer;
-        color: var(--muted, #6b7280);
+        color: var(--muted);
       }
 
       .mode-switch button.active {
         background: white;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
         box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
       }
 
@@ -194,16 +195,15 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         gap: 0.4rem;
         font-size: 0.85rem;
         font-weight: 500;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       input {
         padding: 0.65rem 0.9rem;
-        border: var(--personality-border-width, 1px) solid
-          var(--border, #e2e8f0);
+        border: var(--personality-border-width, 1px) solid var(--border);
         border-radius: var(--personality-border-radius, 0.5rem);
-        background: var(--surface, #fff);
-        color: var(--foreground, #0f172a);
+        background: var(--surface);
+        color: var(--foreground);
         font-size: 0.95rem;
         transition: border-color 160ms ease;
         width: 100%;
@@ -212,22 +212,18 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 
       input:focus {
         outline: none;
-        border-color: var(--primary, #1f7a63);
+        border-color: var(--primary);
         box-shadow: 0 0 0 3px
-          color-mix(in srgb, var(--primary, #1f7a63) 18%, transparent);
+          color-mix(in srgb, var(--primary) 18%, transparent);
       }
 
       .error {
-        color: var(--destructive, #dc2626);
+        color: var(--danger);
         font-size: 0.85rem;
         margin: 0;
         padding: 0.6rem 0.9rem;
         border-radius: 0.4rem;
-        background: color-mix(
-          in srgb,
-          var(--destructive, #dc2626) 8%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--danger) 8%, transparent);
       }
 
       .otui-btn {
@@ -241,12 +237,12 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
       }
 
       .otui-btn.primary {
-        background: var(--primary, #1f7a63);
+        background: var(--primary);
         color: white;
       }
 
       .otui-btn.primary:hover:not(:disabled) {
-        background: color-mix(in srgb, var(--primary, #1f7a63) 88%, black);
+        background: color-mix(in srgb, var(--primary) 88%, black);
       }
 
       .otui-btn:disabled {
@@ -258,7 +254,7 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
         display: block;
         margin-top: 1rem;
         text-align: center;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
         text-decoration: none;
         font-size: 0.9rem;
       }
@@ -269,7 +265,6 @@ export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
@@ -278,7 +273,7 @@ export class BusinessLoginPageComponent {
   loading = signal(false);
   errorMsg = signal('');
   emailStatus = signal('');
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
 
   requestEmail(
     purpose: 'verification' | 'magic-link' | 'password-reset'
@@ -287,8 +282,8 @@ export class BusinessLoginPageComponent {
       this.emailStatus.set('Enter your email address first.');
       return;
     }
-    const returnPath = this.siteSlug
-      ? `/sites/${this.siteSlug}/owner/login`
+    const returnPath = this.siteSlug()
+      ? `/sites/${this.siteSlug()}/owner/login`
       : '/owner/login';
     this.emailAuth
       .request('business-site', this.email, purpose, returnPath)
@@ -303,16 +298,16 @@ export class BusinessLoginPageComponent {
   }
 
   private clientLoginRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'login']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'login']
       : ['/client/login'];
   }
 
   private ownerPostLoginRoute(onboardingCompletedAt?: string | null): string[] {
     const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', route]
-      : ['/owner', route];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', route] : ['/owner', route];
   }
 
   setMode(mode: 'owner' | 'client'): void {
@@ -325,14 +320,15 @@ export class BusinessLoginPageComponent {
   }
 
   registerRoute(): string[] {
+    const siteSlug = this.siteSlug();
     if (this.mode() === 'owner') {
-      return this.siteSlug
-        ? ['/sites', this.siteSlug, 'owner', 'register']
+      return siteSlug
+        ? ['/sites', siteSlug, 'owner', 'register']
         : ['/owner/register'];
     }
 
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'register']
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'register']
       : ['/client/register'];
   }
 

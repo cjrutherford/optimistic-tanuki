@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { toSignal, toObservable } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { switchMap, of } from 'rxjs';
 import {
   BusinessApiService,
   BusinessAuthService,
   BusinessSiteConfigStore,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
 
@@ -104,7 +105,7 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
         font-weight: 800;
         letter-spacing: 0.14em;
         text-transform: uppercase;
-        color: var(--primary, #1f7a63);
+        color: var(--primary);
       }
 
       .support-copy,
@@ -134,8 +135,8 @@ import { CardComponent } from '@optimistic-tanuki/common-ui';
       }
 
       .cta-primary {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
       }
 
       .cta-secondary {
@@ -184,15 +185,14 @@ export class BusinessClientDashboardPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
   protected readonly siteConfig = inject(BusinessSiteConfigStore);
-  private readonly route = inject(ActivatedRoute, { optional: true });
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
   private readonly clientId = computed(
     () => this.auth.clientUser()?.userId ?? ''
   );
   readonly bookings = toSignal(
     toObservable(this.clientId).pipe(
       switchMap((id) =>
-        id ? this.api.getClientBookings(this.siteSlug) : of([])
+        id ? this.api.getClientBookings(this.siteSlug()) : of([])
       )
     ),
     { initialValue: [] }
@@ -200,7 +200,7 @@ export class BusinessClientDashboardPageComponent {
   readonly routines = toSignal(
     toObservable(this.clientId).pipe(
       switchMap((id) =>
-        id ? this.api.getClientRoutines(id, this.siteSlug) : of([])
+        id ? this.api.getClientRoutines(id, this.siteSlug()) : of([])
       )
     ),
     { initialValue: [] }
@@ -208,7 +208,7 @@ export class BusinessClientDashboardPageComponent {
   readonly checkIns = toSignal(
     toObservable(this.clientId).pipe(
       switchMap((id) =>
-        id ? this.api.getClientCheckIns(id, this.siteSlug) : of([])
+        id ? this.api.getClientCheckIns(id, this.siteSlug()) : of([])
       )
     ),
     { initialValue: [] }
@@ -218,19 +218,21 @@ export class BusinessClientDashboardPageComponent {
   });
   readonly additionalBusinesses = computed(() =>
     this.publishedBusinesses().filter(
-      (business) => business.slug !== this.siteSlug
+      (business) => business.slug !== this.siteSlug()
     )
   );
 
   bookingRoute(): string[] {
-    return this.siteSlug ? ['/sites', this.siteSlug, 'book'] : ['/'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'book'] : ['/'];
   }
 
   portalHomeRoute(): string[] {
-    return this.siteSlug ? ['/sites', this.siteSlug, 'client'] : ['/client'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'client'] : ['/client'];
   }
 
   constructor() {
-    this.siteConfig.fetch(false, this.siteSlug).subscribe();
+    this.siteConfig.fetch(false, this.siteSlug()).subscribe();
   }
 }

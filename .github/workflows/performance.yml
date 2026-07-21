@@ -36,6 +36,7 @@ jobs:
           - digital-homestead
           - owner-console
           - forgeofwill
+          - business-site
       fail-fast: false
 
     steps:

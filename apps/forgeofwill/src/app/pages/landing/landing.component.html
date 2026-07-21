@@ -132,7 +132,7 @@
           class="btn-forge btn-primary-ember"
           (click)="navigateToRegister()"
         >
-          <span class="btn-text">Begin Your Journey</span>
+          <span class="btn-text">Create Your Account</span>
           <span class="btn-spark">
             <svg
               viewBox="0 0 24 24"
@@ -189,7 +189,9 @@
         >
           <div class="crystal-faces">
             <div class="crystal-face face-front">
-              <div class="crystal-icon">{{ feature.icon }}</div>
+              <div class="crystal-icon">
+                <otui-icon [name]="feature.icon" [size]="28"></otui-icon>
+              </div>
               <h3 class="crystal-title">{{ feature.title }}</h3>
               <p class="crystal-desc">{{ feature.description }}</p>
             </div>

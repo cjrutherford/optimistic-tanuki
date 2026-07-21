@@ -6,17 +6,16 @@
   "tags": ["type:app"],
   "targets": {
     "build": {
-      "executor": "nx:run-commands",
+      "executor": "@nx/webpack:webpack",
       "options": {
-        "command": "webpack-cli build",
-        "args": ["--node-env=production"],
-        "cwd": "apps/lead-tracker"
+        "webpackConfig": "apps/lead-tracker/webpack.config.js",
+        "outputPath": "dist/apps/lead-tracker"
       },
       "configurations": {
-        "development": {
-          "args": ["--node-env=development"]
-        }
-      }
+        "development": {},
+        "production": {}
+      },
+      "defaultConfiguration": "production"
     },
     "add-pg-dependency": {
       "executor": "nx:run-commands",

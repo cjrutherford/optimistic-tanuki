@@ -50,6 +50,7 @@ describe('BusinessProductDetailComponent', () => {
                 productId,
               }),
             },
+            paramMap: of(convertToParamMap({ siteSlug, productId })),
           },
         },
         {

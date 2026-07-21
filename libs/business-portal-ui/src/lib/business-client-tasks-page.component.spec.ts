@@ -46,6 +46,9 @@ describe('BusinessClientTasksPageComponent', () => {
                 siteSlug: 'steady-hand-contracting',
               }),
             },
+            paramMap: of(
+              convertToParamMap({ siteSlug: 'steady-hand-contracting' })
+            ),
           },
         },
         {

@@ -10,7 +10,7 @@ import {
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { filter } from 'rxjs';
 import {
-  DEFAULT_TRAINER_SITE_CONFIG,
+  DEFAULT_BUSINESS_SITE_CONFIG,
   BusinessAuthService,
   BusinessSiteConfig,
   BusinessSiteConfigStore,
@@ -118,6 +118,13 @@ type TopNavLink = {
         </div>
       </header>
 
+      @if (configLoadError()) {
+      <div class="config-load-error" role="status">
+        We couldn't refresh this business's configuration. Showing the most
+        recently available details.
+      </div>
+      }
+
       <main class="page-shell">
         <router-outlet></router-outlet>
       </main>
@@ -155,17 +162,23 @@ type TopNavLink = {
         padding: 0.85rem 1.5rem;
         border-bottom: var(--personality-border-width, 1px) solid var(--border);
         backdrop-filter: blur(20px) saturate(1.2);
-        background: color-mix(
-          in srgb,
-          var(--background, #fff) 78%,
-          transparent
-        );
+        background: color-mix(in srgb, var(--background) 78%, transparent);
         transition: box-shadow 0.3s ease;
       }
 
       .topbar:has(.topnav a:hover) {
         box-shadow: 0 4px 20px
           color-mix(in srgb, var(--primary) 4%, transparent);
+      }
+
+      .config-load-error {
+        padding: 0.6rem 1.5rem;
+        font-size: 0.85rem;
+        text-align: center;
+        color: color-mix(in srgb, var(--danger) 90%, var(--foreground));
+        background: color-mix(in srgb, var(--danger) 16%, transparent);
+        border-bottom: 1px solid
+          color-mix(in srgb, var(--danger) 30%, transparent);
       }
 
       .brand {
@@ -189,11 +202,11 @@ type TopNavLink = {
         place-items: center;
         font-weight: 800;
         font-size: 1rem;
-        color: white;
+        color: var(--primary-foreground);
         background: linear-gradient(
           135deg,
-          var(--primary, #1f7a63),
-          color-mix(in srgb, var(--primary, #1f7a63) 55%, #0f172a)
+          var(--primary),
+          color-mix(in srgb, var(--primary) 55%, var(--foreground))
         );
         box-shadow: 0 4px 14px
           color-mix(in srgb, var(--primary) 30%, transparent);
@@ -219,7 +232,7 @@ type TopNavLink = {
       }
 
       .brand-copy small {
-        color: color-mix(in srgb, var(--foreground, #0f172a) 58%, transparent);
+        color: color-mix(in srgb, var(--foreground) 58%, transparent);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -251,13 +264,13 @@ type TopNavLink = {
       }
 
       .topnav a {
-        color: color-mix(in srgb, var(--foreground, #0f172a) 68%, transparent);
+        color: color-mix(in srgb, var(--foreground) 68%, transparent);
       }
 
       .topnav a.active,
       .topnav a:hover {
-        color: var(--foreground, #0f172a);
-        background: color-mix(in srgb, var(--primary, #1f7a63) 10%, white);
+        color: var(--foreground);
+        background: color-mix(in srgb, var(--primary) 10%, var(--background));
         transform: translateY(-1px);
       }
 
@@ -292,7 +305,7 @@ type TopNavLink = {
       .ghost {
         border: var(--personality-border-width, 1px) solid var(--border);
         background: transparent;
-        color: var(--foreground, #0f172a);
+        color: var(--foreground);
       }
 
       .ghost:hover {
@@ -302,15 +315,15 @@ type TopNavLink = {
       }
 
       .solid {
-        background: var(--primary, #1f7a63);
-        color: var(--primary-foreground, white);
+        background: var(--primary);
+        color: var(--primary-foreground);
         border: none;
         box-shadow: 0 4px 12px
           color-mix(in srgb, var(--primary) 24%, transparent);
       }
 
       .solid:hover {
-        background: color-mix(in srgb, var(--primary, #1f7a63) 88%, black);
+        background: color-mix(in srgb, var(--primary) 88%, var(--foreground));
         box-shadow: 0 6px 18px
           color-mix(in srgb, var(--primary) 32%, transparent);
         transform: translateY(-1px);
@@ -321,7 +334,7 @@ type TopNavLink = {
       .auth-actions a:focus-visible,
       .auth-actions button:focus-visible,
       .theme-toggle:focus-visible {
-        outline: 2px solid var(--primary, #1f7a63);
+        outline: 2px solid var(--primary);
         outline-offset: 3px;
       }
 
@@ -350,8 +363,14 @@ type TopNavLink = {
   ],
 })
 export class AppComponent {
-  readonly site = signal<BusinessSiteConfig>(DEFAULT_TRAINER_SITE_CONFIG);
+  readonly site = signal<BusinessSiteConfig>(DEFAULT_BUSINESS_SITE_CONFIG);
   readonly configId = signal<string | null>(null);
+  /**
+   * Truthy when the most recent business-site config fetch failed and the
+   * store fell back to defaults, so we can tell that apart from a feature
+   * that is genuinely turned off.
+   */
+  readonly configLoadError = signal<string | null>(null);
   readonly currentTheme = signal<'light' | 'dark'>('light');
   readonly auth = inject(BusinessAuthService);
   readonly isClientAuthenticated = this.auth.isClientAuthenticated;
@@ -386,7 +405,12 @@ export class AppComponent {
   }
 
   private currentHostedSiteSlug(): string | null {
-    const match = this.currentUrl().match(/^\/sites\/([^/]+)/);
+    // Router urls carry the fragment and query string (e.g.
+    // `/sites/acme#contact`), so the slug capture has to stop at `#` and `?`
+    // as well as `/`. Matching plain `[^/]+` swallowed them into the slug,
+    // which then got re-encoded into the next routerLink — compounding on
+    // every nav click (`%23` -> `%2523`) and breaking tenant config lookup.
+    const match = this.currentUrl().match(/^\/sites\/([^/?#]+)/);
     return match?.[1] ?? null;
   }
 
@@ -486,6 +510,7 @@ export class AppComponent {
       const site = mergeBusinessSiteConfig(this.siteConfig.site());
       this.site.set(site);
       this.configId.set(this.siteConfig.configId());
+      this.configLoadError.set(this.siteConfig.loadError?.() ?? null);
       this.syncRouteTheme(site);
     });
 

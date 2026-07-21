@@ -11,6 +11,7 @@ import { dirname, join, relative, sep } from 'node:path';
 
 const root = process.cwd();
 const appsRoot = join(root, 'apps');
+const libsRoot = join(root, 'libs');
 const findings = [];
 
 const args = process.argv.slice(2);
@@ -30,6 +31,23 @@ function getFlagValue(name) {
 const allowlistPath = getFlagValue('--allowlist');
 const writeAllowlistPath = getFlagValue('--write-allowlist');
 
+function isFullyIgnoredDirectory(directory) {
+  // A directory that ships its own `.gitignore` with a bare `*` line is
+  // declaring "everything under here is generated, don't touch it" (e.g.
+  // compodoc output under apps/ui-playground/public/generated/compodoc/).
+  // The common form also has a `!.gitignore` exception line so the marker
+  // itself stays tracked -- that doesn't change the directory's meaning,
+  // so check line-by-line rather than requiring the whole file to be `*`.
+  // walk() has no other way to know this, since it isn't gitignore-aware --
+  // it only skips node_modules and dotfile-prefixed directories by name.
+  try {
+    const content = readFileSync(join(directory, '.gitignore'), 'utf8');
+    return content.split('\n').some((line) => line.trim() === '*');
+  } catch {
+    return false;
+  }
+}
+
 function walk(directory) {
   const entries = readdirSync(directory, { withFileTypes: true });
   const files = [];
@@ -41,11 +59,23 @@ function walk(directory) {
       if (entry.name === 'node_modules' || entry.name.startsWith('.')) {
         continue;
       }
+      if (isFullyIgnoredDirectory(fullPath)) {
+        continue;
+      }
       files.push(...walk(fullPath));
       continue;
     }
 
-    if (entry.isFile() && entry.name.endsWith('.scss')) {
+    if (
+      entry.isFile() &&
+      (entry.name.endsWith('.scss') || entry.name.endsWith('.ts'))
+    ) {
+      // Skip spec/test files: they hold mock data and assertions, not
+      // shipped component styles, and routinely embed literal hex values
+      // as fixtures (e.g. theme-config test doubles) that are not UI code.
+      if (entry.name.endsWith('.spec.ts') || entry.name.endsWith('.d.ts')) {
+        continue;
+      }
       files.push(fullPath);
     }
   }
@@ -106,6 +136,75 @@ function isTokenFile(filePath) {
   return /(?:token|theme|personality)/i.test(normalized);
 }
 
+// Extracts the CSS text (and its absolute offset in `content`) of every
+// template-literal entry inside an Angular `styles: [...]` array, or a bare
+// `styles: \`...\`` string. This is deliberately narrow: we only want to
+// look at inline component stylesheets, not arbitrary `.ts` source (route
+// configs, comments, other string literals that happen to contain
+// hex-looking substrings, etc).
+function extractInlineStyleBlocks(content) {
+  const blocks = [];
+  const stylesKeyPattern = /\bstyles\s*:\s*/g;
+  let keyMatch;
+
+  while ((keyMatch = stylesKeyPattern.exec(content))) {
+    let i = stylesKeyPattern.lastIndex;
+
+    if (content[i] === '[') {
+      // Array form: `styles: [ \`...\`, \`...\` ]`.
+      // Walk bracket depth to find the matching close, but skip over the
+      // contents of any template literal while doing so -- CSS attribute
+      // selectors like `[data-theme]` contain brackets that would otherwise
+      // desync the depth count.
+      let depth = 0;
+      let j = i;
+      for (; j < content.length; j++) {
+        const ch = content[j];
+        if (ch === '`') {
+          j++;
+          while (j < content.length && content[j] !== '`') {
+            if (content[j] === '\\') j++;
+            j++;
+          }
+          continue;
+        }
+        if (ch === '[') {
+          depth++;
+        } else if (ch === ']') {
+          depth--;
+          if (depth === 0) {
+            j++;
+            break;
+          }
+        }
+      }
+
+      const arrayText = content.slice(i, j);
+      const templatePattern = /`([\s\S]*?)`/g;
+      let templateMatch;
+      while ((templateMatch = templatePattern.exec(arrayText))) {
+        blocks.push({
+          text: templateMatch[1],
+          offset: i + templateMatch.index + 1,
+        });
+      }
+
+      stylesKeyPattern.lastIndex = j;
+    } else if (content[i] === '`') {
+      // Bare template-literal form: `styles: \`...\``.
+      let j = i + 1;
+      while (j < content.length && content[j] !== '`') {
+        if (content[j] === '\\') j++;
+        j++;
+      }
+      blocks.push({ text: content.slice(i + 1, j), offset: i + 1 });
+      stylesKeyPattern.lastIndex = j + 1;
+    }
+  }
+
+  return blocks;
+}
+
 function addFinding(filePath, line, rule, message) {
   findings.push({
     file: relative(root, filePath).split(sep).join('/'),
@@ -115,10 +214,19 @@ function addFinding(filePath, line, rule, message) {
   });
 }
 
+// Buckets a finding's repo-relative path to the app or lib that owns it.
+// Apps are bucketed by name (matching the pre-existing scheme); libs are
+// bucketed under a `libs/<lib-name>` key so they're distinguishable from
+// apps of the same short name and so the allowlist stays self-describing.
 function appNameFor(relPath) {
   // relPath uses forward slashes (normalized in addFinding)
-  const match = relPath.match(/^apps\/([^/]+)\//);
-  return match ? match[1] : null;
+  const appMatch = relPath.match(/^apps\/([^/]+)\//);
+  if (appMatch) return appMatch[1];
+
+  const libMatch = relPath.match(/^libs\/([^/]+)\//);
+  if (libMatch) return `libs/${libMatch[1]}`;
+
+  return null;
 }
 
 if (!statSync(appsRoot, { throwIfNoEntry: false })?.isDirectory()) {
@@ -126,50 +234,86 @@ if (!statSync(appsRoot, { throwIfNoEntry: false })?.isDirectory()) {
   process.exit(1);
 }
 
-for (const filePath of walk(appsRoot)) {
-  const content = readFileSync(filePath, 'utf8');
+const hasLibsRoot = statSync(libsRoot, {
+  throwIfNoEntry: false,
+})?.isDirectory();
+const scanRoots = hasLibsRoot ? [appsRoot, libsRoot] : [appsRoot];
 
-  if (!isTokenFile(filePath)) {
-    const hexPattern = /#[0-9a-fA-F]{3,8}\b/g;
-    let match;
-    while ((match = hexPattern.exec(content))) {
-      if (!insideRootBlock(content, match.index)) {
+for (const scanRoot of scanRoots) {
+  for (const filePath of walk(scanRoot)) {
+    const content = readFileSync(filePath, 'utf8');
+    const isTsFile = filePath.endsWith('.ts');
+
+    if (!isTokenFile(filePath)) {
+      const hexPattern = /#[0-9a-fA-F]{3,8}\b/g;
+
+      if (isTsFile) {
+        // Only scan inside inline Angular component styles, not arbitrary
+        // `.ts` source -- avoids false positives from hex-looking strings
+        // in comments, route configs, mock/test fixtures, etc.
+        for (const block of extractInlineStyleBlocks(content)) {
+          let match;
+          hexPattern.lastIndex = 0;
+          while ((match = hexPattern.exec(block.text))) {
+            if (!insideRootBlock(block.text, match.index)) {
+              addFinding(
+                filePath,
+                lineNumberForOffset(content, block.offset + match.index),
+                'hex-literal',
+                `Replace ${match[0]} with a theme token or semantic variable.`
+              );
+            }
+          }
+        }
+      } else {
+        let match;
+        while ((match = hexPattern.exec(content))) {
+          if (!insideRootBlock(content, match.index)) {
+            addFinding(
+              filePath,
+              lineNumberForOffset(content, match.index),
+              'hex-literal',
+              `Replace ${match[0]} with a theme token or semantic variable.`
+            );
+          }
+        }
+      }
+    }
+
+    // The remaining heuristics (narrow-layout, badge-fixed-color) are
+    // scoped to real stylesheets; inline `.ts` template strings aren't
+    // scanned for these today.
+    if (isTsFile) {
+      continue;
+    }
+
+    const maxWidthPattern = /max-width\s*:\s*(\d+(?:\.\d+)?)px\b/g;
+    let maxWidthMatch;
+    while ((maxWidthMatch = maxWidthPattern.exec(content))) {
+      const selector = selectorForOffset(content, maxWidthMatch.index);
+      const value = Number(maxWidthMatch[1]);
+      if (value < 1280 && /(?:shell|layout)/i.test(selector)) {
         addFinding(
           filePath,
-          lineNumberForOffset(content, match.index),
-          'hex-literal',
-          `Replace ${match[0]} with a theme token or semantic variable.`
+          lineNumberForOffset(content, maxWidthMatch.index),
+          'narrow-layout',
+          `Selector "${selector}" uses max-width ${value}px; top-level shell/layout containers should stay >= 1280px unless intentionally narrow.`
         );
       }
     }
-  }
 
-  const maxWidthPattern = /max-width\s*:\s*(\d+(?:\.\d+)?)px\b/g;
-  let maxWidthMatch;
-  while ((maxWidthMatch = maxWidthPattern.exec(content))) {
-    const selector = selectorForOffset(content, maxWidthMatch.index);
-    const value = Number(maxWidthMatch[1]);
-    if (value < 1280 && /(?:shell|layout)/i.test(selector)) {
-      addFinding(
-        filePath,
-        lineNumberForOffset(content, maxWidthMatch.index),
-        'narrow-layout',
-        `Selector "${selector}" uses max-width ${value}px; top-level shell/layout containers should stay >= 1280px unless intentionally narrow.`
-      );
-    }
-  }
-
-  const badgeColorPattern = /color\s*:\s*(white|black)\b/gi;
-  let colorMatch;
-  while ((colorMatch = badgeColorPattern.exec(content))) {
-    const selector = selectorForOffset(content, colorMatch.index);
-    if (/(?:badge|chip|pill)/i.test(selector)) {
-      addFinding(
-        filePath,
-        lineNumberForOffset(content, colorMatch.index),
-        'badge-fixed-color',
-        `Selector "${selector}" uses color: ${colorMatch[1]}; use a semantic badge foreground token.`
-      );
+    const badgeColorPattern = /color\s*:\s*(white|black)\b/gi;
+    let colorMatch;
+    while ((colorMatch = badgeColorPattern.exec(content))) {
+      const selector = selectorForOffset(content, colorMatch.index);
+      if (/(?:badge|chip|pill)/i.test(selector)) {
+        addFinding(
+          filePath,
+          lineNumberForOffset(content, colorMatch.index),
+          'badge-fixed-color',
+          `Selector "${selector}" uses color: ${colorMatch[1]}; use a semantic badge foreground token.`
+        );
+      }
     }
   }
 }
@@ -218,7 +362,7 @@ if (writeAllowlistPath) {
   mkdirSync(dirname(fullPath), { recursive: true });
   writeFileSync(fullPath, JSON.stringify(snapshot, null, 2) + '\n', 'utf8');
   console.log(
-    `Wrote allowlist snapshot for ${allApps.size} app(s) to ${writeAllowlistPath}.`
+    `Wrote allowlist snapshot for ${allApps.size} app/lib bucket(s) to ${writeAllowlistPath}.`
   );
   process.exit(0);
 }
