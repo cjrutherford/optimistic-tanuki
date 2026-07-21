@@ -2,9 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 import {
   BusinessApiService,
   BusinessStoreProduct,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 
@@ -209,21 +211,24 @@ import { ProductCardComponent } from '@optimistic-tanuki/store-ui';
 export class BusinessProductDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly api = inject(BusinessApiService);
-  private readonly siteSlug = this.route.snapshot.paramMap.get('siteSlug');
-  private readonly productId = this.route.snapshot.paramMap.get('productId');
+  private readonly siteSlug = injectSiteSlugSignal();
+  private readonly productId = toSignal(
+    this.route.paramMap.pipe(map((params) => params.get('productId'))),
+    { initialValue: this.route.snapshot.paramMap.get('productId') }
+  );
   private readonly products = toSignal(this.api.getStoreProducts(), {
     initialValue: [],
   });
 
   readonly product = computed(() => {
-    const product = this.products().find((item) => item.id === this.productId);
+    const productId = this.productId();
+    const product = this.products().find((item) => item.id === productId);
     return product?.active && product.type !== 'service' ? product : null;
   });
 
   backRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug]
-      : ['/sites', 'my-business'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug] : ['/sites', 'my-business'];
   }
 
   productCard(product: BusinessStoreProduct) {
