@@ -3,6 +3,7 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ProfileContext } from '../../profile.context';
 import { TenantContextService } from '../../tenant-context.service';
+import { IconComponent, IconName } from '@optimistic-tanuki/common-ui';
 import {
   FinanceService,
   FinanceWorkspace,
@@ -34,7 +35,7 @@ function hasBlockingChecklistItems(
 @Component({
   selector: 'fc-landing',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, IconComponent],
   templateUrl: './landing.component.html',
   styleUrl: './landing.component.scss',
 })
@@ -49,28 +50,32 @@ export class LandingComponent {
     checklist: Array<{ id: string; label: string; complete: boolean }>;
   } | null>(null);
 
-  readonly commandModes = [
+  readonly commandModes: Array<{
+    name: string;
+    icon: IconName;
+    tagline: string;
+  }> = [
     {
       name: 'Cash Flow',
-      icon: '💸',
+      icon: 'wallet',
       tagline:
         'Stay on top of spending, balances, and incoming cash across each workspace.',
     },
     {
       name: 'Goals',
-      icon: '🎯',
+      icon: 'target',
       tagline:
         'Track the reserves, milestones, and funding targets that matter next.',
     },
     {
       name: 'Scenarios',
-      icon: '🔮',
+      icon: 'trending-up',
       tagline:
         'Test what changes before a new expense or income shift hits your plan.',
     },
     {
       name: 'Imports',
-      icon: '📥',
+      icon: 'download',
       tagline: 'Bring transactions in quickly so your ledgers stay current.',
     },
   ];

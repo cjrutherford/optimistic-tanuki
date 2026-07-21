@@ -26,7 +26,9 @@
 
     <aside class="hero-signal">
       <div class="signal-header">
-        <span class="signal-icon">🦈</span>
+        <span class="signal-icon"
+          ><otui-icon name="link" [size]="20"></otui-icon
+        ></span>
         <span class="signal-label">What this keeps connected</span>
       </div>
       <ul>
@@ -41,7 +43,9 @@
   <section class="mode-grid">
     @for (mode of commandModes; track mode.name; let i = $index) {
     <article class="mode-card" [attr.data-index]="i">
-      <span class="mode-icon">{{ mode.icon }}</span>
+      <span class="mode-icon"
+        ><otui-icon [name]="mode.icon" [size]="28"></otui-icon
+      ></span>
       <div class="mode-content">
         <span class="card-label">{{ mode.name }}</span>
         <p>{{ mode.tagline }}</p>

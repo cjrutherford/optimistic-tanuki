@@ -4,11 +4,12 @@ import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
+import { IconComponent, IconName } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, MurmurationSceneComponent],
+  imports: [CommonModule, MurmurationSceneComponent, IconComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
@@ -22,39 +23,39 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   accentColor = '';
   secondaryColor = '';
 
-  features = [
+  features: { icon: IconName; title: string; description: string }[] = [
     {
-      icon: '🧭',
+      icon: 'compass',
       title: 'Plan with direction',
       description:
         'Keep projects, tasks, and next actions in one workspace so priorities stay visible.',
     },
     {
-      icon: '🔥',
+      icon: 'flame',
       title: 'Execute in rhythm',
       description:
         'Move from backlog to active work with timers, notes, and decision points built into the flow.',
     },
     {
-      icon: '🛡️',
+      icon: 'shield',
       title: 'Track risk before drift',
       description:
         'Capture blockers, tradeoffs, and course corrections before momentum turns into rework.',
     },
     {
-      icon: '📓',
+      icon: 'book',
       title: 'Keep the work legible',
       description:
         'Journal context, decisions, and outcomes so the team can understand why the work moved.',
     },
     {
-      icon: '🤖',
+      icon: 'extension',
       title: 'Use AI where it helps',
       description:
         'Bring in assistance for drafting, planning, and analysis without letting the workflow disappear into chat.',
     },
     {
-      icon: '⚒️',
+      icon: 'tool',
       title: 'Ship with intent',
       description:
         'Turn scattered effort into visible progress with a system that keeps the whole craft in view.',

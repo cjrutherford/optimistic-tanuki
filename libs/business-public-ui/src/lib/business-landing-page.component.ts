@@ -866,10 +866,9 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         );
         background: color-mix(
           in srgb,
-          var(--surface, var(--background)) 92%,
-          transparent 8%
+          var(--surface, var(--background)) 96%,
+          transparent 4%
         );
-        backdrop-filter: blur(8px);
       }
 
       .landing-page-root.embedded-preview .section-surface {
@@ -1087,14 +1086,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
         place-items: center;
         font-weight: 800;
         font-size: 1.1rem;
-        color: white;
-        background: linear-gradient(
-          135deg,
-          var(--primary),
-          color-mix(in srgb, var(--primary) 55%, var(--foreground))
-        );
-        box-shadow: 0 4px 12px
-          color-mix(in srgb, var(--primary) 30%, transparent);
+        color: var(--primary-foreground, white);
+        background: var(--primary);
+        border: var(--personality-border-width, 1px) solid
+          color-mix(in srgb, var(--primary) 70%, var(--foreground));
       }
 
       .credential-list {

@@ -71,7 +71,15 @@ export type IconName =
   | 'language'
   | 'code'
   | 'external-link'
-  | 'settings-applications';
+  | 'settings-applications'
+  | 'wallet'
+  | 'target'
+  | 'trending-up'
+  | 'compass'
+  | 'flame'
+  | 'shield'
+  | 'book'
+  | 'tool';
 
 @Component({
   selector: 'otui-icon',

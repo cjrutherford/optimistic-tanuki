@@ -2,7 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { CardComponent, ButtonComponent } from '@optimistic-tanuki/common-ui';
+import {
+  CardComponent,
+  ButtonComponent,
+  IconComponent,
+} from '@optimistic-tanuki/common-ui';
 import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 
 @Component({
@@ -12,6 +16,7 @@ import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
     CommonModule,
     CardComponent,
     ButtonComponent,
+    IconComponent,
     MurmurationSceneComponent,
   ],
   templateUrl: './landing.component.html',

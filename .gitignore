@@ -51,6 +51,7 @@ Thumbs.db
 
 .nx/cache
 .nx/workspace-data
+.nx/workspace-data-build
 .antigravitycli/
 .cursor/
 .github/instructions/nx.instructions.md
