@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   BusinessApiService,
   BusinessStoreProduct,
   BusinessAuthService,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import {
   CheckboxComponent,
@@ -363,8 +364,7 @@ type ProductForm = {
 export class BusinessOwnerProductsPageComponent {
   private readonly api = inject(BusinessApiService);
   private readonly auth = inject(BusinessAuthService);
-  private readonly route = inject(ActivatedRoute, { optional: true });
-  private readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug');
+  private readonly siteSlug = injectSiteSlugSignal();
   private readonly ownerId = computed(() => this.auth.user()?.userId ?? null);
   private readonly ownerProductsSignal = toSignal(
     toObservable(this.ownerId).pipe(
@@ -411,8 +411,9 @@ export class BusinessOwnerProductsPageComponent {
   }
 
   productViewHref(product: BusinessStoreProduct): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'products', product.id]
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'products', product.id]
       : ['/products', product.id];
   }
 

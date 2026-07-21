@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { EMPTY, catchError, switchMap } from 'rxjs';
@@ -135,7 +136,7 @@ export class BusinessOwnerRegisterPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly siteSlug = injectSiteSlugSignal();
 
   fn = '';
   ln = '';
@@ -146,19 +147,16 @@ export class BusinessOwnerRegisterPageComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly message = signal('');
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
 
   loginRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', 'login']
-      : ['/auth'];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', 'login'] : ['/auth'];
   }
 
   private ownerDestination(onboardingCompletedAt?: string | null): string[] {
     const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', route]
-      : ['/owner', route];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', route] : ['/owner', route];
   }
 
   register(): void {

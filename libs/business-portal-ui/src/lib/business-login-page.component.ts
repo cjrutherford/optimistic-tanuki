@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
+  injectSiteSlugSignal,
   mergeBusinessSiteConfig,
 } from '@optimistic-tanuki/business-data-access';
 import { CardComponent } from '@optimistic-tanuki/common-ui';
@@ -264,7 +265,6 @@ export class BusinessLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
@@ -273,7 +273,7 @@ export class BusinessLoginPageComponent {
   loading = signal(false);
   errorMsg = signal('');
   emailStatus = signal('');
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
 
   requestEmail(
     purpose: 'verification' | 'magic-link' | 'password-reset'
@@ -282,8 +282,8 @@ export class BusinessLoginPageComponent {
       this.emailStatus.set('Enter your email address first.');
       return;
     }
-    const returnPath = this.siteSlug
-      ? `/sites/${this.siteSlug}/owner/login`
+    const returnPath = this.siteSlug()
+      ? `/sites/${this.siteSlug()}/owner/login`
       : '/owner/login';
     this.emailAuth
       .request('business-site', this.email, purpose, returnPath)
@@ -298,16 +298,16 @@ export class BusinessLoginPageComponent {
   }
 
   private clientLoginRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'login']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'login']
       : ['/client/login'];
   }
 
   private ownerPostLoginRoute(onboardingCompletedAt?: string | null): string[] {
     const route = onboardingCompletedAt ? 'dashboard' : 'onboarding';
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'owner', route]
-      : ['/owner', route];
+    const siteSlug = this.siteSlug();
+    return siteSlug ? ['/sites', siteSlug, 'owner', route] : ['/owner', route];
   }
 
   setMode(mode: 'owner' | 'client'): void {
@@ -320,14 +320,15 @@ export class BusinessLoginPageComponent {
   }
 
   registerRoute(): string[] {
+    const siteSlug = this.siteSlug();
     if (this.mode() === 'owner') {
-      return this.siteSlug
-        ? ['/sites', this.siteSlug, 'owner', 'register']
+      return siteSlug
+        ? ['/sites', siteSlug, 'owner', 'register']
         : ['/owner/register'];
     }
 
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'register']
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'register']
       : ['/client/register'];
   }
 

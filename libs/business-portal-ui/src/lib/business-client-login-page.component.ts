@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { BusinessAuthService } from '@optimistic-tanuki/business-data-access';
+import { Router } from '@angular/router';
+import {
+  BusinessAuthService,
+  injectSiteSlugSignal,
+} from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 
@@ -100,7 +103,6 @@ import { EmailAuthClientService } from '@optimistic-tanuki/auth-ui';
 export class BusinessClientLoginPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
   private readonly emailAuth = inject(EmailAuthClientService);
 
   email = '';
@@ -108,7 +110,7 @@ export class BusinessClientLoginPageComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly emailStatus = signal('');
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
+  readonly siteSlug = injectSiteSlugSignal();
 
   requestEmail(
     purpose: 'verification' | 'magic-link' | 'password-reset'
@@ -117,8 +119,8 @@ export class BusinessClientLoginPageComponent {
       this.emailStatus.set('Enter your email address first.');
       return;
     }
-    const returnPath = this.siteSlug
-      ? `/sites/${this.siteSlug}/client/login`
+    const returnPath = this.siteSlug()
+      ? `/sites/${this.siteSlug()}/client/login`
       : '/client/login';
     this.emailAuth
       .request('business-site', this.email, purpose, returnPath)
@@ -133,8 +135,9 @@ export class BusinessClientLoginPageComponent {
   }
 
   private dashboardRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'dashboard']
       : ['/client/dashboard'];
   }
 

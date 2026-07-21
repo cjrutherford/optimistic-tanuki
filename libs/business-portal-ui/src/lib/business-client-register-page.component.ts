@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import {
   BusinessApiService,
   BusinessAuthService,
+  injectSiteSlugSignal,
 } from '@optimistic-tanuki/business-data-access';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import { of, switchMap } from 'rxjs';
@@ -127,7 +128,7 @@ export class BusinessClientRegisterPageComponent {
   private readonly auth = inject(BusinessAuthService);
   private readonly api = inject(BusinessApiService);
   private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute, { optional: true });
+  readonly siteSlug = injectSiteSlugSignal();
 
   fn = '';
   ln = '';
@@ -138,17 +139,18 @@ export class BusinessClientRegisterPageComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly message = signal('');
-  readonly siteSlug = this.route?.snapshot.paramMap.get('siteSlug') ?? null;
 
   loginRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'login']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'login']
       : ['/client/login'];
   }
 
   dashboardRoute(): string[] {
-    return this.siteSlug
-      ? ['/sites', this.siteSlug, 'client', 'dashboard']
+    const siteSlug = this.siteSlug();
+    return siteSlug
+      ? ['/sites', siteSlug, 'client', 'dashboard']
       : ['/client/dashboard'];
   }
 
@@ -169,9 +171,9 @@ export class BusinessClientRegisterPageComponent {
       .pipe(
         switchMap(() => this.auth.loginClient(this.email, this.password)),
         switchMap((clientUser) =>
-          this.siteSlug
+          this.siteSlug()
             ? this.api.createLeadIntake({
-                siteSlug: this.siteSlug,
+                siteSlug: this.siteSlug() as string,
                 userId: clientUser.userId,
                 profileId: clientUser.profileId,
                 name: `${this.fn} ${this.ln}`.trim(),
