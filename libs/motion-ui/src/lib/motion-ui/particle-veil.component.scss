@@ -49,9 +49,13 @@
 
 .particle {
   border-radius: var(--border-radius-full, 999px);
+  // Blend the particle core toward --foreground rather than literal white:
+  // white only reads as "bright" against a dark ground, so on a light theme
+  // the particles washed out into the background. --foreground tracks the
+  // theme (dark on light, light on dark), so the core stays legible in both.
   background: radial-gradient(
     circle,
-    color-mix(in srgb, white 40%, var(--secondary)) 0 28%,
+    color-mix(in srgb, var(--foreground) 45%, var(--secondary)) 0 28%,
     color-mix(in srgb, var(--primary) 70%, transparent) 64%,
     transparent 100%
   );

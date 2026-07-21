@@ -92,7 +92,7 @@
   background: linear-gradient(
     180deg,
     transparent,
-    color-mix(in srgb, white 28%, var(--secondary)) 35%,
+    color-mix(in srgb, var(--foreground) 33%, var(--secondary)) 35%,
     transparent 80%
   );
   box-shadow: 0 0 16px color-mix(in srgb, var(--secondary) 18%, transparent);

@@ -44,7 +44,7 @@
   aspect-ratio: 1;
   background: radial-gradient(
     circle,
-    color-mix(in srgb, white 54%, var(--secondary)) 0 24%,
+    color-mix(in srgb, var(--foreground) 59%, var(--secondary)) 0 24%,
     color-mix(in srgb, var(--secondary) 72%, transparent) 48%,
     transparent 76%
   );
