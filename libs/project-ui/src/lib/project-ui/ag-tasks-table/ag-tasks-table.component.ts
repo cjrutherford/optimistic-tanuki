@@ -420,6 +420,8 @@ export class AgTasksTableComponent implements OnInit, OnChanges, OnDestroy {
       priority: task.priority,
       projectId: task.projectId,
       createdBy: task.createdBy,
+      assignee: task.assignee,
+      dueDate: task.dueDate,
     };
     this.createTask.emit(newTask);
     this.closeModal();

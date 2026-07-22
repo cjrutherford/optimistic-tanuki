@@ -73,11 +73,17 @@ export interface CreateTask {
   status: 'TODO' | 'IN_PROGRESS' | 'DONE' | 'ARCHIVED';
   priority: 'LOW' | 'MEDIUM_LOW' | 'MEDIUM' | 'MEDIUM_HIGH' | 'HIGH';
   createdBy: string;
+  assignee?: string;
+  dueDate?: Date;
   tagIds?: string[]; // Optional array of tag IDs to associate
 }
 
 export interface UpdateTask {
   id: string; // uuid
+  title?: string;
+  description?: string;
+  status?: Task['status'];
+  priority?: Task['priority'];
   assignee?: string;
   dueDate?: Date;
   updatedBy?: string;

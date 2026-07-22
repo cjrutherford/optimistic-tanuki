@@ -59,6 +59,8 @@ export class TaskService {
       description: createTaskDto.description,
       status: createTaskDto.status,
       priority: createTaskDto.priority,
+      assignee: createTaskDto.assignee,
+      dueDate: createTaskDto.dueDate,
       createdBy: createTaskDto.createdBy,
       project: project,
       tags: tags,
@@ -120,6 +122,14 @@ export class TaskService {
       where.updatedBy = query.updatedBy;
     }
 
+    if (query.assignee) {
+      where.assignee = query.assignee;
+    }
+
+    if (query.dueDate) {
+      where.dueDate = Between(...query.dueDate);
+    }
+
     if (query.createdAt) {
       where.createdAt = Between(...query.createdAt);
     }
@@ -133,6 +143,7 @@ export class TaskService {
     const tasks = await this.taskRepository.find({
       where,
       relations: ['tags', 'timeEntries', 'project'],
+      order: { createdAt: 'DESC' },
     });
 
     // Filter by tags if tagIds are provided
@@ -195,6 +206,10 @@ export class TaskService {
     if (updateTaskDto.status !== undefined) task.status = updateTaskDto.status;
     if (updateTaskDto.priority !== undefined)
       task.priority = updateTaskDto.priority;
+    if (updateTaskDto.assignee !== undefined)
+      task.assignee = updateTaskDto.assignee;
+    if (updateTaskDto.dueDate !== undefined)
+      task.dueDate = updateTaskDto.dueDate;
     if (updateTaskDto.updatedBy !== undefined)
       task.updatedBy = updateTaskDto.updatedBy;
 

@@ -46,6 +46,8 @@ import {
   UpdateTaskNoteDto,
   UpdateTaskTimeEntryDto,
   UpdateTimerDto,
+  CreateAiChangeDto,
+  ReviewAiChangeDto,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
@@ -149,6 +151,54 @@ export class ProjectPlanningController {
       this.projectPlanningService.send(
         { cmd: ProjectCommands.DELETE },
         { id, requestingUserId: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({ summary: 'List AI-proposed project changes awaiting review' })
+  @RequirePermissions('project-planning.project.read')
+  @Get('projects/:id/ai-changes')
+  async findAiChanges(@Param('id') projectId: string) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.FIND_AI_CHANGES },
+        { projectId }
+      )
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Submit an AI-proposed project mutation for approval',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @Post('projects/:id/ai-changes')
+  async createAiChange(
+    @User() user: UserDetails,
+    @Param('id') projectId: string,
+    @Body() dto: Omit<CreateAiChangeDto, 'projectId' | 'proposedBy'>
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.CREATE_AI_CHANGE },
+        { ...dto, projectId, proposedBy: user.profileId }
+      )
+    );
+  }
+
+  @ApiOperation({
+    summary: 'Approve or reject an AI-proposed project mutation',
+  })
+  @RequirePermissions('project-planning.project.update')
+  @Patch('projects/ai-changes/:id')
+  async reviewAiChange(
+    @User() user: UserDetails,
+    @Param('id') id: string,
+    @Body() dto: Omit<ReviewAiChangeDto, 'id'>
+  ) {
+    return await firstValueFrom(
+      this.projectPlanningService.send(
+        { cmd: ProjectCommands.REVIEW_AI_CHANGE },
+        { ...dto, id, reviewedBy: user.profileId }
       )
     );
   }

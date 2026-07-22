@@ -8,6 +8,7 @@ import {
   MaxLength,
   MinLength,
   IsEnum,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -97,4 +98,20 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   appScope?: string;
+
+  @ApiProperty({
+    description: 'Whether the project can be discovered by non-members',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @ApiProperty({
+    description: 'Whether AI-proposed changes require human approval',
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireHumanApproval?: boolean;
 }

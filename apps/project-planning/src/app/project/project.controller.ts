@@ -7,10 +7,18 @@ import {
   UpdateProjectDto,
 } from '@optimistic-tanuki/models';
 import { ProjectCommands } from '@optimistic-tanuki/constants';
+import {
+  CreateAiChangeDto,
+  ReviewAiChangeDto,
+} from '@optimistic-tanuki/models';
+import { AiChangeService } from '../ai-change/ai-change.service';
 
 @Controller()
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly aiChangeService: AiChangeService
+  ) {}
 
   @MessagePattern({ cmd: ProjectCommands.CREATE })
   async create(@Payload() createProjectDto: CreateProjectDto) {
@@ -48,5 +56,22 @@ export class ProjectController {
     @Payload('requestingUserId') requestingUserId?: string
   ) {
     return await this.projectService.remove(id, requestingUserId);
+  }
+
+  @MessagePattern({ cmd: ProjectCommands.CREATE_AI_CHANGE })
+  createAiChange(@Payload() dto: CreateAiChangeDto) {
+    return this.aiChangeService.create(dto);
+  }
+
+  @MessagePattern({ cmd: ProjectCommands.FIND_AI_CHANGES })
+  findAiChanges(@Payload('projectId') projectId: string) {
+    return this.aiChangeService.findAll(projectId);
+  }
+
+  @MessagePattern({ cmd: ProjectCommands.REVIEW_AI_CHANGE })
+  reviewAiChange(
+    @Payload() payload: ReviewAiChangeDto & { reviewedBy: string }
+  ) {
+    return this.aiChangeService.review(payload, payload.reviewedBy);
   }
 }

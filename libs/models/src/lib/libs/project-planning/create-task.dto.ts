@@ -7,6 +7,7 @@ import {
   MinLength,
   IsArray,
   IsOptional,
+  IsDateString,
 } from 'class-validator';
 
 export enum TaskStatus {
@@ -50,6 +51,16 @@ export class CreateTaskDto {
   @ApiProperty({ description: 'Priority of the task', enum: TaskPriority })
   @IsEnum(TaskPriority)
   priority!: TaskPriority;
+
+  @ApiPropertyOptional({ description: 'User assigned to the task' })
+  @IsOptional()
+  @IsUUID()
+  assignee?: string;
+
+  @ApiPropertyOptional({ description: 'Due date of the task' })
+  @IsOptional()
+  @IsDateString()
+  dueDate?: Date;
 
   @ApiProperty({ description: 'User who created the task' })
   @IsString()

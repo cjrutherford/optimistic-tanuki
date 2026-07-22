@@ -15,7 +15,6 @@ import {
   CdkDragDrop,
   DragDropModule,
   moveItemInArray,
-  transferArrayItem,
 } from '@angular/cdk/drag-drop';
 import { Task, CreateTask, UpdateTask } from '@optimistic-tanuki/ui-models';
 import { ButtonComponent, ModalComponent } from '@optimistic-tanuki/common-ui';
@@ -126,21 +125,9 @@ export class TaskKanbanComponent
       // Move to a different column
       const task = event.previousContainer.data[event.previousIndex];
 
-      // Transfer the item
-      transferArrayItem(
-        event.previousContainer.data,
-        event.container.data,
-        event.previousIndex,
-        event.currentIndex
-      );
-
       // Update the task status
       const updatedTask = { id: task.id, status: targetColumn.status };
       this.editTask.emit(updatedTask);
-      this.statusChanged.emit({
-        taskId: task.id,
-        newStatus: targetColumn.status,
-      });
     }
   }
 
