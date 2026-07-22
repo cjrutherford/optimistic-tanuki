@@ -139,6 +139,26 @@ cp ../../libs/app-registry/src/lib/default-registry.json ../../k8s/base/config/a
 
 Then apply your normal K8s rollout flow.
 
+## Mobile Configuration
+
+Apps of type `client` may include an optional `mobile` block to enable Capacitor
+mobile app generation:
+
+```yaml
+mobile:
+  enabled: true # Enable mobile app generation
+  bundleId: com.example.app # Reverse-DNS bundle ID (required if enabled)
+  project: app-mobile # Optional Nx project name override
+  appName: Example App # Optional display name override
+```
+
+- `enabled`: Boolean to enable/disable mobile app generation (required if block present)
+- `bundleId`: Reverse-DNS package identifier like `com.example.app` (required if enabled). Must match pattern `^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$`
+- `project`: Optional Nx project name for mobile app; defaults to appId if omitted
+- `appName`: Optional display name for mobile app; defaults to app name if omitted
+
+The mobile block is only valid for apps with `appType: client`.
+
 ## Runtime Wiring
 
 - Docker Compose mounts

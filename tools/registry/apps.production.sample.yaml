@@ -49,6 +49,9 @@ apps:
     description: Planning and execution workspace for goals, tasks, and projects.
     iconUrl: https://forgeofwill.com/favicon.ico
     sortOrder: 4
+    mobile:
+      enabled: true
+      bundleId: com.forgeofwill.app
 
   - appId: client-interface
     name: Optimistic Tanuki
@@ -61,6 +64,9 @@ apps:
     authEmail: { enabled: true, from: no-reply@optimistic-tanuki.com }
     description: Client-facing social and community interface for the broader platform.
     sortOrder: 5
+    mobile:
+      enabled: true
+      bundleId: com.optimistictanuki.app
 
   - appId: store
     name: HAI Store
@@ -84,6 +90,9 @@ apps:
     description: Local-first community, classifieds, and business listings.
     iconUrl: https://towne-square.com/favicon.ico
     sortOrder: 7
+    mobile:
+      enabled: true
+      bundleId: com.townesquare.app
 
   - appId: fin-commander
     name: Fin Commander
@@ -97,6 +106,9 @@ apps:
     description: Guided personal finance workflows for accounts, plans, and scenarios.
     iconUrl: https://fin-commander.experiments.christopherrutherford.net/favicon.ico
     sortOrder: 8
+    mobile:
+      enabled: true
+      bundleId: net.christopherrutherford.fincommander
 
   - appId: opportunity-compass
     name: Opportunity Compass

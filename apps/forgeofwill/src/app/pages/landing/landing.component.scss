@@ -1154,6 +1154,16 @@
     max-width: 100%;
     animation: none;
     padding: var(--spacing-md, 1.5rem);
+    // backdrop-filter forces a re-sample of whatever's behind it on every
+    // frame that background moves; on mobile WebView GPUs that's expensive
+    // enough (stacked with the mesh layers below) to visibly tear/flicker.
+    // Drop it and lean on a slightly more opaque background instead.
+    backdrop-filter: none;
+    background: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--surface) 94%, transparent) 0%,
+      color-mix(in srgb, var(--surface) 82%, transparent) 100%
+    );
   }
 
   .crystalline-orbs {
@@ -1168,6 +1178,14 @@
 
   .gradient-mesh {
     filter: blur(40px);
+
+    // The mesh layers are the biggest remaining animation cost on mobile:
+    // four full-viewport, mix-blend-mode: screen layers recompositing every
+    // frame. Freeze them (still visible, just static) instead of hiding them
+    // outright so the background doesn't visually flatten.
+    .mesh-layer {
+      animation: none;
+    }
   }
 }
 

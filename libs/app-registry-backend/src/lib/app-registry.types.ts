@@ -21,6 +21,12 @@ export interface AppRegistration {
     from: string;
     replyTo?: string;
   };
+  mobile?: {
+    enabled: boolean;
+    bundleId: string;
+    project?: string;
+    appName?: string;
+  };
   sortOrder?: number;
   updatedAt?: string;
 }

@@ -64,19 +64,82 @@
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
+        },
+        "mobile": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "prerender": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ],
+          "fileReplacements": [
+            {
+              "replace": "apps/client-interface/src/environments/app-env.ts",
+              "with": "apps/client-interface/src/environments/app-env.mobile.ts"
+            }
+          ]
+        },
+        "mobile-dev": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "prerender": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ]
         }
       },
       "defaultConfiguration": "production"
     },
+    "mobile-sync": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm exec nx build client-interface --configuration mobile",
+          "pnpm exec cap sync"
+        ],
+        "cwd": "apps/client-interface",
+        "parallel": false
+      }
+    },
     "serve": {
       "continuous": true,
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/client-interface/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "client-interface:build:production"
         },
         "development": {
           "buildTarget": "client-interface:build:development"
+        },
+        "mobile-dev": {
+          "buildTarget": "client-interface:build:mobile-dev"
         }
       },
       "defaultConfiguration": "development"

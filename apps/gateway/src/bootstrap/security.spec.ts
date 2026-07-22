@@ -77,6 +77,35 @@ describe('gateway security helpers', () => {
     );
   });
 
+  it('adds Capacitor webview origins when a registry app is mobile-enabled', () => {
+    const mobileRegistry: AppRegistry = {
+      ...registry,
+      apps: [
+        {
+          ...registry.apps[0],
+          mobile: { enabled: true, bundleId: 'com.forgeofwill.app' },
+        },
+        registry.apps[1],
+      ],
+    };
+
+    expect(getTrustedOrigins({ registry: mobileRegistry })).toEqual(
+      expect.arrayContaining(['https://localhost', 'capacitor://localhost'])
+    );
+  });
+
+  it('does not add Capacitor webview origins when no registry app is mobile-enabled', () => {
+    const trusted = getTrustedOrigins({ registry });
+    expect(trusted).not.toContain('https://localhost');
+    expect(trusted).not.toContain('capacitor://localhost');
+  });
+
+  it('allows the capacitor:// scheme when it is in the trusted origins', () => {
+    expect(
+      isAllowedOrigin('capacitor://localhost', ['capacitor://localhost'])
+    ).toBe(true);
+  });
+
   it('allows configured origins', () => {
     expect(
       isAllowedOrigin('https://portal.optimistictanuki.com', [

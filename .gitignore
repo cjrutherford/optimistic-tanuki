@@ -105,3 +105,9 @@ ops/
 .playwright-mcp/
 .setup-complete
 .setup-operator.json
+
+# Capacitor: web assets copied into native projects by `cap sync` (regenerated from dist)
+apps/*/android/app/src/main/assets/public/
+apps/*/android/app/src/main/assets/capacitor.config.json
+apps/*/ios/App/App/public/
+apps/*/ios/App/App/capacitor.config.json

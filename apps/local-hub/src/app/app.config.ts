@@ -16,28 +16,39 @@ import {
   SOCKET_HOST,
   SOCKET_IO_INSTANCE,
   SOCKET_NAMESPACE,
+  SOCKET_PATH,
   SOCKET_AUTH_TOKEN_PROVIDER,
   SOCKET_AUTH_ERROR_HANDLER,
 } from '@optimistic-tanuki/chat-ui';
 import { AuthStateService } from './services/auth-state.service';
 import { AuthenticationService } from './services/authentication.service';
+import { APP_ENV } from '../environments/app-env';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideClientHydration(),
+    ...(APP_ENV.mobile ? [] : [provideClientHydration()]),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideAnimationsAsync(),
     provideHttpClient(withInterceptors([authInterceptor])),
     {
       provide: API_BASE_URL,
-      useValue: '/api',
+      useValue: APP_ENV.apiBaseUrl,
     },
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        const value = (window as any)['env']?.SOCKET_URL || ':3300';
-        return value;
+        return typeof window === 'undefined'
+          ? ''
+          : (window as any)['env']?.SOCKET_URL || APP_ENV.socketUrl || ':3300';
+      },
+    },
+    {
+      provide: SOCKET_PATH,
+      useFactory: () => {
+        return typeof window === 'undefined'
+          ? '/socket.io'
+          : (window as any)['env']?.SOCKET_PATH || APP_ENV.socketPath;
       },
     },
     {

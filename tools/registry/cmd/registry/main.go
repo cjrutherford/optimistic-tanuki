@@ -7,12 +7,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+type mobileConfig struct {
+	Enabled bool   `json:"enabled" yaml:"enabled"`
+	BundleId string `json:"bundleId" yaml:"bundleId"`
+	Project string `json:"project,omitempty" yaml:"project,omitempty"`
+	AppName string `json:"appName,omitempty" yaml:"appName,omitempty"`
+}
 
 type appConfig struct {
 	AppID       string           `json:"appId" yaml:"appId"`
@@ -27,6 +35,7 @@ type appConfig struct {
 	IconURL     string           `json:"iconUrl,omitempty" yaml:"iconUrl,omitempty"`
 	SortOrder   int              `json:"sortOrder,omitempty" yaml:"sortOrder,omitempty"`
 	AuthEmail   *authEmailConfig `json:"authEmail,omitempty" yaml:"authEmail,omitempty"`
+	Mobile      *mobileConfig    `json:"mobile,omitempty" yaml:"mobile,omitempty"`
 }
 
 type authEmailConfig struct {
@@ -353,8 +362,29 @@ func validateConfig(cfg registryConfig) error {
 		if app.Visibility != "public" && app.Visibility != "internal" {
 			return fmt.Errorf("%s has invalid visibility %q", app.AppID, app.Visibility)
 		}
+		if app.Mobile != nil {
+			if app.AppType != "client" {
+				return fmt.Errorf("%s has mobile block but appType is %q (mobile block only supported for appType client)", app.AppID, app.AppType)
+			}
+			if app.Mobile.Enabled {
+				if app.Mobile.BundleId == "" {
+					return fmt.Errorf("%s mobile block has enabled=true but bundleId is empty", app.AppID)
+				}
+				if !validateBundleId(app.Mobile.BundleId) {
+					return fmt.Errorf("%s mobile block has invalid bundleId %q (must match reverse-DNS pattern)", app.AppID, app.Mobile.BundleId)
+				}
+			}
+		}
 	}
 	return nil
+}
+
+func validateBundleId(bundleId string) bool {
+	// Reverse-DNS pattern: starts with letter, followed by alphanumeric or dots,
+	// with dots separating segments that start with a letter and contain alphanumerics/underscores
+	pattern := `^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$`
+	re := regexp.MustCompile(pattern)
+	return re.MatchString(bundleId)
 }
 
 func normalizeApps(apps []appConfig) []appConfig {

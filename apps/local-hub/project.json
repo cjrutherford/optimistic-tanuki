@@ -51,6 +51,52 @@
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
+        },
+        "mobile": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "prerender": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ],
+          "fileReplacements": [
+            {
+              "replace": "apps/local-hub/src/environments/app-env.ts",
+              "with": "apps/local-hub/src/environments/app-env.mobile.ts"
+            }
+          ]
+        },
+        "mobile-dev": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "prerender": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "40kb"
+            }
+          ]
         }
       },
       "defaultConfiguration": "production"
@@ -58,12 +104,18 @@
     "serve": {
       "continuous": true,
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/local-hub/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "local-hub:build:production"
         },
         "development": {
           "buildTarget": "local-hub:build:development"
+        },
+        "mobile-dev": {
+          "buildTarget": "local-hub:build:mobile-dev"
         }
       },
       "defaultConfiguration": "development"
@@ -92,6 +144,17 @@
         "port": 4201,
         "staticFilePath": "dist/apps/local-hub/browser",
         "spa": true
+      }
+    },
+    "mobile-sync": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm exec nx build local-hub --configuration mobile",
+          "pnpm exec cap sync"
+        ],
+        "cwd": "apps/local-hub",
+        "parallel": false
       }
     }
   }

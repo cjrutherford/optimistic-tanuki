@@ -31,10 +31,12 @@ import {
 } from '@optimistic-tanuki/chat-ui';
 import { io } from 'socket.io-client';
 import { Router } from '@angular/router';
+import { APP_ENV } from '../environments/app-env';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideClientHydration(),
+    // Hydration only applies to the SSR web build; the mobile bundle is pure CSR.
+    ...(APP_ENV.mobile ? [] : [provideClientHydration()]),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     provideAnimationsAsync(),
@@ -44,14 +46,14 @@ export const appConfig: ApplicationConfig = {
     ),
     {
       provide: API_BASE_URL,
-      useValue: '/api',
+      useValue: APP_ENV.apiBaseUrl,
     },
     {
       provide: SOCKET_HOST,
       useFactory: () => {
         return typeof window === 'undefined'
           ? ''
-          : (window as any)['env']?.SOCKET_URL || '';
+          : (window as any)['env']?.SOCKET_URL || APP_ENV.socketUrl;
       },
     },
     {
@@ -59,7 +61,7 @@ export const appConfig: ApplicationConfig = {
       useFactory: () => {
         return typeof window === 'undefined'
           ? '/socket.io'
-          : (window as any)['env']?.SOCKET_PATH || '/socket.io';
+          : (window as any)['env']?.SOCKET_PATH || APP_ENV.socketPath;
       },
     },
     {

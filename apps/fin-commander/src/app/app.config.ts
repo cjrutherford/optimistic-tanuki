@@ -15,9 +15,12 @@ import { appRoutes } from './app.routes';
 import { FontLoadingService, ThemeService } from '@optimistic-tanuki/theme-lib';
 import { AuthInterceptor } from './http.interceptor';
 import { financeAppScopeInterceptor } from './finance-appscope.interceptor';
+import { APP_ENV } from '../environments/app-env';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Hydration only applies to the SSR web build; the mobile bundle is pure CSR.
+    ...(APP_ENV.mobile ? [] : [provideClientHydration(withEventReplay())]),
     provideHttpClient(
       withInterceptors([
         AuthInterceptor,
@@ -26,12 +29,11 @@ export const appConfig: ApplicationConfig = {
       ]),
       withFetch()
     ),
-    provideClientHydration(withEventReplay()),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes),
     {
       provide: API_BASE_URL,
-      useValue: '/api',
+      useValue: APP_ENV.apiBaseUrl,
     },
     ThemeService,
     FontLoadingService,

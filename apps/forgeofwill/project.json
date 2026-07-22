@@ -56,19 +56,80 @@
           "optimization": false,
           "extractLicenses": false,
           "sourceMap": true
+        },
+        "mobile": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "32kb"
+            }
+          ],
+          "fileReplacements": [
+            {
+              "replace": "apps/forgeofwill/src/environments/app-env.ts",
+              "with": "apps/forgeofwill/src/environments/app-env.mobile.ts"
+            }
+          ]
+        },
+        "mobile-dev": {
+          "outputMode": "static",
+          "server": false,
+          "ssr": false,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "2mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "8kb",
+              "maximumError": "32kb"
+            }
+          ]
         }
       },
       "defaultConfiguration": "production"
     },
+    "mobile-sync": {
+      "executor": "nx:run-commands",
+      "options": {
+        "commands": [
+          "pnpm exec nx build forgeofwill --configuration mobile",
+          "pnpm exec cap sync"
+        ],
+        "cwd": "apps/forgeofwill",
+        "parallel": false
+      }
+    },
     "serve": {
       "continuous": true,
       "executor": "@angular-devkit/build-angular:dev-server",
+      "options": {
+        "proxyConfig": "apps/forgeofwill/proxy.conf.json"
+      },
       "configurations": {
         "production": {
           "buildTarget": "forgeofwill:build:production"
         },
         "development": {
           "buildTarget": "forgeofwill:build:development"
+        },
+        "mobile-dev": {
+          "buildTarget": "forgeofwill:build:mobile-dev"
         }
       },
       "defaultConfiguration": "development"

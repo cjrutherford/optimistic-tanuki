@@ -3,6 +3,9 @@ import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 
 const UNSAFE_HTTP_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0']);
+// Origins used by Capacitor webviews: Android serves the bundled app from
+// https://localhost (androidScheme), iOS from capacitor://localhost.
+const MOBILE_APP_ORIGINS = ['https://localhost', 'capacitor://localhost'];
 const PRODUCTION = process.env['NODE_ENV'] === 'production';
 const DEV_ALLOW_ALL_BROWSER_ORIGINS =
   !PRODUCTION && process.env['DEV_ALLOW_ALL_BROWSER_ORIGINS'] === 'true';
@@ -42,6 +45,12 @@ export const getTrustedOrigins = ({
     }
   }
 
+  if ((registry?.apps ?? []).some((app) => app.mobile?.enabled)) {
+    for (const origin of MOBILE_APP_ORIGINS) {
+      trustedOrigins.add(origin);
+    }
+  }
+
   return [...trustedOrigins];
 };
 
@@ -55,7 +64,13 @@ export const originHost = (origin: string): string | null => {
 
 export const normalizeOrigin = (origin: string): string | null => {
   try {
-    return trimOrigin(new URL(origin).origin);
+    const url = new URL(origin);
+    // URL.origin is the literal string "null" for non-special schemes such as
+    // capacitor:// (iOS webview); reconstruct scheme://host for those.
+    if (url.origin === 'null') {
+      return url.host ? `${url.protocol}//${url.host}` : null;
+    }
+    return trimOrigin(url.origin);
   } catch {
     return null;
   }
