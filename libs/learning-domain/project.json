@@ -1,0 +1,31 @@
+{
+  "name": "learning-domain",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/learning-domain/src",
+  "projectType": "library",
+  "tags": [
+    "type:domain",
+    "scope:shared",
+    "platform:server",
+    "visibility:internal"
+  ],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/learning-domain",
+        "main": "libs/learning-domain/src/index.ts",
+        "tsConfig": "libs/learning-domain/tsconfig.lib.json",
+        "assets": ["libs/learning-domain/*.md"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/learning-domain/jest.config.ts"
+      }
+    }
+  }
+}

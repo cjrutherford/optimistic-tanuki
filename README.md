@@ -177,3 +177,5 @@ See [docs/testing/quick-reference.md](./docs/testing/quick-reference.md) and [do
 - `examples/`: code examples and reference implementations
 
 Use [docs/README.md](./docs/README.md) as the documentation index.
+
+Learning platform planning and implementation docs live at [docs/learning-platform/README.md](./docs/learning-platform/README.md).
