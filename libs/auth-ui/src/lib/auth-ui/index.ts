@@ -4,4 +4,7 @@ export { MfaBlockComponent } from './mfa-block/mfa-block.component';
 export { ConfirmBlockComponent } from './confirm-block/confirm-block.component';
 export { OAuthButtonsComponent } from './oauth-buttons/oauth-buttons.component';
 export type { OAuthProviderEvent } from './oauth-buttons/oauth-buttons.component';
-export { OAuthCallbackComponent } from '../oauth-callback/oauth-callback.component';
+export {
+  OAuthCallbackComponent,
+  oauthCallbackRoutes,
+} from '../oauth-callback/oauth-callback.component';

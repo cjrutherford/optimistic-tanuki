@@ -1,8 +1,10 @@
 import { Route } from '@angular/router';
+import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
 import { LandingPageComponent } from './components/landing-page.component';
 import { AppResolverComponent } from './components/app-resolver.component';
 
 export const appRoutes: Route[] = [
+  ...oauthCallbackRoutes,
   {
     path: 'app/:appName',
     component: AppResolverComponent,

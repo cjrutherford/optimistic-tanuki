@@ -17,9 +17,9 @@ apps:
   - appId: system-configurator
     name: HAI Computer
     domain: hopefulaspirationsindustries.com
-    subdomain: computer
-    uiBaseUrl: https://computer.hopefulaspirationsindustries.com
-    apiBaseUrl: https://hopefulaspirationsindustries.com/api
+    subdomain: hardware
+    uiBaseUrl: https://hardware.hopefulaspirationsindustries.com
+    apiBaseUrl: https://hardware.hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     authEmail:
@@ -67,7 +67,7 @@ apps:
     domain: hopefulaspirationsindustries.com
     subdomain: store
     uiBaseUrl: https://store.hopefulaspirationsindustries.com
-    apiBaseUrl: https://hopefulaspirationsindustries.com/api
+    apiBaseUrl: https://store.hopefulaspirationsindustries.com/api
     appType: client
     visibility: public
     description: Public storefront for HAI products, services, and bookings.
@@ -77,7 +77,7 @@ apps:
     name: Towne Square
     domain: towne-square.com
     uiBaseUrl: https://towne-square.com
-    apiBaseUrl: https://api.hopefulaspirationsindustries.com
+    apiBaseUrl: https://towne-square.com/api
     appType: client
     visibility: public
     authEmail: { enabled: true, from: no-reply@towne-square.com }
@@ -156,3 +156,11 @@ apps:
     authEmail: { enabled: true, from: no-reply@christopherrutherford.net }
     description: Self-configurable business site.
     sortOrder: 54
+  - appId: video-platform
+    name: Video Platform
+    domain: experiments.christopherrutherford.net
+    subdomain: video
+    uiBaseUrl: https://video.experiments.christopherrutherford.net
+    apiBaseUrl: https://video.experiments.christopherrutherford.net/api
+    appType: client
+    visibility: public

@@ -1,10 +1,12 @@
 import { Route } from '@angular/router';
+import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
 import { CatalogComponent } from './pages/catalog/catalog.component';
 import { CartComponent } from './pages/cart/cart.component';
 import { DonationsComponent } from './pages/donations/donations.component';
 import { BookingsComponent } from './pages/bookings/bookings.component';
 
 export const appRoutes: Route[] = [
+  ...oauthCallbackRoutes,
   { path: '', redirectTo: '/catalog', pathMatch: 'full' },
   { path: 'catalog', component: CatalogComponent },
   { path: 'cart', component: CartComponent },

@@ -10,7 +10,10 @@ import { clientPortalFeatureGuard } from './client-portal-feature.guard';
 import { clientTasksFeatureGuard } from './client-tasks-feature.guard';
 import { invoicesFeatureGuard } from './invoices-feature.guard';
 import { ownerFinanceFeatureGuard } from './owner-finance-feature.guard';
-import { emailAuthRoutes } from '@optimistic-tanuki/auth-ui';
+import {
+  emailAuthRoutes,
+  oauthCallbackRoutes,
+} from '@optimistic-tanuki/auth-ui';
 
 const ownerFinanceConfig = {
   routeBase: '/owner/finance',
@@ -118,6 +121,7 @@ const clientChildren: Route[] = [
 ];
 
 export const appRoutes: Route[] = [
+  ...oauthCallbackRoutes,
   ...emailAuthRoutes('business-site:token'),
   {
     path: '',

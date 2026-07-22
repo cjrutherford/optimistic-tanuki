@@ -1,6 +1,6 @@
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
-import { isPlatformBrowser, CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
+import { DOCUMENT, isPlatformBrowser, CommonModule } from '@angular/common';
+import { ActivatedRoute, Route, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 @Component({
@@ -80,7 +80,9 @@ export class OAuthCallbackComponent implements OnInit {
   error: string | null = null;
   private platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
-  private readonly apiBaseUrl = inject(API_BASE_URL);
+  private readonly apiBaseUrl =
+    inject(API_BASE_URL, { optional: true }) ?? '/api';
+  private readonly document = inject(DOCUMENT);
 
   constructor(private route: ActivatedRoute) {}
 
@@ -99,8 +101,8 @@ export class OAuthCallbackComponent implements OnInit {
       const errorDescription = params['error_description'];
 
       if (provider && (code || error)) {
-        const query = new URLSearchParams(window.location.search);
-        window.location.replace(
+        const query = new URLSearchParams(this.document.location.search);
+        this.document.location.replace(
           `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(
             provider
           )}?${query.toString()}`
@@ -169,3 +171,7 @@ export class OAuthCallbackComponent implements OnInit {
     }
   }
 }
+
+export const oauthCallbackRoutes: readonly Route[] = [
+  { path: 'oauth/callback', component: OAuthCallbackComponent },
+];
