@@ -155,7 +155,9 @@ export class EmailActionComponent implements OnInit {
   ngOnInit() {
     this.purpose = this.route.snapshot.data['purpose'] || 'verification';
     if (!isPlatformBrowser(this.platformId)) return;
-    this.token = parseEmailActionToken(window.location.hash);
+    this.token =
+      this.route.snapshot.queryParamMap.get('token') ||
+      parseEmailActionToken(window.location.hash);
     if (!this.token) {
       this.state = 'error';
       this.message = 'The secure token is missing from this link.';
