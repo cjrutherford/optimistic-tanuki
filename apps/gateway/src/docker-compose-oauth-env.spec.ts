@@ -22,10 +22,10 @@ describe('docker compose oauth environment wiring', () => {
     ];
 
     const authenticationSection = compose.match(
-      /authentication:\n([\s\S]*?)(?:\n\s{2}[a-z0-9-]+:|$)/i
+      /^  authentication:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
     const gatewaySection = compose.match(
-      /gateway:\n([\s\S]*?)(?:\n\s{2}[a-z0-9-]+:|$)/i
+      /^  gateway:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
 
     expect(authenticationSection).toBeTruthy();
@@ -35,5 +35,17 @@ describe('docker compose oauth environment wiring', () => {
       expect(gatewaySection).toContain(line);
       expect(authenticationSection).not.toContain(line);
     }
+  });
+
+  it('disables automatic email verification by default in the production stack', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const authenticationSection = compose.match(
+      /^  authentication:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(authenticationSection).toContain(
+      'AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}'
+    );
   });
 });

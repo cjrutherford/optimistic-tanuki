@@ -333,13 +333,26 @@ export class AuthenticationController {
   async registerUser(
     @Body() data: RegisterRequest,
     @AppScope() appScope: string,
-    @Headers('x-ot-app-id') appId?: string
+    @Headers('x-ot-app-id') appId?: string,
+    @Headers('origin') origin?: string
   ) {
     try {
       this.logger.debug('registerUser called');
+      const canonicalAppId = this.resolveRegistrationAppId(
+        appId,
+        appScope,
+        origin
+      );
+      if (!canonicalAppId) {
+        throw new HttpException(
+          'Email authentication is not configured for this application',
+          HttpStatus.BAD_REQUEST
+        );
+      }
+      this.resolveEmailApp(canonicalAppId);
+
       const result = await this.registerBootstrap.register(data, appScope);
-      const canonicalAppId = appId || this.canonicalAppForScope(appScope);
-      if (canonicalAppId && !result?.data?.user?.emailVerifiedAt) {
+      if (!result?.data?.user?.emailVerifiedAt) {
         try {
           await this.requestEmailAction(canonicalAppId, 'verification', {
             email: data.email,
@@ -351,9 +364,19 @@ export class AuthenticationController {
             this.errorMessage(deliveryError)
           );
         }
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            verificationPending: true,
+          },
+        };
       }
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error(
         'Error in registerUser:',
         error?.message || JSON.stringify(error)
@@ -641,6 +664,38 @@ export class AuthenticationController {
     return this.appRegistry.apps.some((app) => app.appId === appId)
       ? appId
       : null;
+  }
+
+  private resolveRegistrationAppId(
+    appId?: string,
+    appScope?: string,
+    origin?: string
+  ): string | null {
+    const explicitAppId = appId?.trim();
+    if (explicitAppId) {
+      return this.canonicalAppForScope(explicitAppId);
+    }
+
+    const scopedAppId = appScope?.trim();
+    if (scopedAppId) {
+      return this.canonicalAppForScope(scopedAppId);
+    }
+
+    if (!origin) return null;
+    try {
+      const originUrl = new URL(origin).origin;
+      return (
+        this.appRegistry.apps.find((app) => {
+          try {
+            return new URL(app.uiBaseUrl).origin === originUrl;
+          } catch {
+            return false;
+          }
+        })?.appId || null
+      );
+    } catch {
+      return null;
+    }
   }
 
   private errorMessage(error: unknown): string {

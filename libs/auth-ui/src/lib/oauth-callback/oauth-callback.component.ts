@@ -2,12 +2,15 @@ import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser, CommonModule } from '@angular/common';
 import { ActivatedRoute, Route, Router } from '@angular/router';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'lib-oauth-callback',
   standalone: true,
   imports: [CommonModule],
   template: `
+    <meta name="referrer" content="no-referrer" />
     <div class="oauth-callback-container">
       <div *ngIf="!error" class="loading">
         <h2>Completing authentication...</h2>
@@ -83,6 +86,7 @@ export class OAuthCallbackComponent implements OnInit {
   private readonly apiBaseUrl =
     inject(API_BASE_URL, { optional: true }) ?? '/api';
   private readonly document = inject(DOCUMENT);
+  private readonly http = inject(HttpClient, { optional: true });
 
   constructor(private route: ActivatedRoute) {}
 
@@ -91,72 +95,114 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
     // Parse query parameters from URL
-    this.route.queryParams.subscribe((params) => {
-      const provider = this.route.snapshot.paramMap.get('provider');
-      const token = params['token'];
-      const returnTo = params['returnTo'];
-      const code = params['code'];
-      const state = params['state'];
-      const error = params['error'];
-      const errorDescription = params['error_description'];
+    this.route.queryParams.subscribe(
+      (params) => void this.handleParams(params)
+    );
+  }
 
-      if (provider && (code || error)) {
-        const query = new URLSearchParams(this.document.location.search);
-        this.document.location.replace(
-          `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(
-            provider
-          )}?${query.toString()}`
-        );
-        return;
-      }
+  private async handleParams(
+    params: Record<string, string | undefined>
+  ): Promise<void> {
+    const provider = this.route.snapshot.paramMap.get('provider');
+    const callbackCode = params['callbackCode'];
+    const returnTo = params['returnTo'];
+    const code = params['code'];
+    const state = params['state'];
+    const error = params['error'];
+    const errorDescription = params['error_description'];
 
-      if (error) {
-        this.error = errorDescription || error;
-        this.sendMessageToParent({
-          type: 'oauth-callback',
-          payload: {
-            success: false,
-            token: undefined,
-            error: error,
-            errorDescription: errorDescription,
-          },
-        });
-        return;
-      }
+    if (provider && (code || error)) {
+      const query = new URLSearchParams(this.document.location.search);
+      this.document.location.replace(
+        `${this.apiBaseUrl}/oauth/callback/${encodeURIComponent(
+          provider
+        )}?${query.toString()}`
+      );
+      return;
+    }
 
-      if (!token) {
-        this.error = 'No authentication token received';
-        this.sendMessageToParent({
-          type: 'oauth-callback',
-          payload: {
-            success: false,
-            error: 'No authentication token received',
-          },
-        });
-        return;
-      }
-
+    if (error) {
+      this.error = errorDescription || error;
       this.sendMessageToParent({
         type: 'oauth-callback',
         payload: {
-          success: true,
-          token,
+          success: false,
+          token: undefined,
+          error: error,
+          errorDescription: errorDescription,
         },
       });
+      return;
+    }
 
-      if (!window.opener && returnTo) {
-        try {
-          const target = new URL(returnTo, window.location.origin);
-          if (target.origin === window.location.origin) {
-            this.router.navigateByUrl(
-              `${target.pathname}${target.search}${target.hash}`
-            );
-          }
-        } catch {
-          // Non-popup callback fallback can remain on the status page.
-        }
-      }
+    if (!callbackCode) {
+      this.error = 'No authentication callback code received';
+      this.sendMessageToParent({
+        type: 'oauth-callback',
+        payload: {
+          success: false,
+          error: 'No authentication callback code received',
+        },
+      });
+      return;
+    }
+
+    let token: string;
+    try {
+      if (!this.http) throw new Error('HTTP client is unavailable');
+      this.removeCallbackParametersFromHistory();
+      const result = await firstValueFrom(
+        this.http.post<{ token?: string }>(
+          `${this.apiBaseUrl}/oauth/callback/redeem`,
+          { callbackCode },
+          { withCredentials: true }
+        )
+      );
+      if (!result?.token) throw new Error('No authentication token received');
+      token = result.token;
+    } catch {
+      this.error = 'Authentication could not be completed';
+      this.sendMessageToParent({
+        type: 'oauth-callback',
+        payload: {
+          success: false,
+          error: 'Authentication could not be completed',
+        },
+      });
+      return;
+    }
+
+    this.sendMessageToParent({
+      type: 'oauth-callback',
+      payload: {
+        success: true,
+        token,
+      },
     });
+
+    if (!window.opener && returnTo) {
+      try {
+        const target = new URL(returnTo, window.location.origin);
+        if (target.origin === window.location.origin) {
+          this.router.navigateByUrl(
+            `${target.pathname}${target.search}${target.hash}`
+          );
+        }
+      } catch {
+        // Non-popup callback fallback can remain on the status page.
+      }
+    }
+  }
+
+  private removeCallbackParametersFromHistory(): void {
+    const location = this.document.location;
+    const currentUrl = new URL(location?.href || window.location.href);
+    currentUrl.search = '';
+    window.history.replaceState(
+      null,
+      '',
+      `${currentUrl.pathname}${currentUrl.hash}`
+    );
   }
 
   private sendMessageToParent(message: any): void {

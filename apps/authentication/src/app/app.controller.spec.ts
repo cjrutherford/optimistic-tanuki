@@ -6,6 +6,7 @@ import { RpcException } from '@nestjs/microservices';
 import {
   EnableMultiFactorRequest,
   LoginRequest,
+  OAuthProvider,
   RegisterRequest,
   ResetPasswordRequest,
   ValidateTokenRequest,
@@ -414,20 +415,20 @@ describe('AppController', () => {
         data: { newToken: 'token' },
       });
       const oauthRequest = {
-        provider: 'google',
+        provider: OAuthProvider.GOOGLE,
         code: 'auth-code',
         providerUserId: 'google-123',
         email: 'test@example.com',
         displayName: 'Test User',
+        accessToken: 'provider-access-token',
+        refreshToken: 'provider-refresh-token',
       };
-      const response = await appController.oauthLogin(oauthRequest as any);
+      const response = await appController.oauthLogin(oauthRequest);
       expect(oauthService.oauthLogin).toHaveBeenCalledWith(
         'google',
         'google-123',
         'test@example.com',
         'Test User',
-        undefined,
-        undefined,
         undefined,
         false
       );
@@ -468,8 +469,6 @@ describe('AppController', () => {
         'user-1',
         'google',
         'google-123',
-        undefined,
-        undefined,
         undefined,
         undefined
       );

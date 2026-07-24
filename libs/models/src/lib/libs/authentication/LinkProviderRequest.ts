@@ -19,16 +19,6 @@ export class LinkProviderRequest {
 
   @IsString()
   @IsOptional()
-  @ApiPropertyOptional({ description: 'The provider access token' })
-  accessToken?: string;
-
-  @IsString()
-  @IsOptional()
-  @ApiPropertyOptional({ description: 'The provider refresh token' })
-  refreshToken?: string;
-
-  @IsString()
-  @IsOptional()
   @ApiPropertyOptional({
     description: 'The email from the OAuth provider profile',
   })

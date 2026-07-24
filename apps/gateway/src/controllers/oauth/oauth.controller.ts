@@ -12,6 +12,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { ClientProxy } from '@nestjs/microservices';
 import {
@@ -27,8 +28,6 @@ import {
 } from '@optimistic-tanuki/app-registry-backend';
 import {
   CreateProfileDto,
-  LinkProviderRequest,
-  OAuthCallbackRequest,
   OAuthProvider,
   ProfileDto,
   RegisterRequest,
@@ -48,8 +47,10 @@ import {
 } from '@optimistic-tanuki/permission-lib';
 import { Request, Response } from 'express';
 import { RegisterAccountBootstrapService } from '@optimistic-tanuki/auth-feature-account-bootstrap';
-import { createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import validator from 'validator';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { OAUTH_STATE_STORE, OAuthStateStore } from './oauth-state.store';
 
 type GatewayOAuthProviderConfig = {
   clientId?: string;
@@ -67,6 +68,8 @@ type OAuthStatePayload = {
   returnTo: string;
   appScope: string;
   issuedAt: number;
+  /** Present only in the server-side one-time state record for link flows. */
+  linkUserId?: string;
 };
 
 type OAuthIdentity = {
@@ -76,8 +79,6 @@ type OAuthIdentity = {
   displayName: string;
   firstName: string;
   lastName: string;
-  accessToken?: string;
-  refreshToken?: string;
 };
 
 @ApiTags('oauth')
@@ -85,6 +86,8 @@ type OAuthIdentity = {
 export class OAuthController {
   private readonly providers = ['google', 'github', 'microsoft', 'facebook'];
   private readonly oauthStateTtlMs = 10 * 60 * 1000;
+  private readonly callbackGrantTtlMs = 60 * 1000;
+  private readonly providerRequestTimeoutMs = 10 * 1000;
 
   constructor(
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
@@ -96,7 +99,9 @@ export class OAuthController {
     private readonly logger: Logger,
     private readonly roleInit: RoleInitService,
     private readonly configService: ConfigService,
-    private readonly registerBootstrap: RegisterAccountBootstrapService
+    private readonly registerBootstrap: RegisterAccountBootstrapService,
+    @Inject(OAUTH_STATE_STORE)
+    private readonly oauthStateStore: OAuthStateStore
   ) {
     this.authClient
       .connect()
@@ -108,6 +113,7 @@ export class OAuthController {
 
   @Get('start/:provider')
   @Public()
+  @Throttle({ short: { limit: 20, ttl: 60_000 } })
   @ApiOperation({
     summary: 'Initiate shared OAuth login',
     description:
@@ -119,6 +125,56 @@ export class OAuthController {
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
     @Query('domain') queryDomain: string | undefined
+  ) {
+    return this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain
+    );
+  }
+
+  /**
+   * Starts a provider-owned authorization flow to link an identity to the
+   * guard-authenticated account. The provider identity is never accepted from
+   * a client request; it is derived only after the callback code exchange.
+   */
+  @UseGuards(AuthGuard)
+  @Get('link/:provider')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Initiate a verified OAuth provider link' })
+  async startOAuthLink(
+    @Req() request: Request & { user?: { userId?: string } },
+    @Res() response: Response,
+    @Query('returnTo') returnTo: string | undefined,
+    @Query('appScope') requestedAppScope: string | undefined,
+    @Query('domain') queryDomain: string | undefined
+  ) {
+    const userId = request.user?.userId;
+    if (!userId) {
+      throw new HttpException(
+        'Authenticated user is required',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    return this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain,
+      userId
+    );
+  }
+
+  private async beginOAuthFlow(
+    request: Request,
+    response: Response,
+    returnTo: string | undefined,
+    requestedAppScope: string | undefined,
+    queryDomain: string | undefined,
+    linkUserId?: string
   ) {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
@@ -157,11 +213,12 @@ export class OAuthController {
       );
     }
 
-    const state = this.signState({
+    const { state, stateId, nonce } = await this.signState({
       provider,
       returnTo: validatedReturnTo,
       appScope,
       issuedAt: Date.now(),
+      linkUserId,
     });
 
     const redirectUri = this.resolveProviderRedirectUri(provider, config);
@@ -178,6 +235,20 @@ export class OAuthController {
       params.set('prompt', 'consent');
     }
 
+    const existingNonces = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    );
+    const nonceCookie = [
+      ...existingNonces.filter((entry) => entry.id !== stateId),
+      { id: stateId, nonce },
+    ].slice(-4);
+    response.cookie('oauth_state_nonce', JSON.stringify(nonceCookie), {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/api/oauth',
+      maxAge: this.oauthStateTtlMs,
+    });
     response.redirect(`${config.authorizationEndpoint}?${params.toString()}`);
   }
 
@@ -204,24 +275,39 @@ export class OAuthController {
       );
     }
 
-    const {
-      code,
-      state,
-      error,
-      error_description: errorDescription,
-    } = request.query as Record<string, string | undefined>;
+    const { code, state, error } = request.query as Record<
+      string,
+      string | undefined
+    >;
     if (!state) {
-      throw new HttpException('Missing OAuth state', HttpStatus.BAD_REQUEST);
+      this.logger.warn('Rejected OAuth callback: missing state');
+      this.respondInvalidOAuthCallback(response);
+      return;
     }
 
-    const statePayload = this.verifyState(state, provider);
+    const stateId = state.split('.')[0];
+    const nonce = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    ).find((entry) => entry.id === stateId)?.nonce;
+    let statePayload: OAuthStatePayload;
+    try {
+      statePayload = await this.verifyAndConsumeState(state, provider, nonce);
+    } catch (callbackStateError: any) {
+      this.logger.warn(
+        `Rejected OAuth callback state: ${
+          callbackStateError?.message || callbackStateError
+        }`
+      );
+      this.respondInvalidOAuthCallback(response);
+      return;
+    }
     const finalCallbackUrl = this.buildFinalCallbackUrl(statePayload.returnTo);
 
     if (error) {
       response.redirect(
         this.withQuery(finalCallbackUrl, {
           error,
-          error_description: errorDescription || error,
+          error_description: 'OAuth sign-in was cancelled or declined.',
           returnTo: statePayload.returnTo,
         })
       );
@@ -240,11 +326,34 @@ export class OAuthController {
     }
 
     try {
-      const identity = await this.exchangeProviderCode(
-        provider,
-        code,
-        new URL(statePayload.returnTo).hostname
+      const identity = this.validateProviderIdentity(
+        await this.exchangeProviderCode(
+          provider,
+          code,
+          new URL(statePayload.returnTo).hostname
+        )
       );
+      if (statePayload.linkUserId) {
+        await firstValueFrom(
+          this.authClient.send(
+            { cmd: AuthCommands.LinkProvider },
+            {
+              userId: statePayload.linkUserId,
+              provider,
+              providerUserId: identity.providerUserId,
+              providerEmail: identity.email,
+              providerDisplayName: identity.displayName,
+            }
+          )
+        );
+        response.redirect(
+          this.withQuery(finalCallbackUrl, {
+            linked: provider,
+            returnTo: statePayload.returnTo,
+          })
+        );
+        return;
+      }
       const loginResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.OAuthLogin },
@@ -254,8 +363,6 @@ export class OAuthController {
             email: identity.email,
             emailVerified: identity.emailVerified,
             displayName: identity.displayName,
-            accessToken: identity.accessToken,
-            refreshToken: identity.refreshToken,
           }
         )
       );
@@ -278,6 +385,7 @@ export class OAuthController {
         return;
       }
       if (!userId && loginResult?.data?.needsRegistration) {
+        this.requireUsableOAuthEmail(identity.email, provider);
         userId = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
@@ -323,22 +431,26 @@ export class OAuthController {
         throw new Error('Authentication service did not return a token');
       }
 
+      const callbackCode = await this.createCallbackGrant(
+        token,
+        statePayload.returnTo,
+        stateId,
+        nonce!
+      );
       response.redirect(
         this.withQuery(finalCallbackUrl, {
-          token,
+          callbackCode,
           returnTo: statePayload.returnTo,
         })
       );
     } catch (error: any) {
-      this.logger.error(
-        'Error in oauthRedirectCallback:',
-        error?.message || error
-      );
+      // OAuth provider errors can contain response details or, in malformed
+      // errors, credentials. Keep callback diagnostics deliberately generic.
+      this.logger.error('OAuth callback failed');
       response.redirect(
         this.withQuery(finalCallbackUrl, {
           error: 'oauth_callback_failed',
-          error_description:
-            error?.message || 'OAuth authentication could not be completed',
+          error_description: 'OAuth authentication could not be completed.',
           returnTo: statePayload.returnTo,
         })
       );
@@ -348,28 +460,55 @@ export class OAuthController {
   @Post('callback')
   @Public()
   @ApiOperation({
-    summary: 'Handle OAuth provider callback',
+    summary: 'Retired legacy OAuth callback endpoint',
     description:
-      'Legacy app-owned callback endpoint. Shared server-owned OAuth should use GET /oauth/start/:provider and GET /oauth/callback/:provider instead.',
+      'OAuth callbacks must use the server-owned GET /oauth/callback/:provider flow.',
   })
   @ApiResponse({
-    status: 201,
-    description: 'OAuth callback processed successfully.',
+    status: 410,
+    description: 'Legacy callback retired; use the server-owned OAuth flow.',
   })
-  @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async oauthCallback(@Body() data: OAuthCallbackRequest) {
-    try {
-      this.logger.debug(`OAuth callback for provider=${data.provider}`);
-      return await firstValueFrom(
-        this.authClient.send({ cmd: AuthCommands.OAuthLogin }, data)
-      );
-    } catch (error) {
-      this.logger.error('Error in oauthCallback:', error?.message || error);
+  async oauthCallback() {
+    throw new HttpException(
+      'This OAuth callback endpoint has been retired. Start OAuth with GET /oauth/start/:provider.',
+      HttpStatus.GONE
+    );
+  }
+
+  @Post('callback/redeem')
+  @Public()
+  @Throttle({ short: { limit: 10, ttl: 60_000 } })
+  @ApiOperation({ summary: 'Redeem a one-time OAuth callback code' })
+  async redeemCallbackCode(
+    @Body() data: { callbackCode?: unknown },
+    @Req() request: Request
+  ): Promise<{ token: string }> {
+    const callbackCode =
+      typeof data?.callbackCode === 'string' ? data.callbackCode : '';
+    const [stateId, secret] = callbackCode.split('.');
+    const origin = request.headers.origin;
+    const nonce = this.parseNonceCookie(
+      request.cookies?.oauth_state_nonce
+    ).find((entry) => entry.id === stateId)?.nonce;
+    if (!stateId || !secret || !nonce || typeof origin !== 'string') {
       throw new HttpException(
-        `OAuth callback failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
       );
     }
+    const grant = await this.oauthStateStore.consumeCallbackGrant(
+      callbackCode,
+      origin,
+      stateId,
+      this.hashNonce(nonce)
+    );
+    if (!grant) {
+      throw new HttpException(
+        'Invalid OAuth callback code',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    return { token: grant.token };
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -381,35 +520,13 @@ export class OAuthController {
   @UseGuards(AuthGuard)
   @Post('link')
   @ApiBearerAuth()
-  @ApiOperation({
-    summary: 'Link an OAuth provider to the current user account',
-    description:
-      "Links a new OAuth provider (Google, GitHub, etc.) to the authenticated user's account.",
-  })
-  @ApiResponse({ status: 201, description: 'Provider linked successfully.' })
-  @ApiResponse({ status: 500, description: 'Internal server error.' })
-  async linkProvider(
-    @Body() data: Omit<LinkProviderRequest, 'userId'>,
-    @Req() req: { user: { userId: string } }
-  ) {
-    try {
-      const userId = req.user.userId;
-      this.logger.debug(
-        `Linking provider=${data.provider} to userId=${userId}`
-      );
-      return await firstValueFrom(
-        this.authClient.send(
-          { cmd: AuthCommands.LinkProvider },
-          { ...data, userId }
-        )
-      );
-    } catch (error) {
-      this.logger.error('Error in linkProvider:', error?.message || error);
-      throw new HttpException(
-        `Link provider failed: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
-    }
+  @ApiOperation({ summary: 'Retired direct OAuth provider link endpoint' })
+  @ApiResponse({ status: 410, description: 'Use GET /oauth/link/:provider.' })
+  async linkProvider() {
+    throw new HttpException(
+      'Direct provider linking is retired. Start a verified link flow with GET /oauth/link/:provider.',
+      HttpStatus.GONE
+    );
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -707,25 +824,52 @@ export class OAuthController {
     };
   }
 
-  private signState(payload: OAuthStatePayload): string {
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url'
-    );
-    const signature = createHmac('sha256', this.oauthStateSecret())
-      .update(encodedPayload)
-      .digest('base64url');
-    return `${encodedPayload}.${signature}`;
+  private async signState(
+    payload: OAuthStatePayload
+  ): Promise<{ state: string; stateId: string; nonce: string }> {
+    const stateId = randomBytes(32).toString('base64url');
+    const nonce = randomBytes(32).toString('base64url');
+    const nonceHash = this.hashNonce(nonce);
+    const signature = this.signStateArtifact(stateId, nonce);
+    await this.oauthStateStore.create(stateId, {
+      payload,
+      nonceHash,
+      expiresAt: Date.now() + this.oauthStateTtlMs,
+    });
+    return { state: `${stateId}.${signature}`, stateId, nonce };
   }
 
-  private verifyState(state: string, provider: string): OAuthStatePayload {
-    const [encodedPayload, signature] = state.split('.');
-    if (!encodedPayload || !signature) {
+  private async createCallbackGrant(
+    token: string,
+    returnTo: string,
+    stateId: string,
+    nonce: string
+  ): Promise<string> {
+    const callbackCode = `${stateId}.${randomBytes(32).toString('base64url')}`;
+    await this.oauthStateStore.createCallbackGrant(callbackCode, {
+      token,
+      returnOrigin: new URL(returnTo).origin,
+      stateId,
+      nonceHash: this.hashNonce(nonce),
+      expiresAt: Date.now() + this.callbackGrantTtlMs,
+    });
+    return callbackCode;
+  }
+
+  private async verifyAndConsumeState(
+    state: string,
+    provider: string,
+    nonce: string | undefined
+  ): Promise<OAuthStatePayload> {
+    const [stateId, signature] = state.split('.');
+    if (!stateId || !signature || !nonce) {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
 
-    const expectedSignature = createHmac('sha256', this.oauthStateSecret())
-      .update(encodedPayload)
-      .digest('base64url');
+    // The state signature is bound to the browser-only nonce. Validate it
+    // before looking up or consuming the one-time state so an attacker with a
+    // valid callback URL but no nonce cannot invalidate a real login attempt.
+    const expectedSignature = this.signStateArtifact(stateId, nonce);
     if (signature.length !== expectedSignature.length) {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
@@ -737,29 +881,77 @@ export class OAuthController {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
 
-    const payload = JSON.parse(
-      Buffer.from(encodedPayload, 'base64url').toString('utf8')
-    ) as OAuthStatePayload;
-    if (payload.provider !== provider) {
-      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
-    }
-    if (Date.now() - payload.issuedAt > this.oauthStateTtlMs) {
+    const storedState = await this.oauthStateStore.consume(stateId);
+    if (!storedState || storedState.expiresAt <= Date.now()) {
       throw new HttpException(
         'OAuth state has expired',
         HttpStatus.BAD_REQUEST
       );
     }
+    if (!this.valuesMatch(this.hashNonce(nonce), storedState.nonceHash)) {
+      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
+    }
 
+    const payload = storedState.payload;
+    if (payload.provider !== provider) {
+      throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
+    }
     payload.returnTo = this.validateReturnTo(payload.returnTo);
     return payload;
   }
 
   private oauthStateSecret(): string {
+    const secret = process.env.OAUTH_STATE_SECRET?.trim();
+    if (!secret) {
+      throw new HttpException(
+        'OAuth state is not configured',
+        HttpStatus.SERVICE_UNAVAILABLE
+      );
+    }
+    return secret;
+  }
+
+  private respondInvalidOAuthCallback(response: Response): void {
+    response.status(HttpStatus.BAD_REQUEST).json({
+      error: 'invalid_oauth_callback',
+      error_description: 'OAuth callback could not be validated.',
+    });
+  }
+
+  private signStateArtifact(stateId: string, nonce: string): string {
+    return createHmac('sha256', this.oauthStateSecret())
+      .update(`${stateId}.${nonce}`)
+      .digest('base64url');
+  }
+
+  private hashNonce(nonce: string): string {
+    return createHash('sha256').update(nonce).digest('base64url');
+  }
+
+  private parseNonceCookie(
+    value: unknown
+  ): Array<{ id: string; nonce: string }> {
+    if (typeof value !== 'string') return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(
+          (entry): entry is { id: string; nonce: string } =>
+            typeof entry?.id === 'string' && typeof entry?.nonce === 'string'
+        )
+        .slice(-4);
+    } catch {
+      return [];
+    }
+  }
+
+  private valuesMatch(left: string, right: string): boolean {
+    const leftBuffer = Buffer.from(left);
+    const rightBuffer = Buffer.from(right);
     return (
-      process.env.JWT_SECRET ||
-      this.configService.get<string>('auth.jwtSecret') ||
-      this.configService.get<string>('auth.jwt_secret') ||
-      'default_oauth_state_secret'
+      leftBuffer.length === rightBuffer.length &&
+      timingSafeEqual(leftBuffer, rightBuffer)
     );
   }
 
@@ -816,7 +1008,7 @@ export class OAuthController {
       tokenParams.set('grant_type', 'authorization_code');
     }
 
-    const tokenResponse = await fetch(config.tokenEndpoint, {
+    const tokenResponse = await this.fetchProvider(config.tokenEndpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -825,9 +1017,7 @@ export class OAuthController {
       body: tokenParams.toString(),
     });
     if (!tokenResponse.ok) {
-      throw new Error(
-        `${provider} token exchange failed with ${tokenResponse.status}`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
     const tokenPayload = (await tokenResponse.json()) as Record<
@@ -836,30 +1026,22 @@ export class OAuthController {
     >;
     const accessToken = tokenPayload.access_token;
     if (!accessToken) {
-      throw new Error(
-        `${provider} token exchange did not return an access token`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
-    return this.fetchProviderIdentity(
-      provider,
-      accessToken,
-      tokenPayload,
-      config
-    );
+    return this.fetchProviderIdentity(provider, accessToken, config);
   }
 
   private async fetchProviderIdentity(
     provider: string,
     accessToken: string,
-    tokenPayload: Record<string, string | undefined>,
     config: GatewayOAuthProviderConfig
   ): Promise<OAuthIdentity> {
     const userInfoUrl =
       provider === 'facebook'
         ? `${config.userInfoEndpoint}?fields=id,name,email,first_name,last_name`
         : config.userInfoEndpoint!;
-    const userInfoResponse = await fetch(userInfoUrl, {
+    const userInfoResponse = await this.fetchProvider(userInfoUrl, {
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${accessToken}`,
@@ -870,9 +1052,7 @@ export class OAuthController {
     });
 
     if (!userInfoResponse.ok) {
-      throw new Error(
-        `${provider} user info request failed with ${userInfoResponse.status}`
-      );
+      throw new Error('OAuth provider request failed');
     }
 
     const profile = (await userInfoResponse.json()) as Record<string, unknown>;
@@ -889,8 +1069,6 @@ export class OAuthController {
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.given_name || ''),
           lastName: String(profile.family_name || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       case 'github': {
         const githubEmailInfo = await this.fetchGithubEmail(accessToken);
@@ -910,8 +1088,6 @@ export class OAuthController {
           displayName: String(profile.name || profile.login || githubEmail),
           firstName: '',
           lastName: '',
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       }
       case 'microsoft':
@@ -929,8 +1105,6 @@ export class OAuthController {
           ),
           firstName: String(profile.givenName || ''),
           lastName: String(profile.surname || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       case 'facebook':
         return {
@@ -942,8 +1116,6 @@ export class OAuthController {
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.first_name || ''),
           lastName: String(profile.last_name || ''),
-          accessToken,
-          refreshToken: tokenPayload.refresh_token,
         };
       default:
         throw new Error(`Unsupported provider ${provider}`);
@@ -953,13 +1125,21 @@ export class OAuthController {
   private async fetchGithubEmail(
     accessToken: string
   ): Promise<{ email: string; verified: boolean }> {
-    const response = await fetch('https://api.github.com/user/emails', {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${accessToken}`,
-        'User-Agent': 'optimistic-tanuki-gateway',
-      },
-    });
+    let response: globalThis.Response;
+    try {
+      response = await this.fetchProvider(
+        'https://api.github.com/user/emails',
+        {
+          headers: {
+            Accept: 'application/json',
+            Authorization: `Bearer ${accessToken}`,
+            'User-Agent': 'optimistic-tanuki-gateway',
+          },
+        }
+      );
+    } catch {
+      return { email: '', verified: false };
+    }
     if (!response.ok) {
       return { email: '', verified: false };
     }
@@ -980,16 +1160,51 @@ export class OAuthController {
     };
   }
 
+  private async fetchProvider(
+    url: string,
+    init: RequestInit
+  ): Promise<globalThis.Response> {
+    try {
+      return await fetch(url, {
+        ...init,
+        signal: AbortSignal.timeout(this.providerRequestTimeoutMs),
+      });
+    } catch {
+      throw new Error('OAuth provider request failed');
+    }
+  }
+
+  private validateProviderIdentity(identity: OAuthIdentity): OAuthIdentity {
+    const providerUserId = identity.providerUserId.trim();
+    if (
+      !providerUserId ||
+      providerUserId.length > 512 ||
+      /[\u0000-\u001f\u007f]/.test(providerUserId) ||
+      ['null', 'undefined'].includes(providerUserId.toLowerCase())
+    ) {
+      throw new Error('OAuth provider identity is invalid');
+    }
+    return {
+      ...identity,
+      providerUserId,
+      email: identity.email.trim().toLowerCase(),
+    };
+  }
+
+  private requireUsableOAuthEmail(email: string, provider: string): void {
+    if (!email || !validator.isEmail(email)) {
+      throw new Error(
+        `${provider} OAuth did not return a usable email address`
+      );
+    }
+  }
+
   private async registerOAuthUser(
     appScope: string,
     provider: string,
     identity: OAuthIdentity
   ): Promise<string> {
-    if (!identity.email) {
-      throw new Error(
-        `${provider} OAuth did not return an email address required for registration`
-      );
-    }
+    this.requireUsableOAuthEmail(identity.email, provider);
 
     const { firstName, lastName } = this.splitDisplayName(
       identity.firstName,
@@ -1023,8 +1238,6 @@ export class OAuthController {
           userId,
           provider,
           providerUserId: identity.providerUserId,
-          accessToken: identity.accessToken,
-          refreshToken: identity.refreshToken,
           providerEmail: identity.email,
           providerDisplayName: identity.displayName,
         }

@@ -175,7 +175,10 @@ export const applyGatewaySecurityHeaders = (
     'Permissions-Policy',
     'camera=(), geolocation=(), microphone=(), payment=(), usb=()'
   );
-  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // OAuth providers navigate popup windows to a different origin. `same-origin`
+  // makes that live window appear closed to its opener, so keep popups in the
+  // opener's browsing-context group while retaining the other security headers.
+  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   response.setHeader('Cross-Origin-Resource-Policy', 'same-site');
 
   if (request.path.startsWith('/api')) {

@@ -113,6 +113,32 @@ describe('AuthenticationController', () => {
                   from: 'no-reply@hopefulaspirationsindustries.com',
                 },
               },
+              {
+                appId: 'opportunity-compass',
+                name: 'Opportunity Compass',
+                domain: 'christopherrutherford.net',
+                uiBaseUrl: 'https://opportunities.example.com',
+                apiBaseUrl: 'https://opportunities.example.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@christopherrutherford.net',
+                },
+              },
+              {
+                appId: 'fin-commander',
+                name: 'Fin Commander',
+                domain: 'christopherrutherford.net',
+                uiBaseUrl: 'https://finance.example.com',
+                apiBaseUrl: 'https://finance.example.com/api',
+                appType: 'client',
+                visibility: 'public',
+                authEmail: {
+                  enabled: true,
+                  from: 'no-reply@christopherrutherford.net',
+                },
+              },
             ],
           },
         },
@@ -210,11 +236,14 @@ describe('AuthenticationController', () => {
     };
     registerBootstrap.register.mockResolvedValueOnce(mockResult);
     await expect(
-      controller.registerUser(registerRequest, 'test')
-    ).resolves.toEqual(mockResult);
+      controller.registerUser(registerRequest, 'system-configurator')
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
-      'test'
+      'system-configurator'
     );
   });
 
@@ -231,16 +260,93 @@ describe('AuthenticationController', () => {
       bio: '',
     };
 
-    await controller.registerUser(
-      registration,
-      'system-configurator',
-      'system-configurator'
+    await expect(
+      controller.registerUser(
+        registration,
+        'system-configurator',
+        'system-configurator'
+      )
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ verificationPending: true }),
+      })
     );
 
     expect(requestSpy).toHaveBeenCalledWith(
       'system-configurator',
       'verification',
       { email: 'builder@example.com', returnPath: '/' }
+    );
+  });
+
+  it('keeps an unverified registration usable for a resend when delivery fails', async () => {
+    jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockRejectedValue(new Error('SMTP rejected the sender alias'));
+
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Delivery',
+          ln: 'Retry',
+          email: 'retry@example.com',
+          password: 'long-password',
+          confirm: 'long-password',
+          bio: '',
+        },
+        'system-configurator',
+        'system-configurator'
+      )
+    ).resolves.toEqual(
+      expect.objectContaining({
+        data: expect.objectContaining({ verificationPending: true }),
+      })
+    );
+  });
+
+  it('rejects registration when no configured application can be resolved', async () => {
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Unroutable',
+          ln: 'User',
+          email: 'unroutable@example.com',
+          password: 'long-password',
+          confirm: 'long-password',
+          bio: '',
+        },
+        null as any,
+        undefined,
+        'https://unregistered.example'
+      )
+    ).rejects.toThrow('Email authentication is not configured');
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
+  });
+
+  it('resolves the registry sender from the browser origin when app headers are absent', async () => {
+    const requestSpy = jest
+      .spyOn(controller, 'requestEmailAction')
+      .mockResolvedValue({ accepted: true });
+
+    await controller.registerUser(
+      {
+        fn: 'Origin',
+        ln: 'Resolved',
+        email: 'origin@example.com',
+        password: 'long-password',
+        confirm: 'long-password',
+        bio: '',
+      },
+      null as any,
+      undefined,
+      'https://hardware.hopefulaspirationsindustries.com'
+    );
+
+    expect(requestSpy).toHaveBeenCalledWith(
+      'system-configurator',
+      'verification',
+      { email: 'origin@example.com', returnPath: '/' }
     );
   });
 
@@ -340,7 +446,10 @@ describe('AuthenticationController', () => {
 
     await expect(
       controller.registerUser(registerRequest, 'leads-app')
-    ).resolves.toEqual(mockResult);
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,
@@ -462,7 +571,10 @@ describe('AuthenticationController', () => {
 
     await expect(
       controller.registerUser(registerRequest, 'finance')
-    ).resolves.toEqual(mockResult);
+    ).resolves.toEqual({
+      ...mockResult,
+      data: { ...mockResult.data, verificationPending: true },
+    });
 
     expect(registerBootstrap.register).toHaveBeenCalledWith(
       registerRequest,

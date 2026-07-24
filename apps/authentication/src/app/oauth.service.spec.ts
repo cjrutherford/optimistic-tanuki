@@ -127,8 +127,6 @@ describe('OAuthService', () => {
         'google-123',
         'test@example.com',
         'Test User',
-        undefined,
-        undefined,
         'profile-1'
       );
 
@@ -158,14 +156,18 @@ describe('OAuthService', () => {
         'test@example.com',
         'Test User',
         undefined,
-        undefined,
-        undefined,
         true // provider asserts the email is verified
       );
 
       expect(result.code).toBe(0);
       expect((result.data as any).newToken).toBe('mock-jwt-token');
-      expect(oauthRepo.save).toHaveBeenCalled();
+      expect(oauthRepo.save).toHaveBeenCalledWith({
+        provider: 'google',
+        providerUserId: 'google-123',
+        providerEmail: 'test@example.com',
+        providerDisplayName: 'Test User',
+        userId: 'user-1',
+      });
     });
 
     it('refuses to auto-link when the provider email is not verified', async () => {
@@ -187,8 +189,6 @@ describe('OAuthService', () => {
           'google-123',
           'test@example.com',
           'Test User',
-          undefined,
-          undefined,
           undefined,
           false // provider did NOT verify the email
         )
@@ -259,8 +259,6 @@ describe('OAuthService', () => {
         'user-1',
         'github',
         'github-456',
-        undefined,
-        undefined,
         'test@github.com',
         'testuser'
       );

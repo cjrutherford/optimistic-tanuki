@@ -2,6 +2,7 @@ import { APP_BASE_HREF } from '@angular/common';
 import { CommonEngine, isMainModule } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import cookieParser from 'cookie-parser';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,6 +13,7 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const indexHtml = join(serverDistFolder, 'index.server.html');
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';

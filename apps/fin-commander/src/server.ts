@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +15,7 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 
 app.use(

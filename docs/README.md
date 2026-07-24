@@ -82,8 +82,9 @@ The current branch has a few operational surfaces that matter more than the olde
 
 Step-by-step guides for specific tasks:
 
-- [Email Provider Setup](./guides/email-providers.md) - Configuring SMTP, API, and console email providers
-- [OAuth Provider Setup](./guides/oauth-providers.md) - Setting up Google, GitHub, Microsoft, and Facebook login
+- [OAuth and Email Verification Setup](./guides/authentication-setup.md) - Production and local setup for server-owned OAuth, SMTP delivery, and verification flows
+- [OAuth Provider Reference](./guides/oauth-providers.md) - Provider-console settings for Google, GitHub, Microsoft, and Facebook
+- [Email Provider Setup](./guides/email-providers.md) - General SMTP, API, and console email-provider architecture
 - [Local Hub Guide](./guides/local-hub.md) - Complete guide to the Local Hub (Towne Square) app: pages, services, seeding, business pages, elections, image pipeline, and deployment
 - [Local Hub Commerce](./guides/local-hub-commerce.md) - Donations, business pages, and sponsorships in the Local Hub
 - [Theme Designer Guide](./guides/theme-designer.md) - Using the theme designer component
