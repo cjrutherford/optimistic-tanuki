@@ -97,6 +97,12 @@ spec:
                   name: optimistic-tanuki-secrets
                   key: JWT_SECRET
                   optional: true
+            - name: OAUTH_STATE_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: OAUTH_STATE_SECRET
+                  optional: false
             - name: LEMON_SQUEEZY_WEBHOOK_SECRET
               valueFrom:
                 secretKeyRef:

@@ -6,6 +6,7 @@ import {
 } from '@angular/ssr/node';
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,6 +19,7 @@ const evaluatorGuidePath = resolve(
     '/app/docs/guides/business-site-evaluator-guide.html'
 );
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayOrigin = new URL(gatewayUrl).origin;
@@ -35,7 +37,9 @@ const applyPublicAppSecurityHeaders: express.RequestHandler = (
     'Permissions-Policy',
     'camera=(), geolocation=(), microphone=(), payment=(), usb=()'
   );
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // OAuth providers are cross-origin. Preserving the opener relationship keeps
+  // the popup observable until it posts its authenticated result back.
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
   res.setHeader(
     'Content-Security-Policy',

@@ -26,6 +26,7 @@ RUN printf '%s\n' \
     '  server_name _;' \
     '  root /usr/share/nginx/html;' \
     '  index index.html;' \
+    '  add_header Referrer-Policy "no-referrer" always;' \
     '  location / {' \
     '    try_files $uri $uri/ /index.html;' \
     '  }' \

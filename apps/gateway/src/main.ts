@@ -9,6 +9,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, urlencoded } from 'express';
+import cookieParser from 'cookie-parser';
 import {
   applyGatewaySecurityHeaders,
   enforceTrustedBrowserOrigins,
@@ -17,12 +18,15 @@ import {
   parseConfiguredOrigins,
 } from './bootstrap/security';
 import { loadConfiguredRegistry } from './controllers/registry/registry.config';
+import { assertOAuthStateEnvironment } from './controllers/oauth/oauth-state.store';
 
 async function bootstrap() {
+  assertOAuthStateEnvironment();
   const registry = loadConfiguredRegistry(process.env.APP_REGISTRY_PATH);
   const app = await NestFactory.create(AppModule);
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
+  app.use(cookieParser());
 
   // Enable global validation pipe for DTO validation
   app.useGlobalPipes(

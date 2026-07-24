@@ -288,8 +288,6 @@ export class AppController {
       providerUserId: string;
       email: string;
       displayName: string;
-      accessToken?: string;
-      refreshToken?: string;
       profileId?: string;
       emailVerified?: boolean;
     }
@@ -309,8 +307,6 @@ export class AppController {
         data.providerUserId,
         data.email,
         data.displayName,
-        data.accessToken,
-        data.refreshToken,
         data.profileId,
         data.emailVerified ?? false
       );
@@ -337,8 +333,6 @@ export class AppController {
         data.userId,
         data.provider,
         data.providerUserId,
-        data.accessToken,
-        data.refreshToken,
         data.providerEmail,
         data.providerDisplayName
       );

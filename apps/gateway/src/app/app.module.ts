@@ -45,6 +45,12 @@ import { AppConfigController } from '../controllers/app-config/app-config.contro
 import { ForumController } from '../controllers/forum/forum.controller';
 import { FinanceController } from '../controllers/finance/finance.controller';
 import { OAuthController } from '../controllers/oauth/oauth.controller';
+import {
+  LocalOAuthStateStore,
+  OAUTH_STATE_STORE,
+  RedisOAuthStateStore,
+  selectOAuthStateStore,
+} from '../controllers/oauth/oauth-state.store';
 import { VideosController } from '../controllers/videos/videos.controller';
 import { SocialComponentController } from '../controllers/social/social-component.controller';
 import { CommunityController } from '../controllers/social/community/community.controller';
@@ -392,6 +398,22 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
         return new JwtService({ secret });
       },
       inject: [ConfigService],
+    },
+    {
+      provide: OAUTH_STATE_STORE,
+      useFactory: () => {
+        if (selectOAuthStateStore() === 'local') {
+          return new LocalOAuthStateStore();
+        }
+        const host = process.env.REDIS_HOST?.trim();
+        // selectOAuthStateStore has already required this value.
+        return new RedisOAuthStateStore(
+          host!,
+          Number(process.env.REDIS_PORT || 6379),
+          process.env.REDIS_PASSWORD || undefined,
+          Number(process.env.REDIS_DB || 0)
+        );
+      },
     },
     RoleInitService,
     {

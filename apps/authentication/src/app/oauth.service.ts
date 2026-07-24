@@ -28,8 +28,6 @@ export class OAuthService {
     providerUserId: string,
     email: string,
     displayName: string,
-    accessToken?: string,
-    refreshToken?: string,
     profileId?: string,
     emailVerified = false
   ) {
@@ -56,11 +54,6 @@ export class OAuthService {
       });
 
       if (linked && linked.user) {
-        // Update tokens if provided
-        if (accessToken) linked.accessToken = accessToken;
-        if (refreshToken) linked.refreshToken = refreshToken;
-        await this.oauthRepo.save(linked);
-
         // Issue JWT for the linked user
         return await this.issueTokenForUser(linked.user, profileId);
       }
@@ -92,8 +85,6 @@ export class OAuthService {
             providerUserId,
             providerEmail: email,
             providerDisplayName: displayName,
-            accessToken,
-            refreshToken,
             userId: existingUser.id,
           });
 
@@ -129,8 +120,6 @@ export class OAuthService {
     userId: string,
     provider: string,
     providerUserId: string,
-    accessToken?: string,
-    refreshToken?: string,
     providerEmail?: string,
     providerDisplayName?: string
   ) {
@@ -167,8 +156,6 @@ export class OAuthService {
         providerUserId,
         providerEmail,
         providerDisplayName,
-        accessToken,
-        refreshToken,
         userId,
       });
 

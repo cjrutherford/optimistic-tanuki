@@ -99,6 +99,9 @@ services:
     environment:
       <<: *service_db_env
       JWT_SECRET: ${JWT_SECRET:-}
+      # Email addresses stay unverified unless the recipient consumes a
+      # verification action token. Development may override this explicitly.
+      AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}
       SMTP_HOST: ${SMTP_HOST:-mail.christopherrutherford.net}
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_SECURE: ${SMTP_SECURE:-true}
@@ -375,6 +378,7 @@ services:
       ASSETS_INTERNAL_MEDIA_URL: ${ASSETS_INTERNAL_MEDIA_URL:-http://assets:3006}
       ASSETS_INTERNAL_MEDIA_TOKEN: ${ASSETS_INTERNAL_MEDIA_TOKEN:-}
       JWT_SECRET: ${JWT_SECRET:-}
+      OAUTH_STATE_SECRET: ${OAUTH_STATE_SECRET:-}
       LEMON_SQUEEZY_WEBHOOK_SECRET: ${LEMON_SQUEEZY_WEBHOOK_SECRET:-}
       APP_REGISTRY_PATH: ${APP_REGISTRY_PATH:-/usr/src/app/config/app-registry.json}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}

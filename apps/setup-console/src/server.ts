@@ -4,6 +4,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
+import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SetupService } from './server/setup.service';
@@ -12,6 +13,7 @@ const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
+app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
 const setup = new SetupService();
 

@@ -161,6 +161,9 @@ describe('gateway security helpers', () => {
     expect(headers.get('Content-Security-Policy')).toContain(
       "default-src 'none'"
     );
+    expect(headers.get('Cross-Origin-Opener-Policy')).toBe(
+      'same-origin-allow-popups'
+    );
     expect(next).toHaveBeenCalled();
   });
 
