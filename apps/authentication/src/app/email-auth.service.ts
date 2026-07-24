@@ -75,7 +75,7 @@ export class EmailAuthService {
     const actionUrl = `${context.uiBaseUrl.replace(
       /\/$/,
       ''
-    )}${actionPath}#token=${encodeURIComponent(rawToken)}`;
+    )}${actionPath}?token=${encodeURIComponent(rawToken)}`;
     const label = this.actionLabel(purpose);
     const result = await this.email.sendEmail({
       to: user.email,

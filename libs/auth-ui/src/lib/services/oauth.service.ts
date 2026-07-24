@@ -134,7 +134,8 @@ export class OAuthService {
       }
 
       const startUrl = this.buildStartUrl(provider, appScope);
-      this.popup = window.open(startUrl, 'oauth-popup', this.popupFeatures);
+      const popupName = `oauth-popup-${Date.now()}`;
+      this.popup = window.open(startUrl, popupName, this.popupFeatures);
       if (!this.popup) {
         reject(
           new Error(
@@ -180,14 +181,19 @@ export class OAuthService {
       const checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {
           clearInterval(checkClosed);
-          if (this.messageSubscription) {
-            this.messageSubscription.unsubscribe();
-            this.messageSubscription = null;
-          }
-          resolve({
-            success: false,
-            error: 'OAuth popup was closed before completing authentication',
-          });
+          setTimeout(() => {
+            if (this.popup && this.popup.closed) {
+              if (this.messageSubscription) {
+                this.messageSubscription.unsubscribe();
+                this.messageSubscription = null;
+              }
+              resolve({
+                success: false,
+                error:
+                  'OAuth popup was closed before completing authentication',
+              });
+            }
+          }, 500);
         }
       }, 1000);
     });
