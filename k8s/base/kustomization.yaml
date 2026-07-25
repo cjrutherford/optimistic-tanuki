@@ -45,6 +45,7 @@ resources:
   - clients/local-hub.yaml
   - clients/leads-app.yaml
   - clients/video-client.yaml
+  - observability
   - ingress.yaml
   - tailscale-ingress.yaml
 

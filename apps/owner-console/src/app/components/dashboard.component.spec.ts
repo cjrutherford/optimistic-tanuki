@@ -108,6 +108,7 @@ describe('DashboardComponent', () => {
       'CRM',
       'Community Ops',
       'Operations',
+      'Security',
       'Control Center',
       'Logout',
     ]);

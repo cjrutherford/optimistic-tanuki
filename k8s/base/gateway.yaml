@@ -189,6 +189,10 @@ spec:
               value: 'redis'
             - name: REDIS_PORT
               value: '6379'
+            - name: SECURITY_LOKI_URL
+              value: 'http://loki:3100'
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: 'http://otel-collector:4318'
           resources:
             requests:
               memory: '256Mi'

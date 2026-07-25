@@ -1,0 +1,19 @@
+# Install this file in nginx's http context before the Tanuki virtual hosts.
+# Replace the syslog destination with the reachable OTel Collector address.
+map $status $security_event_class {
+  default supported;
+  404 unsupported_url;
+  401 denied;
+  403 denied;
+  429 rate_limited;
+}
+
+log_format security_json escape=json
+  '{"timestamp":"$time_iso8601","requestId":"$request_id",'
+  '"host":"$host","path":"$uri","method":"$request_method",'
+  '"status":$status,"duration":"$request_time",'
+  '"bytes":$body_bytes_sent,"upstreamStatus":"$upstream_status",'
+  '"clientAddress":"$realip_remote_addr","userAgent":"$http_user_agent",'
+  '"classification":"$security_event_class"}';
+
+access_log syslog:server=otel-collector.internal:514,facility=local6,tag=tanuki-security security_json;

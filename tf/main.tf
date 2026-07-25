@@ -112,6 +112,22 @@ resource "helm_release" "ingress_nginx" {
     }
   ]
 
+  values = [<<-EOT
+controller:
+  config:
+    log-format-escape-json: "true"
+    http-snippet: |
+      map $status $security_event_class {
+        default "supported";
+        404 "unsupported_url";
+        401 "denied";
+        403 "denied";
+        429 "rate_limited";
+      }
+    log-format-upstream: '{"timestamp":"$time_iso8601","requestId":"$req_id","host":"$host","path":"$uri","method":"$request_method","status":$status,"duration":"$request_time","bytes":$body_bytes_sent,"upstreamStatus":"$upstream_status","clientAddress":"$realip_remote_addr","userAgent":"$http_user_agent","classification":"$security_event_class"}'
+EOT
+  ]
+
   depends_on = [kubernetes_namespace_v1.ingress_ns]
 }
 

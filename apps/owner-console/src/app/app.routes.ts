@@ -89,6 +89,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'security',
+        loadComponent: () =>
+          import('./components/security-observability.component').then(
+            (m) => m.SecurityObservabilityComponent
+          ),
+      },
+      {
         path: 'control-center',
         loadComponent: () =>
           import('./components/admin-control-center.component').then(

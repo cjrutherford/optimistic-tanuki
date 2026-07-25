@@ -2642,6 +2642,22 @@
       "appScope": "owner-console"
     },
     {
+      "name": "security.observability.read",
+      "description": "Read public edge security telemetry",
+      "active": true,
+      "resource": "security.observability",
+      "action": "read",
+      "appScope": "owner-console"
+    },
+    {
+      "name": "security.enforcement.manage",
+      "description": "Manage public edge security enforcement",
+      "active": true,
+      "resource": "security.enforcement",
+      "action": "manage",
+      "appScope": "owner-console"
+    },
+    {
       "name": "videos.video.update",
       "description": "Monitor and retry video processing (global owner)",
       "active": true,
@@ -3324,6 +3340,16 @@
     {
       "role": "owner_console_owner",
       "permission": "videos.video.update",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "security.observability.read",
+      "permissionAppScope": "owner-console"
+    },
+    {
+      "role": "owner_console_owner",
+      "permission": "security.enforcement.manage",
       "permissionAppScope": "owner-console"
     },
     {

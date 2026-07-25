@@ -470,6 +470,27 @@ FROM role r JOIN permission p ON p.name = 'videos.video.update'
 WHERE r.name = 'owner_console_owner'
 ON CONFLICT DO NOTHING;
 
+-- Owner Console security operations
+INSERT INTO "permission" (name, description, resource, action, "targetId", "appScopeId")
+SELECT permission.name, permission.description, permission.resource, permission.action, NULL, scope.id
+FROM (VALUES
+  ('security.observability.read', 'Read public edge security telemetry', 'security.observability', 'read'),
+  ('security.enforcement.manage', 'Manage public edge security enforcement', 'security.enforcement', 'manage')
+) AS permission(name, description, resource, action)
+CROSS JOIN app_scope scope
+WHERE scope.name = 'owner-console'
+  AND NOT EXISTS (
+    SELECT 1 FROM "permission" existing
+    WHERE existing.name = permission.name AND existing."appScopeId" = scope.id
+  );
+
+INSERT INTO "role_permissions" ("role_id", "permission_id")
+SELECT r.id, p.id
+FROM role r JOIN permission p ON p.name IN ('security.observability.read', 'security.enforcement.manage')
+  AND p."appScopeId" = (SELECT id FROM app_scope WHERE name='owner-console')
+WHERE r.name = 'owner_console_owner'
+ON CONFLICT DO NOTHING;
+
 -- standard_user (global scope) - basic read/write permissions
 INSERT INTO "role_permissions" ("role_id", "permission_id")
 SELECT r.id, p.id
