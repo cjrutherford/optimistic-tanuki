@@ -1,6 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import {
   LoginBlockComponent,
   OAuthProviderEvent,
@@ -34,13 +34,13 @@ import { HttpClient } from '@angular/common/http';
           (submitEvent)="onLogin($event)"
           (oauthProviderSelected)="onOAuthProvider($event)"
         ></lib-login-block>
-        <div class="register-link">
-          <a routerLink="/register">Don't have an account? Register as Owner</a>
+        <div *ngIf="provisioningMessage" class="info-message" role="status">
+          {{ provisioningMessage }}
         </div>
-        <div *ngIf="oauthConfigMessage" class="info-message">
+        <div *ngIf="oauthConfigMessage" class="info-message" role="status">
           {{ oauthConfigMessage }}
         </div>
-        <div *ngIf="error" class="error-message">{{ error }}</div>
+        <div *ngIf="error" class="error-message" role="alert">{{ error }}</div>
       </div>
     </section>
   `,
@@ -140,19 +140,6 @@ import { HttpClient } from '@angular/common/http';
         border: 1px solid color-mix(in srgb, var(--info) 28%, transparent);
       }
 
-      .register-link {
-        text-align: center;
-      }
-
-      .register-link a {
-        color: color-mix(in srgb, var(--info) 62%, white);
-        text-decoration: none;
-      }
-
-      .register-link a:hover {
-        text-decoration: underline;
-      }
-
       @media (max-width: 960px) {
         .auth-shell {
           grid-template-columns: 1fr;
@@ -166,17 +153,23 @@ import { HttpClient } from '@angular/common/http';
 export class LoginComponent implements OnInit {
   error = '';
   oauthConfigMessage = '';
+  provisioningMessage = '';
   private oauthService: OAuthService;
 
   constructor(
     private authService: AuthService,
     private router: Router,
-    private http: HttpClient
+    private http: HttpClient,
+    private route: ActivatedRoute
   ) {
     this.oauthService = new OAuthService(this.http, '/api');
   }
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParams['provisioning'] === 'required') {
+      this.provisioningMessage =
+        'Owner accounts must be provisioned by an existing operator.';
+    }
     this.loadOAuthConfig();
   }
 
@@ -223,28 +216,8 @@ export class LoginComponent implements OnInit {
         this.authService.setToken(result.token);
         this.router.navigate(['/dashboard']);
       } else if (result.needsRegistration && result.userData) {
-        // Handle auto-registration for new OAuth users
-        const names = result.userData.displayName.split(' ');
-        const firstName = names[0] || '';
-        const lastName = names.slice(1).join(' ') || '';
-
-        // Auto-complete registration
-        const regResult = await this.oauthService.completeOAuthRegistration(
-          result.userData.provider,
-          result.userData.providerUserId,
-          result.userData.email,
-          firstName,
-          lastName,
-          '' // code is already exchanged
-        );
-
-        if (regResult.success && regResult.token) {
-          this.authService.setToken(regResult.token);
-          this.router.navigate(['/dashboard']);
-        } else {
-          this.error =
-            regResult.error || 'Registration failed. Please try again.';
-        }
+        this.error =
+          'This OAuth account is not authorized for the Owner Console. Ask an existing operator to have this account provisioned for access.';
       } else {
         this.error = result.error || 'OAuth login failed. Please try again.';
       }

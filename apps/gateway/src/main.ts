@@ -12,6 +12,7 @@ import { json, urlencoded } from 'express';
 import cookieParser from 'cookie-parser';
 import {
   applyGatewaySecurityHeaders,
+  assertProductionOwnerConsoleOrigin,
   enforceTrustedBrowserOrigins,
   getTrustedOrigins,
   isAllowedOrigin,
@@ -61,6 +62,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   const configuredOrigins = parseConfiguredOrigins();
+  assertProductionOwnerConsoleOrigin({ configuredOrigins, registry });
   const trustedOrigins = getTrustedOrigins({ configuredOrigins, registry });
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');

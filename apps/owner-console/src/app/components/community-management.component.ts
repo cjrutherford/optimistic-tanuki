@@ -73,7 +73,6 @@ import { CommunityService } from '../services/community.service';
         border: 1px solid var(--border-color);
         border-radius: var(--border-radius-md);
         background: var(--surface);
-        cursor: pointer;
         transition: box-shadow 0.2s, transform 0.2s;
       }
       .community-card:hover {
@@ -83,6 +82,22 @@ import { CommunityService } from '../services/community.service';
       .community-card h3 {
         margin: 0 0 var(--spacing-sm) 0;
         color: var(--foreground, #111827);
+      }
+      .community-card__open {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
+        text-align: left;
+        font: inherit;
+        cursor: pointer;
+      }
+      .community-card__open:focus-visible {
+        outline: 3px solid
+          color-mix(in srgb, var(--accent, #2563eb) 72%, transparent);
+        outline-offset: 4px;
       }
       .community-card p {
         margin: 0 0 var(--spacing-sm) 0;

@@ -273,6 +273,7 @@ services:
     environment:
       <<: *gateway_client_env
       ADMIN_API_URL: ${ADMIN_API_URL:-http://admin-api:8098}
+      OWNER_CONSOLE_JWT_SECRET: ${JWT_SECRET:-}
     depends_on:
       - admin-api
 
@@ -283,12 +284,14 @@ services:
       dockerfile: ./apps/admin-api/Dockerfile
     image: cjrutherford/optimistic_tanuki_admin-api:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${ADMIN_API_PORT:-8098}:8098'
+      - '127.0.0.1:${ADMIN_API_PORT:-8098}:8098'
     environment:
       ADMIN_API_DEPLOYMENT_PATH: /app/ops/deployments/production.yaml
       ADMIN_API_SECRETS_PATH: /app/.secrets
       ADMIN_API_WORKSPACE_ROOT: /workspace
       ADMIN_API_PORT: 8098
+      ADMIN_API_JWT_SECRET: ${JWT_SECRET:-}
+      ADMIN_API_BOOTSTRAP_TOKEN: ${ADMIN_API_BOOTSTRAP_TOKEN:-}
       PRODUCTION_IMAGE_TAG: ${PRODUCTION_IMAGE_TAG:-latest}
     volumes:
       - ./ops:/app/ops
@@ -393,7 +396,7 @@ services:
       FACEBOOK_CLIENT_ID: ${FACEBOOK_CLIENT_ID:-}
       FACEBOOK_CLIENT_SECRET: ${FACEBOOK_CLIENT_SECRET:-}
       FACEBOOK_REDIRECT_URI: ${FACEBOOK_REDIRECT_URI:-}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,https://optimistic-tanuki.com,https://forgeofwill.com,https://christopherrutherford.net,https://hopefulaspirationsindustries.com,https://towne-square.com,https://digital-homestead.christopherrutherford.net,https://experiments.christopherrutherford.net,https://business.experiments.christopherrutherford.net,https://fin-commander.experiments.christopherrutherford.net,https://hardware.hopefulaspirationsindustries.com,https://store.hopefulaspirationsindustries.com,https://lead-tracker.experiments.christopherrutherford.net,https://video.experiments.christopherrutherford.net}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
     volumes:

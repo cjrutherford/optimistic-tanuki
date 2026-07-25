@@ -247,6 +247,29 @@ describe('AuthenticationController', () => {
     );
   });
 
+  it('rejects public owner-console registration in production', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Owner',
+          ln: 'User',
+          email: 'owner@example.com',
+          password: 'OwnerPassword!123',
+          confirm: 'OwnerPassword!123',
+          bio: '',
+        },
+        'owner-console',
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
+    process.env.NODE_ENV = previousNodeEnv;
+  });
+
   it('sends verification after a successful app registration', async () => {
     const requestSpy = jest
       .spyOn(controller, 'requestEmailAction')
@@ -502,6 +525,21 @@ describe('AuthenticationController', () => {
         active: true,
       })
     );
+  });
+
+  it('never lets an authenticated user self-grant global owner access', async () => {
+    await expect(
+      controller.claimOwnerAccess(
+        {
+          userId: 'user-1',
+          email: 'member@example.com',
+          profileId: 'profile-1',
+        } as any,
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(roleInitService.processNow).not.toHaveBeenCalled();
   });
 
   it('does not seed starter products when the owner already has products', async () => {

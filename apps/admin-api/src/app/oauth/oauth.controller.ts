@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -15,9 +16,11 @@ import {
   OAuthTestResult,
   OAuthValidationResult,
 } from './oauth.service';
+import { OwnerAuthorizationGuard } from '../auth/owner-authorization.guard';
 
 @ApiTags('oauth')
 @Controller()
+@UseGuards(OwnerAuthorizationGuard)
 export class OAuthController {
   constructor(private readonly oauthService: OAuthService) {}
 

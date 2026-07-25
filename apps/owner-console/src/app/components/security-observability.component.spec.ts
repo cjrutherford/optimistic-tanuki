@@ -27,6 +27,20 @@ describe('SecurityObservabilityComponent', () => {
                   },
                 ],
               }),
+            metrics: () =>
+              of({
+                totals: {
+                  requests: 12,
+                  denied: 2,
+                  rateLimited: 1,
+                  blocked: 0,
+                  errors: 0,
+                  serverErrors: 1,
+                },
+                series: [],
+                topPaths: [],
+                topHosts: [],
+              }),
           },
         },
       ],
@@ -41,5 +55,7 @@ describe('SecurityObservabilityComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('/wp-login.php');
     expect(fixture.nativeElement.textContent).toContain('203.0.113.*');
     expect(fixture.nativeElement.textContent).not.toContain('203.0.113.42');
+    expect(fixture.nativeElement.textContent).toContain('Request activity');
+    expect(fixture.nativeElement.textContent).toContain('12');
   });
 });

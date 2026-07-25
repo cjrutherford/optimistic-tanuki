@@ -1,3 +1,6 @@
+import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { appRoutes } from './app.routes';
 import { CommunityOpsWorkspaceComponent } from './components/community-ops-workspace.component';
 
@@ -6,6 +9,22 @@ describe('appRoutes', () => {
     const setupRoute = appRoutes.find((route) => route.path === 'setup');
 
     expect(setupRoute).toBeUndefined();
+  });
+
+  it('redirects the legacy registration route to login with provisioning guidance', () => {
+    const registerRoute = appRoutes.find((route) => route.path === 'register');
+
+    expect(registerRoute?.redirectTo).toEqual(expect.any(Function));
+    expect(registerRoute?.loadComponent).toBeUndefined();
+
+    TestBed.configureTestingModule({ imports: [RouterTestingModule] });
+    const redirect = TestBed.runInInjectionContext(() =>
+      (registerRoute?.redirectTo as () => ReturnType<Router['createUrlTree']>)()
+    );
+
+    expect(TestBed.inject(Router).serializeUrl(redirect)).toBe(
+      '/login?provisioning=required'
+    );
   });
 
   it('exposes an anonymous control-center status route outside the dashboard shell', () => {

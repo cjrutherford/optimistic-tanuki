@@ -57,6 +57,7 @@ describe('BootstrapService', () => {
     await expect(
       service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password')
     ).resolves.toEqual({
+      created: true,
       email: 'owner@example.com',
       name: 'Owner Console',
       profileId: 'owner-profile-1',
@@ -98,7 +99,7 @@ describe('BootstrapService', () => {
     );
   });
 
-  it('treats legacy null-scoped global profiles as existing owners', async () => {
+  it('returns an existing legacy global owner without creating another account', async () => {
     const authClient = {
       send: jest.fn(),
     };
@@ -107,7 +108,9 @@ describe('BootstrapService', () => {
         of([
           {
             id: 'legacy-owner-profile',
+            name: 'Existing Owner',
             appScope: null,
+            userId: 'legacy-owner-user',
           },
         ])
       ),
@@ -125,9 +128,13 @@ describe('BootstrapService', () => {
 
     await expect(
       service.createOwner('Owner Console', 'OWNER@EXAMPLE.COM', 'password')
-    ).rejects.toThrow(
-      'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
-    );
+    ).resolves.toEqual({
+      created: false,
+      email: 'owner@example.com',
+      name: 'Existing Owner',
+      profileId: 'legacy-owner-profile',
+      userId: 'legacy-owner-user',
+    });
 
     expect(authClient.send).not.toHaveBeenCalled();
   });

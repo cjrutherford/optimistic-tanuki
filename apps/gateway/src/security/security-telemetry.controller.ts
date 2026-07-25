@@ -35,6 +35,14 @@ export class SecurityTelemetryController {
     });
   }
 
+  @Get('metrics')
+  @RequirePermissions('security.observability.read')
+  metrics(
+    @Query() query: SecurityEventQuery & { bucket?: '1m' | '5m' | '15m' }
+  ) {
+    return this.telemetry.metrics(query);
+  }
+
   private toEventQuery(query: EventQueryParams): SecurityEventQuery {
     return {
       ...query,

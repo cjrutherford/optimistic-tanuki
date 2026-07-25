@@ -568,6 +568,7 @@ export class BootstrapService {
     email: string,
     password: string
   ): Promise<{
+    created: boolean;
     userId: string;
     profileId: string;
     email: string;
@@ -584,12 +585,17 @@ export class BootstrapService {
           where: [{ appScope: 'global' }, { appScope: null }],
         }
       )
-    )) as Array<{ id: string }>;
+    )) as Array<{ id: string; name?: string; userId?: string }>;
 
     if (existingGlobalProfiles.length > 0) {
-      throw new Error(
-        'Owner Console registration is closed. An existing owner must invite or provision additional operators.'
-      );
+      const existingOwner = existingGlobalProfiles[0];
+      return {
+        created: false,
+        email: normalizedEmail,
+        name: existingOwner.name || name,
+        profileId: existingOwner.id,
+        userId: existingOwner.userId || '',
+      };
     }
 
     const registrationResult = await firstValueFrom(
@@ -672,6 +678,7 @@ export class BootstrapService {
     }
 
     return {
+      created: true,
       userId,
       profileId: createdProfile.id,
       email: normalizedEmail,

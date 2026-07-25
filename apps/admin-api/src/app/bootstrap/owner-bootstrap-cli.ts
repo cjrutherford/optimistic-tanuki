@@ -1,7 +1,8 @@
-export const OWNER_BOOTSTRAP_USAGE = `Usage: pnpm bootstrap:owner --name "Owner Name" --email owner@example.com --password "secret" [--api-base-url http://127.0.0.1:8098/api] [--mark-setup-complete]`;
+export const OWNER_BOOTSTRAP_USAGE = `Usage: OWNER_BOOTSTRAP_NAME="Owner Name" OWNER_BOOTSTRAP_EMAIL=owner@example.com OWNER_BOOTSTRAP_PASSWORD="secret" pnpm bootstrap:owner [--api-base-url http://127.0.0.1:8098/api] [--mark-setup-complete]`;
 
 export type OwnerBootstrapCliOptions = {
   apiBaseUrl: string;
+  bootstrapToken?: string;
   email: string;
   markSetupComplete: boolean;
   name: string;
@@ -11,12 +12,19 @@ export type OwnerBootstrapCliOptions = {
 type FetchLike = typeof fetch;
 
 export function parseOwnerBootstrapArgs(
-  args: string[]
+  args: string[],
+  environment: NodeJS.ProcessEnv = process.env
 ): OwnerBootstrapCliOptions {
   const values: Partial<OwnerBootstrapCliOptions> = {
     apiBaseUrl: 'http://127.0.0.1:8098/api',
+    email: environment.OWNER_BOOTSTRAP_EMAIL?.trim().toLowerCase(),
     markSetupComplete: false,
+    name: environment.OWNER_BOOTSTRAP_NAME?.trim(),
+    password: environment.OWNER_BOOTSTRAP_PASSWORD,
   };
+  if (environment.ADMIN_API_BOOTSTRAP_TOKEN) {
+    values.bootstrapToken = environment.ADMIN_API_BOOTSTRAP_TOKEN;
+  }
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -32,15 +40,6 @@ export function parseOwnerBootstrapArgs(
     }
 
     switch (arg) {
-      case '--name':
-        values.name = nextValue.trim();
-        break;
-      case '--email':
-        values.email = nextValue.trim().toLowerCase();
-        break;
-      case '--password':
-        values.password = nextValue;
-        break;
       case '--api-base-url':
         values.apiBaseUrl = trimTrailingSlash(nextValue.trim());
         break;
@@ -53,19 +52,19 @@ export function parseOwnerBootstrapArgs(
 
   if (!values.name) {
     throw new Error(
-      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required argument: --name`
+      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required environment variable: OWNER_BOOTSTRAP_NAME`
     );
   }
 
   if (!values.email) {
     throw new Error(
-      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required argument: --email`
+      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required environment variable: OWNER_BOOTSTRAP_EMAIL`
     );
   }
 
   if (!values.password) {
     throw new Error(
-      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required argument: --password`
+      `${OWNER_BOOTSTRAP_USAGE}\n\nMissing required environment variable: OWNER_BOOTSTRAP_PASSWORD`
     );
   }
 
@@ -76,6 +75,7 @@ export async function bootstrapOwnerAccount(
   options: OwnerBootstrapCliOptions,
   fetchImpl: FetchLike = fetch
 ): Promise<{
+  created: boolean;
   email: string;
   name: string;
   profileId: string;
@@ -88,6 +88,9 @@ export async function bootstrapOwnerAccount(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(options.bootstrapToken
+          ? { 'x-admin-bootstrap-token': options.bootstrapToken }
+          : {}),
       },
       body: JSON.stringify({
         name: options.name,
@@ -104,6 +107,7 @@ export async function bootstrapOwnerAccount(
   }
 
   const createdOwner = (await createResponse.json()) as {
+    created?: boolean;
     email?: string;
     name?: string;
     profileId?: string;
@@ -117,6 +121,9 @@ export async function bootstrapOwnerAccount(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(options.bootstrapToken
+            ? { 'x-admin-bootstrap-token': options.bootstrapToken }
+            : {}),
         },
         body: JSON.stringify({}),
       }
@@ -130,6 +137,7 @@ export async function bootstrapOwnerAccount(
   }
 
   return {
+    created: createdOwner.created ?? true,
     email: createdOwner.email ?? options.email,
     name: createdOwner.name ?? options.name,
     profileId: createdOwner.profileId ?? '',
@@ -141,15 +149,18 @@ export async function bootstrapOwnerAccount(
 export async function runOwnerBootstrapCli(
   args: string[] = process.argv.slice(2),
   io: Pick<Console, 'error' | 'log'> = console,
-  fetchImpl: FetchLike = fetch
+  fetchImpl: FetchLike = fetch,
+  environment: NodeJS.ProcessEnv = process.env
 ): Promise<void> {
   try {
-    const options = parseOwnerBootstrapArgs(args);
+    const options = parseOwnerBootstrapArgs(args, environment);
     const result = await bootstrapOwnerAccount(options, fetchImpl);
 
     io.log(
       [
-        `Owner created: ${result.email}`,
+        result.created
+          ? `Owner created: ${result.email}`
+          : 'Platform owner already exists; no account was created.',
         result.userId ? `User ID: ${result.userId}` : 'User ID: unavailable',
         result.profileId
           ? `Profile ID: ${result.profileId}`

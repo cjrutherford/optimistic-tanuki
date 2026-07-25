@@ -4,6 +4,7 @@ import { SecurityTelemetryService } from './security-telemetry.service';
 describe('SecurityTelemetryController', () => {
   const telemetry = {
     listEvents: jest.fn(),
+    metrics: jest.fn(),
   } as unknown as jest.Mocked<SecurityTelemetryService>;
 
   beforeEach(() => jest.clearAllMocks());
@@ -33,5 +34,35 @@ describe('SecurityTelemetryController', () => {
       { from: '2026-07-24T00:00:00.000Z', limit: undefined },
       { revealClientAddress: true }
     );
+  });
+
+  it('requests aggregate metrics for security observers', async () => {
+    telemetry.metrics.mockResolvedValue({
+      from: '2026-07-24T00:00:00.000Z',
+      to: '2026-07-24T01:00:00.000Z',
+      bucket: '5m',
+      totals: {
+        requests: 0,
+        denied: 0,
+        rateLimited: 0,
+        blocked: 0,
+        errors: 0,
+        serverErrors: 0,
+      },
+      series: [],
+      topPaths: [],
+      topHosts: [],
+    });
+    const controller = new SecurityTelemetryController(telemetry);
+    await controller.metrics({
+      from: '2026-07-24T00:00:00.000Z',
+      to: '2026-07-24T01:00:00.000Z',
+      bucket: '5m',
+    });
+    expect(telemetry.metrics).toHaveBeenCalledWith({
+      from: '2026-07-24T00:00:00.000Z',
+      to: '2026-07-24T01:00:00.000Z',
+      bucket: '5m',
+    });
   });
 });

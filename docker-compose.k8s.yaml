@@ -141,6 +141,7 @@ services:
       - '8084:4000'
     environment:
       - ADMIN_API_URL=http://admin-api:8098
+      - OWNER_CONSOLE_JWT_SECRET=${JWT_SECRET:-}
     depends_on:
       - admin-api
 
@@ -153,6 +154,8 @@ services:
       - '8098:8098'
     environment:
       - ADMIN_API_PORT=8098
+      - ADMIN_API_JWT_SECRET=${JWT_SECRET:-}
+      - ADMIN_API_BOOTSTRAP_TOKEN=${ADMIN_API_BOOTSTRAP_TOKEN:-}
       - ADMIN_API_DEPLOYMENT_PATH=/app/ops/deployments/production.yaml
       - ADMIN_API_SECRETS_PATH=/app/.secrets
       - ADMIN_API_WORKSPACE_ROOT=/workspace

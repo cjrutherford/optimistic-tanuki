@@ -1,5 +1,6 @@
 import {
   CanActivate,
+  ForbiddenException,
   ExecutionContext,
   Inject,
   Injectable,
@@ -8,7 +9,11 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ClientProxy } from '@nestjs/microservices';
-import { AuthCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  AuthCommands,
+  RoleCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { UserContext } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { UserDetails } from '../decorators/user.decorator';
@@ -20,8 +25,58 @@ export class AuthGuard implements CanActivate {
     @Inject(ServiceTokens.AUTHENTICATION_SERVICE)
     private authService: ClientProxy,
     private reflector: Reflector,
-    private readonly jwt: JwtService
+    private readonly jwt: JwtService,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy
   ) {}
+
+  private async assertPrivilegedScopeAccess(
+    appScope: unknown,
+    profileId: string | undefined
+  ): Promise<void> {
+    const scope = Array.isArray(appScope) ? appScope[0] : appScope;
+    if (scope !== 'owner-console' && scope !== 'global') {
+      return;
+    }
+
+    if (!profileId) {
+      throw new ForbiddenException(
+        'A global owner profile is required for this app scope.'
+      );
+    }
+
+    const roleScope = scope === 'owner-console' ? 'owner-console' : 'global';
+    let roles: Array<{ role?: { name?: string } }>;
+
+    try {
+      roles = (await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: RoleCommands.GetUserRoles },
+          { profileId, appScope: roleScope }
+        )
+      )) as Array<{ role?: { name?: string } }>;
+    } catch {
+      throw new ForbiddenException(
+        'Unable to verify privileged app scope access.'
+      );
+    }
+
+    const allowedRoleNames = new Set(
+      scope === 'owner-console'
+        ? ['owner_console_owner', 'owner', 'global_admin', 'system_admin']
+        : ['owner', 'global_admin', 'system_admin']
+    );
+
+    if (
+      !roles?.some((assignment) =>
+        allowedRoleNames.has(assignment.role?.name || '')
+      )
+    ) {
+      throw new ForbiddenException(
+        'This account is not authorized for Owner Console access.'
+      );
+    }
+  }
 
   private async introspectToken(
     token: string,
@@ -110,6 +165,11 @@ export class AuthGuard implements CanActivate {
         'Unauthorized: Token Invalid (Introspection failed).'
       );
     }
+
+    await this.assertPrivilegedScopeAccess(
+      request.headers['x-ot-appscope'],
+      request.user.profileId
+    );
 
     return true;
   }

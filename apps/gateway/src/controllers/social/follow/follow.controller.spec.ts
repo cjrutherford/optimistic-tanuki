@@ -39,6 +39,12 @@ describe('FollowController', () => {
           },
         },
         {
+          provide: ServiceTokens.PERMISSIONS_SERVICE,
+          useValue: {
+            send: jest.fn().mockImplementation(() => of([])),
+          },
+        },
+        {
           provide: JwtService,
           useValue: {
             verify: jest.fn(),

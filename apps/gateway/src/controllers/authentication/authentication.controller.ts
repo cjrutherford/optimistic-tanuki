@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Inject,
   Post,
   HttpException,
@@ -338,6 +339,14 @@ export class AuthenticationController {
   ) {
     try {
       this.logger.debug('registerUser called');
+      if (
+        appScope === 'owner-console' &&
+        process.env.NODE_ENV === 'production'
+      ) {
+        throw new ForbiddenException(
+          'Owner Console accounts must be provisioned by the deployment bootstrap.'
+        );
+      }
       const canonicalAppId = this.resolveRegistrationAppId(
         appId,
         appScope,
@@ -399,6 +408,12 @@ export class AuthenticationController {
     @User() user: UserDetails,
     @AppScope() appScope: string
   ) {
+    if (appScope === 'owner-console' || appScope === 'global') {
+      throw new ForbiddenException(
+        'Global owner access must be provisioned by an existing platform owner.'
+      );
+    }
+
     const effectiveAppScope =
       appScope === 'owner-console' ? 'global' : appScope;
 

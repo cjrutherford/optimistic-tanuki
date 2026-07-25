@@ -24,26 +24,24 @@ test.describe('Owner Console E2E Tests', () => {
   });
 
   test.describe('Navigation', () => {
-    test('should have register link on login page', async ({ page }) => {
+    test('does not expose public owner registration on the login page', async ({
+      page,
+    }) => {
       await page.goto('/login');
 
       const registerLink = page.locator('a[href*="register"]');
-      await expect(registerLink).toBeVisible();
+      await expect(registerLink).toHaveCount(0);
     });
 
-    test('should navigate to register page', async ({ page }) => {
-      await page.goto('/login');
-      const registerLink = page.locator('a[href*="register"]');
-      await registerLink.click();
-
-      await expect(page).toHaveURL(/.*register/);
-    });
-
-    test('should have login link on register page', async ({ page }) => {
+    test('redirects the legacy registration route to provisioning guidance', async ({
+      page,
+    }) => {
       await page.goto('/register');
 
-      const loginLink = page.locator('a[href*="login"]');
-      await expect(loginLink).toBeVisible();
+      await expect(page).toHaveURL(/\/login\?provisioning=required/);
+      await expect(page.getByRole('status')).toContainText(
+        'Owner accounts must be provisioned by an existing operator.'
+      );
     });
   });
 
@@ -52,18 +50,16 @@ test.describe('Owner Console E2E Tests', () => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.goto('/login');
 
-      const body = page.locator('body');
-      await expect(body).toBeVisible();
-    });
-  });
-
-  test.describe('Registration Page', () => {
-    test('should display registration content', async ({ page }) => {
-      await page.goto('/register');
-
-      // Should display something indicating it's the registration page
-      const body = page.locator('body');
-      await expect(body).toContainText('Register');
+      await expect(
+        page.getByRole('heading', { name: /platform-wide authority/i })
+      ).toBeVisible();
+      const widths = await page.evaluate(() => ({
+        viewport: window.innerWidth,
+        document: document.documentElement.scrollWidth,
+        body: document.body.scrollWidth,
+      }));
+      expect(widths.document).toBeLessThanOrEqual(widths.viewport);
+      expect(widths.body).toBeLessThanOrEqual(widths.viewport);
     });
   });
 

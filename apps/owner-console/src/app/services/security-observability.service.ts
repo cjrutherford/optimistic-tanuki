@@ -20,6 +20,28 @@ export interface SecurityEvent {
   clientAddress?: string;
 }
 
+export interface SecurityMetrics {
+  totals: {
+    requests: number;
+    denied: number;
+    rateLimited: number;
+    blocked: number;
+    errors: number;
+    serverErrors: number;
+  };
+  series: Array<{
+    start: string;
+    requests: number;
+    denied: number;
+    rateLimited: number;
+    blocked: number;
+    errors: number;
+    serverErrors: number;
+  }>;
+  topPaths: Array<{ path: string; count: number; serverErrors: number }>;
+  topHosts: Array<{ host: string; count: number }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SecurityObservabilityService {
   constructor(private readonly http: HttpClient) {}
@@ -36,5 +58,17 @@ export class SecurityObservabilityService {
     return this.http.get<{ events: SecurityEvent[] }>('/api/security/events', {
       params,
     });
+  }
+
+  metrics(query: {
+    from: string;
+    to: string;
+    bucket: '1m' | '5m' | '15m';
+  }): Observable<SecurityMetrics> {
+    const params = new HttpParams()
+      .set('from', query.from)
+      .set('to', query.to)
+      .set('bucket', query.bucket);
+    return this.http.get<SecurityMetrics>('/api/security/metrics', { params });
   }
 }

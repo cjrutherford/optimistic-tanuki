@@ -38,10 +38,25 @@
     *ngIf="selectedOrder"
     (click)="closeOrderDetails()"
   >
-    <div class="modal" (click)="$event.stopPropagation()">
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="order-details-title"
+      tabindex="-1"
+      (keydown.escape)="closeOrderDetails()"
+      (click)="$event.stopPropagation()"
+    >
       <div class="modal-header">
-        <h3>Order Details</h3>
-        <button class="close-btn" (click)="closeOrderDetails()">×</button>
+        <h3 id="order-details-title">Order Details</h3>
+        <button
+          type="button"
+          class="close-btn"
+          aria-label="Close order details"
+          (click)="closeOrderDetails()"
+        >
+          ×
+        </button>
       </div>
       <div class="modal-body">
         <div class="detail-row">

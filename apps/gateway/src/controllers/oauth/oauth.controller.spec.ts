@@ -33,6 +33,10 @@ describe('OAuthController', () => {
       send: jest.fn().mockReturnValue(of([])),
       connect: jest.fn().mockResolvedValue({}),
     } as unknown as jest.Mocked<ClientProxy>;
+    const permissionsClient = {
+      send: jest.fn().mockReturnValue(of([])),
+      connect: jest.fn().mockResolvedValue({}),
+    } as unknown as jest.Mocked<ClientProxy>;
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [OAuthController],
@@ -44,6 +48,10 @@ describe('OAuthController', () => {
         {
           provide: 'PROFILE_SERVICE',
           useValue: profileClient,
+        },
+        {
+          provide: 'PERMISSIONS_SERVICE',
+          useValue: permissionsClient,
         },
         {
           provide: GATEWAY_APP_REGISTRY,
@@ -103,6 +111,29 @@ describe('OAuthController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('rejects production OAuth registration for owner-console', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      await expect(
+        (controller as any).registerOAuthUser('owner-console', 'google', {
+          providerUserId: 'google-owner',
+          email: 'owner@example.com',
+          emailVerified: true,
+          displayName: 'Owner User',
+          firstName: 'Owner',
+          lastName: 'User',
+        })
+      ).rejects.toThrow('Owner Console accounts must be provisioned');
+    } finally {
+      if (previousNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previousNodeEnv;
+      }
+    }
   });
 
   describe('startOAuth', () => {
@@ -440,6 +471,62 @@ describe('OAuthController', () => {
       expect(
         new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
       ).toBe('oauth_callback_failed');
+    });
+
+    it('rejects an existing OAuth user without a global owner role from Owner Console', async () => {
+      const statePayload = {
+        provider: 'google',
+        returnTo: 'https://owner.example/login',
+        appScope: 'owner-console',
+        issuedAt: Date.now(),
+      };
+      jest
+        .spyOn(controller as any, 'verifyAndConsumeState')
+        .mockResolvedValue(statePayload);
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'google-member',
+        email: 'member@example.com',
+        emailVerified: true,
+        displayName: 'Member User',
+        firstName: 'Member',
+        lastName: 'User',
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        (command: { cmd: string }) =>
+          of(
+            command.cmd === AuthCommands.OAuthLogin
+              ? { data: { userId: 'member-user' } }
+              : { data: { newToken: 'should-not-be-issued' } }
+          )
+      );
+      const profileClient = (controller as any).profileClient;
+      profileClient.send.mockReturnValue(
+        of([
+          {
+            id: 'member-global-profile',
+            userId: 'member-user',
+            appScope: 'global',
+          },
+        ])
+      );
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: 'state.signature' },
+          cookies: {},
+        } as any,
+        response
+      );
+
+      expect(
+        new URL(response.redirect.mock.calls[0][0]).searchParams.get('error')
+      ).toBe('oauth_callback_failed');
+      expect(authClient.send).not.toHaveBeenCalledWith(
+        { cmd: AuthCommands.Issue },
+        expect.anything()
+      );
     });
 
     it('rejects an expired callback grant', async () => {

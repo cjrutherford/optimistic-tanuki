@@ -32,4 +32,21 @@ describe('SecurityObservabilityService', () => {
     expect(request.request.method).toBe('GET');
     request.flush({ events: [] });
   });
+
+  it('loads aggregate graph metrics for a selected time range', () => {
+    service
+      .metrics({
+        from: '2026-07-24T00:00:00.000Z',
+        to: '2026-07-24T01:00:00.000Z',
+        bucket: '5m',
+      })
+      .subscribe();
+    const request = http.expectOne(
+      (candidate) =>
+        candidate.url === '/api/security/metrics' &&
+        candidate.params.get('bucket') === '5m'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush({});
+  });
 });

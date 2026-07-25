@@ -9,6 +9,7 @@ import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { authorizeOwnerConsoleAdminRequest } from './admin-api-authorization';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -23,6 +24,8 @@ const adminApiUrl =
   process.env['ADMIN_API_URL'] ||
   process.env['ADMIN_ENV_API_URL'] ||
   'http://admin-api:8098';
+const ownerConsoleJwtSecret =
+  process.env['OWNER_CONSOLE_JWT_SECRET'] || process.env['JWT_SECRET'];
 const getRequestUrl = (req: express.Request): string => {
   const forwardedProto = req.get('x-forwarded-proto')?.split(',')[0]?.trim();
   const forwardedHost = req.get('x-forwarded-host')?.split(',')[0]?.trim();
@@ -59,6 +62,32 @@ app.use(
     },
   })
 );
+
+// Bootstrap operations must never be exposed through the public Owner Console
+// proxy. They are reached only from the deployment host over Admin API loopback.
+app.use('/admin-api/api/bootstrap', (_req, response) => {
+  response.status(404).end();
+});
+
+app.use('/admin-api', async (request, response, next) => {
+  // Deployment status is intentionally public; every other control-center
+  // operation requires a current token for a global owner role.
+  if (request.path === '/api/status/public') {
+    next();
+    return;
+  }
+
+  const authorization = await authorizeOwnerConsoleAdminRequest({
+    authorization: request.get('authorization'),
+    jwtSecret: ownerConsoleJwtSecret,
+    gatewayUrl,
+  });
+  if (!authorization.authorized) {
+    response.status(authorization.status).end();
+    return;
+  }
+  next();
+});
 
 app.use(
   '/admin-api',
