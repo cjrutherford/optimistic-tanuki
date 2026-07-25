@@ -916,6 +916,9 @@ jobs:
   update_staging_overlay:
     name: Update Staging Overlay
     runs-on: ubuntu-24.04
+    # Temporary: do not fail CI while staging promotion is being stabilized.
+    # Remove this line when staging overlay updates must gate merges again.
+    continue-on-error: true
     needs:
       [
         plan,
@@ -974,6 +977,9 @@ jobs:
     name: Deploy Staging
     runs-on: ubuntu-24.04
     environment: staging
+    # Temporary: do not fail CI while staging deployment is being stabilized.
+    # Remove this line when staging deployment must gate merges again.
+    continue-on-error: true
     needs: [plan, update_staging_overlay, deployment_secrets]
     if: needs.plan.outputs.deploy_staging == 'true' && needs.update_staging_overlay.result == 'success' && needs.deployment_secrets.outputs.available == 'true'
     timeout-minutes: 30

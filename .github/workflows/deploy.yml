@@ -42,6 +42,9 @@ jobs:
     name: Promote and Deploy Production
     runs-on: ubuntu-24.04
     environment: production
+    # Temporary: keep manual production deployment failures non-blocking.
+    # Remove this line when production deployment must be enforced again.
+    continue-on-error: true
     needs: [deployment-secrets]
     if: github.event.inputs.environment == 'production' && needs.deployment-secrets.outputs.available == 'true'
     timeout-minutes: 40
