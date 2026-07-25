@@ -28,6 +28,10 @@
 
 This is a large project and needs to be handled with care or there will be a long turn around on changes. When working on a task, please track which apps and libs are being touched to ensure we can streamline the rebuild process.
 
+## Workspace isolation
+
+- Do not create or use Git worktrees for this repository. Work in the current checkout unless the user explicitly changes this instruction.
+
 We want to have the quickest turnaround on changes, so please use the most efficient script (preferably with pnpm) to apply the changes to the local stack.
 
 New components and UX should either try to use existing component elements or build new libraries to allow for reusability. The defining goal in the architecture is that the platform provides, apps shouldn't have to create their own elements unless it's for structure or unique to that specific application.

@@ -262,6 +262,26 @@ jobs:
         continue-on-error: true
         run: bash scripts/validate-compose-k8s-parity.sh
 
+  deployment_secrets:
+    name: Check Staging Deployment Credentials
+    runs-on: ubuntu-24.04
+    needs: [plan]
+    outputs:
+      available: ${{ steps.check.outputs.available }}
+    steps:
+      - name: Check required deployment credentials
+        id: check
+        env:
+          KUBECONFIG_VALUE: ${{ secrets.KUBECONFIG }}
+          DOMAIN_VALUE: ${{ secrets.DOMAIN }}
+          ARGOCD_PASSWORD_VALUE: ${{ secrets.ARGOCD_PASSWORD }}
+        run: |
+          if [ -n "$KUBECONFIG_VALUE" ] && [ -n "$DOMAIN_VALUE" ] && [ -n "$ARGOCD_PASSWORD_VALUE" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+
   quality:
     name: Quality - ${{ matrix.target }}
     runs-on: ubuntu-24.04
@@ -954,8 +974,8 @@ jobs:
     name: Deploy Staging
     runs-on: ubuntu-24.04
     environment: staging
-    needs: [plan, update_staging_overlay]
-    if: needs.plan.outputs.deploy_staging == 'true' && needs.update_staging_overlay.result == 'success' && secrets.KUBECONFIG != '' && secrets.DOMAIN != '' && secrets.ARGOCD_PASSWORD != ''
+    needs: [plan, update_staging_overlay, deployment_secrets]
+    if: needs.plan.outputs.deploy_staging == 'true' && needs.update_staging_overlay.result == 'success' && needs.deployment_secrets.outputs.available == 'true'
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -1019,6 +1039,7 @@ jobs:
       - lighthouse_performance
       - load_performance
       - update_staging_overlay
+      - deployment_secrets
       - deploy_staging
     if: always()
     steps:
@@ -1035,6 +1056,7 @@ jobs:
           echo "- Lighthouse performance: ${{ needs.lighthouse_performance.result }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Load performance: ${{ needs.load_performance.result }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Update staging overlay: ${{ needs.update_staging_overlay.result }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Staging deployment credentials: ${{ needs.deployment_secrets.outputs.available }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- Deploy staging: ${{ needs.deploy_staging.result }}" >> "$GITHUB_STEP_SUMMARY"
 
           for status in \
