@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-22T13:53:16.324Z",
+  "generatedAt": "2026-07-25T11:33:08.843Z",
   "items": [
     {
       "slug": "apps/authentication/readme",
@@ -7415,7 +7415,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-29T15:57:37.074Z"
+      "lastUpdated": "2026-07-25T11:32:50.603Z"
     },
     {
       "slug": "docs/guides/theme-designer",
@@ -11812,7 +11812,7 @@
       "order": 999,
       "landing": false,
       "featured": false,
-      "lastUpdated": "2026-05-29T16:30:56.062Z"
+      "lastUpdated": "2026-07-25T11:32:50.602Z"
     },
     {
       "slug": "docs/reference/readme-template",
