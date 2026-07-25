@@ -75,7 +75,7 @@ export class EmailAuthService {
     const actionUrl = `${context.uiBaseUrl.replace(
       /\/$/,
       ''
-    )}${actionPath}?token=${encodeURIComponent(rawToken)}`;
+    )}${actionPath}#token=${encodeURIComponent(rawToken)}`;
     const label = this.actionLabel(purpose);
     const result = await this.email.sendEmail({
       to: user.email,
@@ -144,6 +144,25 @@ export class EmailAuthService {
       appId: action.appId,
       returnPath: action.returnPath,
       data: { newToken: session },
+    };
+  }
+
+  async confirmVerification(rawToken: string) {
+    const action = await this.inspect(rawToken, AuthActionPurpose.Verification);
+    const consumed = await this.actions.update(
+      { id: action.id, consumedAt: IsNull() },
+      { consumedAt: new Date() }
+    );
+    if (!consumed.affected) {
+      throw new RpcException({ code: 'ACTION_TOKEN_USED' });
+    }
+    action.user.emailVerifiedAt ||= new Date();
+    await this.users.save(action.user);
+    return {
+      message: 'Email verified',
+      code: 0,
+      appId: action.appId,
+      returnPath: action.returnPath,
     };
   }
 

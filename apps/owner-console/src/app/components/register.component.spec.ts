@@ -77,4 +77,25 @@ describe('RegisterComponent', () => {
 
     configureProvidersSpy.mockRestore();
   });
+
+  it('directs a newly registered account to login rather than the dashboard', () => {
+    jest.useFakeTimers();
+    register.mockReturnValue(of({ data: { verificationPending: true } }));
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    component.onRegister({
+      email: 'person@example.com',
+      firstName: 'Person',
+      lastName: 'Example',
+      password: 'long-password',
+      confirmation: 'long-password',
+      bio: '',
+    });
+
+    expect(component.success).toContain('Check your email');
+    jest.advanceTimersByTime(2000);
+    expect(router.navigate).toHaveBeenCalledWith(['/login']);
+    jest.useRealTimers();
+  });
 });

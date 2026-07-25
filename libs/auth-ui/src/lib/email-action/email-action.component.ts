@@ -1,7 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Routes } from '@angular/router';
 import { EmailAuthClientService } from '../services/email-auth.service';
 
@@ -32,7 +32,7 @@ export function emailAuthRoutes(storageKey: string): Routes {
 @Component({
   selector: 'lib-email-action',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
     <main class="email-action-shell">
       <section class="email-action-card" aria-live="polite">
@@ -58,6 +58,8 @@ export function emailAuthRoutes(storageKey: string): Routes {
         </form>
         } @else if (token && state === 'ready') {
         <button type="button" (click)="confirm()">Continue securely</button>
+        } @if (purpose === 'verification' && state === 'success') {
+        <a routerLink="/login">Sign in</a>
         }
       </section>
     </main>
@@ -161,11 +163,20 @@ export class EmailActionComponent implements OnInit {
     if (!this.token) {
       this.state = 'error';
       this.message = 'The secure token is missing from this link.';
+      return;
+    }
+    if (this.purpose === 'verification') {
+      this.confirmVerification();
     }
   }
 
   confirm() {
-    if (!this.token || this.purpose === 'password-reset') return;
+    if (
+      !this.token ||
+      this.purpose === 'password-reset' ||
+      this.purpose === 'verification'
+    )
+      return;
     this.state = 'pending';
     this.message = 'Confirming your request…';
     this.emailAuth.confirmLogin(this.purpose, this.token).subscribe({
@@ -182,6 +193,23 @@ export class EmailActionComponent implements OnInit {
             ? result.returnPath
             : '/';
         void this.router.navigateByUrl(path);
+      },
+      error: () => {
+        this.state = 'error';
+        this.message =
+          'This link is invalid, expired, or has already been used.';
+      },
+    });
+  }
+
+  private confirmVerification() {
+    this.state = 'pending';
+    this.message = 'Verifying your email address…';
+    this.emailAuth.confirmVerification(this.token).subscribe({
+      next: () => {
+        this.state = 'success';
+        this.message =
+          'Your email address has been verified. You can now sign in.';
       },
       error: () => {
         this.state = 'error';

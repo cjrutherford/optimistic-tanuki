@@ -33,6 +33,15 @@ export class EmailAuthClientService {
     }>(`/api/authentication/${endpoint}/confirm`, { token });
   }
 
+  confirmVerification(token: string) {
+    return this.http.post<{
+      message: string;
+      code: number;
+      appId?: string;
+      returnPath?: string;
+    }>('/api/authentication/email-verification/confirm', { token });
+  }
+
   resetPassword(token: string, password: string, confirmation: string) {
     return this.http.post('/api/authentication/password-reset/confirm', {
       token,

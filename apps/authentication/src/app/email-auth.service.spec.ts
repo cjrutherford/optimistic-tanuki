@@ -133,6 +133,29 @@ describe('EmailAuthService', () => {
     );
   });
 
+  it('confirms email verification without issuing a login session', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.Verification,
+      appId: 'forgeofwill',
+      returnPath: '/',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+
+    await expect(service.confirmVerification('raw-token')).resolves.toEqual({
+      message: 'Email verified',
+      code: 0,
+      appId: 'forgeofwill',
+      returnPath: '/',
+    });
+    expect(users.save).toHaveBeenCalledWith(
+      expect.objectContaining({ emailVerifiedAt: expect.any(Date) })
+    );
+    expect(sessions.save).not.toHaveBeenCalled();
+  });
+
   it('rejects expired action tokens', async () => {
     actions.findOne.mockResolvedValue({
       id: 'action-1',

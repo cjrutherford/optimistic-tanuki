@@ -156,6 +156,24 @@ describe('AuthenticationController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('confirms email verification without invoking the session-issuing email action', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ message: 'Email verified', code: 0 })
+    );
+
+    await expect(
+      controller.confirmEmailVerification({ token: 'verification-token' })
+    ).resolves.toEqual({ message: 'Email verified', code: 0 });
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConfirmEmailVerification },
+      { token: 'verification-token' }
+    );
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConsumeEmailAuthAction },
+      expect.anything()
+    );
+  });
+
   it('should login user', async () => {
     const loginRequest: LoginRequest = {
       email: 'test@test.com',

@@ -207,7 +207,12 @@ export class AuthenticationController {
   @Public()
   @Throttle(EMAIL_CONFIRM_THROTTLE)
   confirmEmailVerification(@Body() body: { token: string }) {
-    return this.consumeEmailLogin(body.token, 'verification');
+    return firstValueFrom(
+      this.authClient.send(
+        { cmd: AuthCommands.ConfirmEmailVerification },
+        { token: body.token }
+      )
+    );
   }
 
   @Post('magic-link/confirm')

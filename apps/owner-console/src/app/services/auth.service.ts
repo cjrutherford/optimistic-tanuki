@@ -86,22 +86,13 @@ export class AuthService {
       confirm,
       bio,
     };
-    return this.http
-      .post<AuthResponse>(
-        `${this.API_URL}/authentication/register`,
-        registerData,
-        {
-          headers: this.APP_SCOPE_HEADER,
-        }
-      )
-      .pipe(
-        tap((response) => {
-          if (response.data?.newToken && isPlatformBrowser(this.platformId)) {
-            localStorage.setItem(this.TOKEN_KEY, response.data.newToken);
-            this.isAuthenticatedSubject.next(true);
-          }
-        })
-      );
+    return this.http.post<AuthResponse>(
+      `${this.API_URL}/authentication/register`,
+      registerData,
+      {
+        headers: this.APP_SCOPE_HEADER,
+      }
+    );
   }
 
   logout(): void {

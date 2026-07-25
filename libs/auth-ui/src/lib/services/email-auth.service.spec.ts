@@ -35,4 +35,14 @@ describe('EmailAuthClientService', () => {
     });
     request.flush({ accepted: true });
   });
+
+  it('confirms an email address without requesting a login token', () => {
+    service.confirmVerification('verification-token').subscribe();
+
+    const request = http.expectOne(
+      '/api/authentication/email-verification/confirm'
+    );
+    expect(request.request.body).toEqual({ token: 'verification-token' });
+    request.flush({ message: 'Email verified', code: 0 });
+  });
 });

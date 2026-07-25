@@ -202,9 +202,10 @@ export class RegisterComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.success = 'Registration successful! Redirecting to dashboard...';
+          this.success =
+            'Registration successful. Check your email to verify your account before signing in.';
           setTimeout(() => {
-            this.router.navigate(['/dashboard']);
+            this.router.navigate(['/login']);
           }, 2000);
         },
         error: (err) => {
