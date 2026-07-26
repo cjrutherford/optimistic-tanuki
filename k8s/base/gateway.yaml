@@ -32,7 +32,11 @@ spec:
             - name: APP_REGISTRY_PATH
               value: '/etc/optimistic-tanuki/app-registry/app-registry.json'
             - name: CORS_ALLOWED_ORIGINS
-              value: 'https://owner-console.tail-scale.ts.net'
+              valueFrom:
+                secretKeyRef:
+                  name: optimistic-tanuki-secrets
+                  key: CORS_ALLOWED_ORIGINS
+                  optional: true
             - name: AUTHENTICATION_HOST
               value: 'authentication'
             - name: AUTHENTICATION_PORT
