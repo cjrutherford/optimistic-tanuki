@@ -102,6 +102,7 @@ export class SecurityTelemetryService {
     }
     const bucketMs =
       bucket === '1m' ? 60_000 : bucket === '15m' ? 900_000 : 300_000;
+    const events = await this.readEvents({
       ...query,
       to: to.toISOString(),
       limit: 5000,

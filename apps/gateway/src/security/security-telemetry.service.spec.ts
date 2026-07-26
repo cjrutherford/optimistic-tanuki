@@ -1,4 +1,7 @@
-import { SecurityTelemetryService } from './security-telemetry.service';
+import {
+  SecurityTelemetryService,
+  type SecurityMetricBucket,
+} from './security-telemetry.service';
 
 describe('SecurityTelemetryService', () => {
   const fetchMock = jest.fn();
@@ -184,5 +187,21 @@ describe('SecurityTelemetryService', () => {
       ],
       topHosts: [{ host: 'tanuki.test', count: 2 }],
     });
+  });
+
+  it('rejects metric requests with an unsupported bucket', async () => {
+    const service = new SecurityTelemetryService({
+      lokiUrl: 'http://loki:3100',
+      crowdsecUrl: 'http://crowdsec:8080',
+      fetch: fetchMock as unknown as typeof fetch,
+    });
+
+    await expect(
+      service.metrics({
+        from: '2026-07-24T12:00:00.000Z',
+        to: '2026-07-24T12:10:00.000Z',
+        bucket: '30m' as SecurityMetricBucket,
+      })
+    ).rejects.toThrow('Metrics bucket must be one of: 1m, 5m, 15m.');
   });
 });
