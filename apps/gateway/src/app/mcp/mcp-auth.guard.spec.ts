@@ -9,7 +9,6 @@ jest.mock('@nestjs/jwt', () => ({
   })),
 }));
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 import { McpAuthGuard } from './mcp-auth.guard';
 
 describe('McpAuthGuard', () => {

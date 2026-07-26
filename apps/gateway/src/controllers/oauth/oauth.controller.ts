@@ -1183,7 +1183,7 @@ export class OAuthController {
     if (
       !providerUserId ||
       providerUserId.length > 512 ||
-      /[\u0000-\u001f\u007f]/.test(providerUserId) ||
+      /\p{Cc}/u.test(providerUserId) ||
       ['null', 'undefined'].includes(providerUserId.toLowerCase())
     ) {
       throw new Error('OAuth provider identity is invalid');

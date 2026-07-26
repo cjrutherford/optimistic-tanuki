@@ -14,9 +14,7 @@ describe('AuthGuard', () => {
   let authGuard: AuthGuard;
   let reflector: Reflector;
   let jwtService: JwtService;
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   let clientProxy: any;
-  //eslint-disable-next-line @typescript-eslint/no-explicit-any
   let permissionsClient: any;
 
   const mockUserDetails = {

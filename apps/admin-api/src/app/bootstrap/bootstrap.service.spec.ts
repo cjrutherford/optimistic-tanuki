@@ -1,15 +1,22 @@
 import { ConfigService } from '@nestjs/config';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { of } from 'rxjs';
 import { AuthCommands, ProfileCommands } from '@optimistic-tanuki/constants';
 import { BootstrapService } from './bootstrap.service';
 
 describe('BootstrapService', () => {
+  let deploymentPath: string;
+
   const buildConfigService = () =>
     ({
       get: jest.fn((key: string) => {
         switch (key) {
           case 'admin-api.workspaceRoot':
             return process.cwd();
+          case 'admin-api.deploymentPath':
+            return deploymentPath;
           case 'admin-api.gatewayBaseUrl':
             return 'http://127.0.0.1:3000';
           default:
@@ -17,6 +24,18 @@ describe('BootstrapService', () => {
         }
       }),
     } as unknown as ConfigService);
+
+  beforeEach(() => {
+    const fixtureDirectory = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'bootstrap-service-')
+    );
+    deploymentPath = path.join(fixtureDirectory, 'production.yaml');
+    fs.writeFileSync(deploymentPath, 'apps: []\n');
+  });
+
+  afterEach(() => {
+    fs.rmSync(path.dirname(deploymentPath), { force: true, recursive: true });
+  });
 
   it('creates the initial owner auth user, profile, and owner roles', async () => {
     const authClient = {
