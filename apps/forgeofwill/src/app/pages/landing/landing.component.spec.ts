@@ -16,6 +16,8 @@ describe('LandingComponent', () => {
         {
           provide: ThemeService,
           useValue: {
+            themeColors$: of(undefined),
+            getTheme: jest.fn(() => 'light'),
             generatedTheme$: of(undefined),
             getHeaderGradient: jest.fn(() => 'linear-gradient(#000, #111)'),
             getButtonGradient: jest.fn(() => 'linear-gradient(#111, #222)'),

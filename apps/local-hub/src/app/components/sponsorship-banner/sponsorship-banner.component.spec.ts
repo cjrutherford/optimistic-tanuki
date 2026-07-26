@@ -5,21 +5,23 @@ import { PaymentService } from '../../services/payment.service';
 describe('SponsorshipBannerComponent', () => {
   let fixture: ComponentFixture<SponsorshipBannerComponent>;
   const paymentService = {
-    getEligibleOnPageCampaigns: jest.fn(),
+    getActiveSponsorships: jest.fn(),
   };
 
   beforeEach(async () => {
-    paymentService.getEligibleOnPageCampaigns.mockResolvedValue([
+    paymentService.getActiveSponsorships.mockResolvedValue([
       {
-        id: 'campaign-1',
-        name: 'North Star Advisory',
-        creative: {
-          headline: 'Plan with confidence',
-          mediaUrl: 'https://cdn.example.com/new.jpg',
-          imageUrl: 'https://cdn.example.com/legacy.jpg',
-          ctaLabel: 'Visit North Star',
-          ctaUrl: 'https://north-star.example.com',
-        },
+        id: 'sponsorship-1',
+        communityId: 'community-1',
+        sponsorUserId: 'sponsor-1',
+        type: 'banner',
+        amount: 100,
+        currency: 'USD',
+        status: 'active',
+        adContent: 'Plan with confidence',
+        adImageUrl: 'https://cdn.example.com/new.jpg',
+        paidAt: '2026-07-01T00:00:00.000Z',
+        expiresAt: '2026-08-01T00:00:00.000Z',
       },
     ]);
 
@@ -35,31 +37,29 @@ describe('SponsorshipBannerComponent', () => {
     fixture.detectChanges();
   });
 
-  it('renders mediaUrl in preference to the legacy imageUrl and a safe CTA', () => {
+  it('renders an active sponsorship image and content', () => {
     const image = fixture.nativeElement.querySelector(
       '.ad-image'
     ) as HTMLImageElement;
-    const link = fixture.nativeElement.querySelector(
-      '.ad-cta'
-    ) as HTMLAnchorElement;
 
     expect(image.src).toBe('https://cdn.example.com/new.jpg');
-    expect(link.href).toBe('https://north-star.example.com/');
-    expect(link.target).toBe('_blank');
-    expect(link.rel).toContain('noopener');
-    expect(link.textContent).toContain('Visit North Star');
+    expect(fixture.nativeElement.textContent).toContain('Plan with confidence');
     expect(fixture.nativeElement.textContent).toContain('Sponsored');
   });
 
-  it('renders a legacy imageUrl when mediaUrl is absent', async () => {
-    paymentService.getEligibleOnPageCampaigns.mockResolvedValueOnce([
+  it('does not render an image when a sponsorship has no image URL', async () => {
+    paymentService.getActiveSponsorships.mockResolvedValueOnce([
       {
-        id: 'campaign-2',
-        name: 'Legacy sponsor',
-        creative: {
-          headline: 'Legacy creative',
-          imageUrl: 'https://cdn.example.com/legacy.jpg',
-        },
+        id: 'sponsorship-2',
+        communityId: 'community-2',
+        sponsorUserId: 'sponsor-2',
+        type: 'banner',
+        amount: 100,
+        currency: 'USD',
+        status: 'active',
+        adContent: 'Text-only sponsorship',
+        paidAt: '2026-07-01T00:00:00.000Z',
+        expiresAt: '2026-08-01T00:00:00.000Z',
       },
     ]);
 
@@ -69,12 +69,9 @@ describe('SponsorshipBannerComponent', () => {
     await secondFixture.whenStable();
     secondFixture.detectChanges();
 
-    expect(
-      (
-        secondFixture.nativeElement.querySelector(
-          '.ad-image'
-        ) as HTMLImageElement
-      ).src
-    ).toBe('https://cdn.example.com/legacy.jpg');
+    expect(secondFixture.nativeElement.querySelector('.ad-image')).toBeNull();
+    expect(secondFixture.nativeElement.textContent).toContain(
+      'Text-only sponsorship'
+    );
   });
 });

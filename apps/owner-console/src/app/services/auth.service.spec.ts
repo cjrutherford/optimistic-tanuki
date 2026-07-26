@@ -47,5 +47,7 @@ describe('AuthService', () => {
     const req = httpMock.expectOne('/api/authentication/register');
     expect(req.request.headers.get('x-ot-appscope')).toBe('owner-console');
     req.flush({ data: { newToken: 'token' } });
+    expect(service.isAuthenticated()).toBe(false);
+    expect(localStorage.getItem('auth_token')).toBeNull();
   });
 });

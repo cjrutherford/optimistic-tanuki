@@ -5,7 +5,6 @@ import { TaskMcpService } from './task-mcp.service';
 
 describe('TaskMcpService', () => {
   let service: TaskMcpService;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let clientProxy: any;
 
   const profileId = 'profile-456';

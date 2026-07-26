@@ -6,6 +6,13 @@ import { join } from 'path';
 const execAsync = promisify(exec);
 
 async function globalTeardown(config: FullConfig) {
+  if (process.env['CI'] || process.env['SKIP_SETUP'] === 'true') {
+    console.log(
+      '\n[Playwright Global Teardown] Shared environment retained because setup was skipped'
+    );
+    return;
+  }
+
   const composeFile = join(
     __dirname,
     '../../e2e/docker-compose.owner-console-e2e.yaml'

@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { DataSource } from 'typeorm';
 import { TrainerSiteConfigEntity } from '../trainer-config/entities/trainer-site-config.entity';
 import { TrainerRoutineAssignmentEntity } from '../appointments/entities/trainer-routine-assignment.entity';
 import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-progress-check-in.entity';
@@ -7,26 +8,31 @@ import { TrainerProgressCheckInEntity } from '../appointments/entities/trainer-p
 describe('store static datasource', () => {
   const originalCwd = process.cwd();
   const appRoot = path.resolve(__dirname, '../..');
+  let staticSource: DataSource;
+  let metadataSource: DataSource;
 
-  beforeEach(() => {
+  beforeAll(async () => {
     jest.resetModules();
     process.chdir(appRoot);
+
+    ({ default: staticSource } = await import('./staticDatabase'));
+    metadataSource = new DataSource({
+      ...staticSource.options,
+      migrations: [],
+    });
+    await (
+      metadataSource as unknown as { buildMetadatas(): Promise<void> }
+    ).buildMetadatas();
   });
 
-  afterEach(() => {
+  afterAll(() => {
     process.chdir(originalCwd);
   });
 
-  it('registers trainer site config metadata', async () => {
-    const { default: staticSource } = await import('./staticDatabase');
-
-    await (
-      staticSource as unknown as { buildMetadatas(): Promise<void> }
-    ).buildMetadatas();
-
+  it('registers trainer site config metadata', () => {
     const entities = (staticSource.options.entities ?? []) as Function[];
     const entityNames = entities.map((entity) => entity.name);
-    const trainerMetadata = staticSource.entityMetadatas.find(
+    const trainerMetadata = metadataSource.entityMetadatas.find(
       (metadata) => metadata.name === TrainerSiteConfigEntity.name
     );
 
@@ -34,20 +40,14 @@ describe('store static datasource', () => {
     expect(trainerMetadata?.tableName).toBe('trainer_site_configs');
   });
 
-  it('registers trainer routines and check-in metadata', async () => {
-    const { default: staticSource } = await import('./staticDatabase');
-
-    await (
-      staticSource as unknown as { buildMetadatas(): Promise<void> }
-    ).buildMetadatas();
-
+  it('registers trainer routines and check-in metadata', () => {
     const entityNames = (
       (staticSource.options.entities ?? []) as Function[]
     ).map((entity) => entity.name);
-    const routineMetadata = staticSource.entityMetadatas.find(
+    const routineMetadata = metadataSource.entityMetadatas.find(
       (metadata) => metadata.name === TrainerRoutineAssignmentEntity.name
     );
-    const checkInMetadata = staticSource.entityMetadatas.find(
+    const checkInMetadata = metadataSource.entityMetadatas.find(
       (metadata) => metadata.name === TrainerProgressCheckInEntity.name
     );
 
@@ -57,9 +57,7 @@ describe('store static datasource', () => {
     expect(checkInMetadata?.tableName).toBe('trainer_progress_check_ins');
   });
 
-  it('includes the trainer site config migration file', async () => {
-    await import('./staticDatabase');
-
+  it('includes the trainer site config migration file', () => {
     const migrationsDir = path.resolve(__dirname, '../../migrations');
     const migrationFiles = fs
       .readdirSync(migrationsDir)

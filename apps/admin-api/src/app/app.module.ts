@@ -6,6 +6,7 @@ import { DeploymentModule } from './deployment/deployment.module';
 import { OAuthModule } from './oauth/oauth.module';
 import { ImagesModule } from './images/images.module';
 import loadConfig from '../config';
+import { AdminApiAuthModule } from './auth/admin-api-auth.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import loadConfig from '../config';
       load: [loadConfig],
     }),
     LoggerModule,
+    AdminApiAuthModule,
     BootstrapModule,
     DeploymentModule,
     OAuthModule,

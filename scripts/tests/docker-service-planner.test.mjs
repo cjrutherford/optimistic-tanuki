@@ -433,6 +433,18 @@ test('dev-seed.sh does not rely on docker compose run one-off containers', () =>
   assert.doesNotMatch(script, /docker compose .*\brun --rm\b/);
 });
 
+test('dev-seed.sh provisions an idempotent documented local owner account', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts', 'dev-seed.sh'),
+    'utf8'
+  );
+
+  assert.match(script, /DEV_OWNER_EMAIL:-owner@optimistic-tanuki\.local/);
+  assert.match(script, /DEV_OWNER_PASSWORD:-DevOwner!123/);
+  assert.match(script, /x-ot-appscope: owner-console/);
+  assert.match(script, /Owner Console registration is closed/);
+});
+
 test('docker:dev stays incremental while docker:dev:bootstrap owns seeding', () => {
   const packageJsonPath = path.join(repoRoot, 'package.json');
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));

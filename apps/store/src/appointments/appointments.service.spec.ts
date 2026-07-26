@@ -66,8 +66,8 @@ describe('AppointmentsService', () => {
       service.create({
         userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
         title: 'Consultation',
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:00:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:00:00-04:00'),
       })
     ).resolves.toEqual(
       expect.objectContaining({
@@ -95,8 +95,8 @@ describe('AppointmentsService', () => {
       service.create({
         userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
         title: 'Consultation',
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:00:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:00:00-04:00'),
       })
     ).rejects.toThrow(BadRequestException);
   });
@@ -106,8 +106,8 @@ describe('AppointmentsService', () => {
       {
         id: 'override-1',
         mode: AvailabilityOverrideMode.BLOCKED,
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:30:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:30:00-04:00'),
         isActive: true,
       },
     ] as AvailabilityOverrideEntity[]);
@@ -127,8 +127,8 @@ describe('AppointmentsService', () => {
       service.create({
         userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
         title: 'Consultation',
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:00:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:00:00-04:00'),
       })
     ).rejects.toThrow(BadRequestException);
   });
@@ -149,8 +149,8 @@ describe('AppointmentsService', () => {
       {
         id: 'booking-existing',
         userId: 'client-2',
-        startTime: new Date('2026-05-10T14:30:00'),
-        endTime: new Date('2026-05-10T15:30:00'),
+        startTime: new Date('2026-05-10T14:30:00-04:00'),
+        endTime: new Date('2026-05-10T15:30:00-04:00'),
         status: 'approved',
       },
     ] as AppointmentEntity[]);
@@ -159,8 +159,8 @@ describe('AppointmentsService', () => {
       service.create({
         userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
         title: 'Consultation',
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:00:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:00:00-04:00'),
       })
     ).rejects.toThrow(BadRequestException);
   });
@@ -188,8 +188,8 @@ describe('AppointmentsService', () => {
           resourceId: null,
           title: 'Other owner booking',
           description: null,
-          startTime: new Date('2026-05-10T14:30:00'),
-          endTime: new Date('2026-05-10T15:30:00'),
+          startTime: new Date('2026-05-10T14:30:00-04:00'),
+          endTime: new Date('2026-05-10T15:30:00-04:00'),
           status: 'approved',
           isFreeConsultation: true,
           hourlyRate: null,
@@ -212,8 +212,8 @@ describe('AppointmentsService', () => {
         userId: '3b5ef633-4f76-48a5-b2d1-0c82b4dbd65e',
         ownerId: 'owner-user-handyman' as never,
         title: 'Consultation',
-        startTime: new Date('2026-05-10T14:00:00'),
-        endTime: new Date('2026-05-10T15:00:00'),
+        startTime: new Date('2026-05-10T14:00:00-04:00'),
+        endTime: new Date('2026-05-10T15:00:00-04:00'),
       } as any)
     ).resolves.toEqual(
       expect.objectContaining({

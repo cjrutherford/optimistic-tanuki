@@ -1,7 +1,7 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, PLATFORM_ID, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Routes } from '@angular/router';
 import { EmailAuthClientService } from '../services/email-auth.service';
 
@@ -32,32 +32,38 @@ export function emailAuthRoutes(storageKey: string): Routes {
 @Component({
   selector: 'lib-email-action',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <main class="email-action-shell">
-      <section class="email-action-card" aria-live="polite">
+    <main class="email-action-shell" aria-labelledby="email-action-heading">
+      <section class="email-action-card" aria-live="polite" aria-atomic="true">
         <p class="eyebrow">Secure account access</p>
-        <h1>{{ heading }}</h1>
-        <p>{{ message }}</p>
+        <h1 id="email-action-heading">{{ heading }}</h1>
+        <p id="email-action-message" role="status">{{ message }}</p>
 
         @if (purpose === 'password-reset' && token && state === 'ready') {
         <form [formGroup]="resetForm" (ngSubmit)="submitReset()">
           <label
             >New password<input
               type="password"
+              name="password"
               formControlName="password"
               autocomplete="new-password"
           /></label>
           <label
             >Confirm password<input
               type="password"
+              name="confirmation"
               formControlName="confirmation"
               autocomplete="new-password"
           /></label>
           <button type="submit">Reset password</button>
         </form>
         } @else if (token && state === 'ready') {
-        <button type="button" (click)="confirm()">Continue securely</button>
+        <button type="button" (click)="confirm()">
+          Sign in with magic link
+        </button>
+        } @if (purpose === 'verification' && state === 'success') {
+        <a class="email-action-link" routerLink="/login">Sign in</a>
         }
       </section>
     </main>
@@ -99,6 +105,7 @@ export function emailAuthRoutes(storageKey: string): Routes {
         margin: 0.4rem 0 1rem;
         font-size: clamp(2rem, 7vw, 3.5rem);
         line-height: 0.98;
+        text-wrap: balance;
       }
       form,
       label {
@@ -127,6 +134,30 @@ export function emailAuthRoutes(storageKey: string): Routes {
         cursor: pointer;
         font: inherit;
         font-weight: 700;
+        touch-action: manipulation;
+      }
+      button:hover,
+      .email-action-link:hover {
+        filter: brightness(1.12);
+      }
+      button:focus-visible,
+      .email-action-link:focus-visible {
+        outline: 3px solid currentColor;
+        outline-offset: 3px;
+      }
+      .email-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        margin-top: 1rem;
+        border-radius: 999px;
+        padding: 0.7rem 1.2rem;
+        color: Canvas;
+        background: currentColor;
+        font-weight: 700;
+        text-decoration: none;
+        touch-action: manipulation;
       }
     `,
   ],
@@ -161,11 +192,20 @@ export class EmailActionComponent implements OnInit {
     if (!this.token) {
       this.state = 'error';
       this.message = 'The secure token is missing from this link.';
+      return;
+    }
+    if (this.purpose === 'verification') {
+      this.confirmVerification();
     }
   }
 
   confirm() {
-    if (!this.token || this.purpose === 'password-reset') return;
+    if (
+      !this.token ||
+      this.purpose === 'password-reset' ||
+      this.purpose === 'verification'
+    )
+      return;
     this.state = 'pending';
     this.message = 'Confirming your request…';
     this.emailAuth.confirmLogin(this.purpose, this.token).subscribe({
@@ -182,6 +222,23 @@ export class EmailActionComponent implements OnInit {
             ? result.returnPath
             : '/';
         void this.router.navigateByUrl(path);
+      },
+      error: () => {
+        this.state = 'error';
+        this.message =
+          'This link is invalid, expired, or has already been used.';
+      },
+    });
+  }
+
+  private confirmVerification() {
+    this.state = 'pending';
+    this.message = 'Verifying your email address…';
+    this.emailAuth.confirmVerification(this.token).subscribe({
+      next: () => {
+        this.state = 'success';
+        this.message =
+          'Your email address has been verified. You can now sign in.';
       },
       error: () => {
         this.state = 'error';

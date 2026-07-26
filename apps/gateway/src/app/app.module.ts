@@ -39,6 +39,11 @@ import { PersonaController } from '../controllers/persona/persona.controller';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { RequestTimeoutInterceptor } from '../interceptors/request-timeout.interceptor';
+import {
+  SECURITY_TELEMETRY_SERVICE,
+  SecurityTelemetryController,
+} from '../security/security-telemetry.controller';
+import { SecurityTelemetryService } from '../security/security-telemetry.service';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
@@ -351,8 +356,20 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     LoggerModule,
     ...createMcpToolImports(gatewayComposition),
   ],
-  controllers: controllerEntries.map((entry) => entry.value),
+  controllers: [
+    ...controllerEntries.map((entry) => entry.value),
+    SecurityTelemetryController,
+  ],
   providers: [
+    {
+      provide: SECURITY_TELEMETRY_SERVICE,
+      useFactory: () =>
+        new SecurityTelemetryService({
+          lokiUrl: process.env.SECURITY_LOKI_URL ?? 'http://loki:3100',
+          crowdsecUrl:
+            process.env.SECURITY_CROWDSEC_URL ?? 'http://crowdsec:8080',
+        }),
+    },
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

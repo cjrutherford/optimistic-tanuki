@@ -38,7 +38,7 @@ export default defineConfig({
         cwd: workspaceRoot,
       },
   testDir: './src',
-  testMatch: './src/example.spec.ts',
+  testMatch: '**/example.spec.ts',
   projects: [
     // {
     //   name: 'chromium',

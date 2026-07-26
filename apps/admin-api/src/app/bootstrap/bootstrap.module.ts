@@ -9,9 +9,10 @@ import { RoleInitService } from '@optimistic-tanuki/permission-lib';
 import { ServiceTokens } from '@optimistic-tanuki/constants';
 import { BootstrapController } from './bootstrap.controller';
 import { BootstrapService } from './bootstrap.service';
+import { AdminApiAuthModule } from '../auth/admin-api-auth.module';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, AdminApiAuthModule],
   controllers: [BootstrapController],
   providers: [
     {

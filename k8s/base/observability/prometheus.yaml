@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-prometheus-config
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: security-otel-collector
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [optimistic-tanuki]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: otel-collector;metrics
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: security-prometheus-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: security-prometheus
+  template:
+    metadata:
+      labels:
+        app: security-prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.54.1
+          args:
+            [
+              '--config.file=/etc/prometheus/prometheus.yml',
+              '--storage.tsdb.retention.time=90d',
+              '--storage.tsdb.path=/prometheus',
+            ]
+          ports:
+            - containerPort: 9090
+              name: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: security-prometheus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: security-prometheus-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-prometheus
+spec:
+  selector:
+    app: security-prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http

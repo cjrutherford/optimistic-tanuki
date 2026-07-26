@@ -4,6 +4,7 @@ import { execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import { dump, load } from 'js-yaml';
 import * as nodemailer from 'nodemailer';
+import { renderDomainEmailTemplate } from '@optimistic-tanuki/email';
 import { buildSmtpTransportOptions } from './email-setup';
 import {
   BootstrapConfig,
@@ -629,11 +630,22 @@ export class SetupService {
       buildSmtpTransportOptions(secrets)
     );
     await transport.verify();
+    const sender = from?.trim() || secrets['SMTP_FROM'] || secrets['SMTP_USER'];
+    const template = renderDomainEmailTemplate({
+      domain: sender || 'optimistic-tanuki.com',
+      appName: 'Setup Console',
+      heading: 'Email connection confirmed',
+      body: [
+        'Your Stalwart SMTP connection is configured and sending email successfully.',
+      ],
+      tone: 'success',
+    });
     const sent = await transport.sendMail({
-      from: from?.trim() || secrets['SMTP_FROM'] || secrets['SMTP_USER'],
+      from: sender,
       to: recipient.trim(),
       subject: 'Optimistic Tanuki email connection test',
-      text: 'Your Stalwart SMTP connection is configured and sending email successfully.',
+      text: template.text,
+      html: template.html,
     });
     return { success: true, messageId: sent.messageId };
   }

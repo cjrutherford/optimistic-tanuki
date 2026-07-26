@@ -71,6 +71,7 @@ jobs:
       changed_matrix: ${{ steps.matrix.outputs.changed_matrix }}
       changed_has_changes: ${{ steps.matrix.outputs.changed_has_changes }}
       full_matrix: ${{ steps.matrix.outputs.full_matrix }}
+      image_check_matrix: ${{ steps.flags.outputs.publish_images == 'true' && steps.matrix.outputs.full_matrix || steps.matrix.outputs.changed_matrix }}
       run_docker: ${{ steps.flags.outputs.run_docker }}
       publish_images: ${{ steps.flags.outputs.publish_images }}
       run_e2e: ${{ steps.flags.outputs.run_e2e }}
@@ -347,7 +348,7 @@ jobs:
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix: ${{ fromJson(needs.plan.outputs.changed_matrix) }}
+      matrix: ${{ fromJson(needs.plan.outputs.image_check_matrix) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -358,15 +359,27 @@ jobs:
             [registry."docker.io"]
               mirrors = ["mirror.gcr.io"]
 
+      - name: Log in to Docker Hub for verified release images
+        if: needs.plan.outputs.publish_images == 'true'
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build image check
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./apps/${{ matrix.app }}/Dockerfile
-          push: false
+          push: ${{ needs.plan.outputs.publish_images == 'true' }}
           tags: ${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}
           cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          # GitHub Actions' shared cache is limited repository-wide.  Large,
+          # parallel `mode=max` exports routinely exhaust it, then fail after
+          # the image has already built.  Release checks push the verified SHA
+          # image, so embed its reusable cache metadata in that image instead.
+          # PR checks remain read-only consumers of the existing GHA cache.
+          cache-to: ${{ needs.plan.outputs.publish_images == 'true' && 'type=inline' || '' }}
 
   publish_images:
     name: Publish Images - ${{ matrix.app }}
@@ -394,24 +407,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Resolve publish tags
-        id: tags
+      - name: Promote verified Docker image
         run: |
-          TAGS="${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }},${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ github.ref_name }}"
+          SOURCE="${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ needs.plan.outputs.image_tag }}"
+          TARGETS=(--tag "${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:${{ github.ref_name }}")
           if [ "${{ github.ref_name }}" = "main" ]; then
-            TAGS="$TAGS,${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:latest"
+            TARGETS+=(--tag "${{ env.IMAGE_NAME }}/optimistic_tanuki_${{ matrix.app }}:latest")
           fi
-          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./apps/${{ matrix.app }}/Dockerfile
-          push: true
-          tags: ${{ steps.tags.outputs.tags }}
-          cache-from: type=gha,scope=${{ matrix.app }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+          docker buildx imagetools create "${TARGETS[@]}" "$SOURCE"
 
   microservices_e2e:
     name: Microservices E2E

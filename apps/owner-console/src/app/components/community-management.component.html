@@ -42,19 +42,25 @@
     *ngIf="!loading && filteredCommunities.length > 0"
     class="community-grid"
   >
-    <div
+    <article
       *ngFor="let community of filteredCommunities"
       class="community-card"
-      (click)="editCommunity(community)"
     >
-      <h3>{{ community.name }}</h3>
-      <p>
-        {{ community.description | slice : 0 : 100
-        }}{{ community.description.length > 100 ? '...' : '' }}
-      </p>
-      <p><strong>Members:</strong> {{ community.memberCount }}</p>
-      <p><strong>Join Policy:</strong> {{ community.joinPolicy }}</p>
-      <div class="community-actions" (click)="$event.stopPropagation()">
+      <button
+        type="button"
+        class="community-card__open"
+        (click)="editCommunity(community)"
+        [attr.aria-label]="'Edit ' + community.name"
+      >
+        <h3>{{ community.name }}</h3>
+        <p>
+          {{ community.description | slice : 0 : 100
+          }}{{ community.description.length > 100 ? '...' : '' }}
+        </p>
+        <p><strong>Members:</strong> {{ community.memberCount }}</p>
+        <p><strong>Join Policy:</strong> {{ community.joinPolicy }}</p>
+      </button>
+      <div class="community-actions">
         <otui-button variant="secondary" (click)="manageMembers(community)"
           >Members</otui-button
         >
@@ -64,6 +70,6 @@
           >Delete</otui-button
         >
       </div>
-    </div>
+    </article>
   </div>
 </otui-card>

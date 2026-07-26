@@ -11,6 +11,20 @@ The gateway now validates browser mutation origins against:
 - the runtime app registry mounted through `APP_REGISTRY_PATH`
 - any explicit `CORS_ALLOWED_ORIGINS` additions
 
+## Security observability
+
+The manually managed NGINX edge must emit the same JSON access event as the
+Kubernetes ingress. Install
+[security-observability.conf.sample](./nginx/security-observability.conf.sample)
+in NGINX's `http` context and replace `otel-collector.internal:514` with the
+reachable OpenTelemetry Collector address. The sample intentionally omits query
+values, cookies, authorization headers, and request bodies.
+
+Install the CrowdSec NGINX bouncer on this operator-managed edge with the same
+LAPI credentials and one-hour decision policy as the cluster ingress. Do not
+add it to the application Docker Compose stack: this NGINX host is external to
+Compose and is responsible for enforcing blocks before requests reach clients.
+
 ## Required Forwarded Headers
 
 Every proxied Tanuki app location should set these headers explicitly:

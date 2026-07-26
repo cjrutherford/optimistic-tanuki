@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EmailService } from '@optimistic-tanuki/email';
+import {
+  EmailService,
+  renderDomainEmailTemplate,
+} from '@optimistic-tanuki/email';
 import {
   Lead,
   LeadFlag,
@@ -159,10 +162,17 @@ export class LeadsService {
       };
     }
 
+    const template = renderDomainEmailTemplate({
+      domain: process.env.SMTP_FROM || 'optimistic-tanuki.com',
+      appName: 'Lead Tracker',
+      heading: dto.subject,
+      body: dto.message.split(/\r?\n/).filter(Boolean),
+    });
     const delivery = await this.emailService.sendEmail({
       to: toEmail,
       subject: dto.subject,
-      text: dto.message,
+      text: template.text,
+      html: template.html,
       replyTo: process.env.SMTP_FROM,
     });
 

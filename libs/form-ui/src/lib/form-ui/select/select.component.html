@@ -1,5 +1,6 @@
 <div class="form-field">
   <select
+    [id]="id"
     class="form-control form-control-select"
     [(ngModel)]="value"
     (ngModelChange)="onChange($event); onTouched()"

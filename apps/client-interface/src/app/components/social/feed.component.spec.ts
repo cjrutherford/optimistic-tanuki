@@ -24,14 +24,12 @@ import { VoteService } from '../../vote.service';
 import { ReactionService } from '../../reaction.service';
 import { ActivityService } from '../../activity.service';
 import { throwError } from 'rxjs';
-import { PrivacyService } from '../../privacy.service';
 
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
   let fixture: ComponentFixture<FeedComponent>;
   let postService: PostService;
   let profileService: ProfileService;
-  let privacyService: PrivacyService;
   let router: Router;
   let consoleLogSpy: jest.SpyInstance;
 
@@ -97,11 +95,6 @@ describe('FeedComponent', () => {
         .mockReturnValue(
           of({ id: '1', profileName: 'Test', profilePic: 'url' })
         ),
-    };
-    const privacyServiceMock = {
-      getBlockedUsers: jest.fn().mockReturnValue(of([])),
-      blockUser: jest.fn().mockReturnValue(of(undefined)),
-      unblockUser: jest.fn().mockReturnValue(of(undefined)),
     };
     const routerMock = {
       navigate: jest.fn(),
@@ -179,7 +172,6 @@ describe('FeedComponent', () => {
       imports: [FeedComponent, HttpClientTestingModule, CommonModule],
       providers: [
         { provide: ProfileService, useValue: profileServiceMock },
-        { provide: PrivacyService, useValue: privacyServiceMock },
         { provide: Router, useValue: routerMock },
         {
           provide: ActivatedRoute,
@@ -200,7 +192,6 @@ describe('FeedComponent', () => {
     component = fixture.componentInstance;
     postService = TestBed.inject(PostService);
     profileService = TestBed.inject(ProfileService);
-    privacyService = TestBed.inject(PrivacyService);
     router = TestBed.inject(Router);
   });
 
@@ -212,7 +203,6 @@ describe('FeedComponent', () => {
     fixture.detectChanges();
     tick();
     expect(component).toBeTruthy();
-    expect(privacyService.getBlockedUsers).toHaveBeenCalled();
   }));
 
   it('should not prepend a post when create fails with an isolation denial', async () => {
@@ -253,13 +243,6 @@ describe('FeedComponent', () => {
     );
     consoleErrorSpy.mockRestore();
   });
-
-  it('does not call getBlockedUsers when loading the feed', fakeAsync(() => {
-    fixture.detectChanges();
-    tick();
-
-    expect(profileService.getBlockedUsers).not.toHaveBeenCalled();
-  }));
 
   it('updates an owned post in place after saving edits', async () => {
     const updatePostSpy = jest.spyOn(component.postService, 'updatePost');

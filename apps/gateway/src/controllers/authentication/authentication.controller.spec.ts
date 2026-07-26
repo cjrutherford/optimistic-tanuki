@@ -156,6 +156,24 @@ describe('AuthenticationController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('confirms email verification without invoking the session-issuing email action', async () => {
+    (clientProxy.send as jest.Mock).mockReturnValueOnce(
+      of({ message: 'Email verified', code: 0 })
+    );
+
+    await expect(
+      controller.confirmEmailVerification({ token: 'verification-token' })
+    ).resolves.toEqual({ message: 'Email verified', code: 0 });
+    expect(clientProxy.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConfirmEmailVerification },
+      { token: 'verification-token' }
+    );
+    expect(clientProxy.send).not.toHaveBeenCalledWith(
+      { cmd: AuthCommands.ConsumeEmailAuthAction },
+      expect.anything()
+    );
+  });
+
   it('should login user', async () => {
     const loginRequest: LoginRequest = {
       email: 'test@test.com',
@@ -245,6 +263,29 @@ describe('AuthenticationController', () => {
       registerRequest,
       'system-configurator'
     );
+  });
+
+  it('rejects public owner-console registration in production', async () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    await expect(
+      controller.registerUser(
+        {
+          fn: 'Owner',
+          ln: 'User',
+          email: 'owner@example.com',
+          password: 'OwnerPassword!123',
+          confirm: 'OwnerPassword!123',
+          bio: '',
+        },
+        'owner-console',
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(registerBootstrap.register).not.toHaveBeenCalled();
+    process.env.NODE_ENV = previousNodeEnv;
   });
 
   it('sends verification after a successful app registration', async () => {
@@ -502,6 +543,21 @@ describe('AuthenticationController', () => {
         active: true,
       })
     );
+  });
+
+  it('never lets an authenticated user self-grant global owner access', async () => {
+    await expect(
+      controller.claimOwnerAccess(
+        {
+          userId: 'user-1',
+          email: 'member@example.com',
+          profileId: 'profile-1',
+        } as any,
+        'owner-console'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+
+    expect(roleInitService.processNow).not.toHaveBeenCalled();
   });
 
   it('does not seed starter products when the owner already has products', async () => {

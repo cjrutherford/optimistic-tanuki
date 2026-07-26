@@ -77,6 +77,11 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: AuthCommands.ConfirmEmailVerification })
+  confirmEmailVerification(@Payload() data: { token: string }) {
+    return this.emailAuthService.confirmVerification(data.token);
+  }
+
   @MessagePattern({ cmd: AuthCommands.ConfirmPasswordReset })
   confirmPasswordReset(
     @Payload() data: { token: string; password: string; confirmation: string }

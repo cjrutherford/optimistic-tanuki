@@ -45,6 +45,37 @@ export const getTrustedOrigins = ({
   return [...trustedOrigins];
 };
 
+export const assertProductionOwnerConsoleOrigin = ({
+  configuredOrigins = parseConfiguredOrigins(),
+  nodeEnv = process.env['NODE_ENV'],
+  registry,
+}: {
+  configuredOrigins?: string[];
+  nodeEnv?: string;
+  registry?: AppRegistry;
+} = {}): void => {
+  if (nodeEnv !== 'production') {
+    return;
+  }
+
+  const ownerConsole = registry?.apps.find(
+    (app) => app.appId === 'owner-console'
+  );
+  const ownerOrigin = ownerConsole && normalizeOrigin(ownerConsole.uiBaseUrl);
+  if (!ownerOrigin) {
+    return;
+  }
+
+  const configuredOwnerOrigin = configuredOrigins.some(
+    (origin) => normalizeOrigin(origin) === ownerOrigin
+  );
+  if (!configuredOwnerOrigin) {
+    throw new Error(
+      `CORS_ALLOWED_ORIGINS must include the Owner Console origin ${ownerOrigin}.`
+    );
+  }
+};
+
 export const originHost = (origin: string): string | null => {
   try {
     return new URL(origin).hostname;

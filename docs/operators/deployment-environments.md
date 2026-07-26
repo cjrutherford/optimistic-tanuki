@@ -97,6 +97,37 @@ Expected result:
 
 Do not treat the workspace as ready to apply until both validations pass.
 
+### Bootstrap the Platform Owner
+
+The production Admin API is bound to `127.0.0.1` and is not a public service.
+After the stack is healthy, create the initial Owner Console operator from the
+deployment host with credentials stored in the deploy-specific environment file:
+
+```bash
+set -a
+. /path/to/production.env
+set +a
+pnpm bootstrap:owner --mark-setup-complete
+```
+
+Set `OWNER_BOOTSTRAP_NAME`, `OWNER_BOOTSTRAP_EMAIL`, and
+`OWNER_BOOTSTRAP_PASSWORD` in that file. Also set a high-entropy
+`ADMIN_API_BOOTSTRAP_TOKEN`: it is supplied as a request header by the CLI so
+the Admin API can distinguish this host bootstrap operation after Docker
+forwards it across the bridge network. Do not place credentials or the token in
+shell arguments or commit them. The command is idempotent: a later run reports
+the existing global owner and does not create another account.
+
+### Access Owner Console by Host IP
+
+When Owner Console is reached through the deployment host IP, configure one
+exact origin in both deployment inputs. For example, if the console is served
+at `http://203.0.113.10:8084`, add that full URL to
+`CORS_ALLOWED_ORIGINS` and set the deploy-specific registry entry
+`owner-console.uiBaseUrl` to the same URL. Scheme and port must match exactly.
+Do not use a wildcard or rely on the request `Host` header; the gateway only
+trusts explicitly configured origins in production.
+
 ### Apply Paths
 
 Generated helper:

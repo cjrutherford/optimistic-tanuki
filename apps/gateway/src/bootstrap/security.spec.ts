@@ -2,6 +2,7 @@ import type { Request } from 'express';
 import type { AppRegistry } from '@optimistic-tanuki/app-registry-backend';
 import {
   applyGatewaySecurityHeaders,
+  assertProductionOwnerConsoleOrigin,
   enforceTrustedBrowserOrigins,
   getTrustedOrigins,
   isAllowedOrigin,
@@ -75,6 +76,43 @@ describe('gateway security helpers', () => {
         'https://business.experiments.christopherrutherford.net',
       ])
     );
+  });
+
+  it('requires the production owner-console registry origin in configured origins', () => {
+    const productionRegistry: AppRegistry = {
+      ...registry,
+      apps: [
+        ...registry.apps,
+        {
+          appId: 'owner-console',
+          name: 'Owner Console',
+          domain: '203.0.113.10',
+          uiBaseUrl: 'http://203.0.113.10:8084',
+          apiBaseUrl: 'http://203.0.113.10:8084/api',
+          appType: 'admin',
+          visibility: 'internal',
+        },
+      ],
+    };
+
+    expect(() =>
+      assertProductionOwnerConsoleOrigin({
+        configuredOrigins: ['https://optimistic-tanuki.com'],
+        nodeEnv: 'production',
+        registry: productionRegistry,
+      })
+    ).toThrow('CORS_ALLOWED_ORIGINS must include');
+
+    expect(() =>
+      assertProductionOwnerConsoleOrigin({
+        configuredOrigins: [
+          'https://optimistic-tanuki.com',
+          'http://203.0.113.10:8084',
+        ],
+        nodeEnv: 'production',
+        registry: productionRegistry,
+      })
+    ).not.toThrow();
   });
 
   it('allows configured origins', () => {

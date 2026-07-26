@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
@@ -13,13 +14,17 @@ import {
   ImageInfo,
   RolloutState,
 } from './deployment.service';
+import { OwnerAuthorizationGuard } from '../auth/owner-authorization.guard';
+import { AdminApiPublic } from '../auth/admin-api-access.decorator';
 
 @ApiTags('deployment')
 @Controller()
+@UseGuards(OwnerAuthorizationGuard)
 export class DeploymentController {
   constructor(private readonly deploymentService: DeploymentService) {}
 
   @Get('api/status/public')
+  @AdminApiPublic()
   @ApiOperation({ summary: 'Get public deployment status (legacy)' })
   @ApiResponse({ status: 200, description: 'Public status returned' })
   getPublicStatus() {

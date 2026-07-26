@@ -22,10 +22,10 @@ describe('docker compose oauth environment wiring', () => {
     ];
 
     const authenticationSection = compose.match(
-      /^  authentication:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
     const gatewaySection = compose.match(
-      /^  gateway:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
 
     expect(authenticationSection).toBeTruthy();
@@ -41,11 +41,38 @@ describe('docker compose oauth environment wiring', () => {
     const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
     const compose = fs.readFileSync(composePath, 'utf8');
     const authenticationSection = compose.match(
-      /^  authentication:\n([\s\S]*?)(?=^  [a-z0-9-]+:|$(?![\s\S]))/im
+      /^ {2}authentication:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
     )?.[1];
 
     expect(authenticationSection).toContain(
       'AUTH_AUTO_VERIFY_EMAILS: ${AUTH_AUTO_VERIFY_EMAILS:-false}'
+    );
+  });
+
+  it('includes the default owner-console origin in production CORS origins', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:8084,'
+    );
+  });
+
+  it('supplies a development-only OAuth state secret when the dev override replaces gateway environment', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../docker-compose.dev.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}'
     );
   });
 });

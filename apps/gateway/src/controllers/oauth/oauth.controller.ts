@@ -37,6 +37,7 @@ import { firstValueFrom } from 'rxjs';
 import {
   AuthCommands,
   ProfileCommands,
+  RoleCommands,
   ServiceTokens,
 } from '@optimistic-tanuki/constants';
 import { Public } from '../../decorators/public.decorator';
@@ -94,6 +95,8 @@ export class OAuthController {
     private readonly authClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
     private readonly profileClient: ClientProxy,
+    @Inject(ServiceTokens.PERMISSIONS_SERVICE)
+    private readonly permissionsClient: ClientProxy,
     @Inject(GATEWAY_APP_REGISTRY)
     private readonly registry: AppRegistry,
     private readonly logger: Logger,
@@ -417,6 +420,7 @@ export class OAuthController {
         identity.displayName || identity.email,
         identity.email
       );
+      await this.assertOwnerConsoleAccess(statePayload.appScope, profile.id);
       const issueResult = await firstValueFrom(
         this.authClient.send(
           { cmd: AuthCommands.Issue },
@@ -1179,7 +1183,7 @@ export class OAuthController {
     if (
       !providerUserId ||
       providerUserId.length > 512 ||
-      /[\u0000-\u001f\u007f]/.test(providerUserId) ||
+      /\p{Cc}/u.test(providerUserId) ||
       ['null', 'undefined'].includes(providerUserId.toLowerCase())
     ) {
       throw new Error('OAuth provider identity is invalid');
@@ -1204,6 +1208,12 @@ export class OAuthController {
     provider: string,
     identity: OAuthIdentity
   ): Promise<string> {
+    if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
+      throw new Error(
+        'Owner Console accounts must be provisioned by the deployment bootstrap.'
+      );
+    }
+
     this.requireUsableOAuthEmail(identity.email, provider);
 
     const { firstName, lastName } = this.splitDisplayName(
@@ -1245,6 +1255,38 @@ export class OAuthController {
     );
 
     return userId;
+  }
+
+  private async assertOwnerConsoleAccess(
+    appScope: string,
+    profileId: string
+  ): Promise<void> {
+    if (appScope !== 'owner-console') {
+      return;
+    }
+
+    const roles = (await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: RoleCommands.GetUserRoles },
+        { profileId, appScope: 'global' }
+      )
+    )) as Array<{ role?: { name?: string } }>;
+    const allowedRoleNames = new Set([
+      'owner_console_owner',
+      'owner',
+      'global_admin',
+      'system_admin',
+    ]);
+
+    if (
+      !roles.some((assignment) =>
+        allowedRoleNames.has(assignment.role?.name || '')
+      )
+    ) {
+      throw new Error(
+        'This account is not authorized for Owner Console access.'
+      );
+    }
   }
 
   private splitDisplayName(

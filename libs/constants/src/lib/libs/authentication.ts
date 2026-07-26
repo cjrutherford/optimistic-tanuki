@@ -24,6 +24,7 @@ const AuthCommands = {
   RequestEmailAuthAction: 'RequestEmailAuthAction',
   InspectEmailAuthAction: 'InspectEmailAuthAction',
   ConsumeEmailAuthAction: 'ConsumeEmailAuthAction',
+  ConfirmEmailVerification: 'ConfirmEmailVerification',
   ConfirmPasswordReset: 'ConfirmPasswordReset',
 };
 

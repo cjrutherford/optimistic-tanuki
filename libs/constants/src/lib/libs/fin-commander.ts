@@ -11,7 +11,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-// Mirrors `FinanceWorkspace` from '@optimistic-tanuki/models'. Defined locally
+// Mirrors the `FinanceWorkspace` shape declared by the models library. Defined locally
 // because libs/constants is a low-level library and must not depend on
 // libs/models (doing so breaks its rootDir-scoped build — TS6059).
 type FinanceWorkspace = 'personal' | 'business' | 'net-worth';

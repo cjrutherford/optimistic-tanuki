@@ -1,4 +1,5 @@
-import { Route } from '@angular/router';
+import { inject } from '@angular/core';
+import { Route, Router } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
 import {
@@ -22,10 +23,10 @@ export const appRoutes: Route[] = [
   },
   {
     path: 'register',
-    loadComponent: () =>
-      import('./components/register.component').then(
-        (m) => m.RegisterComponent
-      ),
+    redirectTo: () =>
+      inject(Router).createUrlTree(['/login'], {
+        queryParams: { provisioning: 'required' },
+      }),
   },
   { path: 'oauth/callback', component: OAuthCallbackComponent },
   {
@@ -86,6 +87,13 @@ export const appRoutes: Route[] = [
         loadComponent: () =>
           import('./components/video-processing-monitor.component').then(
             (m) => m.VideoProcessingMonitorComponent
+          ),
+      },
+      {
+        path: 'security',
+        loadComponent: () =>
+          import('./components/security-observability.component').then(
+            (m) => m.SecurityObservabilityComponent
           ),
       },
       {
