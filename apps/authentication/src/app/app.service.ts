@@ -11,7 +11,10 @@ import {
   TokenIssuerService,
 } from '@optimistic-tanuki/auth-domain';
 import { SaltedHashService } from '@optimistic-tanuki/encryption';
-import { EmailService } from '@optimistic-tanuki/email';
+import {
+  EmailService,
+  renderDomainEmailTemplate,
+} from '@optimistic-tanuki/email';
 import { RpcException } from '@nestjs/microservices';
 import * as qrcode from 'qrcode';
 import { TokenEntity } from '../tokens/entities/token.entity';
@@ -394,14 +397,19 @@ export class AppService {
       await this.userRepo.update(userId, { totpSecret: newSecret });
 
       // Send MFA setup confirmation email
-      const safeName = validator.escape(existingUser.firstName || '');
+      const template = this.renderSecurityEmail(
+        'Multi-Factor Authentication Enabled',
+        [
+          `Hello ${existingUser.firstName || ''},`,
+          'Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.',
+        ],
+        'If you did not initiate this, please contact support immediately.'
+      );
       await this.emailService.sendEmail({
         to: existingUser.email,
         subject: 'Multi-Factor Authentication Enabled',
-        text: `Hello ${
-          existingUser.firstName || ''
-        },\n\nMulti-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.\n\nIf you did not initiate this, please contact support immediately.`,
-        html: `<h2>MFA Enabled</h2><p>Hello ${safeName},</p><p>Multi-factor authentication has been enabled on your account. Please scan the QR code with your authenticator app to complete setup.</p><p>If you did not initiate this, please contact support immediately.</p>`,
+        text: template.text,
+        html: template.html,
       });
 
       return {
@@ -437,15 +445,20 @@ export class AppService {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
 
-      const safeName = validator.escape(user.firstName || '');
+      const template = this.renderSecurityEmail(
+        'Multi-Factor Authentication Setup',
+        [
+          `Hello ${user.firstName || ''},`,
+          'A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.',
+        ],
+        'If you did not request this, please secure your account immediately.'
+      );
 
       const result = await this.emailService.sendEmail({
         to: user.email,
         subject: 'Multi-Factor Authentication Setup',
-        text: `Hello ${
-          user.firstName || ''
-        },\n\nA request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.\n\nIf you did not request this, please secure your account immediately.`,
-        html: `<h2>MFA Setup Requested</h2><p>Hello ${safeName},</p><p>A request to enable multi-factor authentication on your account has been initiated. Please use your authenticator app to complete setup.</p><p>If you did not request this, please secure your account immediately.</p>`,
+        text: template.text,
+        html: template.html,
       });
 
       return {
@@ -464,16 +477,20 @@ export class AppService {
       const user = await this.userRepo.findOne({ where: { id: userId } });
       if (!user) throw new RpcException('User not found');
 
-      const safeAction = validator.escape(action);
-      const safeName = validator.escape(user.firstName || '');
+      const template = this.renderSecurityEmail(
+        'Security Alert: MFA Verification',
+        [
+          `Hello ${user.firstName || ''},`,
+          `A multi-factor authentication verification was performed on your account for: ${action}.`,
+        ],
+        'If this was not you, please change your password immediately.'
+      );
 
       const result = await this.emailService.sendEmail({
         to: user.email,
         subject: 'Security Alert: MFA Verification',
-        text: `Hello ${
-          user.firstName || ''
-        },\n\nA multi-factor authentication verification was performed on your account for: ${action}.\n\nIf this was not you, please change your password immediately.`,
-        html: `<h2>Security Alert</h2><p>Hello ${safeName},</p><p>A multi-factor authentication verification was performed on your account for: <strong>${safeAction}</strong>.</p><p>If this was not you, please change your password immediately.</p>`,
+        text: template.text,
+        html: template.html,
       });
 
       return {
@@ -485,6 +502,18 @@ export class AppService {
       if (e instanceof RpcException) throw e;
       throw new RpcException(e.message || e);
     }
+  }
+
+  private renderSecurityEmail(heading: string, body: string[], note: string) {
+    return renderDomainEmailTemplate({
+      domain:
+        this.configService.get<string>('SMTP_FROM') || 'optimistic-tanuki.com',
+      appName: 'Optimistic Tanuki',
+      heading,
+      body,
+      note,
+      tone: 'security',
+    });
   }
 
   async issueToken(userId: string, profileId?: string) {

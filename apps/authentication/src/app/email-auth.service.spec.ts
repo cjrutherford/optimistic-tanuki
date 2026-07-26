@@ -79,6 +79,7 @@ describe('EmailAuthService', () => {
         html: expect.stringContaining(
           'https://hardware.hopefulaspirationsindustries.com/auth/verify#token='
         ),
+        text: expect.stringContaining('Continue securely:'),
       })
     );
     expect(JSON.stringify(actions.save.mock.calls)).not.toContain('#token=');

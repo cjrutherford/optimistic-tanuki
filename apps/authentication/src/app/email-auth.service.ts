@@ -1,7 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { RpcException } from '@nestjs/microservices';
-import { EmailService } from '@optimistic-tanuki/email';
+import {
+  EmailService,
+  renderDomainEmailTemplate,
+} from '@optimistic-tanuki/email';
 import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
 import { createHash, randomBytes } from 'crypto';
 import { IsNull, Repository } from 'typeorm';
@@ -77,15 +80,23 @@ export class EmailAuthService {
       ''
     )}${actionPath}#token=${encodeURIComponent(rawToken)}`;
     const label = this.actionLabel(purpose);
+    const template = renderDomainEmailTemplate({
+      domain: context.uiBaseUrl,
+      appName: context.appName,
+      heading: label,
+      body: [`Use the secure link below to continue with ${context.appName}.`],
+      action: { label: 'Continue securely', url: actionUrl },
+      note: 'If you did not request this, you can safely ignore this email.',
+      tone:
+        purpose === AuthActionPurpose.PasswordReset ? 'security' : 'default',
+    });
     const result = await this.email.sendEmail({
       to: user.email,
       from: context.from,
       replyTo: context.replyTo,
       subject: `${label} — ${context.appName}`,
-      text: `${label} for ${context.appName}: ${actionUrl}`,
-      html: `<h1>${this.escape(
-        context.appName
-      )}</h1><p>${label}</p><p><a href="${actionUrl}">Continue securely</a></p><p>If you did not request this, you can ignore this message.</p>`,
+      text: template.text,
+      html: template.html,
     });
     if (!result.success) {
       await this.actions.update({ tokenHash }, { consumedAt: new Date() });
@@ -221,19 +232,5 @@ export class EmailAuthService {
 
   private safeReturnPath(path = '/') {
     return path.startsWith('/') && !path.startsWith('//') ? path : '/';
-  }
-
-  private escape(value: string) {
-    return value.replace(
-      /[&<>"']/g,
-      (character) =>
-        ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#039;',
-        }[character] as string)
-    );
   }
 }
