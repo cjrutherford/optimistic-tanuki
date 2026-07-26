@@ -16,8 +16,6 @@ data:
       syslog/manual-nginx:
         udp:
           listen_address: 0.0.0.0:514
-        tcp:
-          listen_address: 0.0.0.0:514
       otlp:
         protocols:
           grpc: {}
