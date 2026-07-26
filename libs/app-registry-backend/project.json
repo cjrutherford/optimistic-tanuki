@@ -6,7 +6,7 @@
   "tags": [
     "type:contracts",
     "scope:app-registry",
-    "platform:server",
+    "platform:shared",
     "visibility:internal"
   ],
   "targets": {
