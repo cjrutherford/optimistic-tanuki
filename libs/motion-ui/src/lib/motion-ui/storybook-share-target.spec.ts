@@ -13,7 +13,7 @@ describe('motion-ui storybook-share target', () => {
         host: '0.0.0.0',
         configDir: 'libs/motion-ui/.storybook',
         browserTarget: 'motion-ui:build-storybook',
-        compodoc: false,
+        compodoc: true,
       },
     });
   });

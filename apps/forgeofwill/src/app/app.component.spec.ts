@@ -17,6 +17,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import {
   SOCKET_HOST,
+  SOCKET_PATH,
   SOCKET_NAMESPACE,
   SOCKET_IO_INSTANCE,
   SOCKET_AUTH_TOKEN_PROVIDER,
@@ -82,6 +83,7 @@ describe('AppComponent', () => {
         { provide: ThemeService, useValue: themeService },
         { provide: PLATFORM_ID, useValue: 'browser' },
         { provide: SOCKET_HOST, useValue: 'http://localhost' },
+        { provide: SOCKET_PATH, useValue: '/socket.io' },
         { provide: SOCKET_NAMESPACE, useValue: '/chat' },
         { provide: SOCKET_IO_INSTANCE, useValue: io },
         { provide: SOCKET_AUTH_TOKEN_PROVIDER, useValue: () => 'test-token' },

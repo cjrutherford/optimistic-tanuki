@@ -14,6 +14,7 @@ describe('JustRemoteDiscoveryProvider', () => {
   });
 
   it('falls back to embedded html job data when the rss endpoint returns an app shell', async () => {
+    const publishedAt = new Date().toISOString();
     const topic = {
       id: 'topic-1',
       name: 'Customer Success',
@@ -33,7 +34,7 @@ describe('JustRemoteDiscoveryProvider', () => {
       text: async () => `
         <html>
           <script id="__PRELOADED_STATE__" type="application/json">
-            {"jobsState":{"entity":{"jobs":[{"title":"Customer Success Manager","company_name":"Outreach","href":"remote-customer-service-jobs/customer-success-manager-outreach","remote_type":"Fully Remote","location_restrictions":["United States"],"raw_date":"2026-03-26T11:00:00.620Z"}]}}}
+            {"jobsState":{"entity":{"jobs":[{"title":"Customer Success Manager","company_name":"Outreach","href":"remote-customer-service-jobs/customer-success-manager-outreach","remote_type":"Fully Remote","location_restrictions":["United States"],"raw_date":"${publishedAt}"}]}}}
           </script>
         </html>
       `,
