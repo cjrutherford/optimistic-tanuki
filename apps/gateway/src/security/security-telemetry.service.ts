@@ -97,9 +97,11 @@ export class SecurityTelemetryService {
         'Metrics time range must be valid and no longer than 24 hours.'
       );
     const bucket = query.bucket ?? '5m';
+    if (bucket !== '1m' && bucket !== '5m' && bucket !== '15m') {
+      throw new Error('Metrics bucket must be one of: 1m, 5m, 15m.');
+    }
     const bucketMs =
       bucket === '1m' ? 60_000 : bucket === '15m' ? 900_000 : 300_000;
-    const events = await this.readEvents({
       ...query,
       to: to.toISOString(),
       limit: 5000,
