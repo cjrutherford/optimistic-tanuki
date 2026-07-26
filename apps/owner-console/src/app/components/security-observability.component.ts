@@ -141,7 +141,7 @@ Chart.register(...registerables);
       :host {
         display: block;
         padding: 24px;
-        color: var(--foreground, #172033);
+        color: var(--foreground);
       }
       .security-page {
         display: grid;
@@ -150,13 +150,13 @@ Chart.register(...registerables);
       header,
       .panel,
       article {
-        border: 1px solid var(--border-color, #d6dce5);
+        border: 1px solid var(--border-color);
         border-radius: 20px;
-        background: var(--surface, #fff);
+        background: var(--surface);
         padding: 24px;
       }
       header p {
-        color: var(--accent, #0a6c74);
+        color: var(--accent);
         font-weight: 800;
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -169,7 +169,7 @@ Chart.register(...registerables);
       }
       header span,
       .panel p {
-        color: var(--muted-foreground, #52606d);
+        color: var(--muted);
         display: block;
         margin-top: 8px;
       }
@@ -179,7 +179,7 @@ Chart.register(...registerables);
         gap: 16px;
       }
       article span {
-        color: var(--muted-foreground, #52606d);
+        color: var(--muted);
       }
       article strong {
         display: block;
@@ -202,10 +202,10 @@ Chart.register(...registerables);
         font-weight: 700;
       }
       select {
-        border: 1px solid var(--border-color, #d6dce5);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         padding: 8px;
-        background: var(--surface, #fff);
+        background: var(--surface);
       }
       .rankings {
         display: grid;
@@ -224,20 +224,20 @@ Chart.register(...registerables);
       }
       th,
       td {
-        border-top: 1px solid var(--border-color, #d6dce5);
+        border-top: 1px solid var(--border-color);
         padding: 10px 8px;
         white-space: nowrap;
       }
       th {
         font-size: 0.74rem;
         text-transform: uppercase;
-        color: var(--muted-foreground, #52606d);
+        color: var(--muted);
       }
       code {
         font-size: 0.82rem;
       }
       .error {
-        color: var(--danger, #b42318);
+        color: var(--danger);
       }
     `,
   ],
@@ -344,8 +344,8 @@ export class SecurityObservabilityComponent
           {
             label: 'Requests',
             data: this.metrics.series.map((point) => point.requests),
-            borderColor: '#0a6c74',
-            backgroundColor: 'rgba(10,108,116,.12)',
+            borderColor: this.themeColor('--accent'),
+            backgroundColor: this.translucentThemeColor('--accent', 0.12),
             fill: true,
             tension: 0.32,
           },
@@ -354,13 +354,13 @@ export class SecurityObservabilityComponent
             data: this.metrics.series.map(
               (point) => point.denied + point.rateLimited
             ),
-            borderColor: '#b54708',
+            borderColor: this.themeColor('--warning'),
             tension: 0.32,
           },
           {
             label: 'Server errors',
             data: this.metrics.series.map((point) => point.serverErrors),
-            borderColor: '#b42318',
+            borderColor: this.themeColor('--danger'),
             tension: 0.32,
           },
         ],
@@ -379,5 +379,22 @@ export class SecurityObservabilityComponent
     return this.events.filter(
       (event) => event.classification === classification
     ).length;
+  }
+
+  private themeColor(name: string): string {
+    return getComputedStyle(document.documentElement)
+      .getPropertyValue(name)
+      .trim();
+  }
+
+  private translucentThemeColor(name: string, opacity: number): string {
+    const color = this.themeColor(name);
+    const match = color.match(/^#([\da-f]{6})$/i);
+    if (!match) return color;
+
+    const channels = [0, 2, 4].map((offset) =>
+      Number.parseInt(match[1].slice(offset, offset + 2), 16)
+    );
+    return `rgba(${channels.join(', ')}, ${opacity})`;
   }
 }

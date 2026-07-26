@@ -58,4 +58,12 @@ describe('SecurityObservabilityComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Request activity');
     expect(fixture.nativeElement.textContent).toContain('12');
   });
+
+  it('derives the activity fill color from the active theme token', () => {
+    document.documentElement.style.setProperty('--accent', '#0a6c74');
+
+    expect(
+      (fixture.componentInstance as any).translucentThemeColor('--accent', 0.12)
+    ).toBe('rgba(10, 108, 116, 0.12)');
+  });
 });

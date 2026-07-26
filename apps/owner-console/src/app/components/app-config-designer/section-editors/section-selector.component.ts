@@ -144,12 +144,12 @@ interface SectionTypeOption {
       .close-btn:hover {
         background-color: color-mix(
           in srgb,
-          var(--accent, #2563eb) 10%,
+          var(--accent) 10%,
           var(--surface, #ffffff)
         );
         color: color-mix(
           in srgb,
-          var(--accent, #2563eb) 82%,
+          var(--accent) 82%,
           var(--foreground, #111827)
         );
       }

@@ -70,5 +70,15 @@ describe('EmailActionComponent', () => {
     expect(fixture.nativeElement.textContent).toContain(
       'Your email address has been verified.'
     );
+    expect(
+      fixture.nativeElement
+        .querySelector('main')
+        .getAttribute('aria-labelledby')
+    ).toBe('email-action-heading');
+    expect(
+      fixture.nativeElement
+        .querySelector('a')
+        .classList.contains('email-action-link')
+    ).toBe(true);
   });
 });

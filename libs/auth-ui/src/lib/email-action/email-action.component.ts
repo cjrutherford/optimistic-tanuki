@@ -34,32 +34,36 @@ export function emailAuthRoutes(storageKey: string): Routes {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
   template: `
-    <main class="email-action-shell">
-      <section class="email-action-card" aria-live="polite">
+    <main class="email-action-shell" aria-labelledby="email-action-heading">
+      <section class="email-action-card" aria-live="polite" aria-atomic="true">
         <p class="eyebrow">Secure account access</p>
-        <h1>{{ heading }}</h1>
-        <p>{{ message }}</p>
+        <h1 id="email-action-heading">{{ heading }}</h1>
+        <p id="email-action-message" role="status">{{ message }}</p>
 
         @if (purpose === 'password-reset' && token && state === 'ready') {
         <form [formGroup]="resetForm" (ngSubmit)="submitReset()">
           <label
             >New password<input
               type="password"
+              name="password"
               formControlName="password"
               autocomplete="new-password"
           /></label>
           <label
             >Confirm password<input
               type="password"
+              name="confirmation"
               formControlName="confirmation"
               autocomplete="new-password"
           /></label>
           <button type="submit">Reset password</button>
         </form>
         } @else if (token && state === 'ready') {
-        <button type="button" (click)="confirm()">Continue securely</button>
+        <button type="button" (click)="confirm()">
+          Sign in with magic link
+        </button>
         } @if (purpose === 'verification' && state === 'success') {
-        <a routerLink="/login">Sign in</a>
+        <a class="email-action-link" routerLink="/login">Sign in</a>
         }
       </section>
     </main>
@@ -101,6 +105,7 @@ export function emailAuthRoutes(storageKey: string): Routes {
         margin: 0.4rem 0 1rem;
         font-size: clamp(2rem, 7vw, 3.5rem);
         line-height: 0.98;
+        text-wrap: balance;
       }
       form,
       label {
@@ -129,6 +134,30 @@ export function emailAuthRoutes(storageKey: string): Routes {
         cursor: pointer;
         font: inherit;
         font-weight: 700;
+        touch-action: manipulation;
+      }
+      button:hover,
+      .email-action-link:hover {
+        filter: brightness(1.12);
+      }
+      button:focus-visible,
+      .email-action-link:focus-visible {
+        outline: 3px solid currentColor;
+        outline-offset: 3px;
+      }
+      .email-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        margin-top: 1rem;
+        border-radius: 999px;
+        padding: 0.7rem 1.2rem;
+        color: Canvas;
+        background: currentColor;
+        font-weight: 700;
+        text-decoration: none;
+        touch-action: manipulation;
       }
     `,
   ],
