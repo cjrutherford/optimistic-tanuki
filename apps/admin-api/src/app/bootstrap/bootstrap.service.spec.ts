@@ -118,7 +118,7 @@ describe('BootstrapService', () => {
     );
   });
 
-  it('returns an existing legacy global owner without creating another account', async () => {
+  it('repairs global and owner-console permissions for an existing global owner', async () => {
     const authClient = {
       send: jest.fn(),
     };
@@ -156,5 +156,24 @@ describe('BootstrapService', () => {
     });
 
     expect(authClient.send).not.toHaveBeenCalled();
+    expect(roleInit.processNow).toHaveBeenCalledTimes(2);
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        scopeName: 'global',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner' }),
+        ]),
+      })
+    );
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        scopeName: 'owner-console',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
+        ]),
+      })
+    );
   });
 });
