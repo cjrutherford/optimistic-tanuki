@@ -173,12 +173,18 @@ describe('EmailAuthService', () => {
   it('resets the password and revokes every existing session', async () => {
     actions.findOne.mockResolvedValue({
       id: 'action-1',
+      appId: 'forgeofwill',
       purpose: AuthActionPurpose.PasswordReset,
+      returnPath: '/',
       expiresAt: new Date(Date.now() + 60_000),
       consumedAt: null,
       user: { ...user },
     });
-    await service.resetPassword('raw-token', 'new-password', 'new-password');
+    await expect(
+      service.resetPassword('raw-token', 'new-password', 'new-password')
+    ).resolves.toEqual(
+      expect.objectContaining({ appId: 'forgeofwill', returnPath: '/' })
+    );
     expect(users.save).toHaveBeenCalledWith(
       expect.objectContaining({ password: 'new-hash' })
     );

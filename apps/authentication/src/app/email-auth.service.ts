@@ -202,7 +202,12 @@ export class EmailAuthService {
       { userId: action.user.id, revoked: false },
       { revoked: true }
     );
-    return { message: 'Password reset successful', code: 0 };
+    return {
+      message: 'Password reset successful',
+      code: 0,
+      appId: action.appId,
+      returnPath: action.returnPath,
+    };
   }
 
   private hash(token: string) {
