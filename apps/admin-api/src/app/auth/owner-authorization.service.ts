@@ -1,5 +1,6 @@
 import {
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -8,6 +9,8 @@ import { JwtService } from '@nestjs/jwt';
 
 type OwnerTokenPayload = { profileId?: string };
 type FetchLike = typeof fetch;
+
+export const OWNER_AUTHORIZATION_FETCH = Symbol('OWNER_AUTHORIZATION_FETCH');
 
 const OWNER_ROLE_NAMES = new Set([
   'owner_console_owner',
@@ -20,6 +23,7 @@ const OWNER_ROLE_NAMES = new Set([
 export class OwnerAuthorizationService {
   constructor(
     private readonly config: ConfigService,
+    @Inject(OWNER_AUTHORIZATION_FETCH)
     private readonly fetchImpl: FetchLike = fetch
   ) {}
 

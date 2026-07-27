@@ -20,6 +20,7 @@ RUN pnpm exec nx build admin-api
 FROM node:22-alpine
 RUN apk add --no-cache docker-cli docker-cli-compose
 WORKDIR /app
+ENV NODE_ENV=production
 COPY --from=builder /app/dist/apps/admin-api/package.json ./package.json
 COPY --from=builder /app/dist/apps/admin-api/pnpm-lock.yaml ./pnpm-lock.yaml
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && CI=true pnpm install --prod --frozen-lockfile --ignore-scripts
