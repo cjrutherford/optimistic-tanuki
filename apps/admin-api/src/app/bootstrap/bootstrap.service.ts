@@ -589,6 +589,7 @@ export class BootstrapService {
 
     if (existingGlobalProfiles.length > 0) {
       const existingOwner = existingGlobalProfiles[0];
+      await this.initializeOwnerPermissions(existingOwner.id);
       return {
         created: false,
         email: normalizedEmail,
@@ -639,15 +640,7 @@ export class BootstrapService {
       throw new Error('Owner registration did not return a profile id');
     }
 
-    await this.roleInit.processNow(
-      new RoleInitBuilder()
-        .setScopeName('global')
-        .setProfile(createdProfile.id)
-        .assignOwnerRole()
-        .addOwnerScopeDefaults()
-        .addAssetOwnerPermissions()
-        .build()
-    );
+    await this.initializeOwnerPermissions(createdProfile.id);
 
     const ownerApp = this.loadDeploymentConfig().apps.find(
       (app) => app.appId === 'owner-console'
@@ -684,6 +677,25 @@ export class BootstrapService {
       email: normalizedEmail,
       name,
     };
+  }
+
+  private async initializeOwnerPermissions(profileId: string): Promise<void> {
+    await this.roleInit.processNow(
+      new RoleInitBuilder()
+        .setScopeName('global')
+        .setProfile(profileId)
+        .addOwnerScopeDefaults()
+        .addAssetOwnerPermissions()
+        .build()
+    );
+
+    await this.roleInit.processNow(
+      new RoleInitBuilder()
+        .setScopeName('owner-console')
+        .setProfile(profileId)
+        .addOwnerScopeDefaults()
+        .build()
+    );
   }
 
   async configureOAuthProvider(
