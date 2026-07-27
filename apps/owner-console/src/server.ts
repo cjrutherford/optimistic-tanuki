@@ -16,6 +16,13 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 
 const app = express();
 app.use(oauthCallbackReferrerPolicy);
+// OAuth providers navigate the popup across origins. Keeping it in the same
+// browsing-context group lets the callback deliver its token to the window
+// that initiated sign-in instead of falling back to a stranded popup.
+app.use((_request, response, next) => {
+  response.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  next();
+});
 const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';

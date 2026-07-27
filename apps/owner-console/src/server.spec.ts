@@ -2,6 +2,14 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 describe('owner-console admin API proxy boundary', () => {
+  it('keeps OAuth popups connected to their opener', () => {
+    const server = fs.readFileSync(path.join(__dirname, 'server.ts'), 'utf8');
+
+    expect(server).toContain(
+      "'Cross-Origin-Opener-Policy', 'same-origin-allow-popups'"
+    );
+  });
+
   it('blocks bootstrap paths and authorizes privileged requests before proxying', () => {
     const server = fs.readFileSync(path.join(__dirname, 'server.ts'), 'utf8');
     const blockIndex = server.indexOf("'/admin-api/api/bootstrap'");

@@ -43,10 +43,13 @@ export class EmailAuthClientService {
   }
 
   resetPassword(token: string, password: string, confirmation: string) {
-    return this.http.post('/api/authentication/password-reset/confirm', {
-      token,
-      password,
-      confirmation,
-    });
+    return this.http.post<{ appId?: string; returnPath?: string }>(
+      '/api/authentication/password-reset/confirm',
+      {
+        token,
+        password,
+        confirmation,
+      }
+    );
   }
 }

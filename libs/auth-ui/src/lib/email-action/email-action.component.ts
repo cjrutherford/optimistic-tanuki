@@ -62,8 +62,11 @@ export function emailAuthRoutes(storageKey: string): Routes {
         <button type="button" (click)="confirm()">
           Sign in with magic link
         </button>
-        } @if (purpose === 'verification' && state === 'success') {
-        <a class="email-action-link" routerLink="/login">Sign in</a>
+        } @if ( (purpose === 'verification' || purpose === 'password-reset') &&
+        state === 'success' ) {
+        <a class="email-action-link" [routerLink]="continuationPath">
+          Continue to sign in
+        </a>
         }
       </section>
     </main>
@@ -171,6 +174,7 @@ export class EmailActionComponent implements OnInit {
 
   purpose: 'verification' | 'magic-link' | 'password-reset' = 'verification';
   token = '';
+  continuationPath = '/';
   state: 'ready' | 'pending' | 'success' | 'error' = 'ready';
   message = 'Review this secure request before continuing.';
   resetForm = this.fb.group({ password: [''], confirmation: [''] });
@@ -194,8 +198,11 @@ export class EmailActionComponent implements OnInit {
       this.message = 'The secure token is missing from this link.';
       return;
     }
+    this.removeTokenFromAddress();
     if (this.purpose === 'verification') {
       this.confirmVerification();
+    } else if (this.purpose === 'magic-link') {
+      this.confirm();
     }
   }
 
@@ -216,11 +223,7 @@ export class EmailActionComponent implements OnInit {
         this.state = 'success';
         this.message =
           'Your email is verified and your secure session is ready.';
-        const path =
-          result.returnPath?.startsWith('/') &&
-          !result.returnPath.startsWith('//')
-            ? result.returnPath
-            : '/';
+        const path = this.safeContinuationPath(result.returnPath);
         void this.router.navigateByUrl(path);
       },
       error: () => {
@@ -235,7 +238,8 @@ export class EmailActionComponent implements OnInit {
     this.state = 'pending';
     this.message = 'Verifying your email address…';
     this.emailAuth.confirmVerification(this.token).subscribe({
-      next: () => {
+      next: (result) => {
+        this.continuationPath = this.safeContinuationPath(result.returnPath);
         this.state = 'success';
         this.message =
           'Your email address has been verified. You can now sign in.';
@@ -254,7 +258,8 @@ export class EmailActionComponent implements OnInit {
     this.emailAuth
       .resetPassword(this.token, password || '', confirmation || '')
       .subscribe({
-        next: () => {
+        next: (result) => {
+          this.continuationPath = this.safeContinuationPath(result.returnPath);
           this.state = 'success';
           this.message =
             'Your password was reset. Sign in again on every device.';
@@ -265,5 +270,20 @@ export class EmailActionComponent implements OnInit {
             'This link is invalid, expired, or the passwords do not meet policy.';
         },
       });
+  }
+
+  private safeContinuationPath(path?: string): string {
+    return path?.startsWith('/') && !path.startsWith('//') ? path : '/';
+  }
+
+  private removeTokenFromAddress(): void {
+    const currentUrl = new URL(window.location.href);
+    currentUrl.searchParams.delete('token');
+    currentUrl.hash = '';
+    window.history.replaceState(
+      null,
+      '',
+      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    );
   }
 }

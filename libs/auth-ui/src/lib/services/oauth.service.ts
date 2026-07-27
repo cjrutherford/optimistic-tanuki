@@ -117,6 +117,23 @@ export class OAuthService {
     appScope?: string
   ): Promise<OAuthLoginResult> {
     return new Promise((resolve, reject) => {
+      let checkClosed: ReturnType<typeof setInterval> | null = null;
+      let closeGracePeriod: ReturnType<typeof setTimeout> | null = null;
+      let settled = false;
+      const finish = (result: OAuthLoginResult, closePopup = true): void => {
+        if (settled) return;
+        settled = true;
+        if (checkClosed) clearInterval(checkClosed);
+        if (closeGracePeriod) clearTimeout(closeGracePeriod);
+        if (closePopup) this.closePopup();
+        else if (this.messageSubscription) {
+          this.messageSubscription.unsubscribe();
+          this.messageSubscription = null;
+          this.popup = null;
+        }
+        resolve(result);
+      };
+
       if (!isPlatformBrowser(this.platformId)) {
         reject(new Error('OAuth login is only available in the browser.'));
         return;
@@ -154,14 +171,13 @@ export class OAuthService {
         )
         .subscribe({
           next: (event) => {
-            this.closePopup();
             const result = event.data.payload as OAuthPopupResult;
             if (result.success && result.token) {
-              resolve({ success: true, token: result.token });
+              finish({ success: true, token: result.token });
               return;
             }
 
-            resolve({
+            finish({
               success: false,
               error:
                 result.errorDescription ||
@@ -170,30 +186,29 @@ export class OAuthService {
             });
           },
           error: () => {
-            this.closePopup();
-            resolve({
+            finish({
               success: false,
               error: 'OAuth authentication timed out or was cancelled',
             });
           },
         });
 
-      const checkClosed = setInterval(() => {
+      checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {
-          clearInterval(checkClosed);
-          setTimeout(() => {
-            if (this.popup && this.popup.closed) {
-              if (this.messageSubscription) {
-                this.messageSubscription.unsubscribe();
-                this.messageSubscription = null;
-              }
-              resolve({
+          if (checkClosed) clearInterval(checkClosed);
+          // Browsers can report a live cross-origin OAuth popup as closed
+          // while it navigates back to this origin. Give its callback message
+          // a chance to arrive before treating this as user cancellation.
+          closeGracePeriod = setTimeout(() => {
+            finish(
+              {
                 success: false,
                 error:
                   'OAuth popup was closed before completing authentication',
-              });
-            }
-          }, 500);
+              },
+              false
+            );
+          }, 1500);
         }
       }, 1000);
     });
