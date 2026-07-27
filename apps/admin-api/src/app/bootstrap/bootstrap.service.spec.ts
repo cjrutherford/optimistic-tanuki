@@ -108,11 +108,22 @@ describe('BootstrapService', () => {
         userId: 'owner-user-1',
       })
     );
-    expect(roleInit.processNow).toHaveBeenCalledWith(
+    expect(roleInit.processNow).toHaveBeenCalledTimes(2);
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         scopeName: 'global',
         assignments: expect.arrayContaining([
           expect.objectContaining({ roleName: 'owner' }),
+        ]),
+      })
+    );
+    expect(roleInit.processNow).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        scopeName: 'owner-console',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
         ]),
       })
     );
