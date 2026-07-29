@@ -11,6 +11,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   req = req.clone({
     url: resolveServerApiUrl(req.url, isPlatformServer(platformId)),
+    setHeaders: { 'X-ot-session-mode': 'cookie' },
+    withCredentials: true,
   });
 
   if (token) {

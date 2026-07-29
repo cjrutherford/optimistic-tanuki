@@ -12,9 +12,11 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
 
   const clonedRequest = req.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'x-ot-appscope': 'forgeofwill',
+      'X-ot-session-mode': 'cookie',
     },
+    withCredentials: true,
   });
 
   return next(clonedRequest).pipe(

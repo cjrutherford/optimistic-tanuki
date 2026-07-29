@@ -8,7 +8,7 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('auth_token'),
+  ...emailAuthRoutes('auth_token', true),
   {
     path: 'control-center',
     loadComponent: () =>

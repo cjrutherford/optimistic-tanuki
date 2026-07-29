@@ -4,6 +4,7 @@ import {
   API_BASE_URL,
   LoginRequest,
   RegisterRequest,
+  UserDto,
 } from '@optimistic-tanuki/ui-models';
 import { firstValueFrom } from 'rxjs';
 
@@ -20,19 +21,43 @@ export class AuthenticationService {
 
   login(data: LoginRequest) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
+      this.http.post<{ data: Record<string, never> }>(
         `${this.baseUrl}/login`,
-        data
+        data,
+        {
+          headers: { 'X-ot-session-mode': 'cookie' },
+          withCredentials: true,
+        }
       )
     );
   }
 
   issue(data: { profileId?: string }) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
+      this.http.post<{ data: Record<string, never> }>(
         `${this.baseUrl}/issue`,
-        data
+        data,
+        {
+          headers: { 'X-ot-session-mode': 'cookie' },
+          withCredentials: true,
+        }
       )
+    );
+  }
+
+  currentSession() {
+    return firstValueFrom(
+      this.http.get<{
+        data: { user: UserDto };
+      }>(`${this.baseUrl}/session`, { withCredentials: true })
+    );
+  }
+
+  logout() {
+    return this.http.post(
+      `${this.baseUrl}/logout`,
+      {},
+      { withCredentials: true }
     );
   }
 }

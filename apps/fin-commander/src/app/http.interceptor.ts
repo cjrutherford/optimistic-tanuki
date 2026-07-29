@@ -19,11 +19,11 @@ export const AuthInterceptor: HttpInterceptorFn = (
   const token = authStateService.getToken();
 
   const clonedRequest = req.clone({
-    setHeaders: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {},
+    setHeaders: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'X-ot-session-mode': 'cookie',
+    },
+    withCredentials: true,
   });
 
   return next(clonedRequest).pipe(

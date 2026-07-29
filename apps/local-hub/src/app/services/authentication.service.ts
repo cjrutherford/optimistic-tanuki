@@ -36,35 +36,22 @@ export class AuthenticationService {
 
   login(data: LoginRequest) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
+      this.http.post<{ data: Record<string, never> }>(
         `${this.baseUrl}/login`,
-        data
+        data,
+        {
+          headers: { 'X-ot-session-mode': 'cookie' },
+          withCredentials: true,
+        }
       )
     );
   }
 
-  setToken(token: string) {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        console.error('Invalid JWT token format');
-        return;
-      }
-      const payload = JSON.parse(atob(parts[1]));
-      this.userData.next(payload);
-      this.isAuthenticated.next(true);
-
-      const expiresAt = payload.exp * 1000;
-      const timeout = expiresAt - Date.now();
-
-      if (timeout > 0) {
-        setTimeout(() => {
-          this.isAuthenticated.next(false);
-          this.userData.next(null);
-        }, timeout);
-      }
-    } catch {
-      console.error('Failed to decode JWT token');
-    }
+  currentSession() {
+    return firstValueFrom(
+      this.http.get<{ data: { user: UserDto } }>(`${this.baseUrl}/session`, {
+        withCredentials: true,
+      })
+    );
   }
 }

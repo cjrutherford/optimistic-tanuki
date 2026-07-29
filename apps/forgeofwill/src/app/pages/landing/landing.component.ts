@@ -3,13 +3,12 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
-import { MurmurationSceneComponent } from '@optimistic-tanuki/motion-ui';
 import { IconComponent, IconName } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
-  imports: [CommonModule, MurmurationSceneComponent, IconComponent],
+  imports: [CommonModule, IconComponent],
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })

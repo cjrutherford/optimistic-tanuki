@@ -3,7 +3,6 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { AuthenticationService } from './authentication.service';
 import { LoginRequest, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
-import { jwtDecode } from 'jwt-decode';
 import { isPlatformBrowser } from '@angular/common';
 
 export interface UserData {
@@ -39,20 +38,10 @@ export class AuthStateService {
       return;
     }
 
-    this.tokenSubject = new BehaviorSubject<string | null>(
-      localStorage.getItem(this.tokenKey)
-    );
-    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(
-      !!localStorage.getItem(this.tokenKey)
-    );
-    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
-      this.getDecodedToken()
-    );
-
-    const token = localStorage.getItem(this.tokenKey);
-    if (token) {
-      this.setToken(token);
-    }
+    this.tokenSubject = new BehaviorSubject<string | null>(null);
+    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
+    void this.restoreSession();
   }
 
   isAuthenticated$(): Observable<boolean> {
@@ -76,15 +65,34 @@ export class AuthStateService {
     return this._isAuthenticated;
   }
 
-  login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
+  async login(
+    loginRequest: LoginRequest
+  ): Promise<{ data: Record<string, never> }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject('Login is not available on this platform.');
     }
-    return this.authService.login(loginRequest).then((response) => {
-      const token = response.data.newToken;
-      this.setToken(token);
-      return response;
-    });
+    const response = await this.authService.login(loginRequest);
+    await this.restoreSession();
+    return response;
+  }
+
+  async restoreSession(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    try {
+      const response = await this.authService.currentSession();
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(true);
+      this.decodedTokenSubject.next(response.data.user as UserData);
+      this._isAuthenticated = true;
+    } catch {
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.decodedTokenSubject.next(null);
+      this._isAuthenticated = false;
+    }
   }
 
   setToken(token: string) {
@@ -93,10 +101,10 @@ export class AuthStateService {
       console.log('setToken called on non-browser platform');
       return;
     }
-    localStorage.setItem(this.tokenKey, token);
+    localStorage.removeItem(this.tokenKey);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
-    this.decodedTokenSubject.next(this.getDecodedToken());
+    this.decodedTokenSubject.next(null);
     this._isAuthenticated = true;
   }
 
@@ -104,6 +112,12 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+    const token = this.getToken();
+    this.http
+      .post('/api/authentication/logout', token ? { token } : {}, {
+        withCredentials: true,
+      })
+      .subscribe();
     localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
@@ -116,23 +130,14 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const token = localStorage.getItem(this.tokenKey);
-    if (!token) return null;
-    const decoded: any = jwtDecode(token);
-    if (decoded.profileId === undefined || decoded.profileId === null)
-      decoded.profileId = '';
-    return decoded as UserData;
+    return this.decodedTokenSubject.value;
   }
 
   getToken() {
     if (!isPlatformBrowser(this.platformId)) {
       return null;
     }
-    const subjectValue = this.tokenSubject.value;
-    if (!subjectValue) {
-      return localStorage.getItem(this.tokenKey);
-    }
-    return subjectValue;
+    return this.tokenSubject.value;
   }
 
   getDecodedTokenValue() {

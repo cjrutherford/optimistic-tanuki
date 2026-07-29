@@ -49,6 +49,23 @@ describe('AuthGuard', () => {
   });
 
   describe('canActivate', () => {
+    it('authenticates a browser session from the HttpOnly session cookie', async () => {
+      clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+      const context = {
+        switchToHttp: () => ({
+          getRequest: () => ({
+            headers: {},
+            cookies: { ot_session: 'cookie-token' },
+          }),
+        }),
+        getHandler: jest.fn(),
+        getClass: jest.fn(),
+      } as unknown as jest.Mocked<ExecutionContext>;
+
+      await expect(authGuard.canActivate(context)).resolves.toBe(true);
+      expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token');
+    });
+
     it('should return true if the user is authenticated', async () => {
       // Mock ExecutionContext and Reflector to simulate an authenticated user
       clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));

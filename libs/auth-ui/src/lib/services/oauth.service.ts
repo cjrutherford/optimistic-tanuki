@@ -15,6 +15,7 @@ export interface OAuthProviderConfig {
 export interface OAuthPopupResult {
   success: boolean;
   token?: string;
+  session?: boolean;
   error?: string;
   errorDescription?: string;
 }
@@ -22,6 +23,7 @@ export interface OAuthPopupResult {
 export interface OAuthLoginResult {
   success: boolean;
   token?: string;
+  session?: boolean;
   needsRegistration?: boolean;
   userData?: {
     provider: string;
@@ -172,8 +174,12 @@ export class OAuthService {
         .subscribe({
           next: (event) => {
             const result = event.data.payload as OAuthPopupResult;
-            if (result.success && result.token) {
-              finish({ success: true, token: result.token });
+            if (result.success && (result.token || result.session)) {
+              finish({
+                success: true,
+                token: result.token,
+                session: result.session,
+              });
               return;
             }
 

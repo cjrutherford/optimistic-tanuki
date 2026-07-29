@@ -85,8 +85,12 @@ export class RegisterComponent implements OnInit {
         'client-interface'
       );
 
-      if (result.success && result.token) {
-        this.authStateService.setToken(result.token);
+      if (result.success && (result.token || result.session)) {
+        if (result.token) {
+          this.authStateService.setToken(result.token);
+        } else {
+          await this.authStateService.restoreSession();
+        }
         await this.handlePostLogin();
       } else if (result.needsRegistration) {
         this.messageService.addMessage({

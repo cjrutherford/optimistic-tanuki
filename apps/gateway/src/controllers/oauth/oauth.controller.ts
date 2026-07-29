@@ -69,6 +69,8 @@ type OAuthStatePayload = {
   returnTo: string;
   appScope: string;
   issuedAt: number;
+  /** Server-held PKCE verifier; never serialized into the browser state. */
+  codeVerifier: string;
   /** Present only in the server-side one-time state record for link flows. */
   linkUserId?: string;
 };
@@ -171,14 +173,50 @@ export class OAuthController {
     );
   }
 
+  /**
+   * Browser clients cannot attach an Authorization header to a popup GET.
+   * This guarded endpoint creates the link transaction and returns the
+   * provider URL that the already-authenticated application can open.
+   */
+  @UseGuards(AuthGuard)
+  @Post('link/:provider')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Create an OAuth provider-link transaction' })
+  async createOAuthLink(
+    @Req() request: Request & { user?: { userId?: string } },
+    @Res({ passthrough: true }) response: Response,
+    @Query('returnTo') returnTo: string | undefined,
+    @Query('appScope') requestedAppScope: string | undefined,
+    @Query('domain') queryDomain: string | undefined
+  ): Promise<{ authorizationUrl: string }> {
+    const userId = request.user?.userId;
+    if (!userId) {
+      throw new HttpException(
+        'Authenticated user is required',
+        HttpStatus.UNAUTHORIZED
+      );
+    }
+    const authorizationUrl = await this.beginOAuthFlow(
+      request,
+      response,
+      returnTo,
+      requestedAppScope,
+      queryDomain,
+      userId,
+      false
+    );
+    return { authorizationUrl };
+  }
+
   private async beginOAuthFlow(
     request: Request,
     response: Response,
     returnTo: string | undefined,
     requestedAppScope: string | undefined,
     queryDomain: string | undefined,
-    linkUserId?: string
-  ) {
+    linkUserId?: string,
+    redirect = true
+  ): Promise<string> {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
     )
@@ -196,9 +234,17 @@ export class OAuthController {
     }
 
     const validatedReturnTo = this.validateReturnTo(returnTo);
-    const appScope =
-      requestedAppScope?.trim() ||
-      this.resolveAppScopeForReturnTo(validatedReturnTo);
+    const resolvedAppScope = this.resolveAppScopeForReturnTo(validatedReturnTo);
+    if (
+      requestedAppScope?.trim() &&
+      requestedAppScope.trim() !== resolvedAppScope
+    ) {
+      throw new HttpException(
+        'appScope must match the registered returnTo application',
+        HttpStatus.BAD_REQUEST
+      );
+    }
+    const appScope = resolvedAppScope;
     if (!appScope) {
       throw new HttpException(
         'Unable to resolve app scope for OAuth request',
@@ -206,8 +252,13 @@ export class OAuthController {
       );
     }
 
-    const domain =
-      queryDomain?.trim() || new URL(validatedReturnTo).hostname || undefined;
+    const domain = new URL(validatedReturnTo).hostname;
+    if (queryDomain?.trim() && queryDomain.trim() !== domain) {
+      throw new HttpException(
+        'domain must match the returnTo host',
+        HttpStatus.BAD_REQUEST
+      );
+    }
     const config = this.getProviderConfig(provider, domain);
     if (!config.enabled || !config.clientId || !config.authorizationEndpoint) {
       throw new HttpException(
@@ -216,13 +267,13 @@ export class OAuthController {
       );
     }
 
-    const { state, stateId, nonce } = await this.signState({
+    const { state, stateId, nonce, codeChallenge } = await this.signState({
       provider,
       returnTo: validatedReturnTo,
       appScope,
       issuedAt: Date.now(),
       linkUserId,
-    });
+    } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
     const redirectUri = this.resolveProviderRedirectUri(provider, config);
     const params = new URLSearchParams({
@@ -231,6 +282,8 @@ export class OAuthController {
       response_type: 'code',
       scope: (config.scopes || []).join(' '),
       state,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
     });
 
     if (provider === 'google') {
@@ -248,11 +301,15 @@ export class OAuthController {
     response.cookie('oauth_state_nonce', JSON.stringify(nonceCookie), {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: !['development', 'test'].includes(process.env.NODE_ENV || ''),
       path: '/api/oauth',
       maxAge: this.oauthStateTtlMs,
     });
-    response.redirect(`${config.authorizationEndpoint}?${params.toString()}`);
+    const authorizationUrl = `${
+      config.authorizationEndpoint
+    }?${params.toString()}`;
+    if (redirect) response.redirect(authorizationUrl);
+    return authorizationUrl;
   }
 
   @Get('callback/:provider')
@@ -282,7 +339,7 @@ export class OAuthController {
       string,
       string | undefined
     >;
-    if (!state) {
+    if (!state || state.length > 512 || (code && code.length > 4096)) {
       this.logger.warn('Rejected OAuth callback: missing state');
       this.respondInvalidOAuthCallback(response);
       return;
@@ -333,7 +390,8 @@ export class OAuthController {
         await this.exchangeProviderCode(
           provider,
           code,
-          new URL(statePayload.returnTo).hostname
+          new URL(statePayload.returnTo).hostname,
+          statePayload.codeVerifier
         )
       );
       if (statePayload.linkUserId) {
@@ -485,8 +543,9 @@ export class OAuthController {
   @ApiOperation({ summary: 'Redeem a one-time OAuth callback code' })
   async redeemCallbackCode(
     @Body() data: { callbackCode?: unknown },
-    @Req() request: Request
-  ): Promise<{ token: string }> {
+    @Req() request: Request,
+    @Res({ passthrough: true }) response?: Response
+  ): Promise<{ token?: string; session?: true }> {
     const callbackCode =
       typeof data?.callbackCode === 'string' ? data.callbackCode : '';
     const [stateId, secret] = callbackCode.split('.');
@@ -494,7 +553,13 @@ export class OAuthController {
     const nonce = this.parseNonceCookie(
       request.cookies?.oauth_state_nonce
     ).find((entry) => entry.id === stateId)?.nonce;
-    if (!stateId || !secret || !nonce || typeof origin !== 'string') {
+    if (
+      callbackCode.length > 512 ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(stateId) ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(secret) ||
+      !nonce ||
+      typeof origin !== 'string'
+    ) {
       throw new HttpException(
         'Invalid OAuth callback code',
         HttpStatus.UNAUTHORIZED
@@ -511,6 +576,16 @@ export class OAuthController {
         'Invalid OAuth callback code',
         HttpStatus.UNAUTHORIZED
       );
+    }
+    if (request.headers['x-ot-session-mode'] === 'cookie' && response) {
+      response.cookie('ot_session', grant.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api',
+        maxAge: 60 * 60 * 1000,
+      });
+      return { session: true };
     }
     return { token: grant.token };
   }
@@ -829,18 +904,32 @@ export class OAuthController {
   }
 
   private async signState(
-    payload: OAuthStatePayload
-  ): Promise<{ state: string; stateId: string; nonce: string }> {
+    payload: Omit<OAuthStatePayload, 'codeVerifier'>
+  ): Promise<{
+    state: string;
+    stateId: string;
+    nonce: string;
+    codeChallenge: string;
+  }> {
     const stateId = randomBytes(32).toString('base64url');
     const nonce = randomBytes(32).toString('base64url');
+    const codeVerifier = randomBytes(32).toString('base64url');
+    const codeChallenge = createHash('sha256')
+      .update(codeVerifier)
+      .digest('base64url');
     const nonceHash = this.hashNonce(nonce);
     const signature = this.signStateArtifact(stateId, nonce);
     await this.oauthStateStore.create(stateId, {
-      payload,
+      payload: { ...payload, codeVerifier },
       nonceHash,
       expiresAt: Date.now() + this.oauthStateTtlMs,
     });
-    return { state: `${stateId}.${signature}`, stateId, nonce };
+    return {
+      state: `${stateId}.${signature}`,
+      stateId,
+      nonce,
+      codeChallenge,
+    };
   }
 
   private async createCallbackGrant(
@@ -866,7 +955,12 @@ export class OAuthController {
     nonce: string | undefined
   ): Promise<OAuthStatePayload> {
     const [stateId, signature] = state.split('.');
-    if (!stateId || !signature || !nonce) {
+    if (
+      state.length > 512 ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(stateId) ||
+      !/^[A-Za-z0-9_-]{32,128}$/.test(signature) ||
+      !nonce
+    ) {
       throw new HttpException('Invalid OAuth state', HttpStatus.BAD_REQUEST);
     }
 
@@ -935,14 +1029,17 @@ export class OAuthController {
   private parseNonceCookie(
     value: unknown
   ): Array<{ id: string; nonce: string }> {
-    if (typeof value !== 'string') return [];
+    if (typeof value !== 'string' || value.length > 4096) return [];
     try {
       const parsed = JSON.parse(value);
       if (!Array.isArray(parsed)) return [];
       return parsed
         .filter(
           (entry): entry is { id: string; nonce: string } =>
-            typeof entry?.id === 'string' && typeof entry?.nonce === 'string'
+            typeof entry?.id === 'string' &&
+            entry.id.length <= 128 &&
+            typeof entry?.nonce === 'string' &&
+            entry.nonce.length <= 128
         )
         .slice(-4);
     } catch {
@@ -988,7 +1085,8 @@ export class OAuthController {
   private async exchangeProviderCode(
     provider: string,
     code: string,
-    domain?: string
+    domain?: string,
+    codeVerifier?: string
   ): Promise<OAuthIdentity> {
     const config = this.getProviderConfig(provider, domain);
     if (
@@ -1007,6 +1105,10 @@ export class OAuthController {
       code,
       redirect_uri: redirectUri,
     });
+    if (!codeVerifier || !/^[A-Za-z0-9_-]{43,128}$/.test(codeVerifier)) {
+      throw new Error('OAuth PKCE verifier is invalid');
+    }
+    tokenParams.set('code_verifier', codeVerifier);
 
     if (provider !== 'github') {
       tokenParams.set('grant_type', 'authorization_code');
@@ -1114,9 +1216,10 @@ export class OAuthController {
         return {
           providerUserId: String(profile.id || ''),
           email: String(profile.email || ''),
-          // Facebook only returns an email address once the user has verified
-          // it, so a present email implies a verified email.
-          emailVerified: Boolean(profile.email),
+          // Facebook's profile response does not carry a standards-based
+          // verification assertion. A returned address remains usable for
+          // new-account verification, but never authorizes auto-linking.
+          emailVerified: false,
           displayName: String(profile.name || profile.email || ''),
           firstName: String(profile.first_name || ''),
           lastName: String(profile.last_name || ''),

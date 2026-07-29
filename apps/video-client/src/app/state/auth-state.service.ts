@@ -1,6 +1,5 @@
 import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
 import { LoginRequest, LoginResponse } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
@@ -26,13 +25,7 @@ export class AuthStateService {
   public readonly isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor() {
-    // Check for stored token on initialization
-    if (isPlatformBrowser(this.platformId)) {
-      const storedToken = localStorage.getItem('authToken');
-      if (storedToken) {
-        this.setToken(storedToken);
-      }
-    }
+    if (isPlatformBrowser(this.platformId)) void this.restoreSession();
   }
 
   async login(loginRequest: LoginRequest): Promise<LoginResponse> {
@@ -41,7 +34,9 @@ export class AuthStateService {
         headers: {
           'x-ot-app-id': 'video-platform',
           'x-ot-appscope': 'video-platform',
+          'X-ot-session-mode': 'cookie',
         },
+        withCredentials: true,
       })
     );
 
@@ -52,10 +47,28 @@ export class AuthStateService {
     return response;
   }
 
-  setToken(token: string): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem('authToken', token);
+  private sessionUser: DecodedToken | null = null;
+
+  async restoreSession(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: { user: DecodedToken } }>(
+          '/api/authentication/session',
+          { withCredentials: true }
+        )
+      );
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(true);
+      this.sessionUser = response.data.user;
+    } catch {
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.sessionUser = null;
     }
+  }
+
+  setToken(token: string): void {
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
   }
@@ -66,11 +79,14 @@ export class AuthStateService {
 
   logout(): void {
     if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem('authToken');
       localStorage.removeItem('selectedProfile');
     }
+    this.http
+      .post('/api/authentication/logout', {}, { withCredentials: true })
+      .subscribe({ error: () => undefined });
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+    this.sessionUser = null;
   }
 
   get isAuthenticated(): boolean {
@@ -78,15 +94,7 @@ export class AuthStateService {
   }
 
   getDecodedTokenValue(): DecodedToken | null {
-    const token = this.getToken();
-    if (!token) return null;
-
-    try {
-      return jwtDecode<DecodedToken>(token);
-    } catch (error) {
-      console.error('Error decoding token:', error);
-      return null;
-    }
+    return this.sessionUser;
   }
 
   getDecodedToken(): Observable<DecodedToken | null> {

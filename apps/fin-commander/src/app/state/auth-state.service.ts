@@ -2,7 +2,6 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
 import {
   API_BASE_URL,
   LoginRequest,
@@ -22,7 +21,6 @@ export interface UserData {
 })
 export class AuthStateService {
   private readonly namespace = 'fin-commander-auth';
-  private readonly tokenKey = `${this.namespace}-authToken`;
   private readonly profilesKey = `${this.namespace}-profiles`;
   private readonly selectedProfileKey = `${this.namespace}-selectedProfile`;
 
@@ -53,23 +51,16 @@ export class AuthStateService {
       return;
     }
 
-    const token = localStorage.getItem(this.tokenKey);
-    this.tokenSubject = new BehaviorSubject<string | null>(token);
-    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(!!token);
-    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(
-      this.getDecodedToken()
-    );
+    this.tokenSubject = new BehaviorSubject<string | null>(null);
+    this.isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+    this.decodedTokenSubject = new BehaviorSubject<UserData | null>(null);
     this.currentProfileSubject = new BehaviorSubject<ProfileDto | null>(
       this.getPersistedSelectedProfile()
     );
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.decodedToken$ = this.decodedTokenSubject.asObservable();
     this.currentProfile$ = this.currentProfileSubject.asObservable();
-    this.isAuthenticatedValue = !!token;
-
-    if (token) {
-      this.setToken(token);
-    }
+    void this.restoreSession();
   }
 
   get isAuthenticated(): boolean {
@@ -78,17 +69,35 @@ export class AuthStateService {
       : false;
   }
 
-  login(loginRequest: LoginRequest): Promise<{ data: { newToken: string } }> {
+  async login(
+    loginRequest: LoginRequest
+  ): Promise<{ data: { newToken?: string } }> {
     if (!isPlatformBrowser(this.platformId)) {
       return Promise.reject(
         new Error('Login is not available on this platform.')
       );
     }
 
-    return this.authService.login(loginRequest).then((response) => {
-      this.setToken(response.data.newToken);
-      return response;
-    });
+    const response = await this.authService.login(loginRequest);
+    if (response.data.newToken) this.setToken(response.data.newToken);
+    await this.restoreSession();
+    return response;
+  }
+
+  async restoreSession(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try {
+      const response = await this.authService.currentSession();
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(true);
+      this.decodedTokenSubject.next(response.data.user as UserData);
+      this.isAuthenticatedValue = true;
+    } catch {
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.decodedTokenSubject.next(null);
+      this.isAuthenticatedValue = false;
+    }
   }
 
   setToken(token: string) {
@@ -96,10 +105,9 @@ export class AuthStateService {
       return;
     }
 
-    localStorage.setItem(this.tokenKey, token);
     this.tokenSubject.next(token);
     this.isAuthenticatedSubject.next(true);
-    this.decodedTokenSubject.next(this.getDecodedToken());
+    this.decodedTokenSubject.next(null);
     this.isAuthenticatedValue = true;
     this.authService.setToken(token);
   }
@@ -110,15 +118,14 @@ export class AuthStateService {
     }
 
     const token = this.getToken();
-    if (token) {
-      this.http
-        .post(`${this.apiBaseUrl}/authentication/logout`, { token })
-        .subscribe({
-          error: () => undefined,
-        });
-    }
+    this.http
+      .post(
+        `${this.apiBaseUrl}/authentication/logout`,
+        token ? { token } : {},
+        { withCredentials: true }
+      )
+      .subscribe({ error: () => undefined });
 
-    localStorage.removeItem(this.tokenKey);
     localStorage.removeItem(this.profilesKey);
     localStorage.removeItem(this.selectedProfileKey);
     this.tokenSubject.next(null);
@@ -182,22 +189,5 @@ export class AuthStateService {
 
     const profile = localStorage.getItem(this.selectedProfileKey);
     return profile ? (JSON.parse(profile) as ProfileDto) : null;
-  }
-
-  private getDecodedToken(): UserData | null {
-    if (!isPlatformBrowser(this.platformId)) {
-      return null;
-    }
-
-    const token = localStorage.getItem(this.tokenKey);
-    if (!token) {
-      return null;
-    }
-
-    const decoded = jwtDecode<UserData & { profileId?: string | null }>(token);
-    return {
-      ...decoded,
-      profileId: decoded.profileId ?? '',
-    };
   }
 }

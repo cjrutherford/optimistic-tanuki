@@ -9,6 +9,7 @@ import {
 import { AuthService } from '../services/auth.service';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -211,9 +212,11 @@ export class LoginComponent implements OnInit {
         'owner-console'
       );
 
-      if (result.success && result.token) {
-        // Store the token and navigate to dashboard
-        this.authService.setToken(result.token);
+      if (result.success) {
+        if (result.token) {
+          this.authService.setToken(result.token);
+        }
+        await firstValueFrom(this.authService.restoreSession());
         this.router.navigate(['/dashboard']);
       } else if (result.needsRegistration && result.userData) {
         this.error =

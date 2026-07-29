@@ -95,7 +95,7 @@ const tenantChildren: Route[] = [
 ];
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('fin-commander-auth-authToken'),
+  ...emailAuthRoutes('fin-commander-auth-authToken', true),
   {
     path: '',
     loadComponent: () =>

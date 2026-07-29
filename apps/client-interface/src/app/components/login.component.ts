@@ -92,7 +92,6 @@ export class LoginComponent implements OnDestroy, OnInit {
     try {
       const response = await this.authStateService.login(loginRequest);
       console.log(response);
-      this.authStateService.setToken(response.data.newToken);
       if (this.authStateService.isAuthenticated) {
         const decoded = this.authStateService.getDecodedTokenValue();
         // If profileId is empty string, show only the profile creation modal
@@ -148,8 +147,12 @@ export class LoginComponent implements OnDestroy, OnInit {
         return;
       }
 
-      if (result.success && result.token) {
-        this.authStateService.setToken(result.token);
+      if (result.success && (result.token || result.session)) {
+        if (result.token) {
+          this.authStateService.setToken(result.token);
+        } else {
+          await this.authStateService.restoreSession();
+        }
 
         if (this.authStateService.isAuthenticated) {
           const decoded = this.authStateService.getDecodedTokenValue();

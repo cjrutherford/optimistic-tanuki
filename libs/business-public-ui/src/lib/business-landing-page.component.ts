@@ -181,6 +181,10 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
                 <a class="cta-primary" [routerLink]="bookingRoute()">{{
                   site().contact.consultationLabel
                 }}</a>
+                } @else if (section.ctaHref) {
+                <a class="cta-primary" [href]="section.ctaHref">{{
+                  section.ctaLabel || 'Explore now'
+                }}</a>
                 } @if (site().features.clientPortal.enabled) {
                 <a class="cta-secondary" [routerLink]="clientPortalRoute()"
                   >Client Portal</a

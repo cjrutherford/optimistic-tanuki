@@ -7,7 +7,7 @@ import {
 } from '@optimistic-tanuki/email';
 import { TokenIssuerService } from '@optimistic-tanuki/auth-domain';
 import { createHash, randomBytes } from 'crypto';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, LessThan, Repository } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
 import {
@@ -31,6 +31,7 @@ type PasswordTools = {
 
 @Injectable()
 export class EmailAuthService {
+  private readonly reissueCooldownMs = 60_000;
   constructor(
     @Inject(getRepositoryToken(UserEntity))
     private readonly users: Repository<UserEntity>,
@@ -49,11 +50,29 @@ export class EmailAuthService {
     purpose: AuthActionPurpose,
     context: AuthEmailContext
   ): Promise<{ accepted: true; sent: boolean }> {
+    await this.actions.delete({ expiresAt: LessThan(new Date()) });
     const normalizedEmail = email.trim().toLowerCase();
     const user = await this.users.findOne({
       where: { email: normalizedEmail },
     });
     if (!user) return { accepted: true, sent: false };
+
+    const existing = await this.actions.findOne({
+      where: {
+        userId: user.id,
+        purpose,
+        appId: context.appId,
+        consumedAt: IsNull(),
+      },
+      order: { createdAt: 'DESC' },
+    });
+    if (
+      existing &&
+      existing.expiresAt.getTime() > Date.now() &&
+      existing.createdAt.getTime() > Date.now() - this.reissueCooldownMs
+    ) {
+      return { accepted: true, sent: false };
+    }
 
     await this.actions.update(
       { userId: user.id, purpose, appId: context.appId, consumedAt: IsNull() },
@@ -133,6 +152,15 @@ export class EmailAuthService {
     }
     action.user.emailVerifiedAt ||= new Date();
     await this.users.save(action.user);
+    if (!profileId) {
+      return {
+        message: 'Email action consumed',
+        code: 0,
+        appId: action.appId,
+        returnPath: action.returnPath,
+        data: { userId: action.user.id, email: action.user.email },
+      };
+    }
     const session = this.tokenIssuer.issueForUser(
       {
         userId: action.user.id,

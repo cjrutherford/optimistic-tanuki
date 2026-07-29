@@ -49,7 +49,7 @@ const communityUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('ot-client-authToken'),
+  ...emailAuthRoutes('ot-client-authToken', true),
   {
     path: '',
     loadComponent: () =>

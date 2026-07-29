@@ -70,13 +70,10 @@ export class ProfileService {
       return;
     }
 
-    const response = await this.authenticationService.issue({
+    await this.authenticationService.issue({
       profileId: matchingProfile.id,
     });
-    const newToken = response?.data?.newToken;
-    if (newToken) {
-      this.authState.setToken(newToken);
-    }
+    await this.authState.restoreSession();
   }
 
   getCurrentUserProfiles(): ProfileDto[] {
@@ -142,10 +139,6 @@ export class ProfileService {
     );
 
     const createdProfile = (response.profile || response) as ProfileDto;
-    if (response.newToken) {
-      this.authState.setToken(response.newToken);
-    }
-
     this.currentUserProfiles.update((profiles) => {
       const deduped = profiles.filter(
         (existingProfile) => existingProfile.id !== createdProfile.id
@@ -155,6 +148,8 @@ export class ProfileService {
     this.currentUserProfile.set(createdProfile);
     this.authState.persistProfiles(this.currentUserProfiles());
     this.authState.persistSelectedProfile(createdProfile);
+
+    await this.activateProfile(createdProfile);
 
     return createdProfile;
   }

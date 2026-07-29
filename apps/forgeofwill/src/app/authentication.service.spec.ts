@@ -58,8 +58,7 @@ describe('AuthenticationService', () => {
         email: 'test@example.com',
         password: 'password',
       };
-      const mockToken = 'mock-jwt-token';
-      const expectedResponse = { data: { newToken: mockToken } };
+      const expectedResponse = { data: {} };
 
       service.login(mockLogin).then((result) => {
         expect(result).toEqual(expectedResponse);
@@ -67,6 +66,8 @@ describe('AuthenticationService', () => {
 
       const req = httpMock.expectOne('/api/authentication/login');
       expect(req.request.method).toBe('POST');
+      expect(req.request.withCredentials).toBe(true);
+      expect(req.request.headers.get('X-ot-session-mode')).toBe('cookie');
       req.flush(expectedResponse);
       tick();
     }));
@@ -75,11 +76,12 @@ describe('AuthenticationService', () => {
   describe('setToken', () => {
     it('should set authentication state and user data', () => {
       const mockToken =
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjN9.signature';
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwicHJvZmlsZUlkIjoicHJvZmlsZS0xIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjN9.signature';
       const mockUser: UserDto = {
         userId: '123',
         name: 'Test User',
         email: 'test@example.com',
+        profileId: 'profile-1',
         iat: 1516239022,
         exp: 1516239023,
       };

@@ -35,13 +35,14 @@ describe('LoginComponent', () => {
         {
           provide: AuthenticationService,
           useValue: {
-            login: jest.fn().mockResolvedValue({ data: { newToken: 'token' } }),
+            login: jest.fn().mockResolvedValue({ data: {} }),
           },
         },
         {
           provide: AuthStateService,
           useValue: {
-            setToken: jest.fn(),
+            login: jest.fn().mockResolvedValue({ data: {} }),
+            restoreSession: jest.fn().mockResolvedValue(undefined),
             isAuthenticated: true,
             getDecodedTokenValue: jest
               .fn()

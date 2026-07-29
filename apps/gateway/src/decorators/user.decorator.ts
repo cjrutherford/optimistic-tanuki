@@ -5,6 +5,12 @@ export const UserDetailsDecorator = (
   ctx: ExecutionContext
 ): UserDetails => {
   const request = ctx.switchToHttp().getRequest();
+  // AuthGuard sets this from either a verified bearer token or the HttpOnly
+  // session cookie. Prefer it so controllers never re-parse an untrusted
+  // browser credential and cookie sessions work identically to bearer flows.
+  if (request.user) {
+    return request.user as UserDetails;
+  }
   const token = request.headers['authorization']?.split(' ')[1];
   if (!token) {
     return null;

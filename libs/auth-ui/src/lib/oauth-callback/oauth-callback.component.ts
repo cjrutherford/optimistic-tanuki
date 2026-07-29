@@ -147,19 +147,26 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    let token: string;
+    let token: string | undefined;
+    let session = false;
     try {
       if (!this.http) throw new Error('HTTP client is unavailable');
       this.removeCallbackParametersFromHistory();
       const result = await firstValueFrom(
-        this.http.post<{ token?: string }>(
+        this.http.post<{ token?: string; session?: boolean }>(
           `${this.apiBaseUrl}/oauth/callback/redeem`,
           { callbackCode },
-          { withCredentials: true }
+          {
+            withCredentials: true,
+            headers: { 'X-ot-session-mode': 'cookie' },
+          }
         )
       );
-      if (!result?.token) throw new Error('No authentication token received');
+      if (!result?.token && !result?.session) {
+        throw new Error('No authentication session received');
+      }
       token = result.token;
+      session = result.session === true;
     } catch {
       this.error = 'Authentication could not be completed';
       this.sendMessageToParent({
@@ -177,6 +184,7 @@ export class OAuthCallbackComponent implements OnInit {
       payload: {
         success: true,
         token,
+        session,
       },
     });
 

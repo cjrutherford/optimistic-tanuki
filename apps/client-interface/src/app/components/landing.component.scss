@@ -216,7 +216,7 @@
     fill: var(--accent);
     filter: drop-shadow(0 0 12px var(--accent));
     animation: node-breathe 4s ease-in-out infinite;
-    cursor: pointer;
+    cursor: default;
     transition: all var(--landing-duration-normal) var(--landing-easing);
 
     &.root {

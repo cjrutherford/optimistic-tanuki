@@ -44,26 +44,30 @@ import { ProfileService } from './profile.service';
   `,
   styles: [
     `
-      // .auth-shell {
-      //   min-height: calc(100vh - 56px);
-      //   display: grid;
-      //   grid-template-columns: minmax(0, 420px) minmax(320px, 480px);
-      //   gap: 3rem;
-      //   align-items: center;
-      //   justify-content: center;
-      //   padding: 3rem 1.5rem;
-      //   background: radial-gradient(
-      //       circle at top left,
-      //       rgba(13, 148, 136, 0.12),
-      //       transparent 24rem
-      //     ),
-      //     radial-gradient(
-      //       circle at bottom right,
-      //       rgba(14, 165, 233, 0.14),
-      //       transparent 26rem
-      //     ),
-      //     linear-gradient(180deg, #f5fbfb 0%, #eef6ff 100%);
-      // }
+      .auth-shell {
+        min-height: calc(100vh - 56px);
+        display: grid;
+        grid-template-columns: minmax(0, 420px) minmax(320px, 480px);
+        gap: clamp(2rem, 5vw, 4.5rem);
+        align-items: center;
+        justify-content: center;
+        padding: clamp(2rem, 5vw, 4.5rem) 1.5rem;
+        background: radial-gradient(
+            circle at top left,
+            rgba(13, 148, 136, 0.12),
+            transparent 24rem
+          ),
+          radial-gradient(
+            circle at bottom right,
+            rgba(14, 165, 233, 0.14),
+            transparent 26rem
+          ),
+          linear-gradient(
+            180deg,
+            var(--app-surface) 0%,
+            var(--app-background) 100%
+          );
+      }
       .auth-copy {
         max-width: 30rem;
         display: grid;
@@ -102,15 +106,27 @@ import { ProfileService } from './profile.service';
         box-shadow: 0 18px 34px rgba(13, 68, 93, 0.08);
         font-size: 0.92rem;
         font-weight: 600;
-        color: #124860;
+        color: var(--app-foreground);
       }
       .auth-panel {
         width: 100%;
+        min-width: 0;
       }
       @media (max-width: 900px) {
-        // .auth-shell {
-        //   grid-template-columns: 1fr;
-        // }
+        .auth-shell {
+          grid-template-columns: minmax(0, 36rem);
+          justify-content: center;
+        }
+        .auth-copy {
+          max-width: 36rem;
+        }
+      }
+      @media (max-width: 640px) {
+        .auth-shell {
+          min-height: calc(100vh - 104px);
+          padding: 1.5rem 1rem 2rem;
+          gap: 2rem;
+        }
       }
     `,
   ],
@@ -157,8 +173,8 @@ export class LoginComponent {
       'leads-app'
     );
 
-    if (result.success && result.token) {
-      this.authState.setToken(result.token);
+    if (result.success) {
+      await this.authState.restoreSession();
       await this.handleAuthenticatedUser();
       return;
     }
@@ -174,8 +190,8 @@ export class LoginComponent {
         ''
       );
 
-      if (regResult.success && regResult.token) {
-        this.authState.setToken(regResult.token);
+      if (regResult.success) {
+        await this.authState.restoreSession();
         await this.handleAuthenticatedUser();
       }
     }
