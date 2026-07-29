@@ -3,5 +3,6 @@ export declare type UserDto = {
   exp: number;
   iat: number;
   name: string;
+  profileId: string;
   userId: string;
 };

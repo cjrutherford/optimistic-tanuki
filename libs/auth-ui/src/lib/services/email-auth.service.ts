@@ -23,14 +23,27 @@ export class EmailAuthClientService {
     );
   }
 
-  confirmLogin(purpose: 'verification' | 'magic-link', token: string) {
+  confirmLogin(
+    purpose: 'verification' | 'magic-link',
+    token: string,
+    cookieSession = false
+  ) {
     const endpoint =
       purpose === 'verification' ? 'email-verification' : 'magic-link';
     return this.http.post<{
       appId: string;
       returnPath: string;
-      data: { newToken: string };
-    }>(`/api/authentication/${endpoint}/confirm`, { token });
+      data: { newToken?: string };
+    }>(
+      `/api/authentication/${endpoint}/confirm`,
+      { token },
+      cookieSession
+        ? {
+            headers: new HttpHeaders({ 'X-ot-session-mode': 'cookie' }),
+            withCredentials: true,
+          }
+        : {}
+    );
   }
 
   confirmVerification(token: string) {

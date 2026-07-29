@@ -32,6 +32,7 @@ describe('EmailAuthService', () => {
         ...value,
       })),
       findOne: jest.fn(),
+      delete: jest.fn().mockResolvedValue({ affected: 0 }),
     };
     sessions = {
       save: jest.fn(),
@@ -103,6 +104,31 @@ describe('EmailAuthService', () => {
     expect(email.sendEmail).not.toHaveBeenCalled();
   });
 
+  it('preserves a recently issued action instead of invalidating it', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'recent-action',
+      createdAt: new Date(Date.now() - 30_000),
+      expiresAt: new Date(Date.now() + 15 * 60_000),
+      consumedAt: null,
+    });
+
+    await expect(
+      service.requestAction('person@example.com', AuthActionPurpose.MagicLink, {
+        appId: 'client-interface',
+        appName: 'Optimistic Tanuki',
+        uiBaseUrl: 'https://optimistic-tanuki.com',
+        from: 'no-reply@optimistic-tanuki.com',
+      })
+    ).resolves.toEqual({ accepted: true, sent: false });
+
+    expect(actions.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'user-1' }),
+      expect.anything()
+    );
+    expect(actions.save).not.toHaveBeenCalled();
+    expect(email.sendEmail).not.toHaveBeenCalled();
+  });
+
   it('consumes verification once, marks the user verified, and issues an app-scoped session', async () => {
     actions.findOne.mockResolvedValue({
       id: 'action-1',
@@ -132,6 +158,29 @@ describe('EmailAuthService', () => {
       { id: 'action-1', consumedAt: expect.anything() },
       expect.anything()
     );
+  });
+
+  it('consumes a magic link before downstream profile work without issuing a session', async () => {
+    actions.findOne.mockResolvedValue({
+      id: 'action-1',
+      purpose: AuthActionPurpose.MagicLink,
+      appId: 'forgeofwill',
+      returnPath: '/dashboard',
+      expiresAt: new Date(Date.now() + 60_000),
+      consumedAt: null,
+      user: { ...user },
+    });
+
+    await expect(
+      service.consumeLoginAction('raw-token', AuthActionPurpose.MagicLink)
+    ).resolves.toEqual(
+      expect.objectContaining({
+        appId: 'forgeofwill',
+        returnPath: '/dashboard',
+        data: { userId: 'user-1', email: 'person@example.com' },
+      })
+    );
+    expect(sessions.save).not.toHaveBeenCalled();
   });
 
   it('confirms email verification without issuing a login session', async () => {

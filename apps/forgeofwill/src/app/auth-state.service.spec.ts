@@ -1,20 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { of } from 'rxjs';
-import { jwtDecode } from 'jwt-decode';
 
 import { AuthStateService, UserData } from './auth-state.service';
 import { AuthenticationService } from './authentication.service';
 
-// Mock jwt-decode
-jest.mock('jwt-decode', () => ({
-  jwtDecode: jest.fn(),
-}));
-
 describe('AuthStateService', () => {
   let service: AuthStateService;
-  let authServiceMock: { login: jest.Mock };
+  let authServiceMock: { login: jest.Mock; currentSession: jest.Mock };
   const mockToken =
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxMjMiLCJuYW1lIjoiVGVzdCBVc2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
   const mockDecodedToken: UserData = {
@@ -29,7 +22,10 @@ describe('AuthStateService', () => {
   describe('when in a browser environment', () => {
     beforeEach(() => {
       authServiceMock = {
-        login: jest.fn().mockResolvedValue({ data: { newToken: mockToken } }),
+        login: jest.fn().mockResolvedValue({ data: {} }),
+        currentSession: jest.fn().mockResolvedValue({
+          data: { user: mockDecodedToken },
+        }),
       };
 
       TestBed.configureTestingModule({
@@ -52,13 +48,10 @@ describe('AuthStateService', () => {
       Object.defineProperty(window, 'localStorage', {
         value: mockLocalStorage,
       });
-
-      (jwtDecode as jest.Mock).mockReturnValue(mockDecodedToken);
     });
 
     afterEach(() => {
       localStorage.clear();
-      (jwtDecode as jest.Mock).mockClear();
     });
 
     it('should be created', () => {
@@ -66,10 +59,12 @@ describe('AuthStateService', () => {
       expect(service).toBeTruthy();
     });
 
-    it('should initialize with token from localStorage', () => {
-      localStorage.setItem(tokenKey, mockToken);
+    it('should initialize from the HttpOnly-cookie session', async () => {
       service = TestBed.inject(AuthStateService);
-      expect(service.getToken()).toBe(mockToken);
+      await service.restoreSession();
+
+      expect(service.getToken()).toBeNull();
+      expect(authServiceMock.currentSession).toHaveBeenCalled();
       service
         .isAuthenticated$()
         .subscribe((isAuth) => expect(isAuth).toBe(true));
@@ -78,9 +73,8 @@ describe('AuthStateService', () => {
         .subscribe((decoded) => expect(decoded).toEqual(mockDecodedToken));
     });
 
-    it('should set token, update subjects, and call localStorage on setToken', () => {
+    it('keeps a legacy callback token in memory without persisting it', () => {
       service = TestBed.inject(AuthStateService);
-      const setItemSpy = jest.spyOn(localStorage, 'setItem');
       service.setToken(mockToken);
 
       expect(service.getToken()).toBe(mockToken);
@@ -89,19 +83,20 @@ describe('AuthStateService', () => {
         .subscribe((isAuth) => expect(isAuth).toBe(true));
       service
         .decodedToken$()
-        .subscribe((decoded) => expect(decoded).toEqual(mockDecodedToken));
-      expect(setItemSpy).toHaveBeenCalledWith(tokenKey, mockToken);
+        .subscribe((decoded) => expect(decoded).toBeNull());
+      expect(localStorage.getItem('fow-client-authToken')).toBeNull();
     });
 
-    it('should call authService.login and set token on successful login', async () => {
+    it('restores the cookie-backed session after a successful login', async () => {
       service = TestBed.inject(AuthStateService);
-      const setTokenSpy = jest.spyOn(service, 'setToken');
       const loginRequest = { email: 'test@example.com', password: 'password' };
 
       await service.login(loginRequest);
 
       expect(authServiceMock.login).toHaveBeenCalledWith(loginRequest);
-      expect(setTokenSpy).toHaveBeenCalledWith(mockToken);
+      expect(authServiceMock.currentSession).toHaveBeenCalled();
+      expect(service.isAuthenticated).toBe(true);
+      expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
     });
 
     it('should clear token and update subjects on logout', () => {
@@ -142,30 +137,15 @@ describe('AuthStateService', () => {
     });
 
     it('should return decoded token value', () => {
-      localStorage.setItem(tokenKey, mockToken);
       service = TestBed.inject(AuthStateService);
+      service.setToken(mockToken);
+      expect(service.getDecodedTokenValue()).toBeNull();
+    });
+
+    it('should expose the user returned by session restoration', async () => {
+      service = TestBed.inject(AuthStateService);
+      await service.restoreSession();
       expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
-    });
-
-    it('should handle token without profileId', () => {
-      const tokenNoProfileId = 'token-no-profile-id';
-      const decodedNoProfileId = { userId: '123', name: 'User' };
-      localStorage.setItem(tokenKey, tokenNoProfileId);
-      (jwtDecode as jest.Mock).mockReturnValue(decodedNoProfileId);
-
-      service = TestBed.inject(AuthStateService);
-      expect(service.getDecodedTokenValue()).toEqual({
-        ...decodedNoProfileId,
-        profileId: '',
-      });
-    });
-
-    it('should fall back to localStorage in getToken if subject is null', () => {
-      localStorage.setItem(tokenKey, mockToken);
-      service = TestBed.inject(AuthStateService);
-      // Manually set private subject value to null to test fallback
-      (service as any).tokenSubject.next(null);
-      expect(service.getToken()).toBe(mockToken);
     });
   });
 

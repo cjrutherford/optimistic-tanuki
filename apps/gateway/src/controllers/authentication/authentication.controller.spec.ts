@@ -185,6 +185,48 @@ describe('AuthenticationController', () => {
     expect(loginBootstrap.login).toHaveBeenCalledWith(loginRequest, 'test');
   });
 
+  it('contains a cookie-mode login token in an HttpOnly gateway cookie', async () => {
+    const response = { cookie: jest.fn() };
+    loginBootstrap.login.mockResolvedValueOnce({
+      data: { newToken: 'browser-session-token', profileId: 'profile-1' },
+    });
+
+    await expect(
+      controller.loginUser(
+        { email: 'test@test.com', password: 'test' },
+        'test',
+        'cookie',
+        response as any
+      )
+    ).resolves.toEqual({ data: { profileId: 'profile-1' } });
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'ot_session',
+      'browser-session-token',
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api' })
+    );
+  });
+
+  it('returns only non-secret session identity for an authenticated session', () => {
+    expect(
+      controller.currentSession({
+        userId: 'user-1',
+        email: 'user@example.com',
+        name: 'User',
+        profileId: 'profile-1',
+      } as any)
+    ).toEqual({
+      data: {
+        user: {
+          userId: 'user-1',
+          email: 'user@example.com',
+          name: 'User',
+          profileId: 'profile-1',
+        },
+      },
+    });
+  });
+
   it('should auto-create app-scoped profile for cross-app users and login with it', async () => {
     const loginRequest: LoginRequest = {
       email: 'cross@app.com',

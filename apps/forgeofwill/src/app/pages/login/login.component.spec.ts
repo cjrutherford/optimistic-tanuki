@@ -31,7 +31,6 @@ describe('LoginComponent', () => {
   let router: Router;
   let messageService: MessageService;
 
-  const mockLoginResponse = { data: { newToken: 'mock-token' } };
   const mockProfile: ProfileDto = {
     id: '1',
     userId: 'user1',
@@ -40,9 +39,10 @@ describe('LoginComponent', () => {
 
   beforeEach(async () => {
     const authServiceMock = {
-      login: jest.fn().mockResolvedValue(mockLoginResponse),
+      login: jest.fn().mockResolvedValue({ data: {} }),
     };
     const authStateMock = {
+      login: jest.fn().mockResolvedValue({ data: {} }),
       setToken: jest.fn(),
       isAuthenticated: true,
       getDecodedTokenValue: jest.fn().mockReturnValue({ userId: 'user1' }),
@@ -92,10 +92,8 @@ describe('LoginComponent', () => {
       // Wait for promises to resolve
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(authService.login).toHaveBeenCalledWith(loginData);
-      expect(authState.setToken).toHaveBeenCalledWith(
-        mockLoginResponse.data.newToken
-      );
+      expect(authState.login).toHaveBeenCalledWith(loginData);
+      expect(authService.login).not.toHaveBeenCalled();
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(profileService.selectProfile).toHaveBeenCalledWith(mockProfile);
       expect(router.navigate).toHaveBeenCalledWith(['/']);
@@ -113,10 +111,8 @@ describe('LoginComponent', () => {
       // Wait for promises to resolve
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(authService.login).toHaveBeenCalledWith(loginData);
-      expect(authState.setToken).toHaveBeenCalledWith(
-        mockLoginResponse.data.newToken
-      );
+      expect(authState.login).toHaveBeenCalledWith(loginData);
+      expect(authService.login).not.toHaveBeenCalled();
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(profileService.selectProfile).not.toHaveBeenCalled();
       expect(router.navigate).toHaveBeenCalledWith(['/profile'], {
@@ -134,7 +130,7 @@ describe('LoginComponent', () => {
 
     it('should handle login failure', async () => {
       jest
-        .spyOn(authService, 'login')
+        .spyOn(authState, 'login')
         .mockRejectedValue(new Error('Invalid credentials'));
 
       await component.onLoginSubmit(loginData);
@@ -142,7 +138,7 @@ describe('LoginComponent', () => {
       // Wait for promises to resolve
       await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(authService.login).toHaveBeenCalledWith(loginData);
+      expect(authState.login).toHaveBeenCalledWith(loginData);
       expect(authState.setToken).not.toHaveBeenCalled();
       expect(profileService.getAllProfiles).not.toHaveBeenCalled();
       expect(router.navigate).not.toHaveBeenCalled();

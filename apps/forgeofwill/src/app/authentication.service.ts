@@ -29,9 +29,24 @@ export class AuthenticationService {
 
   login(data: LoginRequest) {
     return firstValueFrom(
-      this.http.post<{ data: { newToken: string } }>(
+      this.http.post<{ data: Record<string, never> }>(
         '/api/authentication/login',
-        data
+        data,
+        {
+          headers: { 'X-ot-session-mode': 'cookie' },
+          withCredentials: true,
+        }
+      )
+    );
+  }
+
+  currentSession() {
+    return firstValueFrom(
+      this.http.get<{ data: { user: UserDto } }>(
+        '/api/authentication/session',
+        {
+          withCredentials: true,
+        }
       )
     );
   }

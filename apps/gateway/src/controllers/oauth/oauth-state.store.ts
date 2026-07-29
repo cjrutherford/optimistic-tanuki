@@ -12,6 +12,7 @@ export type StoredOAuthState = {
     returnTo: string;
     appScope: string;
     issuedAt: number;
+    codeVerifier: string;
     linkUserId?: string;
   };
   nonceHash: string;

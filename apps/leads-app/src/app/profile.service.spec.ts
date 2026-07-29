@@ -18,7 +18,7 @@ describe('ProfileService', () => {
     persistProfiles: jest.fn(),
     getPersistedSelectedProfile: jest.fn(),
     persistSelectedProfile: jest.fn(),
-    setToken: jest.fn(),
+    restoreSession: jest.fn(),
   };
 
   const leadsProfile: ProfileDto = {
@@ -70,7 +70,7 @@ describe('ProfileService', () => {
     httpMock.verify();
   });
 
-  it('refreshes the auth token when activating a leads profile that differs from the JWT profile', async () => {
+  it('refreshes the cookie session when activating a different leads profile', async () => {
     service.currentUserProfiles.set([leadsProfile]);
 
     const activationPromise = service.activateProfile(leadsProfile);
@@ -78,11 +78,13 @@ describe('ProfileService', () => {
     const req = httpMock.expectOne('/api/authentication/issue');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ profileId: 'leads-profile' });
-    req.flush({ data: { newToken: 'fresh-token' } });
+    expect(req.request.withCredentials).toBe(true);
+    expect(req.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    req.flush({ data: {} });
 
     await activationPromise;
 
-    expect(authStateStub.setToken).toHaveBeenCalledWith('fresh-token');
+    expect(authStateStub.restoreSession).toHaveBeenCalled();
     expect(authStateStub.persistSelectedProfile).toHaveBeenCalledWith(
       leadsProfile
     );

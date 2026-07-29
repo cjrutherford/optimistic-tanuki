@@ -1,5 +1,6 @@
 import {
   ApplicationConfig,
+  APP_INITIALIZER,
   provideBrowserGlobalErrorListeners,
   provideZoneChangeDetection,
 } from '@angular/core';
@@ -32,6 +33,12 @@ export const appConfig: ApplicationConfig = {
       useValue: '/api',
     },
     AuthStateService,
+    {
+      provide: APP_INITIALIZER,
+      multi: true,
+      deps: [AuthStateService],
+      useFactory: (auth: AuthStateService) => () => auth.restoreSession(),
+    },
     AuthenticationService,
     ProfileService,
     ReturnIntentService,

@@ -168,7 +168,11 @@ describe('OAuthCallbackComponent', () => {
     await Promise.resolve();
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        payload: { success: true, token: 'platform-token' },
+        payload: expect.objectContaining({
+          success: true,
+          token: 'platform-token',
+          session: false,
+        }),
       }),
       window.location.origin
     );

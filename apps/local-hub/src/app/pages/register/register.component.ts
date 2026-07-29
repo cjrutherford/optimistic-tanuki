@@ -209,8 +209,8 @@ export class RegisterComponent {
         'local-hub'
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success) {
+        await this.authState.restoreSession();
         await this.router.navigate(['/']);
         return;
       }
@@ -226,8 +226,8 @@ export class RegisterComponent {
           ''
         );
 
-        if (regResult.success && regResult.token) {
-          this.authState.setToken(regResult.token);
+        if (regResult.success) {
+          await this.authState.restoreSession();
           await this.router.navigate(['/']);
           return;
         }

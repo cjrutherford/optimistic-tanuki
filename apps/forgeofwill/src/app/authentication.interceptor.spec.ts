@@ -72,7 +72,7 @@ describe('authenticationInterceptor', () => {
     httpClient.get('/api/data').subscribe();
 
     const testReq = httpMock.expectOne('/api/data');
-    expect(testReq.request.headers.get('Authorization')).toBe('Bearer null');
+    expect(testReq.request.headers.has('Authorization')).toBe(false);
     testReq.flush({});
     tick();
   }));

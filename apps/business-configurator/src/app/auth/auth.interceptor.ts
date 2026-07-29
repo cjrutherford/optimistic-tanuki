@@ -9,16 +9,16 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const token = authState.getToken();
 
-  const clonedRequest = req.clone({
-    setHeaders: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      'X-ot-appscope': 'system-configurator',
-      'X-ot-session-mode': 'cookie',
-    },
-    withCredentials: true,
-  });
-
-  return next(clonedRequest).pipe(
+  return next(
+    req.clone({
+      setHeaders: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'X-ot-appscope': 'business-configurator',
+        'X-ot-session-mode': 'cookie',
+      },
+      withCredentials: true,
+    })
+  ).pipe(
     catchError((error) => {
       if (error.status === 401) {
         authState.logout();

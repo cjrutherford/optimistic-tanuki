@@ -137,8 +137,9 @@ export class LoginPageComponent {
         'digital-homestead'
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success) {
+        if (result.token) this.authState.setToken(result.token);
+        await this.authState.restoreSession();
         await this.router.navigate(['/blog']);
         return;
       }
@@ -154,8 +155,9 @@ export class LoginPageComponent {
           ''
         );
 
-        if (regResult.success && regResult.token) {
-          this.authState.setToken(regResult.token);
+        if (regResult.success) {
+          if (regResult.token) this.authState.setToken(regResult.token);
+          await this.authState.restoreSession();
           await this.router.navigate(['/blog']);
           return;
         }

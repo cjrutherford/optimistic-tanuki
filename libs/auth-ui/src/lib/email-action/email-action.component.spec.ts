@@ -2,7 +2,7 @@ import { PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import {
   EmailActionComponent,
   emailAuthRoutes,
@@ -82,11 +82,11 @@ describe('EmailActionComponent', () => {
     ).toBe(true);
   });
 
-  it('automatically consumes a magic link and returns to its safe path', async () => {
+  it('requires confirmation before consuming a token-mode magic link', async () => {
     const confirmLogin = jest.fn(() =>
       of({
         returnPath: '/account',
-        data: { newToken: 'magic-session' },
+        data: {},
       })
     );
     const navigateByUrl = jest.fn().mockResolvedValue(true);
@@ -99,7 +99,11 @@ describe('EmailActionComponent', () => {
             provide: ActivatedRoute,
             useValue: {
               snapshot: {
-                data: { purpose: 'magic-link', storageKey: 'test-token' },
+                data: {
+                  purpose: 'magic-link',
+                  storageKey: 'test-token',
+                  cookieSession: false,
+                },
                 queryParamMap: convertToParamMap({ token: 'magic-token' }),
               },
             },
@@ -116,8 +120,19 @@ describe('EmailActionComponent', () => {
     const magicFixture = TestBed.createComponent(EmailActionComponent);
     magicFixture.detectChanges();
 
-    expect(confirmLogin).toHaveBeenCalledWith('magic-link', 'magic-token');
-    expect(localStorage.getItem('test-token')).toBe('magic-session');
+    expect(confirmLogin).not.toHaveBeenCalled();
+    expect(magicFixture.nativeElement.textContent).toContain(
+      'Sign in with magic link'
+    );
+
+    magicFixture.nativeElement.querySelector('button').click();
+
+    expect(confirmLogin).toHaveBeenCalledWith(
+      'magic-link',
+      'magic-token',
+      false
+    );
+    expect(localStorage.getItem('test-token')).toBeNull();
     expect(navigateByUrl).toHaveBeenCalledWith('/account');
   });
 
@@ -157,5 +172,49 @@ describe('EmailActionComponent', () => {
     expect(
       verificationFixture.nativeElement.querySelector('a').getAttribute('href')
     ).toBe('/welcome');
+  });
+
+  it('keeps a failed verification link retryable', async () => {
+    const confirmVerification = jest
+      .fn()
+      .mockReturnValueOnce(throwError(() => new Error('temporary failure')))
+      .mockReturnValueOnce(of({ message: 'Email verified', code: 0 }));
+    await TestBed.resetTestingModule()
+      .configureTestingModule({
+        imports: [EmailActionComponent],
+        providers: [
+          provideRouter([]),
+          { provide: PLATFORM_ID, useValue: 'browser' },
+          {
+            provide: ActivatedRoute,
+            useValue: {
+              snapshot: {
+                data: { purpose: 'verification', storageKey: 'test-token' },
+                queryParamMap: convertToParamMap({
+                  token: 'verification-token',
+                }),
+              },
+            },
+          },
+          {
+            provide: EmailAuthClientService,
+            useValue: { confirmVerification },
+          },
+        ],
+      })
+      .compileComponents();
+
+    const verificationFixture = TestBed.createComponent(EmailActionComponent);
+    verificationFixture.detectChanges();
+    verificationFixture.detectChanges();
+
+    expect(verificationFixture.componentInstance.token).toBe(
+      'verification-token'
+    );
+    const retry = verificationFixture.nativeElement.querySelector('button');
+    expect(retry?.textContent).toContain('Try again');
+
+    retry.click();
+    expect(confirmVerification).toHaveBeenCalledTimes(2);
   });
 });

@@ -80,8 +80,9 @@ export class RegisterComponent {
       'finance'
     );
 
-    if (result.success && result.token) {
-      this.authStateService.setToken(result.token);
+    if (result.success) {
+      if (result.token) this.authStateService.setToken(result.token);
+      await this.authStateService.restoreSession();
       await this.handlePostLogin();
       return;
     }
@@ -97,8 +98,9 @@ export class RegisterComponent {
         ''
       );
 
-      if (regResult.success && regResult.token) {
-        this.authStateService.setToken(regResult.token);
+      if (regResult.success) {
+        if (regResult.token) this.authStateService.setToken(regResult.token);
+        await this.authStateService.restoreSession();
         await this.handlePostLogin();
       }
     }

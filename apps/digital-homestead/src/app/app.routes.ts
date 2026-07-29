@@ -17,7 +17,7 @@ const forumUserIdResolver: ResolveFn<string> = () => {
 };
 
 export const appRoutes: Route[] = [
-  ...emailAuthRoutes('dh-client-authToken'),
+  ...emailAuthRoutes('dh-client-authToken', true),
   {
     path: '',
     loadComponent: () =>

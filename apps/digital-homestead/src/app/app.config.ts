@@ -42,7 +42,8 @@ class AppScopeInterceptor implements HttpInterceptor {
     }
 
     const cloned = req.clone({
-      setHeaders: { 'X-ot-appscope': appScope },
+      setHeaders: { 'X-ot-appscope': appScope, 'X-ot-session-mode': 'cookie' },
+      withCredentials: true,
     });
     return next.handle(cloned);
   }
@@ -56,10 +57,11 @@ class HttpBearerAuthInterceptor implements HttpInterceptor {
     if (token) {
       const cloned = req.clone({
         setHeaders: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
       return next.handle(cloned);
     }
-    return next.handle(req);
+    return next.handle(req.clone({ withCredentials: true }));
   }
 }
 

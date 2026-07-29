@@ -101,26 +101,32 @@ export class AuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
+    const bearerToken =
+      typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
+        ? authHeader.slice('Bearer '.length).trim()
+        : '';
+    const cookieToken =
+      typeof request.cookies?.ot_session === 'string'
+        ? request.cookies.ot_session
+        : '';
+    const credential = bearerToken || cookieToken;
 
     // Try to attach user if token exists, even for public routes
-    if (authHeader) {
+    if (credential) {
       try {
-        const token = authHeader.split(' ')[1];
-        if (token) {
-          const user = await this.jwt.verifyAsync<UserDetails>(token);
-          // Optional: Introspect if strict validation needed, but verifyAsync checks signature/exp
-          // const isAuthenticated = await this.introspectToken(token, user.userId);
+        const user = await this.jwt.verifyAsync<UserDetails>(credential);
+        // Optional: Introspect if strict validation needed, but verifyAsync checks signature/exp
+        // const isAuthenticated = await this.introspectToken(credential, user.userId);
 
-          const userContext: UserContext = {
-            userId: user.userId,
-            email: user.email,
-            name: user.name,
-            profileId: user.profileId,
-            scopes: [],
-            roles: [],
-          };
-          request.user = userContext;
-        }
+        const userContext: UserContext = {
+          userId: user.userId,
+          email: user.email,
+          name: user.name,
+          profileId: user.profileId,
+          scopes: [],
+          roles: [],
+        };
+        request.user = userContext;
       } catch (e) {
         // If public, ignore auth errors. If private, the check below will fail.
         if (!isPublic) {
@@ -136,9 +142,9 @@ export class AuthGuard implements CanActivate {
     }
 
     if (!request.user) {
-      if (!authHeader) {
+      if (!credential) {
         throw new UnauthorizedException(
-          'Unauthorized: No Auth Header Provided.'
+          'Unauthorized: No session credential provided.'
         );
       }
       // If we reached here, auth header existed but parsing failed and caught above
@@ -155,9 +161,8 @@ export class AuthGuard implements CanActivate {
     // BUT the original code called introspectToken.
 
     // Let's add strict introspection check for protected routes.
-    const token = authHeader.split(' ')[1];
     const isAuthenticated = await this.introspectToken(
-      token,
+      credential,
       request.user.userId
     );
     if (!isAuthenticated) {

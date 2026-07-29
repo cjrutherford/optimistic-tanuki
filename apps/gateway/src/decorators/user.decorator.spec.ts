@@ -2,17 +2,33 @@ import { ExecutionContext } from '@nestjs/common';
 import { UserDetailsDecorator } from './user.decorator';
 
 // Helper to create a fake context with a given auth header
-function createContext(authHeader?: string): ExecutionContext {
+function createContext(authHeader?: string, user?: unknown): ExecutionContext {
   return {
     switchToHttp: () => ({
       getRequest: () => ({
         headers: authHeader ? { authorization: authHeader } : {},
+        user,
       }),
     }),
   } as any;
 }
 
 describe('UserDetailsDecorator', () => {
+  it('returns the guard-authenticated user for cookie sessions', () => {
+    const user = {
+      email: 'test@example.com',
+      exp: 123,
+      iat: 456,
+      name: 'Test User',
+      userId: 'user-1',
+      profileId: 'profile-1',
+    };
+
+    expect(UserDetailsDecorator(null, createContext(undefined, user))).toEqual(
+      user
+    );
+  });
+
   it('should return null if no auth header', () => {
     const ctx = createContext();
     const result = UserDetailsDecorator(null, ctx);

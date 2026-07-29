@@ -103,9 +103,15 @@ export class LoginComponent {
     this.error.set(null);
 
     this.authService.login(credentials).subscribe({
-      next: (response) => {
-        this.authService.setAuthToken(response.data.newToken);
-        this.router.navigate(['/dashboard']);
+      next: async () => {
+        await this.authState.restoreSession();
+        if (!this.authState.isLoggedIn()) {
+          this.error.set(
+            'Login could not establish a session. Please try again.'
+          );
+          return;
+        }
+        await this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.error.set(err.error?.message || 'Login failed. Please try again.');

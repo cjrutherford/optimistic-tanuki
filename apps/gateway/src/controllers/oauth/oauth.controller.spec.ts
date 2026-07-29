@@ -166,6 +166,10 @@ describe('OAuthController', () => {
       expect(redirect.searchParams.get('state')).toMatch(
         /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
       );
+      expect(redirect.searchParams.get('code_challenge_method')).toBe('S256');
+      expect(redirect.searchParams.get('code_challenge')).toMatch(
+        /^[A-Za-z0-9_-]{43}$/
+      );
       expect(response.cookie).toHaveBeenCalledWith(
         'oauth_state_nonce',
         expect.any(String),
@@ -176,6 +180,30 @@ describe('OAuthController', () => {
           maxAge: 10 * 60 * 1000,
         })
       );
+    });
+
+    it('rejects a caller-supplied app scope that differs from returnTo', async () => {
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'client-id',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+
+      await expect(
+        controller.startOAuth(
+          request,
+          { redirect: jest.fn(), cookie: jest.fn() } as any,
+          'https://optimistic-tanuki.example/login',
+          'owner-console',
+          undefined
+        )
+      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
     });
 
     it('retains a bounded set of concurrent initiation nonces', async () => {
@@ -738,6 +766,26 @@ describe('OAuthController', () => {
   });
 
   describe('provider requests', () => {
+    it('does not treat a Facebook email as a verified-email auto-link signal', async () => {
+      jest.spyOn(controller as any, 'fetchProvider').mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          id: 'facebook-user',
+          email: 'person@example.com',
+          name: 'Person Example',
+        }),
+      });
+
+      await expect(
+        (controller as any).fetchProviderIdentity('facebook', 'access-token', {
+          userInfoEndpoint: 'https://graph.facebook.com/v18.0/me',
+        })
+      ).resolves.toMatchObject({
+        email: 'person@example.com',
+        emailVerified: false,
+      });
+    });
+
     it('bounds the token exchange with an abort signal', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
@@ -757,7 +805,12 @@ describe('OAuthController', () => {
       } as Response);
 
       await expect(
-        (controller as any).exchangeProviderCode('google', 'provider-code')
+        (controller as any).exchangeProviderCode(
+          'google',
+          'provider-code',
+          undefined,
+          'a'.repeat(43)
+        )
       ).rejects.toThrow('OAuth provider request failed');
 
       expect(fetchMock).toHaveBeenCalledWith(

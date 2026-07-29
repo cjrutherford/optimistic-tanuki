@@ -95,10 +95,6 @@ export class ProfileService {
     );
 
     const created = 'profile' in response ? response.profile : response;
-    if ('newToken' in response && response.newToken) {
-      this.authState.setToken(response.newToken);
-    }
-
     const profiles = [...this.getCurrentUserProfiles(), created];
     this.currentUserProfiles.set(profiles);
     this.authState.persistProfiles(profiles);
