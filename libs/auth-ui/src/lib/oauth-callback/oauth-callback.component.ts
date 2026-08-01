@@ -156,6 +156,7 @@ export class OAuthCallbackComponent implements OnInit {
           token?: string;
           session?: true;
           returnOrigin?: string;
+        }>(
           `${this.apiBaseUrl}/oauth/callback/redeem`,
           { callbackCode },
           {
@@ -188,9 +189,8 @@ export class OAuthCallbackComponent implements OnInit {
         type: 'oauth-callback',
         payload: {
           success: true,
-          ...(redemption.token
-            ? { token: redemption.token }
-            : { session: true as const }),
+          session: redemption.session === true,
+          ...(redemption.token ? { token: redemption.token } : {}),
         },
       },
       redemption.returnOrigin

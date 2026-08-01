@@ -12,7 +12,6 @@ import {
   Headers,
   Req,
   HttpCode,
-  Req,
   Res,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';

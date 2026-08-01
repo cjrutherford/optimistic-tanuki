@@ -21,4 +21,28 @@ describe('RegisterComponent', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('reports an error instead of continuing when cookie OAuth session restoration fails', async () => {
+    const authStateService = (component as any).authStateService;
+    const messageService = (component as any).messageService;
+    const handlePostLogin = jest.spyOn(component as any, 'handlePostLogin');
+    const addMessage = jest.spyOn(messageService, 'addMessage');
+
+    (component as any).oauthService = {
+      initiateOAuthLogin: jest.fn().mockResolvedValue({
+        success: true,
+        session: true,
+      }),
+    };
+    jest.spyOn(authStateService, 'restoreSession').mockResolvedValue(false);
+
+    await component.onOAuthProvider({ provider: 'google' } as any);
+
+    expect(handlePostLogin).not.toHaveBeenCalled();
+    expect(addMessage).toHaveBeenCalledWith({
+      content:
+        'OAuth registration could not restore your session. Please try again.',
+      type: 'error',
+    });
+  });
 });

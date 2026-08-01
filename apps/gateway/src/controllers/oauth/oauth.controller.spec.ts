@@ -619,22 +619,25 @@ describe('OAuthController', () => {
 
     it('redeems a cookie callback only from the client-interface proxy and returns the verified opener origin', async () => {
       const store = (controller as any).oauthStateStore as LocalOAuthStateStore;
-      await store.createCallbackGrant('state-2.secret', {
+      const stateId = 'state_2_callback_grant_identifier';
+      const secret = 'callback_secret_for_cookie_grant';
+      const callbackCode = `${stateId}.${secret}`;
+      await store.createCallbackGrant(callbackCode, {
         token: 'platform-token',
         returnOrigin: 'https://forge.example',
         redemptionOrigin: 'https://optimistic-tanuki.example',
         cookieSession: true,
-        stateId: 'state-2',
+        stateId,
         nonceHash: (controller as any).hashNonce('nonce'),
         expiresAt: Date.now() + 60_000,
       });
 
       await expect(
-        controller.redeemCallbackCode({ callbackCode: 'state-2.secret' }, {
+        controller.redeemCallbackCode({ callbackCode }, {
           headers: { origin: 'https://forge.example' },
           cookies: {
             oauth_state_nonce: JSON.stringify([
-              { id: 'state-2', nonce: 'nonce' },
+              { id: stateId, nonce: 'nonce' },
             ]),
           },
         } as any)
@@ -643,12 +646,12 @@ describe('OAuthController', () => {
       const response = { cookie: jest.fn() } as any;
       await expect(
         controller.redeemCallbackCode(
-          { callbackCode: 'state-2.secret' },
+          { callbackCode },
           {
             headers: { origin: 'https://optimistic-tanuki.example' },
             cookies: {
               oauth_state_nonce: JSON.stringify([
-                { id: 'state-2', nonce: 'nonce' },
+                { id: stateId, nonce: 'nonce' },
               ]),
             },
           } as any,

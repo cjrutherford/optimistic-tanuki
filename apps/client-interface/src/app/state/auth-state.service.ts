@@ -83,26 +83,6 @@ export class AuthStateService {
     return response;
   }
 
-  async restoreSession(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) {
-      return;
-    }
-
-    try {
-      const response = await this.authService.currentSession();
-      const user = response.data.user as UserData;
-      this.tokenSubject.next(null);
-      this.isAuthenticatedSubject.next(true);
-      this.decodedTokenSubject.next(user);
-      this._isAuthenticated = true;
-    } catch {
-      this.tokenSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.decodedTokenSubject.next(null);
-      this._isAuthenticated = false;
-    }
-  }
-
   async restoreSession(): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId)) {
       return false;
@@ -118,6 +98,10 @@ export class AuthStateService {
       this.setSession(response.data);
       return true;
     } catch {
+      this.tokenSubject.next(null);
+      this.isAuthenticatedSubject.next(false);
+      this.decodedTokenSubject.next(null);
+      this._isAuthenticated = false;
       return false;
     }
   }

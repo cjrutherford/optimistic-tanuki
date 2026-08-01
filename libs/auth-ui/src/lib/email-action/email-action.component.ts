@@ -254,16 +254,6 @@ export class EmailActionComponent implements OnInit {
       });
   }
 
-  retry() {
-    if (this.purpose === 'verification') {
-      this.confirmVerification();
-      return;
-    }
-    if (this.purpose === 'magic-link') {
-      this.confirm();
-    }
-  }
-
   private confirmVerification() {
     this.state = 'pending';
     this.message = 'Verifying your email address…';

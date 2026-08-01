@@ -1036,7 +1036,14 @@ describe('TrainerController', () => {
         ],
       })
         .overrideGuard(AuthGuard)
-        .useValue({ canActivate: () => true })
+        .useValue({
+          canActivate: (context: {
+            switchToHttp: () => { getRequest: () => Record<string, unknown> };
+          }) => {
+            context.switchToHttp().getRequest().user = operatorTokenPayload;
+            return true;
+          },
+        })
         .overrideGuard(PermissionsGuard)
         .useValue({ canActivate: () => true });
 
@@ -1049,7 +1056,7 @@ describe('TrainerController', () => {
       await app?.close();
     });
 
-    it('accepts catalog-source updates through the business route with bearer-token identity', async () => {
+    it('accepts catalog-source updates through the business route with guard-authenticated identity', async () => {
       storeClient.send.mockImplementation((command: any) => {
         if (command?.cmd === ProductCommands.FIND_OWNER_PRODUCTS.cmd) {
           return of([
