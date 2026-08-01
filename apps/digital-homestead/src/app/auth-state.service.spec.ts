@@ -92,7 +92,7 @@ describe('AuthStateService', () => {
       const restored = service.restoreSession();
       const req = httpMock.expectOne('/api/authentication/session');
       expect(req.request.withCredentials).toBe(true);
-      req.flush({ data: mockUserData });
+      req.flush({ data: { user: mockUserData } });
 
       await expect(restored).resolves.toBe(true);
       expect(service.isAuthenticated).toBe(true);

@@ -591,7 +591,8 @@ export class OAuthController {
       );
     }
     if (
-      (grant.cookieSession || request.headers['x-ot-session-mode'] === 'cookie') &&
+      (grant.cookieSession ||
+        request.headers['x-ot-session-mode'] === 'cookie') &&
       response
     ) {
       response.cookie('ot_session', grant.token, {
