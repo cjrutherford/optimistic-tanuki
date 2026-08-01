@@ -12,6 +12,7 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const appScope = 'D6';
 
   const clonedRequest = req.clone({
+    withCredentials: true,
     setHeaders: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'X-ot-appscope': appScope,

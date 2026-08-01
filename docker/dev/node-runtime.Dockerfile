@@ -7,6 +7,8 @@ WORKDIR ${APP_ROOT}
 
 ENV NODE_ENV=development
 
+LABEL com.optimistic-tanuki.runtime=development
+
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --frozen-lockfile

@@ -15,6 +15,7 @@
   max-width: 1600px;
   margin: 0 auto;
   padding: var(--spacing-xl);
+  box-sizing: border-box;
 
   @media (max-width: 1024px) {
     flex-direction: column;
@@ -293,6 +294,8 @@
   padding-bottom: 0;
 
   @media (max-width: 640px) {
+    box-sizing: border-box;
+    width: 100%;
     margin-bottom: var(--spacing-md);
     gap: 0;
     border-bottom-width: 1px;
@@ -313,8 +316,11 @@
   @include p.personality-transition(color, 'fast');
 
   @media (max-width: 640px) {
+    flex: 1 1 0;
+    min-width: 0;
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-size-sm, 0.9rem);
+    white-space: normal;
   }
 
   &:hover {

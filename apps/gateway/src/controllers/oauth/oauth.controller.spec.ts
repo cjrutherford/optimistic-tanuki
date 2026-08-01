@@ -113,6 +113,14 @@ describe('OAuthController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('always sends the final callback through the Client Interface proxy', () => {
+    process.env.CLIENT_INTERFACE_UI_BASE_URL = 'https://proxy.example/';
+
+    expect((controller as any).buildFinalCallbackUrl()).toBe(
+      'https://proxy.example/oauth/callback'
+    );
+  });
+
   it('rejects production OAuth registration for owner-console', async () => {
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -134,6 +142,34 @@ describe('OAuthController', () => {
         process.env.NODE_ENV = previousNodeEnv;
       }
     }
+  });
+
+  it('carries a provider-verified email assertion only when registering a new OAuth account', async () => {
+    const registerBootstrap = (controller as any).registerBootstrap;
+    registerBootstrap.register.mockResolvedValue({
+      data: { user: { id: 'user-1' } },
+    });
+    (authClient.send as jest.Mock).mockReturnValue(
+      of({ data: { id: 'oauth-1' } })
+    );
+
+    await (controller as any).registerOAuthUser('digital-homestead', 'google', {
+      providerUserId: 'google-user',
+      email: 'person@example.com',
+      emailVerified: true,
+      displayName: 'Person Example',
+      firstName: 'Person',
+      lastName: 'Example',
+    });
+
+    expect(authClient.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.LinkProvider },
+      expect.objectContaining({
+        userId: 'user-1',
+        providerEmail: 'person@example.com',
+        providerEmailVerified: true,
+      })
+    );
   });
 
   describe('startOAuth', () => {
@@ -464,6 +500,7 @@ describe('OAuthController', () => {
         returnTo: 'https://optimistic-tanuki.example/login',
         appScope: 'client-interface',
         issuedAt: Date.now(),
+        cookieSession: true,
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
         providerUserId: 'google-user',
@@ -562,6 +599,7 @@ describe('OAuthController', () => {
       await store.createCallbackGrant('state-1.secret', {
         token: 'platform-token',
         returnOrigin: 'https://optimistic-tanuki.example',
+        redemptionOrigin: 'https://client-interface.example',
         stateId: 'state-1',
         nonceHash: (controller as any).hashNonce('nonce'),
         expiresAt: Date.now() - 1,
@@ -579,12 +617,61 @@ describe('OAuthController', () => {
       ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
     });
 
+    it('redeems a cookie callback only from the client-interface proxy and returns the verified opener origin', async () => {
+      const store = (controller as any).oauthStateStore as LocalOAuthStateStore;
+      await store.createCallbackGrant('state-2.secret', {
+        token: 'platform-token',
+        returnOrigin: 'https://forge.example',
+        redemptionOrigin: 'https://optimistic-tanuki.example',
+        cookieSession: true,
+        stateId: 'state-2',
+        nonceHash: (controller as any).hashNonce('nonce'),
+        expiresAt: Date.now() + 60_000,
+      });
+
+      await expect(
+        controller.redeemCallbackCode({ callbackCode: 'state-2.secret' }, {
+          headers: { origin: 'https://forge.example' },
+          cookies: {
+            oauth_state_nonce: JSON.stringify([
+              { id: 'state-2', nonce: 'nonce' },
+            ]),
+          },
+        } as any)
+      ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+
+      const response = { cookie: jest.fn() } as any;
+      await expect(
+        controller.redeemCallbackCode(
+          { callbackCode: 'state-2.secret' },
+          {
+            headers: { origin: 'https://optimistic-tanuki.example' },
+            cookies: {
+              oauth_state_nonce: JSON.stringify([
+                { id: 'state-2', nonce: 'nonce' },
+              ]),
+            },
+          } as any,
+          response
+        )
+      ).resolves.toEqual({
+        session: true,
+        returnOrigin: 'https://forge.example',
+      });
+      expect(response.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'platform-token',
+        expect.objectContaining({ httpOnly: true, path: '/api' })
+      );
+    });
+
     it('links the provider identity returned by the provider to the authenticated link-flow user', async () => {
       const issued = await (controller as any).signState({
         provider: 'google',
         returnTo: 'https://optimistic-tanuki.example/login',
         appScope: 'client-interface',
         issuedAt: Date.now(),
+        cookieSession: true,
         linkUserId: 'user-1',
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
@@ -639,6 +726,7 @@ describe('OAuthController', () => {
         returnTo: 'https://optimistic-tanuki.example/login',
         appScope: 'client-interface',
         issuedAt: Date.now(),
+        cookieSession: true,
       });
       jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
         providerUserId: 'google-user',
@@ -690,16 +778,29 @@ describe('OAuthController', () => {
           },
         } as any)
       ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+      const cookieResponse = { cookie: jest.fn() } as any;
       await expect(
-        controller.redeemCallbackCode({ callbackCode: callbackCode! }, {
-          headers: { origin: 'https://optimistic-tanuki.example' },
-          cookies: {
-            oauth_state_nonce: JSON.stringify([
-              { id: issued.stateId, nonce: issued.nonce },
-            ]),
-          },
-        } as any)
-      ).resolves.toEqual({ token: 'platform-token' });
+        controller.redeemCallbackCode(
+          { callbackCode: callbackCode! },
+          {
+            headers: { origin: 'https://optimistic-tanuki.example' },
+            cookies: {
+              oauth_state_nonce: JSON.stringify([
+                { id: issued.stateId, nonce: issued.nonce },
+              ]),
+            },
+          } as any,
+          cookieResponse
+        )
+      ).resolves.toEqual({
+        session: true,
+        returnOrigin: 'https://optimistic-tanuki.example',
+      });
+      expect(cookieResponse.cookie).toHaveBeenCalledWith(
+        'ot_session',
+        'platform-token',
+        expect.objectContaining({ httpOnly: true, path: '/api' })
+      );
       await expect(
         controller.redeemCallbackCode({ callbackCode: callbackCode! }, {
           headers: { origin: 'https://optimistic-tanuki.example' },
@@ -886,6 +987,7 @@ describe('OAuthController', () => {
       expect(result).toEqual({
         google: {
           clientId: 'public-client-id',
+          callbackOrigin: 'https://optimistic-tanuki.example',
           redirectUri:
             'https://optimistic-tanuki.example/oauth/callback/google',
           scopes: ['openid'],

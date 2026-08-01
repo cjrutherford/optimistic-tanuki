@@ -134,12 +134,17 @@ export class LoginPageComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'digital-homestead'
+        'digital-homestead',
+        true
       );
 
-      if (result.success) {
+      if (result.success && (result.token || result.session)) {
         if (result.token) this.authState.setToken(result.token);
-        await this.authState.restoreSession();
+        else if (!(await this.authState.restoreSession())) {
+          this.error =
+            'OAuth login could not restore your session. Please try again.';
+          return;
+        }
         await this.router.navigate(['/blog']);
         return;
       }

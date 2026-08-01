@@ -339,7 +339,8 @@ export class AppController {
         data.provider,
         data.providerUserId,
         data.providerEmail,
-        data.providerDisplayName
+        data.providerDisplayName,
+        data.providerEmailVerified === true
       );
     } catch (e) {
       if (e instanceof RpcException) throw e;

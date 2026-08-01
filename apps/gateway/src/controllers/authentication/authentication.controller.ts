@@ -10,6 +10,7 @@ import {
   Logger,
   UseGuards,
   Headers,
+  Req,
   HttpCode,
   Req,
   Res,
@@ -159,6 +160,16 @@ export class AuthenticationController {
         console.log('AuthenticationController connected to authClient');
       })
       .catch((e) => console.error(e));
+  }
+
+  /**
+   * Returns only the guard-verified identity for an HttpOnly browser session.
+   * The session JWT is deliberately never returned to client-side JavaScript.
+   */
+  @Get('session')
+  @UseGuards(AuthGuard)
+  async getSession(@Req() request: { user: UserDetails }) {
+    return { data: request.user };
   }
 
   @Post('email-action/request')

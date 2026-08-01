@@ -1,240 +1,136 @@
-import { test, expect } from '@playwright/test';
-import { Logger } from '@nestjs/common';
+import { APIRequestContext, expect, test } from '@playwright/test';
 
-function uniqueEmail(prefix: string): string {
-  const ts = Date.now();
-  const rand = Math.floor(Math.random() * 1_000_000);
-  return `${prefix}.${ts}.${rand}@example.test`;
+const PASSWORD = 'Password123!';
+const APP_HEADERS = {
+  'x-ot-app-id': 'client-interface',
+  'x-ot-appscope': 'client-interface',
+};
+const SOCIAL_HEADERS = {
+  'x-ot-app-id': 'client-interface',
+  'x-ot-appscope': 'social',
+};
+
+function uniqueEmail(role: string): string {
+  return `community-${role}-${Date.now()}-${Math.floor(
+    Math.random() * 1_000_000
+  )}@example.test`;
 }
 
-test.describe('Community Permissions - Client Interface', () => {
-  const logger = new Logger('CommunityPermissionsE2E');
+type AuthenticatedUser = {
+  token: string;
+  profileId: string;
+};
 
-  test.beforeAll(() => {
-    Logger.overrideLogger(['log', 'error', 'warn', 'debug', 'verbose']);
+function profileIdFromToken(token: string): string {
+  const payload = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8')
+  );
+  expect(payload.profileId).toEqual(expect.any(String));
+  return payload.profileId;
+}
+
+async function registerAndLogin(
+  request: APIRequestContext,
+  role: string
+): Promise<AuthenticatedUser> {
+  const email = uniqueEmail(role);
+  const register = await request.post('/api/authentication/register', {
+    headers: APP_HEADERS,
+    data: {
+      email,
+      fn: role,
+      ln: 'Community',
+      password: PASSWORD,
+      confirm: PASSWORD,
+      bio: 'Community permissions test participant',
+    },
   });
+  expect(register.status()).toBe(201);
 
+  const login = await request.post('/api/authentication/login', {
+    headers: APP_HEADERS,
+    data: { email, password: PASSWORD },
+  });
+  expect(login.status()).toBe(201);
+  const payload = await login.json();
+  const token = payload?.data?.newToken;
+  expect(token).toEqual(expect.any(String));
+  return { token, profileId: profileIdFromToken(token) };
+}
+
+function authenticatedHeaders(token: string, scope = APP_HEADERS) {
+  return { ...scope, Authorization: `Bearer ${token}` };
+}
+
+test.describe('Community permissions', () => {
   test.setTimeout(180000);
 
-  test('Security: Non-member cannot post to community', async ({ page }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (msg.type() === 'error') {
-        logger.error(`[Browser Error] ${text}`);
-      }
-    });
-
-    logger.debug('Test: Non-member attempting to post to community');
-    const email = uniqueEmail('nonmember');
-    const password = 'Password123!';
-
-    await page.goto('/register');
-    await page.waitForLoadState('networkidle');
-
-    await page.getByPlaceholder('First Name').fill('Non');
-    await page.getByPlaceholder('Last Name').fill('Member');
-    await page.getByPlaceholder('Email').fill(email);
-
-    const passwordInputs = page.locator('input[type="password"]');
-    await passwordInputs.first().fill(password);
-    await passwordInputs.nth(1).fill(password);
-
-    await page.getByRole('button', { name: /register/i }).click();
-
-    await page.waitForURL(/\/login$/, { timeout: 30000 });
-    await page.getByPlaceholder('Email').fill(email);
-    await page.getByPlaceholder('Password').fill(password);
-    await page.getByRole('button', { name: /login/i }).click({ force: true });
-
-    await page.waitForURL(/\/(settings|feed)/, { timeout: 30000 });
-
-    if (page.url().includes('settings')) {
-      await page.getByPlaceholder('Profile Name').fill('Non Member');
-      await page.getByPlaceholder('Bio').fill('Not in any community');
-      await page.getByRole('button', { name: 'Submit' }).click();
-      await page.waitForURL(/\/feed/, { timeout: 30000 });
-    }
-
-    await page.goto('/communities');
-    await page.waitForLoadState('networkidle');
-
-    const communityCards = page.locator(
-      '.community-card, [class*="community-item"]'
-    );
-    const count = await communityCards.count();
-
-    if (count > 0) {
-      await communityCards.first().click();
-      await page.waitForLoadState('networkidle');
-
-      const postForm = page.locator(
-        'form[class*="post"], [class*="create-post"]'
-      );
-      if (await postForm.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await page.getByPlaceholder('Title').fill('Unauthorized Post');
-        await page.locator('.ProseMirror').fill('Should be blocked');
-
-        await page.getByRole('button', { name: /post/i }).click();
-        await page.waitForTimeout(1000);
-
-        logger.debug(
-          'Post submission attempted - verify it was rejected by backend'
-        );
-      }
-    }
-
-    logger.debug('Test complete');
-  });
-
-  test('Security: Non-member cannot react to community posts', async ({
-    page,
+  test('contains posts and reactions to approved community members', async ({
+    request,
   }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (msg.type() === 'error') {
-        logger.error(`[Browser Error] ${text}`);
-      }
+    const owner = await registerAndLogin(request, 'owner');
+    const member = await registerAndLogin(request, 'member');
+    const outsider = await registerAndLogin(request, 'outsider');
+
+    const createCommunity = await request.post('/api/social/community', {
+      headers: authenticatedHeaders(owner.token),
+      data: {
+        name: `Permission community ${Date.now()}`,
+        slug: `permission-community-${Date.now()}`,
+        description: 'Deterministic community authorization fixture',
+        isPrivate: false,
+        joinPolicy: 'public',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'New York',
+        city: 'New York',
+      },
     });
+    expect(createCommunity.status()).toBe(201);
+    const community = await createCommunity.json();
+    expect(community.id).toEqual(expect.any(String));
 
-    logger.debug('Test: Non-member attempting to react to community posts');
-
-    const outsiderEmail = uniqueEmail('outsiderreact');
-    const outsiderPassword = 'Password123!';
-
-    await page.goto('/register');
-    await page.waitForLoadState('networkidle');
-
-    await page.getByPlaceholder('First Name').fill('Outsider');
-    await page.getByPlaceholder('Last Name').fill('Reactor');
-    await page.getByPlaceholder('Email').fill(outsiderEmail);
-
-    const passwordInputs = page.locator('input[type="password"]');
-    await passwordInputs.first().fill(outsiderPassword);
-    await passwordInputs.nth(1).fill(outsiderPassword);
-
-    await page.getByRole('button', { name: /register/i }).click();
-
-    await page.waitForURL(/\/login$/, { timeout: 30000 });
-    await page.getByPlaceholder('Email').fill(outsiderEmail);
-    await page.getByPlaceholder('Password').fill(outsiderPassword);
-    await page.getByRole('button', { name: /login/i }).click({ force: true });
-
-    await page.waitForURL(/\/(settings|feed)/, { timeout: 30000 });
-
-    if (page.url().includes('settings')) {
-      await page.getByPlaceholder('Profile Name').fill('Outsider Reactor');
-      await page.getByPlaceholder('Bio').fill('Testing reaction security');
-      await page.getByRole('button', { name: 'Submit' }).click();
-      await page.waitForURL(/\/feed/, { timeout: 30000 });
-    }
-
-    await page.goto('/feed');
-    await page.waitForLoadState('networkidle');
-
-    const posts = page.locator('.post-container, [class*="post-card"]');
-    const postCount = await posts.count();
-
-    logger.debug(`Found ${postCount} posts to test`);
-
-    if (postCount > 0) {
-      const firstPost = posts.first();
-      await firstPost.scrollIntoViewIfNeeded();
-
-      const likeButton = firstPost
-        .locator('button[class*="like"], [class*="reaction"]')
-        .first();
-
-      if (await likeButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await likeButton.click();
-        await page.waitForTimeout(500);
-
-        logger.debug('Reaction click attempted as non-member');
-        logger.debug(
-          'SECURITY NOTE: ReactionService does NOT check community membership'
-        );
-        logger.debug(
-          'This is a vulnerability - reactions should require community membership'
-        );
-      }
-    }
-
-    logger.debug('Test complete - review backend for proper rejection');
-  });
-
-  test('Member can post to joined community', async ({ page }) => {
-    page.on('console', (msg) => {
-      const text = msg.text();
-      if (msg.type() === 'error') {
-        logger.error(`[Browser Error] ${text}`);
-      }
+    const outsiderPost = await request.post('/api/social/post', {
+      headers: authenticatedHeaders(outsider.token, SOCIAL_HEADERS),
+      data: {
+        title: 'Outsider post',
+        content: 'This must be rejected.',
+        profileId: outsider.profileId,
+        communityId: community.id,
+      },
     });
+    expect(outsiderPost.status()).toBeGreaterThanOrEqual(400);
 
-    logger.debug('Test: Member posting to joined community');
-
-    const memberEmail = uniqueEmail('member');
-    const memberPassword = 'Password123!';
-
-    await page.goto('/register');
-    await page.waitForLoadState('networkidle');
-
-    await page.getByPlaceholder('First Name').fill('Member');
-    await page.getByPlaceholder('Last Name').fill('User');
-    await page.getByPlaceholder('Email').fill(memberEmail);
-
-    const passwordInputs = page.locator('input[type="password"]');
-    await passwordInputs.first().fill(memberPassword);
-    await passwordInputs.nth(1).fill(memberPassword);
-
-    await page.getByRole('button', { name: /register/i }).click();
-
-    await page.waitForURL(/\/login$/, { timeout: 30000 });
-    await page.getByPlaceholder('Email').fill(memberEmail);
-    await page.getByPlaceholder('Password').fill(memberPassword);
-    await page.getByRole('button', { name: /login/i }).click({ force: true });
-
-    await page.waitForURL(/\/(settings|feed)/, { timeout: 30000 });
-
-    if (page.url().includes('settings')) {
-      await page.getByPlaceholder('Profile Name').fill('Member User');
-      await page.getByPlaceholder('Bio').fill('I am a community member');
-      await page.getByRole('button', { name: 'Submit' }).click();
-      await page.waitForURL(/\/feed/, { timeout: 30000 });
-    }
-
-    await page.goto('/communities');
-    await page.waitForLoadState('networkidle');
-
-    const joinButtons = page.getByRole('button', { name: /join/i });
-    const joinCount = await joinButtons.count();
-
-    if (joinCount > 0) {
-      await joinButtons.first().click();
-      await page.waitForTimeout(2000);
-
-      const joinedCommunity = page.locator('[class*="community"]').first();
-      if (await joinedCommunity.isVisible()) {
-        const postButton = page.getByRole('button', {
-          name: /create post|new post/i,
-        });
-        if (await postButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-          await postButton.click();
-          await page.waitForTimeout(500);
-
-          await page.getByPlaceholder('Title').fill('Member Post');
-          await page
-            .locator('.ProseMirror')
-            .fill('This is a valid member post');
-
-          await page.getByRole('button', { name: /post/i }).click();
-          await page.waitForTimeout(1000);
-
-          logger.debug('Member post submitted successfully');
-        }
+    const join = await request.post(
+      `/api/social/community/${community.id}/join`,
+      {
+        headers: authenticatedHeaders(member.token),
       }
-    } else {
-      logger.debug('No communities available to join');
-    }
+    );
+    expect(join.status()).toBe(201);
 
-    logger.debug('Test complete');
+    const memberPost = await request.post('/api/social/post', {
+      headers: authenticatedHeaders(member.token, SOCIAL_HEADERS),
+      data: {
+        title: 'Member post',
+        content: 'This is allowed.',
+        profileId: member.profileId,
+        communityId: community.id,
+      },
+    });
+    expect(memberPost.status(), await memberPost.text()).toBe(201);
+
+    const memberPostBody = await memberPost.json();
+    expect(memberPostBody.id).toEqual(expect.any(String));
+
+    const outsiderReaction = await request.post('/api/social/reaction', {
+      headers: authenticatedHeaders(outsider.token, SOCIAL_HEADERS),
+      data: {
+        value: 1,
+        postId: memberPostBody.id,
+        profileId: outsider.profileId,
+      },
+    });
+    expect(outsiderReaction.status()).toBeGreaterThanOrEqual(400);
   });
 });

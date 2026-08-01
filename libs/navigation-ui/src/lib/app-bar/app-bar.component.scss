@@ -5,6 +5,20 @@
   gap: 1rem;
   padding: 10px;
   width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+
+  h1,
+  otui-heading {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  lib-theme-toggle {
+    flex: 0 0 auto;
+  }
 }
 
 .title-bar.compact {
@@ -15,6 +29,18 @@
 .title-bar.small {
   gap: 0.5rem;
   padding: 0.2rem 0.35rem;
+}
+
+@media (max-width: 640px) {
+  .title-bar {
+    gap: 0.5rem;
+    padding: 0.5rem;
+
+    h1,
+    otui-heading {
+      display: none;
+    }
+  }
 }
 
 .menu-btn {

@@ -4,7 +4,10 @@ import { workspaceRoot } from '@nx/devkit';
 import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const isCI = !!process.env['CI'];
+const baseURL =
+  process.env['BASE_URL'] ||
+  (isCI ? 'http://127.0.0.1:8083' : 'http://localhost:4200');
 const headless = resolvePlaywrightHeadless(!!process.env['CI']);
 
 /**
@@ -27,6 +30,8 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
+  reporter: [['html', { open: 'never', outputFolder: './playwright-report' }]],
+  outputDir: './test-results',
   /* Run your local dev server before starting the tests */
   webServer: process.env['CI']
     ? undefined
@@ -37,24 +42,31 @@ export default defineConfig({
         reuseExistingServer: true,
         cwd: workspaceRoot,
       },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
+  projects: isCI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'] },
+        },
 
-    {
-      name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
+        {
+          name: 'firefox',
+          use: { ...devices['Desktop Firefox'] },
+        },
 
-    /* {
+        /* {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     }, */
 
-    // Uncomment for mobile browsers support
-    /* {
+        // Uncomment for mobile browsers support
+        /* {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },
     },
@@ -63,8 +75,8 @@ export default defineConfig({
       use: { ...devices['iPhone 12'] },
     }, */
 
-    // Uncomment for branded browsers
-    /* {
+        // Uncomment for branded browsers
+        /* {
       name: 'Microsoft Edge',
       use: { ...devices['Desktop Edge'], channel: 'msedge' },
     },
@@ -72,5 +84,5 @@ export default defineConfig({
       name: 'Google Chrome',
       use: { ...devices['Desktop Chrome'], channel: 'chrome' },
     } */
-  ],
+      ],
 });

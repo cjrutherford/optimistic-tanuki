@@ -15,12 +15,8 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile && \
-    pnpm add -w pg typeorm nodemon && \
-    npm cache clean --force || true
+RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
 COPY --from=builder /usr/src/app/dist/apps/assets/ ./
-RUN rm -rf node_modules/.cache || true
-RUN chown -R node:node .
 USER node
 EXPOSE 3005
 CMD ["dumb-init", "node", "main.js"]

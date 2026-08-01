@@ -1,5 +1,5 @@
 import { Injectable, PLATFORM_ID, inject } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, firstValueFrom } from 'rxjs';
 import { AuthenticationService } from '../authentication.service';
 import {
   LoginRequest,
@@ -101,6 +101,36 @@ export class AuthStateService {
       this.decodedTokenSubject.next(null);
       this._isAuthenticated = false;
     }
+  }
+
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) {
+      return false;
+    }
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: UserData }>(
+          `${this.apiBaseUrl}/authentication/session`,
+          { withCredentials: true }
+        )
+      );
+      this.setSession(response.data);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  setSession(user: UserData) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    localStorage.removeItem(this.tokenKey);
+    this.tokenSubject.next(null);
+    this.isAuthenticatedSubject.next(true);
+    this.decodedTokenSubject.next({ ...user, profileId: user.profileId ?? '' });
+    this._isAuthenticated = true;
   }
 
   setToken(token: string) {

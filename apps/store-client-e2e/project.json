@@ -20,12 +20,12 @@
     },
     "e2e": {
       "executor": "@nx/playwright:playwright",
-      "options": {},
+      "options": {
+        "config": "apps/store-client-e2e/playwright.config.ts"
+      },
       "configurations": {
         "ci": {
-          "env": {
-            "BASE_URL": "http://localhost:8085"
-          }
+          "skipInstall": true
         }
       }
     },

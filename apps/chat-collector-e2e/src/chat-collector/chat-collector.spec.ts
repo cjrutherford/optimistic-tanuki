@@ -28,7 +28,7 @@ describe('Chat Collector Microservice E2E Tests', () => {
     await client.close();
   });
 
-  it('should post a message', async () => {
+  it('persists a posted message in its conversation', async () => {
     const messageData = {
       id: '123e4567-e89b-12d3-a456-426614174000',
       conversationId: '123e4567-e89b-12d3-a456-426614174001',
@@ -45,7 +45,25 @@ describe('Chat Collector Microservice E2E Tests', () => {
       const result = await firstValueFrom(
         client.send({ cmd: ChatCommands.POST_MESSAGE }, messageData)
       );
-      expect(result).toBeDefined();
+      expect(result).toEqual(
+        expect.objectContaining({ id: messageData.conversationId })
+      );
+
+      const messages = await firstValueFrom(
+        client.send(
+          { cmd: ChatCommands.GET_MESSAGES },
+          { conversationId: messageData.conversationId }
+        )
+      );
+      expect(messages).toEqual([
+        expect.objectContaining({
+          id: messageData.id,
+          senderId: messageData.senderId,
+          recipients: messageData.recipientId,
+          content: messageData.content,
+          type: messageData.type,
+        }),
+      ]);
     } catch (error) {
       console.error('Error posting message:', error);
       throw error;

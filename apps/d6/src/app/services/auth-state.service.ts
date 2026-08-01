@@ -1,4 +1,6 @@
 import { Injectable, signal, inject, PLATFORM_ID } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -114,6 +116,24 @@ export class AuthStateService {
       this.setUser(payload);
     } catch {
       // Invalid token format
+    }
+  }
+
+  async restoreSession(): Promise<boolean> {
+    if (!this.isBrowser()) return false;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: any }>('/api/authentication/session', {
+          withCredentials: true,
+        })
+      );
+      this._token.set(null);
+      localStorage.removeItem(this.TOKEN_KEY);
+      this._isAuthenticated.set(true);
+      this.setUser(response.data);
+      return true;
+    } catch {
+      return false;
     }
   }
 

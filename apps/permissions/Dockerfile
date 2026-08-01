@@ -16,9 +16,7 @@ COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w pg typeorm nodemon
 COPY --from=builder /usr/src/app/dist/apps/permissions/ ./
-RUN chown -R node:node .
 USER node
 EXPOSE 3012
 CMD ["dumb-init", "node", "main.js"]

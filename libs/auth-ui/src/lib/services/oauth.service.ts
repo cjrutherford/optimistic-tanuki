@@ -10,11 +10,14 @@ export interface OAuthProviderConfig {
   scopes: string[];
   authorizationEndpoint: string;
   enabled: boolean;
+  /** Server-advertised origin of the shared callback proxy. */
+  callbackOrigin?: string;
 }
 
 export interface OAuthPopupResult {
   success: boolean;
   token?: string;
+  /** The gateway completed authentication using an HttpOnly session cookie. */
   session?: boolean;
   error?: string;
   errorDescription?: string;
@@ -23,6 +26,7 @@ export interface OAuthPopupResult {
 export interface OAuthLoginResult {
   success: boolean;
   token?: string;
+  /** The initiating app must restore its session before navigating. */
   session?: boolean;
   needsRegistration?: boolean;
   userData?: {
@@ -116,7 +120,8 @@ export class OAuthService {
 
   initiateOAuthLogin(
     provider: string,
-    appScope?: string
+    appScope?: string,
+    cookieSession = false
   ): Promise<OAuthLoginResult> {
     return new Promise((resolve, reject) => {
       let checkClosed: ReturnType<typeof setInterval> | null = null;
@@ -152,21 +157,14 @@ export class OAuthService {
         return;
       }
 
-      const startUrl = this.buildStartUrl(provider, appScope);
-      const popupName = `oauth-popup-${Date.now()}`;
-      this.popup = window.open(startUrl, popupName, this.popupFeatures);
-      if (!this.popup) {
-        reject(
-          new Error(
-            'Failed to open OAuth popup. Please check if popups are blocked.'
-          )
-        );
-        return;
-      }
+      const callbackOrigin = this.resolveCallbackOrigin(config.callbackOrigin);
 
+      // Subscribe before opening the popup. Providers can complete quickly
+      // (and local/test providers often do), so opening first can lose the
+      // callback's one-shot postMessage before this window is listening.
       this.messageSubscription = fromEvent<MessageEvent>(window, 'message')
         .pipe(
-          filter((event) => event.origin === window.location.origin),
+          filter((event) => event.origin === callbackOrigin),
           filter((event) => event.data && event.data.type === 'oauth-callback'),
           take(1),
           timeout(300000)
@@ -180,6 +178,11 @@ export class OAuthService {
                 token: result.token,
                 session: result.session,
               });
+              return;
+            }
+
+            if (result.success && result.session) {
+              finish({ success: true, session: true });
               return;
             }
 
@@ -199,6 +202,20 @@ export class OAuthService {
           },
         });
 
+      const startUrl = this.buildStartUrl(provider, appScope, cookieSession);
+      const popupName = `oauth-popup-${Date.now()}`;
+      this.popup = window.open(startUrl, popupName, this.popupFeatures);
+      if (!this.popup) {
+        this.messageSubscription.unsubscribe();
+        this.messageSubscription = null;
+        reject(
+          new Error(
+            'Failed to open OAuth popup. Please check if popups are blocked.'
+          )
+        );
+        return;
+      }
+
       checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {
           if (checkClosed) clearInterval(checkClosed);
@@ -206,6 +223,14 @@ export class OAuthService {
           // while it navigates back to this origin. Give its callback message
           // a chance to arrive before treating this as user cancellation.
           closeGracePeriod = setTimeout(() => {
+            if (cookieSession) {
+              // A callback proxy may be isolated from its opener by browser
+              // cross-origin policies. The session cookie is the authority;
+              // callers still restore it before navigating, so this fallback
+              // cannot authenticate a closed/cancelled popup by itself.
+              finish({ success: true, session: true }, false);
+              return;
+            }
             finish(
               {
                 success: false,
@@ -235,7 +260,11 @@ export class OAuthService {
     };
   }
 
-  private buildStartUrl(provider: string, appScope?: string): string {
+  private buildStartUrl(
+    provider: string,
+    appScope?: string,
+    cookieSession = false
+  ): string {
     const startUrl = new URL(
       `${this.apiBaseUrl}/oauth/start/${encodeURIComponent(provider)}`,
       window.location.origin
@@ -246,6 +275,9 @@ export class OAuthService {
     );
     if (appScope?.trim()) {
       startUrl.searchParams.set('appScope', appScope.trim());
+    }
+    if (cookieSession) {
+      startUrl.searchParams.set('sessionMode', 'cookie');
     }
     return startUrl.toString();
   }
@@ -259,5 +291,14 @@ export class OAuthService {
       this.popup.close();
     }
     this.popup = null;
+  }
+
+  private resolveCallbackOrigin(configuredOrigin?: string): string {
+    if (!configuredOrigin) return window.location.origin;
+    try {
+      return new URL(configuredOrigin).origin;
+    } catch {
+      return window.location.origin;
+    }
   }
 }

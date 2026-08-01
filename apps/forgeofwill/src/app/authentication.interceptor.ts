@@ -11,6 +11,7 @@ export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
   const token = authStateService.getToken();
 
   const clonedRequest = req.clone({
+    withCredentials: true,
     setHeaders: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'x-ot-appscope': 'forgeofwill',

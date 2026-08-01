@@ -1,11 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
-import { workspaceRoot } from '@nx/devkit';
-import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:8080';
-const headless = resolvePlaywrightHeadless(!!process.env['CI']);
+const isCI = !!process.env['CI'];
+const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:8080';
+const rawHeadless = process.env['PLAYWRIGHT_HEADLESS']?.trim().toLowerCase();
+const headless = ['1', 'true', 'yes', 'on'].includes(rawHeadless ?? '')
+  ? true
+  : ['0', 'false', 'no', 'off'].includes(rawHeadless ?? '')
+  ? false
+  : isCI;
 
 /**
  * Read environment variables from file.
@@ -21,7 +25,7 @@ export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   globalTeardown: require.resolve('./global-teardown'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  reporter: [['html', { open: 'never' }]],
+  reporter: [['html', { open: 'never', outputFolder: './playwright-report' }]],
   use: {
     baseURL,
     headless,
@@ -29,38 +33,51 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   outputDir: './test-results',
-  /* Run your local dev server before starting the tests */
-  /* For e2e tests, docker-compose (started by global-setup) handles the server */
-  /* Only start local dev server when USE_DOCKER is not set and not in CI */
-  webServer:
-    process.env['USE_DOCKER'] || process.env['CI']
-      ? undefined
-      : {
-          command:
-            'node ./node_modules/nx/bin/nx.js run client-interface:serve',
-          url: 'http://localhost:4200',
-          reuseExistingServer: true,
-          cwd: workspaceRoot,
+  // The global setup owns an isolated Docker environment for direct local E2E.
+  // CI and live-stack runs explicitly skip it, so never start an unrelated dev server.
+  webServer: undefined,
+  projects: isCI
+    ? [
+        {
+          name: 'chromium-desktop',
+          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
         },
-  projects: [
-    {
-      name: 'chromium-desktop',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
-    {
-      name: 'mobile-chrome',
-      use: {
-        ...devices['Pixel 5'],
-        channel: 'chrome',
-      },
-    },
-    {
-      name: 'tablet-chrome',
-      use: {
-        ...devices['iPad (gen 7)'],
-        browserName: 'chromium',
-        channel: 'chrome',
-      },
-    },
-  ],
+        {
+          name: 'mobile-chrome',
+          use: {
+            ...devices['Pixel 5'],
+            channel: 'chrome',
+          },
+          testIgnore: '**/responsive-audit.spec.ts',
+        },
+        {
+          name: 'tablet-chrome',
+          use: {
+            ...devices['iPad (gen 7)'],
+            browserName: 'chromium',
+            channel: 'chrome',
+          },
+          testIgnore: '**/responsive-audit.spec.ts',
+        },
+      ]
+    : [
+        {
+          name: 'chromium-desktop',
+          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+        },
+        {
+          name: 'mobile-chrome',
+          use: { ...devices['Pixel 5'], channel: 'chrome' },
+          testIgnore: '**/responsive-audit.spec.ts',
+        },
+        {
+          name: 'tablet-chrome',
+          use: {
+            ...devices['iPad (gen 7)'],
+            browserName: 'chromium',
+            channel: 'chrome',
+          },
+          testIgnore: '**/responsive-audit.spec.ts',
+        },
+      ],
 });

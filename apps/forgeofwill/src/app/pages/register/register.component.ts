@@ -80,14 +80,20 @@ export class RegisterComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'forgeofwill'
+        'forgeofwill',
+        true
       );
 
       if (result.success && (result.token || result.session)) {
         if (result.token) {
           this.authState.setToken(result.token);
-        } else {
-          await this.authState.restoreSession();
+        } else if (!(await this.authState.restoreSession())) {
+          this.messageService.addMessage({
+            content:
+              'OAuth registration could not restore your session. Please try again.',
+            type: 'error',
+          });
+          return;
         }
         await this.handlePostLogin();
       } else if (result.needsRegistration && result.userData) {

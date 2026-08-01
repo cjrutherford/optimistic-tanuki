@@ -120,6 +120,7 @@ body.personality-control-center .card-inner {
     color: var(--foreground);
     cursor: pointer;
     font: inherit;
+    min-height: 44px;
     padding: 0.35rem 0;
     text-decoration: underline;
     text-decoration-color: var(--primary);

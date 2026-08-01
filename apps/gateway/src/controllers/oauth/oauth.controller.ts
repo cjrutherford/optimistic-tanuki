@@ -71,6 +71,7 @@ type OAuthStatePayload = {
   issuedAt: number;
   /** Server-held PKCE verifier; never serialized into the browser state. */
   codeVerifier: string;
+  cookieSession?: boolean;
   /** Present only in the server-side one-time state record for link flows. */
   linkUserId?: string;
 };
@@ -129,14 +130,18 @@ export class OAuthController {
     @Res() response: Response,
     @Query('returnTo') returnTo: string | undefined,
     @Query('appScope') requestedAppScope: string | undefined,
-    @Query('domain') queryDomain: string | undefined
+    @Query('domain') queryDomain: string | undefined,
+    @Query('sessionMode') sessionMode?: string
   ) {
     return this.beginOAuthFlow(
       request,
       response,
       returnTo,
       requestedAppScope,
-      queryDomain
+      queryDomain,
+      undefined,
+      true,
+      sessionMode === 'cookie'
     );
   }
 
@@ -215,7 +220,8 @@ export class OAuthController {
     requestedAppScope: string | undefined,
     queryDomain: string | undefined,
     linkUserId?: string,
-    redirect = true
+    redirect = true,
+    cookieSession = false
   ): Promise<string> {
     const provider = String(
       (request.params as { provider?: string }).provider || ''
@@ -273,6 +279,7 @@ export class OAuthController {
       appScope,
       issuedAt: Date.now(),
       linkUserId,
+      cookieSession,
     } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
     const redirectUri = this.resolveProviderRedirectUri(provider, config);
@@ -361,7 +368,7 @@ export class OAuthController {
       this.respondInvalidOAuthCallback(response);
       return;
     }
-    const finalCallbackUrl = this.buildFinalCallbackUrl(statePayload.returnTo);
+    const finalCallbackUrl = this.buildFinalCallbackUrl();
 
     if (error) {
       response.redirect(
@@ -452,20 +459,22 @@ export class OAuthController {
           provider,
           identity
         );
-        await this.sendOAuthVerificationEmail(
-          statePayload.appScope,
-          identity.email,
-          statePayload.returnTo
-        );
-        response.redirect(
-          this.withQuery(finalCallbackUrl, {
-            error: 'email_verification_required',
-            error_description:
-              'Check your email to verify your account before signing in.',
-            returnTo: statePayload.returnTo,
-          })
-        );
-        return;
+        if (!identity.emailVerified) {
+          await this.sendOAuthVerificationEmail(
+            statePayload.appScope,
+            identity.email,
+            statePayload.returnTo
+          );
+          response.redirect(
+            this.withQuery(finalCallbackUrl, {
+              error: 'email_verification_required',
+              error_description:
+                'Check your email to verify your account before signing in.',
+              returnTo: statePayload.returnTo,
+            })
+          );
+          return;
+        }
       }
 
       if (!userId) {
@@ -497,7 +506,8 @@ export class OAuthController {
         token,
         statePayload.returnTo,
         stateId,
-        nonce!
+        nonce!,
+        statePayload.cookieSession === true
       );
       response.redirect(
         this.withQuery(finalCallbackUrl, {
@@ -545,7 +555,10 @@ export class OAuthController {
     @Body() data: { callbackCode?: unknown },
     @Req() request: Request,
     @Res({ passthrough: true }) response?: Response
-  ): Promise<{ token?: string; session?: true }> {
+  ): Promise<
+    | { token: string; returnOrigin: string }
+    | { session: true; returnOrigin: string }
+  > {
     const callbackCode =
       typeof data?.callbackCode === 'string' ? data.callbackCode : '';
     const [stateId, secret] = callbackCode.split('.');
@@ -577,7 +590,10 @@ export class OAuthController {
         HttpStatus.UNAUTHORIZED
       );
     }
-    if (request.headers['x-ot-session-mode'] === 'cookie' && response) {
+    if (
+      (grant.cookieSession || request.headers['x-ot-session-mode'] === 'cookie') &&
+      response
+    ) {
       response.cookie('ot_session', grant.token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -585,9 +601,9 @@ export class OAuthController {
         path: '/api',
         maxAge: 60 * 60 * 1000,
       });
-      return { session: true };
+      return { session: true, returnOrigin: grant.returnOrigin };
     }
-    return { token: grant.token };
+    return { token: grant.token, returnOrigin: grant.returnOrigin };
   }
 
   // Not @Public(): this mutates account state, so AuthGuard MUST reject an
@@ -723,6 +739,8 @@ export class OAuthController {
         result[provider] = {
           clientId: config.clientId,
           redirectUri: this.resolveProviderRedirectUri(provider, config),
+          callbackOrigin: new URL(this.resolveClientInterfaceCallbackBase())
+            .origin,
           scopes: config.scopes || [],
           authorizationEndpoint: config.authorizationEndpoint,
           enabled: true,
@@ -936,12 +954,16 @@ export class OAuthController {
     token: string,
     returnTo: string,
     stateId: string,
-    nonce: string
+    nonce: string,
+    cookieSession: boolean
   ): Promise<string> {
     const callbackCode = `${stateId}.${randomBytes(32).toString('base64url')}`;
     await this.oauthStateStore.createCallbackGrant(callbackCode, {
       token,
       returnOrigin: new URL(returnTo).origin,
+      redemptionOrigin: new URL(this.resolveClientInterfaceCallbackBase())
+        .origin,
+      cookieSession,
       stateId,
       nonceHash: this.hashNonce(nonce),
       expiresAt: Date.now() + this.callbackGrantTtlMs,
@@ -1064,9 +1086,8 @@ export class OAuthController {
     }
   }
 
-  private buildFinalCallbackUrl(returnTo: string): string {
-    const parsed = new URL(returnTo);
-    return `${parsed.origin}/oauth/callback`;
+  private buildFinalCallbackUrl(): string {
+    return `${this.resolveClientInterfaceCallbackBase()}/oauth/callback`;
   }
 
   private withQuery(
@@ -1353,6 +1374,7 @@ export class OAuthController {
           providerUserId: identity.providerUserId,
           providerEmail: identity.email,
           providerDisplayName: identity.displayName,
+          providerEmailVerified: identity.emailVerified,
         }
       )
     );

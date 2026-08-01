@@ -164,7 +164,10 @@ describe('OAuthCallbackComponent', () => {
       expect.not.stringContaining('callbackCode')
     );
     expect(request.request.body).toEqual({ callbackCode: 'one-time-code' });
-    request.flush({ token: 'platform-token' });
+    request.flush({
+      token: 'platform-token',
+      returnOrigin: 'https://forge.example',
+    });
     await Promise.resolve();
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -174,9 +177,55 @@ describe('OAuthCallbackComponent', () => {
           session: false,
         }),
       }),
-      window.location.origin
+      'https://forge.example'
     );
     http.verify();
     replaceState.mockRestore();
+  });
+
+  it('relays cookie-session redemption without requiring a browser-readable token', async () => {
+    const location = {
+      search: '?callbackCode=one-time-code',
+      replace: jest.fn(),
+    };
+    const postMessage = jest.fn();
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: { postMessage },
+    });
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({ callbackCode: 'one-time-code' }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+        { provide: DOCUMENT, useValue: { location } },
+      ],
+    }).compileComponents();
+
+    TestBed.runInInjectionContext(() =>
+      new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
+    );
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne('/api/oauth/callback/redeem').flush({
+      session: true,
+      returnOrigin: 'https://fin.example',
+    });
+    await Promise.resolve();
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: { success: true, session: true },
+      }),
+      'https://fin.example'
+    );
+    http.verify();
   });
 });

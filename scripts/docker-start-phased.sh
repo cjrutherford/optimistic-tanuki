@@ -42,6 +42,14 @@ if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     COMPOSE_FLAGS=("-f" "docker-compose.yaml" "-f" "docker-compose.dev.yaml")
 fi
 
+COMPOSE_UP_FLAGS=(-d --no-deps)
+if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
+    # Development services mount their app output over the image workdir. Renew
+    # anonymous dependency volumes so they are repopulated from the dev runtime
+    # image instead of retaining a production image's incomplete dependencies.
+    COMPOSE_UP_FLAGS+=(--renew-anon-volumes)
+fi
+
 CORE_SERVICES=(
     authentication
 )
@@ -172,7 +180,7 @@ for (const service of plan.restartServices || []) {
     else
         echo "=== Starting missing managed services ==="
     fi
-    run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
+    run_compose up "${COMPOSE_UP_FLAGS[@]}" "${EXTRA_FLAGS[@]}" "${RESTART_ARRAY[@]}"
     echo ""
     run_compose ps
     rm -f "$PLAN_FILE"
@@ -190,7 +198,7 @@ run_phase() {
     fi
 
     echo "=== $description ==="
-    run_compose up -d --no-deps "${EXTRA_FLAGS[@]}" "${services[@]}"
+    run_compose up "${COMPOSE_UP_FLAGS[@]}" "${EXTRA_FLAGS[@]}" "${services[@]}"
     if [ "$DRY_RUN" -eq 0 ] && [ "$phase_delay" -gt 0 ]; then
         sleep "$phase_delay"
     fi

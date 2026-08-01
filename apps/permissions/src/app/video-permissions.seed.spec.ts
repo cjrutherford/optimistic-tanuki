@@ -96,7 +96,7 @@ describe('video-client permission seeds', () => {
         }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'community.join' &&
-          entry.permissionAppScope === 'video-client'
+          entry.permissionAppScope === 'community'
       )
     ).toBe(true);
 
@@ -109,7 +109,7 @@ describe('video-client permission seeds', () => {
         }) =>
           entry.role === 'video_client_member' &&
           entry.permission === 'social.post.create' &&
-          entry.permissionAppScope === 'video-client'
+          entry.permissionAppScope === 'social'
       )
     ).toBe(true);
   });

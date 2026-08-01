@@ -147,13 +147,15 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    let token: string | undefined;
-    let session = false;
+    let redemption: { token?: string; session?: true; returnOrigin?: string };
     try {
       if (!this.http) throw new Error('HTTP client is unavailable');
       this.removeCallbackParametersFromHistory();
       const result = await firstValueFrom(
-        this.http.post<{ token?: string; session?: boolean }>(
+        this.http.post<{
+          token?: string;
+          session?: true;
+          returnOrigin?: string;
           `${this.apiBaseUrl}/oauth/callback/redeem`,
           { callbackCode },
           {
@@ -162,11 +164,13 @@ export class OAuthCallbackComponent implements OnInit {
           }
         )
       );
-      if (!result?.token && !result?.session) {
+      if (
+        (!result?.token && result?.session !== true) ||
+        !this.isTrustedReturnOrigin(result?.returnOrigin)
+      ) {
         throw new Error('No authentication session received');
       }
-      token = result.token;
-      session = result.session === true;
+      redemption = result;
     } catch {
       this.error = 'Authentication could not be completed';
       this.sendMessageToParent({
@@ -179,14 +183,18 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    this.sendMessageToParent({
-      type: 'oauth-callback',
-      payload: {
-        success: true,
-        token,
-        session,
+    this.sendMessageToParent(
+      {
+        type: 'oauth-callback',
+        payload: {
+          success: true,
+          ...(redemption.token
+            ? { token: redemption.token }
+            : { session: true as const }),
+        },
       },
-    });
+      redemption.returnOrigin
+    );
 
     if (!window.opener && returnTo) {
       try {
@@ -213,13 +221,29 @@ export class OAuthCallbackComponent implements OnInit {
     );
   }
 
-  private sendMessageToParent(message: any): void {
+  private isTrustedReturnOrigin(origin: string | undefined): origin is string {
+    if (!origin) return false;
+    try {
+      return new URL(origin).origin === origin;
+    } catch {
+      return false;
+    }
+  }
+
+  private sendMessageToParent(
+    message: any,
+    targetOrigin = window.location.origin
+  ): void {
     if (window.opener) {
-      window.opener.postMessage(message, window.location.origin);
+      window.opener.postMessage(message, targetOrigin);
       // Close the popup after a short delay to allow the message to be processed
       setTimeout(() => {
         window.close();
       }, 1000);
+    } else if (message?.payload?.success) {
+      // Cookie-mode callers can restore the session after observing the popup
+      // close even when browser cross-origin isolation removes window.opener.
+      setTimeout(() => window.close(), 1000);
     } else if (!message?.payload?.success) {
       this.error = 'Unable to communicate with parent window';
     }

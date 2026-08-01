@@ -62,6 +62,8 @@ describe('authenticationInterceptor', () => {
     expect(testReq.request.headers.get('Authorization')).toBe(
       'Bearer test-token'
     );
+    expect(testReq.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(testReq.request.withCredentials).toBe(true);
     testReq.flush({});
     tick();
   }));

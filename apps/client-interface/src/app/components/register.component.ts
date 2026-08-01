@@ -82,7 +82,8 @@ export class RegisterComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'client-interface'
+        'client-interface',
+        true
       );
 
       if (result.success && (result.token || result.session)) {
