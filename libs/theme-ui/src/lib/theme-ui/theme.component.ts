@@ -1,10 +1,12 @@
 import {
   Component,
+  HostListener,
   OnDestroy,
   OnInit,
   ViewContainerRef,
   inject,
 } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { Subject, filter, takeUntil } from 'rxjs';
 
 import { FormsModule } from '@angular/forms';
@@ -23,7 +25,7 @@ import { PersonalitySelectorComponent } from './personality-selector.component';
 @Component({
   selector: 'lib-theme-toggle',
   standalone: true,
-  imports: [FormsModule, CommonModule, OverlayModule],
+  imports: [FormsModule, CommonModule, OverlayModule, A11yModule],
   templateUrl: './theme.component.html',
   styleUrl: './theme.component.scss',
   host: {
@@ -45,6 +47,7 @@ import { PersonalitySelectorComponent } from './personality-selector.component';
   },
 })
 export class ThemeToggleComponent implements OnInit, OnDestroy {
+  private static nextControlsId = 0;
   theme: 'light' | 'dark';
   accentColor = '#ff4081';
   background = 'var(--background, #ffffff)';
@@ -65,6 +68,8 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   personalities = PREDEFINED_PERSONALITIES;
   currentPersonality: Personality | null = null;
   showPersonalityPicker = false;
+  showControls = false;
+  readonly controlsId = `appearance-controls-${ThemeToggleComponent.nextControlsId++}`;
 
   private overlayRef: OverlayRef | null = null;
 
@@ -136,6 +141,20 @@ export class ThemeToggleComponent implements OnInit, OnDestroy {
   toggleTheme() {
     this.theme = this.theme === 'light' ? 'dark' : 'light';
     this.themeService.setTheme(this.theme);
+  }
+
+  toggleControls() {
+    this.showControls = !this.showControls;
+  }
+
+  closeControls() {
+    this.showControls = false;
+  }
+
+  @HostListener('document:keydown.escape')
+  handleEscape() {
+    this.closeControls();
+    this.closePersonalityPicker();
   }
 
   updateAccentColor() {

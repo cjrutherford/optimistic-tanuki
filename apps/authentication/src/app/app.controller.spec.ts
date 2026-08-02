@@ -470,7 +470,8 @@ describe('AppController', () => {
         'google',
         'google-123',
         undefined,
-        undefined
+        undefined,
+        false
       );
       expect(response).toEqual({
         message: 'Provider google linked successfully',

@@ -13,7 +13,7 @@ import {
   CreateAppScopeDto,
 } from '@optimistic-tanuki/models';
 
-type SeedData = {
+export type SeedData = {
   app_scopes: { name: string; description: string; active: boolean }[];
   permissions: {
     name: string;
@@ -38,7 +38,60 @@ type SeedData = {
 
 const seedData: SeedData = seedDataRaw as unknown as SeedData;
 
+function permissionKey(name: string, appScope?: string): string {
+  return `${name}\u0000${appScope ?? ''}`;
+}
+
+export function validateSeedData(data: SeedData): void {
+  const declaredAppScopes = new Set(data.app_scopes.map((scope) => scope.name));
+  const declaredRoles = new Set(data.roles.map((role) => role.name));
+  const declaredPermissions = new Set(
+    data.permissions.map((permission) =>
+      permissionKey(permission.name, permission.appScope)
+    )
+  );
+  const errors: string[] = [];
+
+  for (const permission of data.permissions) {
+    if (permission.appScope && !declaredAppScopes.has(permission.appScope)) {
+      errors.push(
+        `permission "${permission.name}" references undeclared app scope "${permission.appScope}"`
+      );
+    }
+  }
+
+  for (const role of data.roles) {
+    if (!declaredAppScopes.has(role.appScope)) {
+      errors.push(
+        `role "${role.name}" references undeclared app scope "${role.appScope}"`
+      );
+    }
+  }
+
+  for (const association of data.role_permissions) {
+    if (!declaredRoles.has(association.role)) {
+      errors.push(`role "${association.role}" is not declared`);
+    }
+
+    if (
+      !declaredPermissions.has(
+        permissionKey(association.permission, association.permissionAppScope)
+      )
+    ) {
+      errors.push(
+        `permission "${association.permission}" is not declared in app scope "${association.permissionAppScope}"`
+      );
+    }
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Invalid permissions seed data:\n- ${errors.join('\n- ')}`);
+  }
+}
+
 async function main() {
+  validateSeedData(seedData);
+
   const app = await NestFactory.createApplicationContext(AppModule);
 
   try {
@@ -296,8 +349,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error('Unhandled error during seeding:', error);
-  console.error('Stack trace:', error.stack);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Unhandled error during seeding:', error);
+    console.error('Stack trace:', error.stack);
+    process.exit(1);
+  });
+}

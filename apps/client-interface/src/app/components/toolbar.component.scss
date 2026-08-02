@@ -7,18 +7,23 @@
   background: var(--surface, var(--background));
   border-bottom: 1px solid var(--border);
   gap: var(--spacing-md, 16px);
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .toolbar-branding {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm, 8px);
+  min-width: 0;
 }
 
 .toolbar-actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm, 8px);
+  margin-left: auto;
+  min-width: 0;
 }
 
 .nav-button {
@@ -45,4 +50,15 @@
   font-weight: 600;
   color: var(--foreground);
   letter-spacing: -0.02em;
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    padding-inline: var(--spacing-sm, 8px);
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .brand-title {
+    display: none;
+  }
 }

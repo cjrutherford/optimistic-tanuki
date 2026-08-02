@@ -13,6 +13,7 @@
   max-width: none;
   margin: 0;
   padding: var(--spacing-lg);
+  box-sizing: border-box;
 
   @media (max-width: 640px) {
     padding: var(--spacing-sm);

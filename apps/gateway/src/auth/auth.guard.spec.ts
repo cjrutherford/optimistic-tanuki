@@ -311,4 +311,25 @@ describe('AuthGuard', () => {
       expect(permissionsClient.send).not.toHaveBeenCalled();
     });
   });
+
+  it('authenticates a protected request from the HttpOnly session cookie', async () => {
+    clientProxy.send = jest.fn().mockReturnValue(of({ isValid: true }));
+    const request: {
+      headers: Record<string, string>;
+      cookies: Record<string, string>;
+      user?: unknown;
+    } = {
+      headers: {},
+      cookies: { ot_session: 'cookie-token' },
+    };
+    const context = {
+      switchToHttp: () => ({ getRequest: () => request }),
+      getHandler: jest.fn(),
+      getClass: jest.fn(),
+    } as unknown as jest.Mocked<ExecutionContext>;
+
+    await expect(authGuard.canActivate(context)).resolves.toBe(true);
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token');
+    expect(request.user).toEqual(expect.objectContaining({ userId: '123450' }));
+  });
 });

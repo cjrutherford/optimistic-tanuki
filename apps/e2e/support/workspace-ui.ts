@@ -1,4 +1,4 @@
-import { expect, Locator, Page } from '@playwright/test';
+import { expect, Locator, Page, Response } from '@playwright/test';
 
 const TEST_IMAGE_BUFFER = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9sXnVd0AAAAASUVORK5CYII=',
@@ -37,13 +37,22 @@ export async function openProfileEditorFromSettings(
   page: Page
 ): Promise<Locator> {
   await page.goto('/settings');
-  await page.waitForLoadState('networkidle');
+  await expect(page).toHaveURL(/\/settings/);
 
   const trigger = page.locator('[data-profile-editor-trigger]').first();
   await expect(trigger).toBeVisible();
   await trigger.click();
 
-  const dialog = page.locator('.modal-dialog[aria-modal="true"]').first();
+  // The shared modal component exposes its accessible dialog on the page;
+  // some clients render it inside `otui-modal`, while others render the
+  // accessible host directly.  Target the public dialog contract rather than
+  // an implementation tag so this fixture stays cross-client compatible.
+  const dialog = page
+    .locator(
+      'otui-modal:visible, [role="dialog"]:visible, [role="alertdialog"]:visible'
+    )
+    .filter({ has: page.getByRole('heading', { name: 'Edit Profile' }) })
+    .first();
   await expect(dialog).toBeVisible();
   return dialog;
 }
@@ -57,13 +66,40 @@ export async function uploadTestImage(input: Locator): Promise<void> {
 }
 
 export async function submitProfileEditor(page: Page): Promise<void> {
-  const submitButton = page
-    .locator('otui-modal .dialog-actions otui-button[variant="success"]')
+  const dialog = page
+    .locator(
+      'otui-modal:visible, [role="dialog"]:visible, [role="alertdialog"]:visible'
+    )
+    .filter({ has: page.getByRole('heading', { name: 'Edit Profile' }) })
     .first();
-  await expect(submitButton).toBeAttached();
-  await submitButton.evaluate((element) => {
-    (element as HTMLElement).click();
-  });
+  await expect(dialog).toBeVisible();
+  const submitButton = dialog.getByRole('button', { name: 'Submit' }).first();
+  await expect(submitButton).toBeVisible();
+  await submitButton.click();
+}
+
+function isApiResponse(response: Response, path: string): boolean {
+  return response.url().includes(path);
+}
+
+async function responseDetails(response: Response): Promise<string> {
+  let body = '<unavailable>';
+  try {
+    body = (await response.text()).slice(0, 1_000);
+  } catch {
+    // The response can be consumed by the app before diagnostics are captured.
+  }
+  return `${response
+    .request()
+    .method()} ${response.url()} -> ${response.status()} ${body}`;
+}
+
+async function expectSuccessfulResponse(
+  response: Response,
+  action: string
+): Promise<void> {
+  const details = await responseDetails(response);
+  expect(response.ok(), `${action} failed; observed ${details}`).toBeTruthy();
 }
 
 export async function registerAndCreateProfile(
@@ -89,64 +125,70 @@ export async function registerAndCreateProfile(
   await page
     .locator('lib-text-input[formControlName="email"] input')
     .fill(options.email);
-  await page
-    .locator('lib-text-input[formControlName="password"] input')
-    .fill(options.password);
+  const registerPasswordInput = page.locator(
+    'lib-text-input[formControlName="password"] input'
+  );
+  await registerPasswordInput.fill(options.password);
   await page
     .locator('lib-text-input[formControlName="confirmation"] input')
     .fill(options.password);
 
-  await page.click(
-    'otui-button[type="submit"], otui-button:has-text("Register")',
-    {
-      force: true,
-    }
+  const registerResponsePromise = page.waitForResponse((response) =>
+    isApiResponse(response, '/authentication/register')
   );
-
-  await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+  await page.getByRole('button', { name: /register/i }).click();
+  const registerResponse = await registerResponsePromise;
+  if (registerResponse.status() === 409) {
+    // The test may be retried after the account was persisted but before the
+    // original browser completed its redirect. Reuse that account safely.
+    await page.goto('/login');
+  } else {
+    await expectSuccessfulResponse(registerResponse, 'registration');
+    await expect(page).toHaveURL(/\/login/);
+  }
 
   await page
     .locator('lib-text-input[formControlName="email"] input')
     .fill(options.email);
-  await page
-    .locator('lib-text-input[formControlName="password"] input')
-    .fill(options.password);
-
-  await page.click(
-    'otui-button[type="submit"], otui-button:has-text("Login")',
-    {
-      force: true,
-    }
+  const loginPasswordInput = page.locator(
+    'lib-text-input[formControlName="password"] input'
   );
+  await loginPasswordInput.fill(options.password);
+
+  const loginResponsePromise = page.waitForResponse((response) =>
+    isApiResponse(response, '/authentication/login')
+  );
+  // The login card animates into place, which can keep the submit button's
+  // bounding box unstable even though the native form is ready. Submitting
+  // from the focused password field follows the normal user/browser form path
+  // without depending on a transient pointer target.
+  await loginPasswordInput.press('Enter');
+  await expectSuccessfulResponse(await loginResponsePromise, 'login');
 
   await page.waitForURL((url) => !url.pathname.endsWith('/login'), {
     timeout: 15000,
   });
 
-  if (!page.url().includes('/settings')) {
-    await page.goto('/settings');
-  }
+  const dialog = await openProfileEditorFromSettings(page);
 
-  await page.waitForLoadState('networkidle');
-
-  const profileNameInput = page
+  const profileNameInput = dialog
     .locator('lib-text-input[formControlName="profileName"] input')
     .first();
   await expect(profileNameInput).toBeVisible();
   await profileNameInput.fill(options.profileName);
 
-  const bioInput = page
-    .locator('lib-text-input[formControlName="bio"] input')
+  const bioInput = dialog
+    .locator('lib-text-area[formControlName="bio"] textarea')
     .first();
-  if (await bioInput.isVisible()) {
-    await bioInput.fill(options.bio ?? '');
-  }
+  await expect(bioInput).toBeVisible();
+  await bioInput.fill(options.bio ?? '');
 
-  const submitButton = page.getByRole('button', { name: /submit/i }).first();
-  await expect(submitButton).toBeVisible();
-  await submitButton.click({ force: true });
-
-  await page.waitForURL(/\/feed/, { timeout: 15000 }).catch(async () => {
-    await page.waitForTimeout(1000);
-  });
+  const profileResponsePromise = page.waitForResponse(
+    (response) =>
+      isApiResponse(response, '/api/profile') &&
+      ['POST', 'PUT'].includes(response.request().method())
+  );
+  await submitProfileEditor(page);
+  await expectSuccessfulResponse(await profileResponsePromise, 'profile save');
+  await expect(dialog).not.toBeVisible();
 }

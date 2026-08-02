@@ -4,7 +4,10 @@ import { workspaceRoot } from '@nx/devkit';
 import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 // For CI, you may want to set BASE_URL to the deployed application.
-const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
+const isCI = !!process.env['CI'];
+const baseURL =
+  process.env['BASE_URL'] ||
+  (isCI ? 'http://127.0.0.1:8081' : 'http://localhost:4200');
 const headless = resolvePlaywrightHeadless(!!process.env['CI']);
 
 /**
@@ -21,7 +24,8 @@ export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   globalTeardown: require.resolve('./global-teardown'),
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  reporter: [['html', { open: 'never' }]],
+  reporter: [['html', { open: 'never', outputFolder: './playwright-report' }]],
+  outputDir: './test-results',
   use: {
     baseURL,
     headless,
@@ -37,10 +41,17 @@ export default defineConfig({
         reuseExistingServer: true,
         cwd: workspaceRoot,
       },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
-  ],
+  projects: isCI
+    ? [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+        },
+      ]
+    : [
+        {
+          name: 'chromium',
+          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+        },
+      ],
 });

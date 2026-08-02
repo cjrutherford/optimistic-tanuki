@@ -41,4 +41,41 @@ describe('OAuthService', () => {
       token: 'platform-token',
     });
   });
+
+  it('accepts a cookie-session callback without requiring a browser-readable token', async () => {
+    const popup = { closed: false, close: jest.fn() } as unknown as Window;
+    jest.spyOn(window, 'open').mockReturnValue(popup);
+
+    await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        OAuthService,
+        { provide: 'API_BASE_URL', useValue: '/api' },
+      ],
+    }).compileComponents();
+    const service = TestBed.inject(OAuthService);
+    service.configureProviders({ google: { clientId: 'google-client-id' } });
+
+    const login = service.initiateOAuthLogin(
+      'google',
+      'client-interface',
+      true
+    );
+    expect(
+      new URL(
+        jest.mocked(window.open).mock.calls[0][0] as string
+      ).searchParams.get('sessionMode')
+    ).toBe('cookie');
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        data: {
+          type: 'oauth-callback',
+          payload: { success: true, session: true },
+        },
+      })
+    );
+
+    await expect(login).resolves.toEqual({ success: true, session: true });
+  });
 });

@@ -1,11 +1,10 @@
 import { FullConfig } from '@playwright/test';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join } from 'path';
+import {
+  shouldManageE2eEnvironment,
+  stopClientInterfaceE2eEnvironment,
+} from './e2e-lifecycle';
 
-const execAsync = promisify(exec);
-
-async function globalTeardown(config: FullConfig) {
+async function globalTeardown(_config: FullConfig) {
   if (process.env['CI']) {
     console.log(
       '\n[Playwright Global Teardown] Skipping docker-compose cleanup because CI environment detected'
@@ -20,15 +19,14 @@ async function globalTeardown(config: FullConfig) {
     return;
   }
 
-  const composeFile = join(
-    __dirname,
-    '../../e2e/docker-compose.client-interface-e2e.yaml'
+  if (!shouldManageE2eEnvironment()) return;
+
+  console.log(
+    '\n[Playwright Global Teardown] Stopping isolated E2E environment'
   );
-  console.log(`
-[Playwright Global Teardown] Stopping docker-compose: ${composeFile}`);
 
   try {
-    await execAsync(`docker compose -f ${composeFile} down -v`);
+    await stopClientInterfaceE2eEnvironment();
     console.log('Cleanup complete.');
   } catch (error) {
     console.error('Error during teardown:', error);

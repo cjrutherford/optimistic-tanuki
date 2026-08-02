@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ChatGateway } from './chat.gateway';
 import { LoggerModule } from '@optimistic-tanuki/logger';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Socket, Server } from 'socket.io';
 import { ChatMessage } from '@optimistic-tanuki/models';
 
@@ -119,6 +119,45 @@ describe('ChatGateway', () => {
         { cmd: ChatCommands.GET_CONVERSATIONS },
         { profileId: 'sender-id' }
       );
+    });
+
+    it('still persists and broadcasts human messages when persona classification is unavailable', async () => {
+      const payload: ChatMessage = {
+        id: 'msg-id',
+        senderId: 'sender-id',
+        senderName: 'sender-name',
+        recipientId: ['recipient-id'],
+        recipientName: ['recipient-name'],
+        conversationId: 'conv-id',
+        content: 'hello',
+        timestamp: new Date(),
+        type: 'chat',
+        role: 'user',
+      };
+      const messageReceipt = { id: 'msg-1' };
+      const conversations = [{ id: 'conv-id' }];
+
+      telosDocsService.send.mockReturnValue(
+        throwError(() => new Error('TELOS unavailable'))
+      );
+      chatCollectorService.send
+        .mockReturnValueOnce(of(messageReceipt))
+        .mockReturnValueOnce(of(conversations));
+
+      await expect(
+        gateway.handleMessage(payload, socket)
+      ).resolves.toBeUndefined();
+
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.POST_MESSAGE },
+        payload
+      );
+      expect(aiOrchestrationService.send).not.toHaveBeenCalled();
+      expect(chatCollectorService.send).toHaveBeenCalledWith(
+        { cmd: ChatCommands.GET_CONVERSATIONS },
+        { profileId: 'sender-id' }
+      );
+      expect(socket.emit).toHaveBeenCalledWith('conversations', conversations);
     });
 
     it('should handle a message with AI recipients', async () => {

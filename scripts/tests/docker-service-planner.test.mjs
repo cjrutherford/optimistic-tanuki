@@ -303,6 +303,74 @@ test('docker-build-batched.sh accepts explicit service filters', () => {
   assert.doesNotMatch(result.stdout, /client-interface/);
 });
 
+test('docker-build-batched.sh accepts a Compose profile for profiled UI services', () => {
+  const script = fs.readFileSync(
+    path.join(repoRoot, 'scripts/docker-build-batched.sh'),
+    'utf8'
+  );
+
+  assert.match(script, /--profile\)[\s\S]*COMPOSE_PROFILE="\$2"/);
+  assert.match(script, /COMPOSE_FLAGS\+=\(--profile "\$COMPOSE_PROFILE"\)/);
+});
+
+test('development startup rebuilds runtime images that were overwritten by production builds', () => {
+  const buildScript = fs.readFileSync(
+    path.join(repoRoot, 'scripts/docker-build-batched.sh'),
+    'utf8'
+  );
+
+  assert.match(
+    buildScript,
+    /com\.optimistic-tanuki\.runtime=development/,
+    'expected the build planner to require a development runtime marker'
+  );
+  assert.match(
+    buildScript,
+    /dev-runtime-image-mismatch/,
+    'expected stale production-tagged images to be rebuilt for development'
+  );
+});
+
+test('development runtime images carry the marker required by startup validation', () => {
+  for (const dockerfile of [
+    'docker/dev/node-runtime.Dockerfile',
+    'docker/dev/ssr-runtime.Dockerfile',
+  ]) {
+    const contents = fs.readFileSync(path.join(repoRoot, dockerfile), 'utf8');
+    assert.match(contents, /com\.optimistic-tanuki\.runtime=development/);
+  }
+});
+
+test('source-built client dependencies avoid recursive ownership rewrites', () => {
+  for (const app of [
+    'ai-orchestrator',
+    'app-configurator',
+    'assets',
+    'authentication',
+    'blogging',
+    'chat-collector',
+    'client-interface',
+    'forum',
+    'gateway',
+    'lead-tracker',
+    'permissions',
+    'profile',
+    'project-planning',
+    'prompt-proxy',
+    'social',
+    'store',
+    'telos-docs-service',
+  ]) {
+    const dockerfile = fs.readFileSync(
+      path.join(repoRoot, 'apps', app, 'Dockerfile'),
+      'utf8'
+    );
+
+    assert.doesNotMatch(dockerfile, /RUN chown -R node:node \./, app);
+    assert.doesNotMatch(dockerfile, /pnpm add -w/, app);
+  }
+});
+
 test('docker-start-phased.sh dry run still executes the full phased startup path without a plan file', () => {
   const result = spawnSync(
     'bash',

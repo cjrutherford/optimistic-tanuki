@@ -76,9 +76,9 @@ export class AuthStateService {
     return response;
   }
 
-  async restoreSession(): Promise<void> {
+  async restoreSession(): Promise<boolean> {
     if (!isPlatformBrowser(this.platformId)) {
-      return;
+      return false;
     }
 
     try {
@@ -87,11 +87,13 @@ export class AuthStateService {
       this.isAuthenticatedSubject.next(true);
       this.decodedTokenSubject.next(response.data.user as UserData);
       this._isAuthenticated = true;
+      return true;
     } catch {
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(false);
       this.decodedTokenSubject.next(null);
       this._isAuthenticated = false;
+      return false;
     }
   }
 
@@ -124,6 +126,7 @@ export class AuthStateService {
     this.tokenSubject.next(null);
     this.isAuthenticatedSubject.next(false);
     this.decodedTokenSubject.next(null);
+    this._isAuthenticated = false;
   }
 
   private getDecodedToken(): UserData | null {

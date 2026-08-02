@@ -121,7 +121,8 @@ export class OAuthService {
     provider: string,
     providerUserId: string,
     providerEmail?: string,
-    providerDisplayName?: string
+    providerDisplayName?: string,
+    providerEmailVerified = false
   ) {
     try {
       this.l.debug(`Linking provider=${provider} to userId=${userId}`);
@@ -158,6 +159,19 @@ export class OAuthService {
         providerDisplayName,
         userId,
       });
+
+      // Only the gateway receives the provider's verification claim. Even for
+      // that trusted internal path, require an exact email match before a
+      // linked identity can establish platform email verification.
+      if (
+        providerEmailVerified &&
+        providerEmail &&
+        !user.emailVerifiedAt &&
+        user.email.trim().toLowerCase() === providerEmail.trim().toLowerCase()
+      ) {
+        user.emailVerifiedAt = new Date();
+        await this.userRepo.save(user);
+      }
 
       return {
         message: `Provider ${provider} linked successfully`,

@@ -13,6 +13,7 @@ export type StoredOAuthState = {
     appScope: string;
     issuedAt: number;
     codeVerifier: string;
+    cookieSession?: boolean;
     linkUserId?: string;
   };
   nonceHash: string;
@@ -22,6 +23,8 @@ export type StoredOAuthState = {
 export type StoredOAuthCallbackGrant = {
   token: string;
   returnOrigin: string;
+  redemptionOrigin: string;
+  cookieSession?: boolean;
   stateId: string;
   nonceHash: string;
   expiresAt: number;
@@ -36,7 +39,7 @@ export interface OAuthStateStore {
   ): Promise<void>;
   consumeCallbackGrant(
     code: string,
-    returnOrigin: string,
+    redemptionOrigin: string,
     stateId: string,
     nonceHash: string
   ): Promise<StoredOAuthCallbackGrant | undefined>;
@@ -133,7 +136,7 @@ export class LocalOAuthStateStore implements OAuthStateStore {
 
   async consumeCallbackGrant(
     code: string,
-    returnOrigin: string,
+    redemptionOrigin: string,
     stateId: string,
     nonceHash: string
   ): Promise<StoredOAuthCallbackGrant | undefined> {
@@ -143,7 +146,7 @@ export class LocalOAuthStateStore implements OAuthStateStore {
       return undefined;
     }
     if (
-      grant.returnOrigin !== returnOrigin ||
+      grant.redemptionOrigin !== redemptionOrigin ||
       grant.stateId !== stateId ||
       grant.nonceHash !== nonceHash
     )
@@ -256,17 +259,17 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
 
   async consumeCallbackGrant(
     code: string,
-    returnOrigin: string,
+    redemptionOrigin: string,
     stateId: string,
     nonceHash: string
   ): Promise<StoredOAuthCallbackGrant | undefined> {
     this.requireConnection();
     const value = await this.client.sendCommand([
       'EVAL',
-      "local value=redis.call('GET', KEYS[1]); if not value then return nil end; local grant=cjson.decode(value); if grant.returnOrigin ~= ARGV[1] or grant.stateId ~= ARGV[2] or grant.nonceHash ~= ARGV[3] then return nil end; redis.call('DEL', KEYS[1]); return value",
+      "local value=redis.call('GET', KEYS[1]); if not value then return nil end; local grant=cjson.decode(value); if grant.redemptionOrigin ~= ARGV[1] or grant.stateId ~= ARGV[2] or grant.nonceHash ~= ARGV[3] then return nil end; redis.call('DEL', KEYS[1]); return value",
       '1',
       `${this.callbackGrantPrefix}${code}`,
-      returnOrigin,
+      redemptionOrigin,
       stateId,
       nonceHash,
     ]);

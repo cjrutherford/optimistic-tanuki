@@ -15,7 +15,9 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (url.includes('/api/blog')) {
+  if (url.includes('/api/social')) {
+    appScope = 'social';
+  } else if (url.includes('/api/blog')) {
     appScope = 'blogging';
   } else if (url.includes('/api/project')) {
     appScope = 'project-planning';
@@ -27,6 +29,8 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     setHeaders: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'X-ot-appscope': appScope,
+      // This client has cookie-session restoration support. Other clients
+      // intentionally keep the token redemption contract until migrated.
       'X-ot-session-mode': 'cookie',
     },
     withCredentials: true,

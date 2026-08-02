@@ -126,6 +126,15 @@ const mergeOAuthProviderConfig = (
     envValue(`${prefix}_CLIENT_SECRET`) ?? configValue(baseConfig.clientSecret);
   const redirectUri =
     envValue(`${prefix}_REDIRECT_URI`) ?? configValue(baseConfig.redirectUri);
+  const authorizationEndpoint =
+    envValue(`${prefix}_AUTHORIZATION_ENDPOINT`) ??
+    configValue(baseConfig.authorizationEndpoint);
+  const tokenEndpoint =
+    envValue(`${prefix}_TOKEN_ENDPOINT`) ??
+    configValue(baseConfig.tokenEndpoint);
+  const userInfoEndpoint =
+    envValue(`${prefix}_USER_INFO_ENDPOINT`) ??
+    configValue(baseConfig.userInfoEndpoint);
 
   if (
     !hasOAuthProviderConfigValues(baseConfig) &&
@@ -141,6 +150,9 @@ const mergeOAuthProviderConfig = (
     clientId,
     clientSecret,
     redirectUri,
+    authorizationEndpoint,
+    tokenEndpoint,
+    userInfoEndpoint,
     enabled: baseConfig.enabled !== false && Boolean(clientId && clientSecret),
   };
 };

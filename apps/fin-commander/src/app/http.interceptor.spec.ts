@@ -48,6 +48,8 @@ describe('AuthInterceptor', () => {
     expect(forwardedRequest?.headers.get('Authorization')).toBe(
       'Bearer fin-token'
     );
+    expect(forwardedRequest?.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(forwardedRequest?.withCredentials).toBe(true);
   });
 
   it('adds the finance app scope header to finance api requests', async () => {

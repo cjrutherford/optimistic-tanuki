@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { jwtDecode } from 'jwt-decode';
 import {
   API_BASE_URL,
   LoginRequest,
@@ -84,19 +85,21 @@ export class AuthStateService {
     return response;
   }
 
-  async restoreSession(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return false;
     try {
       const response = await this.authService.currentSession();
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
       this.decodedTokenSubject.next(response.data.user as UserData);
       this.isAuthenticatedValue = true;
+      return true;
     } catch {
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(false);
       this.decodedTokenSubject.next(null);
       this.isAuthenticatedValue = false;
+      return false;
     }
   }
 

@@ -72,6 +72,10 @@ export function emailAuthRoutes(
         <a class="email-action-link" [routerLink]="continuationPath">
           Continue to sign in
         </a>
+        } @if (token && state === 'error' && purpose !== 'password-reset') {
+        <button type="button" class="email-action-retry" (click)="retry()">
+          Try again
+        </button>
         }
       </section>
     </main>

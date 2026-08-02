@@ -36,6 +36,7 @@ describe('OAuthService', () => {
           provide: getRepositoryToken(UserEntity),
           useValue: {
             findOne: jest.fn(),
+            save: jest.fn(),
           },
         },
         {
@@ -304,6 +305,59 @@ describe('OAuthService', () => {
       await expect(
         service.linkProvider('user-1', 'github', 'github-456')
       ).rejects.toThrow(RpcException);
+    });
+
+    it('marks a matching account email verified when the gateway attests the linked provider email', async () => {
+      const user = {
+        id: 'user-1',
+        email: 'person@example.com',
+        emailVerifiedAt: null,
+      };
+      (userRepo.findOne as jest.Mock).mockResolvedValue(user);
+      (oauthRepo.findOne as jest.Mock)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      (oauthRepo.save as jest.Mock).mockResolvedValue({ id: 'oauth-1' });
+
+      await service.linkProvider(
+        'user-1',
+        'google',
+        'google-123',
+        'person@example.com',
+        'Person Example',
+        true
+      );
+
+      expect(userRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'user-1',
+          emailVerifiedAt: expect.any(Date),
+        })
+      );
+    });
+
+    it('does not mark a mismatched provider email verified', async () => {
+      const user = {
+        id: 'user-1',
+        email: 'person@example.com',
+        emailVerifiedAt: null,
+      };
+      (userRepo.findOne as jest.Mock).mockResolvedValue(user);
+      (oauthRepo.findOne as jest.Mock)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      (oauthRepo.save as jest.Mock).mockResolvedValue({ id: 'oauth-1' });
+
+      await service.linkProvider(
+        'user-1',
+        'google',
+        'google-123',
+        'other@example.com',
+        'Person Example',
+        true
+      );
+
+      expect(userRepo.save).not.toHaveBeenCalled();
     });
   });
 

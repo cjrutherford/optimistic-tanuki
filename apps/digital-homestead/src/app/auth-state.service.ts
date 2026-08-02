@@ -83,8 +83,8 @@ export class AuthStateService {
     return response;
   }
 
-  async restoreSession(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return;
+  async restoreSession(): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return false;
     try {
       const response = await firstValueFrom(
         this.http.get<{ data: { user: UserData } }>(
@@ -92,15 +92,15 @@ export class AuthStateService {
           { withCredentials: true }
         )
       );
+      const user = response?.data?.user;
+      if (!user?.userId) return false;
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
-      this.decodedTokenSubject.next(response.data.user);
+      this.decodedTokenSubject.next(user);
       this._isAuthenticated = true;
+      return true;
     } catch {
-      this.tokenSubject.next(null);
-      this.isAuthenticatedSubject.next(false);
-      this.decodedTokenSubject.next(null);
-      this._isAuthenticated = false;
+      return false;
     }
   }
 

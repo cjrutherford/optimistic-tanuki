@@ -42,7 +42,8 @@ export class AuthStateService {
     }
   }
 
-  async restoreSession(): Promise<void> {
+  async restoreSession(): Promise<boolean> {
+    if (!this.isBrowser()) return false;
     try {
       const response = await firstValueFrom(
         this.http.get<{ data: { user: any } }>('/api/authentication/session', {
@@ -52,10 +53,12 @@ export class AuthStateService {
       this._token.set(null);
       this._user.set(response.data.user);
       this._isAuthenticated.set(true);
+      return true;
     } catch {
       this._token.set(null);
       this._user.set(null);
       this._isAuthenticated.set(false);
+      return false;
     }
   }
 

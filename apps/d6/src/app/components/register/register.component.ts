@@ -147,11 +147,16 @@ export class RegisterComponent {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'd6'
+        'd6',
+        true
       );
 
-      if (result.success && result.token) {
-        this.authState.setToken(result.token);
+      if (result.success && (result.token || result.session)) {
+        if (result.token) this.authState.setToken(result.token);
+        else if (!(await this.authState.restoreSession())) {
+          this.error.set('OAuth login could not restore your session.');
+          return;
+        }
         await this.router.navigate(['/dashboard']);
         return;
       }

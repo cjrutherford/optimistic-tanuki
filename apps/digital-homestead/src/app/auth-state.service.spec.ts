@@ -87,6 +87,20 @@ describe('AuthStateService', () => {
     });
   });
 
+  describe('restoreSession', () => {
+    it('hydrates authenticated state from the HttpOnly session endpoint without storing a token', async () => {
+      const restored = service.restoreSession();
+      const req = httpMock.expectOne('/api/authentication/session');
+      expect(req.request.withCredentials).toBe(true);
+      req.flush({ data: { user: mockUserData } });
+
+      await expect(restored).resolves.toBe(true);
+      expect(service.isAuthenticated).toBe(true);
+      expect(service.getToken()).toBeNull();
+      expect(service.getDecodedTokenValue()).toEqual(mockUserData);
+    });
+  });
+
   describe('logout', () => {
     it('should clear token and authenticated state', () => {
       service.setToken('mock-jwt-token');

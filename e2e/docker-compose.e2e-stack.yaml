@@ -5,7 +5,6 @@ services:
   db:
     image: postgres:latest
     restart: always
-    container_name: e2e_db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -21,7 +20,6 @@ services:
   redis:
     image: redis:latest
     restart: always
-    container_name: e2e_redis
     ports:
       - '6379:6379'
     healthcheck:
@@ -34,7 +32,6 @@ services:
     build:
       context: ..
       dockerfile: ./docker/db-setup/Dockerfile
-    container_name: e2e_db_setup
     working_dir: /workspace
     volumes:
       - ..:/workspace
@@ -51,7 +48,6 @@ services:
 
   # ──────────────── Backend Microservices ────────────────
   authentication:
-    container_name: e2e_authentication
     image: cjrutherford/optimistic_tanuki_authentication:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -64,6 +60,7 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: ot_authentication
+      AUTH_AUTO_VERIFY_EMAILS: 'true'
       JWT_SECRET: e2e-test-jwt-secret
     depends_on:
       db:
@@ -72,7 +69,6 @@ services:
         condition: service_completed_successfully
 
   profile:
-    container_name: e2e_profile
     image: cjrutherford/optimistic_tanuki_profile:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -94,7 +90,6 @@ services:
         condition: service_completed_successfully
 
   social:
-    container_name: e2e_social
     image: cjrutherford/optimistic_tanuki_social:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -118,7 +113,6 @@ services:
         condition: service_completed_successfully
 
   assets:
-    container_name: e2e_assets
     image: cjrutherford/optimistic_tanuki_assets:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -138,7 +132,6 @@ services:
         condition: service_completed_successfully
 
   project-planning:
-    container_name: e2e_project_planning
     image: cjrutherford/optimistic_tanuki_project-planning:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -158,7 +151,6 @@ services:
         condition: service_completed_successfully
 
   chat-collector:
-    container_name: e2e_chat_collector
     image: cjrutherford/optimistic_tanuki_chat-collector:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -177,8 +169,35 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  forum:
+    image: cjrutherford/optimistic_tanuki_forum:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/forum/Dockerfile
+    ports:
+      - '3015:3015'
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_forum
+      PORT: 3015
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          node -e "const socket=require('net').connect(3015,'127.0.0.1'); socket.setTimeout(2000,()=>process.exit(1)); socket.on('connect',()=>process.exit(0)); socket.on('error',()=>process.exit(1));"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   telos-docs-service:
-    container_name: e2e_telos_docs_service
     image: cjrutherford/optimistic_tanuki_telos-docs-service:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -198,7 +217,6 @@ services:
         condition: service_completed_successfully
 
   prompt-proxy:
-    container_name: e2e_prompt_proxy
     image: cjrutherford/optimistic_tanuki_prompt-proxy:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -220,7 +238,6 @@ services:
         condition: service_completed_successfully
 
   ai-orchestrator:
-    container_name: e2e_ai_orchestrator
     image: cjrutherford/optimistic_tanuki_ai-orchestrator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -246,7 +263,6 @@ services:
         condition: service_started
 
   blogging:
-    container_name: e2e_blogging
     image: cjrutherford/optimistic_tanuki_blogging:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -266,7 +282,6 @@ services:
         condition: service_completed_successfully
 
   permissions:
-    container_name: e2e_permissions
     image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -285,8 +300,23 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  permissions-seed:
+    image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
+    command: ['node', './seed-permissions.js']
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_permissions
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+    restart: 'no'
+
   store:
-    container_name: e2e_store
     image: cjrutherford/optimistic_tanuki_store:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -306,7 +336,6 @@ services:
         condition: service_completed_successfully
 
   app-configurator:
-    container_name: e2e_app_configurator
     image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -331,7 +360,6 @@ services:
         condition: service_completed_successfully
 
   app-configurator-seed:
-    container_name: e2e_app_configurator_seed
     image: cjrutherford/optimistic_tanuki_app-configurator:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -352,7 +380,6 @@ services:
     restart: 'no'
 
   lead-tracker:
-    container_name: e2e_lead_tracker
     image: cjrutherford/optimistic_tanuki_lead-tracker:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -372,7 +399,6 @@ services:
         condition: service_completed_successfully
 
   gateway:
-    container_name: e2e_gateway
     image: cjrutherford/optimistic_tanuki_gateway:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -385,7 +411,22 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+      NODE_ENV: test
+      # Credential routes keep strict production defaults. E2E creates multiple
+      # independent accounts from one browser source, so raise only this
+      # isolated-stack override rather than weakening deployed throttles.
+      THROTTLE_LOGIN_LIMIT: 100
       JWT_SECRET: e2e-test-jwt-secret
+      OAUTH_STATE_SECRET: e2e-oauth-state-secret
+      CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
+      GOOGLE_CLIENT_ID: e2e-google-client-id
+      GOOGLE_CLIENT_SECRET: e2e-google-client-secret
+      GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize
+      GOOGLE_TOKEN_ENDPOINT: http://oauth-provider:3016/token
+      GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ALLOWED_ORIGINS: http://localhost:8080,http://localhost:8081,http://localhost:8082,http://localhost:8083,http://localhost:8084,http://localhost:8085,http://localhost:8089,http://localhost:8090,http://127.0.0.1:8080,http://127.0.0.1:8081,http://127.0.0.1:8082,http://127.0.0.1:8083,http://127.0.0.1:8084,http://127.0.0.1:8085,http://127.0.0.1:8089,http://127.0.0.1:8090
       AUTHENTICATION_HOST: authentication
       AUTHENTICATION_PORT: 3001
       PROFILE_HOST: profile
@@ -398,6 +439,8 @@ services:
       PROJECT_PLANNING_PORT: 3006
       CHAT_COLLECTOR_HOST: chat-collector
       CHAT_COLLECTOR_PORT: 3007
+      FORUM_HOST: forum
+      FORUM_PORT: 3015
       BLOGGING_HOST: blogging
       BLOGGING_PORT: 3011
       PERMISSIONS_HOST: permissions
@@ -425,16 +468,30 @@ services:
         condition: service_started
       store:
         condition: service_started
+      forum:
+        condition: service_started
       app-configurator:
         condition: service_started
       lead-tracker:
         condition: service_started
 
+  oauth-provider:
+    # An explicit tag keeps batched CI builds and project-scoped Compose runs
+    # aligned; without it Compose derives a project-specific image name that
+    # Docker Bake does not produce.
+    image: cjrutherford/optimistic_tanuki_oauth-provider:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./e2e/oauth-provider/Dockerfile
+    ports:
+      - '3016:3016'
+
   # ──────────────── UI Apps (for UI e2e tests) ────────────────
   # Each UI app is started selectively during its test suite via --profile
   client-interface:
-    container_name: e2e_client_interface
-    profiles: [client-interface]
+    # The shared OAuth callback proxy is required by each cookie-session
+    # client, so include it whenever those app profiles are started.
+    profiles: [client-interface, forgeofwill, fin-commander, digital-homestead]
     image: cjrutherford/optimistic_tanuki_client-interface:${E2E_IMAGE_TAG:-latest}
     build:
       context: ..
@@ -446,7 +503,6 @@ services:
         condition: service_started
 
   forgeofwill:
-    container_name: e2e_forgeofwill
     profiles: [forgeofwill]
     image: cjrutherford/optimistic_tanuki_forgeofwill:${E2E_IMAGE_TAG:-latest}
     build:
@@ -458,8 +514,19 @@ services:
       gateway:
         condition: service_started
 
+  fin-commander:
+    profiles: [fin-commander]
+    image: cjrutherford/optimistic_tanuki_fin-commander:${E2E_IMAGE_TAG:-latest}
+    build:
+      context: ..
+      dockerfile: ./apps/fin-commander/Dockerfile
+    ports:
+      - '8089:4000'
+    depends_on:
+      gateway:
+        condition: service_started
+
   digital-homestead:
-    container_name: e2e_digital_homestead
     profiles: [digital-homestead]
     image: cjrutherford/optimistic_tanuki_digital-homestead:${E2E_IMAGE_TAG:-latest}
     build:
@@ -472,7 +539,6 @@ services:
         condition: service_started
 
   christopherrutherford-net:
-    container_name: e2e_crdn
     profiles: [christopherrutherford-net]
     image: cjrutherford/optimistic_tanuki_christopherrutherford-net:${E2E_IMAGE_TAG:-latest}
     build:
@@ -485,7 +551,6 @@ services:
         condition: service_started
 
   owner-console:
-    container_name: e2e_owner_console
     profiles: [owner-console]
     image: cjrutherford/optimistic_tanuki_owner-console:${E2E_IMAGE_TAG:-latest}
     build:
@@ -498,7 +563,6 @@ services:
         condition: service_started
 
   store-client:
-    container_name: e2e_store_client
     profiles: [store-client]
     image: cjrutherford/optimistic_tanuki_store-client:${E2E_IMAGE_TAG:-latest}
     build:
@@ -513,7 +577,6 @@ services:
         condition: service_started
 
   configurable-client:
-    container_name: e2e_configurable_client
     profiles: [configurable-client]
     image: cjrutherford/optimistic_tanuki_configurable-client:${E2E_IMAGE_TAG:-latest}
     build:

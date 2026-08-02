@@ -31,7 +31,6 @@ test.describe('Profile and communities coverage', () => {
       });
 
       await page.goto('/profile');
-      await page.waitForLoadState('networkidle');
       await expect(
         page.locator('[data-testid="profile-identity-section"]')
       ).toBeVisible();
@@ -47,7 +46,6 @@ test.describe('Profile and communities coverage', () => {
       expect(profileOverflow).toBe(false);
 
       await page.goto('/communities');
-      await page.waitForLoadState('networkidle');
       await expect(
         page.locator('[data-testid="communities-social-proof"]')
       ).toBeVisible();
@@ -57,11 +55,30 @@ test.describe('Profile and communities coverage', () => {
         )
       ).toBeVisible();
 
-      const communitiesOverflow = await page.evaluate(() => {
+      const communitiesLayout = await page.evaluate(() => {
         const doc = document.documentElement;
-        return doc.scrollWidth > doc.clientWidth;
+        const overflowingElements = [
+          ...document.querySelectorAll<HTMLElement>('body *'),
+        ]
+          .filter(
+            (element) => element.getBoundingClientRect().right > doc.clientWidth
+          )
+          .map((element) => ({
+            className: element.className,
+            tagName: element.tagName,
+            right: Math.ceil(element.getBoundingClientRect().right),
+          }))
+          .slice(0, 5);
+
+        return {
+          hasOverflow: doc.scrollWidth > doc.clientWidth,
+          overflowingElements,
+        };
       });
-      expect(communitiesOverflow).toBe(false);
+      expect(
+        communitiesLayout.hasOverflow,
+        JSON.stringify(communitiesLayout.overflowingElements)
+      ).toBe(false);
     }
   });
 });

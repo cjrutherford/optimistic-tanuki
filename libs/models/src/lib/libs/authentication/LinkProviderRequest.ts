@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+} from 'class-validator';
 import { OAuthProvider } from './OAuthCallbackRequest';
 
 export class LinkProviderRequest {
@@ -30,4 +36,15 @@ export class LinkProviderRequest {
     description: 'The display name from the OAuth provider profile',
   })
   providerDisplayName?: string;
+
+  /**
+   * Trusted gateway-only assertion from a provider's verified-email claim.
+   * Authentication checks that it matches the platform account before using it.
+   */
+  @IsBoolean()
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Whether the provider attested that providerEmail is verified',
+  })
+  providerEmailVerified?: boolean;
 }

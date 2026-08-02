@@ -15,6 +15,7 @@ import { MessageService } from '@optimistic-tanuki/message-ui';
 import { of, throwError } from 'rxjs';
 import { LoginType, ProfileDto } from '@optimistic-tanuki/ui-models';
 import { signal, WritableSignal } from '@angular/core';
+import { OAuthService } from '@optimistic-tanuki/auth-ui';
 
 class MockProfileService {
   getAllProfiles = jest.fn().mockResolvedValue(undefined);
@@ -44,6 +45,7 @@ describe('LoginComponent', () => {
     const authStateMock = {
       login: jest.fn().mockResolvedValue({ data: {} }),
       setToken: jest.fn(),
+      restoreSession: jest.fn().mockResolvedValue(true),
       isAuthenticated: true,
       getDecodedTokenValue: jest.fn().mockReturnValue({ userId: 'user1' }),
     };
@@ -144,5 +146,21 @@ describe('LoginComponent', () => {
       expect(router.navigate).not.toHaveBeenCalled();
       // Note: The actual component logs to console.error but doesn't call messageService on failure
     });
+  });
+
+  it('restores an HttpOnly OAuth session before continuing the login flow', async () => {
+    jest.spyOn(OAuthService.prototype, 'initiateOAuthLogin').mockResolvedValue({
+      success: true,
+      session: true,
+    });
+    profileService.currentUserProfiles.set([mockProfile]);
+
+    await component.onOAuthProvider({ provider: 'google' });
+    await Promise.resolve();
+
+    expect((authState as any).restoreSession).toHaveBeenCalled();
+    expect(authState.setToken).not.toHaveBeenCalled();
+    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    jest.restoreAllMocks();
   });
 });

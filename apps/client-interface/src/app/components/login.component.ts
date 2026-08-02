@@ -137,7 +137,8 @@ export class LoginComponent implements OnDestroy, OnInit {
     try {
       const result = await this.oauthService?.initiateOAuthLogin(
         event.provider,
-        'client-interface'
+        'client-interface',
+        true
       );
       if (!result) {
         this.messageService.addMessage({
@@ -150,8 +151,13 @@ export class LoginComponent implements OnDestroy, OnInit {
       if (result.success && (result.token || result.session)) {
         if (result.token) {
           this.authStateService.setToken(result.token);
-        } else {
-          await this.authStateService.restoreSession();
+        } else if (!(await this.authStateService.restoreSession())) {
+          this.messageService.addMessage({
+            content:
+              'OAuth login could not restore your session. Please try again.',
+            type: 'error',
+          });
+          return;
         }
 
         if (this.authStateService.isAuthenticated) {

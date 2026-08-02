@@ -27,17 +27,6 @@ export class AppService {
   ) {}
 
   async postMessage(data: ChatMessage): Promise<Conversation> {
-    const newMessage: Partial<Message> = {
-      id: data.id,
-      senderId: data.senderId,
-      recipients: data.recipientId,
-      content: data.content,
-      type: MessageType[data.type.toUpperCase() as keyof typeof MessageType],
-    };
-    this.l.log('Posting new message:', JSON.stringify(newMessage));
-    const message = this.messageRepository.create(newMessage);
-    this.l.debug('Created message entity:', JSON.stringify(message));
-    await this.messageRepository.save(message);
     let conversation: Conversation | null = null;
     if (data.conversationId && data.conversationId !== '') {
       try {
@@ -52,15 +41,29 @@ export class AppService {
     if (!conversation) {
       conversation = this.conversationRepository.create({
         id: data.conversationId || uuidv4(),
-        title: [data.recipientName, ...data.recipientName].join(', '),
+        title: data.recipientName.join(', '),
         participants: [data.senderId, ...data.recipientId],
-        messages: [message],
+        messages: [],
         updatedAt: new Date(),
       });
-    } else {
-      conversation.messages.push(message);
-      conversation.updatedAt = new Date();
+      await this.conversationRepository.save(conversation);
     }
+
+    const newMessage: Partial<Message> = {
+      ...(data.id ? { id: data.id } : {}),
+      senderId: data.senderId,
+      recipients: data.recipientId,
+      content: data.content,
+      type: MessageType[data.type.toUpperCase() as keyof typeof MessageType],
+      conversation,
+    };
+    this.l.log('Posting new message:', JSON.stringify(newMessage));
+    const message = this.messageRepository.create(newMessage);
+    this.l.debug('Created message entity:', JSON.stringify(message));
+    await this.messageRepository.save(message);
+
+    conversation.messages = [...(conversation.messages || []), message];
+    conversation.updatedAt = new Date();
     await this.conversationRepository.save(conversation);
 
     return conversation;

@@ -22,7 +22,6 @@ import {
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
-import { th } from 'zod/v4/locales';
 
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
@@ -149,12 +148,24 @@ export class ChatGateway {
     this.l.log(`Sender ID: ${senderId} connected.`);
 
     // Determine if any participants are AI
-    const aiRecipients: PersonaTelosDto[] = await firstValueFrom(
-      this.telosDocsClient.send(
-        { cmd: PersonaTelosCommands.FIND },
-        { id: recipientIds.join(',') }
-      )
-    );
+    let aiRecipients: PersonaTelosDto[] = [];
+    try {
+      const classifiedRecipients = await firstValueFrom(
+        this.telosDocsClient.send(
+          { cmd: PersonaTelosCommands.FIND },
+          { id: recipientIds.join(',') }
+        )
+      );
+      aiRecipients = Array.isArray(classifiedRecipients)
+        ? classifiedRecipients
+        : [];
+    } catch (error) {
+      this.l.warn(
+        `Unable to classify chat recipients; continuing as human chat: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
+    }
     this.l.log(
       `Sender ID: ${senderId}, Recipient IDs: ${recipientIds.join(', ')}`
     );

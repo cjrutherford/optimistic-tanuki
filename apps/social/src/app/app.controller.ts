@@ -426,6 +426,18 @@ export class AppController {
 
   @MessagePattern({ cmd: ReactionCommands.ADD })
   async addReaction(data: CreateReactionDto) {
+    if (data.postId) {
+      const post = await this.postService.findOne(data.postId);
+      if (
+        post?.communityId &&
+        !(await this.communityService.isMember(post.communityId, data.userId!))
+      ) {
+        throw new RpcException(
+          'You must be a community member to react to this post'
+        );
+      }
+    }
+
     // Check if user already has a reaction on this post/comment
     const existingReaction = await this.reactionService.findUserReaction(
       data.userId!,

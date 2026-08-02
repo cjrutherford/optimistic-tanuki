@@ -61,14 +61,62 @@ export class LoginComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'forgeofwill'
+        'forgeofwill',
+        true
       );
 
       if (result.success && (result.token || result.session)) {
         if (result.token) {
           this.authState.setToken(result.token);
-        } else {
-          await this.authState.restoreSession();
+        } else if (!(await this.authState.restoreSession())) {
+          this.messageService.addMessage({
+            content:
+              'OAuth login could not restore your session. Please try again.',
+            type: 'error',
+          });
+          return;
+        }
+
+        if (this.authState.isAuthenticated) {
+          const decoded = this.authState.getDecodedTokenValue();
+          if (decoded && (decoded as any).profileId === '') {
+            this.router.navigate(['/profile'], {
+              state: {
+                showProfileModal: true,
+                profileMessage: 'Please create your profile to continue.',
+              },
+            });
+            this.messageService.addMessage({
+              content: 'Please create your profile to continue.',
+              type: 'warning',
+            });
+            return;
+          }
+
+          this.profileService.getAllProfiles().then(() => {
+            const currentProfiles = this.profileService.currentUserProfiles();
+            if (!currentProfiles.length) {
+              this.router.navigate(['/profile'], {
+                state: {
+                  showProfileModal: true,
+                  profileMessage:
+                    'No profiles found. Please create a profile to continue.',
+                },
+              });
+              this.messageService.addMessage({
+                content:
+                  'No profiles found. Please create a profile to continue.',
+                type: 'warning',
+              });
+            } else {
+              this.profileService.selectProfile(currentProfiles[0]);
+              this.router.navigate(['/']);
+              this.messageService.addMessage({
+                content: 'Login successful! Welcome back.',
+                type: 'success',
+              });
+            }
+          });
         }
         await this.handlePostLogin();
       } else if (result.needsRegistration && result.userData) {

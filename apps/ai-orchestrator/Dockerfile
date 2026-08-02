@@ -15,11 +15,8 @@ WORKDIR /usr/src/app
 COPY --from=builder /usr/src/app/package.json ./
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w nodemon pg
 RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm install --prod --no-frozen-lockfile
-RUN corepack enable && corepack prepare pnpm@11.0.9 --activate && pnpm add -w @nestjs/axios @modelcontextprotocol/sdk eventsource @langchain/ollama typeorm
 COPY --from=builder /usr/src/app/dist/apps/ai-orchestrator/ ./
-RUN chown -R node:node .
 USER node
 EXPOSE 3010
 CMD ["dumb-init", "node", "main.js"]

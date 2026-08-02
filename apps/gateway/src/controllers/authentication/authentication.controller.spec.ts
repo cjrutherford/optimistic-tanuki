@@ -156,6 +156,26 @@ describe('AuthenticationController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('returns the guard-verified identity for a browser session without exposing a token', async () => {
+    await expect(
+      controller.getSession({
+        user: {
+          userId: 'user-1',
+          email: 'session@example.test',
+          name: 'Session User',
+          profileId: 'profile-1',
+          exp: 0,
+          iat: 0,
+        },
+      })
+    ).resolves.toEqual({
+      data: expect.objectContaining({
+        userId: 'user-1',
+        email: 'session@example.test',
+      }),
+    });
+  });
+
   it('confirms email verification without invoking the session-issuing email action', async () => {
     (clientProxy.send as jest.Mock).mockReturnValueOnce(
       of({ message: 'Email verified', code: 0 })

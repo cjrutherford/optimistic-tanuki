@@ -77,12 +77,13 @@ export class RegisterComponent {
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
     const result = await this.oauthService.initiateOAuthLogin(
       event.provider,
-      'finance'
+      'finance',
+      true
     );
 
-    if (result.success) {
+    if (result.success && (result.token || result.session)) {
       if (result.token) this.authStateService.setToken(result.token);
-      await this.authStateService.restoreSession();
+      else if (!(await this.authStateService.restoreSession())) return;
       await this.handlePostLogin();
       return;
     }

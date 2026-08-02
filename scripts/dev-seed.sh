@@ -109,7 +109,7 @@ refresh_service() {
   service="$1"
 
   echo "Refreshing ${service} with current compose configuration..."
-  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$service"
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --renew-anon-volumes --no-deps "$service"
 }
 
 refresh_services() {
@@ -118,7 +118,7 @@ refresh_services() {
   fi
 
   echo "Refreshing services with current compose configuration..."
-  docker compose ${COMPOSE_FILES} up -d --force-recreate --no-deps "$@"
+  docker compose ${COMPOSE_FILES} up -d --force-recreate --renew-anon-volumes --no-deps "$@"
 }
 
 wait_for_gateway() {
