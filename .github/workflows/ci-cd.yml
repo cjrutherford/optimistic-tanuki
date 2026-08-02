@@ -204,7 +204,7 @@ jobs:
           echo "ui_e2e_matrix=$UI_E2E_MATRIX" >> "$GITHUB_OUTPUT"
 
       - name: Upload Docker plans
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-plans
           path: tmp/docker-workflow/*.json
@@ -359,7 +359,7 @@ jobs:
 
       - name: Upload quality artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: quality-${{ matrix.target }}
           path: |
@@ -535,7 +535,7 @@ jobs:
 
       - name: Upload Docker logs
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-logs-${{ matrix.app }}
           path: docker-logs/
@@ -636,7 +636,7 @@ jobs:
 
       - name: Upload Playwright artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-${{ matrix.app }}
           path: |
@@ -654,7 +654,7 @@ jobs:
 
       - name: Upload Docker logs
         if: failure()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: docker-logs-${{ matrix.app }}
           path: docker-logs/
@@ -831,7 +831,7 @@ jobs:
 
       - name: Upload load test results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: load-test-results
           path: load-test-results.json
