@@ -23,6 +23,7 @@ import {
 } from '@optimistic-tanuki/auth-feature-account-bootstrap';
 import { AuthGuard } from '../../auth/auth.guard';
 import { GATEWAY_APP_REGISTRY } from '../registry/registry.controller';
+import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
 
 describe('AuthenticationController', () => {
   let controller: AuthenticationController;
@@ -150,6 +151,12 @@ describe('AuthenticationController', () => {
     const module: TestingModule = await moduleRef.compile();
 
     controller = module.get<AuthenticationController>(AuthenticationController);
+  });
+
+  it('allows logout to clear an expired browser session', () => {
+    expect(Reflect.getMetadata(IS_PUBLIC_KEY, controller.logoutUser)).toBe(
+      true
+    );
   });
 
   it('should be defined', () => {

@@ -637,6 +637,7 @@ export class AuthenticationController {
     }
   }
 
+  @Public()
   @Post('logout')
   @ApiOperation({ summary: 'Logout a user and invalidate token' })
   @ApiResponse({ status: 201, description: 'User logged out successfully.' })

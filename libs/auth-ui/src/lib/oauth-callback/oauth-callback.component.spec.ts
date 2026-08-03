@@ -125,6 +125,37 @@ describe('OAuthCallbackComponent', () => {
     expect(location.replace).not.toHaveBeenCalled();
   });
 
+  it('keeps the gateway error description visible when the popup has no opener', async () => {
+    Object.defineProperty(window, 'opener', {
+      configurable: true,
+      value: null,
+    });
+
+    await TestBed.configureTestingModule({
+      imports: [OAuthCallbackComponent],
+      providers: [
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            queryParams: of({
+              error: 'email_verification_required',
+              error_description: 'Verify the Microsoft account email first.',
+            }),
+            snapshot: { paramMap: { get: () => null } },
+          },
+        },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } },
+      ],
+    }).compileComponents();
+
+    const component = TestBed.runInInjectionContext(
+      () => new OAuthCallbackComponent(TestBed.inject(ActivatedRoute))
+    );
+    component.ngOnInit();
+
+    expect(component.error).toBe('Verify the Microsoft account email first.');
+  });
+
   it('redeems a callback code and posts the platform token without reading it from the URL', async () => {
     const location = {
       search: '?callbackCode=one-time-code',

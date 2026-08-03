@@ -245,7 +245,7 @@ export class OAuthCallbackComponent implements OnInit {
       // close even when browser cross-origin isolation removes window.opener.
       setTimeout(() => window.close(), 1000);
     } else if (!message?.payload?.success) {
-      this.error = 'Unable to communicate with parent window';
+      this.error ??= 'Unable to communicate with parent window';
     }
   }
 }

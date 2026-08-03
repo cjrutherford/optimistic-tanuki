@@ -40,7 +40,10 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error) => {
       // Only logout on 401 (Unauthorized - token expired/invalid)
       // Do NOT logout on 403 (Forbidden - permission denied)
-      if (error.status === 401) {
+      if (
+        error.status === 401 &&
+        !req.url.includes('/authentication/session')
+      ) {
         authStateService.logout();
         router.navigate(['/login']);
       }

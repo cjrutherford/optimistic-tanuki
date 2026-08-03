@@ -538,6 +538,73 @@ describe('OAuthController', () => {
       ).toBe('oauth_callback_failed');
     });
 
+    it('issues a callback grant when newly registered OAuth user is verified by the platform', async () => {
+      const issued = await (controller as any).signState({
+        provider: 'microsoft',
+        returnTo: 'https://optimistic-tanuki.example/login',
+        appScope: 'client-interface',
+        issuedAt: Date.now(),
+        cookieSession: true,
+      });
+      jest.spyOn(controller as any, 'exchangeProviderCode').mockResolvedValue({
+        providerUserId: 'microsoft-user',
+        email: 'newuser@example.com',
+        emailVerified: false,
+        displayName: 'New User',
+        firstName: 'New',
+        lastName: 'User',
+      });
+      const registerBootstrap = (controller as any).registerBootstrap;
+      registerBootstrap.register.mockResolvedValue({
+        data: {
+          user: {
+            id: 'new-user',
+            emailVerifiedAt: new Date('2026-08-03T15:14:11.083Z'),
+          },
+        },
+      });
+      (authClient.send as jest.Mock).mockImplementation(
+        (command: { cmd: string }) =>
+          of(
+            command.cmd === AuthCommands.OAuthLogin
+              ? { data: { needsRegistration: true } }
+              : command.cmd === AuthCommands.Issue
+              ? { data: { newToken: 'platform-token' } }
+              : { data: { id: 'oauth-1' } }
+          )
+      );
+      const profileClient = (controller as any).profileClient;
+      profileClient.send.mockReturnValue(
+        of([
+          {
+            id: 'profile-1',
+            userId: 'new-user',
+            appScope: 'client-interface',
+          },
+        ])
+      );
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'microsoft' },
+          query: { code: 'provider-code', state: issued.state },
+          cookies: {
+            oauth_state_nonce: JSON.stringify([
+              { id: issued.stateId, nonce: issued.nonce },
+            ]),
+          },
+        } as any,
+        response
+      );
+
+      const callbackUrl = new URL(response.redirect.mock.calls[0][0]);
+      expect(callbackUrl.searchParams.get('callbackCode')).toEqual(
+        expect.any(String)
+      );
+      expect(callbackUrl.searchParams.has('error')).toBe(false);
+    });
+
     it('rejects an existing OAuth user without a global owner role from Owner Console', async () => {
       const statePayload = {
         provider: 'google',

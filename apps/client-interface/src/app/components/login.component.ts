@@ -65,6 +65,7 @@ export class LoginComponent implements OnDestroy, OnInit {
 
   ngOnInit() {
     this.loadOAuthConfig();
+    void this.restoreExistingSession();
   }
 
   ngOnDestroy() {
@@ -160,42 +161,7 @@ export class LoginComponent implements OnDestroy, OnInit {
           return;
         }
 
-        if (this.authStateService.isAuthenticated) {
-          const decoded = this.authStateService.getDecodedTokenValue();
-          if (decoded && decoded.profileId === '') {
-            this.router.navigate(['/settings'], {
-              state: {
-                showProfileModal: false,
-                profileMessage: 'Please create your profile to continue.',
-              },
-            });
-            return;
-          }
-
-          await this.profileService.getAllProfiles();
-          const currentProfiles = this.profileService.getCurrentUserProfiles();
-          if (!currentProfiles.length) {
-            this.router.navigate(['/settings'], {
-              state: {
-                showProfileModal: true,
-                profileMessage:
-                  'No profiles found. Please create a profile to continue.',
-              },
-            });
-            this.messageService.addMessage({
-              content:
-                'No profiles found. Please create a profile to continue.',
-              type: 'warning',
-            });
-          } else {
-            this.profileService.selectProfile(currentProfiles[0]);
-            this.router.navigate(['/feed']);
-            this.messageService.addMessage({
-              content: 'Login successful! Welcome back.',
-              type: 'success',
-            });
-          }
-        }
+        await this.completeAuthenticatedLogin();
       } else if (result.needsRegistration) {
         this.messageService.addMessage({
           content: 'OAuth login did not complete. Please try again.',
@@ -213,5 +179,52 @@ export class LoginComponent implements OnDestroy, OnInit {
         type: 'error',
       });
     }
+  }
+
+  private async restoreExistingSession(): Promise<void> {
+    if (await this.authStateService.restoreSession()) {
+      await this.completeAuthenticatedLogin();
+    }
+  }
+
+  private async completeAuthenticatedLogin(): Promise<void> {
+    if (!this.authStateService.isAuthenticated) {
+      return;
+    }
+
+    const decoded = this.authStateService.getDecodedTokenValue();
+    if (decoded && decoded.profileId === '') {
+      this.router.navigate(['/settings'], {
+        state: {
+          showProfileModal: false,
+          profileMessage: 'Please create your profile to continue.',
+        },
+      });
+      return;
+    }
+
+    await this.profileService.getAllProfiles();
+    const currentProfiles = this.profileService.getCurrentUserProfiles();
+    if (!currentProfiles.length) {
+      this.router.navigate(['/settings'], {
+        state: {
+          showProfileModal: true,
+          profileMessage:
+            'No profiles found. Please create a profile to continue.',
+        },
+      });
+      this.messageService.addMessage({
+        content: 'No profiles found. Please create a profile to continue.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    this.profileService.selectProfile(currentProfiles[0]);
+    this.router.navigate(['/feed']);
+    this.messageService.addMessage({
+      content: 'Login successful! Welcome back.',
+      type: 'success',
+    });
   }
 }
