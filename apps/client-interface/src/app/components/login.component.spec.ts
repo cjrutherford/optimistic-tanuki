@@ -8,6 +8,8 @@ import { of } from 'rxjs';
 import { AuthStateService } from '../state/auth-state.service';
 import { ProfileService } from '../profile.service';
 import { MessageService } from '@optimistic-tanuki/message-ui';
+import { LoginBlockComponent } from '@optimistic-tanuki/auth-ui';
+import { By } from '@angular/platform-browser';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -50,6 +52,14 @@ describe('LoginComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('returns magic-link sessions through login so the cookie session is restored', () => {
+    const loginBlock = fixture.debugElement.query(
+      By.directive(LoginBlockComponent)
+    ).componentInstance as LoginBlockComponent;
+
+    expect(loginBlock.returnPath).toBe('/login');
   });
 
   it('continues into the feed when a cookie session restores on login startup', async () => {
