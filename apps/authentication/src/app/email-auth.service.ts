@@ -10,6 +10,7 @@ import { createHash, randomBytes } from 'crypto';
 import { IsNull, LessThan, Repository } from 'typeorm';
 import { UserEntity } from '../user/entities/user.entity';
 import { TokenEntity } from '../tokens/entities/token.entity';
+import { KeyDatum } from '../key-data/entities/key-datum.entity';
 import {
   AuthActionPurpose,
   AuthActionTokenEntity,
@@ -39,6 +40,8 @@ export class EmailAuthService {
     private readonly actions: Repository<AuthActionTokenEntity>,
     @Inject(getRepositoryToken(TokenEntity))
     private readonly sessions: Repository<TokenEntity>,
+    @Inject(getRepositoryToken(KeyDatum))
+    private readonly keyData: Repository<KeyDatum>,
     private readonly email: EmailService,
     @Inject('EMAIL_PASSWORD_TOOLS')
     private readonly passwordTools: PasswordTools,
@@ -225,7 +228,11 @@ export class EmailAuthService {
     if (!action.user.keyData) throw new RpcException('User not found');
     action.user.password = next.hash;
     action.user.keyData.salt = next.salt.toString();
+    // A successful reset link proves control of the address, just as a
+    // verification link does. Do not leave the account blocked afterwards.
+    action.user.emailVerifiedAt ||= new Date();
     await this.users.save(action.user);
+    await this.keyData.save(action.user.keyData);
     await this.sessions.update(
       { userId: action.user.id, revoked: false },
       { revoked: true }

@@ -48,4 +48,17 @@ describe('client HTTP interceptors', () => {
 
     expect(messages.addMessage).not.toHaveBeenCalled();
   });
+
+  it('shows a session-expired message for a 401 from a protected endpoint', () => {
+    TestBed.runInInjectionContext(() =>
+      errorInterceptor(new HttpRequest('GET', '/api/social/feed'), () =>
+        throwError(() => new HttpErrorResponse({ status: 401 }))
+      )
+    ).subscribe({ error: () => undefined });
+
+    expect(messages.addMessage).toHaveBeenCalledWith({
+      content: 'Your session has expired. Please log in again.',
+      type: 'warning',
+    });
+  });
 });

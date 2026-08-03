@@ -15,11 +15,12 @@ export class TokenEntity {
   @Column({ type: 'text' })
   tokenData: string;
 
-  @JoinColumn()
-  userId: string;
+  @Column({ type: 'uuid', nullable: true })
+  userId: string | null;
 
-  @ManyToOne((type) => UserEntity, (ue) => ue.tokens)
-  user: UserEntity;
+  @ManyToOne((type) => UserEntity, (ue) => ue.tokens, { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user: UserEntity | null;
 
   @Column({ type: 'boolean', default: false })
   revoked = false;

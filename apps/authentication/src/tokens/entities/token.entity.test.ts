@@ -24,6 +24,15 @@ describe('TokenEntity', () => {
     expect(token.userId).toBe('user123');
   });
 
+  it('should allow a token without an associated user', () => {
+    const token = new TokenEntity();
+    token.userId = null;
+    token.user = null;
+
+    expect(token.userId).toBeNull();
+    expect(token.user).toBeNull();
+  });
+
   it('should allow setting and getting user', () => {
     const token = new TokenEntity();
     const user = {

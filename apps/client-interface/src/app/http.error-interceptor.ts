@@ -11,7 +11,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       // Cookie-session probes are expected to return 401 before sign-in and
       // while an OAuth callback is still redeeming. Authentication state
       // handles those responses; presenting a global expiry toast is wrong.
-      if (error.status === 401) {
+      if (error.status === 401 && req.url.includes('/authentication/session')) {
         return throwError(() => error);
       }
 
@@ -31,6 +31,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             errorMessage =
               error.error?.message ||
               'Invalid request. Please check your input.';
+            errorType = 'warning';
+            break;
+          case 401:
+            errorMessage = 'Your session has expired. Please log in again.';
             errorType = 'warning';
             break;
           case 403:

@@ -47,23 +47,23 @@ import { firstValueFrom } from 'rxjs';
       .loading p,
       .error p {
         margin: 0 0 20px;
-        color: #666;
+        color: var(--foreground-muted);
       }
 
       .error h2 {
-        color: #d32f2f;
+        color: var(--danger);
       }
 
       .subtext {
         font-size: 14px;
-        color: #999;
+        color: var(--foreground-muted);
       }
 
       .spinner {
         width: 40px;
         height: 40px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #3498db;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
         border-radius: 50%;
         animation: spin 1s linear infinite;
       }

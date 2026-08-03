@@ -85,32 +85,50 @@ export function emailAuthRoutes(
       :host {
         display: block;
         min-height: 100%;
+        color: var(--foreground);
+        --email-action-background: var(--background);
+        --email-action-surface: var(--surface);
+        --email-action-border: var(
+          --border,
+          color-mix(in srgb, var(--foreground) 22%, transparent)
+        );
+        --email-action-muted: var(
+          --foreground-muted,
+          color-mix(in srgb, var(--foreground) 68%, transparent)
+        );
+        --email-action-accent: var(--primary);
+        --email-action-accent-foreground: var(--primary-foreground);
+        --email-action-shadow: var(
+          --shadow-card,
+          var(--shadow-sm, 0 1rem 2rem rgba(15, 23, 42, 0.12))
+        );
       }
       .email-action-shell {
         min-height: 100vh;
         display: grid;
         place-items: center;
         padding: 2rem;
-        background: radial-gradient(
+        background-color: var(--email-action-background);
+        background-image: radial-gradient(
           circle at top left,
-          color-mix(in srgb, currentColor 8%, transparent),
+          color-mix(in srgb, var(--email-action-accent) 8%, transparent),
           transparent 42%
         );
       }
       .email-action-card {
         width: min(34rem, 100%);
         padding: clamp(1.5rem, 5vw, 3rem);
-        border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+        border: 1px solid var(--email-action-border);
         border-radius: 1rem;
-        background: color-mix(in srgb, Canvas 94%, transparent);
-        box-shadow: 0 1.5rem 4rem
-          color-mix(in srgb, currentColor 12%, transparent);
+        background: var(--email-action-surface);
+        box-shadow: var(--email-action-shadow);
       }
       .eyebrow {
         font-size: 0.75rem;
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
+        color: var(--email-action-muted);
         opacity: 0.68;
       }
       h1 {
@@ -130,9 +148,11 @@ export function emailAuthRoutes(
       }
       input {
         min-height: 2.75rem;
-        border: 1px solid currentColor;
+        border: 1px solid var(--email-action-border);
         border-radius: 0.45rem;
         padding: 0.65rem 0.8rem;
+        background: var(--email-action-surface);
+        color: inherit;
         font: inherit;
       }
       button {
@@ -141,8 +161,8 @@ export function emailAuthRoutes(
         border: 0;
         border-radius: 999px;
         padding: 0.7rem 1.2rem;
-        background: currentColor;
-        color: Canvas;
+        background: var(--email-action-accent);
+        color: var(--email-action-accent-foreground);
         cursor: pointer;
         font: inherit;
         font-weight: 700;
@@ -154,7 +174,7 @@ export function emailAuthRoutes(
       }
       button:focus-visible,
       .email-action-link:focus-visible {
-        outline: 3px solid currentColor;
+        outline: 3px solid var(--email-action-accent);
         outline-offset: 3px;
       }
       .email-action-link {
@@ -165,8 +185,8 @@ export function emailAuthRoutes(
         margin-top: 1rem;
         border-radius: 999px;
         padding: 0.7rem 1.2rem;
-        color: Canvas;
-        background: currentColor;
+        color: var(--email-action-accent-foreground);
+        background: var(--email-action-accent);
         font-weight: 700;
         text-decoration: none;
         touch-action: manipulation;
