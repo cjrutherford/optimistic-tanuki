@@ -1,7 +1,7 @@
 import { Injectable, Inject, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { fromEvent, Subscription } from 'rxjs';
+import { firstValueFrom, fromEvent, Subscription } from 'rxjs';
 import { filter, take, timeout } from 'rxjs/operators';
 
 export interface OAuthProviderConfig {
@@ -126,12 +126,14 @@ export class OAuthService {
     return new Promise((resolve, reject) => {
       let checkClosed: ReturnType<typeof setInterval> | null = null;
       let closeGracePeriod: ReturnType<typeof setTimeout> | null = null;
+      let sessionRecoveryPoll: ReturnType<typeof setInterval> | null = null;
       let settled = false;
       const finish = (result: OAuthLoginResult, closePopup = true): void => {
         if (settled) return;
         settled = true;
         if (checkClosed) clearInterval(checkClosed);
         if (closeGracePeriod) clearTimeout(closeGracePeriod);
+        if (sessionRecoveryPoll) clearInterval(sessionRecoveryPoll);
         if (closePopup) this.closePopup();
         else if (this.messageSubscription) {
           this.messageSubscription.unsubscribe();
@@ -139,6 +141,30 @@ export class OAuthService {
           this.popup = null;
         }
         resolve(result);
+      };
+      const recoverCookieSession = (): void => {
+        const checkSession = async (): Promise<void> => {
+          if (settled) {
+            if (sessionRecoveryPoll) clearInterval(sessionRecoveryPoll);
+            return;
+          }
+          try {
+            await firstValueFrom(
+              this.http.get(`${this.apiBaseUrl}/authentication/session`, {
+                withCredentials: true,
+              })
+            );
+            finish({ success: true, session: true }, false);
+          } catch {
+            // The callback may still be redeeming its one-time grant. Keep
+            // this recovery check scoped to this active popup attempt.
+          }
+        };
+
+        sessionRecoveryPoll = setInterval(() => {
+          void checkSession();
+        }, 1000);
+        void checkSession();
       };
 
       if (!isPlatformBrowser(this.platformId)) {
@@ -224,11 +250,11 @@ export class OAuthService {
           // a chance to arrive before treating this as user cancellation.
           closeGracePeriod = setTimeout(() => {
             if (cookieSession) {
-              // A callback proxy may be isolated from its opener by browser
-              // cross-origin policies. The session cookie is the authority;
-              // callers still restore it before navigating, so this fallback
-              // cannot authenticate a closed/cancelled popup by itself.
-              finish({ success: true, session: true }, false);
+              // A cross-origin provider can falsely report this popup as
+              // closed while the user is still authenticating. If it was a
+              // real close and the callback redeemed the grant, recover the
+              // cookie session without relying solely on postMessage.
+              recoverCookieSession();
               return;
             }
             finish(

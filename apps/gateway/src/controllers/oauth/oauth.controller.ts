@@ -454,12 +454,13 @@ export class OAuthController {
       }
       if (!userId && loginResult?.data?.needsRegistration) {
         this.requireUsableOAuthEmail(identity.email, provider);
-        userId = await this.registerOAuthUser(
+        const registeredUser = await this.registerOAuthUser(
           statePayload.appScope,
           provider,
           identity
         );
-        if (!identity.emailVerified) {
+        userId = registeredUser.userId;
+        if (!registeredUser.emailVerified) {
           await this.sendOAuthVerificationEmail(
             statePayload.appScope,
             identity.email,
@@ -1332,7 +1333,7 @@ export class OAuthController {
     appScope: string,
     provider: string,
     identity: OAuthIdentity
-  ): Promise<string> {
+  ): Promise<{ userId: string; emailVerified: boolean }> {
     if (appScope === 'owner-console' && process.env.NODE_ENV === 'production') {
       throw new Error(
         'Owner Console accounts must be provisioned by the deployment bootstrap.'
@@ -1361,7 +1362,10 @@ export class OAuthController {
       registerRequest,
       appScope
     );
-    const userId = registerResult?.data?.user?.id as string | undefined;
+    const user = registerResult?.data?.user as
+      | { id?: string; emailVerifiedAt?: unknown }
+      | undefined;
+    const userId = user?.id;
     if (!userId) {
       throw new Error('OAuth registration did not return a user id');
     }
@@ -1380,7 +1384,10 @@ export class OAuthController {
       )
     );
 
-    return userId;
+    return {
+      userId,
+      emailVerified: Boolean(user.emailVerifiedAt),
+    };
   }
 
   private async assertOwnerConsoleAccess(

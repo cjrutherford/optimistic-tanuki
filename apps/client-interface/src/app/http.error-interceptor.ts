@@ -8,6 +8,13 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      // Cookie-session probes are expected to return 401 before sign-in and
+      // while an OAuth callback is still redeeming. Authentication state
+      // handles those responses; presenting a global expiry toast is wrong.
+      if (error.status === 401 && req.url.includes('/authentication/session')) {
+        return throwError(() => error);
+      }
+
       let errorMessage = 'An unexpected error occurred';
       let errorType: 'error' | 'warning' | 'info' = 'error';
 

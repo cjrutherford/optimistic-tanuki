@@ -15,6 +15,7 @@ describe('EmailAuthService', () => {
   let users: any;
   let actions: any;
   let sessions: any;
+  let keyData: any;
   let email: any;
   let password: any;
   let service: EmailAuthService;
@@ -38,6 +39,9 @@ describe('EmailAuthService', () => {
       save: jest.fn(),
       update: jest.fn().mockResolvedValue({ affected: 2 }),
     };
+    keyData = {
+      save: jest.fn(async (value) => value),
+    };
     email = {
       sendEmail: jest
         .fn()
@@ -49,9 +53,17 @@ describe('EmailAuthService', () => {
         .fn()
         .mockReturnValue({ hash: 'new-hash', salt: 'new-salt' }),
     };
-    service = new EmailAuthService(users, actions, sessions, email, password, {
-      issueForUser: jest.fn().mockReturnValue('session-token'),
-    } as any);
+    service = new EmailAuthService(
+      users,
+      actions,
+      sessions,
+      keyData,
+      email,
+      password,
+      {
+        issueForUser: jest.fn().mockReturnValue('session-token'),
+      } as any
+    );
   });
 
   it('sends verification from the trusted root-domain alias without exposing the token in storage', async () => {
@@ -136,7 +148,7 @@ describe('EmailAuthService', () => {
       appId: 'forgeofwill',
       expiresAt: new Date(Date.now() + 60_000),
       consumedAt: null,
-      user: { ...user },
+      user: { ...user, keyData: { id: 'key-1', salt: 'old-salt' } },
     });
 
     await expect(
@@ -191,7 +203,7 @@ describe('EmailAuthService', () => {
       returnPath: '/',
       expiresAt: new Date(Date.now() + 60_000),
       consumedAt: null,
-      user: { ...user },
+      user: { ...user, keyData: { id: 'key-1', salt: 'old-salt' } },
     });
 
     await expect(service.confirmVerification('raw-token')).resolves.toEqual({
@@ -227,7 +239,7 @@ describe('EmailAuthService', () => {
       returnPath: '/',
       expiresAt: new Date(Date.now() + 60_000),
       consumedAt: null,
-      user: { ...user },
+      user: { ...user, keyData: { id: 'key-1', salt: 'old-salt' } },
     });
     await expect(
       service.resetPassword('raw-token', 'new-password', 'new-password')
@@ -235,7 +247,13 @@ describe('EmailAuthService', () => {
       expect.objectContaining({ appId: 'forgeofwill', returnPath: '/' })
     );
     expect(users.save).toHaveBeenCalledWith(
-      expect.objectContaining({ password: 'new-hash' })
+      expect.objectContaining({
+        password: 'new-hash',
+        emailVerifiedAt: expect.any(Date),
+      })
+    );
+    expect(keyData.save).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'key-1', salt: 'new-salt' })
     );
     expect(sessions.update).toHaveBeenCalledWith(
       { userId: 'user-1', revoked: false },

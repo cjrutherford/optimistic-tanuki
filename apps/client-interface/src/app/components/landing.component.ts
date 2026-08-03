@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 
 import {
@@ -7,6 +7,7 @@ import {
   ButtonComponent,
   IconComponent,
 } from '@optimistic-tanuki/common-ui';
+import { AuthStateService } from '../state/auth-state.service';
 
 @Component({
   selector: 'app-landing',
@@ -15,8 +16,23 @@ import {
   templateUrl: './landing.component.html',
   styleUrls: ['./landing.component.scss'],
 })
-export class LandingComponent {
+export class LandingComponent implements OnInit {
   private router = inject(Router);
+  private readonly authStateService = inject(AuthStateService);
+
+  ngOnInit(): void {
+    void this.restoreExistingSession();
+  }
+
+  private async restoreExistingSession(): Promise<void> {
+    try {
+      if (await this.authStateService.restoreSession()) {
+        await this.router.navigate(['/feed']);
+      }
+    } catch {
+      // The public landing page remains available when no browser session exists.
+    }
+  }
 
   navigateToLogin(): void {
     this.router.navigate(['/login']);

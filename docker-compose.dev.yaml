@@ -13,7 +13,7 @@ services:
   authentication:
     container_name: ot_authentication # Corrected typo
     environment:
-      AUTH_AUTO_VERIFY_EMAILS: 'true'
+      AUTH_AUTO_VERIFY_EMAILS: 'false'
     build:
       context: .
       dockerfile: ./docker/dev/node-runtime.Dockerfile
