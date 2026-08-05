@@ -6,6 +6,8 @@ COMPOSE_ENV_FILE="${COMPOSE_ENV_FILE:-}"
 GATEWAY_API_URL="${GATEWAY_API_URL:-http://gateway:3000/api}"
 GATEWAY_BASE_URL="${GATEWAY_BASE_URL:-http://gateway:3000}"
 HOST_GATEWAY_BASE_URL="${HOST_GATEWAY_BASE_URL:-http://127.0.0.1:3000}"
+ADMIN_API_BASE_URL="${ADMIN_API_BASE_URL:-http://127.0.0.1:${ADMIN_API_PORT:-8098}/api}"
+SEED_DEMO_BUSINESSES="${SEED_DEMO_BUSINESSES:-false}"
 APP_RUNTIME_DIR="/usr/src/app"
 BUSINESS_SITE_RUNTIME_DIR="/app"
 
@@ -92,14 +94,27 @@ restart_service gateway
 wait_for_gateway
 sleep 5
 
+if [ -n "${OWNER_BOOTSTRAP_NAME:-}" ] && \
+  [ -n "${OWNER_BOOTSTRAP_EMAIL:-}" ] && \
+  [ -n "${OWNER_BOOTSTRAP_PASSWORD:-}" ]; then
+  echo "Reconciling configured platform owner..."
+  pnpm run bootstrap:owner -- --api-base-url "${ADMIN_API_BASE_URL}"
+else
+  echo "Skipping platform owner bootstrap; OWNER_BOOTSTRAP_* values are not fully configured."
+fi
+
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
 
 echo "Seeding social service (including local communities)..."
 run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js
 
-echo "Seeding business-site service (including seeded businesses and client workflows)..."
-run_seed_with_env business-site "${BUSINESS_SITE_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-business.mjs
+if [ "${SEED_DEMO_BUSINESSES}" = "true" ]; then
+  echo "Seeding demo business owners, businesses, and client workflows..."
+  run_seed_with_env business-site "${BUSINESS_SITE_RUNTIME_DIR}" GATEWAY_URL "${GATEWAY_API_URL}" node ./seed-business.mjs
+else
+  echo "Skipping demo business seeds; set SEED_DEMO_BUSINESSES=true to enable them."
+fi
 
 echo ""
 echo "=========================================="

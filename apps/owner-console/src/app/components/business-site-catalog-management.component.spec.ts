@@ -20,7 +20,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
   };
 
   const authService = {
-    getToken: jest.fn(),
+    getSessionUser: jest.fn(),
   };
 
   const rolesService = {
@@ -29,15 +29,6 @@ describe('BusinessSiteCatalogManagementComponent', () => {
   const operatorQueueService = {
     getQueueByDomain: jest.fn(),
   };
-
-  function createToken(payload: Record<string, unknown>): string {
-    const encoded = Buffer.from(JSON.stringify(payload))
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/g, '');
-    return `header.${encoded}.signature`;
-  }
 
   function createComponent() {
     const fixture = TestBed.createComponent(
@@ -49,9 +40,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    authService.getToken.mockReturnValue(
-      createToken({ profileId: 'profile-1' })
-    );
+    authService.getSessionUser.mockReturnValue({ profileId: 'profile-1' });
     rolesService.getUserRoles.mockReturnValue(
       of([
         {
@@ -247,9 +236,7 @@ describe('BusinessSiteCatalogManagementComponent', () => {
   });
 
   it('renders the governance screen as read-only when the operator lacks catalog permission', () => {
-    authService.getToken.mockReturnValue(
-      createToken({ profileId: 'profile-2' })
-    );
+    authService.getSessionUser.mockReturnValue({ profileId: 'profile-2' });
     rolesService.getUserRoles.mockReturnValue(
       of([
         {
@@ -336,10 +323,8 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     });
   });
 
-  it('accepts JWT payloads that need base64url padding before decoding', () => {
-    authService.getToken.mockReturnValue(
-      createToken({ profileId: 'profile-1', org: 'abcde' })
-    );
+  it('uses the session profile for catalog governance access', () => {
+    authService.getSessionUser.mockReturnValue({ profileId: 'profile-1' });
 
     const fixture = createComponent();
     const component = fixture.componentInstance;
@@ -348,8 +333,8 @@ describe('BusinessSiteCatalogManagementComponent', () => {
     expect(component.accessMessage()).toBe('');
   });
 
-  it('accepts userId-based auth tokens for catalog governance access', () => {
-    authService.getToken.mockReturnValue(createToken({ userId: 'user-42' }));
+  it('falls back to the session user id for catalog governance access', () => {
+    authService.getSessionUser.mockReturnValue({ userId: 'user-42' });
 
     const fixture = createComponent();
     const component = fixture.componentInstance;

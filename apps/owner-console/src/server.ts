@@ -86,6 +86,7 @@ app.use('/admin-api', async (request, response, next) => {
 
   const authorization = await authorizeOwnerConsoleAdminRequest({
     authorization: request.get('authorization'),
+    cookieHeader: request.get('cookie'),
     jwtSecret: ownerConsoleJwtSecret,
     gatewayUrl,
   });

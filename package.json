@@ -54,6 +54,7 @@
     "docker:dev:ps": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml ps",
     "docker:dev:reset": "pnpm run build:docker:dev && pnpm run docker:build:dev && ./scripts/docker-start-phased.sh docker-compose.dev.yaml 5 --force-recreate --renew-anon-volumes",
     "docker:prod:seed": "sh ./scripts/prod-seed.sh",
+    "docker:prod": "./scripts/docker-compose-deploy.sh",
     "docker:prod:bootstrap": "./scripts/docker-compose-deploy.sh",
     "docker:dev:plan": "./scripts/docker-build-batched.sh --dry-run docker-compose.dev.yaml && ./scripts/docker-start-phased.sh --dry-run docker-compose.dev.yaml 5",
     "fow:docker:build:dev": "docker compose -f fow.docker-compose.yaml -f fow.docker-compose.dev.yaml build",

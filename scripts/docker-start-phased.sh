@@ -41,6 +41,9 @@ COMPOSE_FLAGS=("-f" "$COMPOSE_FILE")
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then
     COMPOSE_FLAGS=("-f" "docker-compose.yaml" "-f" "docker-compose.dev.yaml")
 fi
+if [ -n "${COMPOSE_ENV_FILE:-}" ]; then
+    COMPOSE_FLAGS=("--env-file" "$COMPOSE_ENV_FILE" "${COMPOSE_FLAGS[@]}")
+fi
 
 COMPOSE_UP_FLAGS=(-d --no-deps)
 if [[ "$COMPOSE_FILE" == *"dev"* ]]; then

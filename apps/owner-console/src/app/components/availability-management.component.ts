@@ -148,7 +148,7 @@ export class AvailabilityManagementComponent implements OnInit {
   }
 
   openCreateModal(): void {
-    const ownerId = this.getOwnerIdFromToken();
+    const ownerId = this.authService.getSessionUser()?.userId;
     if (!ownerId) {
       this.error =
         'Unable to determine operator identity for availability creation.';
@@ -259,24 +259,5 @@ export class AvailabilityManagementComponent implements OnInit {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
-  }
-
-  private getOwnerIdFromToken(): string | null {
-    const token = this.authService.getToken();
-    if (!token) return null;
-
-    const [, payload] = token.split('.');
-    if (!payload) return null;
-    if (typeof atob !== 'function') return null;
-
-    try {
-      const decodedPayload = atob(
-        payload.replace(/-/g, '+').replace(/_/g, '/')
-      );
-      const parsed = JSON.parse(decodedPayload) as { userId?: string };
-      return parsed.userId || null;
-    } catch {
-      return null;
-    }
   }
 }

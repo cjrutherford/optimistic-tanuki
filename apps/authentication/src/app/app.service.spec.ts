@@ -462,6 +462,35 @@ describe('AppService', () => {
         })
       );
     });
+
+    it('reconciles an existing bootstrap owner without resetting its password', async () => {
+      const existingOwner = {
+        id: 'owner-1',
+        email: 'owner@example.test',
+        emailVerifiedAt: null,
+      } as UserEntity;
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(existingOwner);
+      const registerUser = jest.spyOn(service, 'registerUser');
+
+      await expect(
+        service.bootstrapOwner(
+          'OWNER@example.test',
+          'Owner',
+          'Operator',
+          'new-password'
+        )
+      ).resolves.toEqual({ created: false, user: existingOwner });
+
+      expect(registerUser).not.toHaveBeenCalled();
+      expect(userRepo.update).toHaveBeenCalledWith(
+        'owner-1',
+        expect.objectContaining({
+          firstName: 'Owner',
+          lastName: 'Operator',
+          emailVerifiedAt: expect.any(Date),
+        })
+      );
+    });
   });
 
   describe('issueToken', () => {

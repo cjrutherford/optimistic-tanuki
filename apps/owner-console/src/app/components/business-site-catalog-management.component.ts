@@ -707,11 +707,12 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
   }
 
   private loadCatalogAccess(): void {
-    const profileId = this.getProfileIdFromToken();
+    const sessionUser = this.authService.getSessionUser();
+    const profileId = sessionUser?.profileId ?? sessionUser?.userId;
     if (!profileId) {
       this.canManageCatalog.set(false);
       this.accessMessage.set(
-        'This catalog governance screen is read-only because the operator profile could not be determined from the auth token.'
+        'This catalog governance screen is read-only because the operator profile could not be determined from the active session.'
       );
       return;
     }
@@ -753,34 +754,5 @@ export class BusinessSiteCatalogManagementComponent implements OnInit {
         ) ?? false
       );
     });
-  }
-
-  private getProfileIdFromToken(): string | null {
-    const token = this.authService.getToken();
-    if (!token) {
-      return null;
-    }
-
-    const [, payload] = token.split('.');
-    if (!payload || typeof atob !== 'function') {
-      return null;
-    }
-
-    try {
-      const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
-      const padding = normalizedPayload.length % 4;
-      const paddedPayload =
-        padding === 0
-          ? normalizedPayload
-          : `${normalizedPayload}${'='.repeat(4 - padding)}`;
-      const decodedPayload = atob(paddedPayload);
-      const parsed = JSON.parse(decodedPayload) as {
-        profileId?: string;
-        userId?: string;
-      };
-      return parsed.profileId ?? parsed.userId ?? null;
-    } catch {
-      return null;
-    }
   }
 }

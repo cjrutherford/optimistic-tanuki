@@ -42,15 +42,30 @@ describe('AuthService', () => {
     expect(localStorage.getItem('auth_token')).toBeNull();
   });
 
-  it('restores browser authentication from the cookie-backed session endpoint', () => {
+  it('restores browser authentication and session user from the cookie-backed session endpoint', () => {
     service.restoreSession().subscribe();
 
     const req = httpMock.expectOne('/api/authentication/session');
     expect(req.request.method).toBe('GET');
     expect(req.request.withCredentials).toBe(true);
-    req.flush({ data: { user: { userId: 'owner-1' } } });
+    req.flush({
+      data: {
+        user: {
+          userId: 'owner-1',
+          profileId: 'profile-1',
+          email: 'owner@example.com',
+          name: 'Owner',
+        },
+      },
+    });
 
     expect(service.isAuthenticated()).toBe(true);
+    expect(service.getSessionUser()).toEqual({
+      userId: 'owner-1',
+      profileId: 'profile-1',
+      email: 'owner@example.com',
+      name: 'Owner',
+    });
   });
 
   it('clears the cookie-backed session on logout', () => {

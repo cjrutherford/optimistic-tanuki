@@ -25,6 +25,36 @@ describe('authorizeOwnerConsoleAdminRequest', () => {
     );
   });
 
+  it('authorizes a verified owner session cookie', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [{ role: { name: 'global_admin' } }],
+    });
+    const verifyToken = jest
+      .fn()
+      .mockReturnValue({ profileId: 'owner-profile' });
+
+    await expect(
+      authorizeOwnerConsoleAdminRequest({
+        cookieHeader: 'theme=control-center; ot_session=session-token',
+        jwtSecret: 'test-secret',
+        gatewayUrl: 'http://gateway:3000',
+        fetchImpl: fetchMock,
+        verifyToken,
+      })
+    ).resolves.toEqual({ authorized: true });
+
+    expect(verifyToken).toHaveBeenCalledWith('session-token', 'test-secret');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://gateway:3000/api/permissions/user-roles/owner-profile?appScope=owner-console',
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: 'Bearer session-token',
+        }),
+      })
+    );
+  });
+
   it('authorizes the dedicated owner-console role', async () => {
     await expect(
       authorizeOwnerConsoleAdminRequest({

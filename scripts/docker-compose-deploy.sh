@@ -65,7 +65,9 @@ for (( i=0; i<TOTAL_SERVICES; i+=BATCH_SIZE )); do
     compose_cmd pull "${BATCH[@]}"
 done
 
-compose_cmd up -d --no-build --force-recreate "${SERVICES[@]}"
+COMPOSE_ENV_FILE="$COMPOSE_ENV_FILE" \
+  "$PROJECT_DIR/scripts/docker-start-phased.sh" docker-compose.yaml \
+  "${DOCKER_START_PHASE_DELAY:-5}" --no-build --force-recreate
 pnpm run docker:prod:seed
 compose_cmd ps
 

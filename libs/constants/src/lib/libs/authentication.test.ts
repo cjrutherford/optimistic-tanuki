@@ -16,6 +16,10 @@ describe('AuthCommands', () => {
     expect(AuthCommands.Register).toBe('Register');
   });
 
+  it('has a bootstrap-owner upsert command', () => {
+    expect(AuthCommands.BootstrapOwner).toBe('BootstrapOwner');
+  });
+
   it('should have a Validate command', () => {
     expect(AuthCommands.Validate).toBe('Validate');
   });
