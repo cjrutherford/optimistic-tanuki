@@ -120,7 +120,7 @@ build_services_in_batches() {
   local service
   for service in "${services[@]}"; do
     case "$service" in
-      db|redis|db-setup) ;;
+      db|redis|db-setup|oauth-provider) ;;
       *) build_cmd+=(--service "$service") ;;
     esac
   done
@@ -137,12 +137,13 @@ prepare_target_images() {
   local pull_services=()
   local service
 
-  # db-setup is deliberately built locally before any app container starts.
-  run_with_interrupts compose build db-setup
+  # Database setup and the local OAuth test provider are deliberately built
+  # locally before any app container starts; neither is a published app image.
+  run_with_interrupts compose build db-setup oauth-provider
 
   for service in "${services[@]}"; do
     case "$service" in
-      db|redis|db-setup) ;;
+      db|redis|db-setup|oauth-provider) ;;
       *) pull_services+=("$service") ;;
     esac
   done

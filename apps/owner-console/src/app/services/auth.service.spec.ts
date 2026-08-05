@@ -50,12 +50,10 @@ describe('AuthService', () => {
     expect(req.request.withCredentials).toBe(true);
     req.flush({
       data: {
-        user: {
-          userId: 'owner-1',
-          profileId: 'profile-1',
-          email: 'owner@example.com',
-          name: 'Owner',
-        },
+        userId: 'owner-1',
+        profileId: 'profile-1',
+        email: 'owner@example.com',
+        name: 'Owner',
       },
     });
 

@@ -74,13 +74,11 @@ test('Docker lifecycle hooks retain shared CI and SKIP_SETUP environments', () =
   }
 });
 
-test('the UI E2E workflow installs Chrome with Playwright and validates CI config loading', () => {
+test('the UI E2E workflow uses the runner Chrome channel and validates CI config loading', () => {
   const workflow = readFileSync('.github/workflows/ci-cd.yml', 'utf8');
 
-  assert.match(
-    workflow,
-    /name: Install Google Chrome[\s\S]*run: pnpm exec playwright install --with-deps chrome/
-  );
+  assert.doesNotMatch(workflow, /name: Install Google Chrome/);
+  assert.match(workflow, /PLAYWRIGHT_CHANNEL:\s*chrome/);
   assert.doesNotMatch(workflow, /browser-actions\/setup-chrome/);
   assert.match(
     workflow,

@@ -122,13 +122,13 @@ export class AuthService {
   restoreSession(): Observable<boolean> {
     if (!isPlatformBrowser(this.platformId)) return of(false);
     return this.http
-      .get<{ data: { user: SessionUser } }>(
-        `${this.API_URL}/authentication/session`,
-        { headers: this.APP_SCOPE_HEADER, withCredentials: true }
-      )
+      .get<{ data: SessionUser }>(`${this.API_URL}/authentication/session`, {
+        headers: this.APP_SCOPE_HEADER,
+        withCredentials: true,
+      })
       .pipe(
         tap((response) => {
-          this.sessionUser = response.data.user;
+          this.sessionUser = response.data;
           this.isAuthenticatedSubject.next(true);
         }),
         map(() => true),
