@@ -12,17 +12,40 @@ const OWNER_ROLE_NAMES = new Set([
 
 export type AdminApiAuthorizationOptions = {
   authorization?: string;
+  cookieHeader?: string;
   jwtSecret?: string;
   gatewayUrl: string;
   fetchImpl?: typeof fetch;
   verifyToken?: (token: string, secret: string) => OwnerTokenPayload;
 };
 
+function getSessionToken(
+  authorization: string | undefined,
+  cookieHeader: string | undefined
+): string | undefined {
+  const [scheme, bearerToken] = authorization?.split(' ') ?? [];
+  if (scheme === 'Bearer' && bearerToken) {
+    return bearerToken;
+  }
+
+  const sessionCookie = cookieHeader
+    ?.split(';')
+    .map((cookie) => cookie.trim())
+    .find((cookie) => cookie.startsWith('ot_session='));
+  if (!sessionCookie) return undefined;
+
+  try {
+    return decodeURIComponent(sessionCookie.slice('ot_session='.length));
+  } catch {
+    return undefined;
+  }
+}
+
 export async function authorizeOwnerConsoleAdminRequest(
   options: AdminApiAuthorizationOptions
 ): Promise<{ authorized: true } | { authorized: false; status: 401 | 403 }> {
-  const [scheme, token] = options.authorization?.split(' ') ?? [];
-  if (scheme !== 'Bearer' || !token || !options.jwtSecret) {
+  const token = getSessionToken(options.authorization, options.cookieHeader);
+  if (!token || !options.jwtSecret) {
     return { authorized: false, status: 401 };
   }
 

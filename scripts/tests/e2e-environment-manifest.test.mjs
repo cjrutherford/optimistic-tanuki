@@ -29,6 +29,7 @@ test('the registry exposes the CI microservice and UI suites by kind', () => {
     ]
   );
   assert.equal(resolveE2eTarget('business-site-e2e').ci.enabled, false);
+  assert.equal(resolveE2eTarget('ai-orchestrator-e2e').ci.enabled, false);
 });
 
 test('target resolution returns bounded, purpose-specific service sets for pull and start', () => {
@@ -117,6 +118,8 @@ test('client-interface closure includes every service reached by its chat and fo
   assert.match(compose, /FORUM_HOST: forum/);
   assert.match(compose, /FORUM_PORT: 3015/);
   assert.match(compose, /forum:[\s\S]*?healthcheck:[\s\S]*?node -e/);
+  assert.match(compose, /store:\n[\s\S]*?ports:\n\s+- ['"]3013:3013['"]/m);
+  assert.match(compose, /STORE_HOST: store\n\s+STORE_PORT: 3013/);
 });
 
 test('gateway communities E2E runs after the real permissions corpus is seeded', () => {

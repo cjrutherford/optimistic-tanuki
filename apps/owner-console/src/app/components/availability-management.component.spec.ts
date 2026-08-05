@@ -5,24 +5,16 @@ import { AuthService } from '../services/auth.service';
 import { StoreService } from '../services/store.service';
 import { AvailabilityManagementComponent } from './availability-management.component';
 
-function createToken(payload: object): string {
-  return [
-    'header',
-    Buffer.from(JSON.stringify(payload)).toString('base64url'),
-    'signature',
-  ].join('.');
-}
-
 describe('AvailabilityManagementComponent', () => {
   let storeService: { getAvailabilities: jest.Mock };
-  let authService: { getToken: jest.Mock };
+  let authService: { getSessionUser: jest.Mock };
 
   beforeEach(async () => {
     storeService = {
       getAvailabilities: jest.fn().mockReturnValue(of([])),
     };
     authService = {
-      getToken: jest.fn().mockReturnValue(createToken({ userId: 'user-123' })),
+      getSessionUser: jest.fn().mockReturnValue({ userId: 'user-123' }),
     };
 
     await TestBed.configureTestingModule({
@@ -35,7 +27,7 @@ describe('AvailabilityManagementComponent', () => {
     }).compileComponents();
   });
 
-  it('prefills the availability owner from the authenticated token', () => {
+  it('prefills the availability owner from the restored cookie session', () => {
     const fixture = TestBed.createComponent(AvailabilityManagementComponent);
     const component = fixture.componentInstance;
 
@@ -45,10 +37,8 @@ describe('AvailabilityManagementComponent', () => {
     expect(component.showCreateModal).toBe(true);
   });
 
-  it('blocks availability creation when the auth token has no user id', () => {
-    authService.getToken.mockReturnValue(
-      createToken({ profileId: 'profile-1' })
-    );
+  it('blocks availability creation when the restored session has no user id', () => {
+    authService.getSessionUser.mockReturnValue({ profileId: 'profile-1' });
     const fixture = TestBed.createComponent(AvailabilityManagementComponent);
     const component = fixture.componentInstance;
 

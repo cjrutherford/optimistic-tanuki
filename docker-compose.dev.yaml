@@ -13,7 +13,7 @@ services:
   authentication:
     container_name: ot_authentication # Corrected typo
     environment:
-      AUTH_AUTO_VERIFY_EMAILS: 'false'
+      AUTH_AUTO_VERIFY_EMAILS: 'true'
     build:
       context: .
       dockerfile: ./docker/dev/node-runtime.Dockerfile
@@ -366,8 +366,6 @@ services:
     build:
       context: .
       dockerfile: ./apps/admin-api/Dockerfile
-    ports:
-      - '8098:8098'
     environment:
       - ADMIN_API_PORT=8098
       - ADMIN_API_JWT_SECRET=${JWT_SECRET:-development-jwt-secret}

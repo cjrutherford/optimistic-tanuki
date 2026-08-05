@@ -61,6 +61,7 @@ function sharedEntry({
   gatewayNoDeps = false,
   readinessUrl = baseUrl,
   completedServices = ['db-setup'],
+  ci = { enabled: true },
 }) {
   const resolvedCompletedServices = backendDependencies.includes(
     'permissions-seed'
@@ -74,7 +75,7 @@ function sharedEntry({
     suiteKind,
     concurrencyGroup: suiteKind === 'ui' ? 'ui-e2e' : 'microservices-e2e',
     environmentGroup,
-    ci: { enabled: true },
+    ci,
     stack: {
       mode: 'shared',
       composeFile: SHARED_COMPOSE_FILE,
@@ -264,6 +265,10 @@ const MICROSERVICE_ENTRIES = [
     ],
     imageBudget: 9,
     readinessUrl: null,
+    // The CI stack intentionally has no Ollama provider. Keep this suite
+    // available for local runs while excluding it from the CI matrix until a
+    // deterministic model fixture is provided.
+    ci: { enabled: false },
   }),
   sharedEntry({
     project: 'app-configurator-e2e',

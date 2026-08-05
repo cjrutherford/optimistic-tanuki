@@ -150,9 +150,9 @@ wait_for_gateway() {
 }
 
 seed_default_owner() {
-  owner_name="${DEV_OWNER_NAME:-Development Owner}"
-  owner_email="${DEV_OWNER_EMAIL:-owner@optimistic-tanuki.local}"
-  owner_password="${DEV_OWNER_PASSWORD:-DevOwner!123}"
+  owner_name="${OWNER_BOOTSTRAP_NAME:-${DEV_OWNER_NAME:-Development Owner}}"
+  owner_email="${OWNER_BOOTSTRAP_EMAIL:-${DEV_OWNER_EMAIL:-owner@optimistic-tanuki.local}}"
+  owner_password="${OWNER_BOOTSTRAP_PASSWORD:-${DEV_OWNER_PASSWORD:-DevOwner!123}}"
   owner_payload="$(
     node -e '
       const [name, email, password] = process.argv.slice(1);

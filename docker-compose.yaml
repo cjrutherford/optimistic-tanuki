@@ -751,7 +751,7 @@ services:
       dockerfile: ./apps/store/Dockerfile
     image: cjrutherford/optimistic_tanuki_store:${PRODUCTION_IMAGE_TAG:-latest}
     ports:
-      - '${STORE_PORT:-3013}:3009'
+      - '${STORE_PORT:-3013}:3013'
     environment:
       <<: *service_db_env
     depends_on:

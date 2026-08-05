@@ -124,6 +124,41 @@ export class AppService {
     }
   }
 
+  async bootstrapOwner(
+    email: string,
+    fn: string,
+    ln: string,
+    password: string,
+    bio = 'Platform owner'
+  ): Promise<{ created: boolean; user: UserEntity }> {
+    const normalizedEmail = this.normalizeEmail(email);
+    const existingUser = await this.userRepo.findOne({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      await this.userRepo.update(existingUser.id, {
+        firstName: fn,
+        lastName: ln,
+        bio,
+        emailVerifiedAt: existingUser.emailVerifiedAt || new Date(),
+      });
+      return { created: false, user: existingUser };
+    }
+
+    const result = await this.registerUser(
+      normalizedEmail,
+      fn,
+      ln,
+      password,
+      password,
+      bio
+    );
+    const user = result.data.user as UserEntity;
+    await this.userRepo.update(user.id, { emailVerifiedAt: new Date() });
+    return { created: true, user };
+  }
+
   async login(
     email: string,
     password: string,

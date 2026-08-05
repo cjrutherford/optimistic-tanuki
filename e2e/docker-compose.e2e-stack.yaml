@@ -322,7 +322,7 @@ services:
       context: ..
       dockerfile: ./apps/store/Dockerfile
     ports:
-      - '3013:3009'
+      - '3013:3013'
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -446,7 +446,7 @@ services:
       PERMISSIONS_HOST: permissions
       PERMISSIONS_PORT: 3012
       STORE_HOST: store
-      STORE_PORT: 3009
+      STORE_PORT: 3013
       APP_CONFIGURATOR_HOST: app-configurator
       APP_CONFIGURATOR_PORT: 3014
       LEAD_TRACKER_HOST: lead-tracker

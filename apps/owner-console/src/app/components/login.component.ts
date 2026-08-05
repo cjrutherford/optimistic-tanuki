@@ -194,7 +194,15 @@ export class LoginComponent implements OnInit {
     this.error = '';
 
     this.authService.login(loginData.email, loginData.password).subscribe({
-      next: () => {
+      next: async () => {
+        const sessionRestored = await firstValueFrom(
+          this.authService.restoreSession()
+        );
+        if (!sessionRestored) {
+          this.error =
+            'Sign-in succeeded, but the session could not be restored. Please try again.';
+          return;
+        }
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
@@ -209,7 +217,8 @@ export class LoginComponent implements OnInit {
     try {
       const result = await this.oauthService.initiateOAuthLogin(
         event.provider,
-        'owner-console'
+        'owner-console',
+        true
       );
 
       if (result.success) {

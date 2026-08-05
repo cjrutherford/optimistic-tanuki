@@ -482,8 +482,10 @@ jobs:
       - name: Prepare runner Docker capacity
         run: node scripts/wait-for-e2e-readiness.mjs --prepare-runner
 
-      - name: Build database setup prerequisite
-        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup
+      - name: Build local E2E prerequisites
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup oauth-provider
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
       - name: Resolve manifest-bounded services
         run: |
@@ -493,7 +495,7 @@ jobs:
 
       - name: Pull target stack images
         run: |
-          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup)$' /tmp/e2e-services)
+          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
           if [ "${#SERVICES[@]}" -gt 0 ]; then
             docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml pull "${SERVICES[@]}"
           fi
@@ -583,14 +585,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Install Google Chrome
-        run: pnpm exec playwright install --with-deps chrome
-
       - name: Prepare runner Docker capacity
         run: node scripts/wait-for-e2e-readiness.mjs --prepare-runner
 
-      - name: Build database setup prerequisite
-        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup
+      - name: Build local E2E prerequisites
+        run: docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml build db-setup oauth-provider
+        env:
+          E2E_IMAGE_TAG: ${{ needs.plan.outputs.e2e_image_tag }}
 
       - name: Resolve manifest-bounded services
         run: |
@@ -600,7 +601,7 @@ jobs:
 
       - name: Pull target stack images
         run: |
-          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup)$' /tmp/e2e-services)
+          mapfile -t SERVICES < <(grep -Ev '^(db|redis|db-setup|oauth-provider)$' /tmp/e2e-services)
           if [ "${#SERVICES[@]}" -gt 0 ]; then
             docker compose --project-name "$E2E_COMPOSE_PROJECT" -f e2e/docker-compose.e2e-stack.yaml --profile "${{ matrix.profile }}" pull "${SERVICES[@]}"
           fi
@@ -633,6 +634,7 @@ jobs:
         env:
           CI: true
           BASE_URL: ${{ matrix.base_url }}
+          PLAYWRIGHT_CHANNEL: chrome
 
       - name: Upload Playwright artifacts
         if: always()

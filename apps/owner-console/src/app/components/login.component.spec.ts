@@ -12,6 +12,7 @@ import { LoginComponent } from './login.component';
 describe('LoginComponent', () => {
   const login = jest.fn();
   const setToken = jest.fn();
+  const restoreSession = jest.fn();
   const get = jest.fn();
 
   function createComponent(queryParams: Record<string, string> = {}) {
@@ -23,6 +24,7 @@ describe('LoginComponent', () => {
           useValue: {
             login,
             setToken,
+            restoreSession,
           },
         },
         {
@@ -51,6 +53,7 @@ describe('LoginComponent', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     get.mockReturnValue(of({ providers: [] }));
+    restoreSession.mockReturnValue(of(true));
   });
 
   it('shows an inline notice when OAuth provider config cannot be loaded', async () => {
@@ -137,5 +140,37 @@ describe('LoginComponent', () => {
 
     initiateOAuthLogin.mockRestore();
     completeOAuthRegistration.mockRestore();
+  });
+
+  it('starts OAuth with a cookie session and restores it before navigating', async () => {
+    const initiateOAuthLogin = jest
+      .spyOn(OAuthService.prototype, 'initiateOAuthLogin')
+      .mockResolvedValue({ success: true, session: true });
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    await component.onOAuthProvider({ provider: 'google' } as any);
+
+    expect(initiateOAuthLogin).toHaveBeenCalledWith(
+      'google',
+      'owner-console',
+      true
+    );
+    expect(restoreSession).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+
+    initiateOAuthLogin.mockRestore();
+  });
+
+  it('restores the cookie session after password login before navigating', async () => {
+    login.mockReturnValue(of({ data: {} }));
+    const { component } = createComponent();
+    const router = TestBed.inject(Router);
+
+    component.onLogin({ email: 'owner@example.com', password: 'password' });
+    await Promise.resolve();
+
+    expect(restoreSession).toHaveBeenCalledTimes(1);
+    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
   });
 });

@@ -9,6 +9,13 @@ import {
   RegisterRequest,
 } from '@optimistic-tanuki/ui-models';
 
+export type SessionUser = {
+  userId: string;
+  profileId?: string;
+  email?: string;
+  name?: string;
+};
+
 @Injectable({
   providedIn: 'root',
 })
@@ -20,6 +27,7 @@ export class AuthService {
   };
   private readonly isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   private serviceToken: string | null = null;
+  private sessionUser: SessionUser | null = null;
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
   constructor(
@@ -36,6 +44,10 @@ export class AuthService {
 
   getToken(): string | null {
     return isPlatformBrowser(this.platformId) ? null : this.serviceToken;
+  }
+
+  getSessionUser(): SessionUser | null {
+    return this.sessionUser;
   }
 
   setToken(token: string): void {
@@ -102,6 +114,7 @@ export class AuthService {
       )
       .subscribe({ error: () => undefined });
     this.serviceToken = null;
+    this.sessionUser = null;
     this.isAuthenticatedSubject.next(false);
     this.router.navigate(['/login']);
   }
@@ -109,14 +122,18 @@ export class AuthService {
   restoreSession(): Observable<boolean> {
     if (!isPlatformBrowser(this.platformId)) return of(false);
     return this.http
-      .get<{ data: { user: unknown } }>(
-        `${this.API_URL}/authentication/session`,
-        { headers: this.APP_SCOPE_HEADER, withCredentials: true }
-      )
+      .get<{ data: SessionUser }>(`${this.API_URL}/authentication/session`, {
+        headers: this.APP_SCOPE_HEADER,
+        withCredentials: true,
+      })
       .pipe(
-        tap(() => this.isAuthenticatedSubject.next(true)),
+        tap((response) => {
+          this.sessionUser = response.data;
+          this.isAuthenticatedSubject.next(true);
+        }),
         map(() => true),
         catchError(() => {
+          this.sessionUser = null;
           this.isAuthenticatedSubject.next(false);
           return of(false);
         })

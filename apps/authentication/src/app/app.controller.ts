@@ -175,6 +175,26 @@ export class AppController {
     }
   }
 
+  @MessagePattern({ cmd: AuthCommands.BootstrapOwner })
+  bootstrapOwner(
+    @Payload()
+    data: {
+      email: string;
+      fn: string;
+      ln: string;
+      password: string;
+      bio?: string;
+    }
+  ) {
+    return this.appService.bootstrapOwner(
+      data.email,
+      data.fn,
+      data.ln,
+      data.password,
+      data.bio
+    );
+  }
+
   @MessagePattern({ cmd: AuthCommands.ResetPassword })
   async resetPassword(@Payload() data: ResetPasswordRequest) {
     try {

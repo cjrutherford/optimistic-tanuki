@@ -37,17 +37,12 @@ describe('BootstrapService', () => {
     fs.rmSync(path.dirname(deploymentPath), { force: true, recursive: true });
   });
 
-  it('creates the initial owner auth user, profile, and owner roles', async () => {
+  it('upserts the configured owner auth user, profile, and owner roles', async () => {
     const authClient = {
       send: jest.fn().mockReturnValue(
         of({
-          data: {
-            user: {
-              id: 'owner-user-1',
-              firstName: 'Owner',
-              lastName: 'Console',
-            },
-          },
+          created: true,
+          user: { id: 'owner-user-1' },
         })
       ),
     };
@@ -84,10 +79,9 @@ describe('BootstrapService', () => {
     });
 
     expect(authClient.send).toHaveBeenCalledWith(
-      { cmd: AuthCommands.Register },
+      { cmd: AuthCommands.BootstrapOwner },
       expect.objectContaining({
         bio: 'Platform owner',
-        confirm: 'password',
         email: 'owner@example.com',
         fn: 'Owner',
         ln: 'Console',
@@ -129,9 +123,13 @@ describe('BootstrapService', () => {
     );
   });
 
-  it('repairs global and owner-console permissions for an existing global owner', async () => {
+  it('repairs global and owner-console permissions for the configured existing owner', async () => {
     const authClient = {
-      send: jest.fn(),
+      send: jest
+        .fn()
+        .mockReturnValue(
+          of({ created: false, user: { id: 'legacy-owner-user' } })
+        ),
     };
     const profileClient = {
       send: jest.fn().mockReturnValue(
@@ -161,12 +159,15 @@ describe('BootstrapService', () => {
     ).resolves.toEqual({
       created: false,
       email: 'owner@example.com',
-      name: 'Existing Owner',
+      name: 'Owner Console',
       profileId: 'legacy-owner-profile',
       userId: 'legacy-owner-user',
     });
 
-    expect(authClient.send).not.toHaveBeenCalled();
+    expect(authClient.send).toHaveBeenCalledWith(
+      { cmd: AuthCommands.BootstrapOwner },
+      expect.objectContaining({ email: 'owner@example.com' })
+    );
     expect(roleInit.processNow).toHaveBeenCalledTimes(2);
     expect(roleInit.processNow).toHaveBeenNthCalledWith(
       1,
