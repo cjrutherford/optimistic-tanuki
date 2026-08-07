@@ -7,8 +7,6 @@ import { catchError, throwError } from 'rxjs';
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);
-  const token = authStateService.getToken();
-
   // Determine app scope based on API route to align with
   // permissions configuration (social endpoints use the
   // "social" app scope, blogging uses "blogging", etc.).
@@ -21,16 +19,11 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
     appScope = 'blogging';
   } else if (url.includes('/api/project')) {
     appScope = 'project-planning';
-  } else if (url.includes('/api/forum')) {
-    appScope = 'forum';
   }
 
   const clonedRequest = req.clone({
     setHeaders: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'X-ot-appscope': appScope,
-      // This client has cookie-session restoration support. Other clients
-      // intentionally keep the token redemption contract until migrated.
       'X-ot-session-mode': 'cookie',
     },
     withCredentials: true,

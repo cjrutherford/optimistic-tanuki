@@ -8,7 +8,14 @@ export default [
   ...nx.configs['flat/typescript'],
   ...nx.configs['flat/javascript'],
   {
-    ignores: ['**/dist', '**/coverage/**'],
+    ignores: [
+      '**/dist',
+      '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
+      '**/public/generated/**',
+      'dot/**',
+    ],
   },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
@@ -158,5 +165,12 @@ export default [
       '**/*.mjs',
     ],
     rules: {},
+  },
+  {
+    files: ['apps/**/*-e2e/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      // E2E suites share fixtures from the workspace-level e2e support tree.
+      '@nx/enforce-module-boundaries': 'off',
+    },
   },
 ];

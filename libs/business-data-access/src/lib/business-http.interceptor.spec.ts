@@ -42,13 +42,13 @@ describe('businessHttpInterceptor', () => {
     localStorage.clear();
   });
 
-  it('adds the business auth token and app scope header to business api requests', () => {
+  it('adds cookie credentials and the app scope header to business api requests', () => {
     http.put('/api/business/site-config', {}).subscribe();
 
     const request = httpMock.expectOne('/api/business/site-config');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer business-site-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
+    expect(request.request.headers.get('X-ot-session-mode')).toBe('cookie');
+    expect(request.request.withCredentials).toBe(true);
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush({ ok: true });
   });
@@ -68,9 +68,7 @@ describe('businessHttpInterceptor', () => {
     http.get('/api/business/client/routines').subscribe();
 
     const request = httpMock.expectOne('/api/business/client/routines');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush([]);
   });
@@ -90,9 +88,7 @@ describe('businessHttpInterceptor', () => {
     http.get('/api/finance/invoices').subscribe();
 
     const request = httpMock.expectOne('/api/finance/invoices');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer business-site-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
     expect(request.request.headers.get('x-ot-appscope')).toBe('business-site');
     request.flush([]);
   });

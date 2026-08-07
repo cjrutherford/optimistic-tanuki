@@ -105,6 +105,7 @@ fi
 
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
+run_seed forum "${APP_RUNTIME_DIR}" node -e 'const { ClientProxyFactory, Transport } = require("@nestjs/microservices"); const { firstValueFrom } = require("rxjs"); (async () => { const client = ClientProxyFactory.create({ transport: Transport.TCP, options: { host: process.env.FORUM_HOST || "forum", port: Number(process.env.FORUM_PORT || 3015) } }); await client.connect(); await firstValueFrom(client.send({ cmd: "SEED_PRODUCTION_FORUM_TOPICS" }, {})); client.close(); })().catch((error) => { console.error(error); process.exit(1); });'
 
 echo "Seeding social service (including local communities)..."
 run_seed social "${APP_RUNTIME_DIR}" node ./seed-local-communities.js

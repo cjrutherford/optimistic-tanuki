@@ -87,12 +87,11 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) return false;
     try {
       const response = await firstValueFrom(
-        this.http.get<{ data: { user: UserData } }>(
-          '/api/authentication/session',
-          { withCredentials: true }
-        )
+        this.http.get<{ data: UserData }>('/api/authentication/session', {
+          withCredentials: true,
+        })
       );
-      const user = response?.data?.user;
+      const user = response?.data;
       if (!user?.userId) return false;
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);

@@ -10,24 +10,15 @@ export const businessHttpInterceptor: HttpInterceptorFn = (request, next) => {
   }
 
   const auth = inject(BusinessAuthService);
-  const ownerToken = auth.token();
-  const clientToken = auth.clientToken();
-  const prefersOwnerToken =
-    request.url.startsWith('/api/business/owner/') ||
-    request.url.startsWith('/api/finance/') ||
-    request.url === '/api/business/site-config';
-  const token = prefersOwnerToken
-    ? ownerToken ?? clientToken
-    : clientToken ?? ownerToken;
   let headers = request.headers;
 
   if (!headers.has('x-ot-appscope')) {
     headers = headers.set('x-ot-appscope', BUSINESS_SITE_SCOPE);
   }
 
-  if (token && !headers.has('Authorization')) {
-    headers = headers.set('Authorization', `Bearer ${token}`);
+  if (!headers.has('X-ot-session-mode')) {
+    headers = headers.set('X-ot-session-mode', 'cookie');
   }
 
-  return next(request.clone({ headers }));
+  return next(request.clone({ headers, withCredentials: true }));
 };

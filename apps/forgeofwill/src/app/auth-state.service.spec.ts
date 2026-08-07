@@ -24,7 +24,7 @@ describe('AuthStateService', () => {
       authServiceMock = {
         login: jest.fn().mockResolvedValue({ data: {} }),
         currentSession: jest.fn().mockResolvedValue({
-          data: { user: mockDecodedToken },
+          data: mockDecodedToken,
         }),
       };
 

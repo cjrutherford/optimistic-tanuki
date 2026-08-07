@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { chromium, defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 import { workspaceRoot } from '@nx/devkit';
 import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
@@ -9,6 +9,10 @@ const baseURL =
   process.env['BASE_URL'] ||
   (isCI ? 'http://127.0.0.1:8081' : 'http://localhost:4200');
 const headless = resolvePlaywrightHeadless(!!process.env['CI']);
+const useManagedChromium =
+  process.env['PLAYWRIGHT_USE_MANAGED_CHROMIUM'] === 'true';
+const managedChromiumPath =
+  process.env['PLAYWRIGHT_EXECUTABLE_PATH'] || chromium.executablePath();
 
 /**
  * Read environment variables from file.
@@ -29,6 +33,10 @@ export default defineConfig({
   use: {
     baseURL,
     headless,
+    launchOptions: {
+      args: ['--disable-crash-reporter'],
+      ...(useManagedChromium ? { executablePath: managedChromiumPath } : {}),
+    },
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
@@ -45,13 +53,19 @@ export default defineConfig({
     ? [
         {
           name: 'chromium',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
         },
       ]
     : [
         {
           name: 'chromium',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
         },
       ],
 });

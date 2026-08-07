@@ -53,9 +53,9 @@ export class AuthStateService {
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
       this.decodedTokenSubject.next({
-        userId: response.data.user.userId,
-        name: response.data.user.name,
-        email: response.data.user.email,
+        userId: response.data.userId,
+        name: response.data.name,
+        email: response.data.email,
         profileId: '',
       });
       this.authenticated = true;

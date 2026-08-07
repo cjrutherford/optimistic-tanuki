@@ -16,11 +16,8 @@ export const AuthInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);
-  const token = authStateService.getToken();
-
   const clonedRequest = req.clone({
     setHeaders: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'X-ot-session-mode': 'cookie',
     },
     withCredentials: true,

@@ -183,6 +183,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ot_forum
       PORT: 3015
+      SEED_DEMO_DATA: 'true'
     healthcheck:
       test:
         - CMD-SHELL
@@ -418,7 +419,13 @@ services:
       THROTTLE_LOGIN_LIMIT: 100
       JWT_SECRET: e2e-test-jwt-secret
       OAUTH_STATE_SECRET: e2e-oauth-state-secret
-      CLIENT_INTERFACE_UI_BASE_URL: http://127.0.0.1:8080
+      CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080
+      CLIENT_INTERFACE_DOMAIN: localhost
+      CI_GOOGLE_CLIENT_ID: e2e-google-client-id
+      CI_GOOGLE_CLIENT_SECRET: e2e-google-client-secret
+      CI_GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize
+      CI_GOOGLE_TOKEN_ENDPOINT: http://oauth-provider:3016/token
+      CI_GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo
       GOOGLE_CLIENT_ID: e2e-google-client-id
       GOOGLE_CLIENT_SECRET: e2e-google-client-secret
       GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize

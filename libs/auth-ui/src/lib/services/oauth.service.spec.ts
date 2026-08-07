@@ -56,6 +56,12 @@ describe('OAuthService', () => {
       ],
     }).compileComponents();
     const service = TestBed.inject(OAuthService);
+    const http = TestBed.inject(HttpClient);
+    jest
+      .spyOn(http, 'post')
+      .mockReturnValue(
+        of({ session: true, returnOrigin: window.location.origin }) as any
+      );
     service.configureProviders({ google: { clientId: 'google-client-id' } });
 
     const login = service.initiateOAuthLogin(
@@ -73,12 +79,20 @@ describe('OAuthService', () => {
         origin: window.location.origin,
         data: {
           type: 'oauth-callback',
-          payload: { success: true, session: true },
+          payload: { success: true, callbackCode: 'one-time-code' },
         },
       })
     );
 
     await expect(login).resolves.toEqual({ success: true, session: true });
+    expect(http.post).toHaveBeenCalledWith(
+      '/api/oauth/callback/redeem',
+      { callbackCode: 'one-time-code' },
+      expect.objectContaining({
+        withCredentials: true,
+        headers: { 'X-ot-session-mode': 'cookie' },
+      })
+    );
   });
 
   it('waits for the cookie-session callback when a cross-origin popup reports closed', async () => {

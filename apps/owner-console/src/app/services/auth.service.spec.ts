@@ -66,6 +66,28 @@ describe('AuthService', () => {
     });
   });
 
+  it('restores the owner identity when the gateway returns the legacy nested session shape', () => {
+    service.restoreSession().subscribe();
+
+    const req = httpMock.expectOne('/api/authentication/session');
+    req.flush({
+      data: {
+        user: {
+          userId: 'owner-2',
+          profileId: 'profile-2',
+          email: 'owner@example.com',
+        },
+      },
+    });
+
+    expect(service.getSessionUser()).toEqual({
+      userId: 'owner-2',
+      profileId: 'profile-2',
+      email: 'owner@example.com',
+    });
+    expect(service.isAuthenticated()).toBe(true);
+  });
+
   it('clears the cookie-backed session on logout', () => {
     service.logout();
 

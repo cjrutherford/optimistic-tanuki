@@ -13,31 +13,58 @@ test.describe('OAuth cookie session', () => {
     const google = page.getByLabel('Sign in with Google');
     await expect(google).toBeVisible();
 
+    const providerRequestPromise = context.waitForEvent(
+      'request',
+      (request) => {
+        const url = new URL(request.url());
+        return (
+          url.origin === 'http://127.0.0.1:3016' &&
+          url.pathname === '/authorize'
+        );
+      }
+    );
+    const callbackRequestPromise = context.waitForEvent(
+      'request',
+      (request) => {
+        const url = new URL(request.url());
+        return (
+          url.origin === new URL(page.url()).origin &&
+          url.pathname === '/oauth/callback/google'
+        );
+      }
+    );
     const popupPromise = page.waitForEvent('popup');
     await google.click();
     const popup = await popupPromise;
 
     // A popup exists and remains open long enough to complete the external
     // provider redirect instead of being mistaken for a user cancellation.
-    await popup.waitForURL(/127\.0\.0\.1:3016\/authorize/);
+    const providerRequest = await providerRequestPromise;
     expect(popup.isClosed()).toBe(false);
-    await popup.waitForURL(/\/oauth\/callback(?:\?|\/)/);
+    expect(new URL(providerRequest.url()).origin).toBe('http://127.0.0.1:3016');
+    const callbackRequest = await callbackRequestPromise;
+    expect(new URL(callbackRequest.url()).origin).toBe(
+      new URL(page.url()).origin
+    );
 
     // The opener receives only a session-success signal, restores via the
     // protected session endpoint, and then completes the normal login route.
     await expect(page).toHaveURL(/\/(feed|settings)(?:\?|$)/);
     await expect.poll(() => popup.isClosed()).toBe(true);
 
-    const sessionCookie = (await context.cookies('http://127.0.0.1:8080')).find(
-      (cookie) => cookie.name === 'ot_session'
-    );
+    const appOrigin = new URL(page.url()).origin;
+    const sessionCookie = (
+      await context.cookies(`${appOrigin}/api/authentication/session`)
+    ).find((cookie) => cookie.name === 'ot_session');
     expect(sessionCookie).toEqual(
       expect.objectContaining({ httpOnly: true, path: '/api' })
     );
     expect(sessionCookie?.value).toBeTruthy();
     expect(
-      await page.evaluate(() => localStorage.getItem('ot-client-authToken'))
-    ).toBeNull();
+      await page.evaluate(() =>
+        Object.keys(localStorage).filter((key) => /token/i.test(key))
+      )
+    ).toEqual([]);
 
     const session = await page.request.get('/api/authentication/session');
     expect(session.ok()).toBe(true);

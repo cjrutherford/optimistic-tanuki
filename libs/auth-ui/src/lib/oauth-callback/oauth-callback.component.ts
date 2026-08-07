@@ -147,63 +147,45 @@ export class OAuthCallbackComponent implements OnInit {
       return;
     }
 
-    let redemption: { token?: string; session?: true; returnOrigin?: string };
-    try {
-      if (!this.http) throw new Error('HTTP client is unavailable');
-      this.removeCallbackParametersFromHistory();
-      const result = await firstValueFrom(
-        this.http.post<{
-          token?: string;
-          session?: true;
-          returnOrigin?: string;
-        }>(
-          `${this.apiBaseUrl}/oauth/callback/redeem`,
-          { callbackCode },
-          {
-            withCredentials: true,
-            headers: { 'X-ot-session-mode': 'cookie' },
-          }
-        )
-      );
-      if (
-        (!result?.token && result?.session !== true) ||
-        !this.isTrustedReturnOrigin(result?.returnOrigin)
-      ) {
-        throw new Error('No authentication session received');
-      }
-      redemption = result;
-    } catch {
-      this.error = 'Authentication could not be completed';
-      this.sendMessageToParent({
-        type: 'oauth-callback',
-        payload: {
-          success: false,
-          error: 'Authentication could not be completed',
-        },
-      });
-      return;
-    }
-
+    this.removeCallbackParametersFromHistory();
     this.sendMessageToParent(
       {
         type: 'oauth-callback',
         payload: {
           success: true,
-          session: redemption.session === true,
-          ...(redemption.token ? { token: redemption.token } : {}),
+          callbackCode,
         },
       },
-      redemption.returnOrigin
+      window.location.origin
     );
 
     if (!window.opener && returnTo) {
       try {
         const target = new URL(returnTo, window.location.origin);
-        if (target.origin === window.location.origin) {
-          this.router.navigateByUrl(
-            `${target.pathname}${target.search}${target.hash}`
-          );
+        if (!this.http || !this.isTrustedReturnOrigin(target.origin)) return;
+        const redemption = await firstValueFrom(
+          this.http.post<{
+            token?: string;
+            session?: true;
+            returnOrigin?: string;
+          }>(
+            new URL('/api/oauth/callback/redeem', target.origin).toString(),
+            { callbackCode },
+            {
+              withCredentials: true,
+              headers: { 'X-ot-session-mode': 'cookie' },
+            }
+          )
+        );
+        if (
+          (redemption.session !== true && !redemption.token) ||
+          redemption.returnOrigin !== target.origin
+        ) {
+          throw new Error('No authentication session received');
         }
+        this.router.navigateByUrl(
+          `${target.pathname}${target.search}${target.hash}`
+        );
       } catch {
         // Non-popup callback fallback can remain on the status page.
       }

@@ -164,22 +164,20 @@ describe('AuthenticationController', () => {
   });
 
   it('returns the guard-verified identity for a browser session without exposing a token', async () => {
-    await expect(
-      controller.getSession({
-        user: {
-          userId: 'user-1',
-          email: 'session@example.test',
-          name: 'Session User',
-          profileId: 'profile-1',
-          exp: 0,
-          iat: 0,
-        },
-      })
-    ).resolves.toEqual({
-      data: expect.objectContaining({
+    expect(
+      controller.currentSession({
         userId: 'user-1',
         email: 'session@example.test',
-      }),
+        name: 'Session User',
+        profileId: 'profile-1',
+      } as any)
+    ).toEqual({
+      data: {
+        userId: 'user-1',
+        email: 'session@example.test',
+        name: 'Session User',
+        profileId: 'profile-1',
+      },
     });
   });
 
@@ -244,12 +242,10 @@ describe('AuthenticationController', () => {
       } as any)
     ).toEqual({
       data: {
-        user: {
-          userId: 'user-1',
-          email: 'user@example.com',
-          name: 'User',
-          profileId: 'profile-1',
-        },
+        userId: 'user-1',
+        email: 'user@example.com',
+        name: 'User',
+        profileId: 'profile-1',
       },
     });
   });

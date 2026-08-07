@@ -127,6 +127,27 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  forum:
+    container_name: e2e_forum_fow
+    build:
+      context: ..
+      dockerfile: ./apps/forum/Dockerfile
+    ports:
+      - '3015:3015'
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ot_forum
+      PORT: 3015
+      SEED_DEMO_DATA: 'true'
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   gateway:
     container_name: e2e_gateway_fow
     build:
@@ -151,6 +172,8 @@ services:
       PROJECT_PLANNING_PORT: 3006
       CHAT_COLLECTOR_HOST: chat-collector
       CHAT_COLLECTOR_PORT: 3007
+      FORUM_HOST: forum
+      FORUM_PORT: 3015
     depends_on:
       db:
         condition: service_healthy
@@ -163,6 +186,8 @@ services:
       project-planning:
         condition: service_started
       chat-collector:
+        condition: service_started
+      forum:
         condition: service_started
 
   forgeofwill-client-interface:

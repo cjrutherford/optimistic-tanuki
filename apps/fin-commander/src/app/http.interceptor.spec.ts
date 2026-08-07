@@ -17,7 +17,7 @@ describe('AuthInterceptor', () => {
     localStorage.clear();
   });
 
-  it('adds the bearer token to authenticated requests', async () => {
+  it('uses the cookie session for authenticated requests', async () => {
     let forwardedRequest: HttpRequest<unknown> | undefined;
 
     TestBed.configureTestingModule({
@@ -45,9 +45,7 @@ describe('AuthInterceptor', () => {
       await firstValueFrom(AuthInterceptor(request, next));
     });
 
-    expect(forwardedRequest?.headers.get('Authorization')).toBe(
-      'Bearer fin-token'
-    );
+    expect(forwardedRequest?.headers.get('Authorization')).toBeNull();
     expect(forwardedRequest?.headers.get('X-ot-session-mode')).toBe('cookie');
     expect(forwardedRequest?.withCredentials).toBe(true);
   });

@@ -46,12 +46,12 @@ export class AuthStateService {
     if (!this.isBrowser()) return false;
     try {
       const response = await firstValueFrom(
-        this.http.get<{ data: { user: any } }>('/api/authentication/session', {
+        this.http.get<{ data: any }>('/api/authentication/session', {
           withCredentials: true,
         })
       );
       this._token.set(null);
-      this._user.set(response.data.user);
+      this._user.set(response.data);
       this._isAuthenticated.set(true);
       return true;
     } catch {

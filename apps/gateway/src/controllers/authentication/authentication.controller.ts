@@ -161,16 +161,6 @@ export class AuthenticationController {
       .catch((e) => console.error(e));
   }
 
-  /**
-   * Returns only the guard-verified identity for an HttpOnly browser session.
-   * The session JWT is deliberately never returned to client-side JavaScript.
-   */
-  @Get('session')
-  @UseGuards(AuthGuard)
-  async getSession(@Req() request: { user: UserDetails }) {
-    return { data: request.user };
-  }
-
   @Post('email-action/request')
   @Public()
   @HttpCode(HttpStatus.ACCEPTED)
@@ -287,12 +277,10 @@ export class AuthenticationController {
   currentSession(@User() user: UserDetails) {
     return {
       data: {
-        user: {
-          userId: user.userId,
-          email: user.email,
-          name: user.name,
-          profileId: user.profileId,
-        },
+        userId: user.userId,
+        email: user.email,
+        name: user.name,
+        profileId: user.profileId,
       },
     };
   }

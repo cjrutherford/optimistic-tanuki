@@ -11,6 +11,10 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 
 const forumPermissionResolver = async () => {
+  const authState = inject(AuthStateService);
+  if (!authState.getDecodedTokenValue()) {
+    return [];
+  }
   const permissionsService = inject(UserPermissionsService);
   const startsWith = 'forum.';
   const permissions = await permissionsService.searchPermissions(startsWith);

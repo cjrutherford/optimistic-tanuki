@@ -7,13 +7,10 @@ import { catchError, throwError } from 'rxjs';
 export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);
-  const token = authStateService.getToken();
-
   const appScope = 'D6';
 
   const clonedRequest = req.clone({
     setHeaders: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'X-ot-appscope': appScope,
       'X-ot-session-mode': 'cookie',
     },

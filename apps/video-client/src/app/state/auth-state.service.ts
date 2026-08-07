@@ -53,14 +53,13 @@ export class AuthStateService {
     if (!isPlatformBrowser(this.platformId)) return;
     try {
       const response = await firstValueFrom(
-        this.http.get<{ data: { user: DecodedToken } }>(
-          '/api/authentication/session',
-          { withCredentials: true }
-        )
+        this.http.get<{ data: DecodedToken }>('/api/authentication/session', {
+          withCredentials: true,
+        })
       );
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
-      this.sessionUser = response.data.user;
+      this.sessionUser = response.data;
     } catch {
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(false);

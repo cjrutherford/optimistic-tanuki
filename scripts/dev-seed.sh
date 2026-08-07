@@ -247,6 +247,7 @@ refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 refresh_service permissions
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
+run_seed forum "${APP_RUNTIME_DIR}" node -e 'const { ClientProxyFactory, Transport } = require("@nestjs/microservices"); const { firstValueFrom } = require("rxjs"); (async () => { const client = ClientProxyFactory.create({ transport: Transport.TCP, options: { host: process.env.FORUM_HOST || "forum", port: Number(process.env.FORUM_PORT || 3015) } }); await client.connect(); await firstValueFrom(client.send({ cmd: "SEED_DEMO_FORUM_TOPICS" }, {})); client.close(); })().catch((error) => { console.error(error); process.exit(1); });'
 refresh_service gateway
 refresh_services store authentication profile social payments assets chat-collector classifieds
 run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js
