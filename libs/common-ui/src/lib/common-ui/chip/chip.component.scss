@@ -1,43 +1,33 @@
 @use 'personality' as p;
+@use '../interfaces/variant' as variant;
 
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
+  border: 1px solid transparent;
   border-radius: var(--border-radius-full, 16px);
-  font-size: 13px;
   font-weight: 500;
   @include p.personality-transition(all, 'fast');
+  @include variant.variant-surface;
+
+  // ---- Size ----
+  &[data-size='sm'] {
+    padding: 2px 8px;
+    font-size: 12px;
+  }
+  &[data-size='md'] {
+    padding: 4px 12px;
+    font-size: 13px;
+  }
+  &[data-size='lg'] {
+    padding: 6px 16px;
+    font-size: 14px;
+  }
 
   &.disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  &.chip-primary {
-    background: color-mix(in srgb, var(--primary) 15%, transparent);
-    color: var(--primary);
-  }
-
-  &.chip-secondary {
-    background: color-mix(in srgb, var(--secondary) 15%, transparent);
-    color: var(--secondary);
-  }
-
-  &.chip-success {
-    background: var(--success, #4caf50);
-    color: var(--success-foreground, white);
-  }
-
-  &.chip-warning {
-    background: var(--warning, #ff9800);
-    color: var(--warning-foreground, black);
-  }
-
-  &.chip-error {
-    background: var(--danger, #f44336);
-    color: var(--danger-foreground, white);
   }
 }
 

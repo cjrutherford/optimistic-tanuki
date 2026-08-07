@@ -7,6 +7,7 @@
   grid-template-columns: 0.8fr 1.2fr;
   gap: 1rem;
   margin-top: clamp(2.5rem, 5vw, 4rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
   padding: clamp(1.2rem, 2.7vw, 2.1rem);
   position: relative;
   overflow: clip;
@@ -79,24 +80,11 @@ h2 {
 
 .manifesto-card {
   min-height: 9.75rem;
-  padding: 1.1rem;
-  border-radius: var(--hai-radius-panel);
-  background: color-mix(
-    in srgb,
-    var(--surface, var(--background)) 72%,
-    transparent
-  );
-  backdrop-filter: blur(18px);
 }
 
 .manifesto-label {
   display: inline-flex;
   margin-bottom: 0.75rem;
-  font: 700 0.78rem/1.1
-    var(--personality-font-family, var(--font-body, sans-serif));
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--foreground) 60%, var(--primary));
 }
 
 .manifesto-card p {

@@ -1,25 +1,25 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Themeable, ThemeColors } from '@optimistic-tanuki/theme-lib';
+import type { Emphasis, Tone } from './interfaces/variant.contract';
 
 /**
  * Canonical badge tones. Map to the matching `--<tone>` and `--on-<tone>`
  * tokens written by ThemeService.
+ *
+ * @deprecated Use {@link Tone} from the shared variant contract.
  */
-export type BadgeTone =
-  | 'neutral'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'brand';
+export type BadgeTone = Tone;
 
 /**
- * Visual treatment.
+ * Visual treatment. Subset of the canonical {@link Emphasis} (badges never use
+ * `ghost`).
  *
  * - `solid` — filled background, `--on-<tone>` foreground.
  * - `soft` — translucent background mixed from the tone, foreground = tone.
  * - `outline` — transparent background, bordered, foreground = tone.
+ *
+ * @deprecated Use `emphasis` (canonical) instead.
  */
 export type BadgeShape = 'solid' | 'soft' | 'outline';
 
@@ -70,7 +70,19 @@ export class BadgeComponent extends Themeable {
   private _variant?: BadgeVariant;
 
   /** Visual treatment. Defaults to `soft` for non-blocking inline use. */
-  @Input() shape: BadgeShape = 'soft';
+  @Input() emphasis: Emphasis = 'soft';
+
+  /**
+   * Legacy alias for {@link emphasis}. Kept for callers still passing `shape`.
+   *
+   * @deprecated Use `emphasis` instead.
+   */
+  @Input() set shape(value: BadgeShape) {
+    this.emphasis = value;
+  }
+  get shape(): BadgeShape {
+    return this.emphasis as BadgeShape;
+  }
 
   @Input() size: BadgeSize = 'md';
   @Input() icon: 'check' | 'star' | 'shield' | 'none' = 'none';

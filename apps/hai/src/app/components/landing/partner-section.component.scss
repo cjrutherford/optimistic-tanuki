@@ -2,10 +2,9 @@
   display: block;
 }
 .partner-panel {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 2rem;
+  display: block;
   margin-top: 2rem;
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
   padding: clamp(1.5rem, 5vw, 4rem);
   border: 1px solid color-mix(in srgb, var(--secondary) 65%, var(--border));
   border-radius: var(--personality-card-radius, 1.75rem);
@@ -16,8 +15,12 @@
   );
   box-shadow: 1rem 1rem 0 color-mix(in srgb, var(--primary) 20%, transparent);
 }
-.eyebrow {
-  color: color-mix(in srgb, var(--foreground) 65%, var(--secondary));
+.partner-card {
+  min-width: 0;
+}
+.partner-label {
+  display: inline-flex;
+  margin-bottom: 1rem;
 }
 h2 {
   margin: 0;
@@ -29,10 +32,19 @@ p:not(.eyebrow) {
   max-width: 40rem;
   line-height: 1.7;
 }
+.partner-benefits {
+  margin-top: clamp(1.75rem, 4vw, 2.75rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
+}
+.partner-benefits .eyebrow {
+  margin: 0 0 1rem;
+}
 ul {
-  align-self: end;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 1rem 2rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -40,12 +52,12 @@ ul {
   line-height: 1.45;
 }
 li {
-  padding-top: 1rem;
+  padding-top: 0.75rem;
   border-top: 1px solid
-    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
+    color-mix(in srgb, var(--border, var(--primary)) 30%, transparent);
 }
 @media (max-width: 760px) {
-  .partner-panel {
+  ul {
     grid-template-columns: 1fr;
   }
 }

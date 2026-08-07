@@ -1,5 +1,6 @@
 import {
   Body,
+  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -66,6 +67,14 @@ export class ForumController {
     private readonly forumClient: ClientProxy
   ) {}
 
+  private requireAppScope(appScope: string | null): string {
+    if (!appScope) {
+      throw new BadRequestException('x-ot-appscope header is required');
+    }
+
+    return appScope;
+  }
+
   // Topic endpoints
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('topic')
@@ -85,7 +94,7 @@ export class ForumController {
   ) {
     this.logger.log(`Creating topic for user: ${user.userId}`);
     topicDto.userId = user.userId;
-    topicDto.appScope = appScope || topicDto.appScope;
+    topicDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: TopicCommands.CREATE }, topicDto)
     );
@@ -103,6 +112,7 @@ export class ForumController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ): Promise<TopicDto> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: TopicCommands.FIND }, { id, appScope })
     );
@@ -120,10 +130,11 @@ export class ForumController {
     @Param('topicId') topicId: string,
     @AppScope() appScope: string
   ): Promise<ThreadDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ThreadCommands.FIND_MANY },
-        { where: { topicId, ...(appScope ? { appScope } : {}) } }
+        { where: { topicId, appScope } }
       )
     );
   }
@@ -137,10 +148,11 @@ export class ForumController {
   })
   @Get('topics')
   async getAllTopics(@AppScope() appScope: string): Promise<TopicDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: TopicCommands.FIND_MANY },
-        appScope ? { where: { appScope } } : {}
+        { where: { appScope } }
       )
     );
   }
@@ -201,7 +213,7 @@ export class ForumController {
   ) {
     this.logger.log(`Creating thread for user: ${user.userId}`);
     threadDto.userId = user.userId;
-    threadDto.appScope = appScope || threadDto.appScope;
+    threadDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.CREATE }, threadDto)
     );
@@ -219,6 +231,7 @@ export class ForumController {
     @Param('id') id: string,
     @AppScope() appScope: string
   ): Promise<ThreadDto> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: ThreadCommands.FIND }, { id, appScope })
     );
@@ -236,10 +249,11 @@ export class ForumController {
     @Param('threadId') threadId: string,
     @AppScope() appScope: string
   ): Promise<ForumPostDto[]> {
+    appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send(
         { cmd: ForumPostCommands.FIND_MANY },
-        { where: { threadId, ...(appScope ? { appScope } : {}) } }
+        { where: { threadId, appScope } }
       )
     );
   }
@@ -314,7 +328,7 @@ export class ForumController {
   ) {
     this.logger.log(`Creating forum post for user: ${user.userId}`);
     postDto.userId = user.userId;
-    postDto.appScope = appScope || postDto.appScope;
+    postDto.appScope = this.requireAppScope(appScope);
     return await firstValueFrom(
       this.forumClient.send({ cmd: ForumPostCommands.CREATE }, postDto)
     );

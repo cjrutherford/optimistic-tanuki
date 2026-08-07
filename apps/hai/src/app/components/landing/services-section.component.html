@@ -1,11 +1,16 @@
 <section class="story-grid" id="services">
-  <article class="story-panel" data-theme-surface="card">
+  <otui-card
+    class="story-panel"
+    CardVariant="default"
+    tone="brand"
+    emphasis="soft"
+  >
     <p class="eyebrow">Services</p>
-    <h2>Practical systems for the work your business already does.</h2>
+    <h2>Software and infrastructure for the work you already do.</h2>
     <p>
-      HAI turns operational friction into clear, maintainable software and
-      infrastructure. Each engagement starts with the workflow, the people who
-      use it, and the level of ownership that makes sense for the business.
+      We start with the workflow and the people who use it, then build the
+      smallest system that does the job and stays maintainable. You keep the
+      accounts, the data, and the decisions.
     </p>
     <div class="proof-band">
       <span class="eyebrow">What the work can include</span>
@@ -15,15 +20,20 @@
         }
       </ul>
     </div>
-  </article>
+  </otui-card>
 
   <div class="service-list">
     @for (pillar of servicePillars; track pillar.title) {
-    <article class="service-card" data-theme-surface="card">
+    <otui-card
+      class="service-card"
+      CardVariant="default"
+      tone="neutral"
+      emphasis="soft"
+    >
       <span class="card-icon" aria-hidden="true">{{ pillar.icon }}</span>
       <h3>{{ pillar.title }}</h3>
       <p>{{ pillar.description }}</p>
-    </article>
+    </otui-card>
     }
   </div>
 </section>

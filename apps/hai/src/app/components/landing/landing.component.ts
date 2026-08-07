@@ -2,6 +2,7 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, PLATFORM_ID, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { HaiAppDirectoryService } from '@optimistic-tanuki/hai-ui';
+import { BadgeComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {
   PulseRingsComponent,
   TopographicDriftComponent,
@@ -19,6 +20,8 @@ import { PartnerSectionComponent } from './partner-section.component';
   standalone: true,
   imports: [
     CommonModule,
+    CardComponent,
+    BadgeComponent,
     PulseRingsComponent,
     TopographicDriftComponent,
     ServicesSectionComponent,
@@ -63,9 +66,9 @@ export class LandingComponent {
   ];
 
   readonly serviceProof = [
-    'Control of customer interactions and operational data without rejecting useful cloud services.',
-    'Implementation work that keeps the system understandable for the people who operate it.',
-    'Hosting, hardware, and infrastructure choices explained clearly and passed through without invented packages or guarantees.',
+    'Keep your customer records and operational data in systems you can export and move, without swearing off useful cloud tools.',
+    'Software documented and scoped so the people who run it, not just the people who built it, can keep it going.',
+    'Hosting and hardware costs shown at cost and explained, with no invented packages or guarantees.',
   ];
 
   readonly ownershipNotes = [
@@ -118,7 +121,7 @@ export class LandingComponent {
   readonly contactLead = {
     title: 'Start a Project',
     description:
-      'Talk to HAI about a project, an infrastructure need, or a partner delivery conversation.',
+      'Tell us about a project, an infrastructure need, or a partner delivery conversation.',
   };
 
   readonly contactSubjects = [

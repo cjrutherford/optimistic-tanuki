@@ -5,7 +5,7 @@
 >
   <div class="section-copy">
     <p class="eyebrow">Independent Infrastructure</p>
-    <h2>Infrastructure that stays understandable after installation.</h2>
+    <h2>Infrastructure you can still run after we hand it over.</h2>
     <p>
       HAI deploys lightweight VPS or on-premises mini-server environments with
       backups and security maintenance. Hardware can be purchased directly by
@@ -15,13 +15,18 @@
   </div>
 
   <div class="ownership-layout">
-    <article class="ownership-card" data-theme-surface="card">
+    <otui-card
+      class="ownership-card"
+      CardVariant="default"
+      tone="neutral"
+      emphasis="soft"
+    >
       <ul class="ownership-list">
         @for (note of ownershipNotes; track note) {
         <li>{{ note }}</li>
         }
       </ul>
-    </article>
+    </otui-card>
 
     <otui-aurora-ribbon
       class="ownership-motion"

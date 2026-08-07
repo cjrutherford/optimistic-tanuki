@@ -76,6 +76,43 @@ describe('LandingComponent', () => {
     expect(text).toContain('See the services');
   });
 
+  it('renders semantic hash anchors with canonical hero CTA variants', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const buttons = nativeElement.querySelectorAll('.hero-actions a');
+    const card = nativeElement.querySelector('.hero-signal');
+    const badge = nativeElement.querySelector('.hero-signal otui-badge');
+
+    expect(buttons).toHaveLength(2);
+    expect(
+      nativeElement.querySelectorAll('.hero-actions otui-button')
+    ).toHaveLength(0);
+    expect(buttons[0].getAttribute('href')).toBe('#contact');
+    expect(buttons[0].getAttribute('data-tone')).toBe('brand');
+    expect(buttons[0].getAttribute('data-emphasis')).toBe('solid');
+    expect(buttons[0].getAttribute('data-size')).toBe('lg');
+    expect(buttons[0].classList).toContain('primary');
+    expect(buttons[0].classList).toContain('use-gradient');
+    expect(buttons[1].getAttribute('href')).toBe('#services');
+    expect(buttons[1].getAttribute('data-tone')).toBe('brand');
+    expect(buttons[1].getAttribute('data-emphasis')).toBe('outline');
+    expect(buttons[1].getAttribute('data-size')).toBe('lg');
+    expect(buttons[1].classList).toContain('secondary');
+
+    expect(card).not.toBeNull();
+    expect(card?.querySelector('.card')?.getAttribute('data-tone')).toBe(
+      'brand'
+    );
+    expect(card?.querySelector('.card')?.getAttribute('data-emphasis')).toBe(
+      'soft'
+    );
+    expect(card?.querySelector('.card')?.getAttribute('data-size')).toBe('md');
+    expect(badge).not.toBeNull();
+    expect(badge?.textContent).toContain('Built For');
+    expect(badge?.querySelector('.badge')?.getAttribute('data-tone')).toBe(
+      'brand'
+    );
+  });
+
   it('renders the registry-backed HAI app cards', () => {
     const text = fixture.nativeElement.textContent;
 
@@ -106,9 +143,7 @@ describe('LandingComponent', () => {
     expect(
       nativeElement.querySelector('.hero-panel[data-theme-surface="hero"]')
     ).not.toBeNull();
-    expect(
-      nativeElement.querySelector('.story-panel[data-theme-surface="card"]')
-    ).not.toBeNull();
+    expect(nativeElement.querySelector('otui-card.story-panel')).not.toBeNull();
   });
 
   it('renders the manifesto rail with motion-backed section emphasis', () => {
@@ -151,7 +186,9 @@ describe('LandingComponent', () => {
     expect(nativeElement.querySelector('#services')).not.toBeNull();
     expect(nativeElement.querySelector('#approach')).not.toBeNull();
     expect(nativeElement.querySelector('#infrastructure')).not.toBeNull();
-    expect(nativeElement.querySelectorAll('#services article')).toHaveLength(4);
+    expect(nativeElement.querySelectorAll('#services otui-card')).toHaveLength(
+      4
+    );
     expect(nativeElement.querySelector('#services h3')?.textContent).toContain(
       'Custom Portals & Workflow Automation'
     );
@@ -175,5 +212,51 @@ describe('LandingComponent', () => {
     expect(text.indexOf('Maintain and improve')).toBeLessThan(
       text.indexOf('Delivery Proof')
     );
+  });
+
+  it('preserves canonical section targets and migrated surface attributes', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const targets = [
+      '#services',
+      '#approach',
+      '#infrastructure',
+      '#engagement',
+      '#partners',
+      '#ecosystem',
+      '#contact',
+    ];
+
+    expect(targets.every((target) => nativeElement.querySelector(target))).toBe(
+      true
+    );
+    expect(
+      nativeElement.querySelector('#services otui-card')?.getAttribute('tone')
+    ).toBe('brand');
+    expect(
+      nativeElement
+        .querySelector('#approach otui-card')
+        ?.getAttribute('emphasis')
+    ).toBe('outline');
+    expect(
+      nativeElement
+        .querySelector('#infrastructure otui-card')
+        ?.getAttribute('tone')
+    ).toBe('neutral');
+    expect(
+      nativeElement
+        .querySelector('#engagement otui-badge')
+        ?.getAttribute('emphasis')
+    ).toBe('solid');
+    expect(
+      nativeElement.querySelector('#partners otui-card')?.getAttribute('size')
+    ).toBe('lg');
+    expect(
+      nativeElement
+        .querySelector('#ecosystem a.ecosystem-card')
+        ?.getAttribute('data-tone')
+    ).toBe('brand');
+    expect(
+      nativeElement.querySelector('#contact')?.getAttribute('data-emphasis')
+    ).toBe('soft');
   });
 });

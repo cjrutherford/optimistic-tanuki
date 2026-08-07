@@ -360,6 +360,21 @@
             [value]="isAppSelected(app.appId)"
             (changeEvent)="setAppSelection(app.appId, $event)"
           ></lib-checkbox>
+          @if (app.iconUrl) {
+          <img
+            class="service-item-icon"
+            [src]="app.iconUrl"
+            [alt]="app.name + ' icon'"
+            loading="lazy"
+          />
+          } @else {
+          <span
+            class="service-item-icon service-item-icon-fallback"
+            aria-hidden="true"
+          >
+            {{ app.name.charAt(0) }}
+          </span>
+          }
           <span>{{ app.name }}</span>
         </label>
         }
@@ -406,6 +421,21 @@
             [value]="isAppSelected(app.appId)"
             (changeEvent)="setAppSelection(app.appId, $event)"
           ></lib-checkbox>
+          @if (app.iconUrl) {
+          <img
+            class="service-item-icon"
+            [src]="app.iconUrl"
+            [alt]="app.name + ' icon'"
+            loading="lazy"
+          />
+          } @else {
+          <span
+            class="service-item-icon service-item-icon-fallback"
+            aria-hidden="true"
+          >
+            {{ app.name.charAt(0) }}
+          </span>
+          }
           <span>{{ app.name }}</span>
         </label>
         }

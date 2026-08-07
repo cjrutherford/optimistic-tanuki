@@ -5,6 +5,7 @@
   display: grid;
   gap: 2rem;
   margin-top: 2rem;
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
   padding: clamp(1.4rem, 4vw, 3rem);
   border: var(--hai-border-width, 1px) var(--hai-border-style, solid)
     color-mix(in srgb, var(--border, var(--primary)) 42%, transparent);
@@ -39,17 +40,8 @@ h2 {
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
-.engagement-stage {
-  padding: 1.4rem;
-  border: 1px solid
-    color-mix(in srgb, var(--border, var(--primary)) 38%, transparent);
-  border-radius: var(--personality-card-radius, 1.25rem);
-  background: color-mix(in srgb, var(--background) 84%, var(--primary) 16%);
-}
 .stage-number {
-  color: var(--secondary);
-  font: 700 0.8rem/1 var(--font-body, sans-serif);
-  letter-spacing: 0.15em;
+  display: inline-flex;
 }
 h3 {
   margin: 1.5rem 0 1rem;

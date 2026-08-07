@@ -7,32 +7,22 @@
   grid-template-columns: 1.05fr 1fr;
   gap: 1.5rem;
   margin-top: clamp(2.5rem, 5vw, 4rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
 .story-panel,
 .service-card {
   position: relative;
   z-index: 1;
-  border-radius: var(--hai-radius-panel);
-  border: var(--hai-border-width) var(--hai-border-style) var(--hai-outline);
-  box-shadow: var(--hai-shadow-panel);
-}
-
-[data-theme-surface='card'] {
-  background: var(--hai-panel-background);
-  backdrop-filter: blur(14px);
 }
 
 .story-panel {
-  padding: clamp(1.6rem, 2.8vw, 2.5rem);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-left: 3px solid color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
-.eyebrow,
-.card-label {
+.eyebrow {
   margin: 0 0 0.8rem;
   font: 700 0.78rem/1.1
     var(--personality-font-family, var(--font-body, sans-serif));
@@ -91,7 +81,6 @@ h3 {
 }
 
 .service-card {
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   transition: transform var(--hai-transition), box-shadow var(--hai-transition),

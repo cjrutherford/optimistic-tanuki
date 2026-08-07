@@ -1,0 +1,69 @@
+// Shared variant surface mixin for common-ui primitives.
+//
+// Promotes the badge's proven `data-tone` / `data-emphasis` mechanism into a
+// single reusable mixin so every primitive renders tone + emphasis identically.
+//
+// Each tone resolves a `--variant-bg-source` / `--variant-fg-source` pair which
+// the emphasis rules consume. Personality still owns radius, border style and
+// shadows; this mixin owns only color + emphasis treatment.
+//
+// Usage:
+//   @use '../interfaces/variant' as variant;
+//   .otui-button { @include variant.variant-surface; }
+
+@mixin variant-surface {
+  // ---- Tone -> source pair ----
+  &[data-tone='neutral'] {
+    --variant-bg-source: var(--surface-variant, var(--muted));
+    --variant-fg-source: var(--foreground);
+  }
+  &[data-tone='info'] {
+    --variant-bg-source: var(--info);
+    --variant-fg-source: var(--on-info, var(--info-foreground));
+  }
+  &[data-tone='success'] {
+    --variant-bg-source: var(--success);
+    --variant-fg-source: var(--on-success, var(--success-foreground));
+  }
+  &[data-tone='warning'] {
+    --variant-bg-source: var(--warning);
+    --variant-fg-source: var(--on-warning, var(--warning-foreground));
+  }
+  &[data-tone='danger'] {
+    --variant-bg-source: var(--danger);
+    --variant-fg-source: var(--on-danger, var(--danger-foreground));
+  }
+  &[data-tone='brand'] {
+    --variant-bg-source: var(--primary);
+    --variant-fg-source: var(--on-primary, var(--primary-foreground));
+  }
+
+  // ---- Emphasis -> treatment ----
+  &[data-emphasis='solid'] {
+    background: var(--variant-bg-source);
+    color: var(--variant-fg-source);
+    border-color: transparent;
+  }
+  &[data-emphasis='soft'] {
+    background: color-mix(in oklab, var(--variant-bg-source) 18%, transparent);
+    color: var(--variant-bg-source);
+    border-color: transparent;
+  }
+  &[data-emphasis='outline'] {
+    background: transparent;
+    color: var(--variant-bg-source);
+    border-color: var(--variant-bg-source);
+  }
+  &[data-emphasis='ghost'] {
+    background: transparent;
+    color: var(--variant-bg-source);
+    border-color: transparent;
+  }
+
+  // Neutral tone keeps a readable foreground in tinted/bordered emphases.
+  &[data-tone='neutral'][data-emphasis='soft'],
+  &[data-tone='neutral'][data-emphasis='outline'],
+  &[data-tone='neutral'][data-emphasis='ghost'] {
+    color: var(--foreground);
+  }
+}

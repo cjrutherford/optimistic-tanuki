@@ -1,13 +1,20 @@
-<section class="contact-panel" data-theme-surface="hero" id="contact">
+<section
+  class="contact-panel"
+  data-theme-surface="hero"
+  data-tone="brand"
+  data-emphasis="soft"
+  data-size="lg"
+  id="contact"
+>
   <p class="eyebrow">{{ contactLead.title }}</p>
   <h2>{{ contactLead.description }}</h2>
   <lib-contact-form
     [title]="'Start a project with HAI'"
-    [buttonText]="submittingContact ? 'Sending...' : 'Send Message'"
+    [buttonText]="submittingContact ? 'Sending…' : 'Send Message'"
     [subjects]="contactSubjects"
     (formSubmit)="formSubmit.emit($event)"
   ></lib-contact-form>
   @if (contactStatus) {
-  <p class="contact-status">{{ contactStatus }}</p>
+  <p class="contact-status" aria-live="polite">{{ contactStatus }}</p>
   }
 </section>

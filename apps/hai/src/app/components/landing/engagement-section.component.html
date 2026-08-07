@@ -1,23 +1,31 @@
 <section class="engagement-panel" data-theme-surface="feature" id="engagement">
   <div class="section-copy">
     <p class="eyebrow">Engagement Model</p>
-    <h2>Build what matters, then keep it healthy.</h2>
+    <h2>Build it once, then keep it running.</h2>
     <p>
-      HAI can help with an implementation project and remain available for the
-      maintenance that makes the system useful over time.
+      We can take on the build and stay on for the maintenance that keeps it
+      working: patches, backups, and support for as long as that is useful to
+      you.
     </p>
   </div>
   <div class="engagement-flow">
     @for (stage of stages; track stage.number) {
-    <article class="engagement-stage" data-theme-surface="card">
-      <span class="stage-number">{{ stage.number }}</span>
+    <otui-card
+      class="engagement-stage"
+      CardVariant="default"
+      tone="brand"
+      emphasis="outline"
+    >
+      <otui-badge class="stage-number" tone="brand" emphasis="solid">{{
+        stage.number
+      }}</otui-badge>
       <h3>{{ stage.title }}</h3>
       <ul>
         @for (item of stage.items; track item) {
         <li>{{ item }}</li>
         }
       </ul>
-    </article>
+    </otui-card>
     }
   </div>
   <p class="engagement-note">

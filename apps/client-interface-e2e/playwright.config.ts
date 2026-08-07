@@ -3,7 +3,7 @@ import { nxE2EPreset } from '@nx/playwright/preset';
 
 // For CI, you may want to set BASE_URL to the deployed application.
 const isCI = !!process.env['CI'];
-const baseURL = process.env['BASE_URL'] || 'http://localhost:8080';
+const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:8080';
 const rawHeadless = process.env['PLAYWRIGHT_HEADLESS']?.trim().toLowerCase();
 const headless = ['1', 'true', 'yes', 'on'].includes(rawHeadless ?? '')
   ? true

@@ -1,8 +1,10 @@
 @use '../../styles/mixins' as *;
+@use '../interfaces/variant' as variant;
 
 // ============================================
 // Personality-Driven Button Component
-// Uses application personality CSS variables
+// Color + emphasis come from the shared variant contract; radius, border,
+// shadow and fonts come from the personality layer.
 // ============================================
 
 button {
@@ -20,241 +22,84 @@ button {
   font-weight: var(--personality-button-font-weight, 600);
   text-transform: var(--personality-button-text-transform, none);
   cursor: pointer;
+  border: var(--personality-border-width, var(--border-width, 1px))
+    var(--personality-border-style, solid) transparent;
+  border-radius: var(--personality-button-radius, var(--border-radius-md, 4px));
+  box-shadow: var(--personality-box-shadow, var(--shadow-md));
   transition: var(
     --personality-transition,
     transform var(--animation-duration-fast) var(--animation-easing),
     box-shadow var(--animation-duration-fast) var(--animation-easing),
     background var(--animation-duration-fast) var(--animation-easing)
   );
-  border-radius: var(--personality-button-radius, var(--border-radius-md, 4px));
 
+  // ---- Tone + emphasis (shared contract) ----
+  @include variant.variant-surface;
+
+  // Outline/ghost carry no elevation.
+  &[data-emphasis='outline'],
+  &[data-emphasis='ghost'] {
+    box-shadow: none;
+  }
+
+  // ---- Size ----
+  &[data-size='sm'],
+  &[data-size='small'] {
+    min-height: 36px;
+    height: 36px;
+    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+    font-size: 0.75rem;
+  }
+  &[data-size='lg'],
+  &[data-size='large'] {
+    min-height: 52px;
+    height: 52px;
+    padding: var(--spacing-md, 16px) var(--spacing-lg, 32px);
+    font-size: 1rem;
+  }
+
+  // ---- Flagship brand gradient (brand + solid + useGradient) ----
+  &.use-gradient[data-tone='brand'][data-emphasis='solid'] {
+    --variant-bg-source: var(
+      --button-gradient,
+      var(--gradient-primary, var(--primary))
+    );
+    background: var(--variant-bg-source);
+    color: var(--on-primary, var(--primary-foreground, #fff));
+  }
+
+  // ---- Pill treatment (legacy `rounded`) ----
+  &.rounded {
+    border-radius: var(--border-radius-full, 9999px);
+    padding: var(--spacing-sm, 8px) var(--spacing-lg, 24px);
+  }
+
+  // ---- Interaction ----
+  &:hover:not(:disabled) {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-1px);
+  }
+  &[data-emphasis='outline']:hover:not(:disabled),
+  &[data-emphasis='ghost']:hover:not(:disabled) {
+    background: color-mix(in oklab, var(--variant-bg-source) 12%, transparent);
+  }
+  &:active:not(:disabled) {
+    box-shadow: var(--shadow-sm);
+    transform: translateY(0);
+  }
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  &.primary {
-    background-color: var(--primary);
-    color: var(--primary-foreground, #fff);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--primary);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-
-    &:hover:not(:disabled) {
-      background-color: var(
-        --primary-3,
-        color-mix(in srgb, var(--primary) 85%, #000)
-      );
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background-color: var(
-        --primary-7,
-        color-mix(in srgb, var(--primary) 30%, #fff)
-      );
-      box-shadow: none;
-    }
-  }
-
-  &.warning {
-    background-color: var(--warning);
-    color: var(--warning-foreground, #000);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--warning);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-
-    &:hover:not(:disabled) {
-      background-color: color-mix(in srgb, var(--warning) 85%, #000);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background-color: color-mix(in srgb, var(--warning) 30%, #fff);
-      box-shadow: none;
-    }
-  }
-
-  &.danger {
-    background-color: var(--danger);
-    color: var(--danger-foreground, #fff);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--danger);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-
-    &:hover:not(:disabled) {
-      background-color: color-mix(in srgb, var(--danger) 85%, #000);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background-color: color-mix(in srgb, var(--danger) 30%, #fff);
-      box-shadow: none;
-    }
-  }
-
-  &.success {
-    background-color: var(--success);
-    color: var(--success-foreground, #fff);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--success);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-
-    &:hover:not(:disabled) {
-      background-color: color-mix(in srgb, var(--success) 85%, #000);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background-color: color-mix(in srgb, var(--success) 30%, #fff);
-      box-shadow: none;
-    }
-  }
-
-  &.secondary {
-    background-color: var(--secondary);
-    color: var(--secondary-foreground, #fff);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--secondary);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-
-    &:hover:not(:disabled) {
-      background-color: color-mix(in srgb, var(--secondary) 85%, #000);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      background-color: color-mix(in srgb, var(--secondary) 30%, #fff);
-      box-shadow: none;
-    }
-  }
-
-  &.outlined {
-    background-color: transparent;
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--primary);
-    color: var(--primary);
     box-shadow: none;
-
-    &:hover:not(:disabled) {
-      background-color: var(--primary);
-      color: var(--primary-foreground, #fff);
-      box-shadow: var(--shadow-md);
-      transform: translateY(-1px);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: var(--shadow-sm);
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      border-color: color-mix(in srgb, var(--primary) 30%, #fff);
-      color: color-mix(in srgb, var(--primary) 30%, #fff);
-    }
-  }
-
-  &.rounded {
-    background-color: var(--primary);
-    color: var(--primary-foreground, #fff);
-    border: var(--personality-border-width, var(--border-width, 1px))
-      var(--personality-border-style, solid) var(--primary);
-    border-radius: var(--border-radius-full, 9999px);
-    box-shadow: var(--personality-box-shadow, var(--shadow-md));
-    padding: var(--spacing-sm, 8px);
-
-    &:hover:not(:disabled) {
-      background-color: color-mix(in srgb, var(--primary) 85%, #000);
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-1px);
-    }
-
-    &:disabled {
-      background-color: color-mix(in srgb, var(--primary) 30%, #fff);
-      box-shadow: none;
-    }
-  }
-
-  &.text {
-    background-color: transparent;
-    color: var(--primary);
-    border: none;
-    box-shadow: none;
-    padding: var(--spacing-md, 12px) var(--spacing-md, 16px);
-
-    &:hover:not(:disabled) {
-      background-color: var(--primary);
-      color: var(--primary-foreground, #fff);
-    }
-
-    &:disabled {
-      color: color-mix(in srgb, var(--primary) 30%, #fff);
-    }
-  }
-
-  &.block {
-    width: 100%;
-    display: block;
-    text-align: center;
-  }
-
-  &.small {
-    padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-    font-size: 0.75rem;
-    box-shadow: var(--shadow-sm);
-
-    &:hover:not(:disabled) {
-      box-shadow: var(--shadow-md);
-    }
-  }
-
-  &.large {
-    padding: var(--spacing-md, 16px) var(--spacing-lg, 32px);
-    font-size: 1rem;
-    box-shadow: var(--shadow-lg);
-
-    &:hover:not(:disabled) {
-      box-shadow: var(--shadow-xl);
-    }
   }
 }
 
 // ============================================
 // Personality-Specific Button Enhancements
-// Applied via body class based on current personality
+// Applied via body class based on current personality. These target the legacy
+// `.primary` class which is still emitted for backward compatibility.
 // ============================================
 
-// Architect personality - hard shadow shift
 :host-context(.personality-architect) button.primary,
 body.personality-architect button.primary {
   &:hover:not(:disabled) {
@@ -267,7 +112,6 @@ body.personality-architect button.primary {
   }
 }
 
-// Playful personality - bouncy transform
 body.personality-playful button.primary {
   &:hover:not(:disabled) {
     transform: translateY(-4px) scale(1.02);
@@ -277,7 +121,6 @@ body.personality-playful button.primary {
   }
 }
 
-// Minimal personality - subtle shift
 body.personality-minimal button.primary {
   &:hover:not(:disabled) {
     transform: translateY(-2px);
@@ -285,7 +128,6 @@ body.personality-minimal button.primary {
   }
 }
 
-// Electric personality - glow effect
 body.personality-electric button.primary {
   &:hover:not(:disabled) {
     transform: translateY(-2px);
@@ -293,7 +135,6 @@ body.personality-electric button.primary {
   }
 }
 
-// Soft Touch personality - gentle lift
 body.personality-soft-touch button.primary {
   &:hover:not(:disabled) {
     transform: translateY(-3px);
@@ -301,7 +142,6 @@ body.personality-soft-touch button.primary {
   }
 }
 
-// Control Center personality - inset effect
 body.personality-control-center button.primary {
   &:hover:not(:disabled) {
     transform: translateY(-1px);
@@ -309,31 +149,5 @@ body.personality-control-center button.primary {
   }
   &:active:not(:disabled) {
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-}
-
-// Gradient button variant
-button.gradient {
-  background: var(--gradient-primary, var(--primary));
-  color: var(--primary-foreground, #fff);
-  border: var(--border-width, 1px) solid transparent;
-
-  &:hover:not(:disabled) {
-    background: var(--gradient-button-hover, var(--primary));
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
-  }
-}
-
-// Glow button variant
-button.glow {
-  background: var(--primary);
-  color: var(--primary-foreground, #fff);
-  border: var(--border-width, 1px) solid var(--primary);
-  box-shadow: 0 0 10px var(--primary-alpha-30, rgba(63, 81, 181, 0.3));
-
-  &:hover:not(:disabled) {
-    box-shadow: 0 0 25px var(--primary-alpha-50, rgba(63, 81, 181, 0.5));
-    transform: translateY(-2px);
   }
 }

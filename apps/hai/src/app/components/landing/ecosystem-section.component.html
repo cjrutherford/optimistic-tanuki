@@ -1,11 +1,10 @@
 <section class="ecosystem-panel" id="ecosystem">
   <div class="section-copy">
     <p class="eyebrow">Delivery Proof</p>
-    <h2>An active product ecosystem behind the practice.</h2>
+    <h2>Software we build and run ourselves.</h2>
     <p>
-      The HAI ecosystem demonstrates ongoing engineering practice. These
-      registry entries are supporting proof of how HAI builds and operates
-      software, not a claim that every product is a public client case study.
+      These are our own products, not client case studies. They are here so you
+      can see how we structure, ship, and maintain real software over time.
     </p>
   </div>
 
@@ -15,6 +14,9 @@
       class="ecosystem-card"
       [class.ecosystem-card-featured]="i === 0"
       [href]="app.resolvedHref"
+      [attr.data-tone]="i === 0 ? 'brand' : 'neutral'"
+      [attr.data-emphasis]="i === 0 ? 'solid' : 'soft'"
+      [attr.data-size]="i === 0 ? 'lg' : 'md'"
       data-theme-surface="card"
     >
       <span class="card-label">{{ app.category }}</span>

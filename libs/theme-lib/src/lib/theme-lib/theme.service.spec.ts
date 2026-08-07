@@ -856,5 +856,41 @@ describe('ThemeService', () => {
       expect(architectSurface).not.toBe(architectBackground);
       expect(electricSurface).not.toBe(electricBackground);
     }));
+
+    it('aliases --surface-variant to --surface so the neutral tone binds to an intentional token', fakeAsync(() => {
+      const rootStyle = document.documentElement.style;
+
+      service.setPrimaryColor('#3f51b5');
+      tick(100);
+      flush();
+      service.setPersonality('architect');
+      tick(100);
+      flush();
+
+      const surface = rootStyle.getPropertyValue('--surface');
+      const surfaceVariant = rootStyle.getPropertyValue('--surface-variant');
+
+      expect(surfaceVariant).toBeTruthy();
+      expect(surfaceVariant).toBe(surface);
+    }));
+
+    it('emits a real --gradient-primary so gradient surfaces do not degrade to a flat primary', fakeAsync(() => {
+      const rootStyle = document.documentElement.style;
+
+      service.setPrimaryColor('#3f51b5');
+      tick(100);
+      flush();
+      service.setPersonality('electric');
+      tick(100);
+      flush();
+
+      const gradientPrimary = rootStyle.getPropertyValue('--gradient-primary');
+      const primary = rootStyle.getPropertyValue('--primary');
+
+      // Must be a real, non-empty gradient value distinct from the flat primary.
+      expect(gradientPrimary).toBeTruthy();
+      expect(gradientPrimary).toContain('gradient');
+      expect(gradientPrimary).not.toBe(primary);
+    }));
   });
 });
