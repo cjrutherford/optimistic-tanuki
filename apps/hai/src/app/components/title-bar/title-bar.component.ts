@@ -21,10 +21,11 @@ export class TitleBarComponent {
   readonly menuOpen = signal(false);
   readonly navItems: NavItem[] = [
     { label: 'Services', action: () => this.jump('#services') },
-    { label: 'Personal Cloud', action: () => this.jump('#personal-cloud') },
-    { label: 'Ecosystem', action: () => this.jump('#ecosystem') },
+    { label: 'Digital Sovereignty', action: () => this.jump('#approach') },
+    { label: 'Infrastructure', action: () => this.jump('#infrastructure') },
+    { label: 'Engagement Model', action: () => this.jump('#engagement') },
+    { label: 'Partner With HAI', action: () => this.jump('#partners') },
     { label: 'Start a Project', action: () => this.jump('#contact') },
-    { label: 'HAI Computer', action: () => this.leave('system-configurator') },
   ];
 
   toggleMenu() {

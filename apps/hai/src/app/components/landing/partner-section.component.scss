@@ -1,0 +1,51 @@
+:host {
+  display: block;
+}
+.partner-panel {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: clamp(1.5rem, 5vw, 4rem);
+  border: 1px solid color-mix(in srgb, var(--secondary) 65%, var(--border));
+  border-radius: var(--personality-card-radius, 1.75rem);
+  background: color-mix(
+    in srgb,
+    var(--surface, var(--background)) 86%,
+    var(--secondary) 14%
+  );
+  box-shadow: 1rem 1rem 0 color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.eyebrow {
+  color: color-mix(in srgb, var(--foreground) 65%, var(--secondary));
+}
+h2 {
+  margin: 0;
+  max-width: 40rem;
+  font: 400 clamp(2.3rem, 5vw, 4.4rem) / 0.98
+    var(--font-heading, Georgia, serif);
+}
+p:not(.eyebrow) {
+  max-width: 40rem;
+  line-height: 1.7;
+}
+ul {
+  align-self: end;
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 700;
+  line-height: 1.45;
+}
+li {
+  padding-top: 1rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--border, var(--primary)) 45%, transparent);
+}
+@media (max-width: 760px) {
+  .partner-panel {
+    grid-template-columns: 1fr;
+  }
+}

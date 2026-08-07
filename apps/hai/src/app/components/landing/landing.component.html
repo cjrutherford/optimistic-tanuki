@@ -21,30 +21,27 @@
 
     <div class="hero-copy">
       <p class="eyebrow">Hopeful Aspirations Industries</p>
-      <h1>
-        Software, cloud, and personal-cloud systems built to stay legible.
-      </h1>
+      <h1>Digital sovereignty for the work that runs your business.</h1>
       <p class="lede">
-        HAI helps founders, teams, and households build durable systems they can
-        actually operate. The repo is a primary company asset and the main
-        production vehicle for what HAI ships.
+        HAI is an independent software development and IT infrastructure
+        practice in Savannah, Georgia. We help field-service contractors,
+        professional offices, and growing local businesses keep control of the
+        systems behind their customer relationships and daily work.
       </p>
 
       <div class="hero-actions">
         <a class="cta primary" href="#contact">Start a Project</a>
-        <a class="cta secondary" href="/hai-computer"
-          >Explore HAI Computer Systems</a
-        >
+        <a class="cta secondary" href="#services">See the services</a>
       </div>
     </div>
 
     <aside class="hero-signal" data-theme-surface="card">
       <p class="card-label">Built For</p>
       <ul>
-        <li>Founders and operators who need senior implementation help</li>
-        <li>Teams improving cloud systems without losing control</li>
-        <li>People building owned compute and personal-cloud capability</li>
-        <li>Organizations that value durable, legible software systems</li>
+        <li>Field-service contractors and professional offices</li>
+        <li>Growing local businesses with practical workflow needs</li>
+        <li>Teams that need clear choices about data and infrastructure</li>
+        <li>Local technology partners needing delivery capacity</li>
       </ul>
 
       <div class="signal-note">
@@ -69,11 +66,13 @@
     [reducedMotion]="reducedMotion"
   ></hai-personal-cloud-section>
 
+  <hai-engagement-section [stages]="engagementStages"></hai-engagement-section>
+
+  <hai-partner-section [benefits]="partnerBenefits"></hai-partner-section>
+
   <hai-ecosystem-section
     [apps]="(ecosystem$ | async) ?? []"
   ></hai-ecosystem-section>
-
-  <hai-acronym-section></hai-acronym-section>
 
   <hai-contact-section
     [contactLead]="contactLead"

@@ -73,7 +73,7 @@ describe('LandingComponent', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text).toContain('Start a Project');
-    expect(text).toContain('Explore HAI Computer Systems');
+    expect(text).toContain('See the services');
   });
 
   it('renders the registry-backed HAI app cards', () => {
@@ -118,26 +118,62 @@ describe('LandingComponent', () => {
     expect(nativeElement.querySelector('otui-shimmer-beam')).not.toBeNull();
   });
 
-  it('keeps the primary messaging serious while leaving the acronym section playful', () => {
+  it('renders the approved business positioning and removes playful messaging', () => {
     const text = fixture.nativeElement.textContent as string;
 
-    expect(text).toContain('Hopeful Aspirations Industries');
     expect(text).toContain(
-      'Software, cloud, and personal-cloud systems built to stay legible'
+      'Digital sovereignty for the work that runs your business.'
     );
-    expect(text).toContain('Start a Project');
-    expect(text).toContain('repo is a primary company asset');
-    expect(text).toContain('A lighter note');
-    expect(text).toContain('The real name is Hopeful Aspirations Industries');
+    expect(text).toContain('Savannah, Georgia');
+    expect(text).toContain('Custom Portals & Workflow Automation');
+    expect(text).toContain('Independent Infrastructure');
+    expect(text).toContain('Tailored Software');
+    expect(text).toContain('Build the foundation');
+    expect(text).toContain('Maintain and improve');
+    expect(text).toContain(
+      'White-label delivery for local technology partners'
+    );
+    expect(text).not.toContain('What does HAI actually stand for today?');
   });
 
-  it('keeps services ahead of ecosystem and playful brand language in the page narrative', () => {
+  it('keeps services and engagement ahead of delivery proof in the page narrative', () => {
     const text = fixture.nativeElement.textContent as string;
 
     expect(text.indexOf('Services')).toBeGreaterThan(-1);
-    expect(text.indexOf('Services')).toBeLessThan(text.indexOf('HAI Apps'));
     expect(text.indexOf('Services')).toBeLessThan(
-      text.indexOf('A lighter note')
+      text.indexOf('Delivery Proof')
+    );
+  });
+
+  it('renders the business narrative sections with semantic service cards', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.querySelector('#services')).not.toBeNull();
+    expect(nativeElement.querySelector('#approach')).not.toBeNull();
+    expect(nativeElement.querySelector('#infrastructure')).not.toBeNull();
+    expect(nativeElement.querySelectorAll('#services article')).toHaveLength(4);
+    expect(nativeElement.querySelector('#services h3')?.textContent).toContain(
+      'Custom Portals & Workflow Automation'
+    );
+    expect(nativeElement.querySelector('#services')?.textContent).not.toContain(
+      'homelab'
+    );
+    expect(
+      nativeElement.querySelector('#infrastructure')?.textContent
+    ).not.toContain('family compute');
+  });
+
+  it('renders engagement and partner conversion paths before delivery proof', () => {
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const text = nativeElement.textContent as string;
+
+    expect(nativeElement.querySelector('#engagement')).not.toBeNull();
+    expect(nativeElement.querySelector('#partners')).not.toBeNull();
+    expect(text.indexOf('Build the foundation')).toBeLessThan(
+      text.indexOf('Delivery Proof')
+    );
+    expect(text.indexOf('Maintain and improve')).toBeLessThan(
+      text.indexOf('Delivery Proof')
     );
   });
 });
