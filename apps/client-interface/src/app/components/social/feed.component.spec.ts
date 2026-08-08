@@ -24,6 +24,8 @@ import { VoteService } from '../../vote.service';
 import { ReactionService } from '../../reaction.service';
 import { ActivityService } from '../../activity.service';
 import { throwError } from 'rxjs';
+import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 describe('FeedComponent', () => {
   let component: FeedComponent & Partial<OnDestroy>;
@@ -31,6 +33,13 @@ describe('FeedComponent', () => {
   let postService: PostService;
   let profileService: ProfileService;
   let router: Router;
+  let socialFeedData: {
+    loadPublicFeed: jest.Mock;
+    loadFollowingFeed: jest.Mock;
+    loadUserCommunities: jest.Mock;
+    loadCommunityFeed: jest.Mock;
+  };
+  let messageService: { addMessage: jest.Mock };
   let consoleLogSpy: jest.SpyInstance;
 
   class MockIntersectionObserver {
@@ -129,6 +138,13 @@ describe('FeedComponent', () => {
       getReactionsByPost: jest.fn().mockReturnValue(of([])),
       getUserReaction: jest.fn().mockReturnValue(of(null)),
     };
+    socialFeedData = {
+      loadPublicFeed: jest.fn().mockReturnValue(of([])),
+      loadFollowingFeed: jest.fn().mockReturnValue(of([])),
+      loadUserCommunities: jest.fn().mockReturnValue(of([])),
+      loadCommunityFeed: jest.fn().mockReturnValue(of([])),
+    };
+    messageService = { addMessage: jest.fn() };
 
     TestBed.overrideComponent(FeedComponent, {
       set: {
@@ -164,6 +180,8 @@ describe('FeedComponent', () => {
           { provide: VoteService, useValue: voteServiceMock },
           { provide: ReactionService, useValue: reactionServiceMock },
           { provide: ActivityService, useValue: {} },
+          { provide: SocialFeedDataService, useValue: socialFeedData },
+          { provide: MessageService, useValue: messageService },
         ],
       },
     });
@@ -205,6 +223,94 @@ describe('FeedComponent', () => {
     expect(component).toBeTruthy();
   }));
 
+  it('loads the public tab through the shared social data-access layer', () => {
+    component.loadPublicFeed();
+
+    expect(socialFeedData.loadPublicFeed).toHaveBeenCalledWith(
+      { visibility: 'public', communityId: null },
+      {
+        orderBy: 'createdAt',
+        orderDirection: 'desc',
+        limit: 20,
+        offset: 0,
+      }
+    );
+  });
+
+  it('loads following posts through the shared social data-access layer', () => {
+    fixture.detectChanges();
+    component.followingIds.add('followed-profile');
+    component.loadFollowingFeed();
+
+    expect(socialFeedData.loadFollowingFeed).toHaveBeenCalledWith({
+      limit: 20,
+      offset: 0,
+    });
+  });
+
+  it('loads community posts through the shared social data-access layer', () => {
+    fixture.detectChanges();
+    socialFeedData.loadUserCommunities.mockReturnValue(
+      of([{ id: 'community-1' }])
+    );
+    component.loadCommunitiesFeed();
+
+    expect(socialFeedData.loadCommunityFeed).toHaveBeenCalledWith(
+      ['community-1'],
+      { limit: 20, offset: 0 }
+    );
+  });
+
+  it('waits for confirmation before deleting a post', () => {
+    const post = { id: 'post-1', profileId: '123', title: 'Keep me' } as any;
+    component.posts.set([post]);
+
+    component.onDeletePost(post);
+
+    expect(component.postPendingDeletion()).toBe(post);
+    expect(component.postService.deletePost).not.toHaveBeenCalled();
+
+    component.cancelPostDeletion();
+
+    expect(component.postPendingDeletion()).toBeNull();
+    expect(component.posts()).toEqual([post]);
+  });
+
+  it('deletes the confirmed post and closes the confirmation dialog', () => {
+    const post = { id: 'post-1', profileId: '123', title: 'Remove me' } as any;
+    component.posts.set([post]);
+    component.onDeletePost(post);
+
+    component.confirmPostDeletion();
+
+    expect(component.postService.deletePost).toHaveBeenCalledWith('post-1');
+    expect(component.posts()).toEqual([]);
+    expect(component.postPendingDeletion()).toBeNull();
+  });
+
+  it('keeps the confirmation open and reports an error when deletion fails', () => {
+    const deletionError = new Error('Service unavailable');
+    const consoleErrorSpy = jest
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined);
+    jest
+      .spyOn(component.postService, 'deletePost')
+      .mockReturnValue(throwError(() => deletionError));
+    const post = { id: 'post-1', profileId: '123', title: 'Keep me' } as any;
+    component.posts.set([post]);
+    component.onDeletePost(post);
+
+    component.confirmPostDeletion();
+
+    expect(component.posts()).toEqual([post]);
+    expect(component.postPendingDeletion()).toBe(post);
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Your post could not be deleted. Please try again.',
+      type: 'error',
+    });
+    consoleErrorSpy.mockRestore();
+  });
+
   it('should not prepend a post when create fails with an isolation denial', async () => {
     const denial = new Error(
       'Forbidden: cannot create post for another profile'
@@ -241,6 +347,10 @@ describe('FeedComponent', () => {
       '[Feed] Failed to create post:',
       denial
     );
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content: 'Your post could not be published. Please try again.',
+      type: 'error',
+    });
     consoleErrorSpy.mockRestore();
   });
 

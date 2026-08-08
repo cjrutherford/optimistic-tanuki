@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { HttpTestingController } from '@angular/common/http/testing';
 import { ProfileService } from './profile.service';
 import { AuthStateService } from './state/auth-state.service';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -8,6 +9,7 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 
 describe('ProfileService', () => {
   let service: ProfileService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -27,6 +29,7 @@ describe('ProfileService', () => {
       ],
     });
     service = TestBed.inject(ProfileService);
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   describe('getCurrentUserProfile', () => {
@@ -58,5 +61,20 @@ describe('ProfileService', () => {
 
       expect(result).toBeNull();
     });
+  });
+
+  it('loads scoped recipient profiles separately from the current user profiles', async () => {
+    const pending = service.getDiscoverableProfiles();
+    const request = httpMock.expectOne(
+      'http://localhost:3000/profile/discover'
+    );
+    expect(request.request.method).toBe('GET');
+    request.flush([{ id: 'profile-2', userId: 'user-2', profileName: 'Bob' }]);
+
+    await pending;
+    expect(service.discoverableProfiles()).toEqual([
+      { id: 'profile-2', userId: 'user-2', profileName: 'Bob' },
+    ]);
+    expect(service.currentUserProfiles()).toEqual([]);
   });
 });

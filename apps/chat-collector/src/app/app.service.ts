@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -159,6 +160,15 @@ export class AppService {
   }
 
   async createDirectChat(participantIds: string[]): Promise<Conversation> {
+    if (
+      participantIds.length !== 2 ||
+      new Set(participantIds).size !== 2 ||
+      participantIds.some((participantId) => !participantId)
+    ) {
+      throw new BadRequestException(
+        'A direct conversation requires exactly two distinct participants'
+      );
+    }
     const sortedIds = [...participantIds].sort();
 
     const existing = await this.conversationRepository.findOne({

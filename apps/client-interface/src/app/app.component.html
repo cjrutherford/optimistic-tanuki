@@ -63,6 +63,8 @@
       <lib-chat-ui
         [contacts]="chatContacts"
         [conversations]="chatConversations"
+        [currentUserId]="selectedProfile()?.id || ''"
+        (messageSubmitted)="handleFloatingMessageSubmitted($event)"
       ></lib-chat-ui>
     </div>
     } } }

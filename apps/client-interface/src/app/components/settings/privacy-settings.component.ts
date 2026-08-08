@@ -31,6 +31,7 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
             <img
               class="item-avatar"
               [src]="user.blockedAvatar || '/assets/default-avatar.png'"
+              [alt]="user.blockedName + ' avatar'"
             />
             <div class="item-content">
               <span class="item-title">{{ user.blockedName }}</span>
@@ -231,20 +232,20 @@ import { ButtonComponent } from '@optimistic-tanuki/common-ui';
         text-transform: capitalize;
       }
       .status-pending {
-        background: var(--warning-bg, #fff3cd);
-        color: var(--warning, #856404);
+        background: color-mix(in srgb, var(--warning) 15%, var(--surface));
+        color: var(--warning);
       }
       .status-reviewed {
-        background: var(--primary-bg, #e3f2fd);
-        color: var(--primary, #1976d2);
+        background: color-mix(in srgb, var(--primary) 15%, var(--surface));
+        color: var(--primary);
       }
       .status-actioned {
-        background: var(--success-bg, #d4edda);
-        color: var(--success, #155724);
+        background: color-mix(in srgb, var(--success) 15%, var(--surface));
+        color: var(--success);
       }
       .status-dismissed {
-        background: var(--secondary-bg, #f8f9fa);
-        color: var(--secondary, #6c757d);
+        background: color-mix(in srgb, var(--secondary) 15%, var(--surface));
+        color: var(--secondary);
       }
     `,
   ],

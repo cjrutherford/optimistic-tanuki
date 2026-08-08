@@ -16,7 +16,7 @@ describe('createApiProxyOptions', () => {
 });
 
 describe('createSocketIoProxyOptions', () => {
-  it('preserves the socket.io engine path when proxying websocket traffic', () => {
+  it('forwards the incoming socket.io engine path exactly once', () => {
     expect(createSocketIoProxyOptions('http://gateway:3300')).toEqual(
       expect.objectContaining({
         target: 'http://gateway:3300/socket.io',

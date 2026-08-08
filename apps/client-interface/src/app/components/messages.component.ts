@@ -1,4 +1,11 @@
-import { Component, OnInit, signal, inject, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  signal,
+  inject,
+  OnDestroy,
+  computed,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -29,6 +36,15 @@ import { firstValueFrom } from 'rxjs';
           <h1>Messages</h1>
           <p class="subtitle">Your conversations</p>
         </div>
+        <label class="start-conversation">
+          <span>Start a conversation</span>
+          <select (change)="startDirectConversation($any($event.target).value)">
+            <option value="">Choose a person</option>
+            @for (profile of availableProfiles(); track profile.id) {
+            <option [value]="profile.id">{{ profile.profileName }}</option>
+            }
+          </select>
+        </label>
         @if (chatContacts().length > 0) {
         <button class="clear-button" type="button" (click)="clearAll()">
           Clear all
@@ -85,9 +101,25 @@ import { firstValueFrom } from 'rxjs';
         padding: 0.625rem 0.9rem;
         border-radius: var(--border-radius-md, 0.75rem);
         border: 1px solid var(--border);
-        background: color-mix(in srgb, var(--surface, #fff) 92%, transparent);
+        background: color-mix(in srgb, var(--surface) 92%, transparent);
         color: var(--foreground);
         cursor: pointer;
+      }
+
+      .start-conversation {
+        display: grid;
+        gap: 0.25rem;
+        color: var(--muted);
+        font-size: 0.875rem;
+
+        select {
+          min-height: 2.75rem;
+          border: 1px solid var(--border);
+          border-radius: var(--border-radius-md, 0.75rem);
+          background: var(--surface);
+          color: var(--foreground);
+          padding: 0 0.75rem;
+        }
       }
 
       .messages-shell {
@@ -104,7 +136,7 @@ import { firstValueFrom } from 'rxjs';
       }
 
       .error {
-        color: #dc3545;
+        color: var(--error);
       }
     `,
   ],
@@ -121,6 +153,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   chatConversations = signal<ChatConversation[]>([]);
   loading = signal(true);
   error = signal<string | null>(null);
+  availableProfiles = computed(() =>
+    this.profileService.discoverableProfiles()
+  );
 
   currentProfileId: string | null = null;
 
@@ -134,6 +169,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
       this.handleIncomingMessage(message);
     });
     await this.loadConversations();
+    await this.loadDiscoverableProfiles();
   }
 
   ngOnDestroy() {
@@ -173,6 +209,24 @@ export class MessagesComponent implements OnInit, OnDestroy {
     });
   }
 
+  async startDirectConversation(profileId: string): Promise<void> {
+    if (
+      !profileId ||
+      !this.currentProfileId ||
+      profileId === this.currentProfileId
+    ) {
+      return;
+    }
+
+    try {
+      await this.chatService.getOrCreateDirectChat(profileId);
+      this.socketChatService.getConversations(this.currentProfileId);
+    } catch (err) {
+      console.error('Failed to start direct conversation:', err);
+      this.error.set('Could not start the conversation. Please try again.');
+    }
+  }
+
   handleIncomingMessage(message: ChatMessage) {
     this.appendMessageToConversation(message);
   }
@@ -186,6 +240,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     this.currentProfileId = profile.id;
     this.socketChatService.getConversations(profile.id);
+  }
+
+  private async loadDiscoverableProfiles() {
+    try {
+      await this.profileService.getDiscoverableProfiles();
+    } catch (err) {
+      console.error('Failed to load available conversation recipients:', err);
+    }
   }
 
   private async handleConversationsLoaded(

@@ -218,8 +218,8 @@ export interface ProfileInfo {
           min-width: 16px;
           height: 16px;
           padding: 0 4px;
-          background: #f44336;
-          color: white;
+          background: var(--error);
+          color: var(--primary-foreground);
           font-size: 10px;
           font-weight: 600;
           border-radius: 8px;

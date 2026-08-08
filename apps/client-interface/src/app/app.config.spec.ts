@@ -7,7 +7,7 @@ type FactoryProvider = {
 };
 
 describe('appConfig socket host', () => {
-  it('defaults chat sockets to the same origin when no override is present', () => {
+  it('defaults chat sockets to the browser origin when no override is present', () => {
     const socketHostProvider = (appConfig.providers as FactoryProvider[]).find(
       (provider) => provider.provide === SOCKET_HOST
     );
@@ -18,7 +18,22 @@ describe('appConfig socket host', () => {
       .env;
     delete (window as Window & { env?: { SOCKET_URL?: string } }).env;
 
-    expect(socketHostProvider?.useFactory?.()).toBe('');
+    expect(socketHostProvider?.useFactory?.()).toBe(window.location.origin);
+
+    (window as Window & { env?: { SOCKET_URL?: string } }).env = originalEnv;
+  });
+
+  it('treats a path-only socket URL as same-origin instead of a namespace prefix', () => {
+    const socketHostProvider = (appConfig.providers as FactoryProvider[]).find(
+      (provider) => provider.provide === SOCKET_HOST
+    );
+    const originalEnv = (window as Window & { env?: { SOCKET_URL?: string } })
+      .env;
+    (window as Window & { env?: { SOCKET_URL?: string } }).env = {
+      SOCKET_URL: '/ws',
+    };
+
+    expect(socketHostProvider?.useFactory?.()).toBe(window.location.origin);
 
     (window as Window & { env?: { SOCKET_URL?: string } }).env = originalEnv;
   });

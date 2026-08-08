@@ -89,4 +89,22 @@ describe('ClientInterface ChatService', () => {
       })
     );
   });
+
+  it('sends only the recipient profile when starting a direct conversation', async () => {
+    const promise = service.getOrCreateDirectChat('profile-2');
+
+    const request = httpMock.expectOne(
+      '/api/chat/conversations/direct/get-or-create'
+    );
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ recipientProfileId: 'profile-2' });
+    request.flush({
+      id: 'conversation-1',
+      participants: ['profile-1', 'profile-2'],
+    });
+
+    await expect(promise).resolves.toEqual(
+      expect.objectContaining({ id: 'conversation-1' })
+    );
+  });
 });
