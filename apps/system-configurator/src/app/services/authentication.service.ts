@@ -26,7 +26,7 @@ export class AuthenticationService {
 
   currentSession() {
     return firstValueFrom(
-      this.http.get<{ data: { user: UserDto } }>(`${this.baseUrl}/session`, {
+      this.http.get<{ data: UserDto }>(`${this.baseUrl}/session`, {
         withCredentials: true,
       })
     );

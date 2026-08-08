@@ -42,12 +42,9 @@ export class AuthenticationService {
 
   currentSession() {
     return firstValueFrom(
-      this.http.get<{ data: { user: UserDto } }>(
-        '/api/authentication/session',
-        {
-          withCredentials: true,
-        }
-      )
+      this.http.get<{ data: UserDto }>('/api/authentication/session', {
+        withCredentials: true,
+      })
     );
   }
 

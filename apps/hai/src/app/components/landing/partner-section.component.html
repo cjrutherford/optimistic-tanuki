@@ -1,0 +1,30 @@
+<section class="partner-panel" data-theme-surface="hero" id="partners">
+  <otui-card
+    class="partner-card"
+    CardVariant="default"
+    tone="brand"
+    emphasis="soft"
+    size="lg"
+  >
+    <otui-badge class="partner-label" tone="brand" emphasis="solid"
+      >Partner With HAI</otui-badge
+    >
+    <h2>
+      Extend your delivery capacity without handing away the relationship.
+    </h2>
+    <p>
+      HAI supplies white-label software engineering and infrastructure delivery
+      for MSPs, web agencies, and IT repair shops that want a trusted technical
+      partner behind their client work.
+    </p>
+
+    <div class="partner-benefits">
+      <span class="eyebrow">What partners get</span>
+      <ul>
+        @for (benefit of benefits; track benefit) {
+        <li>{{ benefit }}</li>
+        }
+      </ul>
+    </div>
+  </otui-card>
+</section>

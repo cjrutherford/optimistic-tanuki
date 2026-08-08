@@ -4,6 +4,7 @@
 
 .ecosystem-panel {
   margin-top: clamp(2.5rem, 5vw, 4rem);
+  scroll-margin-top: var(--hai-scroll-margin-top, 5rem);
 }
 
 .section-copy,
@@ -68,33 +69,55 @@ h2 {
     border-color var(--hai-transition);
 }
 
+// Anchor cards use the same live theme tokens as common-ui without nesting an
+// interactive primitive inside the native link.
+.ecosystem-card[data-tone='brand'][data-emphasis='solid'] {
+  background: var(--primary);
+  color: var(--on-primary, var(--primary-foreground));
+  border-color: var(--primary);
+}
+
+.ecosystem-card[data-tone='neutral'][data-emphasis='soft'] {
+  background: color-mix(
+    in srgb,
+    var(--surface-variant, var(--muted)) 18%,
+    transparent
+  );
+  color: var(--foreground);
+  border-color: color-mix(
+    in srgb,
+    var(--border) 65%,
+    var(--surface-variant, var(--muted))
+  );
+}
+
+.ecosystem-card[data-size='lg'] {
+  min-height: 16rem;
+}
+
+.ecosystem-card[data-size='md'] {
+  min-height: 14rem;
+}
+
 .ecosystem-card:hover,
 .ecosystem-card:focus-visible {
   transform: translateY(-3px);
   box-shadow: var(--hai-shadow-hover);
 }
 
+.ecosystem-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 70%, var(--foreground));
+  outline-offset: 4px;
+}
+
 .ecosystem-card-featured {
   grid-column: span 6;
-  background: linear-gradient(
-    140deg,
-    color-mix(
-      in srgb,
-      var(--surface, var(--background)) 80%,
-      var(--primary) 20%
-    ),
-    color-mix(
-      in srgb,
-      var(--surface, var(--background)) 92%,
-      var(--secondary) 8%
-    )
-  );
 }
 
 .app-name {
   display: block;
   font-size: 1.7rem;
-  margin-top: auto;
+  margin-top: 0.15rem;
 }
 
 .app-tagline {
@@ -102,10 +125,19 @@ h2 {
   margin-top: 0.35rem;
 }
 
+.ecosystem-card-featured .card-label,
+.ecosystem-card-featured .app-tagline {
+  color: color-mix(
+    in srgb,
+    var(--on-primary, var(--primary-foreground)) 82%,
+    transparent
+  );
+}
+
 .app-link-state {
   display: inline-flex;
   width: fit-content;
-  margin-top: 0.8rem;
+  margin-top: auto;
   padding: 0.34rem 0.64rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--primary) 10%, transparent);
@@ -116,8 +148,8 @@ h2 {
   text-transform: uppercase;
 }
 
-.ecosystem-card .card-label {
-  margin-bottom: auto;
+.ecosystem-card-featured .app-link-state {
+  color: var(--on-primary, var(--primary-foreground));
 }
 
 @media (max-width: 960px) {

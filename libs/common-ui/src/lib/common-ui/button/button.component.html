@@ -2,6 +2,11 @@
   [disabled]="disabled"
   (click)="onClick()"
   [ngClass]="variant"
+  [class.use-gradient]="gradientActive"
+  [class.rounded]="isRounded"
+  [attr.data-tone]="tone"
+  [attr.data-emphasis]="emphasis"
+  [attr.data-size]="size"
   [type]="type"
 >
   <ng-content></ng-content>

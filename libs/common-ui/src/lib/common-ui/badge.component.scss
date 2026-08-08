@@ -1,3 +1,5 @@
+@use './interfaces/variant' as variant;
+
 .badge {
   display: inline-flex;
   align-items: center;
@@ -7,6 +9,8 @@
   white-space: nowrap;
   line-height: 1;
   border: 1px solid transparent;
+
+  @include variant.variant-surface;
 
   // ---- Size ----
   &[data-size='sm'] {
@@ -32,57 +36,6 @@
       width: 18px;
       height: 18px;
     }
-  }
-
-  // ---- Tone -> CSS-variable mapping ----
-  // Each tone resolves a `--badge-bg-source` and `--badge-fg-source`
-  // pair, which the shape rules consume below.
-  &[data-tone='neutral'] {
-    --badge-bg-source: var(--surface-variant, var(--muted));
-    --badge-fg-source: var(--foreground);
-  }
-  &[data-tone='info'] {
-    --badge-bg-source: var(--info);
-    --badge-fg-source: var(--on-info, var(--info-foreground));
-  }
-  &[data-tone='success'] {
-    --badge-bg-source: var(--success);
-    --badge-fg-source: var(--on-success, var(--success-foreground));
-  }
-  &[data-tone='warning'] {
-    --badge-bg-source: var(--warning);
-    --badge-fg-source: var(--on-warning, var(--warning-foreground));
-  }
-  &[data-tone='danger'] {
-    --badge-bg-source: var(--danger);
-    --badge-fg-source: var(--on-danger, var(--danger-foreground));
-  }
-  &[data-tone='brand'] {
-    --badge-bg-source: var(--primary);
-    --badge-fg-source: var(--on-primary, var(--primary-foreground));
-  }
-
-  // ---- Shape ----
-  &[data-shape='solid'] {
-    background: var(--badge-bg-source);
-    color: var(--badge-fg-source);
-  }
-
-  &[data-shape='soft'] {
-    background: color-mix(in oklab, var(--badge-bg-source) 18%, transparent);
-    color: var(--badge-bg-source);
-  }
-
-  &[data-shape='outline'] {
-    background: transparent;
-    color: var(--badge-bg-source);
-    border-color: var(--badge-bg-source);
-  }
-
-  // Neutral tone should keep the foreground readable even in `soft`/`outline`
-  &[data-tone='neutral'][data-shape='soft'],
-  &[data-tone='neutral'][data-shape='outline'] {
-    color: var(--foreground);
   }
 
   &__icon {

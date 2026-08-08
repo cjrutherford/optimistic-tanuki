@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
+import { CardComponent } from '@optimistic-tanuki/common-ui';
 
 @Component({
   selector: 'hai-services-section',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, CardComponent],
   templateUrl: './services-section.component.html',
   styleUrl: './services-section.component.scss',
 })

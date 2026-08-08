@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-05T15:56:07.341Z",
+  "generatedAt": "2026-08-07T19:44:58.065Z",
   "items": [
     {
       "slug": "apps/authentication/readme",
@@ -2369,6 +2369,47 @@
       "landing": false,
       "featured": false,
       "lastUpdated": "2026-05-10T15:54:46.916Z"
+    },
+    {
+      "slug": "docs/audits/2026-08-07-client-interface-forgeofwill-feature-scorecard",
+      "title": "Client Interface and Forge of Will Feature Scorecard",
+      "summary": "This is a source-and-test audit of the two Angular clients and their checked-in E2E suites. It covers advertised landing-page capabilities, reachable routes, UI/service seams, explicit TODOs, and existing verification. It does not claim live-browser behavior for flows that were not run during this planning pass.",
+      "sourcePath": "docs/audits/2026-08-07-client-interface-forgeofwill-feature-scorecard.md",
+      "category": "audits",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Client Interface and Forge of Will Feature Scorecard",
+          "id": "client-interface-and-forge-of-will-feature-scorecard"
+        },
+        {
+          "depth": 2,
+          "text": "Scope",
+          "id": "scope"
+        },
+        {
+          "depth": 2,
+          "text": "Findings",
+          "id": "findings"
+        },
+        {
+          "depth": 2,
+          "text": "What is already evidenced as present",
+          "id": "what-is-already-evidenced-as-present"
+        },
+        {
+          "depth": 2,
+          "text": "Residual questions",
+          "id": "residual-questions"
+        }
+      ],
+      "body": "# Client Interface and Forge of Will Feature Scorecard\n\n## Scope\n\nThis is a source-and-test audit of the two Angular clients and their checked-in E2E suites. It covers advertised landing-page capabilities, reachable routes, UI/service seams, explicit TODOs, and existing verification. It does not claim live-browser behavior for flows that were not run during this planning pass.\n\nScoring uses user impact and verification confidence:\n\n- **P0:** advertised core capability is visibly nonfunctional or misleading.\n- **P1:** important advertised workflow is absent or lacks an end-to-end contract.\n- **P2:** policy, copy, or access behavior needs a deliberate product decision.\n\n## Findings\n\n| App               | Capability                     | Evidence                                                                                                                                                                                        | Status                                      | Priority |\n| ----------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------- |\n| Forge of Will     | AI project summary             | The projects page renders an `AI Project Summary` tile containing only static description text; no summary service or action is wired there.                                                    | Verified incomplete                         | P0       |\n| Forge of Will     | AI assistant                   | The assistant path explicitly logs that creating a new AI conversation is not implemented.                                                                                                      | Verified incomplete                         | P0       |\n| Forge of Will     | Team/small-group collaboration | Project invite API/service exists, but no project-page member/invite UI reference was found.                                                                                                    | High-confidence incomplete                  | P1       |\n| Optimistic Tanuki | Events                         | Landing copy promises events in the core workflow, use cases, and rich-content feature; no event route/service/component was found in the scoped client.                                        | High-confidence gap; confirm product intent | P1       |\n| Optimistic Tanuki | Public discovery               | Landing copy promises public posts discoverable outside the community; source contains feed/community surfaces, but no browser contract proves private/public isolation and outsider discovery. | Unverified                                  | P1       |\n| Optimistic Tanuki | Real-time notifications        | Notification shell and WebSocket infrastructure exist, but the client E2E suite has no delivery/read-state flow.                                                                                | Unverified                                  | P1       |\n| Optimistic Tanuki | Network onboarding             | Landing promises “Create Your Space” and invitations; current E2E journey covers registration/profile but not create-community → invite → join.                                                 | Unverified                                  | P1       |\n| Forge of Will     | Forum access policy            | Forum appears in authenticated navigation, but its route has no app-level authentication guard.                                                                                                 | Needs decision                              | P2       |\n\n## What is already evidenced as present\n\n- Optimistic Tanuki has feed, profile, communities, forum, messages, notifications, activity, privacy, search, reactions, attachments, and OAuth/email routes.\n- Forge of Will has project, task list/calendar/kanban, risks, changes, mind map, journal, timer handlers, profile, settings, forum, chat, and OAuth/email routes.\n- Both clients now have cookie-session OAuth E2E coverage from the prior migration work.\n\n## Residual questions\n\n1. Is events a committed product capability backed by shared models/API, or should the landing copy be narrowed?\n2. Should Forge forum be public-read or authentication-required?\n3. What is the minimum acceptable AI behavior when the AI provider is unavailable?\n4. Should project collaboration support invitations only, or also member roles, removal, and approval state?\n\nThe corresponding implementation plan is [2026-08-07-client-interface-forgeofwill-feature-completeness.md](../plans/2026-08-07-client-interface-forgeofwill-feature-completeness.md).\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-08-07T13:29:26.337Z"
     },
     {
       "slug": "docs/audits/client-app-ui-audit-2026-05-30",

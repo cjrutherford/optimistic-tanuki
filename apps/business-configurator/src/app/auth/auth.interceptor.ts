@@ -7,12 +7,9 @@ import { AuthStateService } from '../state/auth-state.service';
 export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
   const authState = inject(AuthStateService);
   const router = inject(Router);
-  const token = authState.getToken();
-
   return next(
     req.clone({
       setHeaders: {
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         'X-ot-appscope': 'business-configurator',
         'X-ot-session-mode': 'cookie',
       },

@@ -883,6 +883,12 @@ export class ThemeService {
     // alias the property is undefined and `color: var(--muted-foreground)`
     // falls back to `currentColor`, defeating the muted visual hierarchy.
     variables['--muted-foreground'] = colors.muted;
+    // Alias `--surface-variant` to the surface color so the neutral tone of the
+    // common-ui variant contract binds to an intentional token instead of
+    // silently falling back through `var(--surface-variant, var(--muted))`.
+    // The neutral tone is meant to read as a subtle surface, not the muted text
+    // color, so `--surface` is the correct source.
+    variables['--surface-variant'] = colors.surface;
     variables['--border'] = colors.border;
 
     // Primary colors
@@ -893,6 +899,12 @@ export class ThemeService {
     colors.primaryShades.forEach((shade, i) => {
       variables[`--primary-${i}`] = shade;
     });
+    // Emit the personality's primary gradient as `--gradient-primary` so
+    // gradient surfaces in common-ui (accordion `gradient` surface, card
+    // gradient chrome) resolve to a real gradient instead of degrading through
+    // `var(--gradient-primary, var(--primary))` to a flat primary fill.
+    variables['--gradient-primary'] = colors.gradients.primary;
+    variables['--gradient-secondary'] = colors.gradients.secondary;
 
     // Secondary colors
     variables['--secondary'] = colors.secondary;

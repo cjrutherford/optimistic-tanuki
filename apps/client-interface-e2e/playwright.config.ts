@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { chromium, defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
 
 // For CI, you may want to set BASE_URL to the deployed application.
@@ -10,6 +10,10 @@ const headless = ['1', 'true', 'yes', 'on'].includes(rawHeadless ?? '')
   : ['0', 'false', 'no', 'off'].includes(rawHeadless ?? '')
   ? false
   : isCI;
+const useManagedChromium =
+  process.env['PLAYWRIGHT_USE_MANAGED_CHROMIUM'] === 'true';
+const managedChromiumPath =
+  process.env['PLAYWRIGHT_EXECUTABLE_PATH'] || chromium.executablePath();
 
 /**
  * Read environment variables from file.
@@ -29,6 +33,10 @@ export default defineConfig({
   use: {
     baseURL,
     headless,
+    launchOptions: {
+      args: ['--disable-crash-reporter'],
+      ...(useManagedChromium ? { executablePath: managedChromiumPath } : {}),
+    },
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
@@ -40,13 +48,16 @@ export default defineConfig({
     ? [
         {
           name: 'chromium-desktop',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
         },
         {
           name: 'mobile-chrome',
           use: {
             ...devices['Pixel 5'],
-            channel: 'chrome',
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
           },
           testIgnore: '**/responsive-audit.spec.ts',
         },
@@ -55,7 +66,7 @@ export default defineConfig({
           use: {
             ...devices['iPad (gen 7)'],
             browserName: 'chromium',
-            channel: 'chrome',
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
           },
           testIgnore: '**/responsive-audit.spec.ts',
         },
@@ -63,11 +74,17 @@ export default defineConfig({
     : [
         {
           name: 'chromium-desktop',
-          use: { ...devices['Desktop Chrome'], channel: 'chrome' },
+          use: {
+            ...devices['Desktop Chrome'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
         },
         {
           name: 'mobile-chrome',
-          use: { ...devices['Pixel 5'], channel: 'chrome' },
+          use: {
+            ...devices['Pixel 5'],
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
+          },
           testIgnore: '**/responsive-audit.spec.ts',
         },
         {
@@ -75,7 +92,7 @@ export default defineConfig({
           use: {
             ...devices['iPad (gen 7)'],
             browserName: 'chromium',
-            channel: 'chrome',
+            ...(useManagedChromium ? {} : { channel: 'chrome' }),
           },
           testIgnore: '**/responsive-audit.spec.ts',
         },

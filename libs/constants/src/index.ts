@@ -89,6 +89,7 @@ export {
   ForumPostCommands,
   ForumModerationCommands,
   ForumLinkCommands,
+  ForumCommands,
 } from './lib/libs/forum';
 
 export { VideoCommands } from './lib/libs/videos';

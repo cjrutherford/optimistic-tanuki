@@ -122,13 +122,20 @@ export class AuthService {
   restoreSession(): Observable<boolean> {
     if (!isPlatformBrowser(this.platformId)) return of(false);
     return this.http
-      .get<{ data: SessionUser }>(`${this.API_URL}/authentication/session`, {
-        headers: this.APP_SCOPE_HEADER,
-        withCredentials: true,
-      })
+      .get<{ data: SessionUser | { user: SessionUser } }>(
+        `${this.API_URL}/authentication/session`,
+        {
+          headers: this.APP_SCOPE_HEADER,
+          withCredentials: true,
+        }
+      )
       .pipe(
         tap((response) => {
-          this.sessionUser = response.data;
+          const data = response.data as SessionUser | { user: SessionUser };
+          this.sessionUser = 'user' in data ? data.user : data;
+          if (!this.sessionUser?.userId) {
+            throw new Error('Session identity is missing');
+          }
           this.isAuthenticatedSubject.next(true);
         }),
         map(() => true),

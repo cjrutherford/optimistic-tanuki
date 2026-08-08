@@ -13,6 +13,9 @@
 <div
   #modalDialog
   class="modal-dialog"
+  [attr.data-tone]="tone"
+  [attr.data-emphasis]="emphasis"
+  [attr.data-surface]="surface"
   [attr.role]="ariaDescribedBy ? 'dialog' : 'alertdialog'"
   aria-modal="true"
   [attr.aria-label]="ariaLabel || heading"

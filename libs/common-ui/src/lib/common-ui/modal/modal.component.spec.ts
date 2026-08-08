@@ -211,4 +211,42 @@ describe('ModalComponent', () => {
 
     document.body.removeChild(trigger);
   }));
+
+  it('should expose canonical tone/emphasis with neutral/flat defaults', () => {
+    expect(component.tone).toBe('neutral');
+    expect(component.emphasis).toBe('flat');
+    expect(component.surface).toBe('flat');
+  });
+
+  it('should fold legacy variant onto emphasis + surface', () => {
+    component.variant = 'glass';
+    expect(component.emphasis).toBe('soft');
+    expect(component.surface).toBe('glass');
+
+    component.variant = 'gradient';
+    expect(component.emphasis).toBe('soft');
+    expect(component.surface).toBe('gradient');
+
+    component.variant = 'bordered';
+    expect(component.emphasis).toBe('outline');
+    expect(component.surface).toBe('bordered');
+
+    component.variant = 'default';
+    expect(component.emphasis).toBe('flat');
+    expect(component.surface).toBe('flat');
+  });
+
+  it('should render the tone/emphasis/surface contract on the dialog surface', () => {
+    fixture.componentRef.setInput('visible', true);
+    fixture.componentRef.setInput('tone', 'brand');
+    fixture.componentRef.setInput('variant', 'glass');
+    fixture.detectChanges();
+
+    const dialog: HTMLElement =
+      fixture.nativeElement.querySelector('.modal-dialog');
+    expect(dialog).toBeTruthy();
+    expect(dialog.getAttribute('data-tone')).toBe('brand');
+    expect(dialog.getAttribute('data-emphasis')).toBe('soft');
+    expect(dialog.getAttribute('data-surface')).toBe('glass');
+  });
 });

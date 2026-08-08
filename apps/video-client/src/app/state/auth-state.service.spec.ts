@@ -59,7 +59,7 @@ describe('AuthStateService', () => {
     expect(service.getToken()).toBeNull();
     expect(service.isAuthenticated).toBe(true);
     expect(service.getDecodedTokenValue()).toMatchObject({
-      userId: 'viewer-1',
+      user: { userId: 'viewer-1' },
     });
     expect(localStorage.getItem('authToken')).toBeNull();
   });

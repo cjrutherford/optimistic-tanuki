@@ -78,7 +78,7 @@ describe('AuthStateService', () => {
 
       const sessionRequest = httpMock.expectOne('/api/authentication/session');
       expect(sessionRequest.request.withCredentials).toBe(true);
-      sessionRequest.flush({ data: { user: mockUserData } });
+      sessionRequest.flush({ data: mockUserData });
 
       const response = await loginPromise;
       expect(response).toEqual(mockResponse);
@@ -92,7 +92,7 @@ describe('AuthStateService', () => {
       const restored = service.restoreSession();
       const req = httpMock.expectOne('/api/authentication/session');
       expect(req.request.withCredentials).toBe(true);
-      req.flush({ data: { user: mockUserData } });
+      req.flush({ data: mockUserData });
 
       await expect(restored).resolves.toBe(true);
       expect(service.isAuthenticated).toBe(true);
@@ -124,7 +124,7 @@ describe('AuthStateService', () => {
     it('should return session-derived identity and profileId', async () => {
       const restore = service.restoreSession();
       const req = httpMock.expectOne('/api/authentication/session');
-      req.flush({ data: { user: mockUserData } });
+      req.flush({ data: mockUserData });
       await restore;
       expect(service.getDecodedTokenValue()).toEqual(mockUserData);
       expect(service.getProfileId()).toBe(mockUserData.profileId);

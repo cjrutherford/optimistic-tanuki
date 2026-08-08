@@ -216,6 +216,33 @@ wait_for_chat_collector() {
   return 1
 }
 
+wait_for_forum() {
+  attempts="${1:-30}"
+  delay_seconds="${2:-2}"
+
+  echo "Waiting for forum TCP service..."
+
+  while [ "${attempts}" -gt 0 ]; do
+    if docker compose ${COMPOSE_FILES} exec -T forum node -e '
+      const net = require("node:net");
+      const socket = net.createConnection({ host: "127.0.0.1", port: 3015 });
+      socket.once("connect", () => socket.end());
+      socket.once("close", () => process.exit(0));
+      socket.once("error", () => process.exit(1));
+      setTimeout(() => process.exit(1), 1000).unref();
+    ' >/dev/null 2>&1; then
+      echo "forum is ready."
+      return 0
+    fi
+
+    attempts=$((attempts - 1))
+    sleep "${delay_seconds}"
+  done
+
+  echo "forum did not become ready in time." >&2
+  return 1
+}
+
 wait_for_videos() {
   attempts="${1:-60}"
   delay_seconds="${2:-2}"
@@ -247,6 +274,9 @@ refresh_service telos-docs-service
 run_seed telos-docs-service "${APP_RUNTIME_DIR}" node ./seed-persona.js
 refresh_service permissions
 run_seed permissions "${APP_RUNTIME_DIR}" node ./seed-permissions.js
+refresh_service forum
+wait_for_forum
+run_seed forum "${APP_RUNTIME_DIR}" node -e 'const { ClientProxyFactory, Transport } = require("@nestjs/microservices"); const { firstValueFrom } = require("rxjs"); (async () => { const client = ClientProxyFactory.create({ transport: Transport.TCP, options: { host: process.env.FORUM_HOST || "forum", port: Number(process.env.FORUM_PORT || 3015) } }); await client.connect(); await firstValueFrom(client.send({ cmd: "SEED_DEMO_FORUM_TOPICS" }, {})); client.close(); })().catch((error) => { console.error(error); process.exit(1); });'
 refresh_service gateway
 refresh_services store authentication profile social payments assets chat-collector classifieds
 run_seed store "${APP_RUNTIME_DIR}" node ./seed-store.js

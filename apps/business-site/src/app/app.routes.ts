@@ -122,7 +122,7 @@ const clientChildren: Route[] = [
 
 export const appRoutes: Route[] = [
   ...oauthCallbackRoutes,
-  ...emailAuthRoutes('business-site:token'),
+  ...emailAuthRoutes('business-site:token', true),
   {
     path: '',
     loadComponent: () =>

@@ -1,10 +1,27 @@
 @use '../../styles/mixins' as *;
 @use 'personality' as p;
+@use '../interfaces/variant' as variant;
 
 // ============================================
 // Personality-Driven Card Component
 // Uses application personality CSS variables
 // ============================================
+
+// Canonical tone/emphasis surface. The plain `default` card is folded onto the
+// contract and carries `data-tone`; decorative CardVariants opt out and keep
+// their bespoke chrome.
+.card[data-tone] {
+  @include variant.variant-surface;
+}
+
+// The folded `default` card resolves to the neutral tone. A neutral card should
+// read as a normal elevated surface rather than the mixin's faint tone-mix, so
+// preserve the surface background/foreground for that tone specifically. Colored
+// tones (brand/success/…) still paint through the shared mixin above.
+.card[data-tone='neutral'] {
+  background: var(--background-elevated, var(--surface, var(--background)));
+  color: var(--foreground);
+}
 
 .card {
   position: relative;

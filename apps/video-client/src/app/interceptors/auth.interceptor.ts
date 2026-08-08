@@ -7,21 +7,11 @@ import { resolveServerApiUrl } from './server-api-url.util';
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthStateService);
   const platformId = inject(PLATFORM_ID);
-  const token = authService.getToken();
-
   req = req.clone({
     url: resolveServerApiUrl(req.url, isPlatformServer(platformId)),
     setHeaders: { 'X-ot-session-mode': 'cookie' },
     withCredentials: true,
   });
-
-  if (token) {
-    req = req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
 
   return next(req);
 };

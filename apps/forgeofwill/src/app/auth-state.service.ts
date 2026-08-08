@@ -85,7 +85,7 @@ export class AuthStateService {
       const response = await this.authService.currentSession();
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
-      this.decodedTokenSubject.next(response.data.user as UserData);
+      this.decodedTokenSubject.next(response.data as UserData);
       this._isAuthenticated = true;
       return true;
     } catch {

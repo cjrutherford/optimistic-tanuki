@@ -1,11 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { PLATFORM_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of } from 'rxjs';
 import {
@@ -156,7 +151,7 @@ describe('OAuthCallbackComponent', () => {
     expect(component.error).toBe('Verify the Microsoft account email first.');
   });
 
-  it('redeems a callback code and posts the platform token without reading it from the URL', async () => {
+  it('relays the one-time callback code without redeeming it on the callback host', async () => {
     const location = {
       search: '?callbackCode=one-time-code',
       replace: jest.fn(),
@@ -170,8 +165,6 @@ describe('OAuthCallbackComponent', () => {
     await TestBed.configureTestingModule({
       imports: [OAuthCallbackComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -187,34 +180,25 @@ describe('OAuthCallbackComponent', () => {
     TestBed.runInInjectionContext(() =>
       new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
     );
-    const http = TestBed.inject(HttpTestingController);
-    const request = http.expectOne('/api/oauth/callback/redeem');
     expect(replaceState).toHaveBeenCalledWith(
       null,
       '',
       expect.not.stringContaining('callbackCode')
     );
-    expect(request.request.body).toEqual({ callbackCode: 'one-time-code' });
-    request.flush({
-      token: 'platform-token',
-      returnOrigin: 'https://forge.example',
-    });
     await Promise.resolve();
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         payload: expect.objectContaining({
           success: true,
-          token: 'platform-token',
-          session: false,
+          callbackCode: 'one-time-code',
         }),
       }),
-      'https://forge.example'
+      window.location.origin
     );
-    http.verify();
     replaceState.mockRestore();
   });
 
-  it('relays cookie-session redemption without requiring a browser-readable token', async () => {
+  it('relays a cookie-session callback code without redeeming on the proxy host', async () => {
     const location = {
       search: '?callbackCode=one-time-code',
       replace: jest.fn(),
@@ -227,8 +211,6 @@ describe('OAuthCallbackComponent', () => {
     await TestBed.configureTestingModule({
       imports: [OAuthCallbackComponent],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
         {
           provide: ActivatedRoute,
           useValue: {
@@ -244,19 +226,13 @@ describe('OAuthCallbackComponent', () => {
     TestBed.runInInjectionContext(() =>
       new OAuthCallbackComponent(TestBed.inject(ActivatedRoute)).ngOnInit()
     );
-    const http = TestBed.inject(HttpTestingController);
-    http.expectOne('/api/oauth/callback/redeem').flush({
-      session: true,
-      returnOrigin: 'https://fin.example',
-    });
     await Promise.resolve();
 
     expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        payload: { success: true, session: true },
+        payload: { success: true, callbackCode: 'one-time-code' },
       }),
-      'https://fin.example'
+      window.location.origin
     );
-    http.verify();
   });
 });

@@ -146,7 +146,11 @@ export class LocalOAuthStateStore implements OAuthStateStore {
       return undefined;
     }
     if (
-      grant.redemptionOrigin !== redemptionOrigin ||
+      // The callback proxy is the normal redemption origin, but a popup
+      // opener may redeem on its own host so the HttpOnly cookie is scoped to
+      // the application that initiated sign-in.
+      (grant.redemptionOrigin !== redemptionOrigin &&
+        grant.returnOrigin !== redemptionOrigin) ||
       grant.stateId !== stateId ||
       grant.nonceHash !== nonceHash
     )
@@ -266,7 +270,7 @@ export class RedisOAuthStateStore implements OAuthStateStore, OnModuleDestroy {
     this.requireConnection();
     const value = await this.client.sendCommand([
       'EVAL',
-      "local value=redis.call('GET', KEYS[1]); if not value then return nil end; local grant=cjson.decode(value); if grant.redemptionOrigin ~= ARGV[1] or grant.stateId ~= ARGV[2] or grant.nonceHash ~= ARGV[3] then return nil end; redis.call('DEL', KEYS[1]); return value",
+      "local value=redis.call('GET', KEYS[1]); if not value then return nil end; local grant=cjson.decode(value); if (grant.redemptionOrigin ~= ARGV[1] and grant.returnOrigin ~= ARGV[1]) or grant.stateId ~= ARGV[2] or grant.nonceHash ~= ARGV[3] then return nil end; redis.call('DEL', KEYS[1]); return value",
       '1',
       `${this.callbackGrantPrefix}${code}`,
       redemptionOrigin,

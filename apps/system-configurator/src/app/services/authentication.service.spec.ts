@@ -38,10 +38,10 @@ describe('AuthenticationService', () => {
     const sessionRequest = httpMock.expectOne('/api/authentication/session');
     expect(sessionRequest.request.withCredentials).toBe(true);
     sessionRequest.flush({
-      data: { user: { userId: 'hai-1', profileId: 'profile-1' } },
+      data: { userId: 'hai-1', profileId: 'profile-1' },
     });
     await expect(session).resolves.toEqual({
-      data: { user: { userId: 'hai-1', profileId: 'profile-1' } },
+      data: { userId: 'hai-1', profileId: 'profile-1' },
     });
   });
 });

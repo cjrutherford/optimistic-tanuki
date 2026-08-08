@@ -7,22 +7,27 @@ import {
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Observable, tap, catchError, throwError, map, of } from 'rxjs';
+import {
+  Observable,
+  tap,
+  catchError,
+  throwError,
+  map,
+  of,
+  switchMap,
+} from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { RegisterRequest } from '@optimistic-tanuki/models';
 
 export interface BusinessAuthUser {
-  token: string;
+  token?: string;
   profileId: string;
   userId: string;
   email: string;
   name?: string;
 }
 
-const TOKEN_KEY = 'business-site:token';
-const USER_KEY = 'business-site:user';
-const CLIENT_USER_KEY = 'business-site:client-user';
-const CLIENT_TOKEN_KEY = 'business-site:client-token';
+const SESSION_KIND_KEY = 'business-site:session-kind';
 const BUSINESS_SITE_SCOPE = 'business-site';
 
 interface TokenClaims {
@@ -131,45 +136,47 @@ export class BusinessAuthService {
     return {
       headers: {
         'x-ot-appscope': BUSINESS_SITE_SCOPE,
+        'X-ot-session-mode': 'cookie',
         ...(baseToken ? { Authorization: `Bearer ${baseToken}` } : {}),
       },
+      withCredentials: true,
     };
   }
 
-  loginClient(email: string, password: string): Observable<BusinessAuthUser> {
-    return new Observable<BusinessAuthUser>((observer) => {
-      this.http
-        .post<{ token: string; userId?: string; email?: string }>(
-          '/api/authentication/login',
-          { email, password },
-          this.authRequestOptions()
-        )
-        .subscribe({
-          next: (loginResult) => {
-            const baseToken = this.extractToken(loginResult);
-            if (!baseToken) {
-              observer.error(new Error('Login did not return a token'));
-              return;
-            }
+  private sessionUser(email: string): Observable<BusinessAuthUser> {
+    return this.http
+      .get<{
+        data: {
+          userId: string;
+          profileId?: string;
+          email?: string;
+          name?: string;
+        };
+      }>('/api/authentication/session', this.authRequestOptions())
+      .pipe(
+        map((response) => ({
+          userId: response.data.userId,
+          profileId: response.data.profileId || '',
+          email: response.data.email || email,
+          name: response.data.name || '',
+        }))
+      );
+  }
 
-            this.exchangeAppToken(
-              baseToken,
-              {
-                email: loginResult.email ?? email,
-                userId: loginResult.userId,
-              },
-              (user) => this.storeClientUser(user)
-            ).subscribe({
-              next: (user) => {
-                observer.next(user);
-                observer.complete();
-              },
-              error: (err) => observer.error(err),
-            });
-          },
-          error: (err) => observer.error(err),
-        });
-    });
+  loginClient(email: string, password: string): Observable<BusinessAuthUser> {
+    return this.http
+      .post(
+        '/api/authentication/login',
+        { email, password },
+        this.authRequestOptions()
+      )
+      .pipe(
+        switchMap(() => this.sessionUser(email)),
+        tap((user) => {
+          sessionStorage.setItem(SESSION_KIND_KEY, 'client');
+          this.storeClientUser(user);
+        })
+      );
   }
 
   logoutClient(): void {
@@ -249,39 +256,36 @@ export class BusinessAuthService {
     email: string,
     password: string
   ): Observable<BusinessAuthUser> {
-    return new Observable<BusinessAuthUser>((observer) => {
-      this.http
-        .post<{ token: string; userId?: string; email?: string }>(
-          '/api/authentication/login',
-          { email, password },
-          this.authRequestOptions()
-        )
-        .subscribe({
-          next: (loginResult) => {
-            const baseToken = this.extractToken(loginResult);
-            if (!baseToken) {
-              observer.error(new Error('Login did not return a token'));
-              return;
-            }
+    return this.http
+      .post(
+        '/api/authentication/login',
+        { email, password },
+        this.authRequestOptions()
+      )
+      .pipe(
+        switchMap(() => this.sessionUser(email)),
+        tap((user) => {
+          sessionStorage.setItem(SESSION_KIND_KEY, 'owner');
+          this.storeUser(user);
+        })
+      );
+  }
 
-            this.exchangeAppToken(
-              baseToken,
-              {
-                email: loginResult.email ?? email,
-                userId: loginResult.userId,
-              },
-              (user) => this.storeUser(user)
-            ).subscribe({
-              next: (user) => {
-                observer.next(user);
-                observer.complete();
-              },
-              error: (err) => observer.error(err),
-            });
-          },
-          error: (err) => observer.error(err),
-        });
-    });
+  restoreSession(): Observable<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return of(false);
+    const kind = sessionStorage.getItem(SESSION_KIND_KEY);
+    if (kind !== 'owner' && kind !== 'client') return of(false);
+    return this.sessionUser('').pipe(
+      tap((user) =>
+        kind === 'owner' ? this.storeUser(user) : this.storeClientUser(user)
+      ),
+      map(() => true),
+      catchError(() => {
+        this.clearUser();
+        this.clearClientUser();
+        return of(false);
+      })
+    );
   }
 
   logout(): void {
@@ -301,54 +305,31 @@ export class BusinessAuthService {
 
   private storeUser(user: BusinessAuthUser): void {
     this._user.set(user);
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      localStorage.setItem(TOKEN_KEY, user.token);
-    }
   }
 
   private clearUser(): void {
     this._user.set(null);
     if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(SESSION_KIND_KEY);
     }
   }
 
   private loadUser(): BusinessAuthUser | null {
-    try {
-      // Will only run in browser context; SSR will get null
-      if (typeof localStorage === 'undefined') return null;
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? (JSON.parse(raw) as BusinessAuthUser) : null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 
   private storeClientUser(user: BusinessAuthUser): void {
     this._clientUser.set(user);
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(CLIENT_USER_KEY, JSON.stringify(user));
-      localStorage.setItem(CLIENT_TOKEN_KEY, user.token);
-    }
   }
 
   private clearClientUser(): void {
     this._clientUser.set(null);
     if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem(CLIENT_USER_KEY);
-      localStorage.removeItem(CLIENT_TOKEN_KEY);
+      sessionStorage.removeItem(SESSION_KIND_KEY);
     }
   }
 
   private loadClientUser(): BusinessAuthUser | null {
-    try {
-      if (typeof localStorage === 'undefined') return null;
-      const raw = localStorage.getItem(CLIENT_USER_KEY);
-      return raw ? (JSON.parse(raw) as BusinessAuthUser) : null;
-    } catch {
-      return null;
-    }
+    return null;
   }
 }

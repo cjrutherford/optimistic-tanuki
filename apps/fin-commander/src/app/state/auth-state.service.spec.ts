@@ -45,7 +45,7 @@ describe('AuthStateService', () => {
           provide: HttpClient,
           useValue: {
             post: jest.fn().mockReturnValue(of({})),
-            get: jest.fn().mockReturnValue(of({ data: { user: null } })),
+            get: jest.fn().mockReturnValue(of({ data: null })),
           },
         },
       ],
@@ -100,9 +100,11 @@ describe('AuthStateService', () => {
       })
     );
     expect(service.getDecodedTokenValue()).toMatchObject({
-      userId: 'user-1',
-      email: 'captain@example.com',
-      profileId: profile.id,
+      user: {
+        userId: 'user-1',
+        email: 'captain@example.com',
+        profileId: profile.id,
+      },
     });
   });
 });

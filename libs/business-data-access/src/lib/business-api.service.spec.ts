@@ -114,9 +114,7 @@ describe('BusinessApiService site config requests', () => {
 
     const request = httpMock.expectOne('/api/contact');
     expect(request.request.method).toBe('POST');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer client-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
     expect(request.request.body).toEqual({
       name: 'Jordan Prospect',
       email: 'jordan@example.com',
@@ -207,9 +205,7 @@ describe('BusinessApiService site config requests', () => {
         candidate.params.get('slug') === 'steady-hand-contracting'
     );
     expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer owner-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
     request.flush([]);
   });
 
@@ -250,9 +246,7 @@ describe('BusinessApiService site config requests', () => {
         candidate.params.get('type') === 'background'
     );
     expect(request.request.method).toBe('GET');
-    expect(request.request.headers.get('Authorization')).toBe(
-      'Bearer owner-token'
-    );
+    expect(request.request.headers.get('Authorization')).toBeNull();
     request.flush([]);
   });
 });

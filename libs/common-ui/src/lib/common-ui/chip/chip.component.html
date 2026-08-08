@@ -1,4 +1,10 @@
-<span class="chip" [class]="'chip-' + variant" [class.disabled]="disabled">
+<span
+  class="chip"
+  [attr.data-tone]="tone"
+  [attr.data-emphasis]="emphasis"
+  [attr.data-size]="size"
+  [class.disabled]="disabled"
+>
   <ng-content></ng-content>
   @if (deletable) {
   <button

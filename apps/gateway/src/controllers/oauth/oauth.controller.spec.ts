@@ -684,7 +684,7 @@ describe('OAuthController', () => {
       ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
     });
 
-    it('redeems a cookie callback only from the client-interface proxy and returns the verified opener origin', async () => {
+    it('redeems a cookie callback on the initiating app origin and returns the verified opener origin', async () => {
       const store = (controller as any).oauthStateStore as LocalOAuthStateStore;
       const stateId = 'state_2_callback_grant_identifier';
       const secret = 'callback_secret_for_cookie_grant';
@@ -699,36 +699,25 @@ describe('OAuthController', () => {
         expiresAt: Date.now() + 60_000,
       });
 
-      await expect(
-        controller.redeemCallbackCode({ callbackCode }, {
-          headers: { origin: 'https://forge.example' },
-          cookies: {
-            oauth_state_nonce: JSON.stringify([
-              { id: stateId, nonce: 'nonce' },
-            ]),
-          },
-        } as any)
-      ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
-
-      const response = { cookie: jest.fn() } as any;
+      const targetResponse = { cookie: jest.fn() } as any;
       await expect(
         controller.redeemCallbackCode(
           { callbackCode },
           {
-            headers: { origin: 'https://optimistic-tanuki.example' },
+            headers: { origin: 'https://forge.example' },
             cookies: {
               oauth_state_nonce: JSON.stringify([
                 { id: stateId, nonce: 'nonce' },
               ]),
             },
           } as any,
-          response
+          targetResponse
         )
       ).resolves.toEqual({
         session: true,
         returnOrigin: 'https://forge.example',
       });
-      expect(response.cookie).toHaveBeenCalledWith(
+      expect(targetResponse.cookie).toHaveBeenCalledWith(
         'ot_session',
         'platform-token',
         expect.objectContaining({ httpOnly: true, path: '/api' })

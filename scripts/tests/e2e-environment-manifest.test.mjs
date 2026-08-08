@@ -190,7 +190,7 @@ test('local CI runner can narrow a Playwright run without changing the manifest 
   );
 });
 
-test('authenticated forum coverage verifies the authorized scoped topics request', () => {
+test('forum coverage verifies the cookie-session scoped topics request', () => {
   const forumSpec = readFileSync(
     new URL(
       '../../apps/client-interface-e2e/src/forum.spec.ts',
@@ -207,14 +207,16 @@ test('authenticated forum coverage verifies the authorized scoped topics request
   );
   assert.match(forumSpec, /waitForResponse/);
   assert.match(forumSpec, /\/api\/forum\/topics/);
-  assert.match(forumSpec, /authorization/);
-  assert.match(forumSpec, /headers\.authorization/);
   assert.match(forumSpec, /x-ot-appscope/);
-  assert.match(forumSpec, /headers\['x-ot-appscope'\]\)\.toBe\('forum'\)/);
+  assert.match(
+    forumSpec,
+    /headers\['x-ot-appscope'\]\)\.toBe\('client-interface'\)/
+  );
   assert.match(
     interceptor,
-    /url\.includes\('\/api\/forum'\)[\s\S]*?appScope = 'forum'/
+    /'X-ot-appscope': appScope[\s\S]*?'X-ot-session-mode': 'cookie'/
   );
+  assert.match(interceptor, /withCredentials: true/);
 });
 
 test('forum runtime configuration honors portable service environment overrides', () => {

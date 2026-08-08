@@ -24,9 +24,9 @@ export class AppComponent implements OnInit {
     appId: 'hai',
     appName: 'HAI',
     appTagline:
-      'Hopeful Aspirations Industries · Software, cloud, and personal-cloud systems.',
+      'Hopeful Aspirations Industries · Custom software and independent infrastructure.',
     appDescription:
-      'Hopeful Aspirations Industries (HAI) builds software systems, cloud platforms, and personal-cloud tooling through a repo-backed product and delivery business.',
+      'Hopeful Aspirations Industries (HAI) provides custom portals, workflow automation, tailored software, and independent infrastructure for Savannah businesses and local technology partners.',
     appUrl: '/hai',
   };
 

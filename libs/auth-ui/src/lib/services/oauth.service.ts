@@ -19,6 +19,8 @@ export interface OAuthPopupResult {
   token?: string;
   /** The gateway completed authentication using an HttpOnly session cookie. */
   session?: boolean;
+  /** One-time grant to be redeemed by the initiating app's API origin. */
+  callbackCode?: string;
   error?: string;
   errorDescription?: string;
 }
@@ -198,6 +200,45 @@ export class OAuthService {
         .subscribe({
           next: (event) => {
             const result = event.data.payload as OAuthPopupResult;
+            if (result.success && result.callbackCode) {
+              void firstValueFrom(
+                this.http.post<{
+                  token?: string;
+                  session?: true;
+                  returnOrigin?: string;
+                }>(
+                  `${this.apiBaseUrl}/oauth/callback/redeem`,
+                  { callbackCode: result.callbackCode },
+                  {
+                    withCredentials: true,
+                    ...(cookieSession
+                      ? { headers: { 'X-ot-session-mode': 'cookie' } }
+                      : {}),
+                  }
+                )
+              )
+                .then((redemption) => {
+                  if (redemption.returnOrigin !== window.location.origin) {
+                    finish({
+                      success: false,
+                      error: 'OAuth callback origin mismatch',
+                    });
+                    return;
+                  }
+                  finish({
+                    success: true,
+                    session: redemption.session === true,
+                    ...(redemption.token ? { token: redemption.token } : {}),
+                  });
+                })
+                .catch(() =>
+                  finish({
+                    success: false,
+                    error: 'OAuth session could not be restored',
+                  })
+                );
+              return;
+            }
             if (result.success && (result.token || result.session)) {
               finish({
                 success: true,

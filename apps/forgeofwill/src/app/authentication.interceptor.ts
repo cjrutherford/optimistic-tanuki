@@ -8,11 +8,8 @@ import { inject } from '@angular/core';
 export const authenticationInterceptor: HttpInterceptorFn = (req, next) => {
   const authStateService = inject(AuthStateService);
   const router = inject(Router);
-  const token = authStateService.getToken();
-
   const clonedRequest = req.clone({
     setHeaders: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       'x-ot-appscope': 'forgeofwill',
       'X-ot-session-mode': 'cookie',
     },

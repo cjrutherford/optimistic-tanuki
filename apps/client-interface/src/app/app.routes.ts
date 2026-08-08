@@ -11,6 +11,10 @@ import {
 import { ExplorePageComponent } from '@optimistic-tanuki/search-ui';
 
 const forumPermissionResolver: ResolveFn<string[]> = async () => {
+  const authState = inject(AuthStateService);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
   const permissionsService = inject(UserPermissionsService);
   const permissions = await permissionsService.searchPermissions('forum.');
   console.log('Forum permissionsResolver:', permissions);
@@ -110,7 +114,6 @@ export const appRoutes: Route[] = [
           forumUserIdResolver
         )
       ),
-    canActivate: [AuthGuard, ProfileGuard], // Protect the forum route
   },
   {
     path: 'communities',

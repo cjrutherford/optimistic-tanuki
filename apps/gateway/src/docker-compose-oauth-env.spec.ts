@@ -75,4 +75,36 @@ describe('docker compose oauth environment wiring', () => {
       'OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}'
     );
   });
+
+  it('keeps the deterministic E2E provider on a different host from the app while aligning the callback origin', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../e2e/docker-compose.e2e-stack.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toBeTruthy();
+    expect(gatewaySection).toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL: http://localhost:8080'
+    );
+    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN: localhost');
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_CLIENT_ID: e2e-google-client-id'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_CLIENT_SECRET: e2e-google-client-secret'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_TOKEN_ENDPOINT: http://oauth-provider:3016/token'
+    );
+    expect(gatewaySection).toContain(
+      'CI_GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo'
+    );
+  });
 });
