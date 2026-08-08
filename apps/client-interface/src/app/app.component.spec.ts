@@ -11,6 +11,7 @@ import { ProfileService } from './profile.service';
 import { ProfileContext } from './profile.context';
 import { TitleService } from './title.service';
 import { ChatService } from './chat.service';
+import { SocketChatService } from '@optimistic-tanuki/chat-ui';
 import { NotificationService } from '@optimistic-tanuki/notification-ui';
 import { of } from 'rxjs';
 
@@ -103,6 +104,13 @@ describe('AppComponent', () => {
         {
           provide: ChatService,
           useValue: {},
+        },
+        {
+          provide: SocketChatService,
+          useValue: {
+            sendMessage: jest.fn(),
+            onMessage: jest.fn(),
+          },
         },
         {
           provide: NotificationService,
@@ -198,5 +206,36 @@ describe('AppComponent', () => {
     expect(app.suppressFixedChatOverlays()).toBe(true);
     expect(compiled.querySelector('.chat-floating-button')).toBeNull();
     expect(compiled.querySelector('hai-about-tag')).toBeNull();
+  });
+
+  it('sends floating-chat messages through the authenticated shared chat socket', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    const app = fixture.componentInstance;
+    const socketChatService = TestBed.inject(SocketChatService) as unknown as {
+      sendMessage: jest.Mock;
+    };
+    app.selectedProfile.set({ id: 'profile-1' } as any);
+    app.chatConversations = [
+      {
+        id: 'conversation-1',
+        participants: ['profile-1', 'profile-2'],
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    app.handleFloatingMessageSubmitted({
+      conversationId: 'conversation-1',
+      content: 'hello',
+    });
+
+    expect(socketChatService.sendMessage).toHaveBeenCalledWith({
+      conversationId: 'conversation-1',
+      content: 'hello',
+      senderId: 'profile-1',
+      recipientId: ['profile-2'],
+      type: 'chat',
+    });
   });
 });

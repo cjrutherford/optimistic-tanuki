@@ -14,6 +14,7 @@ describe('CommunityChatComponent', () => {
     onConversations: jest.Mock;
     onMessage: jest.Mock;
     getConversations: jest.Mock;
+    sendMessage: jest.Mock;
     destroy: jest.Mock;
   };
 
@@ -33,6 +34,7 @@ describe('CommunityChatComponent', () => {
       onConversations: jest.fn(),
       onMessage: jest.fn(),
       getConversations: jest.fn(),
+      sendMessage: jest.fn(),
       destroy: jest.fn(),
     };
 
@@ -223,7 +225,7 @@ describe('CommunityChatComponent', () => {
     );
   });
 
-  it('sends submitted community messages to the room participants', async () => {
+  it('sends submitted community messages to the room participants over the shared socket', async () => {
     component['currentUserId'] = 'profile-1';
     component.chatConversations.set([
       {
@@ -234,26 +236,18 @@ describe('CommunityChatComponent', () => {
         updatedAt: new Date('2026-07-05T10:00:00.000Z'),
       },
     ]);
-    communityService.sendCommunityChatMessage.mockResolvedValue({
-      id: 'm1',
-      conversationId: 'room-1',
-      senderId: 'profile-1',
-      content: 'hello',
-      type: 'chat',
-      recipients: ['profile-2'],
-      createdAt: new Date('2026-07-05T10:02:00.000Z'),
-    } as any);
-
     await component.handleMessageSubmitted({
       conversationId: 'room-1',
       content: 'hello',
     });
 
-    expect(communityService.sendCommunityChatMessage).toHaveBeenCalledWith({
+    expect(socketChatService.sendMessage).toHaveBeenCalledWith({
       conversationId: 'room-1',
       content: 'hello',
       senderId: 'profile-1',
-      recipientIds: ['profile-2'],
+      recipientId: ['profile-2'],
+      type: 'chat',
     });
+    expect(communityService.sendCommunityChatMessage).not.toHaveBeenCalled();
   });
 });

@@ -201,6 +201,20 @@ describe('AppService', () => {
     });
   });
 
+  describe('createDirectChat', () => {
+    it('rejects direct conversations that do not have exactly two distinct participants', async () => {
+      await expect(service.createDirectChat(['profile-1'])).rejects.toThrow(
+        'exactly two distinct participants'
+      );
+      await expect(
+        service.createDirectChat(['profile-1', 'profile-1'])
+      ).rejects.toThrow('exactly two distinct participants');
+      await expect(
+        service.createDirectChat(['profile-1', 'profile-2', 'profile-3'])
+      ).rejects.toThrow('exactly two distinct participants');
+    });
+  });
+
   describe('postMessageHttp', () => {
     it('associates the saved message with its conversation', async () => {
       const conversation = Object.assign(new Conversation(), {

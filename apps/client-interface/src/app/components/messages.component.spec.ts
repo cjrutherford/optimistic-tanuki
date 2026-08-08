@@ -15,6 +15,7 @@ describe('MessagesComponent', () => {
   let chatService: {
     sendMessage: jest.Mock;
     getMessages: jest.Mock;
+    getOrCreateDirectChat: jest.Mock;
   };
   let socketChatService: {
     onConversations: jest.Mock;
@@ -28,6 +29,9 @@ describe('MessagesComponent', () => {
     chatService = {
       sendMessage: jest.fn(),
       getMessages: jest.fn(),
+      getOrCreateDirectChat: jest
+        .fn()
+        .mockResolvedValue({ id: 'conversation-2' }),
     };
 
     socketChatService = {
@@ -47,6 +51,14 @@ describe('MessagesComponent', () => {
             getCurrentUserProfile: jest
               .fn()
               .mockReturnValue({ id: 'profile-1' }),
+            allProfiles: jest.fn(() => [
+              { id: 'profile-1', profileName: 'Alice' },
+              { id: 'profile-2', profileName: 'Bob' },
+            ]),
+            discoverableProfiles: jest.fn(() => [
+              { id: 'profile-2', profileName: 'Bob' },
+            ]),
+            getDiscoverableProfiles: jest.fn().mockResolvedValue(undefined),
           },
         },
         {
@@ -128,6 +140,15 @@ describe('MessagesComponent', () => {
       type: 'chat',
     });
     expect(chatService.sendMessage).not.toHaveBeenCalled();
+  });
+
+  it('creates or reuses a direct conversation with the selected profile', async () => {
+    await component.startDirectConversation('profile-2');
+
+    expect(chatService.getOrCreateDirectChat).toHaveBeenCalledWith('profile-2');
+    expect(socketChatService.getConversations).toHaveBeenCalledWith(
+      'profile-1'
+    );
   });
 
   it('attaches fetched participant profiles to rehydrated conversations', async () => {

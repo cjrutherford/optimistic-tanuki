@@ -17,6 +17,7 @@ import {
 } from '@optimistic-tanuki/constants';
 import { firstValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
+import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
 interface ConnectedClient {
   id: string;
@@ -41,8 +42,18 @@ export class SocialGateway {
 
   constructor(
     @Inject(ServiceTokens.SOCIAL_SERVICE)
-    private readonly socialClient: ClientProxy
+    private readonly socialClient: ClientProxy,
+    private readonly socketSessionAuth: SocketSessionAuthService
   ) {}
+
+  async handleConnection(client: Socket): Promise<void> {
+    try {
+      const user = await this.socketSessionAuth.authenticate(client);
+      this.registerClient(user.profileId, client);
+    } catch {
+      client.disconnect(true);
+    }
+  }
 
   @SubscribeMessage(SocialRealtimeCommands.GET_FEED)
   async handleGetFeed(
@@ -50,10 +61,14 @@ export class SocialGateway {
     payload: { profileId: string; limit?: number; offset?: number },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`Getting feed for profile: ${payload.profileId}`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`Getting feed for profile: ${profileId}`);
 
     // Register client if not already registered
-    this.registerClient(payload.profileId, client);
+    this.registerClient(profileId, client);
 
     try {
       // Fetch the feed from social service
@@ -68,7 +83,7 @@ export class SocialGateway {
               orderBy: 'createdAt',
               orderDirection: 'DESC',
             },
-            viewerProfileId: payload.profileId,
+            viewerProfileId: profileId,
           }
         )
       );
@@ -87,9 +102,13 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; postIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} subscribing to posts`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} subscribing to posts`);
 
-    const connectedClient = this.registerClient(payload.profileId, client);
+    const connectedClient = this.registerClient(profileId, client);
 
     if (payload.postIds && payload.postIds.length > 0) {
       payload.postIds.forEach((postId) => {
@@ -110,9 +129,13 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; postIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} unsubscribing from posts`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} unsubscribing from posts`);
 
-    const connectedClient = this.connectedClients.get(payload.profileId);
+    const connectedClient = this.connectedClients.get(profileId);
     if (!connectedClient) {
       return;
     }
@@ -136,21 +159,25 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; targetUserIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} subscribing to user activity`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} subscribing to user activity`);
 
-    const connectedClient = this.registerClient(payload.profileId, client);
+    const connectedClient = this.registerClient(profileId, client);
 
     if (payload.targetUserIds && payload.targetUserIds.length > 0) {
       payload.targetUserIds.forEach((userId) => {
         connectedClient.subscriptions.add(`user:${userId}`);
       });
     } else {
-      connectedClient.subscriptions.add(`user:${payload.profileId}`);
+      connectedClient.subscriptions.add(`user:${profileId}`);
     }
 
     client.emit('subscribed', {
       type: 'user_activity',
-      userIds: payload.targetUserIds || [payload.profileId],
+      userIds: payload.targetUserIds || [profileId],
     });
   }
 
@@ -159,9 +186,13 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string; targetUserIds?: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} unsubscribing from user activity`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} unsubscribing from user activity`);
 
-    const connectedClient = this.connectedClients.get(payload.profileId);
+    const connectedClient = this.connectedClients.get(profileId);
     if (!connectedClient) {
       return;
     }
@@ -171,12 +202,12 @@ export class SocialGateway {
         connectedClient.subscriptions.delete(`user:${userId}`);
       });
     } else {
-      connectedClient.subscriptions.delete(`user:${payload.profileId}`);
+      connectedClient.subscriptions.delete(`user:${profileId}`);
     }
 
     client.emit('unsubscribed', {
       type: 'user_activity',
-      userIds: payload.targetUserIds || [payload.profileId],
+      userIds: payload.targetUserIds || [profileId],
     });
   }
 
@@ -185,13 +216,17 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`Getting following for profile: ${payload.profileId}`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`Getting following for profile: ${profileId}`);
 
     try {
       const following = await firstValueFrom(
         this.socialClient.send(
           { cmd: FollowCommands.GET_FOLLOWING },
-          { followerId: payload.profileId }
+          { followerId: profileId }
         )
       );
 
@@ -209,13 +244,17 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`Getting followers for profile: ${payload.profileId}`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`Getting followers for profile: ${profileId}`);
 
     try {
       const followers = await firstValueFrom(
         this.socialClient.send(
           { cmd: FollowCommands.GET_FOLLOWERS },
-          { followeeId: payload.profileId }
+          { followeeId: profileId }
         )
       );
 
@@ -233,14 +272,18 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} subscribing to notifications`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} subscribing to notifications`);
 
-    const connectedClient = this.registerClient(payload.profileId, client);
-    connectedClient.subscriptions.add(`notifications:${payload.profileId}`);
+    const connectedClient = this.registerClient(profileId, client);
+    connectedClient.subscriptions.add(`notifications:${profileId}`);
 
     client.emit('subscribed', {
       type: 'notifications',
-      profileId: payload.profileId,
+      profileId,
     });
   }
 
@@ -249,18 +292,22 @@ export class SocialGateway {
     @MessageBody() payload: { profileId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
-    this.l.log(`User ${payload.profileId} unsubscribing from notifications`);
+    const profileId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    this.l.log(`User ${profileId} unsubscribing from notifications`);
 
-    const connectedClient = this.connectedClients.get(payload.profileId);
+    const connectedClient = this.connectedClients.get(profileId);
     if (!connectedClient) {
       return;
     }
 
-    connectedClient.subscriptions.delete(`notifications:${payload.profileId}`);
+    connectedClient.subscriptions.delete(`notifications:${profileId}`);
 
     client.emit('unsubscribed', {
       type: 'notifications',
-      profileId: payload.profileId,
+      profileId,
     });
   }
 

@@ -59,7 +59,8 @@ import { io } from 'socket.io-client';
               socketNamespace,
               socketIoInstance,
               authTokenProvider,
-              authErrorHandler
+              authErrorHandler,
+              platformId
             )
           : null,
       deps: [

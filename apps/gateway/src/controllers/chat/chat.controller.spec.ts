@@ -6,12 +6,17 @@ import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsCacheService } from '../../auth/permissions-cache.service';
 import { ChatController } from './chat.controller';
-import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import {
+  ChatCommands,
+  ProfileCommands,
+  ServiceTokens,
+} from '@optimistic-tanuki/constants';
 import { UserDetails } from '../../decorators/user.decorator';
 
 describe('ChatController', () => {
   let controller: ChatController;
   let chatService: { send: jest.Mock };
+  let profileService: { send: jest.Mock };
 
   const mockUser: UserDetails = {
     userId: 'user-1',
@@ -26,12 +31,25 @@ describe('ChatController', () => {
     chatService = {
       send: jest.fn().mockReturnValue(of({})),
     };
+    profileService = {
+      send: jest.fn().mockReturnValue(
+        of({
+          id: 'profile-2',
+          userId: 'user-2',
+          appScope: 'client-interface',
+        })
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         {
           provide: ServiceTokens.CHAT_COLLECTOR_SERVICE,
           useValue: chatService,
+        },
+        {
+          provide: ServiceTokens.PROFILE_SERVICE,
+          useValue: profileService,
         },
         {
           provide: ServiceTokens.AUTHENTICATION_SERVICE,
@@ -94,16 +112,39 @@ describe('ChatController', () => {
     );
   });
 
-  it('should get or create a direct conversation', async () => {
-    const participantIds = ['profile-1', 'profile-2'];
+  it('derives the sender from the authenticated user for a direct conversation', async () => {
     chatService.send.mockReturnValue(of({ id: 'conversation-1' }));
 
-    await controller.getOrCreateDirectChat({ participantIds });
+    await controller.getOrCreateDirectChat(
+      { recipientProfileId: 'profile-2' },
+      mockUser,
+      'client-interface'
+    );
+
+    expect(profileService.send).toHaveBeenCalledWith(
+      { cmd: ProfileCommands.Get },
+      { id: 'profile-2' }
+    );
 
     expect(chatService.send).toHaveBeenCalledWith(
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
-      { participantIds }
+      { participantIds: ['profile-1', 'profile-2'] }
     );
+  });
+
+  it('rejects a recipient outside the current app scope', async () => {
+    profileService.send.mockReturnValue(
+      of({ id: 'profile-2', userId: 'user-2', appScope: 'forgeofwill' })
+    );
+
+    await expect(
+      controller.getOrCreateDirectChat(
+        { recipientProfileId: 'profile-2' },
+        mockUser,
+        'client-interface'
+      )
+    ).rejects.toMatchObject({ status: 403 });
+    expect(chatService.send).not.toHaveBeenCalled();
   });
 
   it('should send message with senderId bound to auth user profile', async () => {

@@ -21,8 +21,12 @@ const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const configuredSocketUrl = process.env['SOCKET_URL'] || '';
 const runtimeSocketEnvironment = JSON.stringify({
-  SOCKET_URL: process.env['SOCKET_URL'] || '',
+  // A relative value is a reverse-proxy route, not a Socket.IO host. The
+  // browser client appends its namespace to SOCKET_URL, so forwarding `/ws`
+  // would request the invalid `/ws/chat` namespace.
+  SOCKET_URL: configuredSocketUrl.startsWith('/') ? '' : configuredSocketUrl,
   SOCKET_PATH: process.env['SOCKET_PATH'] || '/socket.io',
 }).replace(/</g, '\\u003c');
 

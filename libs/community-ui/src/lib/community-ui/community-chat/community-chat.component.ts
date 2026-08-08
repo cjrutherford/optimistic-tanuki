@@ -249,23 +249,12 @@ export class CommunityChatComponent implements OnInit, OnDestroy {
       (participantId) => participantId !== this.currentUserId
     );
 
-    const createdMessage = await this.communityService.sendCommunityChatMessage(
-      {
-        conversationId: event.conversationId,
-        content: event.content,
-        senderId: this.currentUserId,
-        recipientIds,
-      }
-    );
-
-    this.appendMessageToConversation({
-      id: createdMessage.id,
-      conversationId: createdMessage.conversationId,
-      senderId: createdMessage.senderId,
-      content: createdMessage.content,
-      type: createdMessage.type,
-      recipientId: createdMessage.recipients || recipientIds,
-      timestamp: new Date(createdMessage.createdAt),
+    this.socketChatService.sendMessage({
+      conversationId: event.conversationId,
+      content: event.content,
+      senderId: this.currentUserId,
+      recipientId: recipientIds,
+      type: 'chat',
     });
   }
 

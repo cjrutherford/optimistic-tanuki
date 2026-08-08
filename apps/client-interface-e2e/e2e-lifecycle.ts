@@ -10,7 +10,6 @@ const TARGET = 'client-interface-e2e';
 const BUILD_EXCLUDED_SERVICES = new Set([
   'db',
   'redis',
-  'db-setup',
   'permissions-seed',
   'app-configurator-seed',
 ]);

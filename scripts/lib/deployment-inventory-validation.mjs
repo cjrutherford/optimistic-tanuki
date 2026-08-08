@@ -83,16 +83,18 @@ export function validateDockerWorkflowMatrix(
   }
 
   const matrix = consumerJob?.strategy?.matrix;
-  const hasDynamicRef =
-    matrix != null &&
-    ((typeof matrix === 'string' &&
-      matrix.includes(`needs.${producerJobName}.outputs.matrix`)) ||
-      (typeof matrix === 'object' &&
-        Object.values(matrix).some(
-          (v) =>
-            typeof v === 'string' &&
-            v.includes(`needs.${producerJobName}.outputs.matrix`)
-        )));
+  const dynamicMatrixOutput = new RegExp(
+    `needs\\.${producerJobName}\\.outputs\\.[A-Za-z0-9_]*matrix`
+  );
+  const matrixValues =
+    matrix == null
+      ? []
+      : typeof matrix === 'string'
+      ? [matrix]
+      : Object.values(matrix);
+  const hasDynamicRef = matrixValues.some(
+    (value) => typeof value === 'string' && dynamicMatrixOutput.test(value)
+  );
   if (hasDynamicRef && hasDynamicMatrixResolver(producerJob)) {
     return [];
   }

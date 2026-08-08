@@ -34,7 +34,7 @@ import {
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../auth/auth.guard';
 import { User, UserDetails } from '../../decorators/user.decorator';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { AppScope } from '../../decorators/appscope.decorator';
@@ -252,6 +252,43 @@ export class ProfileController {
       ? { ...query }
       : { userId: user.userId, ...query };
     return this.client.send({ cmd: ProfileCommands.GetAll }, { where });
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Discover profiles available for direct messages' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profiles in the current app scope or global scope.',
+  })
+  @Get('discover')
+  getDiscoverableProfiles(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    const effectiveScope = appScope === 'owner-console' ? 'global' : appScope;
+    return this.client
+      .send<ProfileDto[]>(
+        { cmd: ProfileCommands.GetAll },
+        {
+          where: [
+            { appScope: effectiveScope },
+            { appScope: 'global' },
+            { appScope: null },
+          ],
+        }
+      )
+      .pipe(
+        map((profiles) =>
+          profiles.filter(
+            (profile) =>
+              profile.userId !== user.userId &&
+              profile.id !== user.profileId &&
+              [effectiveScope, 'global', null].includes(
+                profile.appScope ?? null
+              )
+          )
+        )
+      );
   }
 
   @UseGuards(AuthGuard)

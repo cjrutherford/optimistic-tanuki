@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SocialGateway } from './social.gateway';
 import { PostCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { throwError, of } from 'rxjs';
+import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
 describe('SocialGateway', () => {
   let gateway: SocialGateway;
@@ -18,6 +19,16 @@ describe('SocialGateway', () => {
         {
           provide: ServiceTokens.SOCIAL_SERVICE,
           useValue: mockSocialClient,
+        },
+        {
+          provide: SocketSessionAuthService,
+          useValue: {
+            authenticate: jest.fn(),
+            assertProfile: jest.fn((_client: unknown, profileId: string) => ({
+              userId: 'user-id',
+              profileId,
+            })),
+          },
         },
       ],
     }).compile();
