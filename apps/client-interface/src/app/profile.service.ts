@@ -18,6 +18,7 @@ import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
 export class ProfileService {
   currentUserProfiles = signal<ProfileDto[]>([]);
   allProfiles = signal<ProfileDto[]>([]);
+  discoverableProfiles = signal<ProfileDto[]>([]);
   currentUserProfile = signal<ProfileDto | null>(null);
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authState: AuthStateService = inject(AuthStateService);
@@ -156,6 +157,13 @@ export class ProfileService {
     );
     this.currentUserProfiles.set(userProfiles);
     this.authState.persistProfiles(this.currentUserProfiles());
+  }
+
+  async getDiscoverableProfiles() {
+    const profiles = await firstValueFrom(
+      this.http.get<ProfileDto[]>(`${this.apiBaseUrl}/profile/discover`)
+    );
+    this.discoverableProfiles.set(profiles);
   }
 
   async getProfileById(id: string) {

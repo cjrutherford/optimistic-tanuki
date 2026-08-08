@@ -15,6 +15,7 @@ import { AssetController } from '../controllers/asset.controller';
 import { PalettesController } from '../controllers/palettes.controller';
 import { PersonalitiesController } from '../controllers/personalities.controller';
 import { AuthGuard } from '../auth/auth.guard';
+import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
@@ -390,6 +391,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       useFactory: () => DEFAULT_NAVIGATION_LINKS,
     },
     AuthGuard,
+    SocketSessionAuthService,
     PermissionsGuard,
     PermissionsProxyService,
     {

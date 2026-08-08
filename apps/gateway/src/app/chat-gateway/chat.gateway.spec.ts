@@ -6,6 +6,7 @@ import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { Socket, Server } from 'socket.io';
 import { ChatMessage } from '@optimistic-tanuki/models';
+import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
 describe('ChatGateway', () => {
   let gateway: ChatGateway;
@@ -28,9 +29,11 @@ describe('ChatGateway', () => {
     socket = {
       emit: jest.fn(),
       disconnect: jest.fn(),
+      join: jest.fn(),
     } as unknown as Socket;
     server = {
       emit: jest.fn(),
+      to: jest.fn(() => ({ emit: jest.fn() })),
     } as unknown as Server;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -53,6 +56,20 @@ describe('ChatGateway', () => {
           provide: ServiceTokens.PROFILE_SERVICE,
           useValue: {
             send: jest.fn(() => of({})),
+          },
+        },
+        {
+          provide: SocketSessionAuthService,
+          useValue: {
+            authenticate: jest.fn(),
+            getUser: jest.fn(() => ({
+              userId: 'user-id',
+              profileId: 'sender-id',
+            })),
+            assertProfile: jest.fn((_client: Socket, profileId: string) => ({
+              userId: 'user-id',
+              profileId,
+            })),
           },
         },
         { provide: JwtService, useValue: { verify: jest.fn() } },
@@ -119,6 +136,7 @@ describe('ChatGateway', () => {
         { cmd: ChatCommands.GET_CONVERSATIONS },
         { profileId: 'sender-id' }
       );
+      expect(server.to).toHaveBeenCalledWith('sender-id');
     });
 
     it('still persists and broadcasts human messages when persona classification is unavailable', async () => {
@@ -157,7 +175,7 @@ describe('ChatGateway', () => {
         { cmd: ChatCommands.GET_CONVERSATIONS },
         { profileId: 'sender-id' }
       );
-      expect(socket.emit).toHaveBeenCalledWith('conversations', conversations);
+      expect(server.to).toHaveBeenCalledWith('sender-id');
     });
 
     it('should handle a message with AI recipients', async () => {

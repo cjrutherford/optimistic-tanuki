@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   HttpException,
   Inject,
@@ -12,8 +13,11 @@ import { ClientProxy } from '@nestjs/microservices';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 import { AuthGuard } from '../../auth/auth.guard';
+import { AppScope } from '../../decorators/appscope.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
+import { ProfileCommands } from '@optimistic-tanuki/constants';
+import { ProfileDto } from '@optimistic-tanuki/models';
 
 @ApiBearerAuth()
 @ApiTags('chat')
@@ -22,7 +26,9 @@ import { ChatCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 export class ChatController {
   constructor(
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
-    private readonly chatService: ClientProxy
+    private readonly chatService: ClientProxy,
+    @Inject(ServiceTokens.PROFILE_SERVICE)
+    private readonly profileService: ClientProxy
   ) {}
 
   @Get('conversations/find')
@@ -46,22 +52,55 @@ export class ChatController {
     );
   }
 
-  @Post('conversations/direct')
-  async createDirectChat(@Body() body: { participantIds: string[] }) {
+  @Post('conversations/direct/get-or-create')
+  async getOrCreateDirectChat(
+    @Body() body: { recipientProfileId: string },
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
+    const participantIds = await this.getAuthorizedDirectParticipants(
+      body.recipientProfileId,
+      user,
+      appScope
+    );
     return this.forward(
       { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
-      { participantIds: body.participantIds },
-      'Failed to create direct conversation'
+      { participantIds },
+      'Failed to get or create direct conversation'
     );
   }
 
-  @Post('conversations/direct/get-or-create')
-  async getOrCreateDirectChat(@Body() body: { participantIds: string[] }) {
-    return this.forward(
-      { cmd: ChatCommands.GET_OR_CREATE_DIRECT_CHAT },
-      { participantIds: body.participantIds },
-      'Failed to get or create direct conversation'
+  private async getAuthorizedDirectParticipants(
+    recipientProfileId: string,
+    user: UserDetails,
+    appScope: string
+  ): Promise<string[]> {
+    if (
+      !user.profileId ||
+      !recipientProfileId ||
+      recipientProfileId === user.profileId
+    ) {
+      throw new ForbiddenException('A different recipient profile is required');
+    }
+
+    const recipient = await firstValueFrom(
+      this.profileService.send<ProfileDto>(
+        { cmd: ProfileCommands.Get },
+        {
+          id: recipientProfileId,
+        }
+      )
     );
+    const effectiveScope = appScope === 'owner-console' ? 'global' : appScope;
+    if (
+      !recipient ||
+      recipient.userId === user.userId ||
+      ![effectiveScope, 'global', null].includes(recipient.appScope ?? null)
+    ) {
+      throw new ForbiddenException('Recipient is not available in this app');
+    }
+
+    return [user.profileId, recipientProfileId];
   }
 
   @Post('conversations/community')

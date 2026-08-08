@@ -1,4 +1,4 @@
-import { Inject, Logger } from '@nestjs/common';
+import { Inject, Logger, UnauthorizedException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   ConnectedSocket,
@@ -22,10 +22,14 @@ import {
 } from '@optimistic-tanuki/models';
 import { firstValueFrom } from 'rxjs';
 import { Server, Socket } from 'socket.io';
+import { SocketSessionAuthService } from '../../auth/socket-session-auth.service';
 
 @WebSocketGateway(Number(process.env.SOCKET_PORT) || 3300, {
   namespace: 'chat',
-  cors: { origin: '*' },
+  cors: {
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: Boolean(process.env.CORS_ORIGIN),
+  },
 })
 export class ChatGateway {
   @WebSocketServer()
@@ -42,8 +46,19 @@ export class ChatGateway {
     @Inject(ServiceTokens.TELOS_DOCS_SERVICE)
     private readonly telosDocsClient: ClientProxy,
     @Inject(ServiceTokens.PROFILE_SERVICE)
-    private readonly profileClient: ClientProxy
+    private readonly profileClient: ClientProxy,
+    private readonly socketSessionAuth: SocketSessionAuthService
   ) {}
+
+  async handleConnection(client: Socket): Promise<void> {
+    try {
+      const user = await this.socketSessionAuth.authenticate(client);
+      await client.join(user.profileId);
+      this.updateConnectedSockets(user.profileId, client, 'connect');
+    } catch {
+      client.disconnect(true);
+    }
+  }
 
   @SubscribeMessage('new_persona_chat')
   async handleNewPersonaChat(
@@ -51,6 +66,11 @@ export class ChatGateway {
     payload: { profileId: string; personaId: string; appId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
+    const user = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    );
+    payload.profileId = user.profileId;
     const profile: ProfileDto = await firstValueFrom(
       this.profileClient.send(
         { cmd: ProfileCommands.Get },
@@ -140,6 +160,11 @@ export class ChatGateway {
     @MessageBody() payload: ChatMessage,
     @ConnectedSocket() client: Socket
   ): Promise<void> {
+    const user = this.socketSessionAuth.getUser(client);
+    if (payload.senderId && payload.senderId !== user.profileId) {
+      throw new UnauthorizedException('Message sender does not match session');
+    }
+    payload.senderId = user.profileId;
     this.l.log('New Message Received');
     console.log('[ChatGateway] handleMessage received payload id:', payload.id);
     const senderId = payload.senderId;
@@ -296,23 +321,20 @@ export class ChatGateway {
     } else {
       this.l.log('Message handling complete.');
     }
-    const recipientSockets = this.connectedClients
-      .filter((c) => recipientIds.includes(c.id) || c.id === senderId)
-      .map((c) => ({ id: c.id, client: c.client }));
+    const recipientProfileIds = [...new Set([...recipientIds, senderId])];
     this.l.log(
-      'Updating recipient sockets...' +
-        JSON.stringify(recipientSockets.map((r) => r.id))
+      'Updating recipient sockets...' + JSON.stringify(recipientProfileIds)
     );
-    for (const { id, client } of recipientSockets) {
+    for (const id of recipientProfileIds) {
       this.l.log(`Notifying recipient: ${id}`);
+      this.server.to(id).emit('message', messageReceipt);
       const conversations = await firstValueFrom(
         this.chatCollectorClient.send(
           { cmd: ChatCommands.GET_CONVERSATIONS },
           { profileId: id }
         )
       );
-      console.log(conversations);
-      client.emit('conversations', conversations || []);
+      this.server.to(id).emit('conversations', conversations || []);
     }
   }
 
@@ -322,7 +344,11 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket
   ): Promise<void> {
     this.l.log('starting the call to get conversations.');
-    const senderId = payload.profileId;
+    const senderId = this.socketSessionAuth.assertProfile(
+      client,
+      payload.profileId
+    ).profileId;
+    payload.profileId = senderId;
     this.l.log(`finding conversations for ${senderId}`);
     this.updateConnectedSockets(senderId, client, 'connect');
     const conversations = await firstValueFrom(
@@ -347,9 +373,10 @@ export class ChatGateway {
       return;
     }
     if (type === 'connect') {
-      if (!this.connectedClients.some((c) => c.id === senderId)) {
-        this.connectedClients.push({ id: senderId, client });
-      }
+      this.connectedClients = this.connectedClients.filter(
+        (connectedClient) => connectedClient.id !== senderId
+      );
+      this.connectedClients.push({ id: senderId, client });
     } else {
       this.connectedClients = this.connectedClients.filter(
         (c) => c.id !== senderId
@@ -367,6 +394,10 @@ export class ChatGateway {
     @MessageBody() payload: { participantIds: string[] },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
+    const user = this.socketSessionAuth.getUser(client);
+    if (!payload.participantIds.includes(user.profileId)) {
+      payload.participantIds = [user.profileId, ...payload.participantIds];
+    }
     this.l.log(
       `get_or_create_direct_chat for participants: ${payload.participantIds.join(
         ', '
@@ -386,6 +417,7 @@ export class ChatGateway {
     @MessageBody() payload: { conversationId: string },
     @ConnectedSocket() client: Socket
   ): Promise<void> {
+    this.socketSessionAuth.getUser(client);
     this.l.log(`get_messages for conversation: ${payload.conversationId}`);
     const messages = await firstValueFrom(
       this.chatCollectorClient.send(

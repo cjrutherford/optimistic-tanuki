@@ -10,6 +10,7 @@ import {
 
 import {
   ButtonComponent,
+  ModalComponent,
   SpinnerComponent,
 } from '@optimistic-tanuki/common-ui';
 import {
@@ -31,7 +32,7 @@ import { InjectedComponentData } from '@optimistic-tanuki/compose-lib';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { PostService } from '../../post.service';
 import { AttachmentService } from '../../attachment.service';
-import { filter, firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { filter, firstValueFrom, Observable, Subject, takeUntil } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { CommentService } from '../../comment.service';
 import { ProfileService } from '../../profile.service';
@@ -49,12 +50,15 @@ import { InfiniteScrollDirective } from '../../directives/infinite-scroll.direct
 import { LazyLoadDirective } from '../../directives/lazy-load.directive';
 import { ActivityService } from '../../activity.service';
 import { PrivacyService } from '../../privacy.service';
+import { SocialFeedDataService } from '@optimistic-tanuki/social-data-access';
+import { MessageService } from '@optimistic-tanuki/message-ui';
 
 @Component({
   selector: 'app-feed',
   standalone: true,
   imports: [
     ButtonComponent,
+    ModalComponent,
     SpinnerComponent,
     ComposeComponent,
     PostComponent,
@@ -110,7 +114,10 @@ export class FeedComponent implements OnInit, OnDestroy {
   );
   // Track saved items: postId -> boolean
   savedPosts = signal<{ [postId: string]: boolean }>({});
+  postPendingDeletion = signal<PostDto | null>(null);
   private readonly privacyService = inject(PrivacyService);
+  private readonly socialFeedData = inject(SocialFeedDataService);
+  private readonly messageService = inject(MessageService);
 
   // Image upload callback for the compose component
   imageUploadCallback: ImageUploadCallback = async (
@@ -235,11 +242,11 @@ export class FeedComponent implements OnInit, OnDestroy {
           this.posts().length === 0
         ) {
           console.log('WebSocket not connected, falling back to HTTP');
-          const feedRequest = this.focusedPostId()
+          const feedRequest: Observable<PostDto[]> = this.focusedPostId()
             ? this.postService
                 .getPost(this.focusedPostId())
                 .pipe(map((post) => (post ? [post] : [])))
-            : this.postService.searchPosts(
+            : this.socialFeedData.loadPublicFeed(
                 {},
                 { orderBy: 'createdAt', orderDirection: 'desc' }
               );
@@ -282,7 +289,7 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   private loadOwnedCommunities() {
-    this.communityService.getUserCommunities().subscribe({
+    this.socialFeedData.loadUserCommunities().subscribe({
       next: (communities) => {
         const owned = communities
           .filter((c: CommunityDto) => {
@@ -429,6 +436,10 @@ export class FeedComponent implements OnInit, OnDestroy {
       console.log('[Feed] Post added to feed');
     } catch (error) {
       console.error('[Feed] Failed to create post:', error);
+      this.messageService.addMessage({
+        content: 'Your post could not be published. Please try again.',
+        type: 'error',
+      });
       // Re-throw to let the compose component handle the error display
       throw error;
     }
@@ -537,6 +548,10 @@ export class FeedComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error creating comment:', error);
+        this.messageService.addMessage({
+          content: 'Your comment could not be posted. Please try again.',
+          type: 'error',
+        });
       },
     });
   }
@@ -552,14 +567,30 @@ export class FeedComponent implements OnInit, OnDestroy {
   }
 
   onDeletePost(post: PostDto) {
-    if (confirm('Are you sure you want to delete this post?')) {
-      this.postService.deletePost(post.id).subscribe({
-        next: () => {
-          this.posts.update((posts) => posts.filter((p) => p.id !== post.id));
-        },
-        error: (err) => console.error('Failed to delete post', err),
-      });
-    }
+    this.postPendingDeletion.set(post);
+  }
+
+  cancelPostDeletion(): void {
+    this.postPendingDeletion.set(null);
+  }
+
+  confirmPostDeletion(): void {
+    const post = this.postPendingDeletion();
+    if (!post) return;
+
+    this.postService.deletePost(post.id).subscribe({
+      next: () => {
+        this.posts.update((posts) => posts.filter((p) => p.id !== post.id));
+        this.postPendingDeletion.set(null);
+      },
+      error: (err) => {
+        console.error('Failed to delete post', err);
+        this.messageService.addMessage({
+          content: 'Your post could not be deleted. Please try again.',
+          type: 'error',
+        });
+      },
+    });
   }
 
   async updatePost(id: string, updatePostDto: UpdatePostDto): Promise<PostDto> {
@@ -600,7 +631,13 @@ export class FeedComponent implements OnInit, OnDestroy {
           // Re-sync follow state from the server to ensure UI stays consistent
           this.loadFollowing(currentProfile.id);
         },
-        error: (err) => console.error('Failed to unfollow', err),
+        error: (err) => {
+          console.error('Failed to unfollow', err);
+          this.messageService.addMessage({
+            content: 'Could not unfollow this profile. Please try again.',
+            type: 'error',
+          });
+        },
       });
     } else {
       this.followService.follow(dto).subscribe({
@@ -609,7 +646,13 @@ export class FeedComponent implements OnInit, OnDestroy {
           // Re-sync follow state from the server to ensure UI reflects change
           this.loadFollowing(currentProfile.id);
         },
-        error: (err) => console.error('Failed to follow', err),
+        error: (err) => {
+          console.error('Failed to follow', err);
+          this.messageService.addMessage({
+            content: 'Could not follow this profile. Please try again.',
+            type: 'error',
+          });
+        },
       });
     }
   }
@@ -858,11 +901,11 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.currentVisibility = 'public';
     this.currentPage = 0;
     this.hasMorePosts.set(true);
-    const feedRequest = this.focusedPostId()
+    const feedRequest: Observable<PostDto[]> = this.focusedPostId()
       ? this.postService
           .getPost(this.focusedPostId())
           .pipe(map((post) => (post ? [post] : [])))
-      : this.postService.searchPosts(
+      : this.socialFeedData.loadPublicFeed(
           { visibility: 'public', communityId: null as any },
           {
             orderBy: 'createdAt',
@@ -892,13 +935,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     }
 
     const loadPosts = () => {
-      this.postService
-        .getFeed({
-          includeFollowing: true,
-          includePublic: false,
-          limit: this.pageSize,
-          offset: 0,
-        })
+      this.socialFeedData
+        .loadFollowingFeed({ limit: this.pageSize, offset: 0 })
         .subscribe((posts: PostDto[]) => {
           const followingPosts = posts.filter(
             (post) =>
@@ -928,7 +966,7 @@ export class FeedComponent implements OnInit, OnDestroy {
     this.hasMorePosts.set(true);
     this.loading.set(true);
 
-    this.communityService.getUserCommunities().subscribe({
+    this.socialFeedData.loadUserCommunities().subscribe({
       next: (communities) => {
         const communityIds = communities.map((c) => c.id);
         this.currentCommunityIds = communityIds;
@@ -938,20 +976,22 @@ export class FeedComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.postService.getPostsByCommunityIds(communityIds).subscribe({
-          next: (posts) => {
-            this.posts.set(posts);
-            this.hasMorePosts.set(posts.length >= this.pageSize);
-            this.loadReactionData(posts);
-            this.loadCommunityInfo(posts);
-            this.loading.set(false);
-            this.loadProfiles(posts);
-          },
-          error: (err) => {
-            console.error('Failed to load community posts:', err);
-            this.loading.set(false);
-          },
-        });
+        this.socialFeedData
+          .loadCommunityFeed(communityIds, { limit: this.pageSize, offset: 0 })
+          .subscribe({
+            next: (posts) => {
+              this.posts.set(posts);
+              this.hasMorePosts.set(posts.length >= this.pageSize);
+              this.loadReactionData(posts);
+              this.loadCommunityInfo(posts);
+              this.loading.set(false);
+              this.loadProfiles(posts);
+            },
+            error: (err) => {
+              console.error('Failed to load community posts:', err);
+              this.loading.set(false);
+            },
+          });
       },
       error: (err) => {
         console.error('Failed to load user communities:', err);
@@ -971,8 +1011,8 @@ export class FeedComponent implements OnInit, OnDestroy {
     const offset = this.currentPage * this.pageSize;
 
     if (this.currentVisibility === 'public') {
-      this.postService
-        .searchPosts(
+      this.socialFeedData
+        .loadPublicFeed(
           { visibility: 'public', communityId: null as any },
           {
             orderBy: 'createdAt',
@@ -996,13 +1036,8 @@ export class FeedComponent implements OnInit, OnDestroy {
           },
         });
     } else if (this.currentVisibility === 'following') {
-      this.postService
-        .getFeed({
-          includeFollowing: true,
-          includePublic: false,
-          limit: this.pageSize,
-          offset,
-        })
+      this.socialFeedData
+        .loadFollowingFeed({ limit: this.pageSize, offset })
         .subscribe({
           next: (posts) => {
             this.posts.update((current) => [...current, ...posts]);
@@ -1021,8 +1056,11 @@ export class FeedComponent implements OnInit, OnDestroy {
       this.currentVisibility === 'communities' &&
       this.currentCommunityIds.length > 0
     ) {
-      this.postService
-        .getPostsByCommunityIds(this.currentCommunityIds)
+      this.socialFeedData
+        .loadCommunityFeed(this.currentCommunityIds, {
+          limit: this.pageSize,
+          offset,
+        })
         .subscribe({
           next: (posts) => {
             this.posts.update((current) => [...current, ...posts]);

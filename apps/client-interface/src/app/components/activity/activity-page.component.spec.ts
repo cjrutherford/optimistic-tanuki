@@ -114,6 +114,14 @@ describe('ActivityPageComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('renders activity entries as keyboard-accessible buttons', () => {
+    fixture.detectChanges();
+
+    const activity = fixture.nativeElement.querySelector('.activity-item');
+    expect(activity.tagName).toBe('BUTTON');
+    expect(activity.getAttribute('type')).toBe('button');
+  });
+
   describe('ngOnInit', () => {
     it('should load activities and saved items for current user', () => {
       fixture.detectChanges(); // triggers ngOnInit
