@@ -157,3 +157,5 @@ export {
   CreateFinCommanderScenarioDto,
   UpdateFinCommanderScenarioDto,
 } from './lib/libs/fin-commander';
+
+export { LearningCommands } from './lib/libs/learning';

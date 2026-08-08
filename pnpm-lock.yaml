@@ -867,6 +867,15 @@ importers:
         specifier: ^2.3.0
         version: 2.8.1
 
+  libs/learning-domain:
+    dependencies:
+      tslib:
+        specifier: ^2.3.0
+        version: 2.8.1
+      zod:
+        specifier: ^4.3.5
+        version: 4.4.3
+
   libs/logger:
     dependencies:
       '@nestjs/common':
