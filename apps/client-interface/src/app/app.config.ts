@@ -26,7 +26,6 @@ import {
   SOCKET_IO_INSTANCE,
   SOCKET_NAMESPACE,
   SOCKET_PATH,
-  SOCKET_AUTH_TOKEN_PROVIDER,
   SOCKET_AUTH_ERROR_HANDLER,
 } from '@optimistic-tanuki/chat-ui';
 import { io } from 'socket.io-client';
@@ -49,9 +48,18 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_HOST,
       useFactory: () => {
-        return typeof window === 'undefined'
-          ? ''
-          : (window as any)['env']?.SOCKET_URL || '';
+        if (typeof window === 'undefined') {
+          return '';
+        }
+
+        const socketUrl = (window as any)['env']?.SOCKET_URL || '';
+        // SocketChatService appends the Socket.IO namespace to this value.
+        // A path-only setting (for example `/ws`) would become `/ws/chat`,
+        // which is an invalid Gateway namespace. Use the same-origin proxy
+        // instead; a transport prefix belongs in SOCKET_PATH.
+        return socketUrl.startsWith('/') || !socketUrl
+          ? window.location.origin
+          : socketUrl;
       },
     },
     {
@@ -69,13 +77,6 @@ export const appConfig: ApplicationConfig = {
     {
       provide: SOCKET_IO_INSTANCE,
       useValue: io,
-    },
-    {
-      provide: SOCKET_AUTH_TOKEN_PROVIDER,
-      useFactory: (authStateService: AuthStateService) => {
-        return () => authStateService.getToken();
-      },
-      deps: [AuthStateService],
     },
     {
       provide: SOCKET_AUTH_ERROR_HANDLER,

@@ -10,7 +10,6 @@ import {
   validateComposeImageNames,
   validateDockerWorkflowMatrix,
 } from './lib/deployment-inventory-validation.mjs';
-import { normalizeDeploymentInventory } from './lib/deployment-inventory-normalization.mjs';
 
 const repoRoot = path.resolve(
   path.dirname(new URL(import.meta.url).pathname),
@@ -76,13 +75,7 @@ function parseNxProjectsScript(script) {
   return match[1].split(',');
 }
 
-const buildPush = readYaml(
-  path.join(repoRoot, '.github/workflows/build-push.yml')
-);
-
-const dockerPublish = readYaml(
-  path.join(repoRoot, '.github/workflows/docker-publish.yml')
-);
+const ciCd = readYaml(path.join(repoRoot, '.github/workflows/ci-cd.yml'));
 
 const baseKustomization = readYaml(
   path.join(repoRoot, 'k8s/base/kustomization.yaml')
@@ -95,7 +88,8 @@ const actualResources = (baseKustomization.resources || [])
     (resource) =>
       resource !== 'ingress.yaml' &&
       resource !== 'tailscale-ingress.yaml' &&
-      resource !== 'services/video-processing-data-pvc.yaml'
+      resource !== 'services/video-processing-data-pvc.yaml' &&
+      resource !== 'observability'
   )
   .sort();
 
@@ -107,17 +101,17 @@ const expectedImageNames = inventory.apps.map((app) => app.imageName).sort();
 
 const errors = [
   ...validateDockerWorkflowMatrix(
-    'build-push',
-    buildPush,
-    'determine-changes',
-    'build-and-push',
+    'ci-cd image check',
+    ciCd,
+    'plan',
+    'image_check',
     expectedApps
   ),
   ...validateDockerWorkflowMatrix(
-    'docker-publish',
-    dockerPublish,
-    'determine_changes',
-    'build_and_push',
+    'ci-cd image publish',
+    ciCd,
+    'plan',
+    'publish_images',
     expectedApps
   ),
   ...compareList(

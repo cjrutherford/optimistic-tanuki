@@ -1,7 +1,8 @@
 import { Socket, io } from 'socket.io-client';
 
 import { ChatConversation, ChatMessage } from './types/message';
-import { Inject, Injectable, Optional } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import { Inject, Injectable, Optional, PLATFORM_ID } from '@angular/core';
 import { Subject, Observable } from 'rxjs';
 
 /**
@@ -14,7 +15,7 @@ import { Subject, Observable } from 'rxjs';
  * SOCKET_HOST: The base URL for the socket server.
  * SOCKET_NAMESPACE: The namespace for the socket connection.
  * SOCKET_IO_INSTANCE: The instance of the socket.io client library.
- * SOCKET_AUTH_TOKEN_PROVIDER: Function that returns the current auth token.
+ * SOCKET_AUTH_TOKEN_PROVIDER: Legacy token provider retained for client compatibility.
  * SOCKET_AUTH_ERROR_HANDLER: Function called when auth errors occur.
  *
  * These tokens should be set by YOU when providing the service in your application.
@@ -30,10 +31,6 @@ import { Subject, Observable } from 'rxjs';
  *  },{
  *     provide: SOCKET_IO_INSTANCE,
  *     useValue: io
- *  },{
- *     provide: SOCKET_AUTH_TOKEN_PROVIDER,
- *     useFactory: (authService) => () => authService.getToken(),
- *     deps: [AuthService]
  *  },{
  *     provide: SOCKET_AUTH_ERROR_HANDLER,
  *     useFactory: (router, authService) => () => {
@@ -83,7 +80,7 @@ export class SocketChatService {
    * @param hostUrl The URL of the socket server.
    * @param namespace The namespace for the socket connection.
    * @param ioInstance The Socket.IO client instance.
-   * @param authTokenProvider Function that returns the current auth token.
+   * @param legacyAuthTokenProvider Legacy provider retained while browser sockets authenticate with the session cookie.
    * @param authErrorHandler Function called when auth errors occur (e.g., redirect to login).
    */
   constructor(
@@ -95,18 +92,27 @@ export class SocketChatService {
     @Inject(SOCKET_IO_INSTANCE) private readonly ioInstance: typeof io,
     @Optional()
     @Inject(SOCKET_AUTH_TOKEN_PROVIDER)
-    private readonly authTokenProvider?: () => string | null,
+    private readonly legacyAuthTokenProvider?: () => string | null,
     @Optional()
     @Inject(SOCKET_AUTH_ERROR_HANDLER)
-    private readonly authErrorHandler?: () => void
+    private readonly authErrorHandler?: () => void,
+    @Inject(PLATFORM_ID)
+    private readonly platformId: object = 'browser' as unknown as object
   ) {
-    const token = this.authTokenProvider?.();
+    // Cookie sessions are forwarded by the same-origin API proxy. Keep the
+    // legacy provider injectable so existing apps do not need a coordinated migration.
+    void this.legacyAuthTokenProvider;
+
+    if (!isPlatformBrowser(this.platformId)) {
+      this.socket = this.createNoopSocket();
+      return;
+    }
+
     const socketUrl = this.buildSocketUrl();
     this.socket = this.ioInstance(socketUrl, {
       autoConnect: true,
       path: this.socketPath,
-      auth: token ? { token } : undefined,
-      extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
+      withCredentials: true,
     });
     this.socket.on('connect', () => {
       console.log(`Socket connected to ${socketUrl}`);
@@ -162,6 +168,18 @@ export class SocketChatService {
     });
   }
 
+  private createNoopSocket(): Socket {
+    const socket = {
+      disconnected: true,
+      connect: () => socket,
+      disconnect: () => socket,
+      emit: () => false,
+      on: () => socket,
+    };
+
+    return socket as unknown as Socket;
+  }
+
   private buildSocketUrl(): string {
     const normalizedNamespace = this.namespace.startsWith('/')
       ? this.namespace
@@ -179,6 +197,7 @@ export class SocketChatService {
    * @param profileId The ID of the profile.
    */
   getConversations(profileId: string): void {
+    this.reconnectIfNeeded();
     this.socket.emit('get_conversations', { profileId });
   }
 
@@ -187,7 +206,14 @@ export class SocketChatService {
    * @param message The message to send.
    */
   sendMessage(message: Partial<ChatMessage>): void {
+    this.reconnectIfNeeded();
     this.socket.emit('message', message);
+  }
+
+  private reconnectIfNeeded(): void {
+    if (this.socket?.disconnected) {
+      this.socket.connect();
+    }
   }
 
   /**

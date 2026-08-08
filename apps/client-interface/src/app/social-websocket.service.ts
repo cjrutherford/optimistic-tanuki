@@ -71,16 +71,14 @@ export class SocialWebSocketService implements OnDestroy {
 
     console.log('Connecting to Social WebSocket at:', wsUrl);
 
-    const token = this.authStateService.getToken();
     this.socket = io(`${wsUrl}/social`, {
       path: socketPath,
       transports: ['websocket', 'polling'],
+      withCredentials: true,
       reconnection: true,
       reconnectionDelay: this.baseReconnectDelay,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: this.maxReconnectAttempts,
-      auth: token ? { token } : undefined,
-      extraHeaders: token ? { Authorization: `Bearer ${token}` } : undefined,
     });
 
     this.setupSocketListeners();

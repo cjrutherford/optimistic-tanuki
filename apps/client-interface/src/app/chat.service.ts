@@ -26,7 +26,7 @@ export interface ChatMessage {
 }
 
 export interface CreateDirectChatDto {
-  participantIds: string[];
+  recipientProfileId: string;
 }
 
 export interface CreateCommunityChatDto {
@@ -88,12 +88,12 @@ export class ChatService {
     ) as Promise<ChatConversation>;
   }
 
-  getOrCreateDirectChat(participantIds: string[]): Promise<ChatConversation> {
+  getOrCreateDirectChat(recipientProfileId: string): Promise<ChatConversation> {
     return firstValueFrom(
       this.http.post<ChatConversation>(
         `${this.baseUrl}/conversations/direct/get-or-create`,
         {
-          participantIds,
+          recipientProfileId,
         }
       )
     ) as Promise<ChatConversation>;
@@ -125,10 +125,7 @@ export class ChatService {
     ) as Promise<ChatMessage>;
   }
 
-  async startDirectChat(
-    currentProfileId: string,
-    otherProfileId: string
-  ): Promise<ChatConversation> {
-    return this.getOrCreateDirectChat([currentProfileId, otherProfileId]);
+  async startDirectChat(otherProfileId: string): Promise<ChatConversation> {
+    return this.getOrCreateDirectChat(otherProfileId);
   }
 }

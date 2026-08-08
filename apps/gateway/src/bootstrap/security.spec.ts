@@ -78,6 +78,33 @@ describe('gateway security helpers', () => {
     );
   });
 
+  it('adds loopback aliases for every local client endpoint in the registry', () => {
+    const localRegistry: AppRegistry = {
+      ...registry,
+      apps: [
+        {
+          ...registry.apps[0],
+          uiBaseUrl: 'http://localhost:8080',
+        },
+        {
+          ...registry.apps[1],
+          uiBaseUrl: 'http://localhost:8081',
+        },
+      ],
+    };
+
+    expect(getTrustedOrigins({ registry: localRegistry })).toEqual(
+      expect.arrayContaining([
+        'http://localhost:8080',
+        'http://127.0.0.1:8080',
+        'http://0.0.0.0:8080',
+        'http://localhost:8081',
+        'http://127.0.0.1:8081',
+        'http://0.0.0.0:8081',
+      ])
+    );
+  });
+
   it('requires the production owner-console registry origin in configured origins', () => {
     const productionRegistry: AppRegistry = {
       ...registry,

@@ -82,8 +82,14 @@ describe('SocialWebSocketService', () => {
 
     expect(io).toHaveBeenCalledWith(
       'https://optimistic-tanuki.com/social',
-      expect.objectContaining({ path: '/ws' })
+      expect.objectContaining({
+        path: '/ws',
+        withCredentials: true,
+      })
     );
+    const [, socketOptions] = (io as jest.Mock).mock.calls[0];
+    expect(socketOptions.auth).toBeUndefined();
+    expect(socketOptions.extraHeaders).toBeUndefined();
 
     delete (window as Window & { env?: unknown }).env;
   });

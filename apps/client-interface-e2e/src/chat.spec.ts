@@ -190,9 +190,18 @@ async function bootstrapAuth(
 
   expect(selectedProfile?.id).toBeTruthy();
 
+  await page.context().addCookies([
+    {
+      name: 'ot_session',
+      value: token,
+      url: 'http://127.0.0.1:8080/api',
+      httpOnly: true,
+      sameSite: 'Lax',
+    },
+  ]);
+
   await page.addInitScript(
-    ({ authToken, persistedProfiles, persistedSelectedProfile }) => {
-      localStorage.setItem('ot-client-authToken', authToken);
+    ({ persistedProfiles, persistedSelectedProfile }) => {
       localStorage.setItem(
         'ot-client-profiles',
         JSON.stringify(persistedProfiles)
@@ -203,7 +212,6 @@ async function bootstrapAuth(
       );
     },
     {
-      authToken: token,
       persistedProfiles: profiles,
       persistedSelectedProfile: selectedProfile,
     }
@@ -219,7 +227,7 @@ async function bootstrapAuth(
 async function getOrCreateConversation(
   request: APIRequestContext,
   token: string,
-  participantIds: string[]
+  recipientProfileId: string
 ) {
   const response = await request.post(
     '/api/chat/conversations/direct/get-or-create',
@@ -229,7 +237,7 @@ async function getOrCreateConversation(
         'X-ot-appscope': 'client-interface',
       },
       data: {
-        participantIds,
+        recipientProfileId,
       },
     }
   );
@@ -309,10 +317,7 @@ test.describe('Chat workflow', () => {
       const alice = await bootstrapAuth(request, alicePage, USERS.alice.email);
       const bob = await bootstrapAuth(request, bobPage, USERS.bob.email);
 
-      await getOrCreateConversation(request, alice.token, [
-        alice.profile.id,
-        bob.profile.id,
-      ]);
+      await getOrCreateConversation(request, alice.token, bob.profile.id);
 
       await openConversation(alicePage, USERS.bob.profileName);
       await openConversation(bobPage, USERS.alice.profileName);

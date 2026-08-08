@@ -20,6 +20,10 @@ export class ProfileGuard implements CanActivate {
   }
 
   async canActivate(): Promise<boolean> {
+    if (!this.isAuthenticated) {
+      this.isAuthenticated = await this.authStateService.restoreSession();
+    }
+
     if (this.isAuthenticated) {
       try {
         await this.profileService.getAllProfiles();
@@ -28,6 +32,11 @@ export class ProfileGuard implements CanActivate {
             this.authStateService.getPersistedSelectedProfile();
           if (selectedProfile) {
             this.profileService.selectProfile(selectedProfile);
+          } else {
+            const [firstProfile] = this.profileService.getCurrentUserProfiles();
+            if (firstProfile) {
+              this.profileService.selectProfile(firstProfile);
+            }
           }
         }
         return true;
@@ -36,7 +45,6 @@ export class ProfileGuard implements CanActivate {
         return false;
       }
     }
-    // If the user is not authenticated, navigate to the login page
     this.router.navigate(['/login']);
     return false;
   }
