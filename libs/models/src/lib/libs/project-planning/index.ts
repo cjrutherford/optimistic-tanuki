@@ -5,6 +5,11 @@ export {
   ChangeStatus,
 } from './create-change.dto';
 export { CreateProjectDto } from './create-project.dto';
+export {
+  AiChangeStatuses,
+  CreateAiChangeDto,
+  ReviewAiChangeDto,
+} from './ai-change.dto';
 export { CreateProjectJournalDto } from './create-project-journal.dto';
 export {
   CreateRiskDto,

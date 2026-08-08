@@ -14,7 +14,12 @@ import {
   TaskTag,
   UpdateProfileDto,
 } from '@optimistic-tanuki/ui-models';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import {
   SelectComponent,
   TextAreaComponent,
@@ -59,10 +64,20 @@ export class TaskFormComponent implements OnInit {
   taskForm: FormGroup;
   constructor(private readonly fb: FormBuilder) {
     this.taskForm = this.fb.group({
-      title: this.fb.control(''),
-      description: this.fb.control(''),
+      title: this.fb.control('', [
+        Validators.required,
+        Validators.minLength(3),
+        Validators.maxLength(200),
+      ]),
+      description: this.fb.control('', [
+        Validators.required,
+        Validators.minLength(10),
+        Validators.maxLength(5000),
+      ]),
       status: this.fb.control('TODO'),
       priority: this.fb.control('MEDIUM'),
+      assignee: this.fb.control(''),
+      dueDate: this.fb.control(''),
     });
   }
 
@@ -74,6 +89,10 @@ export class TaskFormComponent implements OnInit {
         description: this.task.description,
         status: this.task.status,
         priority: this.task.priority,
+        assignee: this.task.assignee || '',
+        dueDate: this.task.dueDate
+          ? new Date(this.task.dueDate).toISOString().slice(0, 10)
+          : '',
       });
       // Set selected tags
       this.selectedTagIds = this.task.tags?.map((tag) => tag.id) || [];
@@ -96,26 +115,33 @@ export class TaskFormComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.taskForm.valid) {
-      console.log('Form Submitted!', this.taskForm.value);
-
-      // Get the selected tags objects
-      const selectedTags = this.availableTags.filter((tag) =>
-        this.selectedTagIds.includes(tag.id)
-      );
-
-      const emittedValue: Task = {
-        ...this.taskForm.value,
-        id: this.task ? this.task.id : '',
-        projectId: this.task ? this.task.projectId : '',
-        createdBy: this.task ? this.task.createdBy : '',
-        createdAt: this.task ? this.task.createdAt : new Date(),
-        updatedAt: new Date(),
-        tags: selectedTags,
-      };
-      this.formSubmit.emit(emittedValue);
-      this.taskForm.reset();
-      this.selectedTagIds = [];
+    if (this.taskForm.invalid) {
+      this.taskForm.markAllAsTouched();
+      return;
     }
+
+    console.log('Form Submitted!', this.taskForm.value);
+
+    // Get the selected tags objects
+    const selectedTags = this.availableTags.filter((tag) =>
+      this.selectedTagIds.includes(tag.id)
+    );
+
+    const emittedValue: Task = {
+      ...this.taskForm.value,
+      id: this.task ? this.task.id : '',
+      projectId: this.task ? this.task.projectId : '',
+      createdBy: this.task ? this.task.createdBy : '',
+      createdAt: this.task ? this.task.createdAt : new Date(),
+      updatedAt: new Date(),
+      assignee: this.taskForm.value.assignee || undefined,
+      dueDate: this.taskForm.value.dueDate
+        ? new Date(`${this.taskForm.value.dueDate}T23:59:59`)
+        : undefined,
+      tags: selectedTags,
+    };
+    this.formSubmit.emit(emittedValue);
+    this.taskForm.reset();
+    this.selectedTagIds = [];
   }
 }

@@ -35,75 +35,13 @@ export class TasksTableComponent implements OnInit, OnChanges {
   @Output() editTask: EventEmitter<Task> = new EventEmitter<Task>();
   @Output() deleteTask: EventEmitter<string> = new EventEmitter<string>();
   @Output() timerToggled: EventEmitter<Task> = new EventEmitter<Task>();
-  @Input() tasks: Task[] = [
-    {
-      id: '1',
-      title: 'Design homepage',
-      description: 'Create wireframes for the homepage',
-      status: 'IN_PROGRESS',
-      priority: 'MEDIUM',
-      assignee: 'Alice',
-      projectId: 'project-1',
-      dueDate: new Date('2024-07-01'),
-      createdBy: 'admin',
-      createdAt: new Date('2024-06-01'),
-    },
-    {
-      id: '2',
-      title: 'Implement login',
-      description: 'Develop authentication module',
-      status: 'TODO',
-      priority: 'HIGH',
-      assignee: 'Bob',
-      projectId: 'project-1',
-      dueDate: new Date('2024-07-05'),
-      createdBy: 'admin',
-      createdAt: new Date('2024-06-02'),
-    },
-    {
-      id: '3',
-      title: 'Set up database',
-      description: 'Initialize PostgreSQL instance',
-      status: 'DONE',
-      priority: 'LOW',
-      assignee: 'Charlie',
-      projectId: 'project-2',
-      dueDate: new Date('2024-06-15'),
-      createdBy: 'admin',
-      createdAt: new Date('2024-06-03'),
-    },
-    {
-      id: '4',
-      title: 'Write tests',
-      description: 'Add unit tests for user service',
-      status: 'IN_PROGRESS',
-      priority: 'MEDIUM_HIGH',
-      assignee: 'Dana',
-      projectId: 'project-2',
-      dueDate: new Date('2024-07-10'),
-      createdBy: 'admin',
-      createdAt: new Date('2024-06-04'),
-    },
-    {
-      id: '5',
-      title: 'Deploy to staging',
-      description: 'Deploy latest build to staging environment',
-      status: 'TODO',
-      priority: 'MEDIUM',
-      assignee: 'Eve',
-      projectId: 'project-3',
-      dueDate: new Date('2024-07-15'),
-      createdBy: 'admin',
-      createdAt: new Date('2024-06-05'),
-    },
-  ];
+  @Input() tasks: Task[] = [];
 
   tableActions: TableRowAction[] = [
     {
       title: 'View',
       action: (index: number) => {
-        console.log('View action for task at index:', index);
-        // Implement view logic here
+        this.setShowModal(index);
       },
     },
     {
@@ -149,7 +87,7 @@ export class TasksTableComponent implements OnInit, OnChanges {
       {
         id: task.id,
         heading: 'Created At',
-        value: new Date().toLocaleDateString(),
+        value: task.createdAt?.toLocaleDateString() || 'N/A',
       },
     ]);
     this.cells.set(currentCells);

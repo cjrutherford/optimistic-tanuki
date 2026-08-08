@@ -30,6 +30,8 @@ export class ProjectService {
   async create(createProjectDto: CreateProjectDto) {
     const project = this.projectRepository.create({
       ...createProjectDto,
+      isPublic: createProjectDto.isPublic ?? false,
+      requireHumanApproval: createProjectDto.requireHumanApproval ?? true,
       updatedBy: createProjectDto.owner,
       createdAt: new Date(),
       updatedAt: new Date(),

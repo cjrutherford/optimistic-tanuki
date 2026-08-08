@@ -29,6 +29,7 @@ import {
   TaskCalendarComponent,
   TaskKanbanComponent,
   MindMapComponent,
+  ProjectSummaryComponent,
 } from '@optimistic-tanuki/project-ui';
 import { Component, computed, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -62,6 +63,7 @@ import { ThemeService } from '@optimistic-tanuki/theme-lib';
     ProjectSelectorComponent,
     ProjectFormComponent,
     GlassContainerComponent,
+    ProjectSummaryComponent,
   ],
   templateUrl: './projects.component.html',
   styleUrl: './projects.component.scss',
@@ -116,6 +118,18 @@ export class ProjectsComponent implements OnInit {
   setTaskViewMode(mode: 'list' | 'calendar' | 'kanban'): void {
     console.log('Setting task view mode:', mode);
     this.taskViewMode.set(mode);
+  }
+
+  onSummaryEntitySelected(entity: 'tasks' | 'risks' | 'changes' | 'journal') {
+    this.showDetails(entity);
+  }
+
+  onMindMapNodeSelected(node: {
+    type: 'task' | 'risk' | 'change' | 'project';
+  }) {
+    if (node.type !== 'project') {
+      this.showDetails(`${node.type}s` as 'tasks' | 'risks' | 'changes');
+    }
   }
 
   taskCount = computed(() => {
@@ -316,6 +330,37 @@ export class ProjectsComponent implements OnInit {
         });
       },
     });
+  }
+
+  onTaskDateChanged(event: { taskId: string; dueDate: Date }): void {
+    this.taskService
+      .updateTask({ id: event.taskId, dueDate: event.dueDate })
+      .subscribe({
+        next: (updatedTask) => {
+          this.selectedProject.update((project) => {
+            if (!project) return project;
+            return {
+              ...project,
+              tasks: project.tasks.map((task) =>
+                task.id === updatedTask.id ? updatedTask : task
+              ),
+            };
+          });
+          this.messageService.addMessage({
+            content: 'Task due date updated successfully',
+            type: 'success',
+          });
+        },
+        error: () => {
+          const project = this.selectedProject();
+          if (project) this.loadProject(project.id);
+          this.messageService.addMessage({
+            content:
+              'Unable to update the task due date. The calendar was reset.',
+            type: 'error',
+          });
+        },
+      });
   }
 
   onCreateRisk(risk: CreateRisk) {

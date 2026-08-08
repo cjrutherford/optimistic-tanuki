@@ -35,6 +35,8 @@ import { AnalyticsService } from './analytics/analytics.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { loadConfig } from './config';
 import loadDatabase from './loadDatabase';
+import { AiChange } from './entities/ai-change.entity';
+import { AiChangeService } from './ai-change/ai-change.service';
 
 @Module({
   imports: [
@@ -71,6 +73,7 @@ import loadDatabase from './loadDatabase';
     TaskTagService,
     TaskNoteService,
     AnalyticsService,
+    AiChangeService,
     {
       provide: getRepositoryToken(Project),
       useFactory: (connection: DataSource) => connection.getRepository(Project),
@@ -117,6 +120,12 @@ import loadDatabase from './loadDatabase';
       provide: getRepositoryToken(TaskNote),
       useFactory: (connection: DataSource) =>
         connection.getRepository(TaskNote),
+      inject: ['PROJECT_PLANNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(AiChange),
+      useFactory: (connection: DataSource) =>
+        connection.getRepository(AiChange),
       inject: ['PROJECT_PLANNING_CONNECTION'],
     },
   ],

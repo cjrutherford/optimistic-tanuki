@@ -1,0 +1,102 @@
+<section class="project-summary">
+  <div class="summary-header">
+    <div>
+      <p class="eyebrow">Current objective</p>
+      <h3>{{ project.name }}</h3>
+      <p>{{ project.description || 'No objective recorded yet.' }}</p>
+    </div>
+    <div class="health" [class.healthy]="blockers === 0">
+      <strong>{{ blockers === 0 ? 'On track' : 'Needs attention' }}</strong>
+      <span>{{ blockers }} blocker{{ blockers === 1 ? '' : 's' }}</span>
+    </div>
+  </div>
+
+  <div class="insight-grid">
+    <article>
+      <span>Next recommended action</span>
+      <strong>{{ nextAction }}</strong>
+    </article>
+    <article>
+      <span>Time spent vs expected</span>
+      <strong>{{ formatTime(trackedSeconds) }} tracked</strong>
+      <small>Estimates are not recorded for this project.</small>
+    </article>
+    <button type="button" (click)="select('tasks')">
+      <span>Overdue / high priority</span>
+      <strong
+        >{{ overdueTasks.length }} / {{ highPriorityTasks.length }}</strong
+      >
+    </button>
+    <button type="button" (click)="select('risks')">
+      <span>Unresolved risks</span>
+      <strong>{{ unresolvedRisks.length }}</strong>
+    </button>
+    <button type="button" (click)="select('changes')">
+      <span>Pending changes</span>
+      <strong>{{ pendingChanges.length }}</strong>
+    </button>
+    <button type="button" (click)="select('journal')">
+      <span>Recent notes</span>
+      <strong>{{ noteCount }}</strong>
+    </button>
+  </div>
+
+  <div class="summary-columns">
+    <div>
+      <h4>Recent activity</h4>
+      <ol class="timeline">
+        @for (entry of activity; track entry.date.getTime() + entry.title) {
+        <li>
+          <button type="button" (click)="select(entry.type)">
+            <span
+              >{{ entry.label }} · {{ entry.date | date : 'mediumDate' }}</span
+            >
+            <strong>{{ entry.title }}</strong>
+          </button>
+        </li>
+        } @empty {
+        <li class="empty">No activity recorded yet.</li>
+        }
+      </ol>
+    </div>
+    <div>
+      <h4>Project health</h4>
+      <div class="health-bars">
+        <div>
+          <span>Tasks complete</span
+          ><strong
+            >{{ project.tasks.length - activeTasks.length }} /
+            {{ project.tasks.length }}</strong
+          >
+        </div>
+        <div>
+          <span>Risks contained</span
+          ><strong
+            >{{ project.risks.length - unresolvedRisks.length }} /
+            {{ project.risks.length }}</strong
+          >
+        </div>
+        <div>
+          <span>Changes resolved</span
+          ><strong
+            >{{ project.changes.length - pendingChanges.length }} /
+            {{ project.changes.length }}</strong
+          >
+        </div>
+      </div>
+      <h4>Trend signals</h4>
+      <p class="trend">
+        {{
+          overdueTasks.length
+            ? 'Delivery is slipping on overdue work.'
+            : 'Delivery has no overdue work.'
+        }}
+        {{
+          unresolvedRisks.length
+            ? 'Risk exposure remains active.'
+            : 'Risk exposure is contained.'
+        }}
+      </p>
+    </div>
+  </div>
+</section>
