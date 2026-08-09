@@ -32,6 +32,9 @@ export class CommunitiesComponent implements OnInit {
   selectedStates = signal<string[]>([]);
   selectedLocalityTypes = signal<LocalityType[]>('all' as any);
 
+  private loadGeneration = 0;
+  private hasLoadedSuccessfully = false;
+
   states = ['GA', 'SC', 'FL', 'NC'];
   localityTypes: { value: LocalityType; label: string }[] = [
     { value: 'all', label: 'All Types' },
@@ -77,16 +80,32 @@ export class CommunitiesComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    const generation = ++this.loadGeneration;
+    this.loading.set(true);
+    this.error.set(null);
+
     try {
       const communities = await this.communityService.getCommunities();
+      if (generation !== this.loadGeneration) return;
+
       const nonCityCommunities = communities.filter(
         (c) => !c.localityType || c.localityType !== 'city'
       );
       this.communities.set(nonCityCommunities);
+      this.hasLoadedSuccessfully = true;
+      this.error.set(null);
     } catch {
-      this.error.set('Unable to load communities. Please try again later.');
+      if (
+        generation === this.loadGeneration &&
+        !this.hasLoadedSuccessfully &&
+        this.communities().length === 0
+      ) {
+        this.error.set('Unable to load communities. Please try again later.');
+      }
     } finally {
-      this.loading.set(false);
+      if (generation === this.loadGeneration) {
+        this.loading.set(false);
+      }
     }
   }
 

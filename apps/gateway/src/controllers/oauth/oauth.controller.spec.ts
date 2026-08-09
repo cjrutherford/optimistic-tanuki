@@ -720,8 +720,62 @@ describe('OAuthController', () => {
       expect(targetResponse.cookie).toHaveBeenCalledWith(
         'ot_session',
         'platform-token',
-        expect.objectContaining({ httpOnly: true, path: '/api' })
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+        })
       );
+    });
+
+    it('marks an OAuth browser session Secure in production', async () => {
+      const previousNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
+      const store = (controller as any).oauthStateStore as LocalOAuthStateStore;
+      const stateId = 'production_cookie_callback_grant';
+      const callbackCode = `${stateId}.callback_secret_for_production_cookie`;
+      await store.createCallbackGrant(callbackCode, {
+        token: 'platform-token',
+        returnOrigin: 'https://optimistic-tanuki.example',
+        redemptionOrigin: 'https://optimistic-tanuki.example',
+        cookieSession: true,
+        stateId,
+        nonceHash: (controller as any).hashNonce('nonce'),
+        expiresAt: Date.now() + 60_000,
+      });
+      const targetResponse = { cookie: jest.fn() } as any;
+
+      try {
+        await controller.redeemCallbackCode(
+          { callbackCode },
+          {
+            headers: { origin: 'https://optimistic-tanuki.example' },
+            cookies: {
+              oauth_state_nonce: JSON.stringify([
+                { id: stateId, nonce: 'nonce' },
+              ]),
+            },
+          } as any,
+          targetResponse
+        );
+
+        expect(targetResponse.cookie).toHaveBeenCalledWith(
+          'ot_session',
+          'platform-token',
+          expect.objectContaining({
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+          })
+        );
+      } finally {
+        if (previousNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = previousNodeEnv;
+        }
+      }
     });
 
     it('links the provider identity returned by the provider to the authenticated link-flow user', async () => {
@@ -858,7 +912,11 @@ describe('OAuthController', () => {
       expect(cookieResponse.cookie).toHaveBeenCalledWith(
         'ot_session',
         'platform-token',
-        expect.objectContaining({ httpOnly: true, path: '/api' })
+        expect.objectContaining({
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+        })
       );
       await expect(
         controller.redeemCallbackCode({ callbackCode: callbackCode! }, {

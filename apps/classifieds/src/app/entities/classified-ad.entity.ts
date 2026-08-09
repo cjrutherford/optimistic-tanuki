@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -9,6 +10,7 @@ import {
 export type ClassifiedAdStatus = 'active' | 'sold' | 'expired' | 'removed';
 
 @Entity('classified_ad')
+@Index(['userId'])
 export class ClassifiedAdEntity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

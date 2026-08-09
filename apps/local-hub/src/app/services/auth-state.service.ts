@@ -19,6 +19,8 @@ export class AuthStateService {
   private isAuthenticatedSubject: BehaviorSubject<boolean>;
   private userDataSubject: BehaviorSubject<UserData | null>;
   private _isAuthenticated = false;
+  private sessionRestorePromise: Promise<void> | null = null;
+  private restoreGeneration = 0;
 
   isAuthenticated$: Observable<boolean>;
   userData$: Observable<UserData | null>;
@@ -40,7 +42,7 @@ export class AuthStateService {
     this.userDataSubject = new BehaviorSubject<UserData | null>(null);
     this.isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
     this.userData$ = this.userDataSubject.asObservable();
-    void this.restoreSession();
+    this.sessionRestorePromise = this.restoreSession();
   }
 
   get isAuthenticated(): boolean {
@@ -67,16 +69,30 @@ export class AuthStateService {
   async restoreSession(): Promise<void> {
     if (!isPlatformBrowser(this.platformId)) return;
 
+    const generation = ++this.restoreGeneration;
+
     try {
       const response = await this.authService.currentSession();
+      if (generation !== this.restoreGeneration) return;
       this._isAuthenticated = true;
       this.isAuthenticatedSubject.next(true);
       this.userDataSubject.next(response.data as UserData);
     } catch {
+      if (generation !== this.restoreGeneration) return;
       this._isAuthenticated = false;
       this.isAuthenticatedSubject.next(false);
       this.userDataSubject.next(null);
     }
+  }
+
+  /**
+   * Wait for the constructor's cookie-session restore to settle. Guards use
+   * this shared promise so they never consume the initial `false` value while
+   * the browser session request is still in flight.
+   */
+  waitForSessionRestore(): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return Promise.resolve();
+    return (this.sessionRestorePromise ??= this.restoreSession());
   }
 
   /** Returns the caller's profileId, falling back to userId, then empty string. */

@@ -310,6 +310,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
           coordinates: city.coordinates,
           iconSize: [24, 24],
           iconAnchor: [12, 12],
+          title: city.name,
+          alt: city.name,
         });
 
         marker.bindTooltip(city.name, {
@@ -318,9 +320,9 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
           offset: [0, -10],
         });
 
-        marker.on('click', () => {
-          this.citySelected.emit(city);
-        });
+        const selectCity = () => this.citySelected.emit(city);
+        marker.on('click', selectCity);
+        this.setMarkerAccessibility(marker, city.name, selectCity);
 
         this.markers.push(marker);
       });
@@ -583,6 +585,8 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       coordinates: MapCoordinates;
       iconSize: [number, number];
       iconAnchor: [number, number];
+      title?: string;
+      alt?: string;
     }
   ): any {
     const icon = L.divIcon({
@@ -594,6 +598,30 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
     return L.marker([input.coordinates.lat, input.coordinates.lng], {
       icon,
+      ...(input.title ? { title: input.title } : {}),
+      ...(input.alt ? { alt: input.alt } : {}),
+      keyboard: true,
     }).addTo(this.map);
+  }
+
+  private setMarkerAccessibility(
+    marker: any,
+    name: string,
+    activate: () => void
+  ): void {
+    const element = marker.getElement?.();
+    if (element) {
+      element.setAttribute('role', 'button');
+      element.setAttribute('aria-label', name);
+      element.setAttribute('tabindex', '0');
+    }
+
+    marker.on('keydown', (event: any) => {
+      const key = event?.originalEvent?.key ?? event?.key;
+      if (key === 'Enter' || key === ' ') {
+        event?.originalEvent?.preventDefault?.();
+        activate();
+      }
+    });
   }
 }

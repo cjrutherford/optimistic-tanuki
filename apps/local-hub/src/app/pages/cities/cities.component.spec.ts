@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
 import { CitiesComponent } from './cities.component';
@@ -74,5 +76,16 @@ describe('CitiesComponent', () => {
 
     expect(mapComponent).toBeDefined();
     expect(mapComponent?.mode).toBe('atlas-nearby');
+  });
+
+  it('defines a dark-theme header scrim for readable hero text', () => {
+    const styles = readFileSync(
+      join(__dirname, 'cities.component.scss'),
+      'utf8'
+    );
+
+    expect(styles).toContain("[data-theme='dark'] .header-gradient");
+    expect(styles).toContain('.dark-theme .header-gradient');
+    expect(styles).toContain('rgba(0, 0, 0, 0.45)');
   });
 });

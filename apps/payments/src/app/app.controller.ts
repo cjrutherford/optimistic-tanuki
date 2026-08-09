@@ -1,6 +1,6 @@
-import { Controller, Logger, Inject } from '@nestjs/common';
+import { Controller, HttpException, Logger, Inject } from '@nestjs/common';
 import { PaymentCommands } from '@optimistic-tanuki/constants';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, Payload, RpcException } from '@nestjs/microservices';
 import { PaymentService } from './services/payment.service';
 import { BusinessThemeService } from './services/business-theme.service';
 import { OfferService } from './services/offer.service';
@@ -17,6 +17,43 @@ export class AppController {
     @Inject(OfferService)
     private readonly offerService: OfferService
   ) {}
+
+  private async relayOfferCommand<T>(
+    command: () => Promise<T>,
+    notFoundMessage?: string
+  ): Promise<T> {
+    try {
+      return await command();
+    } catch (error) {
+      if (error instanceof HttpException) {
+        const statusCode = error.getStatus();
+        if (statusCode === 400 || statusCode === 404) {
+          throw new RpcException({
+            statusCode,
+            message:
+              statusCode === 404 && notFoundMessage
+                ? notFoundMessage
+                : error.message,
+          });
+        }
+      }
+      throw error;
+    }
+  }
+
+  private async relayPaymentRead<T>(command: () => Promise<T>): Promise<T> {
+    try {
+      return await command();
+    } catch (error) {
+      if (error instanceof HttpException && error.getStatus() === 404) {
+        throw new RpcException({
+          statusCode: 404,
+          message: 'Payment not found',
+        });
+      }
+      throw error;
+    }
+  }
 
   @MessagePattern({ cmd: PaymentCommands.GET_DONATION_GOAL })
   async getDonationGoal(@Payload() data: { month: number; year: number }) {
@@ -118,8 +155,10 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_PAYMENT })
-  async getPayment(@Payload() data: { paymentId: string }) {
-    return this.paymentService.getPayment(data.paymentId);
+  async getPayment(@Payload() data: { paymentId: string; userId: string }) {
+    return this.relayPaymentRead(() =>
+      this.paymentService.getPayment(data.paymentId, data.userId)
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_PAYMENTS })
@@ -265,7 +304,6 @@ export class AppController {
     return this.offerService.createOffer({
       classifiedId: data.classifiedId,
       buyerId: data.buyerId,
-      sellerId: data.sellerId,
       amount: data.amount,
       message: data.message,
     });
@@ -273,12 +311,16 @@ export class AppController {
 
   @MessagePattern({ cmd: PaymentCommands.ACCEPT_OFFER })
   async acceptOffer(@Payload() data: { offerId: string; sellerId: string }) {
-    return this.offerService.acceptOffer(data.offerId, data.sellerId);
+    return this.relayOfferCommand(() =>
+      this.offerService.acceptOffer(data.offerId, data.sellerId)
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.REJECT_OFFER })
   async rejectOffer(@Payload() data: { offerId: string; sellerId: string }) {
-    return this.offerService.rejectOffer(data.offerId, data.sellerId);
+    return this.relayOfferCommand(() =>
+      this.offerService.rejectOffer(data.offerId, data.sellerId)
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.COUNTER_OFFER })
@@ -291,20 +333,33 @@ export class AppController {
       message?: string;
     }
   ) {
-    return this.offerService.counterOffer(data.offerId, data.sellerId, {
-      counterAmount: data.counterAmount,
-      message: data.message,
-    });
+    return this.relayOfferCommand(() =>
+      this.offerService.counterOffer(data.offerId, data.sellerId, {
+        counterAmount: data.counterAmount,
+        message: data.message,
+      })
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.WITHDRAW_OFFER })
   async withdrawOffer(@Payload() data: { offerId: string; buyerId: string }) {
-    return this.offerService.withdrawOffer(data.offerId, data.buyerId);
+    return this.relayOfferCommand(() =>
+      this.offerService.withdrawOffer(data.offerId, data.buyerId)
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_OFFERS_FOR_CLASSIFIED })
-  async getOffersForClassified(@Payload() data: { classifiedId: string }) {
-    return this.offerService.getOffersForClassified(data.classifiedId);
+  async getOffersForClassified(
+    @Payload() data: { classifiedId: string; userId: string }
+  ) {
+    return this.relayOfferCommand(
+      () =>
+        this.offerService.getOffersForClassified(
+          data.classifiedId,
+          data.userId
+        ),
+      'Classified offers not found'
+    );
   }
 
   @MessagePattern({ cmd: PaymentCommands.GET_USER_OFFERS })
