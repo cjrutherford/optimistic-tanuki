@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-07T19:44:58.065Z",
+  "generatedAt": "2026-08-09T15:37:12.265Z",
   "items": [
     {
       "slug": "apps/authentication/readme",
@@ -2410,6 +2410,82 @@
       "landing": false,
       "featured": false,
       "lastUpdated": "2026-08-07T13:29:26.337Z"
+    },
+    {
+      "slug": "docs/audits/2026-08-09-towne-square-adversarial-scorecard",
+      "title": "Towne Square Adversarial Scorecard",
+      "summary": "**Date:** 2026-08-09 **Scope:** `local-hub`, `local-hub-e2e`, and the gateway/payment boundaries directly exposed by Towne Square **Review mode:** hostile end-to-end trace of public discovery, city/community classifieds, cookie authentication, offers/payments, responsive behavior, accessibility, and automated verification",
+      "sourcePath": "docs/audits/2026-08-09-towne-square-adversarial-scorecard.md",
+      "category": "audits",
+      "tags": [],
+      "kind": "doc",
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Towne Square Adversarial Scorecard",
+          "id": "towne-square-adversarial-scorecard"
+        },
+        {
+          "depth": 2,
+          "text": "Score",
+          "id": "score"
+        },
+        {
+          "depth": 2,
+          "text": "Evidence collected",
+          "id": "evidence-collected"
+        },
+        {
+          "depth": 2,
+          "text": "Ordered findings",
+          "id": "ordered-findings"
+        },
+        {
+          "depth": 3,
+          "text": "[P0] Restrict classified offers and payment records to transaction participants",
+          "id": "p0-restrict-classified-offers-and-payment-records-to-transaction-participants"
+        },
+        {
+          "depth": 3,
+          "text": "[P1] Normalize city and community route parameters before loading classifieds",
+          "id": "p1-normalize-city-and-community-route-parameters-before-loading-classifieds"
+        },
+        {
+          "depth": 3,
+          "text": "[P1] Align SSR route protection with the HttpOnly cookie-session contract",
+          "id": "p1-align-ssr-route-protection-with-the-httponly-cookie-session-contract"
+        },
+        {
+          "depth": 3,
+          "text": "[P2] Give Leaflet locality markers accessible names",
+          "id": "p2-give-leaflet-locality-markers-accessible-names"
+        },
+        {
+          "depth": 3,
+          "text": "[P2] Remove narrow-viewport overflow from landing and city discovery",
+          "id": "p2-remove-narrow-viewport-overflow-from-landing-and-city-discovery"
+        },
+        {
+          "depth": 3,
+          "text": "[P2] Raise local text and control contrast to WCAG AA",
+          "id": "p2-raise-local-text-and-control-contrast-to-wcag-aa"
+        },
+        {
+          "depth": 2,
+          "text": "Residual risks and open questions",
+          "id": "residual-risks-and-open-questions"
+        },
+        {
+          "depth": 2,
+          "text": "Prioritized delivery slices",
+          "id": "prioritized-delivery-slices"
+        }
+      ],
+      "body": "# Towne Square Adversarial Scorecard\n\n**Date:** 2026-08-09  \n**Scope:** `local-hub`, `local-hub-e2e`, and the gateway/payment boundaries directly exposed by Towne Square  \n**Review mode:** hostile end-to-end trace of public discovery, city/community classifieds, cookie authentication, offers/payments, responsive behavior, accessibility, and automated verification\n\n## Score\n\n| Dimension                        |   Weight |      Score | Evidence                                                                                                  |\n| -------------------------------- | -------: | ---------: | --------------------------------------------------------------------------------------------------------- |\n| Correctness and security         |      35% |       4/10 | One cross-user disclosure path and two broken primary navigation/session paths                            |\n| User experience                  |      25% |       6/10 | Strong visual identity and public landing flow, but city classifieds and authenticated deep links fail    |\n| Design-system fit                |      20% |       7/10 | Intentional Soft Touch personality and shared UI usage; local page CSS remains oversized and inconsistent |\n| Accessibility and responsiveness |      10% |       3/10 | Serious contrast failures, unnamed map controls, and reproducible horizontal overflow                     |\n| Verification confidence          |      10% |       2/10 | Unit/build gates pass while live E2E and important user outcomes fail                                     |\n| **Weighted total**               | **100%** | **4.8/10** | Re-score after the four delivery slices below                                                             |\n\n## Evidence collected\n\n- `local-hub:lint`, `local-hub:test:ci`, and `local-hub:build:production` passed. The production build reports multiple component-style budget warnings, including Towne Square landing, city, cities, and community pages.\n- Agent Browser loaded `http://127.0.0.1:8087/` without console or page errors at desktop width.\n- At 375×667, the landing page measured 541px of document width. The support and business grids were the largest overflow offenders.\n- The landing-page axe scan reported one serious rule violation covering 24 contrast failures. The carousel controls also expose an unsupported `aria-label` on a roleless `div`.\n- A separate live adversarial trace found the cities page at 425px document width on a 375px viewport and 24 unnamed interactive Leaflet locality markers.\n- The checked-in live-stack E2E target ran 34 tests; 28 failed. Authenticated tests fail while creating a session because login is not successful. The initial run also exposed that Nx attempts an unsupported Playwright browser installation unless `--skipInstall` is supplied on this host.\n\n## Ordered findings\n\n### [P0] Restrict classified offers and payment records to transaction participants\n\n**Evidence:** `apps/gateway/src/controllers/payments/payments.controller.ts:335`, `apps/gateway/src/controllers/payments/payments.controller.ts:640`, `apps/payments/src/app/services/offer.service.ts:173`, `apps/payments/src/app/services/payment.service.ts:483`\n\nThe authenticated gateway endpoints forward only a classified or payment identifier. The payment service returns the records without checking that the caller is the buyer, seller, or classified owner. Any authenticated user with a public classified UUID can enumerate private negotiations and can follow an accepted payment ID to payment proof and dispute data.\n\n**Impact:** cross-user disclosure of negotiation and payment information.\n\n### [P1] Normalize city and community route parameters before loading classifieds\n\n**Evidence:** `apps/local-hub/src/app/app.routes.ts:29`, `apps/local-hub/src/app/pages/classifieds/classifieds.component.ts:73`, `apps/local-hub/src/app/pages/classified-detail/classified-detail.component.ts:82`, `apps/local-hub/src/app/guards/member.guard.ts:34`\n\nCity routes define `:slug`, while list, detail, and member guard code read only `communitySlug`. City classifieds therefore request `/api/communities/slug/`, enter an error state, and redirect back through community URLs even when navigation began under `/city/...`.\n\n**Impact:** city classifieds cannot reliably load, deep-link, or create listings.\n\n### [P1] Align SSR route protection with the HttpOnly cookie-session contract\n\n**Evidence:** `apps/local-hub/src/server.ts:69`, `apps/gateway/src/controllers/authentication/authentication.controller.ts:689`\n\nThe gateway scopes `ot_session` to `/api`, while Local Hub's Express gate checks a legacy `ot-local-hub-authToken` cookie on page requests. A valid cookie session is neither sent to nor recognized on `/account`, `/messages`, or `/seller-dashboard`.\n\n**Impact:** authenticated reloads and bookmarked deep links redirect to login.\n\n### [P2] Give Leaflet locality markers accessible names\n\n**Evidence:** `apps/local-hub/src/app/components/map/map.component.ts:300`\n\nLeaflet makes locality markers focusable buttons, but the generated marker elements do not receive an accessible name. Tooltip text is not sufficient for the control's accessible name.\n\n**Impact:** keyboard and screen-reader users encounter anonymous map actions.\n\n### [P2] Remove narrow-viewport overflow from landing and city discovery\n\n**Evidence:** `apps/local-hub/src/app/pages/landing/landing.component.scss:438`, `apps/local-hub/src/app/pages/cities/cities.component.scss:622`\n\nThe landing support/business grids do not collapse at their existing breakpoints, producing a 541px page at 375px. The cities map rail similarly resolves wider than its viewport and produces a 425px page.\n\n**Impact:** primary content and controls are clipped or require horizontal scrolling on supported phone widths.\n\n### [P2] Raise local text and control contrast to WCAG AA\n\n**Evidence:** `apps/local-hub/src/app/pages/landing/landing.component.scss`, `apps/local-hub/src/app/pages/cities/cities.component.scss:350`, `apps/local-hub/src/app/components/map/map.component.scss:93`\n\nMuted foregrounds render as low as 2.22:1 against card surfaces. The landing scan identified 24 serious failures, including feature descriptions, donation metadata, and controls; city filters and the map legend use the same weak semantic combination.\n\n**Impact:** important explanatory and control text is difficult to read and fails WCAG AA.\n\n## Residual risks and open questions\n\n- The failed authenticated E2E setup may include stale local stack state, but it still demonstrates that the suite is not currently a reliable release gate.\n- Messaging, offers, donations, seller dashboard actions, and community management lack browser-level outcome tests.\n- `expectPageLoads` proves only a sub-400 response and visible body, so redirects and rendered error states can pass.\n- Authorization must be enforced in the owning payment service, not only in the gateway, because internal callers may bypass HTTP controllers.\n\n## Prioritized delivery slices\n\n1. **P0 payment authorization:** propagate caller identity and enforce buyer/seller ownership in the payment service, with negative tests.\n2. **P1 routing and session correctness:** normalize route context and make server-side protection compatible with the HttpOnly session model.\n3. **P2 responsive and accessible discovery:** repair both overflow surfaces, marker names, semantic contrast, and carousel semantics.\n4. **Verification hardening:** replace permissive smoke assertions with observable browser outcomes and restore a stable authenticated E2E fixture.\n",
+      "order": 999,
+      "landing": false,
+      "featured": false,
+      "lastUpdated": "2026-08-09T12:02:44.927Z"
     },
     {
       "slug": "docs/audits/client-app-ui-audit-2026-05-30",

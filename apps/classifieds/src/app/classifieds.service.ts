@@ -70,6 +70,14 @@ export class ClassifiedsService {
     return ad;
   }
 
+  async findIdsByUser(userId: string): Promise<string[]> {
+    const ads = await this.repo.find({
+      select: { id: true },
+      where: { userId },
+    });
+    return ads.map((ad) => ad.id);
+  }
+
   async findByCommunity(
     communityId: string,
     appScope?: string

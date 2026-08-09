@@ -228,7 +228,25 @@ describe('AuthenticationController', () => {
     expect(response.cookie).toHaveBeenCalledWith(
       'ot_session',
       'browser-session-token',
-      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api' })
+      expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/' })
+    );
+  });
+
+  it('clears browser sessions with the same site-wide cookie scope', async () => {
+    const response = { clearCookie: jest.fn() };
+
+    await expect(
+      controller.logoutUser({}, { cookies: {} } as any, response as any)
+    ).resolves.toEqual({ success: true });
+
+    expect(response.clearCookie).toHaveBeenCalledWith(
+      'ot_session',
+      expect.objectContaining({
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      })
     );
   });
 

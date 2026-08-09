@@ -7,6 +7,7 @@ export const ClassifiedCommands = {
   UPDATE: 'classified.update',
   DELETE: 'classified.delete',
   FIND_BY_ID: 'classified.findById',
+  FIND_BY_USER: 'classified.findByUser',
   FIND_BY_COMMUNITY: 'classified.findByCommunity',
   FIND_BY_PROFILE: 'classified.findByProfile',
   SEARCH: 'classified.search',

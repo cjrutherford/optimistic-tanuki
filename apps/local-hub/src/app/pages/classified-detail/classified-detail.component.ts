@@ -23,6 +23,10 @@ import { PaymentService, Offer } from '../../services/payment.service';
 import { MakeOfferModalComponent } from '../../components/make-offer-modal/make-offer-modal.component';
 import { OfferListComponent } from '../../components/offer-list/offer-list.component';
 import { ProfileDto } from '@optimistic-tanuki/ui-models';
+import {
+  LocalityRouteContext,
+  localityRouteContext,
+} from '../../utils/locality-route-context';
 
 @Component({
   selector: 'app-classified-detail',
@@ -73,30 +77,69 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   chatMessages = signal<ChatMessage[]>([]);
   chatInput = signal('');
   conversationId = signal<string | null>(null);
+  private routeContext: LocalityRouteContext = {
+    slug: '',
+    baseSegments: [],
+  };
+  private loadGeneration = 0;
 
   ngOnInit(): void {
     this.authState.isAuthenticated$
       .pipe(takeUntil(this.destroy$))
       .subscribe((auth) => this.isAuthenticated.set(auth));
 
-    const slug = this.route.snapshot.paramMap.get('communitySlug') ?? '';
-    const id = this.route.snapshot.paramMap.get('id') ?? '';
-    this.loadData(slug, id);
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const generation = ++this.loadGeneration;
+      this.routeContext = localityRouteContext(params);
+      const { slug } = this.routeContext;
+      const id = params.get('id')?.trim() ?? '';
+      this.showMakeOfferModal.set(false);
+      this.offers.set([]);
+      this.offersLoading.set(false);
+      this.showOffersList.set(false);
+      this.showChat.set(false);
+      this.chatLoading.set(false);
+      this.chatMessages.set([]);
+      this.chatInput.set('');
+      this.conversationId.set(null);
+      this.ad.set(null);
+      this.community.set(null);
+      this.error.set(null);
+      this.loading.set(true);
+      this.isMember.set(false);
+      this.isOwner.set(false);
+      this.showEditForm.set(false);
+
+      if (!slug || !id) {
+        this.error.set('Could not determine the requested listing.');
+        this.loading.set(false);
+        return;
+      }
+      this.loadData(slug, id, generation);
+    });
   }
 
   ngOnDestroy(): void {
+    this.loadGeneration++;
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  async loadData(slug: string, id: string): Promise<void> {
+  async loadData(
+    slug: string,
+    id: string,
+    generation = this.loadGeneration
+  ): Promise<void> {
     try {
       const [community, ad] = await Promise.all([
         this.communityService.getCommunityBySlug(slug),
         this.classifiedService.findById(id),
       ]);
+      if (generation !== this.loadGeneration) return;
       this.community.set(community);
-      this.ad.set(await this.enrichSellerProfile(ad));
+      const enrichedAd = await this.enrichSellerProfile(ad);
+      if (generation !== this.loadGeneration) return;
+      this.ad.set(enrichedAd);
 
       if (this.isAuthenticated()) {
         const myId = this.authState.getActingProfileId();
@@ -105,20 +148,24 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         );
         try {
           this.isMember.set(await this.communityService.isMember(community.id));
+          if (generation !== this.loadGeneration) return;
         } catch {
           // non-fatal
         }
       }
     } catch {
-      this.error.set('Could not load listing. Please try again.');
+      if (generation === this.loadGeneration) {
+        this.error.set('Could not load listing. Please try again.');
+      }
     } finally {
-      this.loading.set(false);
+      if (generation === this.loadGeneration) this.loading.set(false);
     }
   }
 
   navigateToClassifieds(): void {
-    const slug = this.community()?.slug;
-    if (slug) this.router.navigate(['/c', slug, 'classifieds']);
+    if (this.routeContext.baseSegments.length > 0) {
+      this.router.navigate([...this.routeContext.baseSegments, 'classifieds']);
+    }
   }
 
   /** Image upload callback passed to ClassifiedFormComponent */
@@ -138,8 +185,12 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   async onEditSubmit(dto: UpdateClassifiedAdDto): Promise<void> {
     const ad = this.ad();
     if (!ad) return;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
     try {
       const updated = await this.classifiedService.update(ad.id, dto);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.ad.set(updated);
       this.showEditForm.set(false);
       this.messageService.addMessage({
@@ -147,6 +198,8 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         type: 'success',
       });
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to update listing.',
         type: 'error',
@@ -157,14 +210,20 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   async onMarkSold(): Promise<void> {
     const ad = this.ad();
     if (!ad) return;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
     try {
       const updated = await this.classifiedService.markSold(ad.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.ad.set(updated);
       this.messageService.addMessage({
         content: 'Listing marked as sold.',
         type: 'success',
       });
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to update status.',
         type: 'error',
@@ -174,17 +233,22 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
   async onDelete(): Promise<void> {
     const ad = this.ad();
-    const slug = this.community()?.slug;
-    if (!ad || !slug) return;
+    if (!ad || this.routeContext.baseSegments.length === 0) return;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
     if (!confirm('Delete this listing? This cannot be undone.')) return;
     try {
       await this.classifiedService.remove(ad.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Listing deleted.',
         type: 'success',
       });
-      this.router.navigate(['/c', slug, 'classifieds']);
+      this.navigateToClassifieds();
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to delete listing.',
         type: 'error',
@@ -204,16 +268,19 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       return;
     }
     if (!this.isMember()) {
-      const slug = this.community()?.slug;
       this.messageService.addMessage({
         content: 'Join this community to contact sellers.',
         type: 'info',
       });
-      if (slug) this.router.navigate(['/c', slug]);
+      if (this.routeContext.baseSegments.length > 0) {
+        this.router.navigate(this.routeContext.baseSegments);
+      }
       return;
     }
     const ad = this.ad();
     if (!ad) return;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
 
     const myProfileId = this.authState.getActingProfileId();
     const sellerProfileId = ad.profileId || ad.userId;
@@ -232,13 +299,17 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         myProfileId,
         sellerProfileId,
       ]);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
 
       let messages = await this.chatService.getMessages(conversation.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
 
       if (messages.length === 0) {
-        const listingUrl = `${window.location.origin}/c/${
-          this.community()?.slug
-        }/classifieds/${ad.id}`;
+        const listingUrl = `${
+          window.location.origin
+        }${this.routeContext.baseSegments.join('/')}/classifieds/${ad.id}`;
         const initialMessage = `Classified Ad: "${ad.title}"\nPrice: $${ad.price}\n${listingUrl}\n\nHi! I'm interested in this listing.`;
 
         await this.chatService.sendMessage({
@@ -248,8 +319,12 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
           recipientIds: [sellerProfileId],
           type: 'system',
         });
+        if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+          return;
 
         messages = await this.chatService.getMessages(conversation.id);
+        if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+          return;
       }
 
       this.conversationId.set(conversation.id);
@@ -258,12 +333,16 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
       );
       this.showChat.set(true);
     } catch {
-      this.messageService.addMessage({
-        content: 'Could not open conversation. Please try again.',
-        type: 'error',
-      });
+      if (generation === this.loadGeneration && this.ad()?.id === listingId) {
+        this.messageService.addMessage({
+          content: 'Could not open conversation. Please try again.',
+          type: 'error',
+        });
+      }
     } finally {
-      this.chatLoading.set(false);
+      if (generation === this.loadGeneration && this.ad()?.id === listingId) {
+        this.chatLoading.set(false);
+      }
     }
   }
 
@@ -275,6 +354,9 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
 
     const myId = this.authState.getActingProfileId();
     const sellerId = ad.profileId || ad.userId;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
+    const conversationIdentity = convId;
     const recipientIds = [sellerId].filter(
       (id): id is string => !!id && id !== myId
     );
@@ -294,12 +376,26 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
         senderId: myId,
         recipientIds,
       });
+      if (
+        generation !== this.loadGeneration ||
+        this.ad()?.id !== listingId ||
+        this.conversationId() !== conversationIdentity
+      ) {
+        return;
+      }
       this.chatMessages.update((msgs) => [
         ...msgs,
         { ...sent, createdAt: new Date(sent.createdAt) },
       ]);
       this.chatInput.set('');
     } catch {
+      if (
+        generation !== this.loadGeneration ||
+        this.ad()?.id !== listingId ||
+        this.conversationId() !== conversationIdentity
+      ) {
+        return;
+      }
       this.messageService.addMessage({
         content: 'Failed to send message.',
         type: 'error',
@@ -310,19 +406,28 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   async loadOffers(): Promise<void> {
     const ad = this.ad();
     if (!ad) return;
+    const generation = this.loadGeneration;
+    const listingId = ad.id;
 
     this.offersLoading.set(true);
     try {
       const offers = await this.paymentService.getOffersForClassified(ad.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId) {
+        return;
+      }
       this.offers.set(offers);
       this.showOffersList.set(true);
     } catch {
-      this.messageService.addMessage({
-        content: 'Failed to load offers.',
-        type: 'error',
-      });
+      if (generation === this.loadGeneration && this.ad()?.id === listingId) {
+        this.messageService.addMessage({
+          content: 'Failed to load offers.',
+          type: 'error',
+        });
+      }
     } finally {
-      this.offersLoading.set(false);
+      if (generation === this.loadGeneration && this.ad()?.id === listingId) {
+        this.offersLoading.set(false);
+      }
     }
   }
 
@@ -331,14 +436,20 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   }
 
   async onAcceptOffer(offer: Offer): Promise<void> {
+    const generation = this.loadGeneration;
+    const listingId = this.ad()?.id;
     try {
       await this.paymentService.acceptOffer(offer.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Offer accepted! Payment has been initiated.',
         type: 'success',
       });
       await this.loadOffers();
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to accept offer.',
         type: 'error',
@@ -347,14 +458,20 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
   }
 
   async onRejectOffer(offer: Offer): Promise<void> {
+    const generation = this.loadGeneration;
+    const listingId = this.ad()?.id;
     try {
       await this.paymentService.rejectOffer(offer.id);
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Offer rejected.',
         type: 'info',
       });
       await this.loadOffers();
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to reject offer.',
         type: 'error',
@@ -367,18 +484,24 @@ export class ClassifiedDetailComponent implements OnInit, OnDestroy {
     amount: number;
     message?: string;
   }): Promise<void> {
+    const generation = this.loadGeneration;
+    const listingId = this.ad()?.id;
     try {
       await this.paymentService.counterOffer(
         data.offer.id,
         data.amount,
         data.message
       );
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Counter offer sent!',
         type: 'success',
       });
       await this.loadOffers();
     } catch {
+      if (generation !== this.loadGeneration || this.ad()?.id !== listingId)
+        return;
       this.messageService.addMessage({
         content: 'Failed to send counter offer.',
         type: 'error',

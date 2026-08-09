@@ -4,6 +4,7 @@ import {
   expectOkOrStatus,
   findCity,
   getCommunities,
+  LOCAL_HUB_HEADERS,
 } from './helpers/local-hub-api';
 
 test.describe('API smoke', () => {
@@ -31,6 +32,7 @@ test.describe('Authentication API', () => {
     const response = await request.post(
       apiUrl('/api/authentication/register'),
       {
+        headers: LOCAL_HUB_HEADERS,
         data: {
           email: `e2e_${timestamp}@test.com`,
           username: `e2euser_${timestamp}`,
@@ -45,6 +47,7 @@ test.describe('Authentication API', () => {
 
   test('rejects invalid login', async ({ request }) => {
     const response = await request.post(apiUrl('/api/authentication/login'), {
+      headers: LOCAL_HUB_HEADERS,
       data: {
         email: 'nonexistent@test.com',
         password: 'wrongpassword',

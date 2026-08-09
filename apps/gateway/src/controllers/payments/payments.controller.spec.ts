@@ -1,6 +1,10 @@
 import { createHmac } from 'crypto';
-import { UnauthorizedException } from '@nestjs/common';
-import { of } from 'rxjs';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { of, throwError } from 'rxjs';
 import { PaymentCommands } from '@optimistic-tanuki/constants';
 import { PaymentsController } from './payments.controller';
 import { verifyWebhookSignature } from './payments-webhook';
@@ -184,5 +188,77 @@ describe('PaymentsController classified payment identity forwarding', () => {
         reason: 'not as described',
       }
     );
+  });
+
+  it('forwards the caller id as userId when getting payment details', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(of({ id: 'payment-1' }));
+
+    await (controller as any).getPayment(user, 'payment-1');
+
+    expect(paymentsClient.send).toHaveBeenCalledWith(
+      { cmd: PaymentCommands.GET_PAYMENT },
+      {
+        paymentId: 'payment-1',
+        userId: 'caller-1',
+      }
+    );
+  });
+
+  it('translates a payment rpc not-found error without disclosing the payment', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(
+      throwError(() => ({
+        statusCode: 404,
+        message: 'Payment not found',
+      }))
+    );
+
+    await expect(
+      (controller as any).getPayment(user, 'payment-1')
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('forwards the caller id as userId when getting offers for a classified', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(of([{ id: 'offer-1' }]));
+
+    await (controller as any).getOffersForClassified(user, 'classified-1');
+
+    expect(paymentsClient.send).toHaveBeenCalledWith(
+      { cmd: PaymentCommands.GET_OFFERS_FOR_CLASSIFIED },
+      {
+        classifiedId: 'classified-1',
+        userId: 'caller-1',
+      }
+    );
+  });
+
+  it('translates a classified-offers rpc not-found error without disclosing the classified', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(
+      throwError(() => ({
+        statusCode: 404,
+        message: 'Classified offers not found',
+      }))
+    );
+
+    await expect(
+      (controller as any).getOffersForClassified(user, 'classified-1')
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('translates an offer authorization rpc bad request error', async () => {
+    const { controller, paymentsClient } = buildController();
+    paymentsClient.send.mockReturnValue(
+      throwError(() => ({
+        statusCode: 400,
+        message: 'You can only accept offers on your own listings',
+      }))
+    );
+
+    await expect(
+      (controller as any).acceptOffer(user, 'offer-1')
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

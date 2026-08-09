@@ -1,5 +1,6 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { of } from 'rxjs';
+import { ClassifiedCommands } from '@optimistic-tanuki/constants';
 import {
   BillingProviderAdapter,
   CreateCheckoutInput,
@@ -65,6 +66,7 @@ function repository<T extends object>(
     save: jest.fn(async (input: T) => ({ id: 'saved-id', ...input })),
     find: jest.fn(async () => []),
     findOne: jest.fn(async () => null),
+    update: jest.fn(async () => ({ affected: 0 })),
     createQueryBuilder: jest.fn(),
   };
   // Default no-op transactional manager: invokes the callback with itself,
@@ -87,9 +89,20 @@ function repository<T extends object>(
   return repo;
 }
 
-function createClassifiedsClient(ad: Record<string, unknown> | null = null) {
+function createClassifiedsClient(
+  ad:
+    | Record<string, unknown>
+    | ((classifiedId: string) => Record<string, unknown> | null)
+    | null = null,
+  ownedClassifiedIds: string[] = []
+) {
   return {
-    send: jest.fn(() => of(ad)),
+    send: jest.fn((pattern, data: { id?: string }) => {
+      if (pattern.cmd === ClassifiedCommands.FIND_BY_USER) {
+        return of(ownedClassifiedIds);
+      }
+      return of(typeof ad === 'function' ? ad(data.id!) : ad);
+    }),
   };
 }
 
@@ -216,7 +229,10 @@ function createAtomicUpdateQueryBuilder(payment: ClassifiedPayment) {
   return qb;
 }
 
-function createServiceWithPayment(payment: ClassifiedPayment) {
+function createServiceWithPayment(
+  payment: ClassifiedPayment,
+  classified: Record<string, unknown> | null = { userId: 'seller-1' }
+) {
   const atomicQueryBuilder = createAtomicUpdateQueryBuilder(payment);
   const classifiedPaymentRepository = repository({
     findOne: jest.fn(async () => payment),
@@ -273,17 +289,23 @@ function createServiceWithPayment(payment: ClassifiedPayment) {
     createQueryBuilder: manager.createQueryBuilder,
   };
 
-  const { service } = createService(undefined, {
-    classifiedPaymentRepository,
-    sellerWalletRepository,
-    transactionRepository,
-  });
+  const classifiedsClient = createClassifiedsClient(classified);
+  const { service } = createService(
+    undefined,
+    {
+      classifiedPaymentRepository,
+      sellerWalletRepository,
+      transactionRepository,
+    },
+    classifiedsClient
+  );
 
   return {
     service,
     classifiedPaymentRepository,
     sellerWalletRepository,
     transactionRepository,
+    classifiedsClient,
   };
 }
 
@@ -378,6 +400,197 @@ describe('PaymentService provider adapter boundary', () => {
 });
 
 describe('PaymentService classified payment authorization', () => {
+  it('does not disclose a payment to a non-participant reader', async () => {
+    const payment = buildClassifiedPayment();
+    const { service } = createServiceWithPayment(payment);
+
+    await expect(
+      service.getPayment('payment-1', 'stranger')
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it.each([
+    [
+      'confirmOutOfPlatformPayment',
+      'pending',
+      (service: PaymentService) =>
+        service.confirmOutOfPlatformPayment('payment-1', 'forged-seller'),
+    ],
+    [
+      'releaseFunds',
+      'confirmed',
+      (service: PaymentService) =>
+        service.releaseFunds('payment-1', 'forged-seller'),
+    ],
+    [
+      'disputePayment',
+      'confirmed',
+      (service: PaymentService) =>
+        service.disputePayment('payment-1', 'forged-seller', 'reason'),
+    ],
+  ])(
+    'rejects a forged legacy seller for %s',
+    async (_action, status, invoke) => {
+      const payment = buildClassifiedPayment({
+        sellerId: 'forged-seller',
+        status: status as ClassifiedPayment['status'],
+      });
+      const { service, classifiedPaymentRepository, sellerWalletRepository } =
+        createServiceWithPayment(payment, { userId: 'seller-1' });
+
+      await expect(invoke(service)).rejects.toBeInstanceOf(BadRequestException);
+      expect(classifiedPaymentRepository.save).not.toHaveBeenCalled();
+      expect(sellerWalletRepository.save).not.toHaveBeenCalled();
+      expect(payment.status).toBe(status);
+    }
+  );
+
+  it('releases funds to the canonical classified owner instead of a forged legacy seller', async () => {
+    const payment = buildClassifiedPayment({
+      sellerId: 'forged-seller',
+      status: 'confirmed',
+    });
+    const { service } = createServiceWithPayment(payment, {
+      userId: 'seller-1',
+    });
+    const creditSpy = jest.spyOn(service, 'creditSellerWallet');
+
+    await expect(service.releaseFunds('payment-1', 'buyer-1')).resolves.toEqual(
+      expect.objectContaining({ success: true })
+    );
+    expect(creditSpy).toHaveBeenCalledWith(
+      'seller-1',
+      90,
+      'payment-1',
+      expect.any(String),
+      expect.anything()
+    );
+    expect(creditSpy).not.toHaveBeenCalledWith(
+      'forged-seller',
+      expect.anything(),
+      expect.anything(),
+      expect.anything(),
+      expect.anything()
+    );
+    expect(payment.sellerId).toBe('seller-1');
+  });
+
+  it.each(['buyer-1', 'seller-1'])(
+    'returns a payment to participant %s',
+    async (participantId) => {
+      const payment = buildClassifiedPayment();
+      const { service } = createServiceWithPayment(payment);
+
+      await expect(
+        service.getPayment('payment-1', participantId)
+      ).resolves.toBe(payment);
+    }
+  );
+
+  it('does not authorize a forged seller stored on a legacy payment', async () => {
+    const payment = buildClassifiedPayment({ sellerId: 'forged-seller' });
+    const { service, classifiedsClient } = createServiceWithPayment(payment, {
+      userId: 'seller-1',
+    });
+
+    await expect(
+      service.getPayment('payment-1', 'forged-seller')
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(classifiedsClient.send).toHaveBeenCalledWith(
+      { cmd: ClassifiedCommands.FIND_BY_ID },
+      { id: 'classified-1' }
+    );
+  });
+
+  it('authorizes the canonical classified owner when a legacy payment has a stale seller', async () => {
+    const payment = buildClassifiedPayment({ sellerId: 'stale-seller' });
+    const { service } = createServiceWithPayment(payment, {
+      userId: 'seller-1',
+    });
+
+    await expect(service.getPayment('payment-1', 'seller-1')).resolves.toBe(
+      payment
+    );
+  });
+
+  it('includes canonical-owner legacy payments while excluding forged seller payments from a user collection', async () => {
+    const buyerPayment = buildClassifiedPayment({
+      id: 'buyer-payment',
+      classifiedId: 'classified-buyer',
+      buyerId: 'user-1',
+      sellerId: 'other-seller',
+    });
+    const forgedSellerPayment = buildClassifiedPayment({
+      id: 'forged-payment',
+      classifiedId: 'classified-forged',
+      buyerId: 'buyer-2',
+      sellerId: 'user-1',
+    });
+    const secondCanonicalSellerPayment = buildClassifiedPayment({
+      id: 'canonical-payment-2',
+      classifiedId: 'classified-owned',
+      buyerId: 'buyer-4',
+      sellerId: 'user-1',
+    });
+    const canonicalSellerPayment = buildClassifiedPayment({
+      id: 'canonical-payment-1',
+      classifiedId: 'classified-owned',
+      buyerId: 'buyer-3',
+      sellerId: 'stale-seller',
+    });
+    const collectionPayments = [
+      buyerPayment,
+      forgedSellerPayment,
+      canonicalSellerPayment,
+      secondCanonicalSellerPayment,
+    ];
+    const classifiedPaymentRepository = repository({
+      find: jest.fn(
+        async ({ where = {} }: { where?: Partial<ClassifiedPayment> }) => {
+          if (where.buyerId === 'user-1') return [buyerPayment];
+          if (where.classifiedId) {
+            const ids = (where.classifiedId as any).value as string[];
+            return collectionPayments.filter((payment) =>
+              ids.includes(payment.classifiedId)
+            );
+          }
+          return collectionPayments;
+        }
+      ),
+    });
+    const classifiedsClient = createClassifiedsClient(
+      (classifiedId) =>
+        classifiedId === 'classified-owned'
+          ? { userId: 'user-1' }
+          : { userId: 'other-user' },
+      ['classified-owned']
+    );
+    const { service } = createService(
+      undefined,
+      { classifiedPaymentRepository },
+      classifiedsClient
+    );
+
+    await expect(service.getUserPayments('user-1')).resolves.toEqual([
+      buyerPayment,
+      canonicalSellerPayment,
+      secondCanonicalSellerPayment,
+    ]);
+    expect(classifiedPaymentRepository.find).toHaveBeenCalledWith({
+      where: { buyerId: 'user-1' },
+      order: { createdAt: 'DESC' },
+    });
+    expect(classifiedPaymentRepository.find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ classifiedId: expect.anything() }),
+      })
+    );
+    expect(classifiedsClient.send).toHaveBeenCalledWith(
+      { cmd: ClassifiedCommands.FIND_BY_USER },
+      { userId: 'user-1' }
+    );
+  });
+
   it('confirmOutOfPlatformPayment throws for a non-participant caller and does not persist changes', async () => {
     const payment = buildClassifiedPayment({ status: 'pending' });
     const { service, classifiedPaymentRepository } =
@@ -788,11 +1001,15 @@ describe('PaymentService.releaseFunds atomic conditional transition', () => {
     const sellerWalletRepository = repository();
     const transactionRepository = repository();
 
-    const { service } = createService(undefined, {
-      classifiedPaymentRepository,
-      sellerWalletRepository,
-      transactionRepository,
-    });
+    const { service } = createService(
+      undefined,
+      {
+        classifiedPaymentRepository,
+        sellerWalletRepository,
+        transactionRepository,
+      },
+      createClassifiedsClient({ userId: 'seller-1' })
+    );
     const creditSpy = jest.spyOn(service, 'creditSellerWallet');
 
     const result = await service.releaseFunds('payment-1', 'buyer-1');

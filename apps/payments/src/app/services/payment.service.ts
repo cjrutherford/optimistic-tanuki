@@ -3,9 +3,11 @@ import {
   Logger,
   Inject,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  In,
   Repository,
   Between,
   LessThanOrEqual,
@@ -287,12 +289,38 @@ export class PaymentService {
    * stricter rule that risks locking out a legitimate caller. Narrowing to
    * a single-party rule per action is a product decision left for follow-up.
    */
-  private assertPaymentParticipant(
+  private async findClassifiedOwnerId(
+    classifiedId: string
+  ): Promise<string | undefined> {
+    const classified = await firstValueFrom(
+      this.classifiedsClient.send<{ userId?: string }>(
+        { cmd: ClassifiedCommands.FIND_BY_ID },
+        { id: classifiedId }
+      )
+    );
+
+    return classified?.userId;
+  }
+
+  private async findClassifiedIdsForUser(userId: string): Promise<string[]> {
+    return firstValueFrom(
+      this.classifiedsClient.send<string[]>(
+        { cmd: ClassifiedCommands.FIND_BY_USER },
+        { userId }
+      )
+    );
+  }
+
+  private async assertPaymentParticipant(
     payment: ClassifiedPayment,
     callerId: string,
     action: string
   ) {
-    if (callerId !== payment.buyerId && callerId !== payment.sellerId) {
+    if (callerId === payment.buyerId) {
+      return;
+    }
+
+    if ((await this.findClassifiedOwnerId(payment.classifiedId)) !== callerId) {
       throw new BadRequestException(
         `You can only ${action} for payments you are a party to`
       );
@@ -330,7 +358,7 @@ export class PaymentService {
       return { success: false, message: 'Payment not found' };
     }
 
-    this.assertPaymentParticipant(payment, callerId, 'confirm payment');
+    await this.assertPaymentParticipant(payment, callerId, 'confirm payment');
 
     if (payment.status !== 'pending') {
       throw new BadRequestException(
@@ -356,13 +384,13 @@ export class PaymentService {
       return { success: false, message: 'Payment not found' };
     }
 
-    this.assertPaymentParticipant(payment, callerId, 'release funds');
+    await this.assertPaymentParticipant(payment, callerId, 'release funds');
 
-    if (!payment.sellerId) {
-      return {
-        success: false,
-        message: 'No seller associated with this payment',
-      };
+    const canonicalSellerId = await this.findClassifiedOwnerId(
+      payment.classifiedId
+    );
+    if (!canonicalSellerId) {
+      throw new BadRequestException('Classified seller not found');
     }
 
     // Idempotency guard (fast path): a payment that is already released is
@@ -413,7 +441,7 @@ export class PaymentService {
         const updateResult = await manager
           .createQueryBuilder()
           .update(ClassifiedPayment)
-          .set({ status: 'released', releasedAt })
+          .set({ status: 'released', releasedAt, sellerId: canonicalSellerId })
           .where('id = :id', { id: paymentId })
           .andWhere('status = :expected', { expected: 'confirmed' })
           .execute();
@@ -422,7 +450,7 @@ export class PaymentService {
 
         if (affected === 1) {
           await this.creditSellerWallet(
-            payment.sellerId,
+            canonicalSellerId,
             Number(payment.sellerReceivesAmount),
             paymentId,
             `Payment release for classified: ${payment.classifiedId}`,
@@ -451,6 +479,7 @@ export class PaymentService {
 
     payment.status = 'released';
     payment.releasedAt = releasedAt;
+    payment.sellerId = canonicalSellerId;
 
     return { success: true, payment };
   }
@@ -464,7 +493,7 @@ export class PaymentService {
       return { success: false, message: 'Payment not found' };
     }
 
-    this.assertPaymentParticipant(payment, callerId, 'dispute payment');
+    await this.assertPaymentParticipant(payment, callerId, 'dispute payment');
 
     if (payment.status !== 'pending' && payment.status !== 'confirmed') {
       throw new BadRequestException(
@@ -480,17 +509,58 @@ export class PaymentService {
     return { success: true, payment };
   }
 
-  async getPayment(paymentId: string) {
-    return this.classifiedPaymentRepository.findOne({
+  async getPayment(paymentId: string, userId: string) {
+    const payment = await this.classifiedPaymentRepository.findOne({
       where: { id: paymentId },
     });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    if (payment.buyerId === userId) {
+      return payment;
+    }
+
+    if ((await this.findClassifiedOwnerId(payment.classifiedId)) !== userId) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    return payment;
   }
 
   async getUserPayments(userId: string) {
-    return this.classifiedPaymentRepository.find({
-      where: [{ buyerId: userId }, { sellerId: userId }],
-      order: { createdAt: 'DESC' },
-    });
+    const classifiedIds = await this.findClassifiedIdsForUser(userId);
+    const sellerPayments =
+      classifiedIds.length === 0
+        ? Promise.resolve([] as ClassifiedPayment[])
+        : (async () => {
+            await this.classifiedPaymentRepository.update(
+              { classifiedId: In(classifiedIds) },
+              { sellerId: userId }
+            );
+            return this.classifiedPaymentRepository.find({
+              where: { classifiedId: In(classifiedIds) },
+              order: { createdAt: 'DESC' },
+            });
+          })();
+    const [buyerPayments, ownedSellerPayments] = await Promise.all([
+      this.classifiedPaymentRepository.find({
+        where: { buyerId: userId },
+        order: { createdAt: 'DESC' },
+      }),
+      sellerPayments,
+    ]);
+    return Array.from(
+      new Map(
+        [...buyerPayments, ...ownedSellerPayments].map((payment) => [
+          payment.id,
+          payment,
+        ])
+      ).values()
+    ).sort(
+      (left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    );
   }
 
   async markInterestedBuyer(paymentId: string, interestedBuyerId: string) {

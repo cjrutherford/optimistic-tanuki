@@ -1,8 +1,10 @@
-import { Injectable, inject } from '@angular/core';
+import { isPlatformServer } from '@angular/common';
+import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
 import { AuthStateService } from '../services/auth-state.service';
 import { CommunityService } from '../services/community.service';
 import { firstValueFrom } from 'rxjs';
+import { localityRouteContext } from '../utils/locality-route-context';
 
 /**
  * Ensures the requesting user is both authenticated and a member of the
@@ -18,8 +20,21 @@ export class MemberGuard implements CanActivate {
   private router = inject(Router);
   private authState = inject(AuthStateService);
   private communityService = inject(CommunityService);
+  private platformId = inject(PLATFORM_ID);
 
   async canActivate(route: ActivatedRouteSnapshot): Promise<boolean> {
+    // The Express SSR gate has already validated the gateway session. Browser
+    // navigation still restores auth state and verifies membership below; API
+    // authorization remains enforced by gateway guards.
+    if (isPlatformServer(this.platformId)) {
+      return true;
+    }
+
+    try {
+      await this.authState.waitForSessionRestore();
+    } catch {
+      // Treat a failed session check as unauthenticated.
+    }
     const isAuthenticated = await firstValueFrom(
       this.authState.isAuthenticated$
     );
@@ -31,7 +46,11 @@ export class MemberGuard implements CanActivate {
       return false;
     }
 
-    const slug = route.paramMap.get('communitySlug') ?? '';
+    const { slug, baseSegments } = localityRouteContext(route.paramMap);
+    if (!slug) {
+      this.router.navigate(['/communities']);
+      return false;
+    }
 
     try {
       const community = await this.communityService.getCommunityBySlug(slug);
@@ -42,7 +61,7 @@ export class MemberGuard implements CanActivate {
 
       const isMember = await this.communityService.isMember(community.id);
       if (!isMember) {
-        this.router.navigate(['/c', slug]);
+        this.router.navigate(baseSegments);
         return false;
       }
 
@@ -53,7 +72,7 @@ export class MemberGuard implements CanActivate {
         slug,
         error
       );
-      this.router.navigate(['/c', slug]);
+      this.router.navigate(baseSegments);
       return false;
     }
   }

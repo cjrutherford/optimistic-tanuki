@@ -272,4 +272,100 @@ describe('MapComponent', () => {
 
     expect(mockLeafletTileLayer.addTo).toHaveBeenCalledWith(mockLeafletMap);
   });
+
+  it('gives locality markers accessible names and keyboard activation', () => {
+    const markerElement = document.createElement('div');
+    const addedMarkers: Array<{ options: any; marker: any }> = [];
+    const leaflet = {
+      divIcon: jest.fn((options) => options),
+      marker: jest.fn((_coordinates: [number, number], options: any) => {
+        const marker = {
+          addTo: jest.fn(),
+          bindTooltip: jest.fn(),
+          getElement: jest.fn(() => markerElement),
+          on: jest.fn(),
+          remove: jest.fn(),
+        };
+        marker.addTo.mockReturnValue(marker);
+        addedMarkers.push({ options, marker });
+        return marker;
+      }),
+      latLngBounds: jest.fn(() => ({ pad: jest.fn() })),
+    };
+    const city = {
+      id: 'city-1',
+      name: 'Savannah',
+      slug: 'savannah-ga',
+      countryCode: 'US',
+      adminArea: 'GA',
+      description: 'Coastal city',
+      imageUrl: '',
+      coordinates: { lat: 32.0809, lng: -81.0912 },
+      population: 1,
+      timezone: 'America/New_York',
+      highlights: [],
+      communities: 1,
+    };
+
+    (component as any).leaflet = leaflet;
+    (component as any).map = {
+      fitBounds: jest.fn(),
+      setView: jest.fn(),
+      invalidateSize: jest.fn(),
+    };
+    (component as any).tileLayer = { addTo: jest.fn() };
+    component.mode = 'atlas-nearby';
+    component.cities = [city];
+
+    (component as any).refreshMapContent();
+
+    const localityMarker = addedMarkers.find(({ options }) =>
+      options.icon.className.includes('map-marker--locality')
+    );
+    expect(localityMarker).toBeDefined();
+    expect(localityMarker?.options.title).toBe('Savannah');
+    expect(localityMarker?.options.alt).toBe('Savannah');
+    expect(markerElement.getAttribute('role')).toBe('button');
+    expect(markerElement.getAttribute('aria-label')).toBe('Savannah');
+    expect(markerElement.getAttribute('tabindex')).toBe('0');
+
+    const eventNames = localityMarker?.marker.on.mock.calls.map(
+      ([eventName]: [string]) => eventName
+    );
+    expect(eventNames).toContain('keydown');
+
+    const keydownBinding = localityMarker?.marker.on.mock.calls.find(
+      ([eventName]: [string]) => eventName === 'keydown'
+    );
+    const preventDefault = jest.fn();
+    const citySelected = jest.spyOn(component.citySelected, 'emit');
+    keydownBinding?.[1]({
+      originalEvent: { key: 'Enter', preventDefault },
+    });
+
+    expect(preventDefault).toHaveBeenCalled();
+    expect(citySelected).toHaveBeenCalledWith(city);
+
+    citySelected.mockClear();
+    const spacePreventDefault = jest.fn();
+    keydownBinding?.[1]({
+      originalEvent: { key: ' ', preventDefault: spacePreventDefault },
+    });
+
+    expect(spacePreventDefault).toHaveBeenCalled();
+    expect(citySelected).toHaveBeenCalledWith(city);
+  });
+
+  it('gives map controls and legend an accessible structure', () => {
+    const control = fixture.nativeElement.querySelector(
+      '.map-control-btn'
+    ) as HTMLButtonElement;
+    const legend = fixture.nativeElement.querySelector(
+      '.map-legend'
+    ) as HTMLElement;
+
+    expect(control.getAttribute('aria-label')).toBe('Reset map view');
+    expect(legend.getAttribute('role')).toBe('group');
+    expect(legend.getAttribute('aria-label')).toBe('Map legend');
+  });
 });

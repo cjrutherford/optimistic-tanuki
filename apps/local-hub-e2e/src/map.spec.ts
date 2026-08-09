@@ -3,7 +3,6 @@ import {
   LocalHubCommunity,
   expectPageLoads,
   findCity,
-  findCommunity,
   getCommunities,
 } from './helpers/local-hub-api';
 
@@ -62,6 +61,17 @@ function findNearbyCluster(
   }
 
   return null;
+}
+
+function findRenderableCommunity(
+  communities: CommunityWithCoordinates[]
+): CommunityWithCoordinates | undefined {
+  return communities.find(
+    (community) =>
+      community.localityType !== 'city' &&
+      Boolean(community.id && community.slug) &&
+      isRenderableCoordinate(community.coordinates)
+  );
 }
 
 async function expectInsideMap(
@@ -138,8 +148,13 @@ test.describe('Map rendering', () => {
     page,
     request,
   }) => {
-    const community = findCommunity(await getCommunities(request));
-    test.skip(!community?.slug, 'No seeded community is available');
+    const community = findRenderableCommunity(
+      (await getCommunities(request)) as CommunityWithCoordinates[]
+    );
+    test.skip(
+      !community?.slug,
+      'No seeded non-city community with renderable coordinates is available'
+    );
 
     await expectPageLoads(page, `/c/${community.slug}`);
     await expect(page.locator('.map-marker--focus')).toHaveCount(1);

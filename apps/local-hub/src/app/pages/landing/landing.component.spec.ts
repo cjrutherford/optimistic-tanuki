@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { LandingComponent } from './landing.component';
 import { RouterTestingModule } from '@angular/router/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
@@ -205,5 +207,49 @@ describe('LandingComponent', () => {
 
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.textContent).toContain('How Towne Square works');
+  });
+
+  it('labels carousel controls as a semantic control group', async () => {
+    jest.spyOn(communityService, 'getCommunities').mockResolvedValue([
+      {
+        id: 'city-1',
+        name: 'Savannah',
+        slug: 'savannah-ga',
+        description: 'Coastal city',
+        localityType: 'city',
+        countryCode: 'US',
+        adminArea: 'GA',
+        city: 'Savannah',
+        memberCount: 10,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        lat: 32.08,
+        lng: -81.09,
+        population: 147088,
+        imageUrl: '',
+        timezone: 'America/New_York',
+      },
+    ]);
+
+    await renderComponent();
+
+    const controls = fixture.nativeElement.querySelector(
+      '.carousel-controls'
+    ) as HTMLElement | null;
+
+    expect(controls?.getAttribute('role')).toBe('group');
+    expect(controls?.getAttribute('aria-label')).toBe(
+      'Featured locality carousel controls'
+    );
+  });
+
+  it('uses semantic hero and foreground tokens for public landing contrast', () => {
+    const styles = readFileSync(
+      join(__dirname, 'landing.component.scss'),
+      'utf8'
+    );
+
+    expect(styles).toContain('--hero-foreground');
+    expect(styles).toContain('var(--on-primary)');
+    expect(styles).not.toMatch(/color:\s*white\s*;/);
   });
 });

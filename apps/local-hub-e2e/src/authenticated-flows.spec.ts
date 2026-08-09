@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
+import { getBaseUrl } from './fixtures/helpers';
 import {
-  addAuthToken,
   apiUrl,
   AuthSession,
   createAuthenticatedSession,
@@ -11,6 +11,7 @@ import {
   findCity,
   findCommunity,
   getCommunities,
+  localHubAuthHeaders,
   LocalHubCommunity,
 } from './helpers/local-hub-api';
 
@@ -33,9 +34,7 @@ async function createSessionWithCommunity(
 
   if (community?.id) {
     await request.post(apiUrl(`/api/communities/${community.id}/join`), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-      },
+      headers: localHubAuthHeaders(session.token),
     });
   }
 
@@ -50,13 +49,11 @@ test.describe('Authenticated community membership', () => {
     const response = await request.post(
       apiUrl(`/api/communities/${community.id}/join`),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
-    expectOkOrStatus(response, [400]);
+    expect(response.status()).toBe(201);
   });
 
   test('gets user memberships', async ({ request }) => {
@@ -64,9 +61,7 @@ test.describe('Authenticated community membership', () => {
     const response = await request.get(
       apiUrl('/api/social/community/user/communities'),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
@@ -81,12 +76,17 @@ test.describe('Authenticated community content', () => {
     const { session, community } = await createSessionWithCommunity(request);
     test.skip(!community?.id, 'No community is available for posts');
 
-    await createPost(request, session.token, community.id, 'E2E Test Post');
+    const post = await createPost(
+      request,
+      session.token,
+      session.profileId,
+      community.id,
+      'E2E Test Post'
+    );
+    expect(post?.id).toEqual(expect.any(String));
 
     const response = await request.post(apiUrl('/api/social/post/find'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-      },
+      headers: localHubAuthHeaders(session.token),
       data: {
         criteria: { communityId: community.id },
       },
@@ -104,22 +104,23 @@ test.describe('Authenticated community content', () => {
     const post = await createPost(
       request,
       session.token,
+      session.profileId,
       community.id,
       'Post for Voting Test'
     );
     test.skip(!post?.id, 'No test post is available for voting');
 
     const voteResponse = await request.post(apiUrl('/api/social/vote'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-      },
+      headers: localHubAuthHeaders(session.token),
       data: {
         postId: post.id,
+        profileId: session.profileId,
         value: 1,
       },
     });
 
-    expectOkOrStatus(voteResponse, [400]);
+    const voteBody = await voteResponse.text();
+    expect(voteResponse.status(), `Vote failed: ${voteBody}`).toBe(201);
   });
 
   test('adds a comment to a post', async ({ request }) => {
@@ -129,22 +130,25 @@ test.describe('Authenticated community content', () => {
     const post = await createPost(
       request,
       session.token,
+      session.profileId,
       community.id,
       'Post for Comment Test'
     );
     test.skip(!post?.id, 'No test post is available for comments');
 
     const commentResponse = await request.post(apiUrl('/api/social/comment'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-      },
+      headers: localHubAuthHeaders(session.token),
       data: {
         postId: post.id,
+        profileId: session.profileId,
         content: 'E2E Test Comment',
       },
     });
 
-    expectOkOrStatus(commentResponse, [400]);
+    const commentBody = await commentResponse.text();
+    expect(commentResponse.status(), `Comment failed: ${commentBody}`).toBe(
+      201
+    );
   });
 });
 
@@ -154,9 +158,7 @@ test.describe('Authenticated classified ads', () => {
     test.skip(!community?.id, 'No community is available for classifieds');
 
     const response = await request.post(apiUrl('/api/classifieds'), {
-      headers: {
-        Authorization: `Bearer ${session.token}`,
-      },
+      headers: localHubAuthHeaders(session.token),
       data: {
         title: 'E2E Test Classified',
         description: 'This is a test classified ad',
@@ -166,7 +168,9 @@ test.describe('Authenticated classified ads', () => {
       },
     });
 
-    expectOkOrStatus(response, [400, 403, 500]);
+    expect(response.status()).toBe(201);
+    const classified = await response.json();
+    expect(classified?.id).toEqual(expect.any(String));
   });
 
   test('gets classifieds by community', async ({ request }) => {
@@ -176,17 +180,13 @@ test.describe('Authenticated classified ads', () => {
     const response = await request.get(
       apiUrl(`/api/classifieds/community/${community.id}`),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
-    expectOkOrStatus(response, [500]);
-    if (response.ok()) {
-      const classifieds = await response.json();
-      expect(Array.isArray(classifieds)).toBeTruthy();
-    }
+    expect(response.status()).toBe(200);
+    const classifieds = await response.json();
+    expect(Array.isArray(classifieds)).toBeTruthy();
   });
 });
 
@@ -198,9 +198,7 @@ test.describe('Authenticated community management', () => {
     const response = await request.get(
       apiUrl(`/api/communities/${community.id}/manager`),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
@@ -214,9 +212,7 @@ test.describe('Authenticated community management', () => {
     const response = await request.get(
       apiUrl(`/api/communities/${community.id}/election`),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
@@ -232,31 +228,119 @@ test.describe('Authenticated business pages', () => {
     const response = await request.get(
       apiUrl(`/api/payments/business/${community.id}`),
       {
-        headers: {
-          Authorization: `Bearer ${session.token}`,
-        },
+        headers: localHubAuthHeaders(session.token),
       }
     );
 
-    expectOkOrStatus(response, [500]);
+    expect(response.status()).toBe(200);
   });
 });
 
 test.describe('Authenticated pages', () => {
-  test('loads account page when authenticated', async ({ page, request }) => {
-    const session = await createAuthenticatedSession(request);
-    await addAuthToken(page, session.token);
+  test('creates a classified through the authenticated UI and reopens its detail', async ({
+    browser,
+    request,
+  }) => {
+    const community = findCommunity(await getCommunities(request));
+    test.skip(
+      !community?.id || !community.slug,
+      'No seeded community is available for classified UI coverage'
+    );
+
+    const browserContext = await browser.newContext({ baseURL: getBaseUrl() });
+    try {
+      const session = await createAuthenticatedSession(browserContext.request, {
+        withBrowserCookie: true,
+      });
+      const joinResponse = await browserContext.request.post(
+        apiUrl(`/api/communities/${community!.id}/join`),
+        { headers: localHubAuthHeaders(session.token) }
+      );
+      expect(joinResponse.status()).toBe(201);
+
+      const page = await browserContext.newPage();
+      const title = `UI classified ${Date.now()}`;
+      const description = 'Created through the authenticated classified form';
+      await page.goto(`/c/${community!.slug}/classifieds/new`);
+      await page.waitForLoadState('domcontentloaded');
+      expect(new URL(page.url()).pathname).toBe(
+        `/c/${community!.slug}/classifieds/new`
+      );
+      await expect(
+        page.getByRole('heading', { name: 'Post a New Listing' })
+      ).toBeVisible();
+
+      await page.locator('#title').fill(title);
+      await page.locator('#description').fill(description);
+      await page.locator('#price').fill('125');
+      await page.getByRole('button', { name: 'Post Listing' }).click();
+
+      await expect(page).toHaveURL(`/c/${community!.slug}/classifieds`);
+      const card = page.locator('.classified-card').filter({ hasText: title });
+      await expect(card).toBeVisible();
+      await expect(card.locator('.card-description')).toContainText(
+        description
+      );
+
+      await page.reload();
+      await expect(page).toHaveURL(`/c/${community!.slug}/classifieds`);
+      await expect(
+        page.locator('.classified-card').filter({ hasText: title })
+      ).toBeVisible();
+
+      await page
+        .locator('.classified-card')
+        .filter({ hasText: title })
+        .getByRole('button', { name: 'View Details' })
+        .click();
+      await expect(page).toHaveURL(/\/c\/[^/]+\/classifieds\/[^/]+$/);
+      await expect(page.getByRole('heading', { name: title })).toBeVisible();
+      await expect(page.locator('.description')).toContainText(description);
+      await page.reload();
+      await expect(page.getByRole('heading', { name: title })).toBeVisible();
+      await expect(page.locator('.description')).toContainText(description);
+    } finally {
+      await browserContext.close();
+    }
+  });
+
+  test('loads and reloads account page from an HttpOnly session', async ({
+    page,
+    context,
+  }) => {
+    await createAuthenticatedSession(context.request, {
+      withBrowserCookie: true,
+    });
 
     await expectPageLoads(page, '/account');
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(
+      page.getByRole('heading', { name: 'My Account' })
+    ).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(
+      page.getByRole('heading', { name: 'My Account' })
+    ).toBeVisible();
   });
 
   test('loads seller dashboard when authenticated', async ({
     page,
-    request,
+    context,
   }) => {
-    const session = await createAuthenticatedSession(request);
-    await addAuthToken(page, session.token);
+    await createAuthenticatedSession(context.request, {
+      withBrowserCookie: true,
+    });
 
     await expectPageLoads(page, '/seller-dashboard');
+    await expect(page).toHaveURL(/\/seller-dashboard$/);
+    await expect(
+      page.getByRole('heading', { name: 'Seller Dashboard' })
+    ).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/\/seller-dashboard$/);
+    await expect(
+      page.getByRole('heading', { name: 'Seller Dashboard' })
+    ).toBeVisible();
   });
 });

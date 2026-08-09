@@ -38,6 +38,11 @@ export class ClassifiedsController {
     return this.classifiedsService.findById(data.id);
   }
 
+  @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_USER })
+  async findIdsByUser(@Payload() data: { userId: string }) {
+    return this.classifiedsService.findIdsByUser(data.userId);
+  }
+
   @MessagePattern({ cmd: ClassifiedCommands.FIND_BY_COMMUNITY })
   async findByCommunity(
     @Payload() data: { communityId: string; appScope?: string }
