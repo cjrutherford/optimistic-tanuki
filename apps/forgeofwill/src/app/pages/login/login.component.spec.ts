@@ -10,7 +10,7 @@ import { LoginComponent } from './login.component';
 import { AuthenticationService } from '../../authentication.service';
 import { AuthStateService } from '../../auth-state.service';
 import { ProfileService } from '../../profile/profile.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from '@optimistic-tanuki/message-ui';
 import { of, throwError } from 'rxjs';
 import { LoginType, ProfileDto } from '@optimistic-tanuki/ui-models';
@@ -30,6 +30,7 @@ describe('LoginComponent', () => {
   let authState: AuthStateService;
   let profileService: MockProfileService;
   let router: Router;
+  let activatedRoute: ActivatedRoute;
   let messageService: MessageService;
 
   const mockProfile: ProfileDto = {
@@ -51,6 +52,14 @@ describe('LoginComponent', () => {
     };
     const routerMock = {
       navigate: jest.fn(),
+      navigateByUrl: jest.fn(),
+    };
+    const activatedRouteMock = {
+      snapshot: {
+        queryParamMap: {
+          get: jest.fn(),
+        },
+      },
     };
     const messageServiceMock = {
       addMessage: jest.fn(),
@@ -63,6 +72,7 @@ describe('LoginComponent', () => {
         { provide: AuthStateService, useValue: authStateMock },
         { provide: ProfileService, useClass: MockProfileService },
         { provide: Router, useValue: routerMock },
+        { provide: ActivatedRoute, useValue: activatedRouteMock },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MessageService, useValue: messageServiceMock },
@@ -77,6 +87,7 @@ describe('LoginComponent', () => {
       ProfileService
     ) as unknown as MockProfileService;
     router = TestBed.inject(Router);
+    activatedRoute = TestBed.inject(ActivatedRoute);
     messageService = TestBed.inject(MessageService);
     fixture.detectChanges();
   });
@@ -98,11 +109,48 @@ describe('LoginComponent', () => {
       expect(authService.login).not.toHaveBeenCalled();
       expect(profileService.getAllProfiles).toHaveBeenCalled();
       expect(profileService.selectProfile).toHaveBeenCalledWith(mockProfile);
-      expect(router.navigate).toHaveBeenCalledWith(['/']);
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/projects');
       expect(messageService.addMessage).toHaveBeenCalledWith({
         content: 'Login successful! Welcome back.',
         type: 'success',
       });
+    });
+
+    it('refetches the cookie session before navigating a successful login to projects', async () => {
+      let resolveSessionRestore!: (restored: boolean) => void;
+      const sessionRestore = new Promise<boolean>((resolve) => {
+        resolveSessionRestore = resolve;
+      });
+      (authState as any).isAuthenticated = false;
+      (authState as any).restoreSession.mockReturnValue(sessionRestore);
+      profileService.currentUserProfiles.set([mockProfile]);
+
+      const submitted = component.onLoginSubmit(loginData);
+      await Promise.resolve();
+
+      expect(profileService.getAllProfiles).not.toHaveBeenCalled();
+      (authState as any).isAuthenticated = true;
+      resolveSessionRestore(true);
+      await submitted;
+
+      expect((authState as any).restoreSession).toHaveBeenCalledTimes(1);
+      expect(profileService.selectProfile).toHaveBeenCalledWith(mockProfile);
+      expect(router.navigateByUrl).toHaveBeenCalledWith('/projects');
+    });
+
+    it('returns a restored cookie session to its internal deep link with query state', async () => {
+      profileService.currentUserProfiles.set([mockProfile]);
+      (activatedRoute.snapshot.queryParamMap.get as jest.Mock).mockReturnValue(
+        '/messages/new?recipient=forge'
+      );
+
+      await component.onLoginSubmit(loginData);
+
+      expect((authState as any).restoreSession).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledWith(
+        '/messages/new?recipient=forge'
+      );
+      expect(router.navigate).not.toHaveBeenCalledWith(['/projects']);
     });
 
     it('should handle successful login with no existing profiles', async () => {
@@ -160,7 +208,50 @@ describe('LoginComponent', () => {
 
     expect((authState as any).restoreSession).toHaveBeenCalled();
     expect(authState.setToken).not.toHaveBeenCalled();
-    expect(router.navigate).toHaveBeenCalledWith(['/']);
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/projects');
+    jest.restoreAllMocks();
+  });
+
+  it('returns an OAuth-restored cookie session to the safe internal deep link', async () => {
+    jest.spyOn(OAuthService.prototype, 'initiateOAuthLogin').mockResolvedValue({
+      success: true,
+      session: true,
+    });
+    profileService.currentUserProfiles.set([mockProfile]);
+    (activatedRoute.snapshot.queryParamMap.get as jest.Mock).mockReturnValue(
+      '/projects?tab=active'
+    );
+
+    await component.onOAuthProvider({ provider: 'google' });
+
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/projects?tab=active');
+    jest.restoreAllMocks();
+  });
+
+  it('does not continue an OAuth auto-registration when its cookie session cannot be restored', async () => {
+    jest.spyOn(OAuthService.prototype, 'initiateOAuthLogin').mockResolvedValue({
+      success: false,
+      needsRegistration: true,
+      userData: {
+        provider: 'google',
+        providerUserId: 'provider-user-1',
+        email: 'forge@example.test',
+        displayName: 'Forge Planner',
+      },
+    });
+    jest
+      .spyOn(OAuthService.prototype, 'completeOAuthRegistration')
+      .mockResolvedValue({ success: true, session: true });
+    (authState as any).restoreSession.mockResolvedValue(false);
+
+    await component.onOAuthProvider({ provider: 'google' });
+
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(messageService.addMessage).toHaveBeenCalledWith({
+      content:
+        'OAuth registration could not restore your session. Please try again.',
+      type: 'error',
+    });
     jest.restoreAllMocks();
   });
 });

@@ -9,8 +9,11 @@ import { dirname, resolve } from 'node:path';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import express, { NextFunction, Request, Response } from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
+import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'node:url';
 import { createSocketIoProxyOptions } from './server-proxy';
+import { createGatewaySessionValidator } from './server-session-validation';
+import { createProtectedRouteGate } from './server-route-guard';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -21,6 +24,7 @@ const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
+const validateGatewaySession = createGatewaySessionValidator({ gatewayUrl });
 const runtimeSocketEnvironment = JSON.stringify({
   SOCKET_URL: process.env['SOCKET_URL'] || '',
   SOCKET_PATH: process.env['SOCKET_PATH'] || '/socket.io',
@@ -38,16 +42,7 @@ const runtimeSocketEnvironment = JSON.stringify({
  * ```
  */
 
-/**
- * Serve static files from /browser
- */
-app.use(
-  express.static(browserDistFolder, {
-    maxAge: '1y',
-    index: false,
-    redirect: false,
-  })
-);
+app.use(cookieParser());
 
 app.use(
   '/socket.io',
@@ -70,6 +65,19 @@ app.use(
     changeOrigin: true,
   })
 );
+
+// API traffic must remain proxied, while every protected document request is
+// validated before either static or Angular rendering can produce a response.
+app.use(createProtectedRouteGate({ validateSession: validateGatewaySession }));
+
+app.use(
+  express.static(browserDistFolder, {
+    maxAge: '1y',
+    index: false,
+    redirect: false,
+  })
+);
+
 /**
  * Handle all other requests by rendering the Angular application.
  */

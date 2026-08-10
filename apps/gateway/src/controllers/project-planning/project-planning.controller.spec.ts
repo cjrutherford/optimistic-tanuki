@@ -145,10 +145,10 @@ describe('ProjectPlanningController', () => {
     );
   });
 
-  it('should delete a project', async () => {
+  it('uses the project service remove command when deleting a project', async () => {
     await controller.deleteProject(mockUser, '1');
     expect(projectPlanningService.send).toHaveBeenCalledWith(
-      { cmd: ProjectCommands.DELETE },
+      { cmd: ProjectCommands.REMOVE },
       { id: '1', requestingUserId }
     );
   });

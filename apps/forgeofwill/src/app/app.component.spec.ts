@@ -201,6 +201,30 @@ describe('AppComponent', () => {
       expect(compiled.querySelector('otui-pulse-rings')).toBeTruthy();
       expect(compiled.querySelector('.app-content')).toBeTruthy();
     });
+
+    it('provides a skip link to the primary workspace landmark', () => {
+      const compiled = fixture.nativeElement as HTMLElement;
+      const skipLink = compiled.querySelector(
+        'a.skip-link[href="#main-content"]'
+      );
+
+      expect(skipLink?.textContent).toContain('Skip to main content');
+      expect(compiled.querySelector('main#main-content')).toBeTruthy();
+    });
+
+    it('keeps supported chat separate from the unavailable assistant status in the main flow', () => {
+      isAuthenticatedSubject.next(true);
+      fixture.detectChanges();
+
+      const compiled = fixture.nativeElement as HTMLElement;
+      const main = compiled.querySelector('main#main-content');
+
+      expect(compiled.querySelector('app-chat')).toBeTruthy();
+      expect(
+        main?.querySelector('app-ai-assistant-bubble [role="status"]')
+      ).toBeTruthy();
+      expect(main?.querySelector('app-chat')).toBeNull();
+    });
   });
 
   describe('Navigation and Actions', () => {

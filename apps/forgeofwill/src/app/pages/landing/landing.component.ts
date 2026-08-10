@@ -49,9 +49,9 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     },
     {
       icon: 'extension',
-      title: 'Use AI where it helps',
+      title: 'Keep decisions in view',
       description:
-        'Bring in assistance for drafting, planning, and analysis without letting the workflow disappear into chat.',
+        'Keep the context behind priorities, tradeoffs, and next actions close to the work.',
     },
     {
       icon: 'tool',

@@ -10,8 +10,9 @@ import {
 } from '@optimistic-tanuki/auth-ui';
 import { LoginType } from '@optimistic-tanuki/ui-models';
 import { ProfileService } from '../../profile/profile.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { resolveLoginReturnUrl } from './login-return-url';
 
 @Component({
   selector: 'app-login',
@@ -27,7 +28,8 @@ export class LoginComponent implements OnInit {
     private readonly authState: AuthStateService,
     private readonly profileService: ProfileService,
     private readonly router: Router,
-    private readonly messageService: MessageService
+    private readonly messageService: MessageService,
+    private readonly route: ActivatedRoute
   ) {
     this.oauthService = new OAuthService(this.http, '/api');
   }
@@ -51,6 +53,13 @@ export class LoginComponent implements OnInit {
     console.log('Logging in user with data:', event);
     try {
       await this.authState.login(event);
+      if (!(await this.authState.restoreSession())) {
+        this.messageService.addMessage({
+          content: 'Login could not restore your session. Please try again.',
+          type: 'error',
+        });
+        return;
+      }
       await this.handlePostLogin();
     } catch (error) {
       console.error('Login failed:', error);
@@ -77,47 +86,6 @@ export class LoginComponent implements OnInit {
           return;
         }
 
-        if (this.authState.isAuthenticated) {
-          const decoded = this.authState.getDecodedTokenValue();
-          if (decoded && (decoded as any).profileId === '') {
-            this.router.navigate(['/profile'], {
-              state: {
-                showProfileModal: true,
-                profileMessage: 'Please create your profile to continue.',
-              },
-            });
-            this.messageService.addMessage({
-              content: 'Please create your profile to continue.',
-              type: 'warning',
-            });
-            return;
-          }
-
-          this.profileService.getAllProfiles().then(() => {
-            const currentProfiles = this.profileService.currentUserProfiles();
-            if (!currentProfiles.length) {
-              this.router.navigate(['/profile'], {
-                state: {
-                  showProfileModal: true,
-                  profileMessage:
-                    'No profiles found. Please create a profile to continue.',
-                },
-              });
-              this.messageService.addMessage({
-                content:
-                  'No profiles found. Please create a profile to continue.',
-                type: 'warning',
-              });
-            } else {
-              this.profileService.selectProfile(currentProfiles[0]);
-              this.router.navigate(['/']);
-              this.messageService.addMessage({
-                content: 'Login successful! Welcome back.',
-                type: 'success',
-              });
-            }
-          });
-        }
         await this.handlePostLogin();
       } else if (result.needsRegistration && result.userData) {
         // Handle auto-registration for new OAuth users
@@ -137,8 +105,13 @@ export class LoginComponent implements OnInit {
         if (regResult.success && (regResult.token || regResult.session)) {
           if (regResult.token) {
             this.authState.setToken(regResult.token);
-          } else {
-            await this.authState.restoreSession();
+          } else if (!(await this.authState.restoreSession())) {
+            this.messageService.addMessage({
+              content:
+                'OAuth registration could not restore your session. Please try again.',
+              type: 'error',
+            });
+            return;
           }
           await this.handlePostLogin();
           this.messageService.addMessage({
@@ -202,7 +175,9 @@ export class LoginComponent implements OnInit {
     }
 
     this.profileService.selectProfile(currentProfiles[0]);
-    await this.router.navigate(['/']);
+    await this.router.navigateByUrl(
+      resolveLoginReturnUrl(this.route.snapshot.queryParamMap.get('returnUrl'))
+    );
     this.messageService.addMessage({
       content: 'Login successful! Welcome back.',
       type: 'success',

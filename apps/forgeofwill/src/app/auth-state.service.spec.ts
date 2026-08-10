@@ -99,6 +99,36 @@ describe('AuthStateService', () => {
       expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
     });
 
+    it('allows a successful login restore after the initial cold restore resolves unauthenticated', async () => {
+      authServiceMock.currentSession
+        .mockRejectedValueOnce(new Error('No session on cold start'))
+        .mockResolvedValueOnce({ data: mockDecodedToken });
+      service = TestBed.inject(AuthStateService);
+
+      await expect(service.waitForInitialSessionRestore()).resolves.toBe(false);
+      expect(service.isAuthenticated).toBe(false);
+
+      await service.login({ email: 'test@example.com', password: 'password' });
+
+      expect(service.isAuthenticated).toBe(true);
+      expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
+    });
+
+    it('coalesces one guard-triggered cookie retry after the initial restore is unauthenticated', async () => {
+      authServiceMock.currentSession
+        .mockRejectedValueOnce(new Error('No session on cold start'))
+        .mockResolvedValue({ data: mockDecodedToken });
+      service = TestBed.inject(AuthStateService);
+
+      await expect(service.waitForInitialSessionRestore()).resolves.toBe(false);
+      const firstRetry = service.restoreSessionAfterInitialFailure();
+      const secondRetry = service.restoreSessionAfterInitialFailure();
+
+      await expect(firstRetry).resolves.toBe(true);
+      await expect(secondRetry).resolves.toBe(true);
+      expect(authServiceMock.currentSession).toHaveBeenCalledTimes(2);
+    });
+
     it('should clear token and update subjects on logout', () => {
       localStorage.setItem(tokenKey, mockToken);
       service = TestBed.inject(AuthStateService);
@@ -146,6 +176,47 @@ describe('AuthStateService', () => {
       service = TestBed.inject(AuthStateService);
       await service.restoreSession();
       expect(service.getDecodedTokenValue()).toEqual(mockDecodedToken);
+    });
+
+    it('keeps a newer successful restore when the initial restore finishes later', async () => {
+      let completeInitialRestore!: (response: { data: UserData }) => void;
+      const initialRestore = new Promise<{ data: UserData }>((resolve) => {
+        completeInitialRestore = resolve;
+      });
+      const newerUser: UserData = {
+        ...mockDecodedToken,
+        userId: 'newer-user',
+        email: 'newer@example.test',
+      };
+      authServiceMock.currentSession
+        .mockImplementationOnce(() => initialRestore)
+        .mockResolvedValueOnce({ data: newerUser });
+
+      service = TestBed.inject(AuthStateService);
+      await service.restoreSession();
+      completeInitialRestore({ data: mockDecodedToken });
+      await service.waitForInitialSessionRestore();
+
+      expect(service.isAuthenticated).toBe(true);
+      expect(service.getDecodedTokenValue()).toEqual(newerUser);
+    });
+
+    it('does not restore an old session after logout', async () => {
+      let completeInitialRestore!: (response: { data: UserData }) => void;
+      const initialRestore = new Promise<{ data: UserData }>((resolve) => {
+        completeInitialRestore = resolve;
+      });
+      authServiceMock.currentSession.mockImplementationOnce(
+        () => initialRestore
+      );
+
+      service = TestBed.inject(AuthStateService);
+      service.logout();
+      completeInitialRestore({ data: mockDecodedToken });
+      await service.waitForInitialSessionRestore();
+
+      expect(service.isAuthenticated).toBe(false);
+      expect(service.getDecodedTokenValue()).toBeNull();
     });
   });
 

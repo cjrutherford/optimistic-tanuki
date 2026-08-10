@@ -147,7 +147,7 @@ export class ProjectPlanningController {
   async deleteProject(@User() user: UserDetails, @Param('id') id: string) {
     return await firstValueFrom(
       this.projectPlanningService.send(
-        { cmd: ProjectCommands.DELETE },
+        { cmd: ProjectCommands.REMOVE },
         { id, requestingUserId: user.profileId }
       )
     );

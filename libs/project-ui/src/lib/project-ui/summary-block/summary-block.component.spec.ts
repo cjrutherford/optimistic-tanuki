@@ -45,4 +45,19 @@ describe('SummaryBlockComponent', () => {
     clickHandleElement.triggerEventHandler('click', null);
     expect(component.onClick.emit).toHaveBeenCalled();
   });
+
+  it('uses a native button so its primary workspace action is keyboard accessible', () => {
+    const clickHandleElement = fixture.debugElement.query(
+      By.css('.click-handle')
+    ).nativeElement as HTMLButtonElement;
+    const emitSpy = jest.spyOn(component.onClick, 'emit');
+
+    expect(clickHandleElement.tagName).toBe('BUTTON');
+    expect(clickHandleElement.type).toBe('button');
+    expect(clickHandleElement.textContent).toContain('View details');
+
+    clickHandleElement.click();
+
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+  });
 });

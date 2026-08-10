@@ -1,13 +1,10 @@
 import { chromium, defineConfig, devices } from '@playwright/test';
 import { nxE2EPreset } from '@nx/playwright/preset';
-import { workspaceRoot } from '@nx/devkit';
 import { resolvePlaywrightHeadless } from '../../e2e/playwright-headless';
 
 // For CI, you may want to set BASE_URL to the deployed application.
 const isCI = !!process.env['CI'];
-const baseURL =
-  process.env['BASE_URL'] ||
-  (isCI ? 'http://127.0.0.1:8081' : 'http://localhost:4200');
+const baseURL = process.env['BASE_URL'] || 'http://127.0.0.1:8081';
 const headless = resolvePlaywrightHeadless(!!process.env['CI']);
 const useManagedChromium =
   process.env['PLAYWRIGHT_USE_MANAGED_CHROMIUM'] === 'true';
@@ -41,14 +38,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   /* Run your local dev server before starting the tests */
-  webServer: process.env['CI']
-    ? undefined
-    : {
-        command: 'node ./node_modules/nx/bin/nx.js run forgeofwill:serve',
-        url: 'http://localhost:4200',
-        reuseExistingServer: true,
-        cwd: workspaceRoot,
-      },
+  webServer: undefined,
   projects: isCI
     ? [
         {

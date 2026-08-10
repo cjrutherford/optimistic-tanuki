@@ -5,6 +5,7 @@ import {
 } from '@optimistic-tanuki/models';
 
 import { Inject, Injectable } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Project } from '../entities/project.entity';
 import {
@@ -38,7 +39,9 @@ export class ProjectService {
   }
 
   async findAll(query: QueryProjectDto, requestingUserId?: string) {
-    const where: FindOptionsWhere<Project> = {};
+    const where: FindOptionsWhere<Project> = {
+      deletedAt: IsNull(),
+    };
 
     if (query.name) {
       where.name = query.name;
@@ -88,7 +91,7 @@ export class ProjectService {
 
   async findOne(id: string, requestingUserId?: string) {
     const project = await this.projectRepository.findOne({
-      where: { id },
+      where: { id, deletedAt: IsNull() },
       relations: ['tasks', 'risks', 'changes', 'journalEntries'],
     });
 
@@ -105,16 +108,53 @@ export class ProjectService {
     updateProjectDto: UpdateProjectDto,
     requestingUserId?: string
   ) {
+    if ('owner' in updateProjectDto || 'members' in updateProjectDto) {
+      throw new RpcException({
+        statusCode: 400,
+        message: 'Project owner and members cannot be changed through update',
+      });
+    }
+
     if (requestingUserId) {
-      const project = await this.projectRepository.findOne({ where: { id } });
+      const project = await this.projectRepository.findOne({
+        where: { id, deletedAt: IsNull() },
+      });
       assertFound(project, `Project with id ${id} not found`);
       assertProjectAccess(project, requestingUserId);
     }
 
-    return await this.projectRepository.update(id, {
-      ...updateProjectDto,
+    const update = updateProjectDto as UpdateProjectDto & {
+      updatedBy?: string;
+    };
+    const fields = {
+      ...(update.name !== undefined ? { name: update.name } : {}),
+      ...(update.description !== undefined
+        ? { description: update.description }
+        : {}),
+      ...(update.startDate !== undefined
+        ? { startDate: update.startDate }
+        : {}),
+      ...(update.endDate !== undefined ? { endDate: update.endDate } : {}),
+      ...(update.status !== undefined ? { status: update.status } : {}),
+      ...(update.appScope !== undefined ? { appScope: update.appScope } : {}),
+      ...(update.updatedBy !== undefined
+        ? { updatedBy: update.updatedBy }
+        : {}),
       updatedAt: new Date(),
+    };
+
+    const result = await this.projectRepository.update(
+      { id, deletedAt: IsNull() },
+      fields
+    );
+    assertFound(result.affected === 1, `Project with id ${id} not found`);
+
+    const refreshedProject = await this.projectRepository.findOneBy({
+      id,
+      deletedAt: IsNull(),
     });
+    assertFound(refreshedProject, `Project with id ${id} not found`);
+    return refreshedProject;
   }
 
   async remove(id: string, requestingUserId?: string) {

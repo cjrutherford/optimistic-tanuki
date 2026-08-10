@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { AuthStateService } from './auth-state.service';
-import { map, take } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { from, Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -12,15 +12,20 @@ export class AlreadyAuthenticatedGuard implements CanActivate {
   private router = inject(Router);
 
   canActivate(): Observable<boolean> {
-    return this.authState.isAuthenticated$().pipe(
-      take(1),
-      map((isAuthenticated) => {
-        if (!isAuthenticated) {
-          return true;
-        }
-        this.router.navigate(['/projects']);
-        return false;
-      })
+    if (this.authState.isInitialSessionRestoreComplete) {
+      return of(this.canActivateWithCurrentAuthState());
+    }
+
+    return from(this.authState.waitForInitialSessionRestore()).pipe(
+      map(() => this.canActivateWithCurrentAuthState())
     );
+  }
+
+  private canActivateWithCurrentAuthState(): boolean {
+    if (!this.authState.isAuthenticated) {
+      return true;
+    }
+    this.router.navigate(['/projects']);
+    return false;
   }
 }

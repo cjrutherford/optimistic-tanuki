@@ -1,4 +1,4 @@
-import { IndexClassifiedUserId20260809110000 } from './20260809110000-index-classified-user-id';
+import { IndexClassifiedUserId20260809110000 } from '../../migrations/20260809110000-index-classified-user-id';
 
 describe('IndexClassifiedUserId20260809110000', () => {
   it('creates and removes the user-id index idempotently', async () => {

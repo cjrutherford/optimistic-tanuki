@@ -1,4 +1,9 @@
-<div *ngIf="useTile; else cardTemplate">
+<div
+  class="app-bar"
+  role="region"
+  [attr.aria-label]="appTitle + ' application bar'"
+  *ngIf="useTile; else cardTemplate"
+>
   <otui-tile style="width: 100%; display: block">
     <div class="title-bar" [class.compact]="isCompact" [class.small]="isSmall">
       <img
@@ -20,19 +25,29 @@
 </div>
 
 <ng-template #cardTemplate>
-  <otui-card>
-    <div class="title-bar" [class.compact]="isCompact" [class.small]="isSmall">
-      <otui-button variant="rounded" (click)="onMenuClick()">
-        <img
-          *ngIf="logoSrc"
-          [src]="logoSrc"
-          [alt]="logoAlt"
-          [style.maxWidth.px]="isSmall ? 40 : isCompact ? 52 : 75"
-          [style.borderRadius]="'50%'"
-        />
-      </otui-button>
-      <h1>{{ appTitle }}</h1>
-      <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
-    </div>
-  </otui-card>
+  <div
+    class="app-bar"
+    role="region"
+    [attr.aria-label]="appTitle + ' application bar'"
+  >
+    <otui-card>
+      <div
+        class="title-bar"
+        [class.compact]="isCompact"
+        [class.small]="isSmall"
+      >
+        <otui-button variant="rounded" (click)="onMenuClick()">
+          <img
+            *ngIf="logoSrc"
+            [src]="logoSrc"
+            [alt]="logoAlt"
+            [style.maxWidth.px]="isSmall ? 40 : isCompact ? 52 : 75"
+            [style.borderRadius]="'50%'"
+          />
+        </otui-button>
+        <h1>{{ appTitle }}</h1>
+        <lib-theme-toggle *ngIf="showThemeToggle"></lib-theme-toggle>
+      </div>
+    </otui-card>
+  </div>
 </ng-template>

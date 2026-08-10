@@ -3054,6 +3054,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.project.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.task.create",
       "permissionAppScope": "project-planning"
     },
@@ -3065,6 +3070,11 @@
     {
       "role": "forgeofwill_planner",
       "permission": "project-planning.task.update",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.task.delete",
       "permissionAppScope": "project-planning"
     },
     {
@@ -3084,6 +3094,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.change.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.risk.create",
       "permissionAppScope": "project-planning"
     },
@@ -3099,6 +3114,11 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.risk.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.journal.create",
       "permissionAppScope": "project-planning"
     },
@@ -3109,12 +3129,22 @@
     },
     {
       "role": "forgeofwill_planner",
+      "permission": "project-planning.journal.delete",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
       "permission": "project-planning.timer.create",
       "permissionAppScope": "project-planning"
     },
     {
       "role": "forgeofwill_planner",
       "permission": "project-planning.timer.read",
+      "permissionAppScope": "project-planning"
+    },
+    {
+      "role": "forgeofwill_planner",
+      "permission": "project-planning.timer.delete",
       "permissionAppScope": "project-planning"
     },
     {

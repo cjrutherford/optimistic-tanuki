@@ -45,6 +45,15 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
       JWT_SECRET: e2e-test-jwt-secret
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3001, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       db:
         condition: service_healthy
@@ -64,11 +73,64 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3002, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       db:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  permissions:
+    image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
+    container_name: e2e_permissions_fow
+    build:
+      context: ..
+      dockerfile: ./apps/permissions/Dockerfile
+    ports:
+      - '3012:3012'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3012, ''127.0.0.1'', () => socket.end(() => process.exit(0))); socket.on(''error'', () => process.exit(1)); setTimeout(() => process.exit(1), 3000);"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  permissions-seed:
+    image: cjrutherford/optimistic_tanuki_permissions:${E2E_IMAGE_TAG:-latest}
+    container_name: e2e_permissions_seed_fow
+    command: ['node', './seed-permissions.js']
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: postgres
+    depends_on:
+      permissions:
+        condition: service_healthy
+    restart: 'no'
 
   social:
     container_name: e2e_social_fow
@@ -102,6 +164,15 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3006, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     depends_on:
       db:
         condition: service_healthy
@@ -155,6 +226,15 @@ services:
       dockerfile: ./apps/gateway/Dockerfile
     ports:
       - '3000:3000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "require(''http'').get(''http://127.0.0.1:3000/api/mcp/sse'', (response) => process.exit(response.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     environment:
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -162,6 +242,18 @@ services:
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
       JWT_SECRET: e2e-test-jwt-secret
+      NODE_ENV: test
+      OAUTH_STATE_SECRET: e2e-oauth-state-secret
+      APP_SCOPE_ORIGINS: '{"forgeofwill":"http://forgeofwill.localhost:8081"}'
+      CORS_ALLOWED_ORIGINS: http://forgeofwill.localhost:8081
+      CLIENT_INTERFACE_UI_BASE_URL: http://forgeofwill.localhost:8081
+      CLIENT_INTERFACE_DOMAIN: forgeofwill.localhost
+      GOOGLE_CLIENT_ID: e2e-google-client-id
+      GOOGLE_CLIENT_SECRET: e2e-google-client-secret
+      GOOGLE_REDIRECT_URI: http://forgeofwill.localhost:8081/api/oauth/callback/google
+      GOOGLE_AUTHORIZATION_ENDPOINT: http://127.0.0.1:3016/authorize
+      GOOGLE_TOKEN_ENDPOINT: http://oauth-provider:3016/token
+      GOOGLE_USER_INFO_ENDPOINT: http://oauth-provider:3016/userinfo
       AUTHENTICATION_HOST: authentication
       AUTHENTICATION_PORT: 3001
       PROFILE_HOST: profile
@@ -174,21 +266,45 @@ services:
       CHAT_COLLECTOR_PORT: 3007
       FORUM_HOST: forum
       FORUM_PORT: 3015
+      PERMISSIONS_HOST: permissions
+      PERMISSIONS_PORT: 3012
     depends_on:
       db:
         condition: service_healthy
       authentication:
-        condition: service_started
+        condition: service_healthy
       profile:
-        condition: service_started
+        condition: service_healthy
       social:
         condition: service_started
       project-planning:
-        condition: service_started
+        condition: service_healthy
       chat-collector:
         condition: service_started
       forum:
         condition: service_started
+      permissions:
+        condition: service_healthy
+      permissions-seed:
+        condition: service_completed_successfully
+
+  oauth-provider:
+    image: cjrutherford/optimistic_tanuki_oauth-provider:${E2E_IMAGE_TAG:-latest}
+    container_name: e2e_oauth_provider_fow
+    build:
+      context: ..
+      dockerfile: ./e2e/oauth-provider/Dockerfile
+    ports:
+      - '3016:3016'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "const socket=require(''net'').connect(3016, ''127.0.0.1''); socket.setTimeout(2000,()=>process.exit(1)); socket.on(''connect'',()=>process.exit(0)); socket.on(''error'',()=>process.exit(1));"',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 12
 
   forgeofwill-client-interface:
     container_name: e2e_fow_client_interface
@@ -197,19 +313,31 @@ services:
       dockerfile: ./apps/forgeofwill/Dockerfile
     ports:
       - '8081:4000'
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(''http://127.0.0.1:4000/'').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
     depends_on:
       gateway:
+        condition: service_healthy
+      oauth-provider:
         condition: service_started
 
   playwright-runner:
-    image: mcr.microsoft.com/playwright:v1.56.1-jammy
+    image: mcr.microsoft.com/playwright:v1.60.0-jammy
     container_name: e2e_runner_fow
+    network_mode: host
     working_dir: /workspace
     volumes:
       - ..:/workspace
       - /workspace/node_modules
     environment:
-      BASE_URL: http://forgeofwill-client-interface:4000
+      BASE_URL: http://forgeofwill.localhost:8081
       CI: 'true'
       NX_DAEMON: 'false'
     depends_on:

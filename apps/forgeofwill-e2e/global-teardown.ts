@@ -1,9 +1,9 @@
 import { FullConfig } from '@playwright/test';
-import { exec } from 'child_process';
+import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 async function globalTeardown(config: FullConfig) {
   if (process.env['CI']) {
@@ -28,7 +28,7 @@ async function globalTeardown(config: FullConfig) {
 [Playwright Global Teardown] Stopping docker-compose: ${composeFile}`);
 
   try {
-    await execAsync(`docker compose -f ${composeFile} down -v`);
+    await execFileAsync('docker', ['compose', '-f', composeFile, 'down', '-v']);
     console.log('Cleanup complete.');
   } catch (error) {
     console.error('Error during teardown:', error);

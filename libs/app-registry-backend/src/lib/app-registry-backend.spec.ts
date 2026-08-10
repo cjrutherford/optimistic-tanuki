@@ -16,4 +16,16 @@ describe('app-registry-backend', () => {
       'hai-to-configurator'
     );
   });
+
+  it('retains Forge’s production origin in the shared registry', () => {
+    expect(
+      DEFAULT_APP_REGISTRY.apps.find((app) => app.appId === 'forgeofwill')
+    ).toEqual(
+      expect.objectContaining({
+        domain: 'forgeofwill.com',
+        uiBaseUrl: 'https://forgeofwill.com',
+        apiBaseUrl: 'https://forgeofwill.com/api',
+      })
+    );
+  });
 });

@@ -98,7 +98,7 @@ pnpm run docker:dev:seed
 
 - Main App: http://localhost:8080
 - Leads App: http://localhost:8095
-- Forge of Will: http://localhost:8081
+- Forge of Will: http://forgeofwill.localhost:8081
 - Owner Console: http://localhost:8084
 - API Gateway: http://localhost:3000
 
