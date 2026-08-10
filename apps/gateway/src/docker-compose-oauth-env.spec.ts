@@ -61,6 +61,18 @@ describe('docker compose oauth environment wiring', () => {
     );
   });
 
+  it('keeps the Forge production origin in the base compose stack without a local scope override', () => {
+    const composePath = path.resolve(__dirname, '../../../docker-compose.yaml');
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain('https://forgeofwill.com');
+    expect(gatewaySection).not.toContain('forgeofwill.localhost');
+    expect(gatewaySection).not.toContain('APP_SCOPE_ORIGINS');
+  });
+
   it('supplies a development-only OAuth state secret when the dev override replaces gateway environment', () => {
     const composePath = path.resolve(
       __dirname,
@@ -73,6 +85,34 @@ describe('docker compose oauth environment wiring', () => {
 
     expect(gatewaySection).toContain(
       'OAUTH_STATE_SECRET=${OAUTH_STATE_SECRET:-development-oauth-state-secret}'
+    );
+  });
+
+  it('keeps the dev default callback proxy neutral while registering Forge as an exact app origin', () => {
+    const composePath = path.resolve(
+      __dirname,
+      '../../../docker-compose.dev.yaml'
+    );
+    const compose = fs.readFileSync(composePath, 'utf8');
+    const gatewaySection = compose.match(
+      /^ {2}gateway:\n([\s\S]*?)(?=^ {2}[a-z0-9-]+:|$(?![\s\S]))/im
+    )?.[1];
+
+    expect(gatewaySection).toContain(
+      'APP_SCOPE_ORIGINS={"forgeofwill":"http://forgeofwill.localhost:8081"}'
+    );
+    expect(gatewaySection).toContain(
+      'CORS_ALLOWED_ORIGINS=http://forgeofwill.localhost:8081'
+    );
+    expect(gatewaySection).toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL=http://localhost:8080'
+    );
+    expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN=localhost');
+    expect(gatewaySection).toContain(
+      'GOOGLE_REDIRECT_URI=http://localhost:8080/api/oauth/callback/google'
+    );
+    expect(gatewaySection).not.toContain(
+      'CLIENT_INTERFACE_UI_BASE_URL=http://forgeofwill.localhost:8081'
     );
   });
 

@@ -1,0 +1,16 @@
+.click-handle {
+  width: 100%;
+  min-height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 4px;
+  }
+}

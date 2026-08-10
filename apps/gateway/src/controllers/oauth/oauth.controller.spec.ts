@@ -23,6 +23,7 @@ describe('OAuthController', () => {
     process.env.OAUTH_STATE_SECRET = 'state-secret';
     delete process.env.CLIENT_INTERFACE_DOMAIN;
     delete process.env.CLIENT_INTERFACE_UI_BASE_URL;
+    delete process.env.APP_SCOPE_ORIGINS;
     configGet = jest.fn();
     authClient = {
       send: jest.fn().mockReturnValue(of(true)),
@@ -65,6 +66,15 @@ describe('OAuthController', () => {
                 domain: 'optimistic-tanuki.example',
                 uiBaseUrl: 'https://optimistic-tanuki.example',
                 apiBaseUrl: 'https://optimistic-tanuki.example/api',
+                appType: 'client',
+                visibility: 'public',
+              },
+              {
+                appId: 'forgeofwill',
+                name: 'Forge of Will',
+                domain: 'forgeofwill.com',
+                uiBaseUrl: 'https://forgeofwill.com',
+                apiBaseUrl: 'https://forgeofwill.com/api',
                 appType: 'client',
                 visibility: 'public',
               },
@@ -119,6 +129,40 @@ describe('OAuthController', () => {
     expect((controller as any).buildFinalCallbackUrl()).toBe(
       'https://proxy.example/oauth/callback'
     );
+  });
+
+  it('uses the exact Forge callback proxy origin for the Forge app scope', () => {
+    process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+    process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+      forgeofwill: 'http://forgeofwill.localhost:8081',
+    });
+
+    expect((controller as any).buildFinalCallbackUrl('forgeofwill')).toBe(
+      'http://forgeofwill.localhost:8081/oauth/callback'
+    );
+  });
+
+  it('keeps the client-interface callback proxy on the global default origin', () => {
+    process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+    process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+      forgeofwill: 'http://forgeofwill.localhost:8081',
+    });
+
+    expect((controller as any).buildFinalCallbackUrl('client-interface')).toBe(
+      'http://localhost:8080/oauth/callback'
+    );
+  });
+
+  it('maps the exact Forge E2E callback origin to the Forge app scope', () => {
+    process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+      forgeofwill: 'http://forgeofwill.localhost:8081',
+    });
+
+    expect(
+      (controller as any).resolveAppScopeForReturnTo(
+        'http://forgeofwill.localhost:8081/login'
+      )
+    ).toBe('forgeofwill');
   });
 
   it('rejects production OAuth registration for owner-console', async () => {
@@ -218,6 +262,74 @@ describe('OAuthController', () => {
       );
     });
 
+    it('uses Forge’s exact app-scoped gateway callback URI and a host-only nonce cookie', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'client-id',
+              redirectUri: 'http://localhost:8080/api/oauth/callback/google',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+      const response = { redirect: jest.fn(), cookie: jest.fn() } as any;
+
+      await controller.startOAuth(
+        request,
+        response,
+        'http://forgeofwill.localhost:8081/login',
+        'forgeofwill',
+        'forgeofwill.localhost'
+      );
+
+      const authorizationUrl = new URL(response.redirect.mock.calls[0][0]);
+      expect(authorizationUrl.searchParams.get('redirect_uri')).toBe(
+        'http://forgeofwill.localhost:8081/api/oauth/callback/google'
+      );
+      expect(response.cookie.mock.calls[0][2]).not.toHaveProperty('domain');
+    });
+
+    it('keeps the client-interface provider callback on its global gateway callback URI', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'client-id',
+              redirectUri: 'https://not-the-callback.example/google',
+              scopes: ['openid'],
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+      const response = { redirect: jest.fn(), cookie: jest.fn() } as any;
+
+      await controller.startOAuth(
+        request,
+        response,
+        'http://localhost:8080/login',
+        'client-interface',
+        'localhost'
+      );
+
+      expect(
+        new URL(response.redirect.mock.calls[0][0]).searchParams.get(
+          'redirect_uri'
+        )
+      ).toBe('http://localhost:8080/api/oauth/callback/google');
+    });
+
     it('rejects a caller-supplied app scope that differs from returnTo', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
@@ -237,6 +349,18 @@ describe('OAuthController', () => {
           { redirect: jest.fn(), cookie: jest.fn() } as any,
           'https://optimistic-tanuki.example/login',
           'owner-console',
+          undefined
+        )
+      ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
+    });
+
+    it('rejects the retired shared localhost Forge return origin', async () => {
+      await expect(
+        controller.startOAuth(
+          request,
+          { redirect: jest.fn(), cookie: jest.fn() } as any,
+          'http://localhost:8081/login',
+          'forgeofwill',
           undefined
         )
       ).rejects.toMatchObject({ status: HttpStatus.BAD_REQUEST });
@@ -302,7 +426,7 @@ describe('OAuthController', () => {
       ).rejects.toMatchObject({ status: HttpStatus.SERVICE_UNAVAILABLE });
     });
 
-    it('uses the provider redirect URI when config supplies one', async () => {
+    it('uses the app-scoped gateway callback instead of a global provider redirect URI', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
           ? {
@@ -327,11 +451,11 @@ describe('OAuthController', () => {
 
       const redirect = new URL(response.redirect.mock.calls[0][0]);
       expect(redirect.searchParams.get('redirect_uri')).toBe(
-        'https://oauth.example/callback/google'
+        'https://optimistic-tanuki.example/api/oauth/callback/google'
       );
     });
 
-    it('falls back to the registry bridge URL when config omits redirect URI', async () => {
+    it('uses the app-scoped gateway callback when config omits redirect URI', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
           ? {
@@ -355,7 +479,7 @@ describe('OAuthController', () => {
 
       const redirect = new URL(response.redirect.mock.calls[0][0]);
       expect(redirect.searchParams.get('redirect_uri')).toBe(
-        'https://optimistic-tanuki.example/oauth/callback/google'
+        'https://optimistic-tanuki.example/api/oauth/callback/google'
       );
     });
   });
@@ -447,6 +571,89 @@ describe('OAuthController', () => {
   });
 
   describe('oauthRedirectCallback', () => {
+    it('reuses Forge’s signed provider callback URI for the token exchange', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      jest.spyOn(controller as any, 'verifyAndConsumeState').mockResolvedValue({
+        provider: 'google',
+        returnTo: 'http://forgeofwill.localhost:8081/login',
+        appScope: 'forgeofwill',
+        providerRedirectUri:
+          'http://forgeofwill.localhost:8081/api/oauth/callback/google',
+        codeVerifier: 'a'.repeat(43),
+        issuedAt: Date.now(),
+      });
+      const exchangeProviderCode = jest
+        .spyOn(controller as any, 'exchangeProviderCode')
+        .mockResolvedValue({
+          providerUserId: ' ',
+          email: 'person@example.test',
+          emailVerified: true,
+          displayName: 'Person',
+          firstName: 'Person',
+          lastName: 'Example',
+        });
+      const response = { redirect: jest.fn() } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: 'valid-state' },
+          cookies: { oauth_state_nonce: '[]' },
+        } as any,
+        response
+      );
+
+      expect(exchangeProviderCode).toHaveBeenCalledWith(
+        'google',
+        'provider-code',
+        'forgeofwill.localhost',
+        'a'.repeat(43),
+        'http://forgeofwill.localhost:8081/api/oauth/callback/google'
+      );
+    });
+
+    it('rejects a callback state whose provider redirect URI does not match its signed app scope', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      jest.spyOn(controller as any, 'verifyAndConsumeState').mockResolvedValue({
+        provider: 'google',
+        returnTo: 'http://forgeofwill.localhost:8081/login',
+        appScope: 'forgeofwill',
+        providerRedirectUri: 'http://localhost:8080/api/oauth/callback/google',
+        codeVerifier: 'a'.repeat(43),
+        issuedAt: Date.now(),
+      });
+      const exchangeProviderCode = jest.spyOn(
+        controller as any,
+        'exchangeProviderCode'
+      );
+      const response = {
+        redirect: jest.fn(),
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as any;
+
+      await controller.oauthRedirectCallback(
+        {
+          params: { provider: 'google' },
+          query: { code: 'provider-code', state: 'valid-state' },
+          cookies: { oauth_state_nonce: '[]' },
+        } as any,
+        response
+      );
+
+      expect(exchangeProviderCode).not.toHaveBeenCalled();
+      expect(response.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+      expect(response.json).toHaveBeenCalledWith(
+        expect.objectContaining({ error: 'invalid_oauth_callback' })
+      );
+    });
+
     it('rejects a blank provider stable id before it can be linked or used to sign in', async () => {
       const issued = await (controller as any).signState({
         provider: 'google',
@@ -1082,6 +1289,58 @@ describe('OAuthController', () => {
   });
 
   describe('getOAuthConfig', () => {
+    it('advertises Forge’s exact callback origin so popup postMessage filtering matches its callback page', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'public-client-id',
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+
+      const result = await controller.getOAuthConfig(
+        { headers: { origin: 'http://forgeofwill.localhost:8081' } } as any,
+        undefined
+      );
+
+      expect((result as any).google.callbackOrigin).toBe(
+        'http://forgeofwill.localhost:8081'
+      );
+    });
+
+    it('advertises the neutral client-interface callback origin for localhost', async () => {
+      process.env.CLIENT_INTERFACE_UI_BASE_URL = 'http://localhost:8080';
+      process.env.APP_SCOPE_ORIGINS = JSON.stringify({
+        forgeofwill: 'http://forgeofwill.localhost:8081',
+      });
+      configGet.mockImplementation((key: string) =>
+        key === 'oauth.google'
+          ? {
+              enabled: true,
+              clientId: 'public-client-id',
+              authorizationEndpoint:
+                'https://accounts.google.com/o/oauth2/v2/auth',
+            }
+          : undefined
+      );
+
+      const result = await controller.getOAuthConfig(
+        { headers: { origin: 'http://localhost:8080' } } as any,
+        undefined
+      );
+
+      expect((result as any).google.callbackOrigin).toBe(
+        'http://localhost:8080'
+      );
+    });
+
     it('returns sanitized provider config from the gateway source of truth', async () => {
       configGet.mockImplementation((key: string) =>
         key === 'oauth.google'
@@ -1106,7 +1365,7 @@ describe('OAuthController', () => {
           clientId: 'public-client-id',
           callbackOrigin: 'https://optimistic-tanuki.example',
           redirectUri:
-            'https://optimistic-tanuki.example/oauth/callback/google',
+            'https://optimistic-tanuki.example/api/oauth/callback/google',
           scopes: ['openid'],
           authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
           enabled: true,

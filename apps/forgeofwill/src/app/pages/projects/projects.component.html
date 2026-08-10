@@ -138,11 +138,14 @@
       </div>
       }
 
-      <!-- AI Summary -->
+      <!-- Project Context -->
       <div class="row-container">
-        <otui-tile class="ai-summary-tile">
-          <h3>AI Project Summary</h3>
-          <p>An Overview of the project provided by your AI Project Manager.</p>
+        <otui-tile class="project-context-tile">
+          <h3>Project context</h3>
+          <p>
+            Review project details, tasks, risks, changes, and journal entries
+            in the workspace below.
+          </p>
         </otui-tile>
       </div>
 
@@ -199,5 +202,25 @@
     (submitEvent)="onProjectUpdated($event)"
   >
   </lib-project-form>
+</otui-modal>
+} @if(showDeleteModal() && selectedProject()) {
+<otui-modal
+  [heading]="'Delete Project?'"
+  (close)="cancelDeleteProject()"
+  [visible]="showDeleteModal()"
+  size="sm"
+>
+  <p>
+    Are you sure you want to delete "{{ selectedProject()!.name }}"? This action
+    cannot be undone.
+  </p>
+  <div modal-footer>
+    <otui-button variant="outlined" (action)="cancelDeleteProject()"
+      >Cancel</otui-button
+    >
+    <otui-button variant="danger" (action)="confirmDeleteProject()"
+      >Delete Project</otui-button
+    >
+  </div>
 </otui-modal>
 }

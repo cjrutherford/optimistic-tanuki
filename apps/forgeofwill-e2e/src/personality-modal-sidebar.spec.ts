@@ -39,11 +39,7 @@ test.describe('Personality Rendering - Forge of Will', () => {
     const body = page.locator('body');
     await expect(body).toBeVisible();
 
-    const initialClasses = await body.getAttribute('class');
-    console.log(`Initial body classes: ${initialClasses}`);
-
-    const hasPersonality = initialClasses?.includes('personality-');
-    console.log(`Has personality class: ${hasPersonality}`);
+    await expect(body).toHaveAttribute('data-personality', 'bold');
   });
 
   test('should find personality selector in UI', async ({ page }) => {

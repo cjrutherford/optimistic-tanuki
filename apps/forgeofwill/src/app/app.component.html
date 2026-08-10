@@ -17,6 +17,7 @@
 }
 
 <div class="app-content">
+  <a class="skip-link" href="#main-content">Skip to main content</a>
   <div class="app-container">
     <otui-app-bar
       appTitle="Forge of Will"
@@ -36,7 +37,7 @@
     >
     </otui-nav-sidebar>
 
-    <main class="main-content">
+    <main id="main-content" class="main-content" tabindex="-1">
       @if (workspaceSummary(); as summary) {
       <section class="workflow-summary">
         <p class="workflow-kicker">{{ summary.eyebrow }}</p>
@@ -45,14 +46,13 @@
       </section>
       }
       <router-outlet></router-outlet>
+      @if (isAuthenticated() && selectedProfile()) {
+      <app-ai-assistant-bubble></app-ai-assistant-bubble>
+      }
     </main>
 
     @if (isAuthenticated() && selectedProfile()) {
     <app-chat [externalMessages]="newPersonaMessages()"></app-chat>
-    <app-ai-assistant-bubble
-      [userProfile]="selectedProfile()"
-      (personaSelected)="onPersonaSelected($event)"
-    ></app-ai-assistant-bubble>
     }
 
     <lib-message></lib-message>

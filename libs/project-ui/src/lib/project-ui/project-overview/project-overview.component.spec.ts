@@ -43,6 +43,21 @@ describe('ProjectOverviewComponent', () => {
     expect(component.projectName()).toBe('Test Project');
   });
 
+  it('renders project context from the project data without unsupported AI attribution', () => {
+    component.project = {
+      ...component.project,
+      name: 'Context Project',
+    };
+    component.ngOnInit();
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Project context');
+    expect(compiled.textContent).toContain('Context Project');
+    expect(compiled.textContent).not.toContain('AI Project Summary');
+    expect(compiled.textContent).not.toContain('AI Project Manager');
+  });
+
   it('should calculate task count correctly', () => {
     const testProject: Project = {
       id: '1',

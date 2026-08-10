@@ -154,7 +154,7 @@
   height: 600px;
 }
 
-.ai-summary-tile {
+.project-context-tile {
   grid-column: span 3;
   padding: var(--spacing-md, 16px);
 
@@ -214,7 +214,7 @@
     flex-wrap: wrap;
   }
 
-  .ai-summary-tile,
+  .project-context-tile,
   .journal-tile {
     grid-column: span 1;
   }

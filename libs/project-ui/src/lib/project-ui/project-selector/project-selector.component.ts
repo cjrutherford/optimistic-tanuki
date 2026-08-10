@@ -61,6 +61,17 @@ export class ProjectSelectorComponent implements OnChanges, OnInit {
   ngOnChanges(changes: SimpleChanges) {
     if (changes['projects']) {
       this.availableProjects.set(this.projects);
+      const selectedProject = this.selectedProject();
+      const nextSelectedProject =
+        this.projects.find((project) => project.id === selectedProject?.id) ??
+        this.projects[0] ??
+        null;
+
+      this.selectedProject.set(nextSelectedProject);
+      this.projectForm.patchValue(
+        { project: nextSelectedProject?.id ?? null },
+        { emitEvent: false }
+      );
     }
   }
 
@@ -83,6 +94,13 @@ export class ProjectSelectorComponent implements OnChanges, OnInit {
 
   onCreateClick() {
     this.createProject.emit();
+  }
+
+  onEditClick(): void {
+    const project = this.selectedProject();
+    if (project) {
+      this.editProject.emit(project);
+    }
   }
 
   onProjectSelected(event: Event) {

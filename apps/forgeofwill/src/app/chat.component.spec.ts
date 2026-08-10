@@ -37,6 +37,7 @@ class MockSocketChatService {
   onStreamingResponse = jest.fn();
   getConversations = jest.fn();
   sendMessage = jest.fn();
+  sendInit = jest.fn();
   destroy = jest.fn();
 }
 
@@ -294,6 +295,35 @@ describe('ChatComponent', () => {
 
     expect(component.isWindowOpen('aiConv')).toBe(true);
     expect(component.selectedConversation()).toBe('aiConv');
+  }));
+
+  it('reports that assistant chat is unavailable instead of claiming to create it', fakeAsync(() => {
+    component.conversations.set([]);
+
+    component.openAiAssistantChat();
+    tick();
+
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'AI assistant chat is not available yet',
+        type: 'info',
+      })
+    );
+  }));
+
+  it('does not initiate an unimplemented persona conversation', fakeAsync(() => {
+    component.conversations.set([]);
+
+    component.openOrCreatePersonaChat('persona1');
+    tick();
+
+    expect(socketChatService.sendInit).not.toHaveBeenCalled();
+    expect(messageService.addMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: 'AI persona chat is not available yet',
+        type: 'info',
+      })
+    );
   }));
 
   it('should update contacts and handle null current user', async () => {

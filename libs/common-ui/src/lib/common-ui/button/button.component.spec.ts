@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ButtonComponent } from './button.component';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -23,6 +25,19 @@ describe('ButtonComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('gives the host a block layout box for hit testing', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    const styles = readFileSync(
+      join(__dirname, 'button.component.scss'),
+      'utf8'
+    );
+
+    // JSDOM does not perform browser hit testing, so assert the layout
+    // primitive and its authored host contract separately.
+    expect(getComputedStyle(host).display).toBe('block');
+    expect(styles).toMatch(/:host\s*\{[\s\S]*display:\s*block;[\s\S]*\}/);
   });
 
   it('should emit action when not disabled', () => {

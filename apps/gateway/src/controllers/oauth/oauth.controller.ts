@@ -68,6 +68,8 @@ type OAuthStatePayload = {
   provider: string;
   returnTo: string;
   appScope: string;
+  /** Exact provider callback selected during initiation and retained server-side. */
+  providerRedirectUri?: string;
   issuedAt: number;
   /** Server-held PKCE verifier; never serialized into the browser state. */
   codeVerifier: string;
@@ -273,19 +275,24 @@ export class OAuthController {
       );
     }
 
+    const providerRedirectUri = this.resolveProviderRedirectUri(
+      provider,
+      config,
+      appScope
+    );
     const { state, stateId, nonce, codeChallenge } = await this.signState({
       provider,
       returnTo: validatedReturnTo,
       appScope,
+      providerRedirectUri,
       issuedAt: Date.now(),
       linkUserId,
       cookieSession,
     } as Omit<OAuthStatePayload, 'codeVerifier'>);
 
-    const redirectUri = this.resolveProviderRedirectUri(provider, config);
     const params = new URLSearchParams({
       client_id: config.clientId,
-      redirect_uri: redirectUri,
+      redirect_uri: providerRedirectUri,
       response_type: 'code',
       scope: (config.scopes || []).join(' '),
       state,
@@ -368,7 +375,23 @@ export class OAuthController {
       this.respondInvalidOAuthCallback(response);
       return;
     }
-    const finalCallbackUrl = this.buildFinalCallbackUrl();
+    const finalCallbackUrl = this.buildFinalCallbackUrl(statePayload.appScope);
+    const callbackDomain = new URL(statePayload.returnTo).hostname;
+    const expectedProviderRedirectUri = this.resolveProviderRedirectUri(
+      provider,
+      this.getProviderConfig(provider, callbackDomain),
+      statePayload.appScope
+    );
+    if (
+      statePayload.providerRedirectUri &&
+      statePayload.providerRedirectUri !== expectedProviderRedirectUri
+    ) {
+      this.logger.warn('Rejected OAuth callback with mismatched redirect URI');
+      this.respondInvalidOAuthCallback(response);
+      return;
+    }
+    const providerRedirectUri =
+      statePayload.providerRedirectUri || expectedProviderRedirectUri;
 
     if (error) {
       response.redirect(
@@ -397,8 +420,9 @@ export class OAuthController {
         await this.exchangeProviderCode(
           provider,
           code,
-          new URL(statePayload.returnTo).hostname,
-          statePayload.codeVerifier
+          callbackDomain,
+          statePayload.codeVerifier,
+          providerRedirectUri
         )
       );
       if (statePayload.linkUserId) {
@@ -506,6 +530,7 @@ export class OAuthController {
       const callbackCode = await this.createCallbackGrant(
         token,
         statePayload.returnTo,
+        statePayload.appScope,
         stateId,
         nonce!,
         statePayload.cookieSession === true
@@ -740,9 +765,18 @@ export class OAuthController {
 
         result[provider] = {
           clientId: config.clientId,
-          redirectUri: this.resolveProviderRedirectUri(provider, config),
-          callbackOrigin: new URL(this.resolveClientInterfaceCallbackBase())
-            .origin,
+          redirectUri: this.resolveProviderRedirectUri(
+            provider,
+            config,
+            origin
+              ? this.resolveAppScopeForReturnTo(origin) ?? undefined
+              : undefined
+          ),
+          callbackOrigin: new URL(
+            this.resolveCallbackBase(
+              origin ? this.resolveAppScopeForReturnTo(origin) : undefined
+            )
+          ).origin,
           scopes: config.scopes || [],
           authorizationEndpoint: config.authorizationEndpoint,
           enabled: true,
@@ -774,10 +808,7 @@ export class OAuthController {
       );
     }
 
-    const origin = parsed.origin;
-    const knownOrigin = this.registry.apps.some(
-      (app) => this.safeOrigin(app.uiBaseUrl) === origin
-    );
+    const knownOrigin = this.resolveAppScopeForReturnTo(parsed.toString());
     const isLocalhost =
       ['localhost', '127.0.0.1'].includes(parsed.hostname) ||
       parsed.hostname.endsWith('.localhost');
@@ -838,10 +869,48 @@ export class OAuthController {
 
   private resolveAppScopeForReturnTo(returnTo: string): string | null {
     const origin = this.safeOrigin(returnTo);
+    if (!origin) return null;
+
+    const configuredScope = [...this.configuredAppScopeOrigins()].find(
+      ([, configuredOrigin]) => configuredOrigin === origin
+    )?.[0];
+    if (configuredScope) return configuredScope;
+
+    if (origin === this.safeOrigin(this.resolveClientInterfaceCallbackBase())) {
+      return 'client-interface';
+    }
+
     const app = this.registry.apps.find(
       (entry) => this.safeOrigin(entry.uiBaseUrl) === origin
     );
     return app?.appId ?? null;
+  }
+
+  private configuredAppScopeOrigins(): Map<string, string> {
+    const rawOrigins = process.env.APP_SCOPE_ORIGINS?.trim();
+    if (!rawOrigins) return new Map();
+
+    try {
+      const configuredOrigins = JSON.parse(rawOrigins) as Record<
+        string,
+        unknown
+      >;
+      if (!configuredOrigins || Array.isArray(configuredOrigins)) {
+        return new Map();
+      }
+
+      return new Map(
+        Object.entries(configuredOrigins).flatMap(([scope, origin]) => {
+          if (typeof origin !== 'string') return [];
+          const normalizedOrigin = this.safeOrigin(origin);
+          return normalizedOrigin === origin.replace(/\/$/, '')
+            ? [[scope, normalizedOrigin]]
+            : [];
+        })
+      );
+    } catch {
+      return new Map();
+    }
   }
 
   private resolveClientInterfaceCallbackBase(): string {
@@ -872,10 +941,33 @@ export class OAuthController {
     );
   }
 
+  private resolveCallbackBase(appScope?: string): string {
+    const configuredOrigin = appScope
+      ? this.configuredAppScopeOrigins().get(appScope)
+      : undefined;
+
+    if (configuredOrigin) return configuredOrigin;
+
+    const registeredApp = appScope
+      ? this.registry.apps.find((app) => app.appId === appScope)
+      : undefined;
+    if (registeredApp?.uiBaseUrl && appScope !== 'client-interface') {
+      return registeredApp.uiBaseUrl.replace(/\/$/, '');
+    }
+
+    return this.resolveClientInterfaceCallbackBase();
+  }
+
   private resolveProviderRedirectUri(
     provider: string,
-    config: GatewayOAuthProviderConfig
+    config: GatewayOAuthProviderConfig,
+    appScope?: string
   ): string {
+    if (appScope) {
+      return `${this.resolveCallbackBase(
+        appScope
+      )}/api/oauth/callback/${provider}`;
+    }
     const configuredRedirectUri = config.redirectUri?.trim();
     if (configuredRedirectUri) {
       return configuredRedirectUri;
@@ -955,6 +1047,7 @@ export class OAuthController {
   private async createCallbackGrant(
     token: string,
     returnTo: string,
+    appScope: string,
     stateId: string,
     nonce: string,
     cookieSession: boolean
@@ -963,8 +1056,7 @@ export class OAuthController {
     await this.oauthStateStore.createCallbackGrant(callbackCode, {
       token,
       returnOrigin: new URL(returnTo).origin,
-      redemptionOrigin: new URL(this.resolveClientInterfaceCallbackBase())
-        .origin,
+      redemptionOrigin: new URL(this.resolveCallbackBase(appScope)).origin,
       cookieSession,
       stateId,
       nonceHash: this.hashNonce(nonce),
@@ -1088,8 +1180,8 @@ export class OAuthController {
     }
   }
 
-  private buildFinalCallbackUrl(): string {
-    return `${this.resolveClientInterfaceCallbackBase()}/oauth/callback`;
+  private buildFinalCallbackUrl(appScope?: string): string {
+    return `${this.resolveCallbackBase(appScope)}/oauth/callback`;
   }
 
   private withQuery(
@@ -1109,7 +1201,8 @@ export class OAuthController {
     provider: string,
     code: string,
     domain?: string,
-    codeVerifier?: string
+    codeVerifier?: string,
+    providerRedirectUri?: string
   ): Promise<OAuthIdentity> {
     const config = this.getProviderConfig(provider, domain);
     if (
@@ -1121,7 +1214,8 @@ export class OAuthController {
       throw new Error(`${provider} OAuth credentials are incomplete`);
     }
 
-    const redirectUri = this.resolveProviderRedirectUri(provider, config);
+    const redirectUri =
+      providerRedirectUri || this.resolveProviderRedirectUri(provider, config);
     const tokenParams = new URLSearchParams({
       client_id: config.clientId,
       client_secret: config.clientSecret,

@@ -230,7 +230,12 @@ These commands are meant for the hybrid inner loop. They only start shared infra
 
 - Main app: `http://localhost:8080`
 - Leads app: `http://localhost:8095`
-- Forge of Will: `http://localhost:8081`
+- Forge of Will: `http://forgeofwill.localhost:8081`
+
+Forge uses its dedicated `.localhost` hostname so its OAuth session cookie cannot
+be shared with the client interface. Use this browser URL rather than
+`http://localhost:8081`; Docker/Node readiness probes may still use `127.0.0.1`.
+
 - Digital Homestead: `http://localhost:8082`
 - christopherrutherford.net: `http://localhost:8083`
 - Owner Console: `http://localhost:8084`

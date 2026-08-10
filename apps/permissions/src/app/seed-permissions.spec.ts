@@ -5,6 +5,28 @@ import { SeedData, validateSeedData } from './seed-permissions';
 const seedData = require('../assets/default-permissions.json') as SeedData;
 
 describe('permissions seed integrity', () => {
+  it('grants Forge planners the exact delete permissions exposed by Forge project controls', () => {
+    const plannerDeletePermissions = seedData.role_permissions
+      .filter(
+        (association) =>
+          association.role === 'forgeofwill_planner' &&
+          association.permission.endsWith('.delete')
+      )
+      .map((association) => association.permission)
+      .sort();
+
+    expect(plannerDeletePermissions).toEqual([
+      'project-planning.change.delete',
+      'project-planning.journal.delete',
+      'project-planning.project.delete',
+      'project-planning.risk.delete',
+      'project-planning.task-note.delete',
+      'project-planning.task-time-entry.delete',
+      'project-planning.task.delete',
+      'project-planning.timer.delete',
+    ]);
+  });
+
   it('resolves every role-permission association to a declared role and permission scope', () => {
     const roles = new Set(
       seedData.roles.map((role: { name: string }) => role.name)
