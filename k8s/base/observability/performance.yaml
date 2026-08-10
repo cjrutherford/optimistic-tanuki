@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-performance
+  labels:
+    app: grafana
+    grafana_dashboard: '1'
+data:
+  performance.json: |
+    {
+      "annotations": {"list": []},
+      "editable": false,
+      "graphTooltip": 0,
+      "panels": [
+        {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "ms"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}, "id": 1, "options": {"legend": {"displayMode": "table", "placement": "bottom", "showLegend": true}}, "targets": [{"expr": "ot_performance_metric_p75", "legendFormat": "{{app}} {{route}} {{metric}}", "refId": "A"}], "title": "Browser performance p75", "type": "timeseries"},
+        {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}, "id": 2, "options": {"colorMode": "value", "graphMode": "area", "justifyMode": "auto", "orientation": "auto", "reduceOptions": {"calcs": ["lastNotNull"], "fields": "", "values": false}, "textMode": "auto"}, "targets": [{"expr": "sum(ot_performance_active_alerts)", "refId": "A"}], "title": "Active performance alerts", "type": "stat"},
+        {"datasource": {"type": "prometheus", "uid": "prometheus"}, "fieldConfig": {"defaults": {"unit": "short"}, "overrides": []}, "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}, "id": 3, "options": {"legend": {"displayMode": "table", "placement": "right", "showLegend": true}}, "targets": [{"expr": "sum by (app, metric) (ot_performance_metric_samples)", "legendFormat": "{{app}} {{metric}}", "refId": "A"}], "title": "Samples by app and metric", "type": "timeseries"}
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["performance", "rum", "angular"],
+      "templating": {"list": []},
+      "time": {"from": "now-6h", "to": "now"},
+      "title": "Angular Performance",
+      "uid": "tanuki-angular-performance",
+      "version": 1
+    }

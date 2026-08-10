@@ -10,6 +10,7 @@ import {
   createApiProxyOptions,
   createSocketIoProxyOptions,
 } from './server-proxy';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -20,6 +21,11 @@ app.use(oauthCallbackReferrerPolicy);
 const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'client-interface',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
 const configuredSocketUrl = process.env['SOCKET_URL'] || '';
 const runtimeSocketEnvironment = JSON.stringify({

@@ -208,6 +208,10 @@ spec:
               mountPath: /var/lib/grafana/dashboards/platform-health.json
               subPath: platform-health.json
               readOnly: true
+            - name: performance-dashboard
+              mountPath: /var/lib/grafana/dashboards/performance.json
+              subPath: performance.json
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
@@ -227,6 +231,9 @@ spec:
         - name: platform-health-dashboard
           configMap:
             name: grafana-dashboard-platform-health
+        - name: performance-dashboard
+          configMap:
+            name: grafana-dashboard-performance
 ---
 apiVersion: v1
 kind: Service

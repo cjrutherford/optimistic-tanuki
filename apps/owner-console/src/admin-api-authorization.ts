@@ -41,6 +41,14 @@ function getSessionToken(
   }
 }
 
+export function getOwnerAuthorizationHeader(
+  authorization: string | undefined,
+  cookieHeader: string | undefined
+): string | undefined {
+  const token = getSessionToken(authorization, cookieHeader);
+  return token ? `Bearer ${token}` : undefined;
+}
+
 export async function authorizeOwnerConsoleAdminRequest(
   options: AdminApiAuthorizationOptions
 ): Promise<{ authorized: true } | { authorized: false; status: 401 | 403 }> {

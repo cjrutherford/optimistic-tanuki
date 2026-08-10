@@ -6,6 +6,8 @@ const AuthCommands = {
   BootstrapOwner: 'BootstrapOwner',
   Validate: 'Validate',
   UserIdFromEmail: 'UserIdFromEmail',
+  GetAllUsers: 'GetAllUsers',
+  GetUsersByIds: 'GetUsersByIds',
   // Issue a new token for a user (e.g. after profile creation). Payload: { userId, profileId? }
   Issue: 'Issue',
   ValidateTotp: 'ValidateTotp',

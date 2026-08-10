@@ -1,6 +1,15 @@
-import { authorizeOwnerConsoleAdminRequest } from './admin-api-authorization';
+import {
+  authorizeOwnerConsoleAdminRequest,
+  getOwnerAuthorizationHeader,
+} from './admin-api-authorization';
 
 describe('authorizeOwnerConsoleAdminRequest', () => {
+  it('converts the cookie session into the bearer header required by Admin API', () => {
+    expect(
+      getOwnerAuthorizationHeader(undefined, 'ot_session=session-token')
+    ).toBe('Bearer session-token');
+  });
+
   it('authorizes a verified owner token', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,

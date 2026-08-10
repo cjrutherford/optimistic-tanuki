@@ -97,6 +97,13 @@ export const appRoutes: Route[] = [
           ),
       },
       {
+        path: 'performance',
+        loadComponent: () =>
+          import('./components/performance-observability.component').then(
+            (m) => m.PerformanceObservabilityComponent
+          ),
+      },
+      {
         path: 'control-center',
         loadComponent: () =>
           import('./components/admin-control-center.component').then(

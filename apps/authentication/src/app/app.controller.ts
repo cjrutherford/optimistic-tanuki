@@ -26,6 +26,16 @@ export class AppController {
     private readonly l: Logger
   ) {}
 
+  @MessagePattern({ cmd: AuthCommands.GetAllUsers })
+  getAllUsersForNotifications() {
+    return this.appService.getAllUsersForNotifications();
+  }
+
+  @MessagePattern({ cmd: AuthCommands.GetUsersByIds })
+  getUsersByIdsForNotifications(@Payload() data: { userIds?: string[] }) {
+    return this.appService.getUsersByIdsForNotifications(data?.userIds ?? []);
+  }
+
   @MessagePattern({ cmd: AuthCommands.RequestEmailAuthAction })
   requestEmailAuthAction(
     @Payload()

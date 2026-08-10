@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken, InjectRepository } from '@nestjs/typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { UserEntity } from '../user/entities/user.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import validator from 'validator';
 import {
   MfaService,
@@ -47,6 +47,25 @@ export class AppService {
 
   private normalizeEmail(email: string): string {
     return email.trim().toLowerCase();
+  }
+
+  async getAllUsersForNotifications(): Promise<
+    Array<{ id: string; email: string }>
+  > {
+    const users = await this.userRepo.find({ select: ['id', 'email'] });
+    return users.map(({ id, email }) => ({ id, email }));
+  }
+
+  async getUsersByIdsForNotifications(
+    userIds: string[]
+  ): Promise<Array<{ id: string; email: string }>> {
+    const ids = [...new Set(userIds)].filter(Boolean).slice(0, 100);
+    if (!ids.length) return [];
+    const users = await this.userRepo.find({
+      where: { id: In(ids) },
+      select: ['id', 'email'],
+    });
+    return users.map(({ id, email }) => ({ id, email }));
   }
 
   private autoVerifyEmailsEnabled(): boolean {

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import bootstrap from './main.server';
 import { createGatewaySessionValidator } from './server-session-validation';
 import { createProtectedRouteGate } from './server-route-guard';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -19,6 +20,11 @@ app.use(oauthCallbackReferrerPolicy);
 const commonEngine = new CommonEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'local-hub',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
 const validateGatewaySession = createGatewaySessionValidator({ gatewayUrl });
 const getRequestUrl = (req: express.Request): string => {
