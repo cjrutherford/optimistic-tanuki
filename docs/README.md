@@ -95,6 +95,11 @@ Step-by-step guides for specific tasks:
 - [MCP Validation Guide](./guides/mcp-validation.md) - Validating MCP implementations
 - [Agents Guide](./guides/agents.md) - Working with AI agents in the platform
 
+### Performance and Operations
+
+- [Performance Monitoring](./performance-monitoring.md) - Runtime telemetry, owner alerts, and resource comparison
+- [Evaluate Performance Metrics Skill](./skills/evaluate-performance-metrics/SKILL.md) - Repeatable Angular route, resource, and alert evaluation workflow
+
 ### Marketing
 
 - [Marketing README](./marketing/README.md) - Index for product, platform, and developer-facing marketing docs

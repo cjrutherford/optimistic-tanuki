@@ -109,6 +109,7 @@ describe('DashboardComponent', () => {
       'Community Ops',
       'Operations',
       'Security',
+      'Performance',
       'Control Center',
       'Logout',
     ]);

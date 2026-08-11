@@ -58,6 +58,7 @@ describe('appRoutes', () => {
         'contacts',
         'operations',
         'video-processing',
+        'performance',
         'control-center',
         'oauth-inspector',
         'registry',

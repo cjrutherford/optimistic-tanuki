@@ -64,7 +64,9 @@ export class RegisterAccountBootstrapService {
     if (appScope === 'owner-console') {
       await this.roleInit.processNow(
         new RoleInitBuilder()
-          .setScopeName('global')
+          // Keep the profile global, but assign the Owner Console role in its
+          // own scope so scoped permissions (including observability) apply.
+          .setScopeName('owner-console')
           .setProfile(createdProfile.id)
           .assignOwnerRole()
           .addOwnerScopeDefaults()

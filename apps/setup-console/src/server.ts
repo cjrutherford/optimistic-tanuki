@@ -8,6 +8,7 @@ import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SetupService } from './server/setup.service';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -15,6 +16,11 @@ const browserDistFolder = resolve(serverDistFolder, '../browser');
 const app = express();
 app.use(oauthCallbackReferrerPolicy);
 const angularApp = new AngularNodeAppEngine();
+startNodeRuntimeMonitoring({
+  appId: 'setup-console',
+  gatewayEndpoint: process.env['GATEWAY_URL'],
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const setup = new SetupService();
 
 app.use(express.json());

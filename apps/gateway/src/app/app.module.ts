@@ -19,6 +19,11 @@ import { SocketSessionAuthService } from '../auth/socket-session-auth.service';
 import { AuthenticationController } from '../controllers/authentication/authentication.controller';
 import { JwtService } from '@nestjs/jwt';
 import { LoggerModule } from '@optimistic-tanuki/logger';
+import {
+  EmailModule,
+  ConsoleEmailProvider,
+  SmtpEmailProvider,
+} from '@optimistic-tanuki/email';
 import { Module } from '@nestjs/common';
 import { ProfileController } from '../controllers/profile/profile.controller';
 import { ProjectPlanningController } from '../controllers/project-planning/project-planning.controller';
@@ -45,6 +50,8 @@ import {
   SecurityTelemetryController,
 } from '../security/security-telemetry.controller';
 import { SecurityTelemetryService } from '../security/security-telemetry.service';
+import { PerformanceTelemetryController } from '../performance/performance-telemetry.controller';
+import { PerformanceTelemetryService } from '../performance/performance-telemetry.service';
 import { StoreController } from '../controllers/store/store.controller';
 import { PermissionsProxyService } from '../auth/permissions-proxy.service';
 import { AppConfigController } from '../controllers/app-config/app-config.controller';
@@ -355,11 +362,35 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
       },
     ]),
     LoggerModule,
+    EmailModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const smtpHost = config.get<string>('SMTP_HOST');
+        if (!smtpHost) return { providers: [new ConsoleEmailProvider()] };
+        return {
+          providers: [
+            new SmtpEmailProvider({
+              host: smtpHost,
+              port: Number(config.get<string | number>('SMTP_PORT') || 465),
+              secure: String(config.get('SMTP_SECURE') ?? 'true') === 'true',
+              auth: {
+                user: config.get<string>('SMTP_USER') || '',
+                pass: config.get<string>('SMTP_PASS') || '',
+              },
+              defaultFrom:
+                config.get<string>('SMTP_FROM') ||
+                'noreply@optimistic-tanuki.dev',
+            }),
+          ],
+        };
+      },
+    }),
     ...createMcpToolImports(gatewayComposition),
   ],
   controllers: [
     ...controllerEntries.map((entry) => entry.value),
     SecurityTelemetryController,
+    PerformanceTelemetryController,
   ],
   providers: [
     {
@@ -371,6 +402,7 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
             process.env.SECURITY_CROWDSEC_URL ?? 'http://crowdsec:8080',
         }),
     },
+    PerformanceTelemetryService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

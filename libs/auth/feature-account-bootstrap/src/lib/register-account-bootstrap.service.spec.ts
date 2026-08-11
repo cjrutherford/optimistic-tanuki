@@ -56,9 +56,9 @@ describe('RegisterAccountBootstrapService', () => {
     );
     expect(roleInit.processNow).toHaveBeenCalledWith(
       expect.objectContaining({
-        scopeName: 'global',
+        scopeName: 'owner-console',
         assignments: expect.arrayContaining([
-          expect.objectContaining({ roleName: 'owner' }),
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
         ]),
       })
     );

@@ -117,7 +117,7 @@ describe('LoginAccountBootstrapService', () => {
       ),
     };
     const permissionsClient = {
-      send: jest.fn().mockReturnValueOnce(of([{ role: { name: 'owner' } }])),
+      send: jest.fn().mockReturnValue(of([{ role: { name: 'owner' } }])),
     };
     const roleInit = { processNow: jest.fn() };
     const service = new LoginAccountBootstrapService(
@@ -140,7 +140,18 @@ describe('LoginAccountBootstrapService', () => {
         profileId: 'profile-global',
       }
     );
-    expect(roleInit.processNow).not.toHaveBeenCalled();
+    expect(roleInit.processNow).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scopeName: 'owner-console',
+        assignments: expect.arrayContaining([
+          expect.objectContaining({ roleName: 'owner_console_owner' }),
+        ]),
+      })
+    );
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: RoleCommands.GetUserRoles },
+      { profileId: 'profile-global', appScope: 'owner-console' }
+    );
     expect(permissionsClient.send).toHaveBeenCalledWith(
       { cmd: RoleCommands.GetUserRoles },
       { profileId: 'profile-global', appScope: 'global' }
@@ -171,7 +182,7 @@ describe('LoginAccountBootstrapService', () => {
     const permissionsClient = {
       send: jest
         .fn()
-        .mockReturnValueOnce(of([{ role: { name: 'community_member' } }])),
+        .mockReturnValue(of([{ role: { name: 'community_member' } }])),
     };
     const roleInit = { processNow: jest.fn() };
     const service = new LoginAccountBootstrapService(

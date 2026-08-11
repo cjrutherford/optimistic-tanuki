@@ -49,6 +49,15 @@ export {
 } from './badge.component';
 export { SectionHeadingComponent } from './section-heading/section-heading.component';
 export {
+  createPerformanceReporter,
+  normalizePerformanceRoute,
+  startPerformanceMonitoring,
+  type PerformanceMetric,
+  type PerformanceMetricName,
+  type PerformanceMonitorOptions,
+  type PerformanceRumPayload,
+} from './performance-monitor';
+export {
   MetricTileComponent,
   type MetricDeltaDirection,
   type MetricTone,

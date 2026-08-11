@@ -9,7 +9,11 @@ import express from 'express';
 import { oauthCallbackReferrerPolicy } from '@optimistic-tanuki/auth-ui';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { authorizeOwnerConsoleAdminRequest } from './admin-api-authorization';
+import {
+  authorizeOwnerConsoleAdminRequest,
+  getOwnerAuthorizationHeader,
+} from './admin-api-authorization';
+import { startNodeRuntimeMonitoring } from '@optimistic-tanuki/common-ui/node-performance-monitor';
 
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
@@ -26,6 +30,11 @@ app.use((_request, response, next) => {
 const angularApp = new AngularNodeAppEngine();
 
 const gatewayUrl = process.env['GATEWAY_URL'] || 'http://gateway:3000';
+startNodeRuntimeMonitoring({
+  appId: 'owner-console',
+  gatewayEndpoint: gatewayUrl,
+  otlpEndpoint: process.env['OTEL_EXPORTER_OTLP_ENDPOINT'],
+});
 const gatewayWsUrl = process.env['GATEWAY_WS_URL'] || 'http://gateway:3300';
 const adminApiUrl =
   process.env['ADMIN_API_URL'] ||
@@ -93,6 +102,13 @@ app.use('/admin-api', async (request, response, next) => {
   if (!authorization.authorized) {
     response.status(authorization.status).end();
     return;
+  }
+  const bearerHeader = getOwnerAuthorizationHeader(
+    request.get('authorization'),
+    request.get('cookie')
+  );
+  if (bearerHeader) {
+    request.headers.authorization = bearerHeader;
   }
   next();
 });
