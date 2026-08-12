@@ -59,6 +59,8 @@ import {
   BudgetDto,
   CreateBudgetDto,
   CreateFinanceTenantDto,
+  CreateFinanceTenantMemberDto,
+  UpdateFinanceTenantMemberRoleDto,
   CreateRecurringItemDto,
   FinanceWorkQueueDto,
   FinanceOnboardingStateDto,
@@ -1350,7 +1352,7 @@ export class FinanceController {
     type: [Object],
   })
   @Get('tenant/members')
-  @RequirePermissions('finance.member.manage')
+  @RequirePermissions('finance.tenant.manage')
   async listTenantMembers(
     @User() user,
     @AppScope() appScope: string,
@@ -1359,6 +1361,61 @@ export class FinanceController {
     return await this.sendFinanceCommand(
       { cmd: FinanceTenantCommands.LIST_TENANT_MEMBERS },
       this.getScope(user, appScope, tenantId)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.tenant.manage')
+  @Post('tenant/members')
+  async createTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Body() dto: CreateFinanceTenantMemberDto
+  ): Promise<FinanceTenantMemberDto> {
+    return await this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.CREATE_TENANT_MEMBER },
+      { ...dto, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.tenant.manage')
+  @Put('tenant/members/:memberId')
+  async updateTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateFinanceTenantMemberRoleDto
+  ): Promise<FinanceTenantMemberDto> {
+    return this.sendFinanceCommand(
+      { cmd: FinanceTenantCommands.UPDATE_TENANT_MEMBER },
+      { ...dto, memberId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @RequirePermissions('finance.tenant.manage')
+  @Delete('tenant/members/:memberId')
+  async removeTenantMember(
+    @User() user,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null,
+    @Param('memberId') memberId: string
+  ): Promise<void> {
+    await firstValueFrom(
+      this.financeClient
+        .send<void>(
+          { cmd: FinanceTenantCommands.REMOVE_TENANT_MEMBER },
+          { memberId, ...this.getScope(user, appScope, tenantId) }
+        )
+        .pipe(
+          catchError((error) =>
+            throwError(() => this.mapFinanceRpcError(error))
+          )
+        ),
+      { defaultValue: undefined }
     );
   }
 

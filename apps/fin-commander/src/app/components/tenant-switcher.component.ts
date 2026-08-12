@@ -16,7 +16,11 @@ import {
   imports: [CommonModule, FormsModule],
   template: `
     <div class="tenant-switcher">
-      <div class="tenant-switcher-row" aria-label="Active account selector">
+      <div
+        class="tenant-switcher-row"
+        role="group"
+        aria-label="Active account selector"
+      >
         <label class="tenant-label" for="fin-tenant-selector">Account</label>
         <select
           id="fin-tenant-selector"

@@ -26,6 +26,8 @@ import {
   BankConnectionLinkTokenDto,
   BootstrapFinanceWorkspaceDto,
   CreateFinanceTenantDto,
+  CreateFinanceTenantMemberDto,
+  UpdateFinanceTenantMemberRoleDto,
   CreateAccountDto,
   UpdateAccountDto,
   CreateTransactionDto,
@@ -153,6 +155,13 @@ export class AppController {
       ...payload,
       tenantId: tenant.id,
     };
+  }
+
+  private async requireScopedFinCommanderPlan(
+    planId: string,
+    scope: FinanceScope
+  ): Promise<void> {
+    await this.finCommanderPlanService.assertAccess(planId, scope);
   }
 
   // Account endpoints
@@ -626,6 +635,45 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: FinanceTenantCommands.CREATE_TENANT_MEMBER })
+  async createTenantMember(
+    @Payload() payload: CreateFinanceTenantMemberDto & FinanceScope
+  ) {
+    const scope =
+      (await this.resolveScope(
+        payload as unknown as Record<string, unknown>
+      )) ?? {};
+    return await this.financeTenantService.addMember(scope, {
+      memberProfileId: payload.memberProfileId,
+      role: payload.role,
+    });
+  }
+
+  @MessagePattern({ cmd: FinanceTenantCommands.UPDATE_TENANT_MEMBER })
+  async updateTenantMember(
+    @Payload()
+    payload: UpdateFinanceTenantMemberRoleDto &
+      FinanceScope & { memberId: string }
+  ) {
+    return this.financeTenantService.updateMemberRole(
+      (await this.resolveScope(
+        payload as unknown as Record<string, unknown>
+      )) ?? {},
+      payload.memberId,
+      { role: payload.role }
+    );
+  }
+
+  @MessagePattern({ cmd: FinanceTenantCommands.REMOVE_TENANT_MEMBER })
+  async removeTenantMember(
+    @Payload() payload: FinanceScope & { memberId: string }
+  ) {
+    return this.financeTenantService.removeMember(
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {},
+      payload.memberId
+    );
+  }
+
   // Fin Commander plan endpoints
   @MessagePattern({ cmd: FinCommanderPlanCommands.CREATE })
   async createFinCommanderPlan(@Payload() data: CreateFinCommanderPlanDto) {
@@ -680,9 +728,9 @@ export class AppController {
   // Fin Commander goal endpoints
   @MessagePattern({ cmd: FinCommanderGoalCommands.CREATE })
   async createFinCommanderGoal(@Payload() data: CreateFinCommanderGoalDto) {
-    return await this.finCommanderGoalService.create(
-      await this.withResolvedTenant(data)
-    );
+    const scopedData = await this.withResolvedTenant(data);
+    await this.requireScopedFinCommanderPlan(scopedData.planId, scopedData);
+    return await this.finCommanderGoalService.create(scopedData);
   }
 
   @MessagePattern({ cmd: FinCommanderGoalCommands.FIND_MANY })
@@ -733,9 +781,9 @@ export class AppController {
   async createFinCommanderScenario(
     @Payload() data: CreateFinCommanderScenarioDto
   ) {
-    return await this.finCommanderScenarioService.create(
-      await this.withResolvedTenant(data)
-    );
+    const scopedData = await this.withResolvedTenant(data);
+    await this.requireScopedFinCommanderPlan(scopedData.planId, scopedData);
+    return await this.finCommanderScenarioService.create(scopedData);
   }
 
   @MessagePattern({ cmd: FinCommanderScenarioCommands.FIND_MANY })

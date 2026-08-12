@@ -70,12 +70,10 @@ describe('AuthStateService', () => {
     };
     authentication.currentSession.mockResolvedValue({
       data: {
-        user: {
-          userId: 'user-1',
-          name: 'Captain Ledger',
-          email: 'captain@example.com',
-          profileId: profile.id,
-        },
+        userId: 'user-1',
+        name: 'Captain Ledger',
+        email: 'captain@example.com',
+        profileId: profile.id,
       },
     });
     const service = TestBed.inject(AuthStateService);
@@ -100,11 +98,50 @@ describe('AuthStateService', () => {
       })
     );
     expect(service.getDecodedTokenValue()).toMatchObject({
-      user: {
-        userId: 'user-1',
-        email: 'captain@example.com',
-        profileId: profile.id,
-      },
+      userId: 'user-1',
+      email: 'captain@example.com',
+      profileId: profile.id,
+    });
+  });
+
+  it('keeps a successful post-login restoration when an older session probe fails', async () => {
+    let rejectStartupProbe: (reason?: unknown) => void = () => undefined;
+    const authentication = TestBed.inject(AuthenticationService) as unknown as {
+      currentSession: jest.Mock;
+    };
+    authentication.currentSession
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectStartupProbe = reject;
+          })
+      )
+      .mockResolvedValueOnce({
+        data: {
+          userId: 'user-1',
+          name: 'Captain Ledger',
+          email: 'captain@example.com',
+          profileId: profile.id,
+        },
+      });
+
+    const service = TestBed.inject(AuthStateService);
+
+    await expect(
+      (
+        service as unknown as {
+          restoreSession: (options: { force: boolean }) => Promise<boolean>;
+        }
+      ).restoreSession({ force: true })
+    ).resolves.toBe(true);
+    rejectStartupProbe(new Error('anonymous session expired'));
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(service.isAuthenticated).toBe(true);
+    expect(service.getDecodedTokenValue()).toMatchObject({
+      userId: 'user-1',
+      email: 'captain@example.com',
     });
   });
 });

@@ -1,4 +1,5 @@
 import {
+  HttpErrorResponse,
   HttpEvent,
   HttpHandlerFn,
   HttpRequest,
@@ -6,8 +7,8 @@ import {
   withInterceptors,
 } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { firstValueFrom, of } from 'rxjs';
+import { provideRouter, Router } from '@angular/router';
+import { firstValueFrom, of, throwError } from 'rxjs';
 import { AuthInterceptor } from './http.interceptor';
 import { AuthStateService } from './state/auth-state.service';
 import { financeAppScopeInterceptor } from './finance-appscope.interceptor';
@@ -48,6 +49,39 @@ describe('AuthInterceptor', () => {
     expect(forwardedRequest?.headers.get('Authorization')).toBeNull();
     expect(forwardedRequest?.headers.get('X-ot-session-mode')).toBe('cookie');
     expect(forwardedRequest?.withCredentials).toBe(true);
+  });
+
+  it('does not log out or redirect when an anonymous session restore receives 401', async () => {
+    const logout = jest.fn();
+    const navigate = jest.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: Router, useValue: { navigate } },
+        {
+          provide: AuthStateService,
+          useValue: { isAuthenticated: false, logout },
+        },
+      ],
+    });
+
+    await TestBed.runInInjectionContext(async () => {
+      const request = new HttpRequest('GET', '/api/authentication/session');
+      const next: HttpHandlerFn = () =>
+        throwError(
+          () => new HttpErrorResponse({ status: 401, url: request.url })
+        ) as ReturnType<HttpHandlerFn>;
+
+      await expect(
+        firstValueFrom(AuthInterceptor(request, next))
+      ).rejects.toMatchObject({
+        status: 401,
+      });
+    });
+
+    expect(logout).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('adds the finance app scope header to finance api requests', async () => {

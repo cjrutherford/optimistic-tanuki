@@ -31,7 +31,16 @@ describe('AppController (tenant isolation)', () => {
     Pick<FinanceTenantService, 'assertTenantAccess' | 'getCurrentTenant'>
   >;
   let finCommanderPlanService: jest.Mocked<
-    Pick<FinCommanderPlanService, 'create' | 'findOne' | 'findAll'>
+    Pick<
+      FinCommanderPlanService,
+      'assertAccess' | 'create' | 'findOne' | 'findAll'
+    >
+  >;
+  let finCommanderGoalService: jest.Mocked<
+    Pick<FinCommanderGoalService, 'create'>
+  >;
+  let finCommanderScenarioService: jest.Mocked<
+    Pick<FinCommanderScenarioService, 'create'>
   >;
   let bankConnectionService: jest.Mocked<
     Pick<
@@ -60,9 +69,16 @@ describe('AppController (tenant isolation)', () => {
       getCurrentTenant: jest.fn().mockResolvedValue({ id: 'default-tenant' }),
     };
     finCommanderPlanService = {
+      assertAccess: jest.fn().mockResolvedValue(undefined),
       create: jest.fn().mockResolvedValue({ id: 'plan-1' }),
       findOne: jest.fn().mockResolvedValue({ id: 'plan-1' }),
       findAll: jest.fn().mockResolvedValue([]),
+    };
+    finCommanderGoalService = {
+      create: jest.fn().mockResolvedValue({ id: 'goal-1' }),
+    };
+    finCommanderScenarioService = {
+      create: jest.fn().mockResolvedValue({ id: 'scenario-1' }),
     };
     bankConnectionService = {
       exchangePublicToken: jest.fn().mockResolvedValue({ id: 'connection-1' }),
@@ -81,8 +97,8 @@ describe('AppController (tenant isolation)', () => {
       bankConnectionService as unknown as BankConnectionService,
       {} as FinancialUtilitiesService,
       finCommanderPlanService as unknown as FinCommanderPlanService,
-      {} as FinCommanderGoalService,
-      {} as FinCommanderScenarioService
+      finCommanderGoalService as unknown as FinCommanderGoalService,
+      finCommanderScenarioService as unknown as FinCommanderScenarioService
     );
   });
 
@@ -396,6 +412,34 @@ describe('AppController (tenant isolation)', () => {
       expect(bankConnectionService.createLinkToken).toHaveBeenCalledWith(
         payload
       );
+    });
+  });
+
+  describe('Fin Commander child creation', () => {
+    it('rejects a goal whose parent plan is outside the resolved tenant scope', async () => {
+      finCommanderPlanService.assertAccess.mockRejectedValue(accessDenied());
+
+      await expect(
+        controller.createFinCommanderGoal({
+          planId: 'foreign-plan',
+          name: 'Foreign goal',
+          targetAmountCents: 100,
+          dueDate: '2026-12-31',
+          profileId: 'caller-profile',
+          tenantId: 'own-tenant',
+          userId: 'user-1',
+          appScope: 'finance',
+        })
+      ).rejects.toBeInstanceOf(RpcException);
+
+      expect(finCommanderPlanService.assertAccess).toHaveBeenCalledWith(
+        'foreign-plan',
+        expect.objectContaining({
+          profileId: 'caller-profile',
+          tenantId: 'own-tenant',
+        })
+      );
+      expect(finCommanderGoalService.create).not.toHaveBeenCalled();
     });
   });
 });

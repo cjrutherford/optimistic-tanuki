@@ -62,3 +62,27 @@ export interface FinanceTenantMemberDto {
   profileId: string;
   role: string;
 }
+
+export const FINANCE_TENANT_MEMBER_ROLES = [
+  'finance_admin',
+  'finance_member',
+] as const;
+
+export type FinanceTenantMemberRole =
+  (typeof FINANCE_TENANT_MEMBER_ROLES)[number];
+
+export class CreateFinanceTenantMemberDto {
+  @IsString()
+  @IsUUID()
+  memberProfileId: string;
+
+  @IsString()
+  @IsIn(FINANCE_TENANT_MEMBER_ROLES)
+  role: FinanceTenantMemberRole;
+}
+
+export class UpdateFinanceTenantMemberRoleDto {
+  @IsString()
+  @IsIn(FINANCE_TENANT_MEMBER_ROLES)
+  role: FinanceTenantMemberRole;
+}

@@ -25,8 +25,9 @@ function setup() {
     getScope: () => 'personal',
     listPlans: () => [{ id: 'plan-1' }],
     listGoals: () => [...seedGoals],
-    saveGoal: jest.fn(),
-    deleteGoal: jest.fn(),
+    refreshGoals: jest.fn().mockResolvedValue(seedGoals),
+    saveGoal: jest.fn().mockResolvedValue(seedGoals[0]),
+    deleteGoal: jest.fn().mockResolvedValue(undefined),
   } as unknown as FinCommanderPlanStore;
 
   TestBed.configureTestingModule({
@@ -80,7 +81,7 @@ describe('GoalsPageComponent', () => {
     );
   });
 
-  it('requires confirmation before deleting a goal', () => {
+  it('requires confirmation before deleting a goal', async () => {
     const store = setup();
     const fixture = TestBed.createComponent(GoalsPageComponent);
     fixture.detectChanges();
@@ -95,7 +96,7 @@ describe('GoalsPageComponent', () => {
     expect(store.deleteGoal as jest.Mock).not.toHaveBeenCalled();
 
     cmp.requestDelete('goal-existing');
-    cmp.confirmDelete('goal-existing');
+    await cmp.confirmDelete('goal-existing');
     expect(store.deleteGoal as jest.Mock).toHaveBeenCalledWith('goal-existing');
     expect(cmp.pendingDeleteId()).toBeNull();
     expect(cmp.statusMessage()).toContain('Emergency Fund');

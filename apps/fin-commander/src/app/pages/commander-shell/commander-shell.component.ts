@@ -953,16 +953,15 @@ export class CommanderShellComponent {
       return;
     }
 
-    const newPlanId = this.slugify(name);
-    this.store.savePlan({
-      id: newPlanId,
+    const plan = await this.store.savePlan({
+      id: this.slugify(name),
       name,
       description:
         this.newPlanDescription.trim() || 'First plan created from Commander.',
       defaultWorkspace: 'personal',
       updatedAt: new Date().toISOString(),
     });
-    await this.router.navigate(['/commander', newPlanId, 'overview']);
+    await this.router.navigate(['/commander', plan.id, 'overview']);
   }
 
   private slugify(value: string): string {

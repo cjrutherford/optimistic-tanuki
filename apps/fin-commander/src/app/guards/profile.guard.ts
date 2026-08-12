@@ -19,7 +19,10 @@ export class ProfileGuard implements CanActivate {
   }
 
   async canActivate(): Promise<boolean> {
-    if (!this.isAuthenticated) {
+    if (
+      !this.isAuthenticated &&
+      !(await this.authStateService.restoreSession())
+    ) {
       await this.router.navigate(['/login']);
       return false;
     }

@@ -148,6 +148,60 @@ describe('TenantContextService', () => {
     );
   });
 
+  it('activates a tenant from a canonical route without depending on the general refresh lifecycle', async () => {
+    const currentProfile = signal<ProfileDto | null>(financeProfile);
+    const isAuthenticated = signal(true);
+    const financeService = {
+      getTenants: jest.fn().mockResolvedValue([
+        {
+          id: 'tenant-1',
+          name: 'Household',
+          profileId: 'profile-1',
+          appScope: 'finance',
+        },
+        {
+          id: 'tenant-2',
+          name: 'Shared Studio',
+          profileId: 'profile-owner',
+          appScope: 'finance',
+        },
+      ]),
+      getCurrentTenant: jest.fn(),
+      getTenantMembers: jest.fn().mockResolvedValue([]),
+    };
+    const setScope = jest.fn();
+
+    TestBed.configureTestingModule({
+      providers: [
+        TenantContextService,
+        { provide: FinanceService, useValue: financeService },
+        {
+          provide: ProfileContext,
+          useValue: {
+            currentProfile,
+            currentProfileId: computed(() => currentProfile()?.id ?? null),
+            isAuthenticated,
+          },
+        },
+        { provide: FinCommanderPlanStore, useValue: { setScope } },
+      ],
+    });
+
+    const service = TestBed.inject(TenantContextService);
+
+    await expect(service.activateRouteTenant('tenant-2')).resolves.toBe(true);
+
+    expect(financeService.getCurrentTenant).not.toHaveBeenCalled();
+    expect(service.activeTenant()?.id).toBe('tenant-2');
+    expect(localStorage.getItem('fin-commander-active-tenant-id')).toBe(
+      'tenant-2'
+    );
+    expect(setScope).toHaveBeenLastCalledWith({
+      tenantId: 'tenant-2',
+      profileId: 'profile-1',
+    });
+  });
+
   it('automatically syncs the active tenant and profile into the commander scope', async () => {
     const currentProfile = signal<ProfileDto | null>(null);
     const isAuthenticated = signal(true);

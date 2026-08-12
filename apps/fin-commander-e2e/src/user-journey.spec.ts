@@ -14,6 +14,11 @@ type BrowserUser = {
   lastName: string;
 };
 
+type TenantRouteContext = {
+  accountsPath: string;
+  plansPath: string;
+};
+
 function uniqueEmail(prefix = 'fc-e2e'): string {
   return `${prefix}-${Date.now()}-${Math.round(
     Math.random() * 1000
@@ -118,6 +123,17 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
   page.on('console', async (message) => {
     if (message.type() === 'error') {
       let text = message.text();
+      const location = message.location();
+      const isExpectedAnonymousProbe =
+        text ===
+          'Failed to load resource: the server responded with a status of 401 (Unauthorized)' &&
+        ['/api/authentication/session', '/api/profile'].some((path) =>
+          location.url.includes(path)
+        );
+
+      if (isExpectedAnonymousProbe) {
+        return;
+      }
 
       if (text === 'ERROR HttpErrorResponse' || text === 'ERROR rt') {
         try {
@@ -215,7 +231,6 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
       ) {
         return;
       }
-      const location = message.location();
       if (location.url) {
         text = `${text} @ ${location.url}:${location.lineNumber}:${location.columnNumber}`;
       }
@@ -247,6 +262,19 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
       return;
     }
 
+    const request = response.request();
+    const isAnonymousBootstrapProbe =
+      response.status() === 401 &&
+      request.method() === 'GET' &&
+      !(await request.headerValue('cookie')) &&
+      ['/api/authentication/session', '/api/profile'].some((path) =>
+        response.url().includes(path)
+      );
+
+    if (isAnonymousBootstrapProbe) {
+      return;
+    }
+
     let body = '';
     try {
       body = await response.text();
@@ -255,9 +283,7 @@ async function startDiagnostics(page: Page): Promise<BrowserDiagnostics> {
     }
 
     diagnostics.failedResponses.push(
-      `${response
-        .request()
-        .method()} ${response.url()} -> ${response.status()} ${body}`
+      `${request.method()} ${response.url()} -> ${response.status()} ${body}`
     );
   });
 
@@ -397,7 +423,7 @@ async function clickMenuItem(page: Page, label: string) {
 }
 
 async function currentPlanId(page: Page): Promise<string> {
-  const match = page.url().match(/\/commander\/([^/]+)/);
+  const match = page.url().match(/\/(?:plans|commander)\/([^/]+)/);
   expect(match?.[1]).toBeTruthy();
   return match![1];
 }
@@ -422,7 +448,7 @@ async function registerViaBrowser(
   await page.goto(`${baseURL}/register`, { waitUntil: 'networkidle' });
   await page.getByLabel('First Name').fill(user.firstName);
   await page.getByLabel('Last Name').fill(user.lastName);
-  await page.getByLabel('Email').fill(user.email);
+  await page.getByLabel('Email', { exact: true }).fill(user.email);
   await page.getByLabel('Password', { exact: true }).fill(user.password);
   await page.getByLabel('Confirm Password').fill(user.password);
 
@@ -446,7 +472,7 @@ async function loginViaBrowser(
   user: Pick<BrowserUser, 'email' | 'password'>
 ) {
   await page.goto(`${baseURL}/login`, { waitUntil: 'networkidle' });
-  await page.getByLabel('Email').fill(user.email);
+  await page.getByLabel('Email', { exact: true }).fill(user.email);
   await page.getByLabel('Password').fill(user.password);
   await expectResponseOk(
     page,
@@ -463,7 +489,10 @@ async function loginViaBrowser(
 }
 
 async function ensureProfileSaved(page: Page) {
-  await clickMenuItem(page, 'Settings');
+  // A newly registered user is correctly routed to onboarding after login,
+  // where the global title bar is intentionally absent. Profile setup must
+  // therefore use the route directly instead of depending on that menu.
+  await page.goto('/settings', { waitUntil: 'networkidle' });
   await expect(page).toHaveURL(/\/settings$/);
 
   await page
@@ -497,7 +526,7 @@ async function bootstrapFinanceWorkspaces(
     accountName?: string;
     includeBusinessWorkspace?: boolean;
   }
-) {
+): Promise<TenantRouteContext> {
   const accountName = options?.accountName ?? 'Household Command';
   const includeBusinessWorkspace = options?.includeBusinessWorkspace ?? true;
 
@@ -521,6 +550,17 @@ async function bootstrapFinanceWorkspaces(
     page.getByRole('heading', { name: 'Choose your workspaces' })
   ).toBeVisible();
 
+  await expect(page.locator('fc-title-bar')).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Account' })).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Profile' })).toHaveCount(0);
+
+  const personalWorkspace = page.getByRole('button', {
+    name: 'Personal Income, bills, and everyday spending',
+  });
+  await page.mouse.wheel(0, 400);
+  await personalWorkspace.click();
+  await expect(personalWorkspace).toHaveClass(/selected/);
+
   if (includeBusinessWorkspace) {
     await page
       .getByRole('button', {
@@ -543,17 +583,48 @@ async function bootstrapFinanceWorkspaces(
     page.getByRole('heading', { name: 'Review your finance accounts' })
   ).toBeVisible();
   await page.getByRole('button', { name: 'Open accounts' }).click();
-  await page.waitForURL(/\/finance\/personal\/accounts$/, { timeout: 20000 });
+  await page.waitForURL(/\/tenants\/[^/]+\/accounts\/personal\/accounts$/, {
+    timeout: 20000,
+  });
+
+  const pathname = new URL(page.url()).pathname;
+  const match = pathname.match(/^(\/tenants\/[^/]+)\/accounts\//);
+  if (!match) {
+    expect(pathname).toMatch(/^\/finance\//);
+    return {
+      accountsPath: '/finance',
+      plansPath: '/commander',
+    };
+  }
+  return {
+    accountsPath: `${match![1]}/accounts`,
+    plansPath: `${match![1]}/plans`,
+  };
+}
+
+async function openOnboardingFinanceStep(
+  page: Page,
+  heading: string,
+  action: string
+) {
+  await page.goto('/onboarding', { waitUntil: 'networkidle' });
+  await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+  await page.getByRole('button', { name: action }).click();
+  await page.waitForLoadState('networkidle');
 }
 
 async function createAndUpdateAccount(
   page: Page,
+  routes: TenantRouteContext,
   workspace: 'personal' | 'business',
-  namePrefix: string
+  namePrefix: string,
+  options?: { useCurrentRoute?: boolean }
 ) {
-  await page.goto(`/finance/${workspace}/accounts`, {
-    waitUntil: 'networkidle',
-  });
+  if (!options?.useCurrentRoute) {
+    await page.goto(`${routes.accountsPath}/${workspace}/accounts`, {
+      waitUntil: 'networkidle',
+    });
+  }
 
   const accountName = `${namePrefix} ${Date.now()}`;
   await expectResponseOk(
@@ -571,11 +642,11 @@ async function createAndUpdateAccount(
   );
 
   await expect(
-    page.locator(`tr:has-text("${accountName}")`).first()
+    page.getByRole('row', { name: new RegExp(accountName) })
   ).toBeVisible();
 
   const updatedName = `${accountName} Updated`;
-  const row = page.locator(`tr:has-text("${accountName}")`).first();
+  const row = page.getByRole('row', { name: new RegExp(accountName) });
   await row.getByRole('button', { name: 'Edit' }).click();
 
   await expectResponseOk(
@@ -589,7 +660,7 @@ async function createAndUpdateAccount(
     }
   );
   await expect(
-    page.locator(`tr:has-text("${updatedName}")`).first()
+    page.getByRole('row', { name: new RegExp(updatedName) })
   ).toBeVisible();
 
   await expectResponseOk(
@@ -599,9 +670,8 @@ async function createAndUpdateAccount(
       response.request().method() === 'PUT',
     async () => {
       await page
-        .locator(`tr:has-text("${updatedName}")`)
-        .first()
-        .getByRole('button', { name: 'Mark Reviewed' })
+        .getByRole('row', { name: new RegExp(updatedName) })
+        .getByRole('button', { name: 'Reviewed' })
         .click();
     }
   );
@@ -612,12 +682,16 @@ async function createAndUpdateAccount(
 
 async function createUpdateDeleteTransaction(
   page: Page,
+  routes: TenantRouteContext,
   workspace: 'personal' | 'business',
-  categoryPrefix: string
+  categoryPrefix: string,
+  options?: { useCurrentRoute?: boolean }
 ) {
-  await page.goto(`/finance/${workspace}/transactions`, {
-    waitUntil: 'networkidle',
-  });
+  if (!options?.useCurrentRoute) {
+    await page.goto(`${routes.accountsPath}/${workspace}/transactions`, {
+      waitUntil: 'networkidle',
+    });
+  }
 
   const category = `${categoryPrefix}-${Date.now()}`;
   await expectResponseOk(
@@ -643,11 +717,13 @@ async function createUpdateDeleteTransaction(
     }
   );
   await expect(
-    page.locator(`tr:has-text("${category}")`).first()
+    page.getByRole('row', { name: new RegExp(category) })
   ).toBeVisible();
 
   const updatedCategory = `${category}-updated`;
-  const transactionRow = page.locator(`tr:has-text("${category}")`).first();
+  const transactionRow = page.getByRole('row', {
+    name: new RegExp(category),
+  });
   await transactionRow.getByRole('button', { name: 'Edit' }).click();
   await expectResponseOk(
     page,
@@ -660,7 +736,7 @@ async function createUpdateDeleteTransaction(
     }
   );
   await expect(
-    page.locator(`tr:has-text("${updatedCategory}")`).first()
+    page.getByRole('row', { name: new RegExp(updatedCategory) })
   ).toBeVisible();
   await expectResponseOk(
     page,
@@ -669,24 +745,27 @@ async function createUpdateDeleteTransaction(
       response.request().method() === 'DELETE',
     async () => {
       await page
-        .locator(`tr:has-text("${updatedCategory}")`)
-        .first()
+        .getByRole('row', { name: new RegExp(updatedCategory) })
         .getByRole('button', { name: 'Delete' })
         .click();
     }
   );
-  await expect(page.locator(`tr:has-text("${updatedCategory}")`)).toHaveCount(
-    0
-  );
+  await expect(
+    page.getByRole('row', { name: new RegExp(updatedCategory) })
+  ).toHaveCount(0);
 }
 
 async function createUpdateDeleteBudget(
   page: Page,
-  workspace: 'personal' | 'business'
+  routes: TenantRouteContext,
+  workspace: 'personal' | 'business',
+  options?: { useCurrentRoute?: boolean }
 ) {
-  await page.goto(`/finance/${workspace}/budgets`, {
-    waitUntil: 'networkidle',
-  });
+  if (!options?.useCurrentRoute) {
+    await page.goto(`${routes.accountsPath}/${workspace}/budgets`, {
+      waitUntil: 'networkidle',
+    });
+  }
 
   const budgetName = `Budget ${Date.now()}`;
   await expectResponseOk(
@@ -702,13 +781,12 @@ async function createUpdateDeleteBudget(
     }
   );
   await expect(
-    page.locator(`article:has-text("${budgetName}")`).first()
+    page.getByRole('row', { name: new RegExp(budgetName) })
   ).toBeVisible();
 
   const updatedBudgetName = `${budgetName} Updated`;
   await page
-    .locator(`article:has-text("${budgetName}")`)
-    .first()
+    .getByRole('row', { name: new RegExp(budgetName) })
     .getByRole('button', { name: 'Edit' })
     .click();
   await expectResponseOk(
@@ -722,7 +800,7 @@ async function createUpdateDeleteBudget(
     }
   );
   await expect(
-    page.locator(`article:has-text("${updatedBudgetName}")`).first()
+    page.getByRole('row', { name: new RegExp(updatedBudgetName) })
   ).toBeVisible();
   await expectResponseOk(
     page,
@@ -731,25 +809,28 @@ async function createUpdateDeleteBudget(
       response.request().method() === 'DELETE',
     async () => {
       await page
-        .locator(`article:has-text("${updatedBudgetName}")`)
-        .first()
+        .getByRole('row', { name: new RegExp(updatedBudgetName) })
         .getByRole('button', { name: 'Delete' })
         .click();
     }
   );
   await expect(
-    page.locator(`article:has-text("${updatedBudgetName}")`)
+    page.getByRole('row', { name: new RegExp(updatedBudgetName) })
   ).toHaveCount(0);
 }
 
 async function createCategorizedTransaction(
   page: Page,
+  routes: TenantRouteContext,
   workspace: 'personal' | 'business',
-  categoryPrefix: string
+  categoryPrefix: string,
+  options?: { useCurrentRoute?: boolean }
 ) {
-  await page.goto(`/finance/${workspace}/transactions`, {
-    waitUntil: 'networkidle',
-  });
+  if (!options?.useCurrentRoute) {
+    await page.goto(`${routes.accountsPath}/${workspace}/transactions`, {
+      waitUntil: 'networkidle',
+    });
+  }
 
   const category = `${categoryPrefix}-${Date.now()}`;
   await expectResponseOk(
@@ -776,19 +857,23 @@ async function createCategorizedTransaction(
   );
 
   await expect(
-    page.locator(`tr:has-text("${category}")`).first()
+    page.getByRole('row', { name: new RegExp(category) })
   ).toBeVisible();
   return category;
 }
 
 async function createBudget(
   page: Page,
+  routes: TenantRouteContext,
   workspace: 'personal' | 'business',
-  namePrefix = 'Setup Budget'
+  namePrefix = 'Setup Budget',
+  options?: { useCurrentRoute?: boolean }
 ) {
-  await page.goto(`/finance/${workspace}/budgets`, {
-    waitUntil: 'networkidle',
-  });
+  if (!options?.useCurrentRoute) {
+    await page.goto(`${routes.accountsPath}/${workspace}/budgets`, {
+      waitUntil: 'networkidle',
+    });
+  }
 
   const budgetName = `${namePrefix} ${Date.now()}`;
   await expectResponseOk(
@@ -805,16 +890,17 @@ async function createBudget(
   );
 
   await expect(
-    page.locator(`article:has-text("${budgetName}")`).first()
+    page.getByRole('row', { name: new RegExp(budgetName) })
   ).toBeVisible();
   return budgetName;
 }
 
 async function createUpdateDeleteRecurring(
   page: Page,
+  routes: TenantRouteContext,
   workspace: 'personal' | 'business'
 ) {
-  await page.goto(`/finance/${workspace}/recurring`, {
+  await page.goto(`${routes.accountsPath}/${workspace}/recurring`, {
     waitUntil: 'networkidle',
   });
 
@@ -874,8 +960,10 @@ async function createUpdateDeleteRecurring(
   ).toHaveCount(0);
 }
 
-async function createUpdateDeleteAsset(page: Page) {
-  await page.goto('/finance/net-worth/assets', { waitUntil: 'networkidle' });
+async function createUpdateDeleteAsset(page: Page, routes: TenantRouteContext) {
+  await page.goto(`${routes.accountsPath}/net-worth/assets`, {
+    waitUntil: 'networkidle',
+  });
   await expect(
     page.getByRole('heading', { name: 'Tracked Assets' })
   ).toBeVisible();
@@ -1002,19 +1090,28 @@ test.describe('Fin Commander user journey', () => {
     );
 
     await ensureProfileSaved(page);
-    await bootstrapFinanceWorkspaces(page, {
+    const routes = await bootstrapFinanceWorkspaces(page, {
       accountName: 'Personal Command',
       includeBusinessWorkspace: false,
     });
     logDiagnosticsCheckpoint('after-bootstrap-personal', diagnostics);
-    await createAndUpdateAccount(page, 'personal', 'Checking');
+    await createAndUpdateAccount(page, routes, 'personal', 'Checking', {
+      useCurrentRoute: true,
+    });
     logDiagnosticsCheckpoint('after-account-personal', diagnostics);
     await logRuntimeBundleContext(page, diagnostics);
-    await createUpdateDeleteTransaction(page, 'personal', 'category');
+    await createCategorizedTransaction(
+      page,
+      routes,
+      'personal',
+      'Setup baseline'
+    );
+    await createUpdateDeleteTransaction(page, routes, 'personal', 'category');
     logDiagnosticsCheckpoint('after-transaction-personal', diagnostics);
-    await createUpdateDeleteBudget(page, 'personal');
+    await createBudget(page, routes, 'personal', 'Setup baseline');
+    await createUpdateDeleteBudget(page, routes, 'personal');
     logDiagnosticsCheckpoint('after-budget-personal', diagnostics);
-    await createUpdateDeleteRecurring(page, 'personal');
+    await createUpdateDeleteRecurring(page, routes, 'personal');
     logDiagnosticsCheckpoint('after-recurring-personal', diagnostics);
 
     await logRuntimeBundleContext(page, diagnostics);
@@ -1036,13 +1133,37 @@ test.describe('Fin Commander user journey', () => {
     await registerViaBrowser(page, baseURL as string, user);
     await loginViaBrowser(page, baseURL as string, user);
     await ensureProfileSaved(page);
-    await bootstrapFinanceWorkspaces(page, {
+    const routes = await bootstrapFinanceWorkspaces(page, {
       accountName: 'Workspace Expansion',
       includeBusinessWorkspace: false,
     });
-    await createAndUpdateAccount(page, 'personal', 'Expansion Checking');
-    await createCategorizedTransaction(page, 'personal', 'expansion-category');
-    await createBudget(page, 'personal', 'Expansion Budget');
+    await createAndUpdateAccount(
+      page,
+      routes,
+      'personal',
+      'Expansion Checking',
+      { useCurrentRoute: true }
+    );
+    await openOnboardingFinanceStep(
+      page,
+      'Categorize your first transactions',
+      'Open transactions'
+    );
+    await createCategorizedTransaction(
+      page,
+      routes,
+      'personal',
+      'expansion-category',
+      { useCurrentRoute: true }
+    );
+    await openOnboardingFinanceStep(
+      page,
+      'Create a first budget',
+      'Open budgets'
+    );
+    await createBudget(page, routes, 'personal', 'Expansion Budget', {
+      useCurrentRoute: true,
+    });
 
     await page.goto('/onboarding', { waitUntil: 'networkidle' });
     await expect(
@@ -1068,11 +1189,11 @@ test.describe('Fin Commander user journey', () => {
       }
     );
 
-    await page.goto('/finance/business/accounts', {
+    await page.goto(`${routes.accountsPath}/business/accounts`, {
       waitUntil: 'networkidle',
     });
     await expect(
-      page.locator('tr:has-text("Business Operating")')
+      page.getByRole('row', { name: /Business Operating/ })
     ).toBeVisible();
 
     expectNoBrowserErrors(diagnostics);
@@ -1100,7 +1221,7 @@ test.describe('Fin Commander user journey', () => {
     );
 
     await ensureProfileSaved(page);
-    await bootstrapFinanceWorkspaces(page, {
+    const routes = await bootstrapFinanceWorkspaces(page, {
       accountName: 'Household Command',
       includeBusinessWorkspace: true,
     });
@@ -1109,10 +1230,10 @@ test.describe('Fin Commander user journey', () => {
 
     await openMenu(page);
     await expect(
-      page.locator('otui-modal button').filter({ hasText: 'Ledger' })
+      page.locator('otui-modal button').filter({ hasText: 'Tenant' })
     ).toBeVisible();
     await expect(
-      page.locator('otui-modal button').filter({ hasText: 'Commander' })
+      page.locator('otui-modal button').filter({ hasText: 'Plans' })
     ).toBeVisible();
     await expect(
       page.locator('otui-modal button').filter({ hasText: 'Settings' })
@@ -1122,19 +1243,33 @@ test.describe('Fin Commander user journey', () => {
     ).toHaveCount(0);
     await closeMenu(page);
 
-    await createAndUpdateAccount(page, 'business', 'Operating');
+    await createAndUpdateAccount(
+      page,
+      routes,
+      'personal',
+      'Household Checking',
+      {
+        useCurrentRoute: true,
+      }
+    );
+    await createAndUpdateAccount(page, routes, 'business', 'Operating');
     logDiagnosticsCheckpoint('after-account-business', diagnostics);
-    await createUpdateDeleteTransaction(page, 'business', 'biz-category');
+    await createUpdateDeleteTransaction(
+      page,
+      routes,
+      'business',
+      'biz-category'
+    );
     logDiagnosticsCheckpoint('after-transaction-business', diagnostics);
-    await createUpdateDeleteBudget(page, 'business');
+    await createUpdateDeleteBudget(page, routes, 'business');
     logDiagnosticsCheckpoint('after-budget-business', diagnostics);
-    await createUpdateDeleteRecurring(page, 'business');
+    await createUpdateDeleteRecurring(page, routes, 'business');
     logDiagnosticsCheckpoint('after-recurring-business', diagnostics);
-    await createUpdateDeleteAsset(page);
+    await createUpdateDeleteAsset(page, routes);
     logDiagnosticsCheckpoint('after-asset', diagnostics);
 
-    await clickMenuItem(page, 'Commander');
-    await expect(page).toHaveURL(/\/commander\/new\/overview$/);
+    await clickMenuItem(page, 'Plans');
+    await expect(page).toHaveURL(new RegExp(`${routes.plansPath}$`));
     await expect(page.getByLabel('Plan name')).toBeVisible();
     const planName = `First Plan ${Date.now()}`;
     await page.getByLabel('Plan name').fill(planName);
@@ -1142,7 +1277,9 @@ test.describe('Fin Commander user journey', () => {
       .getByLabel('What is this plan for?')
       .fill('Cover monthly obligations and savings goals');
     await page.getByRole('button', { name: 'Create your first plan' }).click();
-    await expect(page).toHaveURL(/\/commander\/[^/]+\/overview$/);
+    await expect(page).toHaveURL(
+      new RegExp(`${routes.plansPath}/[^/]+/overview$`)
+    );
     await expect(page).not.toHaveURL(/home-command/);
     await expect(
       page.getByText(
@@ -1154,10 +1291,12 @@ test.describe('Fin Commander user journey', () => {
     ).toBeVisible();
     const planId = await currentPlanId(page);
 
-    await page.goto(`/commander/${planId}/cash-flow`, {
+    await page.goto(`${routes.plansPath}/${planId}/cash-flow`, {
       waitUntil: 'networkidle',
     });
-    await expect(page).toHaveURL(new RegExp(`/commander/${planId}/cash-flow$`));
+    await expect(page).toHaveURL(
+      new RegExp(`${routes.plansPath}/${planId}/cash-flow$`)
+    );
     await expect(
       page.getByRole('heading', { name: 'Finance workspaces' })
     ).toBeVisible();
@@ -1165,8 +1304,12 @@ test.describe('Fin Commander user journey', () => {
       page.getByRole('link', { name: 'Accounts' }).first()
     ).toBeVisible();
 
-    await page.goto(`/commander/${planId}/goals`, { waitUntil: 'networkidle' });
-    await expect(page).toHaveURL(new RegExp(`/commander/${planId}/goals$`));
+    await page.goto(`${routes.plansPath}/${planId}/goals`, {
+      waitUntil: 'networkidle',
+    });
+    await expect(page).toHaveURL(
+      new RegExp(`${routes.plansPath}/${planId}/goals$`)
+    );
     const goalName = `Goal ${Date.now()}`;
     await page.getByLabel('Goal name').fill(goalName);
     await page.getByLabel('Target amount').fill('10000');
@@ -1188,10 +1331,12 @@ test.describe('Fin Commander user journey', () => {
       0
     );
 
-    await page.goto(`/commander/${planId}/scenarios`, {
+    await page.goto(`${routes.plansPath}/${planId}/scenarios`, {
       waitUntil: 'networkidle',
     });
-    await expect(page).toHaveURL(new RegExp(`/commander/${planId}/scenarios$`));
+    await expect(page).toHaveURL(
+      new RegExp(`${routes.plansPath}/${planId}/scenarios$`)
+    );
     const scenarioName = `Scenario ${Date.now()}`;
     await page.getByLabel('Scenario name').fill(scenarioName);
     await page.getByLabel('Summary').fill('Stress test the command plan');
@@ -1215,10 +1360,12 @@ test.describe('Fin Commander user journey', () => {
       page.locator(`article:has-text("${scenarioName}")`)
     ).toHaveCount(0);
 
-    await page.goto(`/commander/${planId}/imports`, {
+    await page.goto(`${routes.plansPath}/${planId}/imports`, {
       waitUntil: 'networkidle',
     });
-    await expect(page).toHaveURL(new RegExp(`/commander/${planId}/imports$`));
+    await expect(page).toHaveURL(
+      new RegExp(`${routes.plansPath}/${planId}/imports$`)
+    );
     await expect(
       page.getByRole('heading', {
         name: 'Transaction intake and reconciliation',
@@ -1249,11 +1396,11 @@ test.describe('Fin Commander user journey', () => {
       page.getByText('Committed 1 imported transactions.')
     ).toBeVisible();
 
-    await page.goto('/finance/business/transactions', {
+    await page.goto(`${routes.accountsPath}/business/transactions`, {
       waitUntil: 'networkidle',
     });
     await expect(
-      page.locator('tr:has-text("Neighborhood Market")')
+      page.getByRole('row', { name: /Neighborhood Market/ })
     ).toBeVisible();
     logDiagnosticsCheckpoint('after-import-verification', diagnostics);
 

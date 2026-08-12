@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -767,7 +768,10 @@ export class GoalsPageComponent {
       this.store.getScope();
       this.planId = this.routePlanId() ?? this.store.listPlans()[0]?.id ?? '';
       this.resetDraft();
-      this.loadGoals();
+      untracked(() => {
+        this.loadGoals();
+        void this.store.refreshGoals(this.planId).then(() => this.loadGoals());
+      });
     });
   }
 
@@ -805,7 +809,7 @@ export class GoalsPageComponent {
     });
   }
 
-  saveGoal() {
+  async saveGoal(): Promise<void> {
     this.bumpDraft();
     if (this.draftErrors().length > 0) return;
     const goal: FinCommanderGoal = {
@@ -817,7 +821,7 @@ export class GoalsPageComponent {
       dueDate: this.draft.dueDate,
       strategy: this.draft.strategy,
     };
-    this.store.saveGoal(goal);
+    await this.store.saveGoal(goal);
     this.statusMessage.set(`Goal "${this.draft.name.trim()}" saved.`);
     this.resetDraft();
     this.loadGoals();
@@ -831,9 +835,9 @@ export class GoalsPageComponent {
     this.pendingDeleteId.set(null);
   }
 
-  confirmDelete(goalId: string) {
+  async confirmDelete(goalId: string): Promise<void> {
     const removed = this.goals().find((goal) => goal.id === goalId);
-    this.store.deleteGoal(goalId);
+    await this.store.deleteGoal(goalId);
     this.pendingDeleteId.set(null);
     this.statusMessage.set(
       removed ? `Removed goal "${removed.name}".` : 'Goal removed.'
@@ -851,8 +855,8 @@ export class GoalsPageComponent {
   }
 
   /** @deprecated Use {@link requestDelete} + {@link confirmDelete}; kept for backwards compatibility in tests. */
-  deleteGoal(goalId: string) {
-    this.confirmDelete(goalId);
+  async deleteGoal(goalId: string): Promise<void> {
+    await this.confirmDelete(goalId);
   }
 
   private loadGoals() {

@@ -5,6 +5,12 @@ import { TenantContextService } from '../tenant-context.service';
 import { ProfileService } from '../profile.service';
 import { resolveNextSetupRoute } from '../setup-route-policy';
 
+function isOnboardingFinanceRoute(url: string): boolean {
+  return /^\/tenants\/[^/]+\/accounts\/(personal|business)\/(accounts|transactions|budgets|recurring)(?:[/?#]|$)/.test(
+    url
+  );
+}
+
 export const onboardingCompleteGuard: CanActivateFn = async (_route, state) => {
   const tenantContext = inject(TenantContextService);
   const profileService = inject(ProfileService);
@@ -24,7 +30,7 @@ export const onboardingCompleteGuard: CanActivateFn = async (_route, state) => {
 
   let activeTenant = tenantContext.activeTenant();
 
-  if (profile && !activeTenant) {
+  if (profile && !activeTenant?.type) {
     await tenantContext.loadTenantContext();
     activeTenant = tenantContext.activeTenant();
   }
@@ -36,6 +42,10 @@ export const onboardingCompleteGuard: CanActivateFn = async (_route, state) => {
   );
 
   if (nextRoute) {
+    if (nextRoute[0] === '/onboarding' && isOnboardingFinanceRoute(state.url)) {
+      return true;
+    }
+
     return router.createUrlTree(nextRoute);
   }
 

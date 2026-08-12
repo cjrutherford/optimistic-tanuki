@@ -41,4 +41,14 @@ describe('NavSidebarComponent', () => {
     expect(text).toContain('Accounts');
     expect(text).toContain('Transactions');
   });
+
+  it('provides a navigation landmark and accessible label for docked navigation', () => {
+    const fixture = TestBed.createComponent(NavSidebarComponent);
+    fixture.componentRef.setInput('heading', 'Tenant navigation');
+    fixture.componentRef.setInput('mode', 'docked');
+    fixture.detectChanges();
+
+    const navigation = fixture.nativeElement.querySelector('nav');
+    expect(navigation?.getAttribute('aria-label')).toBe('Tenant navigation');
+  });
 });

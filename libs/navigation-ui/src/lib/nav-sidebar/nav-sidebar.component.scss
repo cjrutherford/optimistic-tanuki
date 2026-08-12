@@ -5,6 +5,11 @@
   gap: 0.75rem;
 }
 
+nav {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .nav-heading {
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -61,7 +66,7 @@
     var(--primary, #2563eb) 10%,
     var(--surface, white)
   );
-  color: var(--primary, #2563eb);
+  color: var(--foreground, #0f172a);
 }
 
 .nav-link:hover {

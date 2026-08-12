@@ -32,11 +32,13 @@
 
 @if (mode === 'docked') {
 <otui-card class="nav-sidebar-card docked">
-  <div class="nav-heading">{{ heading }}</div>
-  <ng-container
-    [ngTemplateOutlet]="tree"
-    [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
-  ></ng-container>
+  <nav [attr.aria-label]="heading">
+    <div class="nav-heading">{{ heading }}</div>
+    <ng-container
+      [ngTemplateOutlet]="tree"
+      [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
+    ></ng-container>
+  </nav>
 </otui-card>
 } @else {
 <otui-modal
@@ -46,10 +48,12 @@
   [visible]="isOpen"
 >
   <otui-card class="nav-sidebar-card">
-    <ng-container
-      [ngTemplateOutlet]="tree"
-      [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
-    ></ng-container>
+    <nav [attr.aria-label]="heading">
+      <ng-container
+        [ngTemplateOutlet]="tree"
+        [ngTemplateOutletContext]="{ $implicit: navItems, depth: 0 }"
+      ></ng-container>
+    </nav>
   </otui-card>
 </otui-modal>
 }

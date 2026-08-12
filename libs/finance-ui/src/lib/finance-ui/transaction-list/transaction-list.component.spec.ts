@@ -78,4 +78,17 @@ describe('TransactionListComponent', () => {
     expect(text).toContain('Update rows directly in the ledger');
     expect(fixture.nativeElement.querySelector('otui-ag-grid')).not.toBeNull();
   });
+
+  it('reserves fixed width for each transaction row action', () => {
+    const fixture = TestBed.createComponent(TransactionListComponent);
+    const actionsColumn = fixture.componentInstance.columnDefs.find(
+      (column) => column.headerName === 'Actions'
+    );
+
+    expect(actionsColumn).toMatchObject({
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
+    });
+  });
 });

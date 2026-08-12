@@ -35,6 +35,8 @@ export class AuthStateService {
   private readonly decodedTokenSubject: BehaviorSubject<UserData | null>;
   private readonly currentProfileSubject: BehaviorSubject<ProfileDto | null>;
   private isAuthenticatedValue = false;
+  private sessionRestorePromise: Promise<boolean> | null = null;
+  private sessionRestoreVersion = 0;
 
   readonly isAuthenticated$: Observable<boolean>;
   readonly decodedToken$: Observable<UserData | null>;
@@ -81,20 +83,44 @@ export class AuthStateService {
 
     const response = await this.authService.login(loginRequest);
     if (response.data.newToken) this.setToken(response.data.newToken);
-    await this.restoreSession();
+    await this.restoreSession({ force: true });
     return response;
   }
 
-  async restoreSession(): Promise<boolean> {
-    if (!isPlatformBrowser(this.platformId)) return false;
+  restoreSession(options: { force?: boolean } = {}): Promise<boolean> {
+    if (!isPlatformBrowser(this.platformId)) return Promise.resolve(false);
+
+    if (!options.force && this.sessionRestorePromise) {
+      return this.sessionRestorePromise;
+    }
+
+    const restoreVersion = ++this.sessionRestoreVersion;
+    const restoration = this.restoreCookieSession(restoreVersion);
+    this.sessionRestorePromise = restoration;
+    void restoration.finally(() => {
+      if (this.sessionRestorePromise === restoration) {
+        this.sessionRestorePromise = null;
+      }
+    });
+
+    return restoration;
+  }
+
+  private async restoreCookieSession(restoreVersion: number): Promise<boolean> {
     try {
       const response = await this.authService.currentSession();
+      if (restoreVersion !== this.sessionRestoreVersion) return true;
+
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(true);
       this.decodedTokenSubject.next(response.data as UserData);
       this.isAuthenticatedValue = true;
       return true;
     } catch {
+      if (restoreVersion !== this.sessionRestoreVersion) {
+        return this.isAuthenticatedValue;
+      }
+
       this.tokenSubject.next(null);
       this.isAuthenticatedSubject.next(false);
       this.decodedTokenSubject.next(null);
