@@ -135,14 +135,16 @@ export class FinCommanderProjectionService {
     events.sort(
       (a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label)
     );
+    const dailyEventTotals = events.reduce((totals, event) => {
+      totals.set(event.date, (totals.get(event.date) ?? 0) + event.amountCents);
+      return totals;
+    }, new Map<string, number>());
     let balance = openingBalanceCents;
     const dailyBalances = Array.from({ length: HORIZON_DAYS }, (_, offset) => {
       const date = new Date(start);
       date.setUTCDate(start.getUTCDate() + offset);
       const dateString = this.isoDate(date);
-      balance += events
-        .filter((event) => event.date === dateString)
-        .reduce((sum, event) => sum + event.amountCents, 0);
+      balance += dailyEventTotals.get(dateString) ?? 0;
       return { date: dateString, closingBalanceCents: balance };
     });
     return {

@@ -72,16 +72,28 @@ export type FinanceTenantMemberRole =
   (typeof FINANCE_TENANT_MEMBER_ROLES)[number];
 
 export class CreateFinanceTenantMemberDto {
+  @ApiProperty({
+    description: 'The profile ID of the member to add to the finance tenant',
+    format: 'uuid',
+  })
   @IsString()
   @IsUUID()
   memberProfileId: string;
 
+  @ApiProperty({
+    description: 'The member role granted within the finance tenant',
+    enum: FINANCE_TENANT_MEMBER_ROLES,
+  })
   @IsString()
   @IsIn(FINANCE_TENANT_MEMBER_ROLES)
   role: FinanceTenantMemberRole;
 }
 
 export class UpdateFinanceTenantMemberRoleDto {
+  @ApiProperty({
+    description: 'The member role granted within the finance tenant',
+    enum: FINANCE_TENANT_MEMBER_ROLES,
+  })
   @IsString()
   @IsIn(FINANCE_TENANT_MEMBER_ROLES)
   role: FinanceTenantMemberRole;

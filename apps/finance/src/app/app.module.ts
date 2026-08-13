@@ -19,6 +19,7 @@ import { FinancialCheckoutSession } from '../entities/financial-checkout-session
 import { FinCommanderPlanEntity } from '../entities/fin-commander-plan.entity';
 import { FinCommanderGoalEntity } from '../entities/fin-commander-goal.entity';
 import { FinCommanderScenarioEntity } from '../entities/fin-commander-scenario.entity';
+import { FinCommanderFundingDirectiveEntity } from '../entities/fin-commander-funding-directive.entity';
 import { DataSource } from 'typeorm';
 import { AccountService } from './services/account.service';
 import { TransactionService } from './services/transaction.service';
@@ -34,6 +35,7 @@ import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
+import { FinCommanderFundingDirectiveService } from './services/fin-commander-funding-directive.service';
 
 @Module({
   imports: [
@@ -62,6 +64,7 @@ import { FinCommanderProjectionService } from './services/fin-commander-projecti
     FinCommanderGoalService,
     FinCommanderScenarioService,
     FinCommanderProjectionService,
+    FinCommanderFundingDirectiveService,
     {
       provide: getRepositoryToken(Account),
       useFactory: (ds: DataSource) => ds.getRepository(Account),
@@ -132,6 +135,12 @@ import { FinCommanderProjectionService } from './services/fin-commander-projecti
       provide: getRepositoryToken(FinCommanderScenarioEntity),
       useFactory: (ds: DataSource) =>
         ds.getRepository(FinCommanderScenarioEntity),
+      inject: ['FINANCE_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(FinCommanderFundingDirectiveEntity),
+      useFactory: (ds: DataSource) =>
+        ds.getRepository(FinCommanderFundingDirectiveEntity),
       inject: ['FINANCE_CONNECTION'],
     },
   ],

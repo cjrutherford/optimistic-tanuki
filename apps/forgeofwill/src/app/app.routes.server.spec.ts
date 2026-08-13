@@ -25,6 +25,8 @@ describe('Forge server rendering policy', () => {
         'settings',
         'messages',
         'messages/new',
+        'oauth/callback',
+        'oauth/callback/:provider',
       ])
     );
     expect(publicFallback?.renderMode).toBe(RenderMode.Prerender);

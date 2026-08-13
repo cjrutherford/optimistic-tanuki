@@ -43,6 +43,9 @@ export class RecurringItem {
   @Column('uuid', { nullable: true })
   accountId: string;
 
+  @Column('uuid', { nullable: true })
+  fundingDirectiveId: string | null;
+
   @Column()
   userId: string;
 

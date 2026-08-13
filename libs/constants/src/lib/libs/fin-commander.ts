@@ -26,6 +26,27 @@ export interface FinCommanderGoalFundingDirective {
   isOverdue: boolean;
 }
 
+export interface FinCommanderFundingDirectivePreview {
+  goalId: string;
+  amountCents: number;
+  cadence: 'monthly';
+  startDate: string;
+  fundingAccountId: string;
+  fundingAccountName: string;
+  effect: 'forecast-only; no transaction or account balance change';
+}
+
+export interface FinCommanderFundingDirectiveDto
+  extends FinCommanderFundingDirectivePreview {
+  id: string;
+  recurringItemId: string | null;
+  status: 'approved' | 'cancelled';
+  approvedAt: string | null;
+  approvedByUserId: string | null;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+}
+
 export interface FinCommanderCashFlowEvent {
   date: string;
   amountCents: number;
@@ -58,6 +79,9 @@ export const FinCommanderGoalCommands = {
   DELETE: 'DELETE_FIN_COMMANDER_GOAL',
   FIND: 'FIND_FIN_COMMANDER_GOAL',
   FIND_MANY: 'FIND_MANY_FIN_COMMANDER_GOAL',
+  FUNDING_DIRECTIVE_PREVIEW: 'PREVIEW_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
+  FUNDING_DIRECTIVE_APPROVE: 'APPROVE_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
+  FUNDING_DIRECTIVE_CANCEL: 'CANCEL_FIN_COMMANDER_GOAL_FUNDING_DIRECTIVE',
 };
 
 export const FinCommanderScenarioCommands = {

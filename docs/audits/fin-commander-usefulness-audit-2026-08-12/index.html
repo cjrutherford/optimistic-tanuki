@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta http-equiv="Cache-Control" content="no-store" />
-    <title>Fin Commander usefulness re-audit · 2026-08-12</title>
+    <title>Fin Commander usefulness re-audit · 2026-08-13</title>
     <style>
       :root {
         color-scheme: dark;
@@ -118,6 +118,65 @@
         font-size: 0.85rem;
         font-weight: 700;
       }
+      .tabs {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 1.5rem 0 0;
+        border-bottom: 1px solid #284866;
+        padding-bottom: 12px;
+      }
+      .tab {
+        appearance: none;
+        border: 1px solid #39719a;
+        border-radius: 999px;
+        background: #102338;
+        color: #bbcadb;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+        padding: 8px 13px;
+      }
+      .tab[aria-selected='true'] {
+        border-color: #78d2bd;
+        background: #173451;
+        color: #fff;
+      }
+      .tab:focus-visible {
+        outline: 3px solid #ffbf6d;
+        outline-offset: 3px;
+      }
+      .tab-panel {
+        margin: 1rem 0 2rem;
+      }
+      .tab-panel[hidden] {
+        display: none;
+      }
+      .issue-guidance {
+        margin: 0 0 1.5rem;
+      }
+      .issue-guidance ul {
+        margin: 0.75rem 0 0;
+      }
+      .guide-link {
+        color: #a9d8ff;
+        font-weight: 700;
+      }
+      .checklist {
+        margin: 1rem 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .checklist li {
+        border-top: 1px solid #284866;
+        padding: 10px 0;
+      }
+      .done {
+        color: #78d2bd;
+      }
+      .next {
+        color: #ffbf6d;
+      }
       .flow {
         display: flex;
         flex-wrap: wrap;
@@ -162,12 +221,12 @@
   <body>
     <main>
       <p class="eyebrow">
-        Fresh usefulness re-audit · 2026-08-12 · live local app + source review
+        Fresh usefulness re-audit · 2026-08-13 · source + CI review
       </p>
       <h1>
-        Fin Commander now forecasts cash, but does not yet close the loop.
+        Fin Commander is CI-ready, but still does not close the accounting loop.
       </h1>
-      <div class="score">5.0 / 10</div>
+      <div class="score">4.1 / 10</div>
       <p class="sub">
         The app can safely persist tenant-scoped plans, calculate a funded-goal
         directive, and show a deterministic 90-day balance projection from
@@ -177,10 +236,328 @@
       </p>
       <p>
         <span class="status"
-          >Audit state: Slice B implemented · 2026-08-12</span
+          >Audit state: recalibrated + tracker added · 2026-08-13</span
         >
         This score measures practical decision usefulness and product coherence,
         not code quality alone.
+      </p>
+
+      <div
+        class="tabs"
+        role="tablist"
+        aria-label="Fin Commander execution tracker"
+      >
+        <button
+          class="tab"
+          id="recalibration-tab"
+          role="tab"
+          aria-selected="true"
+          aria-controls="recalibration-panel"
+        >
+          Recalibration
+        </button>
+        <button
+          class="tab"
+          id="slice-a-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="slice-a-panel"
+          tabindex="-1"
+        >
+          Slice A · done
+        </button>
+        <button
+          class="tab"
+          id="slice-b-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="slice-b-panel"
+          tabindex="-1"
+        >
+          Slice B · done
+        </button>
+        <button
+          class="tab"
+          id="slice-c-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="slice-c-panel"
+          tabindex="-1"
+        >
+          Slice C · done
+        </button>
+        <button
+          class="tab"
+          id="slice-d-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="slice-d-panel"
+          tabindex="-1"
+        >
+          Slice D · done
+        </button>
+        <button
+          class="tab"
+          id="closeout-tab"
+          role="tab"
+          aria-selected="false"
+          aria-controls="closeout-panel"
+          tabindex="-1"
+        >
+          Closeout rule
+        </button>
+      </div>
+
+      <section
+        class="card issue-guidance"
+        aria-labelledby="issue-guidance-title"
+      >
+        <h2 id="issue-guidance-title">Issue guidance</h2>
+        <p>
+          Every tracked finding links to the slice that resolves it or the
+          decision that gates it.
+        </p>
+        <ul>
+          <li>
+            <a
+              class="guide-link"
+              href="#slice-c-panel"
+              data-open-tab="slice-c-tab"
+              >Forecast, scenarios, and the missing accounting loop → Slice C
+              execution bridge</a
+            >
+          </li>
+          <li>
+            <a
+              class="guide-link"
+              href="#slice-d-panel"
+              data-open-tab="slice-d-tab"
+              >Entity collaboration workflow → Slice D in-app People and access
+              management</a
+            >
+          </li>
+          <li>
+            <a
+              class="guide-link"
+              href="#closeout-panel"
+              data-open-tab="closeout-tab"
+              >Release-matrix and evidence gaps → closeout rule</a
+            >
+          </li>
+        </ul>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="recalibration-panel"
+        role="tabpanel"
+        aria-labelledby="recalibration-tab"
+        tabindex="0"
+      >
+        <h2>Score recalibration</h2>
+        <div class="grid">
+          <article class="card">
+            <b>There is no proven 2.8 → 5.0 jump</b>
+            <p>
+              The repository’s score artifacts record 4.3 → 5.0, not 2.8 → 5.0.
+              No Fin Commander audit containing a 2.8 baseline is present in the
+              reviewed corpus.
+            </p>
+          </article>
+          <article class="card">
+            <b>Current product score: 4.1 / 10</b>
+            <p>
+              A consistent product-first weighting scores decision usefulness 4,
+              financial-model integrity 4, workflow coherence 3,
+              multi-user/entity trust 6, and UX/quality signals 4. Weighted
+              result: 4.1.
+            </p>
+          </article>
+          <article class="card">
+            <b>Release confidence: improved</b>
+            <p>
+              Fresh affected Nx tests passed for 60 projects and lint for 58; 30
+              validation contracts and the UI guards passed; Gateway, Finance,
+              and Fin Commander production images built.
+            </p>
+          </article>
+        </div>
+        <p class="muted">
+          The earlier 5.0 blended verified isolation and CI confidence too
+          heavily into a score intended to measure real accounting usefulness.
+          The app is materially stronger than intent-only planning, but still
+          cannot turn an approved plan into reversible accounting work.
+        </p>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="slice-a-panel"
+        role="tabpanel"
+        aria-labelledby="slice-a-tab"
+        tabindex="0"
+        hidden
+      >
+        <h2>Slice A — Funded-goal directive</h2>
+        <p><span class="status">Delivered</span></p>
+        <p>
+          Goals select an active Finance-tenant account. Finance validates scope
+          and returns a source-backed required monthly contribution without
+          moving money.
+        </p>
+        <ul class="checklist">
+          <li class="done">
+            ✓ Domain calculation, scoped API route, and UI rendering
+            implemented.
+          </li>
+          <li class="done">✓ Service/controller/component coverage exists.</li>
+          <li class="next">
+            → Product gap retained: directive is advisory, not an executable
+            instruction.
+          </li>
+        </ul>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="slice-b-panel"
+        role="tabpanel"
+        aria-labelledby="slice-b-tab"
+        tabindex="0"
+        hidden
+      >
+        <h2>Slice B — Deterministic cash-flow projection</h2>
+        <p><span class="status">Delivered</span></p>
+        <p>
+          Finance projects 90 days from active workspace balances, recurring
+          credits/debits, and funded-goal allocations. The Cash Flow route
+          clearly labels the result as a projection, not affordability advice.
+        </p>
+        <ul class="checklist">
+          <li class="done">
+            ✓ Contract → Finance handler → Gateway → client route is wired and
+            tested.
+          </li>
+          <li class="done">
+            ✓ Direct production images for Gateway, Finance, and Fin Commander
+            built.
+          </li>
+          <li class="next">
+            → Product gap retained: no event-ledger UI, scenario baseline, or
+            affordability guardrail.
+          </li>
+        </ul>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="slice-c-panel"
+        role="tabpanel"
+        aria-labelledby="slice-c-tab"
+        tabindex="0"
+        hidden
+      >
+        <h2>Slice C — Execution bridge</h2>
+        <p>
+          <span class="status">Delivered · validated on Docker stack</span>
+        </p>
+        <p>
+          Turn an explicitly approved funding directive into one reversible,
+          auditable forecast instruction: a linked recurring contribution that
+          never creates a transaction or an unconfirmed journal mutation.
+        </p>
+        <ul class="checklist">
+          <li>
+            ✓ Typed directive includes goal, account, cadence, amount, approval
+            state, recurring-item link, and cancellation/audit fields.
+          </li>
+          <li>
+            ✓ Preview exposes the exact forecast instruction before approval.
+          </li>
+          <li>
+            ✓ Approval creates one linked instruction with two-way audit
+            references.
+          </li>
+          <li>
+            ✓ Revoke/cancel prevents future scheduling without corrupting posted
+            ledger history.
+          </li>
+          <li>
+            ✓ Verified: Finance focused tests (27), Gateway controller tests
+            (16), Finance/Gateway builds and lint, Fin Commander component
+            tests, and rebuilt Docker stack.
+          </li>
+        </ul>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="slice-d-panel"
+        role="tabpanel"
+        aria-labelledby="slice-d-tab"
+        tabindex="0"
+        hidden
+      >
+        <h2>Slice D — In-app collaboration and operator management</h2>
+        <p>
+          <span class="status">Delivered · validated on Docker stack</span>
+        </p>
+        <p>
+          Expose the already verified Finance membership lifecycle in an Fin
+          Commander Entity members experience: active collaborators, role
+          updates, removal, and clear tenant scope/error states.
+        </p>
+        <ul class="checklist">
+          <li>
+            ✓ Tenant operator can add an existing Finance-scoped profile with a
+            role.
+          </li>
+          <li>
+            ✓ Tenant operator can change or revoke a member role; a revoked
+            session loses access.
+          </li>
+          <li>
+            ✓ Non-operator receives a clear denial and cannot see mutation
+            controls.
+          </li>
+          <li>
+            ✓ Five-user live-stack matrix proves
+            operator/admin/member/revoked/unrelated tenant outcomes through the
+            gateway and Finance authorization boundary.
+          </li>
+          <li>
+            ✓ Focused Fin Commander component tests, lint, development build,
+            and Docker Playwright target pass. The five-user browser UI matrix
+            remains the next deeper E2E expansion.
+          </li>
+        </ul>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="closeout-panel"
+        role="tabpanel"
+        aria-labelledby="closeout-tab"
+        tabindex="0"
+        hidden
+      >
+        <h2>Artifact closeout is part of every slice</h2>
+        <p>
+          Before a slice is called complete, update its tab with the resulting
+          behavior, changed boundaries, exact validation evidence, score
+          movement (or explicit no-change), remaining risk, and next objective.
+          Then republish and verify all active report hosts return the new
+          no-cache artifact.
+        </p>
+      </section>
+
+      <p class="muted">
+        Review basis: commit <code>35ad399</code>; CI-equivalent Nx affected
+        test/lint runs; 30 validation contracts; source review across Fin
+        Commander, Gateway, Finance, auth-ui, and the membership routes. The
+        workspace-wide format check remains noisy because generated, tracked
+        setup-console coverage reports are present; focused formatting for
+        changed source files passes.
       </p>
 
       <h2>What the product currently does</h2>
@@ -216,7 +593,7 @@
             <tr>
               <td>Decision usefulness</td>
               <td>30%</td>
-              <td>5/10</td>
+              <td>4/10</td>
               <td>
                 Goals show a calculated monthly contribution and a plan now
                 shows its 90-day projected balance. Affordability and tradeoff
@@ -226,7 +603,7 @@
             <tr>
               <td>Financial-model integrity</td>
               <td>25%</td>
-              <td>5/10</td>
+              <td>4/10</td>
               <td>
                 A deterministic engine starts at active workspace balances,
                 schedules active recurring credits/debits, and schedules
@@ -237,7 +614,7 @@
             <tr>
               <td>Workflow coherence</td>
               <td>20%</td>
-              <td>5/10</td>
+              <td>3/10</td>
               <td>
                 Plans now consume real operating-account and recurring-item
                 inputs, rather than only display workspace summaries. They still
@@ -248,7 +625,7 @@
             <tr>
               <td>Multi-user/entity trust</td>
               <td>15%</td>
-              <td>7/10</td>
+              <td>6/10</td>
               <td>
                 Five-account API matrix proves
                 owner/admin/member/revoked/unrelated boundaries and revocation.
@@ -258,7 +635,7 @@
             <tr>
               <td>Entry UX and quality signals</td>
               <td>10%</td>
-              <td>5/10</td>
+              <td>4/10</td>
               <td>
                 Landing and registration are reachable and semantically clear.
                 Browser reported a theme contrast warning and font fallback;
@@ -270,8 +647,10 @@
       </div>
 
       <h2>Highest-impact findings</h2>
-      <section class="finding p0">
-        <h3>P0 — Forecast is useful context, not an affordability answer</h3>
+      <section class="finding p1">
+        <h3 id="issue-forecast">
+          P1 — Forecast is useful context, not an affordability answer
+        </h3>
         <p>
           Slice B calculates a 90-day daily balance from active workspace
           accounts, active recurring credits/debits, and monthly funded-goal
@@ -284,9 +663,18 @@
           the balance up or down, but still cannot ask whether a goal is safe to
           approve or what must change to fund it.
         </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#slice-c-panel"
+            data-open-tab="slice-c-tab"
+            >Guidance: Slice C adds approval, a preview, and a linked
+            recurring/budget instruction.</a
+          >
+        </p>
       </section>
-      <section class="finding p0">
-        <h3>P0 — “Scenarios” cannot model an outcome</h3>
+      <section class="finding p1">
+        <h3 id="issue-scenarios">P1 — “Scenarios” cannot model an outcome</h3>
         <p>
           Each scenario stores a summary and JSON records with string deltas and
           an impact label. There is no date range, numeric value, probability,
@@ -298,11 +686,22 @@
           <b>User consequence:</b> a scenario is a labeled note, not evidence
           for a financial decision.
         </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#slice-c-panel"
+            data-open-tab="slice-c-tab"
+            >Guidance: Slice C defines the typed, approved directive and preview
+            boundary before scenarios can safely drive accounting work.</a
+          >
+        </p>
       </section>
       <section class="finding p1">
         <h3>
-          P1 — The information architecture promises a closed loop it does not
-          deliver
+          <span id="issue-closed-loop"
+            >P1 — The information architecture promises a closed loop it does
+            not deliver
+          </span>
         </h3>
         <p>
           The Plans page says operational money work and forward plans “stay
@@ -316,17 +715,57 @@
           day-to-day accounting work, duplicating context and losing
           traceability.
         </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#slice-c-panel"
+            data-open-tab="slice-c-tab"
+            >Guidance: Slice C is the explicit execution bridge and must
+            preserve a reversible audit link.</a
+          >
+        </p>
+      </section>
+      <section class="finding p2">
+        <h3 id="issue-release-proof">
+          P2 — Release checks are broader than the product slice
+        </h3>
+        <p>
+          The affected graph is broad in this shared branch, so CI plans a large
+          Docker image matrix. The directly affected Gateway, Finance, and Fin
+          Commander images build successfully, but a clean remote PR run is
+          still the authoritative proof for the complete matrix.
+        </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#closeout-panel"
+            data-open-tab="closeout-tab"
+            >Guidance: record the exact matrix evidence and republish verified
+            hosts at closeout.</a
+          >
+        </p>
       </section>
       <section class="finding p1">
         <h3>
-          P1 — Entity collaboration is proven in API tests but not yet a usable
-          product workflow
+          <span id="issue-collaboration"
+            >P1 — Entity collaboration is proven in API tests but not yet a
+            usable product workflow
+          </span>
         </h3>
         <p>
           Member lifecycle routes and five-account isolation are valuable
           foundations. The user-facing Entity members route must make selection,
           roles, removal, and errors understandable before households or teams
           can confidently collaborate.
+        </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#slice-d-panel"
+            data-open-tab="slice-d-tab"
+            >Guidance: Slice D exposes add, role change, removal, denial, and
+            five-user browser proof.</a
+          >
         </p>
       </section>
       <section class="finding p2">
@@ -336,6 +775,15 @@
           expectation of calculated advice. The actual inputs are mostly
           manually authored fields. The unauthenticated live session also logged
           a 7:1 contrast warning for the Professional theme and fallback fonts.
+        </p>
+        <p>
+          <a
+            class="guide-link"
+            href="#closeout-panel"
+            data-open-tab="closeout-tab"
+            >Guidance: keep visual claims bounded until a focused
+            UX/accessibility slice supplies live evidence.</a
+          >
         </p>
       </section>
 
@@ -376,25 +824,38 @@
         <article class="card">
           <b>Slice C — Execution bridge</b>
           <p>
-            Let an approved directive create or revise a budget, recurring
-            transfer, or review task. Preserve an audit link both directions and
-            require confirmation for ledger-affecting changes.
+            Create an approved, tenant-scoped recurring funding instruction from
+            a goal. Preserve an audit link both directions and do not mutate a
+            ledger or account balance.
           </p>
           <p>
             <b>Acceptance:</b> approving a directive creates a linked recurring
             funding instruction without silently moving money.
           </p>
+          <p>
+            <b>Delivered:</b> preview/approve/cancel gateway routes, durable
+            directive and two-way recurring-item/goal links, integer-cent
+            boundary, idempotent approval, and cancellation that preserves
+            history while deactivating future forecasting.
+          </p>
         </article>
         <article class="card">
           <b>Slice D — Collaboration UI</b>
           <p>
-            Wire the verified membership API into Entity members: searchable
-            Finance-scoped profiles, role change, remove, clear owner-only
-            states, and revocation messaging.
+            Wire the verified membership API into Fin Commander's in-app Entity
+            members screen: active collaborators, role change, removal, clear
+            operator-only states, and revocation messaging.
           </p>
           <p>
-            <b>Acceptance:</b> an owner can grant/revoke a member in the UI and
-            both sessions visibly receive the expected access outcome.
+            <b>Acceptance:</b> a tenant operator can grant/revoke a member in
+            the UI and both sessions visibly receive the expected access
+            outcome.
+          </p>
+          <p>
+            <b>Delivered:</b> discoverable People &amp; access navigation,
+            operator and view-only states, validation, role/revocation feedback,
+            and authorization-aware API errors. The explicit five-user browser
+            UI journey remains a follow-up, while the live API matrix passes.
           </p>
         </article>
       </div>
@@ -437,10 +898,48 @@
       <h2>Re-audit trigger</h2>
       <p>
         Re-score after Slice C turns a reviewed directive into an explicit,
-        reversible ledger action with an audit link. Do not raise the usefulness
-        score merely for additional free-text fields, more cards, or visual
-        polish.
+        reversible forecast instruction with an audit link, and Slice D exposes
+        the verified membership API in Fin Commander. Do not raise the
+        usefulness score merely for additional free-text fields, more cards,
+        green CI, or visual polish.
       </p>
     </main>
+    <script>
+      const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
+      const panels = Array.from(document.querySelectorAll('[role="tabpanel"]'));
+      function selectTab(tab, focus = false) {
+        tabs.forEach((candidate) => {
+          const selected = candidate === tab;
+          candidate.setAttribute('aria-selected', String(selected));
+          candidate.tabIndex = selected ? 0 : -1;
+        });
+        panels.forEach((panel) => {
+          panel.hidden = panel.id !== tab.getAttribute('aria-controls');
+        });
+        if (focus) tab.focus();
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectTab(tab));
+        tab.addEventListener('keydown', (event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key))
+            return;
+          event.preventDefault();
+          const nextIndex =
+            event.key === 'Home'
+              ? 0
+              : event.key === 'End'
+              ? tabs.length - 1
+              : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) %
+                tabs.length;
+          selectTab(tabs[nextIndex], true);
+        });
+      });
+      document.querySelectorAll('[data-open-tab]').forEach((link) => {
+        link.addEventListener('click', () => {
+          const target = document.getElementById(link.dataset.openTab);
+          if (target) selectTab(target, true);
+        });
+      });
+    </script>
   </body>
 </html>

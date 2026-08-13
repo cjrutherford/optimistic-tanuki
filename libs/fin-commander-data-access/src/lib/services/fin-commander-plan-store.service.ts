@@ -6,6 +6,8 @@ import {
 } from '@optimistic-tanuki/finance-ui';
 import {
   FinCommanderGoal,
+  FinCommanderFundingDirective,
+  FinCommanderFundingDirectivePreview,
   FinCommanderOverview,
   FinCommanderPlan,
   FinCommanderScenario,
@@ -102,6 +104,24 @@ export class FinCommanderPlanStore {
     if (this.hasScope(scope)) {
       this.goals.update((goals) => goals.filter((goal) => goal.id !== goalId));
     }
+  }
+
+  async previewFundingDirective(
+    goalId: string
+  ): Promise<FinCommanderFundingDirectivePreview | null> {
+    return this.api.previewFundingDirective(this.requireScope(), goalId);
+  }
+
+  async approveFundingDirective(
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    return this.api.approveFundingDirective(this.requireScope(), goalId);
+  }
+
+  async cancelFundingDirective(
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    return this.api.cancelFundingDirective(this.requireScope(), goalId);
   }
 
   listScenarios(planId: string): FinCommanderScenario[] {

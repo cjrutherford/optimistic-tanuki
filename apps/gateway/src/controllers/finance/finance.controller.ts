@@ -1640,6 +1640,60 @@ export class FinanceController {
 
   @UseGuards(AuthGuard, PermissionsGuard)
   @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Preview a goal funding directive' })
+  @Get('fin-commander/goal/:goalId/funding-directive')
+  @RequirePermissions('finance.fin-commander-goal.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async previewFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_PREVIEW },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Approve a goal funding directive' })
+  @Post('fin-commander/goal/:goalId/funding-directive/approve')
+  @RequirePermissions('finance.fin-commander-goal.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async approveFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_APPROVE },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Cancel a goal funding directive' })
+  @Post('fin-commander/goal/:goalId/funding-directive/cancel')
+  @RequirePermissions('finance.fin-commander-goal.update')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async cancelFinCommanderFundingDirective(
+    @User() user,
+    @Param('goalId') goalId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_CANCEL },
+      { goalId, ...this.getScope(user, appScope, tenantId) }
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
   @ApiOperation({ summary: 'Update a Fin Commander goal by ID' })
   @ApiResponse({
     status: 200,

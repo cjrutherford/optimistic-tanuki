@@ -72,6 +72,7 @@ import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
+import { FinCommanderFundingDirectiveService } from './services/fin-commander-funding-directive.service';
 
 @Controller()
 export class AppController {
@@ -88,7 +89,8 @@ export class AppController {
     private readonly finCommanderPlanService: FinCommanderPlanService,
     private readonly finCommanderGoalService: FinCommanderGoalService,
     private readonly finCommanderScenarioService: FinCommanderScenarioService,
-    private readonly finCommanderProjectionService: FinCommanderProjectionService
+    private readonly finCommanderProjectionService: FinCommanderProjectionService,
+    private readonly finCommanderFundingDirectiveService: FinCommanderFundingDirectiveService
   ) {}
 
   private extractFindManyOptions<T>(
@@ -812,6 +814,36 @@ export class AppController {
     return await this.finCommanderGoalService.remove(
       payload.id,
       await this.resolveScope(payload as Record<string, unknown>)
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_PREVIEW })
+  async previewFinCommanderFundingDirective(
+    @Payload() payload: { goalId: string } & FinanceScope
+  ) {
+    return this.finCommanderFundingDirectiveService.preview(
+      payload.goalId,
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {}
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_APPROVE })
+  async approveFinCommanderFundingDirective(
+    @Payload() payload: { goalId: string } & FinanceScope
+  ) {
+    return this.finCommanderFundingDirectiveService.approve(
+      payload.goalId,
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {}
+    );
+  }
+
+  @MessagePattern({ cmd: FinCommanderGoalCommands.FUNDING_DIRECTIVE_CANCEL })
+  async cancelFinCommanderFundingDirective(
+    @Payload() payload: { goalId: string } & FinanceScope
+  ) {
+    return this.finCommanderFundingDirectiveService.cancel(
+      payload.goalId,
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {}
     );
   }
 

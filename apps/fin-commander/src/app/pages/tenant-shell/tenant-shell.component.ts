@@ -293,6 +293,11 @@ export class TenantShellComponent implements OnInit {
             isActive: this.isActive(`/tenants/${tenantId}/overview`),
             action: () => this.navigate(tenantOverviewRoute(tenantId)),
           },
+          {
+            label: 'People & access',
+            isActive: this.isActive(`/tenants/${tenantId}/members`),
+            action: () => this.navigate(['/tenants', tenantId, 'members']),
+          },
           plansNode,
           {
             label: 'Accounts',

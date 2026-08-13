@@ -6,6 +6,8 @@ import {
   FinCommanderPlan,
   FinCommanderScenario,
   FinCommanderCashFlowProjection,
+  FinCommanderFundingDirective,
+  FinCommanderFundingDirectivePreview,
 } from '../models/fin-commander.models';
 import { FinCommanderScope } from '../models/fin-commander-scope.model';
 
@@ -103,6 +105,44 @@ export class FinCommanderPlanApiService {
     }
     await firstValueFrom(
       this.http.delete<void>(`${this.baseUrl}/goal/${goalId}`)
+    );
+  }
+
+  async previewFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirectivePreview | null> {
+    if (!scope || !goalId) return null;
+    return firstValueFrom(
+      this.http.get<FinCommanderFundingDirectivePreview>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive`
+      )
+    );
+  }
+
+  async approveFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    if (!scope) throw new Error('An active tenant scope is required');
+    return firstValueFrom(
+      this.http.post<FinCommanderFundingDirective>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive/approve`,
+        {}
+      )
+    );
+  }
+
+  async cancelFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    if (!scope) throw new Error('An active tenant scope is required');
+    return firstValueFrom(
+      this.http.post<FinCommanderFundingDirective>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive/cancel`,
+        {}
+      )
     );
   }
 

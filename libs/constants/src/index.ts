@@ -152,6 +152,8 @@ export {
   UpdateFinCommanderPlanDto,
   FinCommanderGoalDto,
   FinCommanderGoalFundingDirective,
+  FinCommanderFundingDirectivePreview,
+  FinCommanderFundingDirectiveDto,
   FinCommanderCashFlowEvent,
   FinCommanderCashFlowProjection,
   CreateFinCommanderGoalDto,

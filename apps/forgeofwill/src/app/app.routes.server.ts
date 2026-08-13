@@ -8,6 +8,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'settings', renderMode: RenderMode.Client },
   { path: 'messages', renderMode: RenderMode.Client },
   { path: 'messages/new', renderMode: RenderMode.Client },
+  { path: 'oauth/callback', renderMode: RenderMode.Client },
+  { path: 'oauth/callback/:provider', renderMode: RenderMode.Client },
   {
     path: 'forum/topic/:topicId',
     renderMode: RenderMode.Client,

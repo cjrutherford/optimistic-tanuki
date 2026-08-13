@@ -1,14 +1,16 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
-import { Initial1770152975983 } from './1770152975983-initial';
 
-export class CommunityBroadcast20260417143000 implements MigrationInterface {
-  name = 'CommunityBroadcast20260417143000';
+export class CommunityBroadcast1786715103205 implements MigrationInterface {
+  name = 'CommunityBroadcast1786715103205';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    const hasChannelTable = await queryRunner.hasTable('channel');
-
-    if (!hasChannelTable) {
-      await new Initial1770152975983().up(queryRunner);
+    // This replacement was CLI-created after the retired migration reached main.
+    // Preserve an upgraded database's history instead of repeating its backfill.
+    const retiredMigration = await queryRunner.query(
+      `SELECT 1 FROM "migrations" WHERE "name" = 'CommunityBroadcast20260417143000' LIMIT 1`
+    );
+    if (Array.isArray(retiredMigration) && retiredMigration.length > 0) {
+      return;
     }
 
     await queryRunner.query(
@@ -79,14 +81,12 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
         END IF;
       END $$;
     `);
-
     await queryRunner.query(
       `ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "communityId" character varying`
     );
     await queryRunner.query(
       `UPDATE "video" v SET "communityId" = c."communityId" FROM "channel" c WHERE c."id" = v."channelId" AND v."communityId" IS NULL`
     );
-
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "channel_feed" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -105,14 +105,12 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
         CONSTRAINT "UQ_channel_feed_communityId" UNIQUE ("communityId")
       )
     `);
-
     await queryRunner.query(`
       INSERT INTO "channel_feed" ("channelId", "communityId", "timezone", "currentMode", "lastTransitionAt")
       SELECT "id", "communityId", COALESCE("timezone", 'UTC'), 'offline', now()
       FROM "channel"
       ON CONFLICT ("channelId") DO NOTHING
     `);
-
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "program_block" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -132,7 +130,6 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
         CONSTRAINT "PK_program_block" PRIMARY KEY ("id")
       )
     `);
-
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS "live_session" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -152,7 +149,6 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
         CONSTRAINT "PK_live_session" PRIMARY KEY ("id")
       )
     `);
-
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -168,6 +164,13 @@ export class CommunityBroadcast20260417143000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    const retiredMigration = await queryRunner.query(
+      `SELECT 1 FROM "migrations" WHERE "name" = 'CommunityBroadcast20260417143000' LIMIT 1`
+    );
+    if (Array.isArray(retiredMigration) && retiredMigration.length > 0) {
+      return;
+    }
+
     await queryRunner.query(
       `ALTER TABLE "channel_feed" DROP CONSTRAINT "FK_channel_feed_channel"`
     );

@@ -36,6 +36,9 @@ export class FinCommanderGoalEntity {
   @Column({ type: 'uuid', nullable: true })
   fundingAccountId: string | null;
 
+  @Column({ type: 'uuid', nullable: true })
+  fundingDirectiveId: string | null;
+
   @Column()
   userId: string;
 

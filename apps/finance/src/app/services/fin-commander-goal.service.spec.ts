@@ -105,4 +105,32 @@ describe('FinCommanderGoalService funded directives', () => {
       isOverdue: false,
     });
   });
+
+  it('exposes an approval preview in integer cents without touching ledger repositories', async () => {
+    accountRepo.findOne.mockResolvedValue({
+      id: '37cb1c7e-9310-4273-8520-2f725df9cb6b',
+      name: 'Emergency savings',
+      balance: 4000,
+      currency: 'USD',
+    } as Account);
+
+    const preview = await (service as any).getFundingApprovalPreview(
+      {
+        id: 'goal-1',
+        name: 'Emergency fund',
+        targetAmountCents: 1_000_000,
+        fundingAccountId: '37cb1c7e-9310-4273-8520-2f725df9cb6b',
+        dueDate: '2026-10-15',
+      },
+      { tenantId: 'tenant-1', appScope: 'finance' },
+      new Date('2026-08-12T12:00:00.000Z')
+    );
+
+    expect(preview).toMatchObject({
+      amountCents: 200_000,
+      cadence: 'monthly',
+      fundingAccountId: '37cb1c7e-9310-4273-8520-2f725df9cb6b',
+      effect: 'forecast-only; no transaction or account balance change',
+    });
+  });
 });

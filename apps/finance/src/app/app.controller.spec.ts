@@ -21,6 +21,7 @@ import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
 import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
+import { FinCommanderFundingDirectiveService } from './services/fin-commander-funding-directive.service';
 
 describe('AppController (tenant isolation)', () => {
   let controller: AppController;
@@ -105,7 +106,8 @@ describe('AppController (tenant isolation)', () => {
       finCommanderPlanService as unknown as FinCommanderPlanService,
       finCommanderGoalService as unknown as FinCommanderGoalService,
       finCommanderScenarioService as unknown as FinCommanderScenarioService,
-      finCommanderProjectionService as unknown as FinCommanderProjectionService
+      finCommanderProjectionService as unknown as FinCommanderProjectionService,
+      {} as FinCommanderFundingDirectiveService
     );
   });
 

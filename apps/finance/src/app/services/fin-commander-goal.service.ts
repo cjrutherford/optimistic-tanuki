@@ -10,6 +10,7 @@ import DOMPurify from 'isomorphic-dompurify';
 import {
   CreateFinCommanderGoalDto,
   FinCommanderGoalFundingDirective,
+  FinCommanderFundingDirectivePreview,
   UpdateFinCommanderGoalDto,
 } from '@optimistic-tanuki/constants';
 import { FinCommanderGoalEntity } from '../../entities';
@@ -102,6 +103,33 @@ export class FinCommanderGoalService {
         remainingAmountCents / monthsRemaining
       ),
       isOverdue,
+    };
+  }
+
+  async getFundingApprovalPreview(
+    goal: Pick<
+      FinCommanderGoalEntity,
+      'id' | 'name' | 'fundingAccountId' | 'targetAmountCents' | 'dueDate'
+    >,
+    scope: { tenantId?: string; appScope?: string },
+    asOf = new Date()
+  ): Promise<FinCommanderFundingDirectivePreview | null> {
+    const directive = await this.getFundingDirective(goal, scope, asOf);
+    if (!directive) {
+      return null;
+    }
+
+    const start = new Date(
+      Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 1)
+    );
+    return {
+      goalId: goal.id,
+      amountCents: directive.requiredMonthlyContributionCents,
+      cadence: 'monthly',
+      startDate: start.toISOString().slice(0, 10),
+      fundingAccountId: directive.fundingAccountId,
+      fundingAccountName: directive.fundingAccountName,
+      effect: 'forecast-only; no transaction or account balance change',
     };
   }
 

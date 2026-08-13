@@ -33,6 +33,27 @@ export interface FinCommanderGoal {
   } | null;
 }
 
+export interface FinCommanderFundingDirectivePreview {
+  goalId: string;
+  amountCents: number;
+  cadence: 'monthly';
+  startDate: string;
+  fundingAccountId: string;
+  fundingAccountName: string;
+  effect: 'forecast-only; no transaction or account balance change';
+}
+
+export interface FinCommanderFundingDirective
+  extends FinCommanderFundingDirectivePreview {
+  id: string;
+  recurringItemId: string | null;
+  status: 'approved' | 'cancelled';
+  approvedAt: string | null;
+  approvedByUserId: string | null;
+  cancelledAt: string | null;
+  cancelledByUserId: string | null;
+}
+
 export interface FinCommanderScenarioAssumption {
   id: string;
   label: string;

@@ -14,6 +14,7 @@ import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import {
   FinCommanderGoal,
+  FinCommanderFundingDirectivePreview,
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
 import { Account, FinanceService } from '@optimistic-tanuki/finance-ui';
@@ -244,6 +245,36 @@ function dollarsToCents(dollars: number): number {
                 {{ formatCurrency(directive.remainingAmountCents) }} remaining ·
                 {{ directive.monthsRemaining }} months remaining
               </span>
+              @if (previewFor(goal.id); as preview) {
+              <div class="approval-preview" role="status">
+                <strong
+                  >Ready to schedule {{ formatCurrency(preview.amountCents) }}
+                  {{ preview.cadence }}</strong
+                >
+                <span
+                  >Starts {{ formatDate(preview.startDate) }} from
+                  {{ preview.fundingAccountName }}.</span
+                >
+                <span>Forecast only — no transaction or balance change.</span>
+                <button
+                  type="button"
+                  class="btn-primary"
+                  [disabled]="fundingBusyGoalId() === goal.id"
+                  (click)="approveFunding(goal.id)"
+                >
+                  Approve funding instruction
+                </button>
+              </div>
+              } @else {
+              <button
+                type="button"
+                class="btn-ghost"
+                [disabled]="fundingBusyGoalId() === goal.id"
+                (click)="previewFunding(goal.id)"
+              >
+                Preview funding instruction
+              </button>
+              }
             </section>
             } @else if (goal.fundingAccountId) {
             <p class="funding-unavailable">
@@ -699,6 +730,18 @@ function dollarsToCents(dollars: number): number {
         color: var(--foreground);
         font-size: 1rem;
       }
+      .approval-preview {
+        display: grid;
+        gap: 0.45rem;
+        padding-top: 0.7rem;
+        border-top: 1px solid
+          color-mix(in srgb, var(--primary) 25%, transparent);
+      }
+      .approval-preview .btn-primary,
+      .funding-directive .btn-ghost {
+        justify-self: start;
+        margin: 0.25rem 0 0;
+      }
       .directive-eyebrow {
         color: var(--primary);
         font-size: 0.7rem;
@@ -809,6 +852,10 @@ export class GoalsPageComponent {
   readonly pendingDeleteId = signal<string | null>(null);
   readonly statusMessage = signal('');
   readonly fundingAccounts = signal<Account[]>([]);
+  readonly fundingPreview = signal<FinCommanderFundingDirectivePreview | null>(
+    null
+  );
+  readonly fundingBusyGoalId = signal<string | null>(null);
   // Re-evaluate `draftErrors` whenever the draft mutates by bumping this tick.
   readonly draftVersion = signal(0);
   readonly draftErrors = computed(() => {
@@ -931,6 +978,45 @@ export class GoalsPageComponent {
       removed ? `Removed goal "${removed.name}".` : 'Goal removed.'
     );
     this.loadGoals();
+  }
+
+  async previewFunding(goalId: string): Promise<void> {
+    this.fundingBusyGoalId.set(goalId);
+    try {
+      const preview = await this.store.previewFundingDirective(goalId);
+      this.fundingPreview.set(preview);
+      this.statusMessage.set(
+        preview
+          ? 'Review the funding instruction before approval. It will not move money.'
+          : 'A funding instruction is unavailable until this goal has an active funding account.'
+      );
+    } catch {
+      this.statusMessage.set('Unable to preview this funding instruction.');
+    } finally {
+      this.fundingBusyGoalId.set(null);
+    }
+  }
+
+  async approveFunding(goalId: string): Promise<void> {
+    this.fundingBusyGoalId.set(goalId);
+    try {
+      const directive = await this.store.approveFundingDirective(goalId);
+      this.statusMessage.set(
+        `Funding instruction approved. ${this.formatCurrency(
+          directive.amountCents
+        )} is forecast monthly; no money was moved.`
+      );
+      this.fundingPreview.set(null);
+    } catch {
+      this.statusMessage.set('Unable to approve this funding instruction.');
+    } finally {
+      this.fundingBusyGoalId.set(null);
+    }
+  }
+
+  previewFor(goalId: string): FinCommanderFundingDirectivePreview | null {
+    const preview = this.fundingPreview();
+    return preview?.goalId === goalId ? preview : null;
   }
 
   /** Bump the draft version signal so `draftErrors` re-evaluates after ngModel writes. */
