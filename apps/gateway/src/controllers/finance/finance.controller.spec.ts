@@ -14,6 +14,7 @@ import {
   FinanceBankingCommands,
   FinancialUtilitiesCommands,
   FinCommanderPlanCommands,
+  FinCommanderProjectionCommands,
 } from '@optimistic-tanuki/constants';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
 
@@ -441,6 +442,28 @@ describe('FinanceController', () => {
         tenantId: 'tenant-1',
         appScope: 'finance',
       })
+    );
+  });
+
+  it('forwards a cash-flow projection request with the authenticated tenant scope', async () => {
+    financeClient.send.mockReturnValue(of({ openingBalanceCents: 100000 }));
+
+    await (controller as any).getFinCommanderCashFlowProjection(
+      { userId: 'user-1', profileId: 'profile-1' },
+      'plan-1',
+      'finance',
+      'tenant-1'
+    );
+
+    expect(financeClient.send).toHaveBeenCalledWith(
+      { cmd: FinCommanderProjectionCommands.GET },
+      {
+        planId: 'plan-1',
+        userId: 'user-1',
+        profileId: 'profile-1',
+        tenantId: 'tenant-1',
+        appScope: 'finance',
+      }
     );
   });
 });

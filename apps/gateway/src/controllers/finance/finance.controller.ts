@@ -30,6 +30,7 @@ import {
   FinCommanderPlanCommands,
   FinCommanderGoalCommands,
   FinCommanderScenarioCommands,
+  FinCommanderProjectionCommands,
   FinCommanderPlanDto,
   UpdateFinCommanderPlanDto,
   FinCommanderGoalDto,
@@ -1352,7 +1353,7 @@ export class FinanceController {
     type: [Object],
   })
   @Get('tenant/members')
-  @RequirePermissions('finance.tenant.manage')
+  @RequirePermissions('finance.member.manage')
   async listTenantMembers(
     @User() user,
     @AppScope() appScope: string,
@@ -1365,7 +1366,7 @@ export class FinanceController {
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
-  @RequirePermissions('finance.tenant.manage')
+  @RequirePermissions('finance.member.manage')
   @Post('tenant/members')
   async createTenantMember(
     @User() user,
@@ -1380,7 +1381,7 @@ export class FinanceController {
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
-  @RequirePermissions('finance.tenant.manage')
+  @RequirePermissions('finance.member.manage')
   @Put('tenant/members/:memberId')
   async updateTenantMember(
     @User() user,
@@ -1396,7 +1397,7 @@ export class FinanceController {
   }
 
   @UseGuards(AuthGuard, PermissionsGuard)
-  @RequirePermissions('finance.tenant.manage')
+  @RequirePermissions('finance.member.manage')
   @Delete('tenant/members/:memberId')
   async removeTenantMember(
     @User() user,
@@ -1465,6 +1466,24 @@ export class FinanceController {
     return await this.sendFinanceCommand(
       { cmd: FinCommanderPlanCommands.FIND_MANY },
       this.getScope(user, appScope, tenantId)
+    );
+  }
+
+  @UseGuards(AuthGuard, PermissionsGuard)
+  @ApiTags('fin-commander')
+  @ApiOperation({ summary: 'Project 90 days of plan cash flow' })
+  @Get('fin-commander/plan/:planId/projection')
+  @RequirePermissions('finance.fin-commander-plan.read')
+  @PermissionTarget('headers', 'x-finance-tenant-id')
+  async getFinCommanderCashFlowProjection(
+    @User() user,
+    @Param('planId') planId: string,
+    @AppScope() appScope: string,
+    @FinanceTenantId() tenantId: string | null
+  ) {
+    return await this.sendFinanceCommand(
+      { cmd: FinCommanderProjectionCommands.GET },
+      { planId, ...this.getScope(user, appScope, tenantId) }
     );
   }
 

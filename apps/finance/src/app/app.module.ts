@@ -33,6 +33,7 @@ import { FinancialUtilitiesService } from './services/financial-utilities.servic
 import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
+import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { FinCommanderScenarioService } from './services/fin-commander-scenario.s
     FinCommanderPlanService,
     FinCommanderGoalService,
     FinCommanderScenarioService,
+    FinCommanderProjectionService,
     {
       provide: getRepositoryToken(Account),
       useFactory: (ds: DataSource) => ds.getRepository(Account),

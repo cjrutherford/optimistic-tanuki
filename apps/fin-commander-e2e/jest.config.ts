@@ -6,6 +6,7 @@ export default {
     '/node_modules/',
     '<rootDir>/src/user-journey.spec.ts',
     '<rootDir>/src/oauth-cookie-session.spec.ts',
+    '<rootDir>/src/entity-membership.spec.ts',
   ],
   transform: {
     '^.+\\.[tj]s$': [

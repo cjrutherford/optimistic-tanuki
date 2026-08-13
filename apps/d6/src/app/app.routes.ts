@@ -79,6 +79,10 @@ export const appRoutes: Routes = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: '**',
     redirectTo: '',
   },

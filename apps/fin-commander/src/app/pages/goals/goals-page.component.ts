@@ -16,6 +16,7 @@ import {
   FinCommanderGoal,
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
+import { Account, FinanceService } from '@optimistic-tanuki/finance-ui';
 
 function createGoalId(): string {
   return `goal-${Date.now()}-${Math.round(Math.random() * 1000)}`;
@@ -34,6 +35,7 @@ interface GoalDraft {
   currentAmount: number;
   dueDate: string;
   strategy: string;
+  fundingAccountId: string;
 }
 
 /** Convert a dollar amount to integer cents, guarding against NaN. */
@@ -118,6 +120,28 @@ function dollarsToCents(dollars: number): number {
               type="date"
               required
             />
+          </div>
+          <div class="field">
+            <label class="field-label" for="fundingAccountId"
+              >Funding account</label
+            >
+            <select
+              id="fundingAccountId"
+              class="field-input field-select"
+              [(ngModel)]="draft.fundingAccountId"
+              (ngModelChange)="onDraftChange()"
+              name="fundingAccountId"
+              required
+            >
+              <option value="">
+                Choose the account dedicated to this goal
+              </option>
+              @for (account of fundingAccounts(); track account.id) {
+              <option [value]="account.id">
+                {{ account.name }} · {{ formatAccountBalance(account.balance) }}
+              </option>
+              }
+            </select>
           </div>
           <div class="field field-wide">
             <label class="field-label" for="strategy">Strategy</label>
@@ -205,6 +229,27 @@ function dollarsToCents(dollars: number): number {
 
             @if (goal.strategy) {
             <p class="goal-strategy">{{ goal.strategy }}</p>
+            } @if (goal.fundingDirective; as directive) {
+            <section class="funding-directive" aria-label="Funding directive">
+              <span class="directive-eyebrow">Funding directive</span>
+              <strong
+                >Fund monthly:
+                {{
+                  formatCurrency(directive.requiredMonthlyContributionCents)
+                }}</strong
+              >
+              <span>
+                {{ directive.fundingAccountName }} holds
+                {{ formatCurrency(directive.fundingAccountBalanceCents) }} ·
+                {{ formatCurrency(directive.remainingAmountCents) }} remaining ·
+                {{ directive.monthsRemaining }} months remaining
+              </span>
+            </section>
+            } @else if (goal.fundingAccountId) {
+            <p class="funding-unavailable">
+              Funding account data is unavailable. Re-select an active tenant
+              account.
+            </p>
             }
             <span class="goal-due">
               <span class="due-icon">◷</span>
@@ -639,6 +684,33 @@ function dollarsToCents(dollars: number): number {
         line-height: 1.5;
       }
 
+      .funding-directive {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.85rem;
+        border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+        border-radius: 0.75rem;
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .funding-directive strong {
+        color: var(--foreground);
+        font-size: 1rem;
+      }
+      .directive-eyebrow {
+        color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .funding-unavailable {
+        color: var(--warning);
+        font-size: 0.85rem;
+      }
+
       .goal-due {
         display: flex;
         align-items: center;
@@ -727,6 +799,7 @@ function dollarsToCents(dollars: number): number {
 export class GoalsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(FinCommanderPlanStore);
+  private readonly finance = inject(FinanceService);
   private readonly routePlanId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('planId'))),
     { initialValue: this.route.snapshot.paramMap.get('planId') }
@@ -735,6 +808,7 @@ export class GoalsPageComponent {
   readonly goals = signal<FinCommanderGoal[]>([]);
   readonly pendingDeleteId = signal<string | null>(null);
   readonly statusMessage = signal('');
+  readonly fundingAccounts = signal<Account[]>([]);
   // Re-evaluate `draftErrors` whenever the draft mutates by bumping this tick.
   readonly draftVersion = signal(0);
   readonly draftErrors = computed(() => {
@@ -748,6 +822,8 @@ export class GoalsPageComponent {
     if (this.draft.currentAmount > this.draft.targetAmount)
       errors.push('Current amount cannot exceed the target.');
     if (!this.draft.dueDate) errors.push('Due date is required.');
+    if (!this.draft.fundingAccountId)
+      errors.push('A funding account is required.');
     if (!this.draft.strategy.trim()) errors.push('Strategy is required.');
     return errors;
   });
@@ -761,6 +837,7 @@ export class GoalsPageComponent {
     currentAmount: 0,
     dueDate: new Date().toISOString().slice(0, 10),
     strategy: '',
+    fundingAccountId: '',
   };
 
   constructor() {
@@ -770,6 +847,7 @@ export class GoalsPageComponent {
       this.resetDraft();
       untracked(() => {
         this.loadGoals();
+        void this.loadFundingAccounts();
         void this.store.refreshGoals(this.planId).then(() => this.loadGoals());
       });
     });
@@ -809,6 +887,15 @@ export class GoalsPageComponent {
     });
   }
 
+  formatAccountBalance(balance: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(balance) || 0);
+  }
+
   async saveGoal(): Promise<void> {
     this.bumpDraft();
     if (this.draftErrors().length > 0) return;
@@ -820,6 +907,7 @@ export class GoalsPageComponent {
       currentAmountCents: dollarsToCents(this.draft.currentAmount),
       dueDate: this.draft.dueDate,
       strategy: this.draft.strategy,
+      fundingAccountId: this.draft.fundingAccountId,
     };
     await this.store.saveGoal(goal);
     this.statusMessage.set(`Goal "${this.draft.name.trim()}" saved.`);
@@ -872,7 +960,14 @@ export class GoalsPageComponent {
       currentAmount: 0,
       dueDate: new Date().toISOString().slice(0, 10),
       strategy: '',
+      fundingAccountId: '',
     };
     this.bumpDraft();
+  }
+
+  private async loadFundingAccounts() {
+    this.fundingAccounts.set(
+      (await this.finance.getAccounts()).filter((account) => account.isActive)
+    );
   }
 }

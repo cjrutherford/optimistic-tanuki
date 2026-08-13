@@ -60,7 +60,6 @@ class RecordingBillingReconciliationService
 function repository<T extends object>(
   overrides: Partial<Record<string, unknown>> = {}
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const repo: any = {
     create: jest.fn((input: T) => input),
     save: jest.fn(async (input: T) => ({ id: 'saved-id', ...input })),

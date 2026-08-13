@@ -150,6 +150,10 @@ export const appRoutes: Route[] = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'settings',
     canActivate: [AuthGuard],
     loadComponent: () =>

@@ -5,6 +5,7 @@ import {
   FinCommanderGoal,
   FinCommanderPlan,
   FinCommanderScenario,
+  FinCommanderCashFlowProjection,
 } from '../models/fin-commander.models';
 import { FinCommanderScope } from '../models/fin-commander-scope.model';
 
@@ -62,6 +63,18 @@ export class FinCommanderPlanApiService {
     );
   }
 
+  async getCashFlowProjection(
+    scope: FinCommanderScope,
+    planId: string
+  ): Promise<FinCommanderCashFlowProjection | null> {
+    if (!scope || !planId) return null;
+    return firstValueFrom(
+      this.http.get<FinCommanderCashFlowProjection>(
+        `${this.baseUrl}/plan/${planId}/projection`
+      )
+    );
+  }
+
   async saveGoal(
     scope: FinCommanderScope,
     goal: FinCommanderGoal
@@ -78,6 +91,7 @@ export class FinCommanderPlanApiService {
           currentAmountCents: goal.currentAmountCents,
           dueDate: goal.dueDate,
           strategy: goal.strategy,
+          fundingAccountId: goal.fundingAccountId,
         }
       )
     );

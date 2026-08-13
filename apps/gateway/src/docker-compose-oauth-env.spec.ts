@@ -109,7 +109,7 @@ describe('docker compose oauth environment wiring', () => {
     );
     expect(gatewaySection).toContain('CLIENT_INTERFACE_DOMAIN=localhost');
     expect(gatewaySection).toContain(
-      'GOOGLE_REDIRECT_URI=http://localhost:8080/api/oauth/callback/google'
+      'GOOGLE_REDIRECT_URI=http://localhost:8080/oauth/callback/google'
     );
     expect(gatewaySection).not.toContain(
       'CLIENT_INTERFACE_UI_BASE_URL=http://forgeofwill.localhost:8081'

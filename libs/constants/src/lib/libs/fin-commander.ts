@@ -16,6 +16,34 @@ import {
 // libs/models (doing so breaks its rootDir-scoped build — TS6059).
 type FinanceWorkspace = 'personal' | 'business' | 'net-worth';
 
+export interface FinCommanderGoalFundingDirective {
+  fundingAccountId: string;
+  fundingAccountName: string;
+  fundingAccountBalanceCents: number;
+  remainingAmountCents: number;
+  monthsRemaining: number;
+  requiredMonthlyContributionCents: number;
+  isOverdue: boolean;
+}
+
+export interface FinCommanderCashFlowEvent {
+  date: string;
+  amountCents: number;
+  kind: 'recurring-income' | 'recurring-expense' | 'goal-funding';
+  label: string;
+  sourceId: string;
+}
+
+export interface FinCommanderCashFlowProjection {
+  calculatedAt: string;
+  workspace: FinanceWorkspace;
+  openingBalanceCents: number;
+  projectedBalanceCents: number;
+  horizonDays: number;
+  events: FinCommanderCashFlowEvent[];
+  dailyBalances: Array<{ date: string; closingBalanceCents: number }>;
+}
+
 export const FinCommanderPlanCommands = {
   CREATE: 'CREATE_FIN_COMMANDER_PLAN',
   UPDATE: 'UPDATE_FIN_COMMANDER_PLAN',
@@ -38,6 +66,10 @@ export const FinCommanderScenarioCommands = {
   DELETE: 'DELETE_FIN_COMMANDER_SCENARIO',
   FIND: 'FIND_FIN_COMMANDER_SCENARIO',
   FIND_MANY: 'FIND_MANY_FIN_COMMANDER_SCENARIO',
+};
+
+export const FinCommanderProjectionCommands = {
+  GET: 'GET_FIN_COMMANDER_CASH_FLOW_PROJECTION',
 };
 
 /**
@@ -177,6 +209,17 @@ export class FinCommanderGoalDto {
   @ApiProperty()
   @IsString()
   strategy: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Tenant account dedicated to funding this goal',
+  })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string | null;
+
+  fundingDirective?: FinCommanderGoalFundingDirective | null;
 }
 
 export class CreateFinCommanderGoalDto {
@@ -213,6 +256,15 @@ export class CreateFinCommanderGoalDto {
   @IsString()
   @IsOptional()
   strategy?: string;
+
+  @ApiProperty({
+    required: false,
+    description: 'Tenant account dedicated to funding this goal',
+  })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string;
 
   @ApiProperty()
   @IsString()
@@ -272,6 +324,12 @@ export class UpdateFinCommanderGoalDto {
   @IsString()
   @IsOptional()
   strategy?: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsString()
+  @IsUUID()
+  @IsOptional()
+  fundingAccountId?: string | null;
 }
 
 /**

@@ -641,12 +641,13 @@ async function createAndUpdateAccount(
     }
   );
 
-  await expect(
-    page.getByRole('row', { name: new RegExp(accountName) })
-  ).toBeVisible();
+  await page.locator('otui-ag-grid').scrollIntoViewIfNeeded();
+  const row = page
+    .locator('.ag-center-cols-container .ag-row')
+    .filter({ hasText: accountName });
+  await expect(row).toBeVisible();
 
   const updatedName = `${accountName} Updated`;
-  const row = page.getByRole('row', { name: new RegExp(accountName) });
   await row.getByRole('button', { name: 'Edit' }).click();
 
   await expectResponseOk(
@@ -659,9 +660,10 @@ async function createAndUpdateAccount(
       await page.getByRole('button', { name: 'Update account' }).click();
     }
   );
-  await expect(
-    page.getByRole('row', { name: new RegExp(updatedName) })
-  ).toBeVisible();
+  const updatedRow = page
+    .locator('.ag-center-cols-container .ag-row')
+    .filter({ hasText: updatedName });
+  await expect(updatedRow).toBeVisible();
 
   await expectResponseOk(
     page,
@@ -669,10 +671,7 @@ async function createAndUpdateAccount(
       /\/api\/finance\/account\/.+/.test(response.url()) &&
       response.request().method() === 'PUT',
     async () => {
-      await page
-        .getByRole('row', { name: new RegExp(updatedName) })
-        .getByRole('button', { name: 'Reviewed' })
-        .click();
+      await updatedRow.getByRole('button', { name: 'Reviewed' }).click();
     }
   );
   await page.waitForLoadState('networkidle');
@@ -780,15 +779,14 @@ async function createUpdateDeleteBudget(
       await page.getByRole('button', { name: 'Create budget' }).click();
     }
   );
-  await expect(
-    page.getByRole('row', { name: new RegExp(budgetName) })
-  ).toBeVisible();
+  await page.locator('otui-ag-grid').scrollIntoViewIfNeeded();
+  const budgetRow = page
+    .locator('.ag-center-cols-container .ag-row')
+    .filter({ hasText: budgetName });
+  await expect(budgetRow).toBeVisible();
 
   const updatedBudgetName = `${budgetName} Updated`;
-  await page
-    .getByRole('row', { name: new RegExp(budgetName) })
-    .getByRole('button', { name: 'Edit' })
-    .click();
+  await budgetRow.getByRole('button', { name: 'Edit' }).click();
   await expectResponseOk(
     page,
     (response) =>
@@ -799,24 +797,20 @@ async function createUpdateDeleteBudget(
       await page.getByRole('button', { name: 'Update budget' }).click();
     }
   );
-  await expect(
-    page.getByRole('row', { name: new RegExp(updatedBudgetName) })
-  ).toBeVisible();
+  const updatedBudgetRow = page
+    .locator('.ag-center-cols-container .ag-row')
+    .filter({ hasText: updatedBudgetName });
+  await expect(updatedBudgetRow).toBeVisible();
   await expectResponseOk(
     page,
     (response) =>
       /\/api\/finance\/budget\/.+/.test(response.url()) &&
       response.request().method() === 'DELETE',
     async () => {
-      await page
-        .getByRole('row', { name: new RegExp(updatedBudgetName) })
-        .getByRole('button', { name: 'Delete' })
-        .click();
+      await updatedBudgetRow.getByRole('button', { name: 'Delete' }).click();
     }
   );
-  await expect(
-    page.getByRole('row', { name: new RegExp(updatedBudgetName) })
-  ).toHaveCount(0);
+  await expect(updatedBudgetRow).toHaveCount(0);
 }
 
 async function createCategorizedTransaction(
@@ -889,8 +883,11 @@ async function createBudget(
     }
   );
 
+  await page.locator('otui-ag-grid').scrollIntoViewIfNeeded();
   await expect(
-    page.getByRole('row', { name: new RegExp(budgetName) })
+    page
+      .locator('.ag-center-cols-container .ag-row')
+      .filter({ hasText: budgetName })
   ).toBeVisible();
   return budgetName;
 }
@@ -1243,7 +1240,7 @@ test.describe('Fin Commander user journey', () => {
     ).toHaveCount(0);
     await closeMenu(page);
 
-    await createAndUpdateAccount(
+    const personalFundingAccount = await createAndUpdateAccount(
       page,
       routes,
       'personal',
@@ -1274,9 +1271,9 @@ test.describe('Fin Commander user journey', () => {
     const planName = `First Plan ${Date.now()}`;
     await page.getByLabel('Plan name').fill(planName);
     await page
-      .getByLabel('What is this plan for?')
+      .getByLabel('Description')
       .fill('Cover monthly obligations and savings goals');
-    await page.getByRole('button', { name: 'Create your first plan' }).click();
+    await page.getByRole('button', { name: 'Create plan' }).click();
     await expect(page).toHaveURL(
       new RegExp(`${routes.plansPath}/[^/]+/overview$`)
     );
@@ -1291,18 +1288,29 @@ test.describe('Fin Commander user journey', () => {
     ).toBeVisible();
     const planId = await currentPlanId(page);
 
+    const projectionResponse = page.waitForResponse(
+      (response) =>
+        response
+          .url()
+          .includes(`/api/finance/fin-commander/plan/${planId}/projection`) &&
+        response.request().method() === 'GET'
+    );
     await page.goto(`${routes.plansPath}/${planId}/cash-flow`, {
       waitUntil: 'networkidle',
     });
+    await expect((await projectionResponse).ok()).toBe(true);
     await expect(page).toHaveURL(
       new RegExp(`${routes.plansPath}/${planId}/cash-flow$`)
     );
     await expect(
-      page.getByRole('heading', { name: 'Finance workspaces' })
+      page.getByRole('heading', { name: 'Account operating areas' })
     ).toBeVisible();
     await expect(
       page.getByRole('link', { name: 'Accounts' }).first()
     ).toBeVisible();
+    await expect(page.getByLabel('90-day cash flow forecast')).toContainText(
+      '90-day forecast'
+    );
 
     await page.goto(`${routes.plansPath}/${planId}/goals`, {
       waitUntil: 'networkidle',
@@ -1315,9 +1323,40 @@ test.describe('Fin Commander user journey', () => {
     await page.getByLabel('Target amount').fill('10000');
     await page.getByLabel('Current amount').fill('2500');
     await page.getByLabel('Due date').fill('2026-09-01');
+    const fundingAccount = page.getByLabel('Funding account');
+    const fundingAccountId = await fundingAccount
+      .locator('option')
+      .filter({ hasText: personalFundingAccount })
+      .getAttribute('value');
+    expect(fundingAccountId).toBeTruthy();
+    await fundingAccount.selectOption(fundingAccountId as string);
     await page.getByLabel('Strategy').fill('Send monthly surplus to savings');
-    await page.getByRole('button', { name: 'Save Goal' }).click();
-    await expect(page.locator(`article:has-text("${goalName}")`)).toBeVisible();
+    const goalResponse = await expectResponseOk(
+      page,
+      (response) =>
+        response
+          .url()
+          .includes(`/api/finance/fin-commander/plan/${planId}/goal`) &&
+        response.request().method() === 'POST',
+      async () => {
+        await page.getByRole('button', { name: 'Save Goal' }).click();
+      }
+    );
+    const createdGoal = await goalResponse.json();
+    expect(createdGoal.fundingAccountId).toBeTruthy();
+    expect(createdGoal.fundingDirective).toMatchObject({
+      fundingAccountName: personalFundingAccount,
+      fundingAccountBalanceCents: 123400,
+      remainingAmountCents: 876600,
+    });
+    const goalCard = page.locator(`article:has-text("${goalName}")`);
+    await expect(goalCard).toBeVisible();
+    await expect(goalCard.getByLabel('Funding directive')).toContainText(
+      'Fund monthly:'
+    );
+    await expect(goalCard.getByLabel('Funding directive')).toContainText(
+      personalFundingAccount
+    );
     await page
       .locator(`article:has-text("${goalName}")`)
       .getByRole('button', { name: 'Remove' })
@@ -1399,8 +1438,11 @@ test.describe('Fin Commander user journey', () => {
     await page.goto(`${routes.accountsPath}/business/transactions`, {
       waitUntil: 'networkidle',
     });
+    await page.locator('otui-ag-grid').scrollIntoViewIfNeeded();
     await expect(
-      page.getByRole('row', { name: /Neighborhood Market/ })
+      page
+        .locator('.ag-center-cols-container .ag-row')
+        .filter({ hasText: 'Neighborhood Market' })
     ).toBeVisible();
     logDiagnosticsCheckpoint('after-import-verification', diagnostics);
 

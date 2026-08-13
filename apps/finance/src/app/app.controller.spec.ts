@@ -20,6 +20,7 @@ import { FinancialUtilitiesService } from './services/financial-utilities.servic
 import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
+import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
 
 describe('AppController (tenant isolation)', () => {
   let controller: AppController;
@@ -37,10 +38,13 @@ describe('AppController (tenant isolation)', () => {
     >
   >;
   let finCommanderGoalService: jest.Mocked<
-    Pick<FinCommanderGoalService, 'create'>
+    Pick<FinCommanderGoalService, 'create' | 'getFundingDirective'>
   >;
   let finCommanderScenarioService: jest.Mocked<
     Pick<FinCommanderScenarioService, 'create'>
+  >;
+  let finCommanderProjectionService: jest.Mocked<
+    Pick<FinCommanderProjectionService, 'getProjection'>
   >;
   let bankConnectionService: jest.Mocked<
     Pick<
@@ -76,10 +80,12 @@ describe('AppController (tenant isolation)', () => {
     };
     finCommanderGoalService = {
       create: jest.fn().mockResolvedValue({ id: 'goal-1' }),
+      getFundingDirective: jest.fn().mockResolvedValue(null),
     };
     finCommanderScenarioService = {
       create: jest.fn().mockResolvedValue({ id: 'scenario-1' }),
     };
+    finCommanderProjectionService = { getProjection: jest.fn() };
     bankConnectionService = {
       exchangePublicToken: jest.fn().mockResolvedValue({ id: 'connection-1' }),
       createConnection: jest.fn().mockResolvedValue({ id: 'connection-1' }),
@@ -98,7 +104,8 @@ describe('AppController (tenant isolation)', () => {
       {} as FinancialUtilitiesService,
       finCommanderPlanService as unknown as FinCommanderPlanService,
       finCommanderGoalService as unknown as FinCommanderGoalService,
-      finCommanderScenarioService as unknown as FinCommanderScenarioService
+      finCommanderScenarioService as unknown as FinCommanderScenarioService,
+      finCommanderProjectionService as unknown as FinCommanderProjectionService
     );
   });
 
@@ -416,6 +423,43 @@ describe('AppController (tenant isolation)', () => {
   });
 
   describe('Fin Commander child creation', () => {
+    it('returns the Finance-calculated funding directive with a created goal', async () => {
+      finCommanderGoalService.create.mockResolvedValue({
+        id: 'goal-1',
+        fundingAccountId: 'account-1',
+      } as never);
+      finCommanderGoalService.getFundingDirective.mockResolvedValue({
+        fundingAccountId: 'account-1',
+        fundingAccountName: 'Emergency savings',
+        fundingAccountBalanceCents: 400_000,
+        remainingAmountCents: 600_000,
+        monthsRemaining: 3,
+        requiredMonthlyContributionCents: 200_000,
+        isOverdue: false,
+      });
+
+      await expect(
+        controller.createFinCommanderGoal({
+          planId: 'plan-1',
+          name: 'Emergency fund',
+          targetAmountCents: 1_000_000,
+          dueDate: '2026-10-15',
+          fundingAccountId: 'account-1',
+          userId: 'user-1',
+          profileId: 'caller-profile',
+          tenantId: 'own-tenant',
+          appScope: 'finance',
+        } as never)
+      ).resolves.toEqual(
+        expect.objectContaining({
+          id: 'goal-1',
+          fundingDirective: expect.objectContaining({
+            requiredMonthlyContributionCents: 200_000,
+          }),
+        })
+      );
+    });
+
     it('rejects a goal whose parent plan is outside the resolved tenant scope', async () => {
       finCommanderPlanService.assertAccess.mockRejectedValue(accessDenied());
 
@@ -440,6 +484,38 @@ describe('AppController (tenant isolation)', () => {
         })
       );
       expect(finCommanderGoalService.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Fin Commander cash-flow projection', () => {
+    it('resolves scope and delegates projection calculation to the Finance service', async () => {
+      const projection = {
+        openingBalanceCents: 100_000,
+        projectedBalanceCents: 445_000,
+      };
+      finCommanderProjectionService.getProjection.mockResolvedValue(
+        projection as never
+      );
+
+      await expect(
+        controller.getFinCommanderCashFlowProjection({
+          planId: 'plan-1',
+          profileId: 'caller-profile',
+          tenantId: 'own-tenant',
+          userId: 'user-1',
+          appScope: 'finance',
+        } as never)
+      ).resolves.toEqual(projection);
+
+      expect(finCommanderProjectionService.getProjection).toHaveBeenCalledWith(
+        'plan-1',
+        expect.objectContaining({
+          profileId: 'caller-profile',
+          tenantId: 'own-tenant',
+          userId: 'user-1',
+          appScope: 'finance',
+        })
+      );
     });
   });
 });

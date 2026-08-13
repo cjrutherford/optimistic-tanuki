@@ -21,6 +21,16 @@ export interface FinCommanderGoal {
   currentAmountCents: number;
   dueDate: string;
   strategy: string;
+  fundingAccountId?: string | null;
+  fundingDirective?: {
+    fundingAccountId: string;
+    fundingAccountName: string;
+    fundingAccountBalanceCents: number;
+    remainingAmountCents: number;
+    monthsRemaining: number;
+    requiredMonthlyContributionCents: number;
+    isOverdue: boolean;
+  } | null;
 }
 
 export interface FinCommanderScenarioAssumption {
@@ -36,6 +46,21 @@ export interface FinCommanderScenario {
   name: string;
   summary: string;
   assumptions: FinCommanderScenarioAssumption[];
+}
+
+export interface FinCommanderCashFlowProjection {
+  calculatedAt: string;
+  workspace: FinanceWorkspace;
+  openingBalanceCents: number;
+  projectedBalanceCents: number;
+  horizonDays: number;
+  events: Array<{
+    date: string;
+    amountCents: number;
+    kind: string;
+    label: string;
+    sourceId: string;
+  }>;
 }
 
 export interface FinCommanderOverview {

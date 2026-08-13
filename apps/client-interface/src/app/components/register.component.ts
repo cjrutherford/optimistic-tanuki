@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 
 import { Router } from '@angular/router';

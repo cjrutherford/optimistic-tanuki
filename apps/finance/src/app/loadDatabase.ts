@@ -19,6 +19,7 @@ import { AddFinanceTenantType1760613363000 } from '../migrations/add-finance-ten
 import { BankConnections1771000000000 } from '../migrations/1771000000000-bank-connections';
 import { FinancialUtilities1771500000000 } from '../migrations/1771500000000-financial-utilities';
 import { FinCommander1772000000000 } from '../migrations/1772000000000-fin-commander';
+import { FinCommanderFundedGoal1772100000000 } from '../migrations/1772100000000-fin-commander-funded-goal';
 
 const loadDatabase = (config: ConfigService) => {
   const database = config.get('database');
@@ -51,6 +52,7 @@ const loadDatabase = (config: ConfigService) => {
       BankConnections1771000000000,
       FinancialUtilities1771500000000,
       FinCommander1772000000000,
+      FinCommanderFundedGoal1772100000000,
       path.resolve(__dirname, '../migrations/*.js'),
     ],
     migrationsRun: true,

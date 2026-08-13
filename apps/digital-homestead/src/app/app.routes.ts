@@ -54,6 +54,10 @@ export const appRoutes: Route[] = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'blog',
     loadComponent: () =>
       import('./components/blog-page/blog-page.component').then(

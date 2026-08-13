@@ -20,6 +20,10 @@ export const appRoutes: Route[] = [
   { path: 'login', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'oauth/callback', component: OAuthCallbackComponent },
+  {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
   { path: 'watch/:id', component: WatchComponent },
   { path: 'c/:slugOrId', component: ChannelComponent },
   { path: 'channel/:slugOrId', component: ChannelComponent },

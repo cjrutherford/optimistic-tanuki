@@ -37,6 +37,7 @@ describe('OAuthCallbackComponent', () => {
   it('exports the app-local OAuth callback route', () => {
     expect(oauthCallbackRoutes).toEqual([
       { path: 'oauth/callback', component: OAuthCallbackComponent },
+      { path: 'oauth/callback/:provider', component: OAuthCallbackComponent },
     ]);
   });
 

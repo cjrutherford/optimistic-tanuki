@@ -13,6 +13,7 @@ import {
   FinCommanderPlanCommands,
   FinCommanderGoalCommands,
   FinCommanderScenarioCommands,
+  FinCommanderProjectionCommands,
   CreateFinCommanderPlanDto,
   UpdateFinCommanderPlanDto,
   CreateFinCommanderGoalDto,
@@ -70,6 +71,7 @@ import { FinancialUtilitiesService } from './services/financial-utilities.servic
 import { FinCommanderPlanService } from './services/fin-commander-plan.service';
 import { FinCommanderGoalService } from './services/fin-commander-goal.service';
 import { FinCommanderScenarioService } from './services/fin-commander-scenario.service';
+import { FinCommanderProjectionService } from './services/fin-commander-projection.service';
 
 @Controller()
 export class AppController {
@@ -85,7 +87,8 @@ export class AppController {
     private readonly financialUtilitiesService: FinancialUtilitiesService,
     private readonly finCommanderPlanService: FinCommanderPlanService,
     private readonly finCommanderGoalService: FinCommanderGoalService,
-    private readonly finCommanderScenarioService: FinCommanderScenarioService
+    private readonly finCommanderScenarioService: FinCommanderScenarioService,
+    private readonly finCommanderProjectionService: FinCommanderProjectionService
   ) {}
 
   private extractFindManyOptions<T>(
@@ -162,6 +165,19 @@ export class AppController {
     scope: FinanceScope
   ): Promise<void> {
     await this.finCommanderPlanService.assertAccess(planId, scope);
+  }
+
+  private async withFundingDirective(
+    goal: FinCommanderGoalEntity,
+    scope: FinanceScope
+  ) {
+    return {
+      ...goal,
+      fundingDirective: await this.finCommanderGoalService.getFundingDirective(
+        goal,
+        scope
+      ),
+    };
   }
 
   // Account endpoints
@@ -725,12 +741,25 @@ export class AppController {
     );
   }
 
+  @MessagePattern({ cmd: FinCommanderProjectionCommands.GET })
+  async getFinCommanderCashFlowProjection(
+    @Payload() payload: { planId: string } & FinanceScope
+  ) {
+    return await this.finCommanderProjectionService.getProjection(
+      payload.planId,
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {}
+    );
+  }
+
   // Fin Commander goal endpoints
   @MessagePattern({ cmd: FinCommanderGoalCommands.CREATE })
   async createFinCommanderGoal(@Payload() data: CreateFinCommanderGoalDto) {
     const scopedData = await this.withResolvedTenant(data);
     await this.requireScopedFinCommanderPlan(scopedData.planId, scopedData);
-    return await this.finCommanderGoalService.create(scopedData);
+    return await this.withFundingDirective(
+      await this.finCommanderGoalService.create(scopedData),
+      scopedData
+    );
   }
 
   @MessagePattern({ cmd: FinCommanderGoalCommands.FIND_MANY })
@@ -738,9 +767,14 @@ export class AppController {
     @Payload()
     payload?: FindManyOptions<FinCommanderGoalEntity> & FinanceScope
   ) {
-    return await this.finCommanderGoalService.findAll(
-      await this.resolveScope(payload as Record<string, unknown>),
+    const scope =
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {};
+    const goals = await this.finCommanderGoalService.findAll(
+      scope,
       this.extractFindManyOptions(payload)
+    );
+    return await Promise.all(
+      goals.map((goal) => this.withFundingDirective(goal, scope))
     );
   }
 
@@ -748,10 +782,10 @@ export class AppController {
   async findOneFinCommanderGoal(
     @Payload() payload: { id: string } & FinanceScope
   ) {
-    return await this.finCommanderGoalService.findOne(
-      payload.id,
-      await this.resolveScope(payload as Record<string, unknown>)
-    );
+    const scope =
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {};
+    const goal = await this.finCommanderGoalService.findOne(payload.id, scope);
+    return goal ? await this.withFundingDirective(goal, scope) : null;
   }
 
   @MessagePattern({ cmd: FinCommanderGoalCommands.UPDATE })
@@ -759,10 +793,15 @@ export class AppController {
     @Payload()
     payload: { id: string; data: UpdateFinCommanderGoalDto } & FinanceScope
   ) {
-    return await this.finCommanderGoalService.update(
-      payload.id,
-      payload.data,
-      await this.resolveScope(payload as Record<string, unknown>)
+    const scope =
+      (await this.resolveScope(payload as Record<string, unknown>)) ?? {};
+    return await this.withFundingDirective(
+      await this.finCommanderGoalService.update(
+        payload.id,
+        payload.data,
+        scope
+      ),
+      scope
     );
   }
 

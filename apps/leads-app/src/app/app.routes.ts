@@ -32,6 +32,10 @@ export const appRoutes: Route[] = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'profile/setup',
     loadComponent: () =>
       import('./profile-setup.component').then((m) => m.ProfileSetupComponent),

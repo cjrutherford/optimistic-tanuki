@@ -4,6 +4,7 @@ import {
   FinCommanderGoal,
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-ui';
 import { of } from 'rxjs';
 import { GoalsPageComponent } from './goals-page.component';
 
@@ -17,6 +18,16 @@ const seedGoals: FinCommanderGoal[] = [
     currentAmountCents: 250_000,
     dueDate: '2026-12-31',
     strategy: 'Auto-transfer $500/month',
+    fundingAccountId: 'account-1',
+    fundingDirective: {
+      fundingAccountId: 'account-1',
+      fundingAccountName: 'Emergency savings',
+      fundingAccountBalanceCents: 250_000,
+      remainingAmountCents: 750_000,
+      monthsRemaining: 15,
+      requiredMonthlyContributionCents: 50_000,
+      isOverdue: false,
+    },
   },
 ];
 
@@ -42,6 +53,10 @@ function setup() {
         },
       },
       { provide: FinCommanderPlanStore, useValue: store },
+      {
+        provide: FinanceService,
+        useValue: { getAccounts: jest.fn().mockResolvedValue([]) },
+      },
     ],
   });
 
@@ -100,5 +115,16 @@ describe('GoalsPageComponent', () => {
     expect(store.deleteGoal as jest.Mock).toHaveBeenCalledWith('goal-existing');
     expect(cmp.pendingDeleteId()).toBeNull();
     expect(cmp.statusMessage()).toContain('Emergency Fund');
+  });
+
+  it('renders the server-calculated funding directive for a goal', () => {
+    setup();
+    const fixture = TestBed.createComponent(GoalsPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Fund monthly');
+    expect(fixture.nativeElement.textContent).toContain('$500.00');
+    expect(fixture.nativeElement.textContent).toContain('Emergency savings');
+    expect(fixture.nativeElement.textContent).toContain('15 months remaining');
   });
 });
