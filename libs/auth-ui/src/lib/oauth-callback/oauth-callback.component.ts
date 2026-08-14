@@ -234,4 +234,8 @@ export class OAuthCallbackComponent implements OnInit {
 
 export const oauthCallbackRoutes: readonly Route[] = [
   { path: 'oauth/callback', component: OAuthCallbackComponent },
+  {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
 ];

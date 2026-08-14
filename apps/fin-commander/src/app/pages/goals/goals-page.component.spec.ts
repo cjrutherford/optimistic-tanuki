@@ -4,6 +4,7 @@ import {
   FinCommanderGoal,
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
+import { FinanceService } from '@optimistic-tanuki/finance-ui';
 import { of } from 'rxjs';
 import { GoalsPageComponent } from './goals-page.component';
 
@@ -17,6 +18,16 @@ const seedGoals: FinCommanderGoal[] = [
     currentAmountCents: 250_000,
     dueDate: '2026-12-31',
     strategy: 'Auto-transfer $500/month',
+    fundingAccountId: 'account-1',
+    fundingDirective: {
+      fundingAccountId: 'account-1',
+      fundingAccountName: 'Emergency savings',
+      fundingAccountBalanceCents: 250_000,
+      remainingAmountCents: 750_000,
+      monthsRemaining: 15,
+      requiredMonthlyContributionCents: 50_000,
+      isOverdue: false,
+    },
   },
 ];
 
@@ -25,8 +36,34 @@ function setup() {
     getScope: () => 'personal',
     listPlans: () => [{ id: 'plan-1' }],
     listGoals: () => [...seedGoals],
-    saveGoal: jest.fn(),
-    deleteGoal: jest.fn(),
+    refreshGoals: jest.fn().mockResolvedValue(seedGoals),
+    saveGoal: jest.fn().mockResolvedValue(seedGoals[0]),
+    deleteGoal: jest.fn().mockResolvedValue(undefined),
+    previewFundingDirective: jest.fn().mockResolvedValue({
+      goalId: 'goal-existing',
+      amountCents: 50_000,
+      cadence: 'monthly',
+      startDate: '2026-09-01',
+      fundingAccountId: 'account-1',
+      fundingAccountName: 'Emergency savings',
+      effect: 'forecast-only; no transaction or account balance change',
+    }),
+    approveFundingDirective: jest.fn().mockResolvedValue({
+      id: 'directive-1',
+      goalId: 'goal-existing',
+      amountCents: 50_000,
+      cadence: 'monthly',
+      startDate: '2026-09-01',
+      fundingAccountId: 'account-1',
+      fundingAccountName: 'Emergency savings',
+      effect: 'forecast-only; no transaction or account balance change',
+      recurringItemId: 'recurring-1',
+      status: 'approved',
+      approvedAt: '2026-08-12T00:00:00.000Z',
+      approvedByUserId: 'user-1',
+      cancelledAt: null,
+      cancelledByUserId: null,
+    }),
   } as unknown as FinCommanderPlanStore;
 
   TestBed.configureTestingModule({
@@ -41,6 +78,10 @@ function setup() {
         },
       },
       { provide: FinCommanderPlanStore, useValue: store },
+      {
+        provide: FinanceService,
+        useValue: { getAccounts: jest.fn().mockResolvedValue([]) },
+      },
     ],
   });
 
@@ -80,7 +121,7 @@ describe('GoalsPageComponent', () => {
     );
   });
 
-  it('requires confirmation before deleting a goal', () => {
+  it('requires confirmation before deleting a goal', async () => {
     const store = setup();
     const fixture = TestBed.createComponent(GoalsPageComponent);
     fixture.detectChanges();
@@ -95,9 +136,42 @@ describe('GoalsPageComponent', () => {
     expect(store.deleteGoal as jest.Mock).not.toHaveBeenCalled();
 
     cmp.requestDelete('goal-existing');
-    cmp.confirmDelete('goal-existing');
+    await cmp.confirmDelete('goal-existing');
     expect(store.deleteGoal as jest.Mock).toHaveBeenCalledWith('goal-existing');
     expect(cmp.pendingDeleteId()).toBeNull();
     expect(cmp.statusMessage()).toContain('Emergency Fund');
+  });
+
+  it('renders the server-calculated funding directive for a goal', () => {
+    setup();
+    const fixture = TestBed.createComponent(GoalsPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Fund monthly');
+    expect(fixture.nativeElement.textContent).toContain('$500.00');
+    expect(fixture.nativeElement.textContent).toContain('Emergency savings');
+    expect(fixture.nativeElement.textContent).toContain('15 months remaining');
+  });
+
+  it('requires a preview before approving a forecast-only funding instruction', async () => {
+    const store = setup();
+    const fixture = TestBed.createComponent(GoalsPageComponent);
+    fixture.detectChanges();
+    const cmp = fixture.componentInstance;
+
+    await cmp.previewFunding('goal-existing');
+    fixture.detectChanges();
+    expect(store.previewFundingDirective as jest.Mock).toHaveBeenCalledWith(
+      'goal-existing'
+    );
+    expect(fixture.nativeElement.textContent).toContain(
+      'Forecast only — no transaction or balance change.'
+    );
+
+    await cmp.approveFunding('goal-existing');
+    expect(store.approveFundingDirective as jest.Mock).toHaveBeenCalledWith(
+      'goal-existing'
+    );
+    expect(cmp.statusMessage()).toContain('no money was moved');
   });
 });

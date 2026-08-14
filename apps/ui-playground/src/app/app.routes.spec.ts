@@ -25,6 +25,7 @@ describe('ui-playground routes', () => {
 
     expect(libraryPaths).toEqual([
       'oauth/callback',
+      'oauth/callback/:provider',
       '',
       'docs',
       'docs/api/:library',

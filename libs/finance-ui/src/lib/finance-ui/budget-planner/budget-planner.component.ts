@@ -142,7 +142,9 @@ export class BudgetPlannerComponent implements OnInit {
       sortable: false,
       filter: false,
       editable: false,
-      maxWidth: 220,
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
       cellRenderer: (params: { data?: Budget }) => {
         const data = params.data;
         if (!data) {

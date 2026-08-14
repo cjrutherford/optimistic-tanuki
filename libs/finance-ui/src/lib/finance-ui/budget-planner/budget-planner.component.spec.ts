@@ -59,4 +59,17 @@ describe('BudgetPlannerComponent', () => {
     expect(text).toContain('Track targets and spend in one operating view');
     expect(fixture.nativeElement.querySelector('otui-ag-grid')).not.toBeNull();
   });
+
+  it('reserves fixed width for each budget row action', () => {
+    const fixture = TestBed.createComponent(BudgetPlannerComponent);
+    const actionsColumn = fixture.componentInstance.columnDefs.find(
+      (column) => column.headerName === 'Actions'
+    );
+
+    expect(actionsColumn).toMatchObject({
+      flex: 0,
+      minWidth: 300,
+      maxWidth: 300,
+    });
+  });
 });

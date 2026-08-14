@@ -968,6 +968,7 @@ export class OAuthController {
         appScope
       )}/api/oauth/callback/${provider}`;
     }
+
     const configuredRedirectUri = config.redirectUri?.trim();
     if (configuredRedirectUri) {
       return configuredRedirectUri;

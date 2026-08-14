@@ -99,6 +99,19 @@ describe('TenantShellComponent', () => {
     expect(text).toContain('Operating Plan');
   });
 
+  it('makes People & access discoverable from the tenant navigation', () => {
+    const fixture = TestBed.createComponent(TenantShellComponent);
+    fixture.detectChanges();
+
+    const tenantNode = fixture.componentInstance.treeItems()[0];
+    const peopleItem = tenantNode.children?.find(
+      (child) => child.label === 'People & access'
+    );
+
+    expect(peopleItem).toBeDefined();
+    expect(peopleItem?.isActive).toBe(false);
+  });
+
   it('exposes a logout action in the navigation tree', () => {
     const fixture = TestBed.createComponent(TenantShellComponent);
     fixture.detectChanges();

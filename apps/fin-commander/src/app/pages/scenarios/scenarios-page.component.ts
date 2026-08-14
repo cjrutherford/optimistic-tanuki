@@ -1,5 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -21,14 +28,14 @@ function createScenarioId(): string {
     <section class="page">
       <header class="page-header">
         <span class="eyebrow">Scenarios</span>
-        <h2>Model what-if assumptions</h2>
+        <h1>Model what-if assumptions</h1>
       </header>
 
       <!-- ── SCENARIO EDITOR ────────────────────────────────────── -->
       <form class="editor-card" (ngSubmit)="saveScenario()" novalidate>
         <div class="editor-header">
           <span class="editor-eyebrow">New Scenario</span>
-          <h3 class="editor-title">Model a what-if</h3>
+          <h2 class="editor-title">Model a what-if</h2>
         </div>
 
         <div class="editor-grid">
@@ -107,7 +114,7 @@ function createScenarioId(): string {
 
         <div class="editor-footer">
           @if (draftErrors().length > 0) {
-          <ul class="hint-errors" role="alert" aria-live="assertive">
+          <ul class="hint-errors" aria-live="assertive">
             @for (err of draftErrors(); track err) {
             <li>{{ err }}</li>
             }
@@ -715,7 +722,12 @@ export class ScenariosPageComponent {
 
       this.planId = this.routePlanId() ?? this.store.listPlans()[0]?.id ?? '';
       this.resetDraft();
-      this.loadScenarios();
+      untracked(() => {
+        this.loadScenarios();
+        void this.store
+          .refreshScenarios(this.planId)
+          .then(() => this.loadScenarios());
+      });
     });
   }
 
@@ -734,11 +746,11 @@ export class ScenariosPageComponent {
     }
   }
 
-  saveScenario() {
+  async saveScenario(): Promise<void> {
     this.bumpDraft();
     if (this.draftErrors().length > 0) return;
     const name = this.draft.name.trim();
-    this.store.saveScenario({
+    await this.store.saveScenario({
       ...this.draft,
       id: createScenarioId(),
       assumptions: [
@@ -763,11 +775,11 @@ export class ScenariosPageComponent {
     this.pendingDeleteId.set(null);
   }
 
-  confirmDelete(scenarioId: string) {
+  async confirmDelete(scenarioId: string): Promise<void> {
     const removed = this.scenarios().find(
       (scenario) => scenario.id === scenarioId
     );
-    this.store.deleteScenario(scenarioId);
+    await this.store.deleteScenario(scenarioId);
     this.pendingDeleteId.set(null);
     this.statusMessage.set(
       removed ? `Removed scenario "${removed.name}".` : 'Scenario removed.'
@@ -784,8 +796,8 @@ export class ScenariosPageComponent {
   }
 
   /** @deprecated Kept for backwards compatibility; use {@link requestDelete} + {@link confirmDelete}. */
-  deleteScenario(scenarioId: string) {
-    this.confirmDelete(scenarioId);
+  async deleteScenario(scenarioId: string): Promise<void> {
+    await this.confirmDelete(scenarioId);
   }
 
   private loadScenarios() {

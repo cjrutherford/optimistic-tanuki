@@ -9,6 +9,44 @@ export const serverRoutes: ServerRoute[] = [
     path: 'demo',
     renderMode: RenderMode.Prerender,
   },
+  // These routes depend on an HttpOnly browser session. Keeping them client
+  // rendered lets their guards restore that session before choosing a route.
+  {
+    path: 'onboarding',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'settings',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'account',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'finance',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'finance/:workspace',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'finance/:workspace/:section',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'commander',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'commander/:planId',
+    renderMode: RenderMode.Client,
+  },
+  {
+    path: 'commander/:planId/:section',
+    renderMode: RenderMode.Client,
+  },
   {
     path: 'tenants/active',
     renderMode: RenderMode.Client,

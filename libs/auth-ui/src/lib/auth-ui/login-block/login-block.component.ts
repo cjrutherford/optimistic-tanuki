@@ -89,12 +89,9 @@ export class LoginBlockComponent extends Themeable {
     this.borderColor = colors.complementary;
   }
 
-  onFormChange(e: string) {
-    console.log(e);
-  }
+  onFormChange(_e: string) {}
 
   onSubmit() {
-    console.log(this.loginForm.value);
     this.submitEvent.emit(this.loginForm.value);
   }
 

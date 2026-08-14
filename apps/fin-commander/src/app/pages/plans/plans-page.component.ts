@@ -243,9 +243,8 @@ export class PlansPageComponent {
       return;
     }
 
-    const planId = this.slugify(name);
-    this.store.savePlan({
-      id: planId,
+    const plan = await this.store.savePlan({
+      id: this.slugify(name),
       name,
       description:
         this.newPlanDescription.trim() ||
@@ -257,7 +256,7 @@ export class PlansPageComponent {
     this.newPlanName = '';
     this.newPlanDescription = '';
 
-    await this.router.navigate(this.planRoute(planId));
+    await this.router.navigate(this.planRoute(plan.id));
   }
 
   private slugify(value: string): string {

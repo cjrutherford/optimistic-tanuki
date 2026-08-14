@@ -1,4 +1,4 @@
-import { Initial1737000000000 } from '../../migrations/1737000000000-initial';
+import { Initial1737000000000 } from '../migrations/1737000000000-initial';
 
 describe('finance initial migration', () => {
   it('uses uuid account references for finance records', async () => {

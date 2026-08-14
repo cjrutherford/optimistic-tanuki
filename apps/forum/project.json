@@ -65,6 +65,17 @@
           "buildTarget": "forum:build:production"
         }
       }
+    },
+    "typeorm:migration:generate": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js migration:generate -d src/app/staticDatabase.ts",
+        "cwd": "apps/forum",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json",
+          "POSTGRES_HOST": "127.0.0.1"
+        }
+      }
     }
   },
   "tags": ["type:app"]

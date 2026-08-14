@@ -9,9 +9,12 @@ import { Repository, FindOneOptions, FindManyOptions } from 'typeorm';
 import DOMPurify from 'isomorphic-dompurify';
 import {
   CreateFinCommanderGoalDto,
+  FinCommanderGoalFundingDirective,
+  FinCommanderFundingDirectivePreview,
   UpdateFinCommanderGoalDto,
 } from '@optimistic-tanuki/constants';
 import { FinCommanderGoalEntity } from '../../entities';
+import { Account } from '../../entities/account.entity';
 import {
   FinanceScope,
   withScopedFindManyOptions,
@@ -22,8 +25,113 @@ import {
 export class FinCommanderGoalService {
   constructor(
     @Inject(getRepositoryToken(FinCommanderGoalEntity))
-    private readonly goalRepo: Repository<FinCommanderGoalEntity>
+    private readonly goalRepo: Repository<FinCommanderGoalEntity>,
+    @Inject(getRepositoryToken(Account))
+    private readonly accountRepo: Repository<Account>
   ) {}
+
+  private async assertFundingAccount(
+    fundingAccountId: string | undefined | null,
+    scope: { tenantId?: string; appScope?: string }
+  ): Promise<void> {
+    if (!fundingAccountId) {
+      return;
+    }
+
+    const account = await this.accountRepo.findOne({
+      where: {
+        id: fundingAccountId,
+        tenantId: scope.tenantId,
+        appScope: scope.appScope ?? 'finance',
+        isActive: true,
+      },
+    });
+    if (!account) {
+      throw new NotFoundException('Funding account not found');
+    }
+  }
+
+  async getFundingDirective(
+    goal: Pick<
+      FinCommanderGoalEntity,
+      'fundingAccountId' | 'targetAmountCents' | 'dueDate'
+    >,
+    scope: { tenantId?: string; appScope?: string },
+    asOf = new Date()
+  ): Promise<FinCommanderGoalFundingDirective | null> {
+    if (!goal.fundingAccountId) {
+      return null;
+    }
+
+    const account = await this.accountRepo.findOne({
+      where: {
+        id: goal.fundingAccountId,
+        tenantId: scope.tenantId,
+        appScope: scope.appScope ?? 'finance',
+        isActive: true,
+      },
+    });
+    if (!account) {
+      return null;
+    }
+
+    const fundingAccountBalanceCents = Math.round(
+      Number(account.balance) * 100
+    );
+    const remainingAmountCents = Math.max(
+      0,
+      goal.targetAmountCents - fundingAccountBalanceCents
+    );
+    const dueDate = new Date(`${goal.dueDate}T00:00:00.000Z`);
+    const monthsUntilDue =
+      (dueDate.getUTCFullYear() - asOf.getUTCFullYear()) * 12 +
+      dueDate.getUTCMonth() -
+      asOf.getUTCMonth() +
+      1;
+    const isOverdue =
+      dueDate.getTime() <
+      Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), asOf.getUTCDate());
+    const monthsRemaining = Math.max(1, monthsUntilDue);
+
+    return {
+      fundingAccountId: account.id,
+      fundingAccountName: account.name,
+      fundingAccountBalanceCents,
+      remainingAmountCents,
+      monthsRemaining,
+      requiredMonthlyContributionCents: Math.ceil(
+        remainingAmountCents / monthsRemaining
+      ),
+      isOverdue,
+    };
+  }
+
+  async getFundingApprovalPreview(
+    goal: Pick<
+      FinCommanderGoalEntity,
+      'id' | 'name' | 'fundingAccountId' | 'targetAmountCents' | 'dueDate'
+    >,
+    scope: { tenantId?: string; appScope?: string },
+    asOf = new Date()
+  ): Promise<FinCommanderFundingDirectivePreview | null> {
+    const directive = await this.getFundingDirective(goal, scope, asOf);
+    if (!directive) {
+      return null;
+    }
+
+    const start = new Date(
+      Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 1)
+    );
+    return {
+      goalId: goal.id,
+      amountCents: directive.requiredMonthlyContributionCents,
+      cadence: 'monthly',
+      startDate: start.toISOString().slice(0, 10),
+      fundingAccountId: directive.fundingAccountId,
+      fundingAccountName: directive.fundingAccountName,
+      effect: 'forecast-only; no transaction or account balance change',
+    };
+  }
 
   private sanitizeContent(content: string): string {
     return DOMPurify.sanitize(content, {
@@ -50,6 +158,10 @@ export class FinCommanderGoalService {
     );
     const currentAmountCents = createGoalDto.currentAmountCents ?? 0;
     this.assertIntegerCents(currentAmountCents, 'currentAmountCents');
+    await this.assertFundingAccount(
+      createGoalDto.fundingAccountId,
+      createGoalDto
+    );
 
     const goal = this.goalRepo.create({
       ...createGoalDto,
@@ -112,6 +224,13 @@ export class FinCommanderGoalService {
     }
     if (updateGoalDto.strategy !== undefined) {
       updatedData.strategy = this.sanitizeContent(updateGoalDto.strategy);
+    }
+    if (updateGoalDto.fundingAccountId !== undefined) {
+      await this.assertFundingAccount(
+        updateGoalDto.fundingAccountId,
+        scope ?? {}
+      );
+      updatedData.fundingAccountId = updateGoalDto.fundingAccountId;
     }
 
     await this.goalRepo.update(id, updatedData);

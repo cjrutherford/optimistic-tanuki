@@ -881,12 +881,11 @@ export class OverviewPageComponent {
   private loadVersion = 0;
 
   readonly overview = signal<FinCommanderOverview | null>(null);
-  readonly plans = signal(this.store.listPlans());
+  readonly plans = computed(() => this.store.listPlans());
 
   constructor() {
     effect(() => {
       this.store.getScope();
-      this.plans.set(this.store.listPlans());
 
       const planId = this.routePlanId() ?? this.plans()[0]?.id;
       if (!planId) {
@@ -990,11 +989,17 @@ export class OverviewPageComponent {
     planId: string,
     loadVersion: number
   ): Promise<void> {
-    const overview = await this.store.buildOverview(planId);
-    if (loadVersion !== this.loadVersion) {
-      return;
+    try {
+      const overview = await this.store.buildOverview(planId);
+      if (loadVersion !== this.loadVersion) {
+        return;
+      }
+      this.overview.set(overview);
+    } catch {
+      if (loadVersion === this.loadVersion) {
+        this.overview.set(null);
+      }
     }
-    this.overview.set(overview);
   }
 
   plansRoute(): string[] {

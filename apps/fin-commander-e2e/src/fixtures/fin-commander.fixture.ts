@@ -36,18 +36,24 @@ export async function createTestUser(
   const response = await apiContext.post('/api/authentication/register', {
     data: {
       email: user.email,
-      username: user.username,
+      fn: 'Fin',
+      ln: user.username,
       password: user.password,
-      confirmPassword: user.password,
+      confirm: user.password,
+      bio: '',
     },
     failOnStatusCode: false,
   });
 
-  if (response.ok()) {
-    const data = await response.json();
-    user.id = data.id || data.user?.id || '';
-    user.token = data.token || data.newToken;
+  if (!response.ok()) {
+    throw new Error(
+      `Registration failed: ${response.status()} ${await response.text()}`
+    );
   }
+
+  const data = await response.json();
+  user.id = data.data?.user?.id || data.id || data.user?.id || '';
+  user.token = data.data?.newToken || data.token || data.newToken;
 
   return user;
 }
@@ -77,12 +83,14 @@ export async function createFinanceDbPool(): Promise<Pool> {
 }
 
 export const test = base.extend<FinCommanderFixtureContext>({
-  apiContext: async (_args, use) => {
+  apiContext: async ({ baseURL }, use) => {
+    void baseURL;
     await waitForGateway();
     const apiContext = await playwrightRequest.newContext({
       baseURL: getGatewayUrl(),
       extraHTTPHeaders: {
         'content-type': 'application/json',
+        'x-ot-appscope': 'finance',
       },
     });
 
@@ -97,7 +105,8 @@ export const test = base.extend<FinCommanderFixtureContext>({
     const user = await createTestUser(apiContext);
     await use(user);
   },
-  dbPool: async (_args, use) => {
+  dbPool: async ({ baseURL }, use) => {
+    void baseURL;
     let dbPool: Pool | null = null;
 
     try {

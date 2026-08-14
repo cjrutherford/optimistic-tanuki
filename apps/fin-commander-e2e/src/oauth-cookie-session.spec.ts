@@ -26,7 +26,7 @@ test.describe('OAuth cookie session', () => {
       (cookie) => cookie.name === 'ot_session'
     );
     expect(sessionCookie).toEqual(
-      expect.objectContaining({ httpOnly: true, path: '/api' })
+      expect.objectContaining({ httpOnly: true, path: '/' })
     );
     expect(
       await page.evaluate(() =>

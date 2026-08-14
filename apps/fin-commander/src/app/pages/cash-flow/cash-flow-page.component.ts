@@ -1,7 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ShimmerBeamComponent } from '@optimistic-tanuki/motion-ui';
+import {
+  FinCommanderPlanApiService,
+  FinCommanderPlanStore,
+  FinCommanderCashFlowProjection,
+} from '@optimistic-tanuki/fin-commander-data-access';
 import { tenantAccountsRoute } from '../../tenant-routes';
 
 @Component({
@@ -14,6 +19,23 @@ import { tenantAccountsRoute } from '../../tenant-routes';
         <span class="eyebrow">Cash Flow</span>
         <h2>Account operating areas</h2>
       </header>
+
+      @if (projection(); as forecast) {
+      <section class="forecast" aria-label="90-day cash flow forecast">
+        <span
+          >90-day forecast · calculated
+          {{ forecast.calculatedAt | date : 'mediumDate' }}</span
+        >
+        <strong
+          >{{ formatCurrency(forecast.openingBalanceCents) }} →
+          {{ formatCurrency(forecast.projectedBalanceCents) }}</strong
+        >
+        <p>
+          {{ forecast.events.length }} scheduled inputs from recurring items and
+          funded goals. This is a projection, not an affordability decision.
+        </p>
+      </section>
+      }
 
       <div class="workspaces-grid">
         @for (workspace of workspaces; track workspace.id; let i = $index) {
@@ -143,6 +165,22 @@ import { tenantAccountsRoute } from '../../tenant-routes';
         display: grid;
         gap: 1.25rem;
         grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      }
+      .forecast {
+        display: grid;
+        gap: 0.35rem;
+        padding: 1rem 1.25rem;
+        border: 1px solid color-mix(in srgb, var(--border) 45%, transparent);
+        border-radius: var(--fc-card-radius, 18px);
+        background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+      }
+      .forecast strong {
+        font-size: 1.35rem;
+        color: var(--foreground);
+      }
+      .forecast p {
+        margin: 0;
+        color: var(--muted);
       }
 
       .workspace-card {
@@ -391,6 +429,9 @@ import { tenantAccountsRoute } from '../../tenant-routes';
 })
 export class CashFlowPageComponent {
   private readonly route = inject(ActivatedRoute);
+  private readonly store = inject(FinCommanderPlanStore);
+  private readonly api = inject(FinCommanderPlanApiService);
+  readonly projection = signal<FinCommanderCashFlowProjection | null>(null);
   readonly workspaces = [
     {
       id: 'personal',
@@ -414,6 +455,22 @@ export class CashFlowPageComponent {
       copy: 'Use the ledger rollup and tracked assets to verify long-range position.',
     },
   ];
+
+  constructor() {
+    const planId = this.route.snapshot.paramMap.get('planId');
+    const scope = this.store.getScope();
+    if (planId && scope)
+      void this.api
+        .getCashFlowProjection(scope, planId)
+        .then((value) => this.projection.set(value));
+  }
+
+  formatCurrency(cents: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(cents / 100);
+  }
 
   accountsRoute(workspace: string, section?: string): string[] {
     return tenantAccountsRoute(

@@ -34,6 +34,10 @@ export const appRoutes: Route[] = [
     title: 'OAuth Callback',
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'profile-gate',
     canActivate: [AuthenticationGuard],
     loadComponent: () =>

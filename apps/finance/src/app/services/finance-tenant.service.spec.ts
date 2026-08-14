@@ -149,6 +149,59 @@ describe('FinanceTenantService', () => {
     ]);
   });
 
+  it('lets only the owning profile add an active member to its tenant', async () => {
+    tenantRepo.findOne.mockResolvedValue({
+      id: 'tenant-1',
+      profileId: 'owner-profile',
+      appScope: 'finance',
+      isActive: true,
+    } as FinanceTenant);
+    tenantMemberRepo.findOne.mockResolvedValue(null);
+    tenantMemberRepo.save.mockResolvedValue({
+      id: 'member-2',
+      tenantId: 'tenant-1',
+      profileId: 'member-profile',
+      role: 'finance_member',
+      isActive: true,
+    } as FinanceTenantMember);
+
+    await expect(
+      (service as any).addMember(
+        { tenantId: 'tenant-1', profileId: 'owner-profile' },
+        {
+          memberProfileId: 'member-profile',
+          role: 'finance_member',
+        }
+      )
+    ).resolves.toMatchObject({
+      profileId: 'member-profile',
+      role: 'finance_member',
+    });
+    expect(tenantMemberRepo.save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: 'tenant-1',
+        profileId: 'member-profile',
+        role: 'finance_member',
+        isActive: true,
+      })
+    );
+  });
+
+  it('rejects a member attempting to manage another membership', async () => {
+    tenantRepo.findOne.mockResolvedValue(null);
+
+    await expect(
+      (service as any).addMember(
+        { tenantId: 'tenant-1', profileId: 'member-profile' },
+        {
+          memberProfileId: 'other-profile',
+          role: 'finance_member',
+        }
+      )
+    ).rejects.toBeInstanceOf(RpcException);
+    expect(tenantMemberRepo.save).not.toHaveBeenCalled();
+  });
+
   it('lists all accessible tenants for the active profile and app scope', async () => {
     tenantRepo.find.mockResolvedValue([
       {
@@ -193,6 +246,58 @@ describe('FinanceTenantService', () => {
         profileId: 'profile-1',
         appScope: 'finance',
       },
+    ]);
+  });
+
+  it('includes active membership tenants when listing a profile’s accessible tenants', async () => {
+    tenantRepo.find
+      .mockResolvedValueOnce([
+        {
+          id: 'tenant-owned',
+          name: 'Household',
+          profileId: 'profile-1',
+          appScope: 'finance',
+          isActive: true,
+          createdAt: new Date('2026-01-01'),
+        },
+      ] as FinanceTenant[])
+      .mockResolvedValueOnce([
+        {
+          id: 'tenant-member',
+          name: 'Shared Studio',
+          profileId: 'profile-owner',
+          appScope: 'finance',
+          isActive: true,
+          createdAt: new Date('2026-01-02'),
+        },
+      ] as FinanceTenant[]);
+    tenantMemberRepo.find.mockResolvedValue([
+      {
+        id: 'member-1',
+        tenantId: 'tenant-member',
+        profileId: 'profile-1',
+        role: 'finance_member',
+        isActive: true,
+      },
+    ] as FinanceTenantMember[]);
+
+    const tenants = await service.listTenants({
+      profileId: 'profile-1',
+      appScope: 'finance',
+    });
+
+    expect(tenantMemberRepo.find).toHaveBeenCalledWith({
+      where: { profileId: 'profile-1', isActive: true },
+    });
+    expect(tenantRepo.find).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        where: expect.objectContaining({ appScope: 'finance', isActive: true }),
+      })
+    );
+    expect(tenants.map((tenant) => tenant.id)).toEqual([
+      'tenant-owned',
+      'tenant-member',
     ]);
   });
 

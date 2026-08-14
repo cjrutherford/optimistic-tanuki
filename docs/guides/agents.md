@@ -53,6 +53,6 @@ _It's Highly important to note that UI and backend models should never mix as it
    - Dev: `pnpm run docker:dev`
    - Prod: `pnpm run docker:up`
 4. syncing the database should be done with the `db-setup` container only.
-5. generating migrations should be done in the app's folder and by using this command: `TS_NODE_PROJECT=./tsconfig.app.json node -r ts-node/register -r tsconfig-paths/register ../../node_modules/typeorm/cli.js -d src/staticDatabase.ts migration:generate migrations/<migration-name>` (config.yaml database host must be set to local host first, and set back to db after.)
+5. Generate schema migrations through the owning service Nx `typeorm:migration:generate` target, e.g. `pnpm exec nx run classifieds:typeorm:migration:generate --args='migrations/add-classified-user-index'`. Do not hand-create migration files or timestamps. Use CLI `migration:create` only for data backfills that cannot be inferred from entity metadata, and document the exception with reversible `up` and `down` behavior. Run `pnpm run validate:typeorm-migrations` before merge.
 
 Please refer to [Code and Scaffolding Guidelines](./code-and-scaffold-guidelines.md) for general style and procedure notes.

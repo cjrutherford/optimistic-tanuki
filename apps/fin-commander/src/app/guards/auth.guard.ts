@@ -17,7 +17,10 @@ export class AuthGuard implements CanActivate {
   }
 
   async canActivate(): Promise<boolean> {
-    if (this.isAuthenticated) {
+    if (
+      this.isAuthenticated ||
+      (await this.authStateService.restoreSession())
+    ) {
       return true;
     }
 

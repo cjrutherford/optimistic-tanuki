@@ -10,7 +10,7 @@
 </otui-app-bar>
 
 @if (profileContext.isAuthenticated()) {
-<div class="command-bar">
+<header class="command-bar" aria-label="Finance command bar">
   <div class="command-bar-left">
     <div class="state-chip">
       <span class="state-label">Account</span>
@@ -31,7 +31,7 @@
       <span class="help-icon">?</span>
     </button>
   </div>
-</div>
+</header>
 }
 
 <otui-nav-sidebar

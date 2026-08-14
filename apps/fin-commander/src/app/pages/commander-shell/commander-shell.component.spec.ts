@@ -53,7 +53,7 @@ describe('CommanderShellComponent (a11y)', () => {
             getScope: () => 'personal',
             listPlans: () => [activePlan],
             getPlan: (id: string) => (id === 'plan-1' ? activePlan : null),
-            savePlan: jest.fn(),
+            savePlan: jest.fn().mockResolvedValue(activePlan),
           },
         },
         {

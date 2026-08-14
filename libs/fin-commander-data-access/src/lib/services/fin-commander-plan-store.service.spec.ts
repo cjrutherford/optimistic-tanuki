@@ -6,6 +6,15 @@ import { FinCommanderPlanApiService } from './fin-commander-plan-api.service';
 
 describe('FinCommanderPlanStore', () => {
   const localStorageState = new Map<string, string>();
+  const apiPlans = [
+    {
+      id: 'api-plan',
+      name: 'API plan',
+      description: 'Persisted by the tenant API',
+      defaultWorkspace: 'personal' as const,
+      updatedAt: '2026-08-11T00:00:00.000Z',
+    },
+  ];
 
   beforeEach(() => {
     localStorageState.clear();
@@ -33,7 +42,8 @@ describe('FinCommanderPlanStore', () => {
         {
           provide: FinCommanderPlanApiService,
           useValue: {
-            listPlans: jest.fn().mockResolvedValue([]),
+            listPlans: jest.fn().mockResolvedValue(apiPlans),
+            createPlan: jest.fn().mockResolvedValue(apiPlans[0]),
             listGoals: jest.fn().mockResolvedValue([]),
             saveGoal: jest.fn().mockResolvedValue(undefined),
             deleteGoal: jest.fn().mockResolvedValue(undefined),
@@ -46,46 +56,23 @@ describe('FinCommanderPlanStore', () => {
     });
   });
 
-  it('stores goal collections by tenant and profile scope instead of browser-global keys', () => {
+  it('hydrates plans from the tenant API and never restores browser-local records', async () => {
     const store = TestBed.inject(FinCommanderPlanStore);
 
+    localStorageState.set(
+      'fin-commander.plans.tenant-a.profile-a',
+      JSON.stringify([
+        {
+          id: 'legacy-local-plan',
+          name: 'Legacy browser plan',
+        },
+      ])
+    );
     store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
-    store.saveGoal({
-      id: 'goal-a',
-      planId: 'home-command',
-      name: 'Tenant A goal',
-      targetAmountCents: 100000,
-      currentAmountCents: 10000,
-      dueDate: '2026-05-01',
-      strategy: 'Save monthly',
-    });
+    await store.refreshPlans();
 
-    store.setScope({ tenantId: 'tenant-b', profileId: 'profile-b' });
-    store.saveGoal({
-      id: 'goal-b',
-      planId: 'home-command',
-      name: 'Tenant B goal',
-      targetAmountCents: 200000,
-      currentAmountCents: 20000,
-      dueDate: '2026-06-01',
-      strategy: 'Save weekly',
-    });
-
-    expect(localStorageState.has('fin-commander.goals')).toBe(false);
-    expect(Array.from(localStorageState.keys()).sort()).toEqual([
-      'fin-commander.goals.tenant-a.profile-a',
-      'fin-commander.goals.tenant-b.profile-b',
-    ]);
-
-    store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
-    expect(store.listGoals('home-command').map((goal) => goal.id)).toEqual([
-      'goal-a',
-    ]);
-
-    store.setScope({ tenantId: 'tenant-b', profileId: 'profile-b' });
-    expect(store.listGoals('home-command').map((goal) => goal.id)).toEqual([
-      'goal-b',
-    ]);
+    expect(store.listPlans()).toEqual(apiPlans);
+    expect(store.getPlan('legacy-local-plan')).toBeNull();
   });
 
   it('delegates persistence operations through an API seam', async () => {
@@ -94,7 +81,7 @@ describe('FinCommanderPlanStore', () => {
 
     store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
 
-    await store.listPlansAsync();
+    await store.refreshPlans();
 
     expect(api.listPlans).toHaveBeenCalledWith({
       tenantId: 'tenant-a',
@@ -108,5 +95,21 @@ describe('FinCommanderPlanStore', () => {
     store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
 
     expect(store.listPlans()).toEqual([]);
+  });
+
+  it('uses the server-issued plan id after a create', async () => {
+    const store = TestBed.inject(FinCommanderPlanStore);
+
+    store.setScope({ tenantId: 'tenant-a', profileId: 'profile-a' });
+    const persisted = await store.savePlan({
+      id: 'browser-generated-id',
+      name: 'New plan',
+      description: 'Created through the API',
+      defaultWorkspace: 'personal',
+      updatedAt: '2026-08-11T00:00:00.000Z',
+    });
+
+    expect(persisted.id).toBe('api-plan');
+    expect(store.listPlans()).toEqual(apiPlans);
   });
 });

@@ -5,6 +5,9 @@ import {
   FinCommanderGoal,
   FinCommanderPlan,
   FinCommanderScenario,
+  FinCommanderCashFlowProjection,
+  FinCommanderFundingDirective,
+  FinCommanderFundingDirectivePreview,
 } from '../models/fin-commander.models';
 import { FinCommanderScope } from '../models/fin-commander-scope.model';
 
@@ -34,6 +37,22 @@ export class FinCommanderPlanApiService {
     );
   }
 
+  async createPlan(
+    scope: FinCommanderScope,
+    plan: FinCommanderPlan
+  ): Promise<FinCommanderPlan> {
+    if (!scope) {
+      throw new Error('An active tenant scope is required to create a plan');
+    }
+    return firstValueFrom(
+      this.http.post<FinCommanderPlan>(`${this.baseUrl}/plan`, {
+        name: plan.name,
+        description: plan.description,
+        defaultWorkspace: plan.defaultWorkspace,
+      })
+    );
+  }
+
   async listGoals(
     scope: FinCommanderScope,
     planId: string
@@ -46,14 +65,26 @@ export class FinCommanderPlanApiService {
     );
   }
 
+  async getCashFlowProjection(
+    scope: FinCommanderScope,
+    planId: string
+  ): Promise<FinCommanderCashFlowProjection | null> {
+    if (!scope || !planId) return null;
+    return firstValueFrom(
+      this.http.get<FinCommanderCashFlowProjection>(
+        `${this.baseUrl}/plan/${planId}/projection`
+      )
+    );
+  }
+
   async saveGoal(
     scope: FinCommanderScope,
     goal: FinCommanderGoal
-  ): Promise<void> {
+  ): Promise<FinCommanderGoal> {
     if (!scope) {
-      return;
+      throw new Error('An active tenant scope is required to save a goal');
     }
-    await firstValueFrom(
+    return firstValueFrom(
       this.http.post<FinCommanderGoal>(
         `${this.baseUrl}/plan/${goal.planId}/goal`,
         {
@@ -62,6 +93,7 @@ export class FinCommanderPlanApiService {
           currentAmountCents: goal.currentAmountCents,
           dueDate: goal.dueDate,
           strategy: goal.strategy,
+          fundingAccountId: goal.fundingAccountId,
         }
       )
     );
@@ -73,6 +105,44 @@ export class FinCommanderPlanApiService {
     }
     await firstValueFrom(
       this.http.delete<void>(`${this.baseUrl}/goal/${goalId}`)
+    );
+  }
+
+  async previewFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirectivePreview | null> {
+    if (!scope || !goalId) return null;
+    return firstValueFrom(
+      this.http.get<FinCommanderFundingDirectivePreview>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive`
+      )
+    );
+  }
+
+  async approveFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    if (!scope) throw new Error('An active tenant scope is required');
+    return firstValueFrom(
+      this.http.post<FinCommanderFundingDirective>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive/approve`,
+        {}
+      )
+    );
+  }
+
+  async cancelFundingDirective(
+    scope: FinCommanderScope,
+    goalId: string
+  ): Promise<FinCommanderFundingDirective> {
+    if (!scope) throw new Error('An active tenant scope is required');
+    return firstValueFrom(
+      this.http.post<FinCommanderFundingDirective>(
+        `${this.baseUrl}/goal/${goalId}/funding-directive/cancel`,
+        {}
+      )
     );
   }
 
@@ -93,11 +163,11 @@ export class FinCommanderPlanApiService {
   async saveScenario(
     scope: FinCommanderScope,
     scenario: FinCommanderScenario
-  ): Promise<void> {
+  ): Promise<FinCommanderScenario> {
     if (!scope) {
-      return;
+      throw new Error('An active tenant scope is required to save a scenario');
     }
-    await firstValueFrom(
+    return firstValueFrom(
       this.http.post<FinCommanderScenario>(
         `${this.baseUrl}/plan/${scenario.planId}/scenario`,
         {

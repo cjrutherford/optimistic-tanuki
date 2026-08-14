@@ -1,5 +1,8 @@
 import { Route } from '@angular/router';
-import { createFinanceRoutes } from '@optimistic-tanuki/finance-ui';
+import {
+  createFinanceRoutes,
+  FINANCE_HOST_CONFIG,
+} from '@optimistic-tanuki/finance-ui';
 import {
   emailAuthRoutes,
   OAuthCallbackComponent,
@@ -7,6 +10,7 @@ import {
 import { AuthGuard } from './guards/auth.guard';
 import { onboardingCompleteGuard } from './guards/onboarding-complete.guard';
 import { ProfileGuard } from './guards/profile.guard';
+import { tenantRouteContextGuard } from './guards/tenant-route-context.guard';
 
 export const FINANCE_ROUTE_PATH = 'finance';
 export const TENANT_ROUTE_PATH = 'tenants/:tenantId';
@@ -56,13 +60,17 @@ const planChildren: Route[] = [
   },
 ];
 
-const tenantFinanceChildren = createFinanceRoutes({
+const tenantFinanceConfig = {
   routeBase: '/tenants/:tenantId/accounts',
   shellTitle: 'Tenant Accounts',
   shellLede:
     'Keep accounts, transactions, and setup work aligned for this tenant.',
   showWorkspaceSubnav: false,
-}).filter((route) => route.path !== 'onboarding');
+};
+
+const tenantFinanceChildren = createFinanceRoutes(tenantFinanceConfig).filter(
+  (route) => route.path !== 'onboarding'
+);
 
 const tenantChildren: Route[] = [
   {
@@ -75,6 +83,13 @@ const tenantChildren: Route[] = [
     loadComponent: () =>
       import('./pages/account/account-page.component').then(
         (m) => m.AccountPageComponent
+      ),
+  },
+  {
+    path: 'members',
+    loadComponent: () =>
+      import('./pages/entity-members/entity-members-page.component').then(
+        (m) => m.EntityMembersPageComponent
       ),
   },
   {
@@ -135,6 +150,10 @@ export const appRoutes: Route[] = [
     component: OAuthCallbackComponent,
   },
   {
+    path: 'oauth/callback/:provider',
+    component: OAuthCallbackComponent,
+  },
+  {
     path: 'settings',
     canActivate: [AuthGuard],
     loadComponent: () =>
@@ -145,38 +164,53 @@ export const appRoutes: Route[] = [
   {
     path: 'account',
     pathMatch: 'full',
-    redirectTo: 'tenants/active/overview',
+    redirectTo: '/tenants/active/overview',
   },
   {
     path: FINANCE_ROUTE_PATH,
     pathMatch: 'full',
-    redirectTo: 'tenants/active/accounts',
+    redirectTo: '/tenants/active/accounts',
   },
   {
     path: `${FINANCE_ROUTE_PATH}/:workspace`,
-    redirectTo: 'tenants/active/accounts/:workspace',
+    redirectTo: ({ params }) =>
+      `/tenants/active/accounts/${params['workspace']}`,
   },
   {
     path: `${FINANCE_ROUTE_PATH}/:workspace/:section`,
-    redirectTo: 'tenants/active/accounts/:workspace/:section',
+    redirectTo: ({ params }) =>
+      `/tenants/active/accounts/${params['workspace']}/${params['section']}`,
   },
   {
     path: 'commander',
     pathMatch: 'full',
-    redirectTo: 'tenants/active/plans',
+    redirectTo: '/tenants/active/plans',
   },
   {
     path: 'commander/:planId',
     pathMatch: 'full',
-    redirectTo: 'tenants/active/plans/:planId/overview',
+    redirectTo: ({ params }) =>
+      `/tenants/active/plans/${params['planId']}/overview`,
   },
   {
     path: 'commander/:planId/:section',
-    redirectTo: 'tenants/active/plans/:planId/:section',
+    redirectTo: ({ params }) =>
+      `/tenants/active/plans/${params['planId']}/${params['section']}`,
   },
   {
     path: 'tenants/active',
-    canActivate: [AuthGuard, ProfileGuard, onboardingCompleteGuard],
+    canActivate: [
+      AuthGuard,
+      ProfileGuard,
+      tenantRouteContextGuard,
+      onboardingCompleteGuard,
+    ],
+    providers: [
+      {
+        provide: FINANCE_HOST_CONFIG,
+        useValue: tenantFinanceConfig,
+      },
+    ],
     loadComponent: () =>
       import('./pages/tenant-shell/tenant-shell.component').then(
         (m) => m.TenantShellComponent
@@ -185,7 +219,18 @@ export const appRoutes: Route[] = [
   },
   {
     path: TENANT_ROUTE_PATH,
-    canActivate: [AuthGuard, ProfileGuard, onboardingCompleteGuard],
+    canActivate: [
+      AuthGuard,
+      ProfileGuard,
+      tenantRouteContextGuard,
+      onboardingCompleteGuard,
+    ],
+    providers: [
+      {
+        provide: FINANCE_HOST_CONFIG,
+        useValue: tenantFinanceConfig,
+      },
+    ],
     loadComponent: () =>
       import('./pages/tenant-shell/tenant-shell.component').then(
         (m) => m.TenantShellComponent

@@ -9,6 +9,8 @@ import { RpcException } from '@nestjs/microservices';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import {
   CreateFinanceTenantDto,
+  CreateFinanceTenantMemberDto,
+  UpdateFinanceTenantMemberRoleDto,
   FinanceTenantDto,
   FinanceTenantMemberDto,
 } from '@optimistic-tanuki/models';
@@ -210,7 +212,7 @@ export class FinanceTenantService {
 
   async listTenants(scope: FinanceScope): Promise<FinanceTenantDto[]> {
     try {
-      const tenants = await this.tenantRepo.find({
+      const ownedTenants = await this.tenantRepo.find({
         where: {
           ...(scope.profileId ? { profileId: scope.profileId } : {}),
           ...(scope.appScope ? { appScope: scope.appScope } : {}),
@@ -221,7 +223,39 @@ export class FinanceTenantService {
         },
       });
 
-      return tenants.map((tenant) => this.toTenantDto(tenant));
+      const memberships = scope.profileId
+        ? await this.tenantMemberRepo.find({
+            where: { profileId: scope.profileId, isActive: true },
+          })
+        : [];
+      const memberTenantIds = (memberships ?? []).map(
+        (membership) => membership.tenantId
+      );
+      const memberTenants = memberTenantIds.length
+        ? await this.tenantRepo.find({
+            where: {
+              id: In(memberTenantIds),
+              ...(scope.appScope ? { appScope: scope.appScope } : {}),
+              isActive: true,
+            },
+            order: {
+              createdAt: 'ASC',
+            },
+          })
+        : [];
+      const accessibleTenants = Array.from(
+        new Map(
+          [...ownedTenants, ...memberTenants].map((tenant) => [
+            tenant.id,
+            tenant,
+          ])
+        ).values()
+      ).sort(
+        (left, right) =>
+          (left.createdAt?.getTime() ?? 0) - (right.createdAt?.getTime() ?? 0)
+      );
+
+      return accessibleTenants.map((tenant) => this.toTenantDto(tenant));
     } catch (error) {
       throw this.toRpcException(error);
     }
@@ -249,5 +283,103 @@ export class FinanceTenantService {
     } catch (error) {
       throw this.toRpcException(error);
     }
+  }
+
+  async addMember(
+    scope: FinanceScope,
+    dto: CreateFinanceTenantMemberDto
+  ): Promise<FinanceTenantMemberDto> {
+    try {
+      if (!scope.tenantId || !scope.profileId) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+      const tenant = await this.tenantRepo.findOne({
+        where: {
+          id: scope.tenantId,
+          profileId: scope.profileId,
+          isActive: true,
+        },
+      });
+      if (!tenant) {
+        throw new NotFoundException(
+          'Finance tenant not found or access denied'
+        );
+      }
+      const existing = await this.tenantMemberRepo.findOne({
+        where: { tenantId: tenant.id, profileId: dto.memberProfileId },
+      });
+      if (existing?.isActive) {
+        throw new HttpException('Profile is already an active member', 409);
+      }
+      const member = await this.tenantMemberRepo.save({
+        ...(existing ? { id: existing.id } : {}),
+        tenantId: tenant.id,
+        profileId: dto.memberProfileId,
+        role: dto.role,
+        isActive: true,
+      });
+      return {
+        id: member.id,
+        tenantId: member.tenantId,
+        profileId: member.profileId,
+        role: member.role,
+      };
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  async updateMemberRole(
+    scope: FinanceScope,
+    memberId: string,
+    dto: UpdateFinanceTenantMemberRoleDto
+  ): Promise<FinanceTenantMemberDto> {
+    try {
+      const tenant = await this.requireOwner(scope);
+      const member = await this.tenantMemberRepo.findOne({
+        where: { id: memberId, tenantId: tenant.id, isActive: true },
+      });
+      if (!member || member.profileId === tenant.profileId)
+        throw new NotFoundException('Finance tenant member not found');
+      const saved = await this.tenantMemberRepo.save({
+        ...member,
+        role: dto.role,
+      });
+      return {
+        id: saved.id,
+        tenantId: saved.tenantId,
+        profileId: saved.profileId,
+        role: saved.role,
+      };
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  async removeMember(scope: FinanceScope, memberId: string): Promise<void> {
+    try {
+      const tenant = await this.requireOwner(scope);
+      const member = await this.tenantMemberRepo.findOne({
+        where: { id: memberId, tenantId: tenant.id, isActive: true },
+      });
+      if (!member || member.profileId === tenant.profileId)
+        throw new NotFoundException('Finance tenant member not found');
+      await this.tenantMemberRepo.save({ ...member, isActive: false });
+    } catch (error) {
+      throw this.toRpcException(error);
+    }
+  }
+
+  private async requireOwner(scope: FinanceScope): Promise<FinanceTenant> {
+    if (!scope.tenantId || !scope.profileId)
+      throw new NotFoundException('Finance tenant not found or access denied');
+    const tenant = await this.tenantRepo.findOne({
+      where: { id: scope.tenantId, profileId: scope.profileId, isActive: true },
+    });
+    if (!tenant)
+      throw new NotFoundException('Finance tenant not found or access denied');
+    return tenant;
   }
 }

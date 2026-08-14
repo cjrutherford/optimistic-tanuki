@@ -5,6 +5,7 @@ import {
   effect,
   inject,
   signal,
+  untracked,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -13,8 +14,10 @@ import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import {
   FinCommanderGoal,
+  FinCommanderFundingDirectivePreview,
   FinCommanderPlanStore,
 } from '@optimistic-tanuki/fin-commander-data-access';
+import { Account, FinanceService } from '@optimistic-tanuki/finance-ui';
 
 function createGoalId(): string {
   return `goal-${Date.now()}-${Math.round(Math.random() * 1000)}`;
@@ -33,6 +36,7 @@ interface GoalDraft {
   currentAmount: number;
   dueDate: string;
   strategy: string;
+  fundingAccountId: string;
 }
 
 /** Convert a dollar amount to integer cents, guarding against NaN. */
@@ -117,6 +121,28 @@ function dollarsToCents(dollars: number): number {
               type="date"
               required
             />
+          </div>
+          <div class="field">
+            <label class="field-label" for="fundingAccountId"
+              >Funding account</label
+            >
+            <select
+              id="fundingAccountId"
+              class="field-input field-select"
+              [(ngModel)]="draft.fundingAccountId"
+              (ngModelChange)="onDraftChange()"
+              name="fundingAccountId"
+              required
+            >
+              <option value="">
+                Choose the account dedicated to this goal
+              </option>
+              @for (account of fundingAccounts(); track account.id) {
+              <option [value]="account.id">
+                {{ account.name }} · {{ formatAccountBalance(account.balance) }}
+              </option>
+              }
+            </select>
           </div>
           <div class="field field-wide">
             <label class="field-label" for="strategy">Strategy</label>
@@ -204,6 +230,57 @@ function dollarsToCents(dollars: number): number {
 
             @if (goal.strategy) {
             <p class="goal-strategy">{{ goal.strategy }}</p>
+            } @if (goal.fundingDirective; as directive) {
+            <section class="funding-directive" aria-label="Funding directive">
+              <span class="directive-eyebrow">Funding directive</span>
+              <strong
+                >Fund monthly:
+                {{
+                  formatCurrency(directive.requiredMonthlyContributionCents)
+                }}</strong
+              >
+              <span>
+                {{ directive.fundingAccountName }} holds
+                {{ formatCurrency(directive.fundingAccountBalanceCents) }} ·
+                {{ formatCurrency(directive.remainingAmountCents) }} remaining ·
+                {{ directive.monthsRemaining }} months remaining
+              </span>
+              @if (previewFor(goal.id); as preview) {
+              <div class="approval-preview" role="status">
+                <strong
+                  >Ready to schedule {{ formatCurrency(preview.amountCents) }}
+                  {{ preview.cadence }}</strong
+                >
+                <span
+                  >Starts {{ formatDate(preview.startDate) }} from
+                  {{ preview.fundingAccountName }}.</span
+                >
+                <span>Forecast only — no transaction or balance change.</span>
+                <button
+                  type="button"
+                  class="btn-primary"
+                  [disabled]="fundingBusyGoalId() === goal.id"
+                  (click)="approveFunding(goal.id)"
+                >
+                  Approve funding instruction
+                </button>
+              </div>
+              } @else {
+              <button
+                type="button"
+                class="btn-ghost"
+                [disabled]="fundingBusyGoalId() === goal.id"
+                (click)="previewFunding(goal.id)"
+              >
+                Preview funding instruction
+              </button>
+              }
+            </section>
+            } @else if (goal.fundingAccountId) {
+            <p class="funding-unavailable">
+              Funding account data is unavailable. Re-select an active tenant
+              account.
+            </p>
             }
             <span class="goal-due">
               <span class="due-icon">◷</span>
@@ -638,6 +715,45 @@ function dollarsToCents(dollars: number): number {
         line-height: 1.5;
       }
 
+      .funding-directive {
+        display: grid;
+        gap: 0.2rem;
+        padding: 0.85rem;
+        border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent);
+        border-radius: 0.75rem;
+        background: color-mix(in srgb, var(--primary) 10%, transparent);
+        color: var(--muted);
+        font-size: 0.86rem;
+      }
+
+      .funding-directive strong {
+        color: var(--foreground);
+        font-size: 1rem;
+      }
+      .approval-preview {
+        display: grid;
+        gap: 0.45rem;
+        padding-top: 0.7rem;
+        border-top: 1px solid
+          color-mix(in srgb, var(--primary) 25%, transparent);
+      }
+      .approval-preview .btn-primary,
+      .funding-directive .btn-ghost {
+        justify-self: start;
+        margin: 0.25rem 0 0;
+      }
+      .directive-eyebrow {
+        color: var(--primary);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .funding-unavailable {
+        color: var(--warning);
+        font-size: 0.85rem;
+      }
+
       .goal-due {
         display: flex;
         align-items: center;
@@ -726,6 +842,7 @@ function dollarsToCents(dollars: number): number {
 export class GoalsPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly store = inject(FinCommanderPlanStore);
+  private readonly finance = inject(FinanceService);
   private readonly routePlanId = toSignal(
     this.route.paramMap.pipe(map((params) => params.get('planId'))),
     { initialValue: this.route.snapshot.paramMap.get('planId') }
@@ -734,6 +851,11 @@ export class GoalsPageComponent {
   readonly goals = signal<FinCommanderGoal[]>([]);
   readonly pendingDeleteId = signal<string | null>(null);
   readonly statusMessage = signal('');
+  readonly fundingAccounts = signal<Account[]>([]);
+  readonly fundingPreview = signal<FinCommanderFundingDirectivePreview | null>(
+    null
+  );
+  readonly fundingBusyGoalId = signal<string | null>(null);
   // Re-evaluate `draftErrors` whenever the draft mutates by bumping this tick.
   readonly draftVersion = signal(0);
   readonly draftErrors = computed(() => {
@@ -747,6 +869,8 @@ export class GoalsPageComponent {
     if (this.draft.currentAmount > this.draft.targetAmount)
       errors.push('Current amount cannot exceed the target.');
     if (!this.draft.dueDate) errors.push('Due date is required.');
+    if (!this.draft.fundingAccountId)
+      errors.push('A funding account is required.');
     if (!this.draft.strategy.trim()) errors.push('Strategy is required.');
     return errors;
   });
@@ -760,6 +884,7 @@ export class GoalsPageComponent {
     currentAmount: 0,
     dueDate: new Date().toISOString().slice(0, 10),
     strategy: '',
+    fundingAccountId: '',
   };
 
   constructor() {
@@ -767,7 +892,11 @@ export class GoalsPageComponent {
       this.store.getScope();
       this.planId = this.routePlanId() ?? this.store.listPlans()[0]?.id ?? '';
       this.resetDraft();
-      this.loadGoals();
+      untracked(() => {
+        this.loadGoals();
+        void this.loadFundingAccounts();
+        void this.store.refreshGoals(this.planId).then(() => this.loadGoals());
+      });
     });
   }
 
@@ -805,7 +934,16 @@ export class GoalsPageComponent {
     });
   }
 
-  saveGoal() {
+  formatAccountBalance(balance: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(balance) || 0);
+  }
+
+  async saveGoal(): Promise<void> {
     this.bumpDraft();
     if (this.draftErrors().length > 0) return;
     const goal: FinCommanderGoal = {
@@ -816,8 +954,9 @@ export class GoalsPageComponent {
       currentAmountCents: dollarsToCents(this.draft.currentAmount),
       dueDate: this.draft.dueDate,
       strategy: this.draft.strategy,
+      fundingAccountId: this.draft.fundingAccountId,
     };
-    this.store.saveGoal(goal);
+    await this.store.saveGoal(goal);
     this.statusMessage.set(`Goal "${this.draft.name.trim()}" saved.`);
     this.resetDraft();
     this.loadGoals();
@@ -831,14 +970,53 @@ export class GoalsPageComponent {
     this.pendingDeleteId.set(null);
   }
 
-  confirmDelete(goalId: string) {
+  async confirmDelete(goalId: string): Promise<void> {
     const removed = this.goals().find((goal) => goal.id === goalId);
-    this.store.deleteGoal(goalId);
+    await this.store.deleteGoal(goalId);
     this.pendingDeleteId.set(null);
     this.statusMessage.set(
       removed ? `Removed goal "${removed.name}".` : 'Goal removed.'
     );
     this.loadGoals();
+  }
+
+  async previewFunding(goalId: string): Promise<void> {
+    this.fundingBusyGoalId.set(goalId);
+    try {
+      const preview = await this.store.previewFundingDirective(goalId);
+      this.fundingPreview.set(preview);
+      this.statusMessage.set(
+        preview
+          ? 'Review the funding instruction before approval. It will not move money.'
+          : 'A funding instruction is unavailable until this goal has an active funding account.'
+      );
+    } catch {
+      this.statusMessage.set('Unable to preview this funding instruction.');
+    } finally {
+      this.fundingBusyGoalId.set(null);
+    }
+  }
+
+  async approveFunding(goalId: string): Promise<void> {
+    this.fundingBusyGoalId.set(goalId);
+    try {
+      const directive = await this.store.approveFundingDirective(goalId);
+      this.statusMessage.set(
+        `Funding instruction approved. ${this.formatCurrency(
+          directive.amountCents
+        )} is forecast monthly; no money was moved.`
+      );
+      this.fundingPreview.set(null);
+    } catch {
+      this.statusMessage.set('Unable to approve this funding instruction.');
+    } finally {
+      this.fundingBusyGoalId.set(null);
+    }
+  }
+
+  previewFor(goalId: string): FinCommanderFundingDirectivePreview | null {
+    const preview = this.fundingPreview();
+    return preview?.goalId === goalId ? preview : null;
   }
 
   /** Bump the draft version signal so `draftErrors` re-evaluates after ngModel writes. */
@@ -851,8 +1029,8 @@ export class GoalsPageComponent {
   }
 
   /** @deprecated Use {@link requestDelete} + {@link confirmDelete}; kept for backwards compatibility in tests. */
-  deleteGoal(goalId: string) {
-    this.confirmDelete(goalId);
+  async deleteGoal(goalId: string): Promise<void> {
+    await this.confirmDelete(goalId);
   }
 
   private loadGoals() {
@@ -868,7 +1046,14 @@ export class GoalsPageComponent {
       currentAmount: 0,
       dueDate: new Date().toISOString().slice(0, 10),
       strategy: '',
+      fundingAccountId: '',
     };
     this.bumpDraft();
+  }
+
+  private async loadFundingAccounts() {
+    this.fundingAccounts.set(
+      (await this.finance.getAccounts()).filter((account) => account.isActive)
+    );
   }
 }

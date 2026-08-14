@@ -63,6 +63,7 @@
     "pre:docker:up": "pnpm run build",
     "docker:dev:watch": "pnpm run build:docker:dev && pnpm run docker:dev:up && pnpm run watch:docker:dev",
     "db:setup": "sh ./scripts/setup-and-migrate.sh",
+    "validate:typeorm-migrations": "node ./scripts/validate-typeorm-migrations.mjs",
     "dev:ssr": "ng run christopherrutherford-net:serve-ssr",
     "serve:ssr": "node dist/apps/christopherrutherford-net/server/main.js",
     "build:ssr": "ng build && ng run christopherrutherford-net:server",

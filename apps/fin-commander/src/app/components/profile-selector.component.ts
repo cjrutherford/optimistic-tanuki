@@ -7,7 +7,11 @@ import { ProfileContext } from '../profile.context';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="profile-selector" aria-label="Finance profile selector">
+    <div
+      class="profile-selector"
+      role="group"
+      aria-label="Finance profile selector"
+    >
       <label class="profile-label" for="fin-profile-selector">Profile</label>
       <select
         id="fin-profile-selector"

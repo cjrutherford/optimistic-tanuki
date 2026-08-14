@@ -282,13 +282,13 @@ export class OAuthService {
         );
         return;
       }
-
       checkClosed = setInterval(() => {
         if (this.popup && this.popup.closed) {
-          if (checkClosed) clearInterval(checkClosed);
-          // Browsers can report a live cross-origin OAuth popup as closed
-          // while it navigates back to this origin. Give its callback message
-          // a chance to arrive before treating this as user cancellation.
+          if (checkClosed) {
+            clearInterval(checkClosed);
+            checkClosed = null;
+          }
+
           closeGracePeriod = setTimeout(() => {
             if (cookieSession) {
               // A cross-origin provider can falsely report this popup as
