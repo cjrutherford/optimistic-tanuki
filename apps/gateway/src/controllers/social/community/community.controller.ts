@@ -25,6 +25,8 @@ import {
   ServiceTokens,
   RoleCommands,
   ChatCommands,
+  AppScopeCommands,
+  WorkspaceCommands,
 } from '@optimistic-tanuki/constants';
 import {
   CommunityDto,
@@ -37,6 +39,7 @@ import {
   CommunityInviteDto,
   AssignRoleDto,
   CommunityMembershipStatus,
+  workspaceScopeName,
 } from '@optimistic-tanuki/models';
 import { AuthGuard } from '../../../auth/auth.guard';
 import { Public } from '../../../decorators/public.decorator';
@@ -44,6 +47,8 @@ import { User, UserDetails } from '../../../decorators/user.decorator';
 import { AppScope } from '../../../decorators/appscope.decorator';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { RequirePermissions } from '../../../decorators/permissions.decorator';
+import { WorkspaceContext } from '../../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../../guards/workspace-context.guard';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -59,7 +64,9 @@ export class CommunityController {
     @Inject(ServiceTokens.PERMISSIONS_SERVICE)
     private readonly permissionsClient: ClientProxy,
     @Inject(ServiceTokens.CHAT_COLLECTOR_SERVICE)
-    private readonly chatClient: ClientProxy
+    private readonly chatClient: ClientProxy,
+    @Inject(ServiceTokens.WORKSPACE_SERVICE)
+    private readonly workspaceClient: ClientProxy
   ) {}
 
   @Post()
@@ -86,6 +93,8 @@ export class CommunityController {
         }
       )
     );
+
+    await this.provisionCommunityWorkspace(community, user, appScope);
 
     try {
       const communityManagerRole = await firstValueFrom(
@@ -141,6 +150,67 @@ export class CommunityController {
     }
 
     return community;
+  }
+
+  private async provisionCommunityWorkspace(
+    community: CommunityDto,
+    user: UserDetails,
+    appScope: string
+  ): Promise<void> {
+    const workspace = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.REGISTER, {
+        kind: 'community',
+        slug: community.slug || community.id,
+        displayName: community.name,
+        appScope,
+        ownerUserId: user.userId,
+        ownerProfileId: user.profileId,
+        source: { service: 'social', sourceId: community.id },
+      })
+    );
+    const activated = await firstValueFrom(
+      this.workspaceClient.send(WorkspaceCommands.ACTIVATE, {
+        workspaceId: workspace.workspaceId,
+        source: { service: 'social', sourceId: community.id },
+      })
+    );
+    const name = workspaceScopeName(activated.workspaceId);
+    let scope = await firstValueFrom(
+      this.permissionsClient.send({ cmd: AppScopeCommands.GetByName }, { name })
+    );
+    if (!scope) {
+      scope = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.Create },
+          {
+            name,
+            description: 'Community workspace permission scope',
+            active: true,
+          }
+        )
+      );
+    }
+    const ownerRole = await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: RoleCommands.GetByName },
+        { name: 'community_owner', appScope }
+      )
+    );
+    if (!scope?.id || !ownerRole?.id) {
+      throw new Error(
+        'Community workspace owner permissions are not configured'
+      );
+    }
+    await firstValueFrom(
+      this.permissionsClient.send(
+        { cmd: RoleCommands.Assign },
+        {
+          roleId: ownerRole.id,
+          profileId: user.profileId,
+          appScopeId: scope.id,
+        }
+      )
+    );
   }
 
   @Get('top-active')
@@ -230,6 +300,14 @@ export class CommunityController {
   }
 
   @Put(':id')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.update')
   @ApiOperation({ summary: 'Update a community' })
   @ApiResponse({
@@ -251,6 +329,14 @@ export class CommunityController {
   }
 
   @Delete(':id')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.delete')
   @ApiOperation({ summary: 'Delete a community' })
   @ApiResponse({
@@ -376,6 +462,14 @@ export class CommunityController {
   }
 
   @Post(':id/invite')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.invite')
   @ApiOperation({ summary: 'Invite a user to a community' })
   @ApiResponse({
@@ -440,6 +534,15 @@ export class CommunityController {
   }
 
   @Post('members/:memberId/approve')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Approve a community member' })
   @ApiResponse({
@@ -471,6 +574,15 @@ export class CommunityController {
   }
 
   @Post('members/:memberId/reject')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Reject a community member' })
   @ApiResponse({
@@ -490,6 +602,15 @@ export class CommunityController {
   }
 
   @Delete('members/:memberId')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'memberId',
+    sourceService: 'social',
+    resource: 'member',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Remove a community member' })
   @ApiResponse({
@@ -519,6 +640,15 @@ export class CommunityController {
   }
 
   @Delete('invites/:inviteId')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'inviteId',
+    sourceService: 'social',
+    resource: 'invite',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Cancel a community invite' })
   @ApiResponse({
@@ -538,6 +668,14 @@ export class CommunityController {
   }
 
   @Post(':id/managers')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Appoint a community manager' })
   @ApiResponse({
@@ -576,6 +714,14 @@ export class CommunityController {
   }
 
   @Delete(':id/managers/:profileId')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Revoke community manager role' })
   @ApiResponse({
@@ -640,6 +786,15 @@ export class CommunityController {
   }
 
   @Post(':id/chat-room')
+  @WorkspaceContext({
+    kind: 'community',
+    source: 'params',
+    path: 'id',
+    sourceService: 'social',
+    strict: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
+  @RequirePermissions('community.manage')
   @ApiOperation({ summary: 'Create or repair a community chat room' })
   async ensureChatRoom(
     @Param('id') communityId: string,

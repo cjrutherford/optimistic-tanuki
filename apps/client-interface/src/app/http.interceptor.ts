@@ -13,7 +13,10 @@ export const AuthInterceptor: HttpInterceptorFn = (req, next) => {
   let appScope = 'client-interface';
   const url = req.url || '';
 
-  if (url.includes('/api/social')) {
+  if (
+    url.includes('/api/social') ||
+    url.includes('/api/workspaces/communities')
+  ) {
     appScope = 'social';
   } else if (url.includes('/api/blog')) {
     appScope = 'blogging';

@@ -1,4 +1,5 @@
 export { ConfigurableLandingPageComponent } from './lib/configurable-landing-page.component';
+export { ConfiguratorEditorWorkspaceComponent } from './lib/configurator-editor-workspace.component';
 export { EditorBlockTreeComponent } from './lib/editor-block-tree.component';
 export {
   EditorDesignSystemPanelComponent,

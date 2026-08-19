@@ -40,6 +40,7 @@ import {
             <button
               type="button"
               class="tag-remove"
+              [attr.aria-label]="'Remove item ' + (i + 1)"
               (click)="itemRemoved.emit(i)"
             >
               Remove

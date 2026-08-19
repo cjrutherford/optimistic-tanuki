@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Self-service configurability program tracker"
+    />
+    <title>Configurability Program Tracker</title>
+    <style>
+      :root {
+        --ink: #17252b;
+        --muted: #64747a;
+        --paper: #f5f1e8;
+        --card: #fffdf8;
+        --line: #d9d2c4;
+        --deep: #123d49;
+        --teal: #087b70;
+        --gold: #dc9d26;
+        --red: #b64b37;
+        --pale: #e2efe8;
+        --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font: 16px/1.55 Georgia, 'Times New Roman', serif;
+      }
+      .wrap {
+        width: min(1180px, calc(100% - 2rem));
+        margin: auto;
+      }
+      header {
+        padding: 4rem 0 3rem;
+        color: #fffcf5;
+        background: radial-gradient(
+            circle at 82% -20%,
+            #258e82 0,
+            transparent 38%
+          ),
+          linear-gradient(125deg, #102f3a, #154b56);
+      }
+      .eyebrow {
+        font: 700 0.72rem/1 var(--mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #91d9c7;
+        margin: 0 0 0.8rem;
+      }
+      h1,
+      h2,
+      h3 {
+        line-height: 1.1;
+        margin: 0;
+        color: inherit;
+      }
+      h1 {
+        max-width: 14ch;
+        font-size: clamp(2.8rem, 7vw, 5.7rem);
+        letter-spacing: -0.06em;
+      }
+      h2 {
+        font-size: clamp(1.8rem, 4vw, 3rem);
+        letter-spacing: -0.04em;
+      }
+      h3 {
+        font-size: 1.2rem;
+      }
+      .lede {
+        max-width: 64ch;
+        font-size: 1.16rem;
+        color: #dff0e8;
+        margin: 1.2rem 0;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        font: 700 0.7rem var(--mono);
+      }
+      .meta span,
+      .badge {
+        border: 1px solid currentColor;
+        border-radius: 99px;
+        padding: 0.28rem 0.55rem;
+      }
+      main {
+        padding: 2.5rem 0 5rem;
+      }
+      section {
+        margin: 0 0 2.7rem;
+      }
+      .outcome {
+        border-left: 7px solid var(--gold);
+        background: var(--card);
+        padding: 1.4rem 1.6rem;
+        box-shadow: 0 14px 34px #17252b18;
+        font-size: 1.08rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 1rem;
+      }
+      .card {
+        grid-column: span 4;
+        background: var(--card);
+        border: 1px solid var(--line);
+        padding: 1.15rem;
+      }
+      .card b {
+        display: block;
+        color: var(--teal);
+        font: 700 0.72rem var(--mono);
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        margin-bottom: 0.55rem;
+      }
+      .diagram {
+        background: var(--deep);
+        color: #f6fbf4;
+        padding: 1.35rem;
+        overflow: auto;
+        font: 0.84rem/1.75 var(--mono);
+        box-shadow: 0 14px 34px #17252b1d;
+      }
+      .diagram strong {
+        color: #ffe29a;
+      }
+      .directive {
+        background: var(--pale);
+        border-top: 4px solid var(--teal);
+        padding: 1rem 1.2rem;
+      }
+      .directive.risk {
+        background: #f8e8e2;
+        border-top-color: var(--red);
+      }
+      .tracker {
+        background: var(--card);
+        border: 1px solid var(--line);
+        box-shadow: 0 14px 34px #17252b16;
+      }
+      .scoreline {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.1rem 1.3rem;
+        border-bottom: 1px solid var(--line);
+      }
+      .scoreline p {
+        margin: 0.25rem 0;
+        color: var(--muted);
+      }
+      .scorekey {
+        font: 700 0.75rem var(--mono);
+        color: var(--teal);
+      }
+      [role='tablist'] {
+        display: flex;
+        overflow-x: auto;
+        gap: 0.15rem;
+        padding: 0.45rem 0.45rem 0;
+        border-bottom: 1px solid var(--line);
+        scrollbar-color: var(--teal) transparent;
+      }
+      [role='tab'] {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        border-bottom: 4px solid transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font: 700 0.75rem var(--mono);
+        padding: 0.75rem 0.8rem;
+        white-space: nowrap;
+      }
+      [role='tab'][aria-selected='true'] {
+        color: var(--deep);
+        border-color: var(--gold);
+      }
+      [role='tabpanel'] {
+        padding: 1.35rem;
+      }
+      [role='tabpanel'][hidden] {
+        display: none;
+      }
+      .slicehead {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 1rem;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 1rem;
+      }
+      .slicehead p {
+        margin: 0.35rem 0;
+        color: var(--muted);
+      }
+      .score {
+        color: var(--teal);
+        font: 800 2rem var(--mono);
+      }
+      .slicegrid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.2rem;
+        margin: 1.1rem 0;
+      }
+      .slicegrid h3 {
+        font: 700 0.72rem var(--mono);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--teal);
+      }
+      .slicegrid p {
+        margin: 0.35rem 0;
+      }
+      .next {
+        margin-top: 0.9rem;
+        background: #e6f2ea;
+        border-left: 4px solid var(--teal);
+        padding: 0.85rem 1rem;
+      }
+      .check {
+        padding-left: 1.3rem;
+        list-style: '□  ';
+      }
+      .check li {
+        margin: 0.28rem 0;
+      }
+      .index {
+        margin-top: 1.1rem;
+        overflow: auto;
+      }
+      .index table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 750px;
+        background: var(--card);
+      }
+      .index th,
+      .index td {
+        padding: 0.7rem;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+      }
+      .index th {
+        font: 700 0.68rem var(--mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: #e9e2d5;
+      }
+      .index a {
+        color: var(--deep);
+        font-weight: 700;
+      }
+      .status {
+        color: #805b08;
+        background: #ffeca8;
+        border: 0;
+        font: 700 0.68rem var(--mono);
+      }
+      code {
+        font: inherit;
+        background: #ece7dc;
+        padding: 0.08rem 0.22rem;
+        border-radius: 3px;
+      }
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 1.7rem 0;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      a {
+        color: var(--deep);
+        text-underline-offset: 3px;
+      }
+      :focus-visible {
+        outline: 3px solid var(--gold);
+        outline-offset: 3px;
+      }
+      @media (max-width: 760px) {
+        header {
+          padding: 3rem 0 2.5rem;
+        }
+        .card {
+          grid-column: span 12;
+        }
+        .slicegrid {
+          grid-template-columns: 1fr;
+        }
+        .scoreline {
+          align-items: start;
+          flex-direction: column;
+        }
+      }
+      .status.complete {
+        color: #0d4d32;
+        background: #def3e6;
+      }
+      .slice-complete .slicehead {
+        border-bottom-color: #9ac9ac;
+      }
+      .slice-complete .score {
+        color: #176344;
+      }
+      .slice-complete .next {
+        background: #def3e6;
+        border-left-color: #176344;
+      }
+      .check.complete {
+        list-style: '✓  ';
+        color: #15583b;
+      }
+      .check.complete li::marker {
+        font-weight: 900;
+      }
+      .index tr.complete td:first-child a {
+        color: #176344;
+      }
+      .index tr.complete td:nth-child(2)::after {
+        content: '  ✓';
+        color: #176344;
+        font-weight: 900;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="wrap">
+        <p class="eyebrow">Optimistic Tanuki · living program tracker</p>
+        <h1>Self-service configuration, without shared-state confusion.</h1>
+        <p class="lede">
+          A single roadmap for independently operated business sites and
+          communities: configuration, product capabilities, workspace isolation,
+          moderation, and honest marketing.
+        </p>
+        <div class="meta">
+          <span>2026-08-18</span><span>Slice 16 complete</span
+          ><span
+            >24 slices · 9 complete · business-site child-scope isolation
+            verified</span
+          ><span>Scores: impact 40 · reuse 25 · risk 20 · readiness 15</span>
+        </div>
+      </div>
+    </header>
+    <main class="wrap">
+      <section class="outcome">
+        <strong>Program directive.</strong> <code>app-configurator</code> is the
+        internal configuration control plane. Business-site and the future
+        Configurator Workspace are separate self-service products. A workspace
+        owner can configure and publish only their own business site or
+        community; clients, members, and moderators operate only inside explicit
+        membership and permission boundaries. Product services retain their own
+        data and workflows.
+      </section>
+      <section>
+        <p class="eyebrow" style="color: var(--teal)">
+          Non-negotiable architecture
+        </p>
+        <div class="grid">
+          <article class="card">
+            <b>Control plane</b>Configuration owns placement, enablement,
+            navigation, theme, policy, release state, and references. It does
+            not own products, posts, threads, or orders.
+          </article>
+          <article class="card">
+            <b>Product boundaries</b>Business, social, store, forum, and
+            blogging services remain authoritative for domain records and
+            validation. Plugins integrate them through narrow data-access
+            adapters.
+          </article>
+          <article class="card">
+            <b>Self-service safety</b>Public landing CTAs begin verified
+            onboarding. The internal TCP configuration service is never a public
+            browser endpoint.
+          </article>
+        </div>
+      </section>
+      <section>
+        <p class="eyebrow" style="color: var(--teal)">
+          The two flows that govern the whole program
+        </p>
+        <div
+          class="diagram"
+          role="img"
+          aria-label="Workspace authorization and self-service lifecycle"
+        >
+          <strong>Request isolation</strong><br />session → authenticated
+          profile → app scope → workspace membership / target → capability
+          permission → domain-record ownership<br />                                        ✕
+          deny at the first missing link<br /><br /><strong
+            >Self-service lifecycle</strong
+          ><br />discover → register / sign in → verify → create or claim
+          workspace → owner policy + default config → configure → preview →
+          publish<br />                                                                     └─
+          invite / approve / suspend client or member → moderate → audit
+        </div>
+      </section>
+      <section id="tracker">
+        <p class="eyebrow" style="color: var(--teal)">Execution tracker</p>
+        <h2>One tab, one accountable slice.</h2>
+        <div class="tracker">
+          <div class="scoreline">
+            <div>
+              <strong>Score provenance</strong>
+              <p>
+                Baseline established in this artifact on 2026-08-16. Scores rank
+                decision usefulness, cross-product reuse, risk reduction, and
+                implementation readiness—not CI status.
+              </p>
+            </div>
+            <span class="scorekey">All slices: proposed</span>
+          </div>
+          <div id="tabs" role="tablist" aria-label="Program slices"></div>
+          <div id="panels"></div>
+        </div>
+        <div class="index">
+          <table>
+            <thead>
+              <tr>
+                <th>Slice</th>
+                <th>Score</th>
+                <th>Wave</th>
+                <th>Directive</th>
+              </tr>
+            </thead>
+            <tbody id="indexRows"></tbody>
+          </table>
+        </div>
+      </section>
+      <section>
+        <p class="eyebrow" style="color: var(--teal)">Program guardrails</p>
+        <div class="grid">
+          <article class="directive" style="grid-column: span 6">
+            <strong>Keep entry points first class.</strong> Business-site
+            owner/client routes, community moderation, store management, forum
+            participation, and blogging authoring remain product journeys. The
+            Configurator Workspace composes capabilities and deep-links to their
+            product editors; it does not clone them.
+          </article>
+          <article class="directive risk" style="grid-column: span 6">
+            <strong>Isolation is more than <code>x-ot-appscope</code>.</strong>
+            App scope chooses a permission vocabulary. The server must resolve
+            and authorize a workspace target and its domain record on every
+            protected request, query, cache key, event, and background action.
+          </article>
+        </div>
+      </section>
+      <section>
+        <p class="eyebrow" style="color: var(--teal)">Evidence base</p>
+        <p>
+          Existing evidence includes app-configurator publish/rollback
+          revisions; app-config-models schema types; business-site tenant-aware
+          public/owner/client routes and guards; business-data-access state;
+          reusable editor primitives in configurable-client-ui; app-scoped role
+          assignments with target IDs; gateway permissions enforcement; business
+          client approval; social community/report moderation; forum scoped
+          routes; blogging draft/publish; store service/client; and the current
+          business-site platform home.
+        </p>
+      </section>
+    </main>
+    <footer>
+      <div class="wrap">
+        Report source:
+        <code>docs/reports/configurable-platform-program/index.html</code> ·
+        no-cache served tracker · update this artifact whenever a slice’s
+        evidence or score moves.
+      </div>
+    </footer>
+    <script>
+      const S = [
+        [
+          0,
+          'Platform contracts',
+          94,
+          'Foundation',
+          'Versioned configuration identity, lifecycle, manifest, generic block schema, and compatibility rules.',
+          'app-configurator has publish/rollback/revisions; app-config-models has block/theme types.',
+          'A generic contract may accidentally encode business assumptions.',
+          'Write the v1 manifest and lifecycle contract, then map existing DTOs.',
+          [
+            'Round-trip and unknown-plugin tests pass.',
+            'Gateway and service share versioned commands.',
+            'No business type crosses the base contract.',
+          ],
+        ],
+        [
+          1,
+          'Plugin feature-shell standard',
+          92,
+          'Foundation',
+          'Library convention: contracts, data-access, feature-editor, feature-runtime, and UI; registration and Nx boundary rules.',
+          'Nx taxonomy already supports type:feature and type:data-access.',
+          'Over-modularization before a second plugin is proven.',
+          'Define names, tags, exports, and host registration API.',
+          [
+            'Business host lazy-loads its feature.',
+            'Registration controls capabilities and routes.',
+            'Apps do not import plugin internals.',
+          ],
+        ],
+        [
+          2,
+          'Shared configurator data access',
+          90,
+          'Foundation',
+          'Tenant-aware load, draft, save, publish, rollback, revision, error, and offline-draft reconciliation store.',
+          'BusinessSiteConfigStore proves signals, stale handling, and recovery patterns.',
+          'Legacy local storage becomes a competing source of truth.',
+          'Specify the client API from gateway commands; start with failing store tests.',
+          [
+            'Concurrent loads cannot overwrite newer context.',
+            'Failed saves preserve draft and give recovery.',
+            'Publish/rollback refresh without reload.',
+          ],
+        ],
+        [
+          3,
+          'Shared configurator editor',
+          88,
+          'Foundation',
+          'Guided and studio modes, schema inspection, collections, preview bridge, accessibility, and unsaved-change behavior.',
+          'Owner Console adopts the shared workspace shell. Grid collections use typed schema controls through the same draft and renderer path; preview selection, responsive inspector, route/browser draft protection, and named collection actions are covered.',
+          'A full visual accessibility audit and additional collection types remain later hardening, not blockers for this editor foundation.',
+          'Use this shell for the next configurator surface; do not reintroduce app-owned canvas, inspector, or preview markup.',
+          [
+            'Editor shell has no persistence or tenant imports.',
+            'Preview uses renderer registration.',
+            'Guided and studio serialize identical drafts.',
+            'Grid collection controls update the rendered draft through the shared schema contract.',
+            'Dirty draft state resets only after a successful mutation.',
+            'Routes and browser unload protect a dirty draft.',
+          ],
+        ],
+        [
+          4,
+          'Business-site reference plugin',
+          86,
+          'Delivery',
+          'Business adapters, block catalog, editor composition, and runtime registration outside business-data-access.',
+          'The business presence feature now owns the landing block catalog and document adapter. The business editor consumes that feature boundary; business-data-access retains domain types, state, API access, and pure config merge helpers.',
+          'Verified through the feature, editor, and route contracts. Dynamic manifest-driven route generation remains intentionally deferred to a later platform-runtime slice.',
+          'Keep public, owner, booking, and client entry points independent while future runtime registration evolves.',
+          [
+            'Registered through manifest.',
+            'Feature-owned entry point is consumed by the editor.',
+            'business-data-access stops exporting editor schema.',
+            'Feature package owns the business landing block catalog.',
+          ],
+        ],
+        [
+          5,
+          'Runtime parity',
+          82,
+          'Delivery',
+          'Published runtime resolver, safe renderer registry, capability-gated routes, and preview/published rendering parity.',
+          'Business-site now has an explicit runtime section map, filters unsupported shared blocks on conversion, and uses the exact public renderer in owner preview.',
+          'Unsupported persisted sections are visible and non-interactive in both public and embedded preview. The generic configurable-client contract remains a separately scoped follow-on.',
+          'Keep fixed public/owner/booking/client routes independent; extend registry coverage to the generic renderer only after its separate contract is mapped.',
+          [
+            'Approved preview matches published fixture.',
+            'Unknown config fails safely.',
+            'Public SSR never leaks drafts.',
+          ],
+        ],
+        [
+          6,
+          'Publish, preview, audit trust',
+          79,
+          'Delivery',
+          'Draft/published UX, history, rollback, conflicts, authorization, and human-readable audit.',
+          'app-configurator revision behavior and business editor preview copy exist.',
+          'Silent overwrites and weak conflict behavior.',
+          'Trace every mutating app-config route and define revision preconditions.',
+          [
+            'Cross-tenant publish/rollback denied.',
+            'Rollback creates an auditable revision.',
+            'Owner can explain published state.',
+          ],
+        ],
+        [
+          7,
+          'Media capability',
+          71,
+          'Delivery',
+          'Portable media reference, asset picker, alt/focal/aspect fields, and plugin adapters.',
+          'Business and generic configs both model image metadata.',
+          'Storage policy leaks into editor policy.',
+          'Inventory media fields and define a lossless minimal model.',
+          [
+            'Accessible alt/decorative decision required.',
+            'Published runtime resolves media independently.',
+            'Extensions are namespaced.',
+          ],
+        ],
+        [
+          8,
+          'Second configurable plugin proof',
+          68,
+          'Validation',
+          'A materially different configurable experience validates the small shared contract.',
+          'Configurable-client is a candidate; blogging becomes a stronger lifecycle test.',
+          'A near-clone proves nothing.',
+          'Choose the pilot before editor abstraction closes.',
+          [
+            'Consumes contracts without business imports.',
+            'Rejects or isolates a business assumption.',
+            'Score recalibration is recorded.',
+          ],
+        ],
+        [
+          9,
+          'Capability catalog and placement',
+          91,
+          'Expansion',
+          'Manifest capability ID, eligibility, placement slot, policy schema, resource reference, permissions, and deep link.',
+          'Social, store, forum, and blogging have discrete UI/service capabilities.',
+          'Catalog becomes a second product database.',
+          'Define capability metadata only; keep records in owners.',
+          [
+            'Five capabilities register without product UI imports.',
+            'Placement is policy, not copied content.',
+            'Direct product entry points remain.',
+          ],
+        ],
+        [
+          10,
+          'Product data-access adapters',
+          89,
+          'Expansion',
+          'Narrow resource-picker/query adapters for store, forum, and blogging; align social-data-access.',
+          'social-data-access already exists; other domains have service/UI APIs.',
+          'Adapters duplicate service state.',
+          'Define common selection/policy contract, then one adapter at a time.',
+          [
+            'Adapters list/select references only.',
+            'No domain record duplication.',
+            'Errors preserve owning-service meaning.',
+          ],
+        ],
+        [
+          11,
+          'Configurator Workspace',
+          87,
+          'Expansion',
+          'Central browser workspace: discover, choose surface, configure capabilities, review, publish, and deep-link to product authoring.',
+          'business configurator/editor and owner console prove parts of this UX.',
+          'A new UI is mistaken for a public wrapper around TCP service.',
+          'Define web host, gateway API, and route ownership.',
+          [
+            'No direct TCP calls or service credentials.',
+            'Owner sees only entitled workspaces.',
+            'Deep links retain workspace context.',
+          ],
+        ],
+        [
+          12,
+          'Runtime composition and entry parity',
+          84,
+          'Expansion',
+          'Render enabled social/store/forum/blogging placements while direct routes retain identical policy.',
+          'Existing gateways carry app scope and domain UI is independently routable.',
+          'Central and direct paths disagree on visibility.',
+          'Write a published-policy fixture used by both paths.',
+          [
+            'Same policy from both entry points.',
+            'Guards match for each placement.',
+            'No hidden capability data in SSR.',
+          ],
+        ],
+        [
+          13,
+          'Product capability pilots',
+          80,
+          'Expansion',
+          'Pilot blogging → forum → store → social after the shared contract is real.',
+          'Blogging has draft/publish; forum has scoped moderation; store is transactional; social is policy-rich.',
+          'Pilots expand scope before isolation controls exist.',
+          'Gate each pilot on slices 14–19.',
+          [
+            'No cross-service record ownership leak.',
+            'Standalone journey remains.',
+            'Required permissions are enforced.',
+          ],
+        ],
+        [
+          14,
+          'Workspace identity and tenant contract',
+          96,
+          'Security',
+          'Canonical workspace ID/slug, kind, owner, lifecycle, app scope, config link, and membership target.',
+          'Business-site stores tenant identity inside config metadata; social owns UUID communities; permissions has target IDs but is not a tenant authority.',
+          'A central record could duplicate product data or unintentionally turn workspace identity into an authorization bypass.',
+          'Dedicated Workspace service, shared contract, generated migration, additive Gateway resolver, and idempotent source registration are verified. Existing owner configs without a stable slug remain unclaimed; Slice 15 owns their claim/publish transaction.',
+          [
+            'Workspace-aware APIs resolve canonical context.',
+            'No source record is fabricated from client owner fields.',
+            'Identity is isolated from permissions target semantics.',
+          ],
+        ],
+        [
+          15,
+          'Registration, claim, owner bootstrap',
+          94,
+          'Security',
+          'Email/OAuth verification, profile, create/claim workspace, owner role, policy/config defaults, secure return intent.',
+          'Authentication, account bootstrap, and business registration flows exist; verified business-site and community claims require auth-attested email verification, derive source identity server-side, return safe local intents, and repair a partial activation by replaying the same idempotent claim.',
+          'Partial onboarding grants ownership too early.',
+          'Complete: claims require auth-attested email verification before source-bound activation; advance to mandatory workspace authorization enforcement.',
+          [
+            'Verified identity precedes owner activation.',
+            'Retries are idempotent.',
+            'Repair/rollback path exists.',
+          ],
+        ],
+        [
+          16,
+          'Authorization and isolation enforcement',
+          95,
+          'Security',
+          'Gateway and service context require app scope + workspace target + capability permission + record ownership; cache keys include workspace.',
+          'Claims create/reuse UUID child AppScopes, both community creation surfaces auto-provision the workspace/owner role, and all community owner, moderation, election, and manager mutations resolve strict canonical context; member/invite actions first perform authoritative Social lookups.',
+          'The composed Gateway stack is not running locally, so runtime community E2E has not yet exercised the new path.',
+          'Start the focused Gateway/Social/Workspace composition and run the checked-in community E2E.',
+          [
+            'Cross-workspace read/write/preview/publish denied.',
+            'No forbidden ID leaks.',
+            'Cache cannot cross workspace.',
+          ],
+        ],
+        [
+          17,
+          'Membership, client, moderator lifecycle',
+          92,
+          'Governance',
+          'Pending/active/suspended/revoked states, invite/approval, least-privilege grants, owner-client ties, moderator delegation.',
+          'Business lead approval and community membership flows exist.',
+          'Approval races with session/role refresh.',
+          'Define state machine and idempotent transitions.',
+          [
+            'Suspension revokes access.',
+            'Owner cannot govern another workspace.',
+            'Every transition is audited.',
+          ],
+        ],
+        [
+          18,
+          'Moderation control plane',
+          90,
+          'Governance',
+          'Shared queue/reference shape for reports and relationship actions, reasons, decisions, appeal, retention, notification.',
+          'Social reporting/moderation is implemented; business has approval workflow.',
+          'Over-generalizing content-specific actions.',
+          'Standardize workflow vocabulary; delegate enforcement to owners.',
+          [
+            'Social report and client approval use shared queue contract.',
+            'Domain data stays in owners.',
+            'Decision has evidence and audit.',
+          ],
+        ],
+        [
+          19,
+          'Self-service adversarial E2E',
+          89,
+          'Governance',
+          'Focused composed tests for owner, client/member, moderator, anonymous, and cross-tenant denial.',
+          'Business e2e and cross-service infrastructure patterns exist.',
+          'Only happy paths are tested.',
+          'Build minimal test composition around workspace resolver.',
+          [
+            'Register, claim, configure, publish covered.',
+            'Invite/approve/suspend/report covered.',
+            'Cross-tenant denial at gateway and browser.',
+          ],
+        ],
+        [
+          20,
+          'Positioning and content model',
+          86,
+          'Marketing',
+          'Distinct outcomes, CTAs, FAQs, trust claims, examples, and content ownership for business-site and Configurator Workspace.',
+          'Existing business platform home has hero/capability/directory structure.',
+          'Copy promises private discovery or unbuilt capabilities.',
+          'Inventory every claim and its implementation status.',
+          [
+            'Claims map to capability or future label.',
+            'No cross-workspace promise.',
+            'CTA aligns to verified onboarding.',
+          ],
+        ],
+        [
+          21,
+          'Business-site discovery landing',
+          84,
+          'Marketing',
+          'Improve owner-first platform landing: examples, start/claim/sign-in, role explanation, trust, SSR metadata, accessibility.',
+          'BusinessPlatformHomePageComponent already has styled platform home and directory.',
+          'Public directory exposes private workspace state.',
+          'Define approved-public directory policy and CTA routes.',
+          [
+            'Only public tenants discoverable.',
+            'Onboarding leaks no private state.',
+            'Mobile/a11y/SSR acceptance pass.',
+          ],
+        ],
+        [
+          22,
+          'Configurator Workspace public landing',
+          83,
+          'Marketing',
+          'Public browser landing, workspace-type chooser, capability map, governance promise, create/claim/sign-in.',
+          'business-configurator is a browser app; app-configurator is explicitly internal TCP service.',
+          'Browser bypasses gateway or exposes internal contract.',
+          'Choose web host and route it only through public API.',
+          [
+            'No direct TCP or credentials.',
+            'Verified create/claim reaches correct workspace.',
+            'Private paths are not indexed.',
+          ],
+        ],
+        [
+          23,
+          'Consentful funnel measurement',
+          74,
+          'Marketing',
+          'Consent, event taxonomy, aggregated activation/publish outcomes, SEO release checks, opt-out.',
+          'Landing/SSR infrastructure and platform analytics patterns can be reused.',
+          'Events leak email, workspace ID, or unpublished config.',
+          'Define allowlisted event payloads and index policy.',
+          [
+            'Opaque/aggregated identifiers only.',
+            'Opt-out works.',
+            'Owner/client/moderator routes excluded from indexing.',
+          ],
+        ],
+      ];
+      const tabs = document.querySelector('#tabs'),
+        panels = document.querySelector('#panels'),
+        rows = document.querySelector('#indexRows');
+      document.querySelector('.scorekey').textContent =
+        '9 complete · 15 proposed';
+      function isComplete(n) {
+        return n <= 5 || n === 14 || n === 15;
+      }
+      function statusFor(n) {
+        return n === 0
+          ? 'Complete · contract, persistence, validation'
+          : n === 1
+          ? 'Complete · feature shell, host binding, surface isolation'
+          : n === 2
+          ? 'Complete · trusted owner context, published projection, migration'
+          : n === 3
+          ? 'Complete · shared shell, collections, draft protection'
+          : n === 4
+          ? 'Complete · feature-owned catalog, adapter, and host routes'
+          : n === 5
+          ? 'Complete · runtime coverage, safe fallback, preview/public proof'
+          : n === 14
+          ? 'Complete · canonical identity foundation verified'
+          : n === 15
+          ? 'Complete · verified identity, safe intent, idempotent activation repair'
+          : n === 16
+          ? 'Complete · strict business-site child scope verified'
+          : 'Proposed';
+      }
+      function panel(s) {
+        const [n, t, score, wave, deliver, evidence, risk, next, checks] = s,
+          complete = isComplete(n),
+          status = statusFor(n);
+        return `<article role="tabpanel" class="${
+          complete ? 'slice-complete' : ''
+        }" id="slice-${n}" aria-labelledby="tab-${n}" ${
+          n ? 'hidden' : ''
+        }><div class="slicehead"><div><h3>Slice ${n} · ${t}</h3><p><span class="badge status ${
+          complete ? 'complete' : ''
+        }">${
+          complete ? '✓ ' : ''
+        }${status}</span> ${wave} · score ${score}/100</p></div><div class="score">${
+          complete ? '✓ ' : ''
+        }${score}</div></div><div class="slicegrid"><div><h3>Deliver</h3><p>${deliver}</p><h3>Evidence</h3><p>${evidence}</p></div><div><h3>Residual risk</h3><p>${risk}</p><h3>Directive</h3><p>${directiveFor(
+          n
+        )}</p></div></div><div class="next"><strong>${
+          complete ? 'Completion evidence:' : 'Next action:'
+        }</strong> ${next}</div><h3 style="margin-top:1rem">Closeout checklist</h3><ul class="check ${
+          complete ? 'complete' : ''
+        }">${checks.map((x) => `<li>${x}</li>`).join('')}</ul></article>`;
+      }
+      function directiveFor(n) {
+        if (n >= 14 && n <= 19)
+          return 'Workspace target is server-resolved and enforced; app scope alone never grants tenant access.';
+        if (n >= 20)
+          return 'Public marketing begins verified onboarding and never reveals private workspace context.';
+        if (n >= 9)
+          return 'Configure placement and policy; do not copy product records into configuration.';
+        return 'Keep contracts narrow, plugins explicit, and product entry points independent.';
+      }
+      S.forEach((s) => {
+        const [n, t, score, wave] = s,
+          complete = isComplete(n);
+        tabs.insertAdjacentHTML(
+          'beforeend',
+          `<button role="tab" id="tab-${n}" aria-selected="${
+            n === 0
+          }" aria-controls="slice-${n}">${
+            complete ? '✓ ' : ''
+          }${n} ${t}</button>`
+        );
+        panels.insertAdjacentHTML('beforeend', panel(s));
+        rows.insertAdjacentHTML(
+          'beforeend',
+          `<tr class="${
+            complete ? 'complete' : ''
+          }"><td><a href="#slice-${n}" data-slice="${n}">${
+            complete ? '✓ ' : ''
+          }${n} · ${t}</a></td><td><strong>${score}</strong></td><td>${wave}</td><td>${directiveFor(
+            n
+          )}</td></tr>`
+        );
+      });
+      const T = [...document.querySelectorAll('[role=tab]')],
+        P = [...document.querySelectorAll('[role=tabpanel]')];
+      function activate(tab, focus = false) {
+        T.forEach((x, i) => {
+          const on = x === tab;
+          x.setAttribute('aria-selected', on);
+          P[i].hidden = !on;
+        });
+        if (focus) tab.focus();
+        history.replaceState(null, '', `#${tab.getAttribute('aria-controls')}`);
+      }
+      T.forEach((tab, i) => {
+        tab.addEventListener('click', () => activate(tab));
+        tab.addEventListener('keydown', (e) => {
+          let j;
+          if (e.key === 'ArrowRight') j = (i + 1) % T.length;
+          else if (e.key === 'ArrowLeft') j = (i - 1 + T.length) % T.length;
+          else if (e.key === 'Home') j = 0;
+          else if (e.key === 'End') j = T.length - 1;
+          else return;
+          e.preventDefault();
+          activate(T[j], true);
+        });
+      });
+      document.querySelectorAll('[data-slice]').forEach((a) =>
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          activate(T[+a.dataset.slice], true);
+          document.querySelector('#tracker').scrollIntoView();
+        })
+      );
+      const initial = location.hash.match(/^#slice-(\d+)$/);
+      if (initial && T[+initial[1]]) activate(T[+initial[1]]);
+    </script>
+  </body>
+</html>

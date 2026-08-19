@@ -3,6 +3,7 @@ import {
   createFinanceRoutes,
   FINANCE_HOST_CONFIG,
 } from '@optimistic-tanuki/finance-ui';
+import { BUSINESS_SITE_PRESENCE_FEATURE } from '@optimistic-tanuki/business-presence-feature';
 import { bookingFeatureGuard } from './booking-feature.guard';
 import { businessAuthGuard } from './trainer-auth.guard';
 import { clientAuthGuard } from './client-auth.guard';
@@ -44,6 +45,9 @@ const ownerChildren: Route[] = [
       import('@optimistic-tanuki/business-portal-ui').then(
         (m) => m.BusinessSiteEditorPageComponent
       ),
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
   },
   {
     path: 'requests',
@@ -146,6 +150,9 @@ export const appRoutes: Route[] = [
         (m) => m.BusinessLandingPageComponent
       ),
     title: 'Business Site',
+    data: {
+      configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+    },
   },
   {
     path: 'sites/:siteSlug/products/:productId',

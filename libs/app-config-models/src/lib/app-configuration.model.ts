@@ -9,6 +9,7 @@ import {
 import { RouteConfig } from './route-config.model';
 import { ThemeConfig } from './theme-config.model';
 import { FeaturesConfig } from './feature-config.model';
+import { ConfigurablePluginManifest } from './configurable-plugin-manifest.model';
 
 export type BlockRenderContext = 'landing-page' | 'rich-text';
 export type EditorWorkspaceMode = 'guided' | 'studio';
@@ -25,6 +26,7 @@ export interface BlockFieldDefinition {
   rows?: number;
   isOutput?: boolean;
   outputSchema?: unknown;
+  itemFields?: BlockFieldDefinition[];
 }
 
 export interface BlockDefinition {
@@ -307,6 +309,28 @@ export const APP_CONFIG_LANDING_PAGE_BLOCK_DEFINITIONS: Record<
         editor: 'text',
         placeholder: 'Featured resources',
       },
+      {
+        key: 'items',
+        type: 'array',
+        label: 'Grid items',
+        itemFields: [
+          {
+            key: 'title',
+            type: 'string',
+            label: 'Title',
+            defaultValue: 'New item',
+          },
+          {
+            key: 'description',
+            type: 'string',
+            label: 'Description',
+            editor: 'textarea',
+            rows: 3,
+          },
+          { key: 'imageUrl', type: 'url', label: 'Image URL', editor: 'url' },
+          { key: 'link', type: 'url', label: 'Link', editor: 'url' },
+        ],
+      },
     ],
   },
   cta: {
@@ -419,6 +443,7 @@ export interface AppConfigurationSnapshot {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active: boolean;
 }
 
@@ -446,6 +471,10 @@ export interface AppConfigReleaseState {
  */
 export interface AppConfiguration {
   id: string;
+  /** Present on owner-only responses; never required by public renderers. */
+  ownerUserId?: string;
+  ownerProfileId?: string;
+  appScope?: string;
   name: string;
   description?: string;
   domain?: string;
@@ -453,11 +482,25 @@ export interface AppConfiguration {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active: boolean;
   release?: AppConfigReleaseState;
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+/** Trusted ownership context attached by the gateway after authentication. */
+export interface AppConfigRequestContext {
+  ownerUserId: string;
+  ownerProfileId: string;
+  appScope: string;
+}
+
+/** The safe projection used by anonymous public configuration resolution. */
+export type PublishedAppConfiguration = Omit<
+  AppConfiguration,
+  'ownerUserId' | 'ownerProfileId' | 'release'
+> & { publishedVersion: number };
 
 /**
  * DTO for creating a new app configuration
@@ -470,6 +513,7 @@ export interface CreateAppConfigDto {
   routes: RouteConfig[];
   features: FeaturesConfig;
   theme: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active?: boolean;
 }
 
@@ -484,6 +528,7 @@ export interface UpdateAppConfigDto {
   routes?: RouteConfig[];
   features?: FeaturesConfig;
   theme?: ThemeConfig;
+  manifest?: ConfigurablePluginManifest;
   active?: boolean;
 }
 
@@ -966,6 +1011,7 @@ export function appConfigToConfigDocument(
         name: config.name,
         description: config.description,
         domain: config.domain,
+        manifest: config.manifest,
         active: config.active,
         createdAt: config.createdAt,
         updatedAt: config.updatedAt,
@@ -990,6 +1036,7 @@ export function configDocumentToAppConfig(
     active: base.active,
     description: base.description ?? metadata.description,
     domain: base.domain ?? metadata.domain,
+    manifest: base.manifest ?? metadata.manifest,
     createdAt: base.createdAt ?? metadata.createdAt,
     updatedAt: base.updatedAt ?? metadata.updatedAt,
     landingPage: {

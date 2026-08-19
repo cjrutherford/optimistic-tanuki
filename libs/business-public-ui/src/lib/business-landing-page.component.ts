@@ -702,6 +702,13 @@ import { BusinessRichContentRendererComponent } from './business-rich-content-re
           </div>
         </section>
       </div>
+      } @default {
+      <div
+        class="layout-item section-shell unsupported-section"
+        [attr.data-block-type]="section.type"
+      >
+        <p>Unsupported section</p>
+      </div>
       } }
     </ng-template>
 

@@ -1,13 +1,26 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { AppConfigReleaseState } from '@optimistic-tanuki/app-config-models';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  AppConfigReleaseState,
+  ConfigurablePluginManifest,
+} from '@optimistic-tanuki/app-config-models';
 
 @Entity()
+@Index(['ownerProfileId', 'appScope', 'name'], { unique: true })
 export class AppConfigurationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  @Column()
   name: string;
+
+  @Column()
+  ownerUserId: string;
+
+  @Column()
+  ownerProfileId: string;
+
+  @Column()
+  appScope: string;
 
   @Column({ nullable: true })
   description: string;
@@ -29,6 +42,9 @@ export class AppConfigurationEntity {
 
   @Column({ type: 'jsonb', default: '{}' })
   theme: Record<string, unknown>;
+
+  @Column({ type: 'jsonb', nullable: true })
+  manifest?: ConfigurablePluginManifest;
 
   @Column({ default: true })
   active: boolean;

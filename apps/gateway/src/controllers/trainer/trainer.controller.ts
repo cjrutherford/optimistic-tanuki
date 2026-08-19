@@ -43,6 +43,8 @@ import { Public } from '../../decorators/public.decorator';
 import { User, UserDetails } from '../../decorators/user.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { WorkspaceContext } from '../../decorators/workspace-context.decorator';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 type BusinessLeadIntakeDto = {
   siteSlug?: string;
@@ -1169,7 +1171,14 @@ export class TrainerController {
   }
 
   @RequirePermissions('app-config.update')
-  @UseGuards(AuthGuard, PermissionsGuard)
+  @WorkspaceContext({
+    kind: 'business-site',
+    source: 'query',
+    path: 'slug',
+    strict: true,
+    optional: true,
+  })
+  @UseGuards(AuthGuard, WorkspaceContextGuard, PermissionsGuard)
   @Put('site-config')
   async updateSiteConfig(
     @Body()

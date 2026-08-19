@@ -60,6 +60,11 @@ services:
     transport: TCP
     host: store
     port: 3013
+  workspace:
+    name: workspace
+    transport: TCP
+    host: workspace
+    port: 3024
   app_configurator:
     name: app_configurator
     transport: TCP

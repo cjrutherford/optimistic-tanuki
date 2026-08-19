@@ -1,6 +1,11 @@
 # Docker Compose for Gateway E2E Tests
 # Full stack setup for testing gateway with all backend services
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: e2e_redis_gateway
+    command: redis-server --save '' --appendonly no
+
   db:
     image: postgres:latest
     restart: always
@@ -21,14 +26,16 @@ services:
     working_dir: /workspace
     volumes:
       - ..:/workspace
+      - /workspace/node_modules
     environment:
+      CI: 'true'
       POSTGRES_HOST: db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     depends_on:
       db:
         condition: service_healthy
-    command: /bin/sh -c "apk add --no-cache postgresql-client && psql -h db -U postgres -c 'CREATE DATABASE ot_lead_tracker;' || true && pnpm run db:setup"
+    command: /bin/sh -c "apk add --no-cache postgresql-client && corepack enable && PGPASSWORD=postgres psql -h db -U postgres -c 'CREATE DATABASE ot_lead_tracker;' || true && corepack pnpm run db:setup"
     restart: 'no'
 
   lead-tracker:
@@ -47,6 +54,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
 
   authentication:
     container_name: e2e_authentication_gw
@@ -61,6 +70,8 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+      POSTGRES_DB: ot_authentication
+      AUTH_AUTO_VERIFY_EMAILS: 'true'
       JWT_SECRET: e2e-test-jwt-secret
     depends_on:
       db:
@@ -80,7 +91,7 @@ services:
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
-      DATABASE_NAME: postgres
+      DATABASE_NAME: ot_profile
     depends_on:
       db:
         condition: service_healthy
@@ -125,6 +136,44 @@ services:
       db-setup:
         condition: service_completed_successfully
 
+  social:
+    container_name: e2e_social_gw
+    build:
+      context: ..
+      dockerfile: ./apps/social/Dockerfile
+    ports:
+      - '3003:3003'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_social
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
+  workspace:
+    container_name: e2e_workspace_gw
+    build:
+      context: ..
+      dockerfile: ./apps/workspace/Dockerfile
+    ports:
+      - '3024:3024'
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_workspace
+    depends_on:
+      db:
+        condition: service_healthy
+      db-setup:
+        condition: service_completed_successfully
+
   gateway:
     container_name: e2e_gateway
     build:
@@ -147,7 +196,12 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: postgres
+      NODE_ENV: test
       JWT_SECRET: e2e-test-jwt-secret
+      OAUTH_STATE_SECRET: e2e-oauth-state-secret
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ALLOWED_ORIGINS: http://localhost:8084
       AUTHENTICATION_HOST: authentication
       AUTHENTICATION_PORT: 3001
       PROFILE_HOST: profile
@@ -156,6 +210,10 @@ services:
       PERMISSIONS_PORT: 3012
       BLOGGING_HOST: blogging
       BLOGGING_PORT: 3011
+      SOCIAL_HOST: social
+      SOCIAL_PORT: 3003
+      WORKSPACE_HOST: workspace
+      WORKSPACE_PORT: 3024
       LEAD_TRACKER_HOST: lead-tracker
       LEAD_TRACKER_PORT: 3020
     depends_on:
@@ -168,6 +226,12 @@ services:
       permissions:
         condition: service_started
       blogging:
+        condition: service_started
+      social:
+        condition: service_started
+      workspace:
+        condition: service_started
+      redis:
         condition: service_started
       lead-tracker:
         condition: service_started

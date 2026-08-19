@@ -95,6 +95,33 @@ describe('BusinessLandingPageComponent', () => {
     return fixture;
   }
 
+  it('renders a visible fallback for an enabled persisted unsupported section', async () => {
+    const unsupportedType = 'future-section';
+    const fixture = await render({
+      ...DEFAULT_BUSINESS_SITE_CONFIG,
+      landingPage: {
+        ...DEFAULT_BUSINESS_SITE_CONFIG.landingPage,
+        sections: [
+          {
+            id: 'unsupported-section',
+            type: unsupportedType,
+            title: 'Future section',
+            enabled: true,
+            order: 0,
+          },
+        ],
+      },
+    } as unknown as BusinessSiteConfig);
+
+    const fallback = fixture.nativeElement.querySelector(
+      `[data-block-type="${unsupportedType}"]`
+    ) as HTMLElement;
+
+    expect(fallback).toBeTruthy();
+    expect(fallback.textContent).toContain('Unsupported section');
+    expect(fallback.querySelector('a, button')).toBeNull();
+  });
+
   it('requests offers using the hosted tenant slug from the route', async () => {
     const getOffers = jest.fn().mockReturnValue(of(offers));
 

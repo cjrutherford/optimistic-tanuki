@@ -854,7 +854,9 @@ export class AppController {
     return await this.communityService.create(
       data.dto,
       data.userId,
-      data.profileId,
+      data.profileId ||
+        (data.dto as CreateCommunityDto & { ownerProfileId?: string })
+          .ownerProfileId,
       data.appScope
     );
   }
@@ -978,6 +980,16 @@ export class AppController {
   async cancelInvite(@Payload() data: { inviteId: string; userId: string }) {
     await this.communityService.cancelInvite(data.inviteId, data.userId);
     return { success: true };
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_MEMBER })
+  async findCommunityMember(@Payload('id') id: string) {
+    return this.communityService.findMember(id);
+  }
+
+  @MessagePattern({ cmd: CommunityCommands.FIND_INVITE })
+  async findCommunityInvite(@Payload('id') id: string) {
+    return this.communityService.findInvite(id);
   }
 
   @MessagePattern({ cmd: CommunityCommands.GET_PENDING_INVITES })

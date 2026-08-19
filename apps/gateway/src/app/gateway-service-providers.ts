@@ -111,6 +111,11 @@ const gatewayServiceProviderDefinitions: GatewayServiceProviderDefinition[] = [
     configKey: 'store',
   },
   {
+    token: ServiceTokens.WORKSPACE_SERVICE,
+    serviceId: 'workspace',
+    configKey: 'workspace',
+  },
+  {
     token: ServiceTokens.APP_CONFIGURATOR_SERVICE,
     serviceId: 'app-configurator',
     configKey: 'app_configurator',

@@ -78,6 +78,8 @@ describe('appRoutes', () => {
       editorMode: 'studio',
       workspaceKind: 'app-config',
     });
+    expect(guidedRoute?.canDeactivate).toHaveLength(1);
+    expect(studioRoute?.canDeactivate).toHaveLength(1);
   });
 
   it('redirects register to login with the provisioning query flag', () => {

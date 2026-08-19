@@ -1,4 +1,5 @@
 import { oauthCallbackRoutes } from '@optimistic-tanuki/auth-ui';
+import { BUSINESS_SITE_PRESENCE_FEATURE } from '@optimistic-tanuki/business-presence-feature';
 import { appRoutes } from './app.routes';
 import { bookingFeatureGuard } from './booking-feature.guard';
 import { clientAuthGuard } from './client-auth.guard';
@@ -146,6 +147,27 @@ describe('appRoutes', () => {
     );
 
     expect(tenantRoute?.title).toBe('Business Site');
+  });
+
+  it('uses the business presence feature shell for the public site and owner editor', () => {
+    const tenantRoute = appRoutes.find(
+      (route) => route.path === 'sites/:siteSlug'
+    );
+    const ownerRoute = appRoutes.find((route) => route.path === 'owner');
+    const ownerEditorRoute = (ownerRoute?.children ?? []).find(
+      (route) => route.path === 'site'
+    );
+
+    expect(tenantRoute?.data).toEqual(
+      expect.objectContaining({
+        configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+      })
+    );
+    expect(ownerEditorRoute?.data).toEqual(
+      expect.objectContaining({
+        configurableFeatureId: BUSINESS_SITE_PRESENCE_FEATURE.id,
+      })
+    );
   });
 
   it('adds public product detail routes for hosted and root business sites', () => {

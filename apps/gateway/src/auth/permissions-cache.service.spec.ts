@@ -126,6 +126,33 @@ describe('PermissionsCacheService', () => {
       expect(result2).toBeNull();
     });
 
+    it('does not reuse a target permission cache entry across workspace child scope IDs', async () => {
+      await service.set(
+        'profile1',
+        'permission1',
+        'workspace-scope-1',
+        true,
+        'target1'
+      );
+
+      expect(
+        await service.get(
+          'profile1',
+          'permission1',
+          'workspace-scope-1',
+          'target1'
+        )
+      ).toBe(true);
+      expect(
+        await service.get(
+          'profile1',
+          'permission1',
+          'workspace-scope-2',
+          'target1'
+        )
+      ).toBeNull();
+    });
+
     it('should differentiate between different profiles', async () => {
       await service.set('profile1', 'permission1', 'appScope1', true);
       await service.set('profile2', 'permission1', 'appScope1', false);

@@ -3,15 +3,15 @@ import {
   type BlockInstance,
   type ConfigDocument,
 } from '@optimistic-tanuki/app-config-models';
-
+import type {
+  BusinessSiteConfig,
+  LandingSection,
+} from '@optimistic-tanuki/business-data-access';
 import {
   cloneBusinessSiteConfig,
   normalizeLandingSections,
-  type BusinessSiteConfig,
-  type LandingSection,
-} from './business-site.config';
-
-export { BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS } from './business-site-block-definitions';
+} from '../../../business-data-access/src/lib/business-site.config';
+import { supportsBusinessPresenceSection } from './business-presence-runtime';
 
 function landingSectionToBlock(section: LandingSection): BlockInstance {
   const {
@@ -102,7 +102,9 @@ export function configDocumentToBusinessSiteConfig(
     ...base.landingPage,
     layout: document.layout as BusinessSiteConfig['landingPage']['layout'],
     sections: normalizeLandingSections(
-      normalizeBlockOrder(document.blocks).map(blockToLandingSection)
+      normalizeBlockOrder(document.blocks)
+        .filter((block) => supportsBusinessPresenceSection(block.type))
+        .map(blockToLandingSection)
     ),
   };
 
