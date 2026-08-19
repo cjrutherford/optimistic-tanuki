@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { Route, Router } from '@angular/router';
 import { authGuard } from './guards/auth.guard';
+import { appConfigDesignerDeactivateGuard } from './components/app-config-designer/app-config-designer-deactivate.guard';
 import { OPERATOR_WORKSPACES } from './operator-workspaces';
 import {
   emailAuthRoutes,
@@ -216,6 +217,7 @@ export const appRoutes: Route[] = [
           editorMode: 'guided',
           workspaceKind: 'app-config',
         },
+        canDeactivate: [appConfigDesignerDeactivateGuard],
       },
       {
         path: 'app-config/designer/:id',
@@ -227,6 +229,7 @@ export const appRoutes: Route[] = [
           editorMode: 'studio',
           workspaceKind: 'app-config',
         },
+        canDeactivate: [appConfigDesignerDeactivateGuard],
       },
       {
         path: 'store/appointments',

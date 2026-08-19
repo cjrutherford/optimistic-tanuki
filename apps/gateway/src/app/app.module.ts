@@ -102,6 +102,9 @@ import {
   createMcpToolImports,
   createGatewayServiceProviders,
 } from './gateway-service-providers';
+import { WorkspaceResolverService } from './workspace-context/workspace-resolver.service';
+import { WorkspaceClaimController } from '../controllers/workspace/workspace-claim.controller';
+import { WorkspaceContextGuard } from '../guards/workspace-context.guard';
 
 const gatewayServices = [
   'authentication',
@@ -115,6 +118,7 @@ const gatewayServices = [
   'blogging',
   'permissions',
   'store',
+  'workspace',
   'app-configurator',
   'forum',
   'finance',
@@ -391,8 +395,11 @@ const realtimeProviderEntries: Array<ValueComposableEntry<any>> =
     ...controllerEntries.map((entry) => entry.value),
     SecurityTelemetryController,
     PerformanceTelemetryController,
+    WorkspaceClaimController,
   ],
   providers: [
+    WorkspaceResolverService,
+    WorkspaceContextGuard,
     {
       provide: SECURITY_TELEMETRY_SERVICE,
       useFactory: () =>

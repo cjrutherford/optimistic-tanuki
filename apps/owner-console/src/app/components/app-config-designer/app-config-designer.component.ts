@@ -3,6 +3,7 @@ import {
   Input,
   Output,
   EventEmitter,
+  HostListener,
   OnInit,
   ChangeDetectionStrategy,
   signal,
@@ -49,10 +50,8 @@ import {
   updateBlockInWorkspace,
 } from '@optimistic-tanuki/app-config-models';
 import {
-  ConfigurableLandingPageComponent,
-  EditorBlockTreeComponent,
+  ConfiguratorEditorWorkspaceComponent,
   EditorDesignSystemPanelComponent,
-  SchemaBlockInspectorComponent,
 } from '@optimistic-tanuki/configurable-client-ui';
 import { AppConfigService } from '../../services/app-config.service';
 import { SectionSelectorComponent } from './section-editors/section-selector.component';
@@ -75,10 +74,8 @@ import { SectionEditorComponent } from './section-editors/section-editor.compone
     DragDropModule,
     ButtonComponent,
     CardComponent,
-    ConfigurableLandingPageComponent,
-    EditorBlockTreeComponent,
+    ConfiguratorEditorWorkspaceComponent,
     EditorDesignSystemPanelComponent,
-    SchemaBlockInspectorComponent,
     TextInputComponent,
     TextAreaComponent,
     CheckboxComponent,
@@ -158,6 +155,7 @@ export class AppConfigDesignerComponent implements OnInit {
   errorMessage = '';
   releaseNotes = '';
   changeSummary = '';
+  private cleanSnapshot = '';
 
   constructor(
     private appConfigService: AppConfigService,
@@ -167,6 +165,7 @@ export class AppConfigDesignerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.captureCleanSnapshot();
     this.syncThemePreview();
 
     this.route.data.subscribe((data) => {
@@ -269,6 +268,13 @@ export class AppConfigDesignerComponent implements OnInit {
     });
   }
 
+  patchSelectedCollection(
+    fieldKey: string,
+    items: Array<Record<string, unknown>>
+  ): void {
+    this.patchSelectedBlock({ [fieldKey]: items });
+  }
+
   blockFallbackTitle(block: BlockInstance, index: number): string {
     const section = this.config.landingPage.sections[index];
     if (!section) {
@@ -288,6 +294,7 @@ export class AppConfigDesignerComponent implements OnInit {
         this.changeSummary = config.release?.changeSummary || '';
         this.syncWorkspaceFromConfig();
         this.syncThemePreview();
+        this.captureCleanSnapshot();
       },
       error: (err) => {
         this.errorMessage = `Failed to load configuration: ${this.describeError(
@@ -573,6 +580,7 @@ export class AppConfigDesignerComponent implements OnInit {
         .updateConfiguration(this.configId, this.config)
         .subscribe({
           next: (updated) => {
+            this.captureCleanSnapshot();
             this.statusMessage =
               'Configuration saved. Returning to the configuration list…';
             this.saved.emit(updated);
@@ -587,6 +595,7 @@ export class AppConfigDesignerComponent implements OnInit {
     } else {
       this.appConfigService.createConfiguration(this.config as any).subscribe({
         next: (created) => {
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration created. Returning to the configuration list…';
           this.saved.emit(created);
@@ -623,6 +632,7 @@ export class AppConfigDesignerComponent implements OnInit {
       .subscribe({
         next: (published) => {
           this.config = published;
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration published. Returning to the configuration list…';
           this.saved.emit(published);
@@ -655,6 +665,7 @@ export class AppConfigDesignerComponent implements OnInit {
           this.config = rolledBack;
           this.syncWorkspaceFromConfig();
           this.syncThemePreview();
+          this.captureCleanSnapshot();
           this.statusMessage =
             'Configuration rolled back to the selected published revision.';
         },
@@ -667,10 +678,31 @@ export class AppConfigDesignerComponent implements OnInit {
   }
 
   onCancel(): void {
-    if (confirm('Are you sure you want to discard changes?')) {
+    if (this.canDeactivate()) {
       this.cancelled.emit();
       this.router.navigate(['/dashboard/app-config']);
     }
+  }
+
+  isDirty(): boolean {
+    return this.cleanSnapshot !== JSON.stringify(this.config);
+  }
+
+  canDeactivate(): boolean {
+    return (
+      !this.isDirty() ||
+      confirm('You have unsaved changes. Are you sure you want to leave?')
+    );
+  }
+
+  @HostListener('window:beforeunload', ['$event'])
+  onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (!this.isDirty()) {
+      return;
+    }
+
+    event.preventDefault();
+    event.returnValue = '';
   }
 
   releaseStatusLabel(): string {
@@ -705,6 +737,10 @@ export class AppConfigDesignerComponent implements OnInit {
     }
 
     return workspace;
+  }
+
+  private captureCleanSnapshot(): void {
+    this.cleanSnapshot = JSON.stringify(this.config);
   }
 
   private commitWorkspace(
@@ -765,7 +801,7 @@ export class AppConfigDesignerComponent implements OnInit {
     );
   }
 
-  private isMobileViewport(): boolean {
+  isMobileViewport(): boolean {
     return (
       typeof window !== 'undefined' &&
       typeof window.matchMedia === 'function' &&

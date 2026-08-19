@@ -18,13 +18,10 @@ import {
   BusinessAssetLibraryItem,
   BusinessApiService,
   BusinessAuthService,
-  BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
   BusinessSiteConfig,
   BusinessSiteConfigStore,
   BusinessStoreProduct,
-  businessSiteConfigToConfigDocument,
   cloneBusinessSiteConfig,
-  configDocumentToBusinessSiteConfig,
   GridLayoutSlot,
   injectSiteSlugSignal,
   LandingSection,
@@ -34,6 +31,11 @@ import {
   normalizeLandingSections,
   SplitLayoutSlot,
 } from '@optimistic-tanuki/business-data-access';
+import {
+  BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
+  businessSiteConfigToConfigDocument,
+  configDocumentToBusinessSiteConfig,
+} from '@optimistic-tanuki/business-presence-feature';
 import { BusinessLandingPageComponent } from '@optimistic-tanuki/business-public-ui';
 import { ButtonComponent, CardComponent } from '@optimistic-tanuki/common-ui';
 import {

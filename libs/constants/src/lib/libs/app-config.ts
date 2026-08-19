@@ -1,7 +1,7 @@
 export const AppConfigCommands = {
   Create: 'app-config.create',
   Get: 'app-config.get',
-  GetByDomain: 'app-config.getByDomain',
+  GetPublishedByDomain: 'app-config.getPublishedByDomain',
   GetByName: 'app-config.getByName',
   GetAll: 'app-config.getAll',
   Update: 'app-config.update',

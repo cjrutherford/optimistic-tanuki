@@ -10,6 +10,7 @@ import {
   BusinessAuthService,
   BusinessSiteConfigStore,
   DEFAULT_BUSINESS_SITE_CONFIG,
+  type LandingSection,
 } from '@optimistic-tanuki/business-data-access';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
 import { API_BASE_URL } from '@optimistic-tanuki/ui-models';
@@ -632,6 +633,28 @@ describe('BusinessSiteEditorPageComponent', () => {
       host.querySelectorAll('app-schema-collection-panel').length
     ).toBeGreaterThanOrEqual(1);
     expect(host.querySelector('business-landing-page')).toBeTruthy();
+  });
+
+  it('renders the public unsupported-section fallback in the embedded preview', async () => {
+    const { fixture, component } = createComponent();
+    component.draft().landingPage.sections.unshift({
+      id: 'unsupported-preview-section',
+      type: 'future-section',
+      title: 'Future section',
+      enabled: true,
+      order: -1,
+    } as unknown as LandingSection);
+
+    component.refreshDraftSignalFromTemplate();
+    await Promise.resolve();
+    fixture.detectChanges();
+
+    const fallback = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-live-preview] [data-block-type="future-section"]'
+    ) as HTMLElement;
+
+    expect(fallback).toBeTruthy();
+    expect(fallback.textContent).toContain('Unsupported section');
   });
 
   it('pushes unsaved draft changes into the shared preview store and theme service', async () => {

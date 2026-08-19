@@ -1,0 +1,15 @@
+{
+  "name": "@optimistic-tanuki/app-config-data-access",
+  "version": "0.0.1",
+  "private": true,
+  "type": "commonjs",
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "dependencies": {
+    "@angular/common": "^20.0.0",
+    "@angular/core": "^20.0.0",
+    "@optimistic-tanuki/app-config-models": "workspace:*",
+    "rxjs": "~7.8.0",
+    "tslib": "^2.3.0"
+  }
+}

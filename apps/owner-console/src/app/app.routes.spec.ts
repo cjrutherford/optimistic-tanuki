@@ -121,6 +121,8 @@ describe('appRoutes', () => {
       editorMode: 'studio',
       workspaceKind: 'app-config',
     });
+    expect(guidedRoute?.canDeactivate).toHaveLength(1);
+    expect(studioRoute?.canDeactivate).toHaveLength(1);
   });
 
   it('keeps a compatibility alias for the legacy business-site catalog route', () => {

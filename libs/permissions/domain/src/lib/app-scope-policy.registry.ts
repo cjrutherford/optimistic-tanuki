@@ -90,6 +90,13 @@ const clientInterfaceDefaults = (
       description: 'Invite to community',
       appScope: 'client-interface',
     },
+    {
+      name: 'community.manage',
+      resource: 'community',
+      action: 'manage',
+      description: 'Manage community members and governance',
+      appScope: 'client-interface',
+    },
   ];
 
   const roles: PolicyRoleSpec[] = [

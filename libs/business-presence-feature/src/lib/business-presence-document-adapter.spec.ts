@@ -2,11 +2,11 @@ import {
   BUSINESS_LANDING_PAGE_BLOCK_DEFINITIONS,
   businessSiteConfigToConfigDocument,
   configDocumentToBusinessSiteConfig,
-} from './business-site-blocks';
+} from './business-presence-blocks';
 import {
   DEFAULT_BUSINESS_SITE_CONFIG,
   type BusinessSiteConfig,
-} from './business-site.config';
+} from '../../../business-data-access/src/lib/business-site.config';
 
 describe('business-site block adapters', () => {
   it('converts a business-site config into a shared config document', () => {
@@ -120,6 +120,55 @@ describe('business-site block adapters', () => {
         body: 'Book a discovery call.',
         ctaLabel: 'Schedule now',
         ctaHref: '/book',
+      }),
+    ]);
+  });
+
+  it('retains business defaults when document metadata is incomplete', () => {
+    const config = configDocumentToBusinessSiteConfig({
+      layout: 'single',
+      blocks: [],
+      metadata: {
+        businessSite: {
+          brand: { businessName: 'North Star Coaching' },
+        },
+      },
+    });
+
+    expect(config.brand.businessName).toBe('North Star Coaching');
+    expect(config.theme).toEqual(DEFAULT_BUSINESS_SITE_CONFIG.theme);
+    expect(config.landingPage.sections).toEqual([]);
+  });
+
+  it('drops unsupported shared-document blocks before rebuilding business config', () => {
+    const config = configDocumentToBusinessSiteConfig({
+      layout: 'single',
+      blocks: [
+        {
+          id: 'retired-promo',
+          type: 'retired-promo',
+          order: 0,
+          enabled: true,
+          renderContext: 'landing-page',
+          data: { title: 'Retired promotion' },
+        },
+        {
+          id: 'hero',
+          type: 'hero',
+          order: 1,
+          enabled: true,
+          renderContext: 'landing-page',
+          data: { title: 'Current introduction' },
+        },
+      ],
+    });
+
+    expect(config.landingPage.sections).toEqual([
+      expect.objectContaining({
+        id: 'hero',
+        type: 'hero',
+        order: 0,
+        title: 'Current introduction',
       }),
     ]);
   });

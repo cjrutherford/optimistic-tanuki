@@ -15,7 +15,9 @@ import { LeadStatus } from '@optimistic-tanuki/models';
 
 import { AuthGuard } from '../../auth/auth.guard';
 import { PERMISSIONS_KEY } from '../../decorators/permissions.decorator';
+import { WORKSPACE_CONTEXT_KEY } from '../../decorators/workspace-context.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
+import { WorkspaceContextGuard } from '../../guards/workspace-context.guard';
 
 import { TrainerController } from './trainer.controller';
 
@@ -1044,6 +1046,8 @@ describe('TrainerController', () => {
             return true;
           },
         })
+        .overrideGuard(WorkspaceContextGuard)
+        .useValue({ canActivate: () => true })
         .overrideGuard(PermissionsGuard)
         .useValue({ canActivate: () => true });
 
@@ -2132,10 +2136,20 @@ describe('TrainerController', () => {
 
     expect(Reflect.getMetadata(GUARDS_METADATA, updateSiteConfig)).toEqual([
       AuthGuard,
+      WorkspaceContextGuard,
       PermissionsGuard,
     ]);
     expect(Reflect.getMetadata(PERMISSIONS_KEY, updateSiteConfig)).toEqual({
       permissions: ['app-config.update'],
+    });
+    expect(
+      Reflect.getMetadata(WORKSPACE_CONTEXT_KEY, updateSiteConfig)
+    ).toEqual({
+      kind: 'business-site',
+      source: 'query',
+      path: 'slug',
+      strict: true,
+      optional: true,
     });
   });
 

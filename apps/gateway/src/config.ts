@@ -297,6 +297,7 @@ export type Config = {
     permissions: TcpServiceConfig;
     app_configurator: TcpServiceConfig;
     store: TcpServiceConfig;
+    workspace: TcpServiceConfig;
     forum: TcpServiceConfig;
     finance: TcpServiceConfig;
     wellness: TcpServiceConfig;

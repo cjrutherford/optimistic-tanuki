@@ -81,12 +81,14 @@ export class AuthGuard implements CanActivate {
   private async introspectToken(
     token: string,
     userId: string
-  ): Promise<boolean> {
-    const response = await firstValueFrom(
+  ): Promise<{ isValid: boolean; emailVerified: boolean }> {
+    const response = (await firstValueFrom(
       this.authService.send({ cmd: AuthCommands.Validate }, { token, userId })
-    );
-    // Assuming the response contains a field `isValid` to indicate token validity
-    return response && response.isValid;
+    )) as { isValid?: boolean; emailVerified?: boolean };
+    return {
+      isValid: Boolean(response?.isValid),
+      emailVerified: response?.emailVerified === true,
+    };
   }
 
   async parseToken(token: string): Promise<UserDetails> {
@@ -161,15 +163,16 @@ export class AuthGuard implements CanActivate {
     // BUT the original code called introspectToken.
 
     // Let's add strict introspection check for protected routes.
-    const isAuthenticated = await this.introspectToken(
+    const authentication = await this.introspectToken(
       credential,
       request.user.userId
     );
-    if (!isAuthenticated) {
+    if (!authentication.isValid) {
       throw new UnauthorizedException(
         'Unauthorized: Token Invalid (Introspection failed).'
       );
     }
+    request.user.emailVerified = authentication.emailVerified;
 
     await this.assertPrivilegedScopeAccess(
       request.headers['x-ot-appscope'],

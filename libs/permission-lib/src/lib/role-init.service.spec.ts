@@ -60,6 +60,10 @@ describe('RoleInitService', () => {
         name: 'leads-app',
       })
     );
+    expect(permissionsClient.send).toHaveBeenCalledWith(
+      { cmd: PermissionCommands.Create },
+      expect.objectContaining({ name: 'lead.read', targetId: undefined })
+    );
   });
 
   it('mirrors cross-scope assignments through the policy registry', async () => {

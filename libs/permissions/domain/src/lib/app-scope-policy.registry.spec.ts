@@ -26,6 +26,7 @@ describe('AppScopePolicyRegistry', () => {
           'community.update',
           'community.delete',
           'community.invite',
+          'community.manage',
         ],
       },
     ]);

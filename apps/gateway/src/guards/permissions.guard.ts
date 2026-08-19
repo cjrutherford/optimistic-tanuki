@@ -203,6 +203,73 @@ export class PermissionsGuard implements CanActivate {
       }
     }
 
+    const workspaceContext = request.workspaceContext as
+      | {
+          workspace?: { appScope?: string };
+          workspaceScope?: string;
+          strict?: boolean;
+        }
+      | undefined;
+    if (workspaceContext?.workspaceScope) {
+      if (workspaceContext.workspace?.appScope !== appScopeName) {
+        throw new ForbiddenException(
+          'Workspace does not belong to this app scope'
+        );
+      }
+      const workspaceScope = await firstValueFrom(
+        this.permissionsClient.send(
+          { cmd: AppScopeCommands.GetByName },
+          { name: workspaceContext.workspaceScope }
+        )
+      );
+      if (!workspaceScope) {
+        throw new ForbiddenException(
+          'Workspace permission scope was not found'
+        );
+      }
+
+      let allWorkspacePermissionsGranted = true;
+      for (const permission of permissions) {
+        let hasPermission = await this.cacheService.get(
+          appScopePermissionProfileId,
+          permission,
+          workspaceScope.id,
+          targetId
+        );
+        if (hasPermission === null) {
+          hasPermission = await firstValueFrom(
+            this.permissionsClient.send(
+              { cmd: RoleCommands.CheckPermission },
+              {
+                profileId: appScopePermissionProfileId,
+                permission,
+                profileAppScope: workspaceContext.workspaceScope,
+                appScopeId: workspaceScope.id,
+                targetId,
+              }
+            )
+          );
+          await this.cacheService.set(
+            appScopePermissionProfileId,
+            permission,
+            workspaceScope.id,
+            hasPermission,
+            targetId
+          );
+        }
+        if (!hasPermission) {
+          allWorkspacePermissionsGranted = false;
+          break;
+        }
+      }
+      if (allWorkspacePermissionsGranted) {
+        return true;
+      }
+      if (workspaceContext.strict) {
+        throw new ForbiddenException('Workspace permission denied');
+      }
+    }
+
     // If global scope didn't grant access, check app-specific scope
     // User must have a profile matching the app scope
     if (!appScopeProfile) {

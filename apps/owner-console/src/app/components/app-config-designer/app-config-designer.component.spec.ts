@@ -273,6 +273,50 @@ describe('AppConfigDesignerComponent', () => {
     ]);
   });
 
+  it('round-trips a schema collection into the rendered grid draft', () => {
+    const { component } = createComponent('studio');
+    component.config = {
+      ...component.config,
+      landingPage: {
+        ...component.config.landingPage,
+        sections: [
+          {
+            id: 'grid-1',
+            type: 'grid',
+            order: 0,
+            visible: true,
+            title: 'Resources',
+            columns: 3,
+            items: [],
+          },
+        ],
+      },
+    };
+    component['syncWorkspaceFromConfig']();
+    component.selectCanvasBlock('grid-1');
+
+    component.patchSelectedCollection('items', [
+      {
+        title: 'Getting started',
+        description: 'A practical guide',
+        link: '/guide',
+      },
+    ]);
+
+    expect(component.config.landingPage.sections[0]).toEqual(
+      expect.objectContaining({
+        type: 'grid',
+        items: [
+          {
+            title: 'Getting started',
+            description: 'A practical guide',
+            link: '/guide',
+          },
+        ],
+      })
+    );
+  });
+
   it('updates the rendered preview and theme service immediately from draft edits', () => {
     const { fixture, component } = createComponent('studio');
     const host = fixture.nativeElement as HTMLElement;
@@ -288,6 +332,36 @@ describe('AppConfigDesignerComponent', () => {
 
     expect(host.textContent).toContain('Join today');
     expect(setPrimaryColor).toHaveBeenLastCalledWith('#0f766e');
+  });
+
+  it('marks workspace edits as unsaved until a successful draft save', () => {
+    const { component } = createComponent('studio');
+
+    expect(component.isDirty()).toBe(false);
+
+    component.selectCanvasBlock('cta-1');
+    component.patchSelectedBlock({ title: 'Changed draft' });
+
+    expect(component.isDirty()).toBe(true);
+
+    component.onSave();
+
+    expect(component.isDirty()).toBe(false);
+  });
+
+  it('blocks route deactivation and browser unload while a draft is dirty', () => {
+    const { component } = createComponent('studio');
+    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
+    component.selectCanvasBlock('cta-1');
+    component.patchSelectedBlock({ title: 'Changed draft' });
+    const unloadEvent = new Event('beforeunload', { cancelable: true });
+
+    expect(component.canDeactivate()).toBe(false);
+
+    component.onBeforeUnload(unloadEvent as BeforeUnloadEvent);
+
+    expect(confirmSpy).toHaveBeenCalled();
+    expect(unloadEvent.defaultPrevented).toBe(true);
   });
 
   it('publishes a configuration with release notes and returns to the list', () => {
@@ -373,9 +447,12 @@ describe('AppConfigDesignerComponent', () => {
     previewSection.click();
     fixture.detectChanges();
 
-    expect(component.mobileSheetOpen()).toBe(true);
-    expect(component.mobileSheetMode()).toBe('inspector');
-    expect(host.querySelector('[data-mobile-sheet]')).toBeTruthy();
+    expect(host.querySelector('[data-mobile-editor-sheet]')).toBeTruthy();
+    expect(
+      host.querySelector(
+        '[data-mobile-editor-sheet] app-schema-block-inspector'
+      )
+    ).toBeTruthy();
   });
 
   it('drives explicit theme mode and personality through theme-lib', () => {

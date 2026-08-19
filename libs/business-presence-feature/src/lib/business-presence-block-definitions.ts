@@ -3,7 +3,7 @@ import {
   type BlockFieldDefinition,
 } from '@optimistic-tanuki/app-config-models';
 
-import { type LandingSection } from './business-site.types';
+import type { LandingSection } from '@optimistic-tanuki/business-data-access';
 
 const COMMON_SECTION_FIELDS: BlockFieldDefinition[] = [
   {

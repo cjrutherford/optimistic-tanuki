@@ -638,6 +638,14 @@ export class CommunityService {
     await this.inviteRepo.remove(invite);
   }
 
+  async findMember(memberId: string): Promise<CommunityMember | null> {
+    return this.memberRepo.findOne({ where: { id: memberId } });
+  }
+
+  async findInvite(inviteId: string): Promise<CommunityInvite | null> {
+    return this.inviteRepo.findOne({ where: { id: inviteId } });
+  }
+
   async getPendingInvites(
     communityId: string,
     userId: string

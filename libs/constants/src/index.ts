@@ -76,6 +76,7 @@ export {
 
 export { AppConfigCommands } from './lib/libs/app-config';
 export { TrainerConfigCommands } from './lib/libs/trainer';
+export { WorkspaceCommands } from './lib/libs/workspace';
 export { HardwareCommands } from './lib/libs/system-configurator';
 export {
   AppointmentCommands,

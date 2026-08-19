@@ -7,6 +7,11 @@ describe('ConfigurationsController', () => {
   let controller: ConfigurationsController;
   let service: ConfigurationsService;
 
+  const ownerContext = {
+    ownerUserId: 'user-owner-a',
+    ownerProfileId: 'profile-owner-a',
+    appScope: 'business-site',
+  };
   const mockConfig = {
     id: 'config-1',
     name: 'Test App',
@@ -21,7 +26,9 @@ describe('ConfigurationsController', () => {
           useValue: {
             createConfiguration: jest.fn().mockResolvedValue(mockConfig),
             getConfiguration: jest.fn().mockResolvedValue(mockConfig),
-            getConfigurationByDomain: jest.fn().mockResolvedValue(mockConfig),
+            getPublishedConfigurationByDomain: jest
+              .fn()
+              .mockResolvedValue(mockConfig),
             getConfigurationByName: jest.fn().mockResolvedValue(mockConfig),
             getAllConfigurations: jest.fn().mockResolvedValue([mockConfig]),
             updateConfiguration: jest.fn().mockResolvedValue(mockConfig),
@@ -49,60 +56,100 @@ describe('ConfigurationsController', () => {
 
   it('createConfiguration should call service', async () => {
     const dto = { name: 'New' } as any;
-    const result = await controller.createConfiguration(dto);
-    expect(service.createConfiguration).toHaveBeenCalledWith(dto);
+    const result = await controller.createConfiguration({
+      dto,
+      context: ownerContext,
+    });
+    expect(service.createConfiguration).toHaveBeenCalledWith(dto, ownerContext);
     expect(result).toEqual(mockConfig);
   });
 
   it('getConfiguration should call service', async () => {
-    const result = await controller.getConfiguration('1');
-    expect(service.getConfiguration).toHaveBeenCalledWith('1');
+    const result = await controller.getConfiguration({
+      id: '1',
+      context: ownerContext,
+    });
+    expect(service.getConfiguration).toHaveBeenCalledWith('1', ownerContext);
     expect(result).toEqual(mockConfig);
   });
 
-  it('getConfigurationByDomain should call service', async () => {
-    const result = await controller.getConfigurationByDomain({
+  it('getPublishedConfigurationByDomain should call service', async () => {
+    const result = await controller.getPublishedConfigurationByDomain({
       domain: 'test',
     });
-    expect(service.getConfigurationByDomain).toHaveBeenCalledWith('test');
+    expect(service.getPublishedConfigurationByDomain).toHaveBeenCalledWith(
+      'test'
+    );
     expect(result).toEqual(mockConfig);
   });
 
   it('getConfigurationByName should call service', async () => {
-    const result = await controller.getConfigurationByName({ name: 'test' });
-    expect(service.getConfigurationByName).toHaveBeenCalledWith('test');
+    const result = await controller.getConfigurationByName({
+      name: 'test',
+      context: ownerContext,
+    });
+    expect(service.getConfigurationByName).toHaveBeenCalledWith(
+      'test',
+      ownerContext
+    );
     expect(result).toEqual(mockConfig);
   });
 
   it('getAllConfigurations should call service', async () => {
-    const result = await controller.getAllConfigurations({});
-    expect(service.getAllConfigurations).toHaveBeenCalledWith({});
+    const result = await controller.getAllConfigurations({
+      context: ownerContext,
+    });
+    expect(service.getAllConfigurations).toHaveBeenCalledWith(ownerContext, {});
     expect(result).toEqual([mockConfig]);
   });
 
   it('updateConfiguration should call service', async () => {
-    const dto = { id: '1', name: 'Updated' } as any;
-    const result = await controller.updateConfiguration(dto);
-    expect(service.updateConfiguration).toHaveBeenCalledWith('1', dto);
+    const dto = { name: 'Updated' } as any;
+    const result = await controller.updateConfiguration({
+      id: '1',
+      dto,
+      context: ownerContext,
+    });
+    expect(service.updateConfiguration).toHaveBeenCalledWith(
+      '1',
+      dto,
+      ownerContext
+    );
     expect(result).toEqual(mockConfig);
   });
 
   it('deleteConfiguration should call service', async () => {
-    await controller.deleteConfiguration('1');
-    expect(service.deleteConfiguration).toHaveBeenCalledWith('1');
+    await controller.deleteConfiguration({ id: '1', context: ownerContext });
+    expect(service.deleteConfiguration).toHaveBeenCalledWith('1', ownerContext);
   });
 
   it('publishConfiguration should call service', async () => {
-    const dto = { id: '1', releaseNotes: 'Launch ready' } as any;
-    const result = await controller.publishConfiguration(dto);
-    expect(service.publishConfiguration).toHaveBeenCalledWith('1', dto);
+    const dto = { releaseNotes: 'Launch ready' } as any;
+    const result = await controller.publishConfiguration({
+      id: '1',
+      dto,
+      context: ownerContext,
+    });
+    expect(service.publishConfiguration).toHaveBeenCalledWith(
+      '1',
+      dto,
+      ownerContext
+    );
     expect(result).toEqual(mockConfig);
   });
 
   it('rollbackConfiguration should call service', async () => {
-    const dto = { id: '1', version: 1, releaseNotes: 'Rollback' } as any;
-    const result = await controller.rollbackConfiguration(dto);
-    expect(service.rollbackConfiguration).toHaveBeenCalledWith('1', dto);
+    const dto = { version: 1, releaseNotes: 'Rollback' } as any;
+    const result = await controller.rollbackConfiguration({
+      id: '1',
+      dto,
+      context: ownerContext,
+    });
+    expect(service.rollbackConfiguration).toHaveBeenCalledWith(
+      '1',
+      dto,
+      ownerContext
+    );
     expect(result).toEqual(mockConfig);
   });
 });

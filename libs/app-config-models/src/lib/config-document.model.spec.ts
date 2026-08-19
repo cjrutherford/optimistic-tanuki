@@ -14,8 +14,80 @@ import {
   type BlockDefinition,
   type ConfigDocument,
 } from './app-configuration.model';
+import type { ConfigurablePluginManifest } from './configurable-plugin-manifest.model';
+import { isConfigurablePluginManifest } from './configurable-plugin-manifest.model';
 
 describe('config document adapters', () => {
+  it('accepts only the V1 manifest schema', () => {
+    const manifest: ConfigurablePluginManifest = {
+      schemaVersion: 1 as const,
+      surfaceType: 'generic',
+      capabilities: {},
+    };
+
+    if (false) {
+      const unsupportedManifest: ConfigurablePluginManifest = {
+        // @ts-expect-error ConfigurablePluginManifest is limited to schema version 1.
+        schemaVersion: 2,
+        surfaceType: 'generic',
+        capabilities: {},
+      };
+      expect(unsupportedManifest).toBeUndefined();
+    }
+
+    expect(manifest.schemaVersion).toBe(1);
+  });
+
+  it('rejects malformed optional capability fields', () => {
+    expect(
+      isConfigurablePluginManifest({
+        schemaVersion: 1,
+        surfaceType: 'generic',
+        capabilities: {
+          blogging: {
+            enabled: true,
+            placement: 42,
+            permissions: ['blog.read', 9],
+            settings: [],
+            resourceRef: { type: 'blog', id: 7 },
+            deepLink: { path: '/blog', label: false },
+          },
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('carries the versioned plugin manifest through the shared document metadata', () => {
+    const manifest = {
+      schemaVersion: 1 as const,
+      surfaceType: 'business-site' as const,
+      capabilities: {
+        blogging: {
+          enabled: true,
+          placement: 'primary-navigation',
+          permissions: ['blog.read'],
+          settings: { allowComments: true },
+          resourceRef: { type: 'blog', id: 'blog-1' },
+          deepLink: { path: '/blog', label: 'Blog' },
+        },
+      },
+    };
+    const config: AppConfiguration & { manifest: typeof manifest } = {
+      id: 'cfg-manifest',
+      name: 'Manifest App',
+      landingPage: { layout: 'single-column', sections: [] },
+      routes: [],
+      features: {},
+      theme: {},
+      active: true,
+      manifest,
+    };
+
+    expect(appConfigToConfigDocument(config).metadata?.['appConfig']).toEqual(
+      expect.objectContaining({ manifest })
+    );
+  });
+
   it('converts a legacy app config into normalized landing-page blocks', () => {
     const config: AppConfiguration = {
       id: 'cfg-1',
@@ -175,6 +247,33 @@ describe('config document adapters', () => {
         items: [{ title: 'Guide', description: 'Read me' }],
       },
     ]);
+  });
+
+  it('restores the manifest from shared document metadata', () => {
+    const manifest = {
+      schemaVersion: 1 as const,
+      surfaceType: 'community' as const,
+      capabilities: { forum: { enabled: true } },
+    };
+    const config = configDocumentToAppConfig(
+      {
+        layout: 'single-column',
+        blocks: [],
+        metadata: { appConfig: { manifest } },
+      },
+      { id: 'cfg-metadata', name: 'Recovered', active: true }
+    );
+
+    expect(config.manifest).toEqual(manifest);
+  });
+
+  it('keeps legacy configurations manifest-free', () => {
+    const config = configDocumentToAppConfig(
+      { layout: 'single-column', blocks: [] },
+      { id: 'cfg-legacy', name: 'Legacy', active: true }
+    );
+
+    expect(config.manifest).toBeUndefined();
   });
 
   it('normalizes block order by current position', () => {

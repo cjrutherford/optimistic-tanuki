@@ -56,7 +56,11 @@ describe('CommunitiesController#getMyCommunities', () => {
       send: jest.fn().mockReturnValue(of([])),
     } as unknown as jest.Mocked<ClientProxy>;
     const permissionsClient = {} as ClientProxy;
-    controller = new CommunitiesController(socialClient, permissionsClient);
+    controller = new CommunitiesController(
+      socialClient,
+      permissionsClient,
+      {} as ClientProxy
+    );
   });
 
   it('forwards the guard-verified userId when a valid token is present', async () => {

@@ -12,6 +12,7 @@
           type="button"
           class="mode-switch-btn"
           [class.active]="workspaceMode === 'guided'"
+          [attr.aria-pressed]="workspaceMode === 'guided'"
           (click)="setWorkspaceMode('guided')"
         >
           Guided Setup
@@ -20,6 +21,7 @@
           type="button"
           class="mode-switch-btn"
           [class.active]="workspaceMode === 'studio'"
+          [attr.aria-pressed]="workspaceMode === 'studio'"
           (click)="setWorkspaceMode('studio')"
         >
           Studio
@@ -78,6 +80,10 @@
   <div class="designer-status error" role="alert">
     {{ errorMessage }}
   </div>
+  } @if (isDirty()) {
+  <div class="designer-status pending" role="status" data-unsaved-changes>
+    Unsaved changes
+  </div>
   } @if (workspaceMode === 'guided') {
   <div class="guided-rail">
     <div class="guided-rail-copy">
@@ -121,96 +127,20 @@
   </div>
   }
 
-  <div class="shared-workspace" data-shared-canvas>
-    <div class="workspace-canvas">
-      <div class="workspace-surface-header">
-        <div>
-          <h2>Rendered Page Canvas</h2>
-          <p>
-            Guided Setup and Studio both edit the same landing-page document.
-          </p>
-        </div>
-        <div class="workspace-toolbar">
-          <otui-button variant="secondary" (action)="showSectionSelector()">
-            <otui-icon name="add"></otui-icon>
-            Insert Block
-          </otui-button>
-          @if (selectedCanvasBlock(); as selectedBlock) {
-          <otui-button variant="secondary" (action)="moveSelectedBlock(0)">
-            Move First
-          </otui-button>
-          <otui-button variant="secondary" (action)="removeSelectedBlock()">
-            Remove
-          </otui-button>
-          }
-        </div>
-      </div>
-
-      <app-editor-block-tree
-        [blocks]="canvasBlocks()"
-        [selectedBlockId]="selectedBlockId()"
-        [fallbackTitle]="blockFallbackTitle.bind(this)"
-        (blockSelected)="selectCanvasBlock($event)"
-      ></app-editor-block-tree>
-    </div>
-
-    <div class="workspace-inspector">
-      <h3>Inspector</h3>
-      @if (selectedCanvasBlock(); as selectedBlock) {
-      <app-schema-block-inspector
-        [block]="selectedBlock"
-        [definition]="selectedBlockDefinition()"
-        (fieldChanged)="patchSelectedField($event.key, $event.value)"
-      ></app-schema-block-inspector>
-      } @else {
-      <p>Select a block on the canvas to edit it.</p>
-      }
-    </div>
-
-    <div class="workspace-preview" data-rendered-preview>
-      <div class="workspace-surface-header">
-        <div>
-          <h2>Rendered Landing Page</h2>
-          <p>
-            The live landing page stays beside the editor in guided and studio
-            modes.
-          </p>
-        </div>
-      </div>
-      <div class="mobile-preview-actions">
-        <button
-          type="button"
-          class="mobile-preview-btn primary"
-          (click)="
-            openMobileSheet(selectedCanvasBlock() ? 'inspector' : 'structure')
-          "
-        >
-          {{
-            selectedCanvasBlock()
-              ? 'Edit Selected Section'
-              : 'Edit Page Structure'
-          }}
-        </button>
-        @if (selectedCanvasBlock()) {
-        <button
-          type="button"
-          class="mobile-preview-btn"
-          (click)="openMobileSheet('structure')"
-        >
-          Structure
-        </button>
-        }
-      </div>
-      <div class="preview-shell">
-        <app-landing-page
-          [config]="asAppConfiguration()"
-          [embeddedPreview]="true"
-          [selectedSectionId]="selectedBlockId()"
-          (sectionSelected)="selectCanvasBlock($event)"
-        ></app-landing-page>
-      </div>
-    </div>
-  </div>
+  <app-configurator-editor-workspace
+    [config]="asAppConfiguration()"
+    [blocks]="canvasBlocks()"
+    [selectedBlockId]="selectedBlockId()"
+    [blockDefinitions]="blockDefinitions"
+    [fallbackTitle]="blockFallbackTitle.bind(this)"
+    [compactViewport]="isMobileViewport()"
+    (blockSelected)="selectCanvasBlock($event)"
+    (fieldChanged)="patchSelectedField($event.key, $event.value)"
+    (collectionChanged)="patchSelectedCollection($event.key, $event.items)"
+    (insertRequested)="showSectionSelector()"
+    (moveFirstRequested)="moveSelectedBlock(0)"
+    (removeRequested)="removeSelectedBlock()"
+  ></app-configurator-editor-workspace>
 
   @if (releaseHistory().length) {
   <div class="release-history">
@@ -243,88 +173,7 @@
       }
     </div>
   </div>
-  } @if (mobileSheetOpen()) {
-  <button
-    type="button"
-    class="mobile-sheet-backdrop"
-    aria-label="Close editor sheet"
-    (click)="closeMobileSheet()"
-  ></button>
   }
-
-  <div
-    class="mobile-editor-sheet"
-    [class.open]="mobileSheetOpen()"
-    data-mobile-sheet
-  >
-    <div class="mobile-sheet-handle"></div>
-    <div class="mobile-sheet-header">
-      <div>
-        <p class="mobile-sheet-kicker">
-          {{ mobileSheetMode() === 'inspector' ? 'Inspector' : 'Structure' }}
-        </p>
-        <h3>{{ mobileSheetTitle() }}</h3>
-      </div>
-      <button
-        type="button"
-        class="mobile-sheet-close"
-        (click)="closeMobileSheet()"
-      >
-        Close
-      </button>
-    </div>
-
-    <div class="mobile-sheet-tabs">
-      <button
-        type="button"
-        class="mobile-sheet-tab"
-        [class.active]="mobileSheetMode() === 'structure'"
-        (click)="openMobileSheet('structure')"
-      >
-        Structure
-      </button>
-      @if (selectedCanvasBlock()) {
-      <button
-        type="button"
-        class="mobile-sheet-tab"
-        [class.active]="mobileSheetMode() === 'inspector'"
-        (click)="openMobileSheet('inspector')"
-      >
-        Inspector
-      </button>
-      }
-    </div>
-
-    <div class="mobile-sheet-body">
-      @if (mobileSheetMode() === 'structure') {
-      <div class="mobile-sheet-panel">
-        <div class="mobile-sheet-toolbar">
-          <otui-button variant="secondary" (action)="showSectionSelector()">
-            <otui-icon name="add"></otui-icon>
-            Insert Block
-          </otui-button>
-        </div>
-        <app-editor-block-tree
-          [blocks]="canvasBlocks()"
-          [selectedBlockId]="selectedBlockId()"
-          [fallbackTitle]="blockFallbackTitle.bind(this)"
-          (blockSelected)="selectCanvasBlock($event)"
-        ></app-editor-block-tree>
-      </div>
-      } @else {
-      <div class="mobile-sheet-panel">
-        @if (selectedCanvasBlock(); as selectedBlock) {
-        <app-schema-block-inspector
-          [block]="selectedBlock"
-          [definition]="selectedBlockDefinition()"
-          (fieldChanged)="patchSelectedField($event.key, $event.value)"
-        ></app-schema-block-inspector>
-        }
-      </div>
-      }
-    </div>
-  </div>
-
   <otui-tabs
     [tabs]="tabs"
     [activeTab]="selectedTab"

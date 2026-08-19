@@ -15,6 +15,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AppConfigCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import {
   CreateAppConfigDto,
+  AppConfigRequestContext,
   PublishAppConfigDto,
   RollbackAppConfigDto,
   UpdateAppConfigDto,
@@ -22,6 +23,9 @@ import {
 import { AuthGuard } from '../../auth/auth.guard';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
+import { AppScope } from '../../decorators/appscope.decorator';
+import { User, UserDetails } from '../../decorators/user.decorator';
+import { Public } from '../../decorators/public.decorator';
 import { firstValueFrom } from 'rxjs';
 
 @ApiTags('app-config')
@@ -41,21 +45,35 @@ export class AppConfigController {
     description: 'Configuration created successfully',
   })
   @Post()
-  async createConfiguration(@Body() createDto: CreateAppConfigDto) {
+  async createConfiguration(
+    @Body() createDto: CreateAppConfigDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     this.logger.log('Creating app configuration');
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Create }, createDto)
+      this.client.send(
+        { cmd: AppConfigCommands.Create },
+        { dto: createDto, context: this.context(user, appScope) }
+      )
     );
   }
 
-  @UseGuards(AuthGuard)
+  @RequirePermissions('app-config.read')
+  @UseGuards(AuthGuard, PermissionsGuard)
   @ApiOperation({ summary: 'Get all app configurations' })
   @ApiResponse({ status: 200, description: 'Configurations retrieved' })
   @Get()
-  async getAllConfigurations() {
+  async getAllConfigurations(
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     this.logger.log('Getting all app configurations');
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.GetAll }, {})
+      this.client.send(
+        { cmd: AppConfigCommands.GetAll },
+        { context: this.context(user, appScope) }
+      )
     );
   }
 
@@ -63,10 +81,14 @@ export class AppConfigController {
   @ApiResponse({ status: 200, description: 'Configuration found' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })
   @Get('by-domain/:domain')
+  @Public()
   async getConfigurationByDomain(@Param('domain') domain: string) {
     this.logger.log(`Getting app configuration by domain: ${domain}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.GetByDomain }, { domain })
+      this.client.send(
+        { cmd: AppConfigCommands.GetPublishedByDomain },
+        { domain }
+      )
     );
   }
 
@@ -74,10 +96,19 @@ export class AppConfigController {
   @ApiResponse({ status: 200, description: 'Configuration found' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })
   @Get('by-name/:name')
-  async getConfigurationByName(@Param('name') name: string) {
+  @RequirePermissions('app-config.read')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  async getConfigurationByName(
+    @Param('name') name: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Getting app configuration by name: ${name}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.GetByName }, { name })
+      this.client.send(
+        { cmd: AppConfigCommands.GetByName },
+        { name, context: this.context(user, appScope) }
+      )
     );
   }
 
@@ -85,10 +116,19 @@ export class AppConfigController {
   @ApiResponse({ status: 200, description: 'Configuration found' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })
   @Get(':id')
-  async getConfiguration(@Param('id') id: string) {
+  @RequirePermissions('app-config.read')
+  @UseGuards(AuthGuard, PermissionsGuard)
+  async getConfiguration(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Getting app configuration: ${id}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Get }, id)
+      this.client.send(
+        { cmd: AppConfigCommands.Get },
+        { id, context: this.context(user, appScope) }
+      )
     );
   }
 
@@ -100,11 +140,16 @@ export class AppConfigController {
   @Put(':id')
   async updateConfiguration(
     @Param('id') id: string,
-    @Body() updateDto: UpdateAppConfigDto
+    @Body() updateDto: UpdateAppConfigDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
     this.logger.log(`Updating app configuration: ${id}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Update }, { id, ...updateDto })
+      this.client.send(
+        { cmd: AppConfigCommands.Update },
+        { id, dto: updateDto, context: this.context(user, appScope) }
+      )
     );
   }
 
@@ -114,13 +159,15 @@ export class AppConfigController {
   @Post(':id/publish')
   async publishConfiguration(
     @Param('id') id: string,
-    @Body() publishDto: PublishAppConfigDto
+    @Body() publishDto: PublishAppConfigDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
     this.logger.log(`Publishing app configuration: ${id}`);
     return await firstValueFrom(
       this.client.send(
         { cmd: AppConfigCommands.Publish },
-        { id, ...publishDto }
+        { id, dto: publishDto, context: this.context(user, appScope) }
       )
     );
   }
@@ -133,13 +180,15 @@ export class AppConfigController {
   @Post(':id/rollback')
   async rollbackConfiguration(
     @Param('id') id: string,
-    @Body() rollbackDto: RollbackAppConfigDto
+    @Body() rollbackDto: RollbackAppConfigDto,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
   ) {
     this.logger.log(`Rolling back app configuration: ${id}`);
     return await firstValueFrom(
       this.client.send(
         { cmd: AppConfigCommands.Rollback },
-        { id, ...rollbackDto }
+        { id, dto: rollbackDto, context: this.context(user, appScope) }
       )
     );
   }
@@ -150,10 +199,28 @@ export class AppConfigController {
   @ApiResponse({ status: 200, description: 'Configuration deleted' })
   @ApiResponse({ status: 404, description: 'Configuration not found' })
   @Delete(':id')
-  async deleteConfiguration(@Param('id') id: string) {
+  async deleteConfiguration(
+    @Param('id') id: string,
+    @User() user: UserDetails,
+    @AppScope() appScope: string
+  ) {
     this.logger.log(`Deleting app configuration: ${id}`);
     return await firstValueFrom(
-      this.client.send({ cmd: AppConfigCommands.Delete }, id)
+      this.client.send(
+        { cmd: AppConfigCommands.Delete },
+        { id, context: this.context(user, appScope) }
+      )
     );
+  }
+
+  private context(
+    user: UserDetails,
+    appScope: string
+  ): AppConfigRequestContext {
+    return {
+      ownerUserId: user.userId,
+      ownerProfileId: user.profileId,
+      appScope: Array.isArray(appScope) ? appScope[0] : appScope,
+    };
   }
 }

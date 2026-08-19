@@ -1,0 +1,26 @@
+{
+  "name": "configurable-plugin-contracts",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/configurable-plugin-contracts/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:feature"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/configurable-plugin-contracts",
+        "main": "libs/configurable-plugin-contracts/src/index.ts",
+        "tsConfig": "libs/configurable-plugin-contracts/tsconfig.lib.json",
+        "assets": []
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/configurable-plugin-contracts/jest.config.ts"
+      }
+    }
+  }
+}

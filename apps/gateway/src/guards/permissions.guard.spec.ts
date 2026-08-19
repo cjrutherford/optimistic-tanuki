@@ -3,7 +3,7 @@ import { ExecutionContext, ForbiddenException, Logger } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PermissionsGuard } from './permissions.guard';
 import { PermissionsCacheService } from '../auth/permissions-cache.service';
-import { ServiceTokens } from '@optimistic-tanuki/constants';
+import { RoleCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { of, throwError } from 'rxjs';
 import { ICacheProvider } from '../auth/cache/cache-provider.interface';
 import { ClientProxy } from '@nestjs/microservices';
@@ -117,7 +117,9 @@ describe('PermissionsGuard', () => {
   const createMockContext = (
     user: any,
     headers: any = {},
-    extras: Partial<Record<'params' | 'body' | 'query', any>> = {}
+    extras: Partial<
+      Record<'params' | 'body' | 'query' | 'workspaceContext', any>
+    > = {}
   ): ExecutionContext => {
     return {
       switchToHttp: () => ({
@@ -127,6 +129,7 @@ describe('PermissionsGuard', () => {
           params: extras.params || {},
           body: extras.body || {},
           query: extras.query || {},
+          workspaceContext: extras.workspaceContext,
         }),
       }),
       getHandler: jest.fn(),
@@ -228,6 +231,104 @@ describe('PermissionsGuard', () => {
       jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue({
         permissions: ['test.permission'],
       });
+    });
+
+    it('checks the resolved workspace child scope before product-scope fallback', async () => {
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest
+        .spyOn(profileService, 'send')
+        .mockReturnValue(
+          of([
+            {
+              id: 'business-profile',
+              appScope: 'business-site',
+              userId: 'user1',
+            },
+          ])
+        );
+      permissionsClient.send
+        .mockReturnValueOnce(
+          of({ id: 'business-scope', name: 'business-site' })
+        )
+        .mockReturnValueOnce(
+          of({
+            id: 'workspace-scope',
+            name: 'workspace:123e4567-e89b-12d3-a456-426614174000',
+          })
+        )
+        .mockReturnValueOnce(of(true));
+
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'user1', profileId: 'business-profile' },
+            { 'x-ot-appscope': 'business-site' },
+            {
+              workspaceContext: {
+                workspace: { appScope: 'business-site' },
+                workspaceScope:
+                  'workspace:123e4567-e89b-12d3-a456-426614174000',
+              },
+            }
+          )
+        )
+      ).resolves.toBe(true);
+
+      expect(permissionsClient.send).toHaveBeenCalledWith(
+        { cmd: RoleCommands.CheckPermission },
+        expect.objectContaining({
+          appScopeId: 'workspace-scope',
+          profileAppScope: 'workspace:123e4567-e89b-12d3-a456-426614174000',
+        })
+      );
+    });
+
+    it('denies a strict workspace route when its child scope lacks the capability', async () => {
+      const profileService = module.get<ClientProxy>(
+        ServiceTokens.PROFILE_SERVICE
+      );
+      jest
+        .spyOn(profileService, 'send')
+        .mockReturnValue(
+          of([
+            {
+              id: 'business-profile',
+              appScope: 'business-site',
+              userId: 'user1',
+            },
+          ])
+        );
+      permissionsClient.send
+        .mockReturnValueOnce(
+          of({ id: 'business-scope', name: 'business-site' })
+        )
+        .mockReturnValueOnce(
+          of({
+            id: 'workspace-scope',
+            name: 'workspace:123e4567-e89b-12d3-a456-426614174000',
+          })
+        )
+        .mockReturnValueOnce(of(false));
+
+      await expect(
+        guard.canActivate(
+          createMockContext(
+            { userId: 'user1', profileId: 'business-profile' },
+            { 'x-ot-appscope': 'business-site' },
+            {
+              workspaceContext: {
+                workspace: { appScope: 'business-site' },
+                workspaceScope:
+                  'workspace:123e4567-e89b-12d3-a456-426614174000',
+                strict: true,
+              },
+            }
+          )
+        )
+      ).rejects.toThrow('Workspace permission denied');
+      expect(permissionsClient.send).toHaveBeenCalledTimes(3);
     });
 
     it('should grant access when permission check passes', async () => {

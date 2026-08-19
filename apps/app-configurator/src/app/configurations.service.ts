@@ -1,15 +1,23 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppConfigurationEntity } from '../configurations/entities/app-configuration.entity';
 import {
   AppConfigReleaseRevision,
   AppConfigReleaseState,
+  AppConfigRequestContext,
+  PublishedAppConfiguration,
   AppConfigurationSnapshot,
   CreateAppConfigDto,
   PublishAppConfigDto,
   RollbackAppConfigDto,
   UpdateAppConfigDto,
+  isConfigurablePluginManifest,
 } from '@optimistic-tanuki/app-config-models';
 
 @Injectable()
@@ -21,45 +29,76 @@ export class ConfigurationsService {
   ) {}
 
   async createConfiguration(
-    createDto: CreateAppConfigDto
+    createDto: CreateAppConfigDto,
+    context: AppConfigRequestContext
   ): Promise<AppConfigurationEntity> {
+    this.assertManifest(createDto.manifest);
     const entity = new AppConfigurationEntity();
     entity.name = createDto.name;
+    entity.ownerUserId = context.ownerUserId;
+    entity.ownerProfileId = context.ownerProfileId;
+    entity.appScope = context.appScope;
     entity.description = createDto.description || '';
     entity.domain = createDto.domain;
     entity.landingPage = createDto.landingPage as any;
     entity.routes = createDto.routes as any;
     entity.features = createDto.features as any;
     entity.theme = createDto.theme as any;
+    entity.manifest = createDto.manifest;
     entity.active = createDto.active ?? true;
     entity.release = this.createInitialReleaseState(entity);
 
     return await this.configRepository.save(entity);
   }
 
-  async getConfiguration(id: string): Promise<AppConfigurationEntity> {
-    const config = await this.configRepository.findOne({ where: { id } });
+  async getConfiguration(
+    id: string,
+    context: AppConfigRequestContext
+  ): Promise<AppConfigurationEntity> {
+    const config = await this.configRepository.findOne({
+      where: { id, ...context },
+    });
     if (!config) {
       throw new NotFoundException(`Configuration with ID ${id} not found`);
     }
     return config;
   }
 
-  async getConfigurationByDomain(
+  async getPublishedConfigurationByDomain(
     domain: string
-  ): Promise<AppConfigurationEntity> {
-    const config = await this.configRepository.findOne({ where: { domain } });
+  ): Promise<PublishedAppConfiguration> {
+    const config = await this.configRepository.findOne({
+      where: { domain, active: true },
+    });
     if (!config) {
       throw new NotFoundException(
         `Configuration with domain ${domain} not found`
       );
     }
-    return config;
+    const snapshot = config.release?.publishedSnapshot;
+    const publishedVersion = config.release?.publishedVersion;
+    if (!snapshot || !publishedVersion || config.release?.status === 'draft') {
+      throw new NotFoundException(
+        `Published configuration with domain ${domain} not found`
+      );
+    }
+    return {
+      id: config.id,
+      ...snapshot,
+      publishedVersion,
+      createdAt: config.createdAt,
+      updatedAt: config.updatedAt,
+    };
   }
 
-  async getConfigurationByName(name: string): Promise<AppConfigurationEntity> {
+  async getConfigurationByName(
+    name: string,
+    context: AppConfigRequestContext
+  ): Promise<AppConfigurationEntity> {
     this.logger.log(`[Service] Querying configuration by name: "${name}"`);
-    const config = await this.configRepository.findOne({ where: { name } });
+    const config = await this.configRepository.findOne({
+      where: { name, ...context },
+    });
     if (!config) {
       this.logger.warn(`[Service] Configuration with name "${name}" not found`);
       throw new NotFoundException(`Configuration with name ${name} not found`);
@@ -71,6 +110,7 @@ export class ConfigurationsService {
   }
 
   async getAllConfigurations(
+    context: AppConfigRequestContext,
     query: any = {}
   ): Promise<AppConfigurationEntity[]> {
     this.logger.log(
@@ -78,7 +118,7 @@ export class ConfigurationsService {
       query
     );
     const configs = await this.configRepository.find({
-      where: query,
+      where: { ...query, ...context },
       order: { createdAt: 'DESC' },
     });
     this.logger.log(`[Service] Found ${configs.length} configurations`);
@@ -87,12 +127,11 @@ export class ConfigurationsService {
 
   async updateConfiguration(
     id: string,
-    updateDto: UpdateAppConfigDto
+    updateDto: UpdateAppConfigDto,
+    context: AppConfigRequestContext
   ): Promise<AppConfigurationEntity> {
-    const config = await this.configRepository.findOne({ where: { id } });
-    if (!config) {
-      throw new NotFoundException(`Configuration with ID ${id} not found`);
-    }
+    this.assertManifest(updateDto.manifest);
+    const config = await this.getConfiguration(id, context);
 
     Object.assign(config, updateDto);
     config.release = this.buildUpdatedReleaseState(config);
@@ -103,9 +142,10 @@ export class ConfigurationsService {
 
   async publishConfiguration(
     id: string,
-    publishDto: PublishAppConfigDto
+    publishDto: PublishAppConfigDto,
+    context: AppConfigRequestContext
   ): Promise<AppConfigurationEntity> {
-    const config = await this.getConfiguration(id);
+    const config = await this.getConfiguration(id, context);
     const version = (config.release?.publishedVersion ?? 0) + 1;
     const snapshot = this.toSnapshot(config);
     const revision: AppConfigReleaseRevision = {
@@ -134,9 +174,10 @@ export class ConfigurationsService {
 
   async rollbackConfiguration(
     id: string,
-    rollbackDto: RollbackAppConfigDto
+    rollbackDto: RollbackAppConfigDto,
+    context: AppConfigRequestContext
   ): Promise<AppConfigurationEntity> {
-    const config = await this.getConfiguration(id);
+    const config = await this.getConfiguration(id, context);
     const history = config.release?.history ?? [];
     const targetRevision = history.find(
       (revision) => revision.version === rollbackDto.version
@@ -156,6 +197,7 @@ export class ConfigurationsService {
     config.routes = restored.routes as any;
     config.features = restored.features as any;
     config.theme = restored.theme as any;
+    config.manifest = restored.manifest;
     config.active = restored.active;
 
     const version =
@@ -184,8 +226,11 @@ export class ConfigurationsService {
     return await this.configRepository.save(config);
   }
 
-  async deleteConfiguration(id: string): Promise<void> {
-    const result = await this.configRepository.delete(id);
+  async deleteConfiguration(
+    id: string,
+    context: AppConfigRequestContext
+  ): Promise<void> {
+    const result = await this.configRepository.delete({ id, ...context });
     if (result.affected === 0) {
       throw new NotFoundException(`Configuration with ID ${id} not found`);
     }
@@ -242,6 +287,7 @@ export class ConfigurationsService {
       routes: config.routes as any,
       features: config.features as any,
       theme: config.theme as any,
+      manifest: config.manifest,
       active: config.active,
     };
   }
@@ -255,6 +301,14 @@ export class ConfigurationsService {
     }
 
     return JSON.stringify(left) === JSON.stringify(right);
+  }
+
+  private assertManifest(manifest: unknown): void {
+    if (manifest !== undefined && !isConfigurablePluginManifest(manifest)) {
+      throw new BadRequestException(
+        'manifest must use the supported configurable manifest schema'
+      );
+    }
   }
 
   private buildPreviewUrl(domain?: string): string | undefined {

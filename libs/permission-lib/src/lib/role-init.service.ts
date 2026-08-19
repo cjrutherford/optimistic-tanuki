@@ -117,7 +117,11 @@ export class RoleInitService {
         description: p.description || '',
         resource: p.resource,
         action: p.action,
-        targetId: p.targetId ?? appScopeId,
+        // A permission belongs to the role's scope through its assignment.
+        // Do not turn the app-scope id into a resource target: workspace
+        // routes authorize against a concrete resource id and would otherwise
+        // reject every scoped owner action.
+        targetId: p.targetId,
       };
       try {
         const created = await firstValueFrom(
@@ -177,7 +181,7 @@ export class RoleInitService {
             description: permission.description || '',
             resource: permission.resource,
             action: permission.action,
-            targetId: targetScope.id,
+            targetId: permission.targetId,
           };
 
           try {

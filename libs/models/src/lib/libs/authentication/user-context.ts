@@ -3,6 +3,7 @@ export interface UserContext {
   email: string;
   name: string;
   profileId: string;
+  emailVerified?: boolean;
   scopes?: string[];
   roles?: string[];
 }

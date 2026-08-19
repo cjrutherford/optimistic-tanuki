@@ -26,6 +26,9 @@
       "@optimistic-tanuki/app-catalog-contracts": [
         "libs/app-catalog-contracts/src/index.ts"
       ],
+      "@optimistic-tanuki/app-config-data-access": [
+        "libs/app-config-data-access/src/index.ts"
+      ],
       "@optimistic-tanuki/app-config-models": [
         "libs/app-config-models/src/index.ts"
       ],
@@ -53,6 +56,9 @@
       "@optimistic-tanuki/business-portal-ui": [
         "libs/business-portal-ui/src/index.ts"
       ],
+      "@optimistic-tanuki/business-presence-feature": [
+        "libs/business-presence-feature/src/index.ts"
+      ],
       "@optimistic-tanuki/business-public-ui": [
         "libs/business-public-ui/src/index.ts"
       ],
@@ -65,6 +71,9 @@
       "@optimistic-tanuki/compose-lib": ["libs/compose-lib/src/index.ts"],
       "@optimistic-tanuki/configurable-client-ui": [
         "libs/configurable-client-ui/src/index.ts"
+      ],
+      "@optimistic-tanuki/configurable-plugin-contracts": [
+        "libs/configurable-plugin-contracts/src/index.ts"
       ],
       "@optimistic-tanuki/constants": ["libs/constants/src/index.ts"],
       "@optimistic-tanuki/database": ["libs/database/src/index.ts"],

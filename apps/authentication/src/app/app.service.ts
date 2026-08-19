@@ -427,11 +427,19 @@ export class AppService {
       if (!storedToken || storedToken.revoked) {
         throw new RpcException('Token is invalid or revoked');
       }
+      const userId = String((valid as { userId?: string }).userId || '');
+      const user = userId
+        ? await this.userRepo.findOne({ where: { id: userId } })
+        : null;
+      if (!user) {
+        throw new RpcException('Token user was not found');
+      }
       return {
         message: 'Token is valid',
         code: 0,
         data: valid,
         isValid: true,
+        emailVerified: Boolean(user.emailVerifiedAt),
       };
     } catch (e) {
       throw new RpcException('Invalid token');
