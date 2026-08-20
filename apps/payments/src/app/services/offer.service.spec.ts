@@ -6,7 +6,19 @@ import { Offer } from '../../entities/offer.entity';
 import { ClassifiedPayment } from '../../entities/classified-payment.entity';
 import { FindOperator } from 'typeorm';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * A pending offer that has not expired.
+ *
+ * The dates are relative to now rather than fixed calendar dates. They were
+ * hardcoded to 2026-08-09/16, which made the fixture expire on 2026-08-16 and
+ * every test using it start failing on the 17th — the suite was measuring the
+ * date it ran on rather than the behaviour under test. Tests that want an
+ * expired offer should pass `expiresAt` explicitly.
+ */
 function buildOffer(overrides: Partial<Offer> = {}): Offer {
+  const now = Date.now();
   return {
     id: 'offer-1',
     classifiedId: 'classified-1',
@@ -17,10 +29,10 @@ function buildOffer(overrides: Partial<Offer> = {}): Offer {
     message: null,
     counterOfferAmount: null,
     counterMessage: null,
-    expiresAt: new Date('2026-08-16T00:00:00.000Z'),
+    expiresAt: new Date(now + 7 * DAY_MS),
     acceptedPaymentId: null,
-    createdAt: new Date('2026-08-09T00:00:00.000Z'),
-    updatedAt: new Date('2026-08-09T00:00:00.000Z'),
+    createdAt: new Date(now - 1 * DAY_MS),
+    updatedAt: new Date(now - 1 * DAY_MS),
     ...overrides,
   } as Offer;
 }
