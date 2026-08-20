@@ -148,7 +148,7 @@ the interview can complete.
 verbatim. **Done 2026-08-19:**
 
 - `LeadOnboardingProfileRecord.discTranscript` (jsonb, `NOT NULL DEFAULT '[]'`) plus CLI-generated
-  migration `2026082000000-add-onboarding-disc-transcript.ts`. The default backfills existing rows so no
+  migration `1787170007574-add-onboarding-disc-transcript.ts`. The default backfills existing rows so no
   caller has to null-check.
 - **Migration process correction.** The first attempt hand-wrote the migration file and timestamp,
   which `AGENTS.md` §TypeORM migrations explicitly forbids. Regenerated with
@@ -501,59 +501,121 @@ account per test through the API, matching the `authe2e_*` pattern used
 elsewhere in the repo, and seed a topic to satisfy the onboarding gate (which
 is just `leads === 0 && topics === 0`). No credentials, no out-of-band setup.
 
-Result: 19/19 e2e (was 16/19), 152/152 lead-tracker unit tests across 27
-suites, 101/101 leads-app, lint clean across 7 projects.
+Result: 19/19 e2e (was 16/19), 153/153 lead-tracker unit tests across 27
+suites, 101/101 leads-app, 62/62 payments, lint clean across 8 projects.
 
 ### Migration ordering — fixed 2026-08-20
 
-`apps/lead-tracker/` numbers migrations by date (`YYYYMMDD#####`, e.g.
-`2026060300000`) rather than by `Date.now()` epoch milliseconds. It is the only
-service in the monorepo that does. A dated number is numerically larger than a
-present-day epoch one, so every migration `typeorm migration:generate` produced
-sorted _ahead_ of the dated migrations it depended on.
+`apps/lead-tracker/` was the only service in the monorepo numbering migrations by
+date (`YYYYMMDD#####`, e.g. `2026060300000`) instead of by `Date.now()` epoch
+milliseconds. A dated number is numerically far larger than a present-day epoch
+one, so every migration `typeorm migration:generate` produced sorted _ahead_ of
+the dated migrations it depended on.
 
-This was a hard blocker, not a style inconsistency: a fresh database could not
-be built at all. `AddOnboardingDiscTranscript` ran before the migration that
-creates `lead_onboarding_profiles` and failed with
+This was a hard blocker, not a style inconsistency: a fresh database could not be
+built at all. `AddOnboardingDiscTranscript` ran before the migration that creates
+`lead_onboarding_profiles` and failed with
 `relation "lead_onboarding_profiles" does not exist`. Every existing database
 already had the old migrations applied, so nothing failed locally and no test
 caught it — only CI and a new developer build from nothing.
 
-Fix: the eight generated migrations were renumbered onto the dated convention
-(`2026082000000`–`2026082007000`), filenames and class-name suffixes together.
-The seven committed `2026033000000`–`2026060300000` migrations were deliberately
-left alone — renaming those orphans the ledger row in every database that has
-already applied them, whereas the eight were still uncommitted and existed only
-in this working tree.
+**Fix: the whole directory now uses CLI epoch timestamps.** The seven
+hand-numbered migrations were moved to real epoch-ms values for the dates they
+were written (`2026-03-30` … `2026-06-03` → `1774828800000` … `1780444800000`),
+and the eight generated ones kept the timestamps the CLI assigned them.
+Filenames and class-name suffixes moved together. Run order now matches
+authoring order, and **`migration:generate` output can be committed as-is** —
+there is no renaming step, and therefore no deviation from AGENTS.md's "do not
+hand-create migration timestamps".
 
-Verified against a throwaway database: all 20 migrations apply in order, a
-second run is a clean no-op, and `migration:generate` reports no drift against
-the entities.
+An earlier pass had done the reverse, renumbering the eight generated migrations
+_up_ onto the dated convention. That was the right call only under an assumption
+that does not hold here: it existed to avoid orphaning ledger rows in databases
+that had already applied the committed seven. This project has no released or
+publicly hosted clients, so wiping and recreating the database is available, and
+the simpler convention wins.
 
-`scripts/validate-typeorm-migrations.mjs` now rejects any lead-tracker
-migration numbered in the epoch-ms range and prints renaming instructions, so
-the next `migration:generate` cannot reintroduce this silently. That validator
-already runs in CI (`.github/workflows/ci-cd.yml`) and in
-`scripts/setup-and-migrate.sh`, which is why the rule lives there rather than in
-a separate spec.
+`scripts/validate-typeorm-migrations.mjs` now rejects hand-written dates so this
+cannot come back. It detects them by _shape_, not magnitude — as an epoch value
+`2026090100000` is only the year 2034, so an upper bound misses it entirely
+(a canary slipped straight through the first attempt). What gives a hand-written
+date away is leading digits that read as a calendar date: `1787227913318` starts
+`17872279`, a month 22 that no date has. That validator already runs in CI
+(`.github/workflows/ci-cd.yml`) and in `scripts/setup-and-migrate.sh`, which is
+why the rule lives there rather than in a separate spec.
 
-Note this is a documented deviation from "do not hand-create migration
-timestamps" in AGENTS.md: the migrations themselves are all CLI-generated, but
-their timestamps must be renamed afterwards to fit this service's dated
-convention. The validator is what keeps that from being an ad-hoc habit.
+### Rebuilding the database
 
-### Dev database ledger — reconciled 2026-08-20
+The renames leave the `migrations` ledger holding rows under the old names, so
+the database has to be rebuilt rather than migrated forward. That is fine here —
+there are no deployed clients to preserve.
 
-The rename left the dev database holding eight ledger rows under the pre-rename
-names. It was reconciled by tearing the stack down with its volumes removed
-(`docker compose ... down -v`) and rebuilding end to end.
+Note that `pnpm run docker:dev:reset` alone does _not_ clear it: the data lives
+in the named volume `optimistic-tanuki_postgres_data`, and the script only passes
+`--renew-anon-volumes`. Clearing it requires `docker compose ... down -v`
+explicitly, or dropping the individual database.
 
-Note that `pnpm run docker:dev:reset` alone does _not_ do this: the database
-lives in the named volume `optimistic-tanuki_postgres_data`, and the script only
-passes `--renew-anon-volumes`. Clearing it requires `down -v` explicitly.
+Confirmed from empty: all 21 lead-tracker migrations apply in order,
+`migration:generate` finds no drift against the entities, the unique
+`lead_applications` index is present, seeding completed, and the full e2e suite
+passed 19/19 against the rebuilt stack. The schema is reproducible from
+migrations alone.
 
-Confirmed afterwards: all 20 lead-tracker migrations applied in order against an
-empty database, `migration:show` reads 20 applied / 0 pending,
-`migration:generate` finds no drift against the entities, seeding completed, and
-the full e2e suite passed 19/19 against the rebuilt stack. The schema is
-reproducible from migrations alone.
+## Review response (PR #235, 2026-08-20)
+
+### Presence gaps were fabricated on every Google result
+
+The review flagged that `findPresenceGaps` treated `undefined` as a confirmed
+absence for `website` and `phone`, contradicting the contract its own doc comment
+stated. Investigating turned up something larger: the provider queries **Text
+Search**, which never returns `website`, `formatted_phone_number` or full
+`opening_hours` — those are Place _Details_ fields. Mapping their absence via
+`Boolean(...)` and `?? 0` therefore fired on _every_ result, stamping "No website
+listed" (40) and "No phone number listed" (10) on every lead and writing invented
+findings into the pitch text.
+
+Fixed at both ends:
+
+- `findPresenceGaps` counts a field as a gap only when the source reported on it
+  (`isConfirmedlyAbsent`), so `undefined` stays unknown. The two providers now
+  differ correctly: Overpass normalises to `null` because for OSM the tag set is
+  the whole record, while Google passes `undefined` unless Details established
+  otherwise.
+- Added a Place Details lookup for the three missing fields, run only on places
+  that survive keyword and exclusion filtering, and capped by `maxDetailLookups`
+  (default 25) because Details is billed per call. A lookup that fails or is
+  skipped leaves the field unknown and says so in the run warnings.
+- The specs could not have caught this, because they returned `website` on the
+  Text Search result. They now split search and details fields honestly, plus a
+  regression test asserting no gap is claimed for a field Details never
+  established.
+
+### Concurrent application versions
+
+`lead_applications` indexed `(profileId, leadId, version)` without uniqueness,
+and the next version was read before a slow LLM generation call — wide enough for
+a double-click to produce two rows claiming the same version. The index is now
+unique (`1787258467295-unique-application-version`, CLI-generated). Rather than
+hold a transaction across the generation, the service catches the unique
+violation (`23505`), re-reads the version and stores the documents it already
+produced, so a collision costs a retry of the insert rather than of the
+generation. It reports the version actually written and gives up with a
+`ConflictException` after five straight collisions.
+
+### Accessibility
+
+The remove-company chip button was a bare `×` with no accessible name. It now
+carries an `aria-label` naming the company, with the glyph `aria-hidden`.
+
+### An unrelated CI blocker
+
+`apps/payments/.../offer.service.spec.ts` hardcoded `expiresAt: 2026-08-16`, so
+from the 17th the fixture was an already-expired offer and the suite failed on
+any branch. It fails identically on `main`.
+
+The first fix introduced a subtler bug: sampling `Date.now()` inside
+`buildOffer` made it non-deterministic, and several tests call it twice — once
+for the stored offer, once for the expected value — so two calls straddling a
+millisecond stopped being `toEqual`. One run passed by luck before the next
+failed on a different test. The timestamps are now sampled once per run, verified
+across repeated runs rather than a single green.

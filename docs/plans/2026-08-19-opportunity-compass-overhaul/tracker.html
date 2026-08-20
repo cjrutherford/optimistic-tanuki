@@ -1520,7 +1520,7 @@ node tools/scripts/pilot-onboarding-models.mjs</pre>
           </li>
           <li>
             <s>Removing sources changes live topics.</s> <b>Resolved</b> by
-            <code>2026082002000-migrate-topics-off-retired-sources</code>, which
+            <code>1787184267302-migrate-topics-off-retired-sources</code>, which
             moves live topics off the retired providers rather than leaving them
             pointing at deleted code.
           </li>
@@ -1542,14 +1542,18 @@ node tools/scripts/pilot-onboarding-models.mjs</pre>
             <code>relation "lead_onboarding_profiles" does not exist</code>.
             Every existing database already had the old migrations applied, so
             nothing failed locally — only CI and a new developer would have hit
-            it. The eight generated migrations were renumbered onto the
-            service's dated <code>YYYYMMDD#####</code> convention
-            (<code>2026082000000</code>–<code>2026082007000</code>); the seven
-            committed ones were left alone, since renaming those breaks any
-            database that already applied them. A fresh database now applies all
-            20 in order and <code>migration:generate</code> reports no drift
-            against the entities. The rule is enforced by
-            <code>validate-typeorm-migrations.mjs</code> in CI.
+            it. The whole directory now uses CLI epoch timestamps: the seven
+            hand-numbered migrations moved to real epoch-ms values for the dates
+            they were written, and the eight generated ones kept what the CLI
+            assigned them. Run order matches authoring order, and
+            <code>migration:generate</code> output can be committed as-is — no
+            renaming step, and so no deviation from AGENTS.md's "do not
+            hand-create migration timestamps". A fresh database applies all 21
+            in order with no drift against the entities. Enforced by
+            <code>validate-typeorm-migrations.mjs</code> in CI, which detects
+            hand-written dates by <em>shape</em> rather than magnitude — as an
+            epoch value <code>2026090100000</code> is only the year 2034, so an
+            upper bound missed it entirely.
           </li>
           <li>
             <b
@@ -1595,7 +1599,7 @@ node tools/scripts/pilot-onboarding-models.mjs</pre>
     <pre class="verify"><b># unit + lint + build</b>
 pnpm exec nx run-many --target=lint --projects=leads-app,lead-tracker,models,leads-feature-onboarding,gateway,leads-contracts,leads-app-e2e
 pnpm exec nx test leads-app        <span style="opacity:.7"># 101/101</span>
-pnpm exec nx test lead-tracker     <span style="opacity:.7"># 152/152, 27 suites</span>
+pnpm exec nx test lead-tracker     <span style="opacity:.7"># 153/153, 27 suites</span>
 pnpm exec nx run-many --target=build --projects=leads-app,lead-tracker,gateway
 pnpm run ui:heuristics:ci          <span style="opacity:.7"># leads-app pinned at 0</span>
 pnpm run validate:typeorm-migrations  <span style="opacity:.7"># migration naming + ordering</span>
@@ -1728,15 +1732,16 @@ PW_CHANNEL=chrome BASE_URL=http://localhost:8095 \
           <code>relation "lead_onboarding_profiles" does not exist</code>.
           Existing databases already had the old migrations applied, which is
           why nothing failed locally and no test noticed — only CI and a new
-          developer build from nothing. The eight generated migrations were
-          renumbered onto the dated convention; the seven committed ones were
-          deliberately left alone. Verified by migrating a throwaway database:
-          all 20 apply in order, a second run is a clean no-op, and
+          developer build from nothing. The whole directory was moved onto CLI
+          epoch timestamps: the seven hand-numbered migrations became real
+          epoch-ms values for the dates they were written, and the eight
+          generated ones kept what the CLI gave them. Verified from an empty
+          database: all 21 apply in order, a second run is a clean no-op, and
           <code>migration:generate</code> finds no drift.
           <code>scripts/validate-typeorm-migrations.mjs</code> — which already
-          runs in CI and in <code>setup-and-migrate.sh</code> — now rejects any
-          lead-tracker migration numbered in the epoch-ms range and prints
-          renaming instructions.
+          runs in CI and in <code>setup-and-migrate.sh</code> — now rejects
+          hand-written dates, detecting them by the shape of their leading
+          digits rather than by magnitude.
         </li>
         <li>
           <b>A stale assertion, not a bug.</b> The
@@ -1747,18 +1752,83 @@ PW_CHANNEL=chrome BASE_URL=http://localhost:8095 \
         </li>
       </ul>
       <p class="note" style="margin-top: 14px">
-        Result: <b>19/19 e2e</b> (was 16/19), <b>152/152</b> lead-tracker unit
-        tests across 27 suites, <b>101/101</b> leads-app, lint clean across 7
-        projects, and <code>validate:typeorm-migrations</code> passing.
+        Result: <b>19/19 e2e</b> (was 16/19), <b>153/153</b> lead-tracker unit
+        tests across 27 suites, <b>101/101</b> leads-app, <b>62/62</b> payments,
+        lint clean across 8 projects, and
+        <code>validate:typeorm-migrations</code> passing.
       </p>
       <p class="note" style="margin-top: 10px">
         <b>Confirmed from nothing.</b> The stack was torn down with its volumes
-        removed and rebuilt end to end. All 20 lead-tracker migrations applied
+        removed and rebuilt end to end. All 21 lead-tracker migrations applied
         in order against an empty database, seeding completed, and the full e2e
         suite passed <b>19/19</b> against it — so the schema is reproducible
         from migrations alone, which is what CI and a new developer actually do.
-        The dev database ledger now reads 20 applied / 0 pending with no drift
+        The dev database ledger now reads 21 applied / 0 pending with no drift
         against the entities.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ REVIEW RESPONSE ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Review response</h2>
+      <p class="kicker">PR #235 · 2026-08-20</p>
+    </div>
+
+    <div class="panel">
+      <ul>
+        <li>
+          <b>Presence gaps were fabricated on every Google result.</b> The
+          review flagged that <code>findPresenceGaps</code> treated
+          <code>undefined</code> as a confirmed absence, contradicting the
+          contract its own doc comment stated. The cause ran deeper: the
+          provider queries <b>Text Search</b>, which never returns
+          <code>website</code>, <code>formatted_phone_number</code> or full
+          <code>opening_hours</code> — those are Place <em>Details</em> fields.
+          So the mapping did not occasionally collapse an unknown; it fired on
+          <em>every</em> result, stamping "No website listed" (40) and "No phone
+          number listed" (10) on every lead and writing invented findings into
+          the pitch text. Fixed by making the data real rather than only the
+          mapping cautious: a bounded Place Details lookup
+          (<code>maxDetailLookups</code>, default 25, since Details is billed
+          per call) now establishes those fields, and anything it cannot answer
+          stays unknown. The specs returned <code>website</code> on the search
+          result and so could never have caught this; they now split search and
+          details fields honestly.
+        </li>
+        <li>
+          <b>Concurrent generates could share a version.</b>
+          <code>lead_applications</code> indexed
+          <code>(profileId, leadId, version)</code> without uniqueness, and the
+          next version was read before a slow LLM call — wide enough for a
+          double-click. The index is now unique. Rather than hold a transaction
+          across the generation, the service catches the unique violation
+          (<code>23505</code>), re-reads the version and stores the documents it
+          already produced, so a collision costs a retry of the insert rather
+          than of the generation.
+        </li>
+        <li>
+          <b>An unlabelled control.</b> The remove-company chip button was a
+          bare <code>×</code>; it now carries an <code>aria-label</code> naming
+          the company, with the glyph <code>aria-hidden</code>.
+        </li>
+        <li>
+          <b>CI was red for an unrelated reason.</b>
+          <code>payments/offer.service.spec.ts</code> hardcoded
+          <code>expiresAt: 2026-08-16</code>, so from the 17th the fixture was
+          an already-expired offer and the suite failed on any branch — it fails
+          identically on <code>main</code>. The first fix then introduced a
+          subtler bug: sampling <code>Date.now()</code> inside the builder made
+          it non-deterministic, and several tests call it twice, so two calls
+          straddling a millisecond stopped being <code>toEqual</code>. One run
+          passed by luck before the next failed elsewhere. Sampled once per run,
+          and verified across repeated runs rather than a single green.
+        </li>
+      </ul>
+      <p class="note" style="margin-top: 14px">
+        CI on PR #235: <b>58 pass, 0 fail</b> (7 skipped are staging-deploy
+        steps that only run on <code>main</code>).
       </p>
     </div>
   </section>
