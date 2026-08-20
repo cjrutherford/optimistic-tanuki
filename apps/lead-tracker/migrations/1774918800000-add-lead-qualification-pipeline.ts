@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddLeadQualificationPipeline2026033101000
+export class AddLeadQualificationPipeline1774918800000
   implements MigrationInterface
 {
-  name = 'AddLeadQualificationPipeline2026033101000';
+  name = 'AddLeadQualificationPipeline1774918800000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

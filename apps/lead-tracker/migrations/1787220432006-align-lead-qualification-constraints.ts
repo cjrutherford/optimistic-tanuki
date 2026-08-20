@@ -16,10 +16,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *    The entity now declares CASCADE, so this migration preserves behaviour.
  *  - `lead_onboarding_profiles.appScope` becomes NOT NULL, matching the entity.
  */
-export class AlignLeadQualificationConstraints2026082003000
+export class AlignLeadQualificationConstraints1787220432006
   implements MigrationInterface
 {
-  name = 'AlignLeadQualificationConstraints2026082003000';
+  name = 'AlignLeadQualificationConstraints1787220432006';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

@@ -8,8 +8,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * matters as much as what it kept.
  */
 
-export class AddLeadApplications2026082007000 implements MigrationInterface {
-  name = 'AddLeadApplications2026082007000';
+export class AddLeadApplications1787227913318 implements MigrationInterface {
+  name = 'AddLeadApplications1787227913318';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

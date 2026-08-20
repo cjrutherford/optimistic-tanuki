@@ -10,10 +10,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * which is a behaviour change nothing in this workstream asked for. That drift
  * needs its own deliberate migration.
  */
-export class AddOnboardingDiscTranscript2026082000000
+export class AddOnboardingDiscTranscript1787170007574
   implements MigrationInterface
 {
-  name = 'AddOnboardingDiscTranscript2026082000000';
+  name = 'AddOnboardingDiscTranscript1787170007574';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

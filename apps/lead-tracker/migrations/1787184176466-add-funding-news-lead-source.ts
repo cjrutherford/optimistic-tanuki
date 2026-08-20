@@ -14,10 +14,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * after review — the FK rewrite silently changes `leadId` from
  * ON DELETE CASCADE to ON DELETE NO ACTION. That drift needs its own migration.
  */
-export class AddFundingNewsLeadSource2026082001000
+export class AddFundingNewsLeadSource1787184176466
   implements MigrationInterface
 {
-  name = 'AddFundingNewsLeadSource2026082001000';
+  name = 'AddFundingNewsLeadSource1787184176466';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

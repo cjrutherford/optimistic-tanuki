@@ -70,8 +70,30 @@ describe('GoogleMapsDiscoveryProvider', () => {
                 name: 'Bright Smile Dental',
                 formatted_address: '123 Main St, Savannah, GA',
                 business_status: 'OPERATIONAL',
+                // A real gap, so this stays about keyword matching rather than
+                // quietly depending on gap scoring to keep the candidate.
+                rating: 3.2,
+                user_ratings_total: 3,
               },
             ],
+          }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: {
+          get: (name: string) =>
+            name.toLowerCase() === 'content-type'
+              ? 'application/json; charset=utf-8'
+              : null,
+        },
+        text: async () =>
+          JSON.stringify({
+            result: {
+              website: 'https://brightsmile.example',
+              formatted_phone_number: '+1 912-555-0111',
+              opening_hours: { open_now: true },
+            },
           }),
       }) as typeof fetch;
 
@@ -197,34 +219,39 @@ describe('GoogleMapsDiscoveryProvider', () => {
       }),
     } as unknown as ConfigService);
 
-  it('names the presence gaps that make a business worth pitching to', async () => {
-    global.fetch = jest
+  // Text Search carries ratings and review counts but never website, phone or
+  // opening hours; those come from a follow-up Place Details request. The
+  // fixtures below keep that split honest, because a fixture that returns
+  // website on the search result cannot catch the bug where absence of the
+  // field is mistaken for absence of a website.
+  const geocodeThenSearch = (place: Record<string, unknown>) =>
+    jest
       .fn()
       .mockResolvedValueOnce(
         jsonOnce({
           results: [{ geometry: { location: { lat: 32.08, lng: -81.09 } } }],
         })
       )
-      .mockResolvedValueOnce(
-        jsonOnce({
-          results: [
-            {
-              place_id: 'place-gap',
-              name: 'No Web Dental',
-              formatted_address: '1 Main St, Savannah, GA',
-              business_status: 'OPERATIONAL',
-              user_ratings_total: 2,
-              rating: 3.1,
-            },
-          ],
-        })
-      ) as typeof fetch;
+      .mockResolvedValueOnce(jsonOnce({ results: [place] }));
+
+  it('names the presence gaps that make a business worth pitching to', async () => {
+    global.fetch = geocodeThenSearch({
+      place_id: 'place-gap',
+      name: 'No Web Dental',
+      formatted_address: '1 Main St, Savannah, GA',
+      business_status: 'OPERATIONAL',
+      user_ratings_total: 2,
+      rating: 3.1,
+      // Details answers with nothing, which is a real finding: this business
+      // genuinely has no website, phone or published hours.
+    }).mockResolvedValueOnce(jsonOnce({ result: {} })) as typeof fetch;
 
     const result = await buildProvider().search(gapTopic);
 
     expect(result.candidates).toHaveLength(1);
     const lead = result.candidates[0].lead;
     expect(lead.notes).toContain('No website listed');
+    expect(lead.notes).toContain('No phone number listed');
     expect(lead.notes).toContain('Only 2 review(s)');
     expect(lead.notes).toContain('Rating of 3.1');
     // The lead name leads with the most valuable gap so it reads as a pitch.
@@ -232,35 +259,61 @@ describe('GoogleMapsDiscoveryProvider', () => {
   });
 
   it('skips a business whose online presence has no gaps', async () => {
-    global.fetch = jest
-      .fn()
-      .mockResolvedValueOnce(
-        jsonOnce({
-          results: [{ geometry: { location: { lat: 32.08, lng: -81.09 } } }],
-        })
-      )
-      .mockResolvedValueOnce(
-        jsonOnce({
-          results: [
-            {
-              place_id: 'place-complete',
-              name: 'Fully Booked Dental',
-              formatted_address: '2 Main St, Savannah, GA',
-              business_status: 'OPERATIONAL',
-              website: 'https://fullybookeddental.example',
-              rating: 4.8,
-              user_ratings_total: 240,
-              opening_hours: { open_now: true },
-              formatted_phone_number: '+1 912-555-0100',
-            },
-          ],
-        })
-      ) as typeof fetch;
+    global.fetch = geocodeThenSearch({
+      place_id: 'place-complete',
+      name: 'Fully Booked Dental',
+      formatted_address: '2 Main St, Savannah, GA',
+      business_status: 'OPERATIONAL',
+      rating: 4.8,
+      user_ratings_total: 240,
+    }).mockResolvedValueOnce(
+      jsonOnce({
+        result: {
+          website: 'https://fullybookeddental.example',
+          formatted_phone_number: '+1 912-555-0100',
+          opening_hours: { open_now: true },
+        },
+      })
+    ) as typeof fetch;
 
     const result = await buildProvider().search(gapTopic);
 
     // A business with a complete presence is not a lead for this kind of work.
     expect(result.candidates).toHaveLength(0);
     expect(result.warnings.join(' ')).toContain('no gaps');
+  });
+
+  it('does not invent a gap for a field the Details lookup never established', async () => {
+    // The regression this guards: website, phone and opening hours are absent
+    // from every Text Search result, and treating that absence as a finding put
+    // a phantom "No website listed" — 40 points — on every business returned.
+    global.fetch = geocodeThenSearch({
+      place_id: 'place-unknown',
+      name: 'Unknown Presence Dental',
+      formatted_address: '3 Main St, Savannah, GA',
+      business_status: 'OPERATIONAL',
+      rating: 3.2,
+      user_ratings_total: 4,
+    }).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      headers: { get: () => 'application/json' },
+      text: async () => '{}',
+    }) as typeof fetch;
+
+    const result = await buildProvider().search(gapTopic);
+
+    expect(result.candidates).toHaveLength(1);
+    const notes = result.candidates[0].lead.notes || '';
+    // Scored on what is actually known...
+    expect(notes).toContain('Only 4 review(s)');
+    expect(notes).toContain('Rating of 3.2');
+    // ...and silent about what is not.
+    expect(notes).not.toContain('No website listed');
+    expect(notes).not.toContain('No phone number listed');
+    expect(notes).not.toContain('No opening hours published');
+    expect(result.warnings.join(' ')).toContain(
+      'Could not check website or phone details for 1 business(es)'
+    );
   });
 });

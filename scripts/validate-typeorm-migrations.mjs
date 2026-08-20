@@ -28,34 +28,41 @@ const migrationDirectories = [
 ];
 
 /**
- * Services that number migrations by date (`YYYYMMDD#####`) instead of by
- * `Date.now()` epoch milliseconds.
+ * Migration timestamps must be real `Date.now()` epoch milliseconds, which is
+ * what `typeorm migration:generate` produces. Numbers shaped like a date
+ * (`20260603_____`) are numerically far larger than a present-day epoch value,
+ * so they sort after everything the CLI will generate for years — which quietly
+ * inverts run order and can make the schema unbuildable from scratch.
  *
- * The two styles are not interchangeable. A dated number (~2.0e12) is
- * numerically larger than a present-day epoch one (~1.79e12), so a migration
- * straight out of `typeorm migration:generate` sorts *before* every dated
- * migration no matter when it was written — and TypeORM runs migrations in
- * timestamp order. On a fresh database the generated migration then executes
- * ahead of the ones it depends on.
- *
- * This fails nowhere on an existing database, because the old migrations are
- * already applied there. Only CI and a new developer build the schema from
- * nothing, which is exactly what this check protects.
- *
- * `legacyEpochCeiling` is the last migration predating the dated convention;
- * `datedFloor` is the first dated one. Anything landing between the two is a
- * generated timestamp that has not been renamed.
+ * `lead-tracker` had seven such migrations. They are now real epoch values for
+ * the dates they were written on, so every directory here uses one convention
+ * and CLI output can be committed as-is.
  */
-const datedConventionDirectories = {
-  'apps/lead-tracker/migrations': {
-    legacyEpochCeiling: '1774825000000',
-    datedFloor: '2026033000000',
-  },
+/**
+ * A hand-written date is recognised by its shape, not its magnitude: as an
+ * epoch value `2026090100000` is only the year 2034, so a plain upper bound
+ * does not catch it. What gives it away is that its leading eight digits read
+ * as a calendar date. Real epoch timestamps do not — `1787227913318` starts
+ * `17872279`, a month 22 that no date has.
+ */
+const looksLikeHandWrittenDate = (timestamp) => {
+  const [, year, month, day] =
+    /^(\d{4})(\d{2})(\d{2})\d{5}$/.exec(timestamp) || [];
+  if (!year) {
+    return false;
+  }
+  return (
+    Number(year) >= 2000 &&
+    Number(year) <= 2099 &&
+    Number(month) >= 1 &&
+    Number(month) <= 12 &&
+    Number(day) >= 1 &&
+    Number(day) <= 31
+  );
 };
 
 const errors = [];
 for (const migrationDirectory of migrationDirectories) {
-  const datedConvention = datedConventionDirectories[migrationDirectory];
   const absoluteDirectory = join(workspaceRoot, migrationDirectory);
   const timestamps = new Map();
   let previousTimestamp = '';
@@ -98,20 +105,15 @@ for (const migrationDirectory of migrationDirectories) {
       );
       continue;
     }
-    if (
-      datedConvention &&
-      timestamp > datedConvention.legacyEpochCeiling &&
-      timestamp < datedConvention.datedFloor
-    ) {
+    if (looksLikeHandWrittenDate(timestamp)) {
       errors.push(
         `${relative(
           workspaceRoot,
           filePath
-        )}: timestamp ${timestamp} is a generated epoch-ms value, which sorts ` +
-          `before the dated migrations in this directory and makes a fresh ` +
-          `database unbuildable. Rename the file and the class-name suffix to ` +
-          `the YYYYMMDD##### convention, using a number greater than every ` +
-          `existing migration here.`
+        )}: timestamp ${timestamp} is not a plausible epoch-ms value — it looks ` +
+          `like a hand-written date. Use the timestamp ` +
+          `\`typeorm migration:generate\` assigns, so run order matches the ` +
+          `order migrations were written in.`
       );
       continue;
     }

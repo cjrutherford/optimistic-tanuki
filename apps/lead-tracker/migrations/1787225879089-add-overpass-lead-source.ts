@@ -6,8 +6,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * deployment with no Places API key.
  */
 
-export class AddOverpassLeadSource2026082005000 implements MigrationInterface {
-  name = 'AddOverpassLeadSource2026082005000';
+export class AddOverpassLeadSource1787225879089 implements MigrationInterface {
+  name = 'AddOverpassLeadSource1787225879089';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

@@ -23,10 +23,18 @@ export type BusinessPresence = {
   reviewCount?: number | null;
 };
 
+/**
+ * A field counts as a confirmed gap only when the source actually reported on
+ * it and reported nothing. `undefined` means the source never covered the
+ * field, which is not evidence of anything.
+ */
+const isConfirmedlyAbsent = (value: string | null | undefined): boolean =>
+  value !== undefined && !value;
+
 export const findPresenceGaps = (presence: BusinessPresence): PresenceGap[] => {
   const gaps: PresenceGap[] = [];
 
-  if (!presence.website) {
+  if (isConfirmedlyAbsent(presence.website)) {
     gaps.push({ code: 'no-website', label: 'No website listed', weight: 40 });
   }
 
@@ -64,7 +72,7 @@ export const findPresenceGaps = (presence: BusinessPresence): PresenceGap[] => {
     });
   }
 
-  if (!presence.phone) {
+  if (isConfirmedlyAbsent(presence.phone)) {
     gaps.push({
       code: 'no-phone',
       label: 'No phone number listed',

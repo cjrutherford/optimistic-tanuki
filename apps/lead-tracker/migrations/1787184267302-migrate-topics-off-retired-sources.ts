@@ -19,10 +19,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * — that information is gone once removed — so it is documented rather than
  * faked, and the retired ids remain valid enum members either way.
  */
-export class MigrateTopicsOffRetiredSources2026082002000
+export class MigrateTopicsOffRetiredSources1787184267302
   implements MigrationInterface
 {
-  name = 'MigrateTopicsOffRetiredSources2026082002000';
+  name = 'MigrateTopicsOffRetiredSources1787184267302';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // crunchbase -> funding-news

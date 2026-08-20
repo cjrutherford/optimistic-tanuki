@@ -7,8 +7,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * database agree (see AlignLeadQualificationConstraints).
  */
 
-export class AddNewDiscoverySources2026082004000 implements MigrationInterface {
-  name = 'AddNewDiscoverySources2026082004000';
+export class AddNewDiscoverySources1787221623538 implements MigrationInterface {
+  name = 'AddNewDiscoverySources1787221623538';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

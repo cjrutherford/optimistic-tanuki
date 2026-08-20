@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddOnboardingTopicMetadata2026033100000
+export class AddOnboardingTopicMetadata1774915200000
   implements MigrationInterface
 {
-  name = 'AddOnboardingTopicMetadata2026033100000';
+  name = 'AddOnboardingTopicMetadata1774915200000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

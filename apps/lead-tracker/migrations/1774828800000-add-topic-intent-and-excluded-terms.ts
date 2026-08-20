@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddTopicIntentAndExcludedTerms2026033000000
+export class AddTopicIntentAndExcludedTerms1774828800000
   implements MigrationInterface
 {
-  name = 'AddTopicIntentAndExcludedTerms2026033000000';
+  name = 'AddTopicIntentAndExcludedTerms1774828800000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`

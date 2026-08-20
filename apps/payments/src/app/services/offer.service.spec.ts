@@ -9,16 +9,25 @@ import { FindOperator } from 'typeorm';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
- * A pending offer that has not expired.
+ * Fixture timestamps, fixed once per run rather than per call.
  *
- * The dates are relative to now rather than fixed calendar dates. They were
- * hardcoded to 2026-08-09/16, which made the fixture expire on 2026-08-16 and
- * every test using it start failing on the 17th — the suite was measuring the
- * date it ran on rather than the behaviour under test. Tests that want an
- * expired offer should pass `expiresAt` explicitly.
+ * They are relative to the run instead of hardcoded calendar dates: the
+ * original 2026-08-09/16 pair meant the fixture expired on 2026-08-16 and every
+ * test using it began failing on the 17th, measuring the date the suite ran on
+ * rather than the behaviour under test.
+ *
+ * Sampling `Date.now()` inside `buildOffer` would swap that for a subtler bug —
+ * several tests call it twice, once for the stored offer and once for the
+ * expected value, and two calls straddling a millisecond boundary produce
+ * objects that are no longer `toEqual`. Sampling once keeps the fixture both
+ * unexpired and comparable.
  */
+const FIXTURE_NOW = Date.now();
+const OFFER_CREATED_AT = new Date(FIXTURE_NOW - 1 * DAY_MS);
+const OFFER_EXPIRES_AT = new Date(FIXTURE_NOW + 7 * DAY_MS);
+
+/** A pending offer that has not expired. Pass `expiresAt` to get one that has. */
 function buildOffer(overrides: Partial<Offer> = {}): Offer {
-  const now = Date.now();
   return {
     id: 'offer-1',
     classifiedId: 'classified-1',
@@ -29,10 +38,10 @@ function buildOffer(overrides: Partial<Offer> = {}): Offer {
     message: null,
     counterOfferAmount: null,
     counterMessage: null,
-    expiresAt: new Date(now + 7 * DAY_MS),
+    expiresAt: OFFER_EXPIRES_AT,
     acceptedPaymentId: null,
-    createdAt: new Date(now - 1 * DAY_MS),
-    updatedAt: new Date(now - 1 * DAY_MS),
+    createdAt: OFFER_CREATED_AT,
+    updatedAt: OFFER_CREATED_AT,
     ...overrides,
   } as Offer;
 }

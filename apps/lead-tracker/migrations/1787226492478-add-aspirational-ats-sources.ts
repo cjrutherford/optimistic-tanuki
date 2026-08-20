@@ -6,10 +6,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * board tokens they watch.
  */
 
-export class AddAspirationalAtsSources2026082006000
+export class AddAspirationalAtsSources1787226492478
   implements MigrationInterface
 {
-  name = 'AddAspirationalAtsSources2026082006000';
+  name = 'AddAspirationalAtsSources1787226492478';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

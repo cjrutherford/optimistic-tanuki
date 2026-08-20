@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class ScopeLeadsByProfile2026040200000 implements MigrationInterface {
-  name = 'ScopeLeadsByProfile2026040200000';
+export class ScopeLeadsByProfile1775088000000 implements MigrationInterface {
+  name = 'ScopeLeadsByProfile1775088000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

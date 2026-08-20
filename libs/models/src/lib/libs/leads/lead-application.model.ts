@@ -21,7 +21,11 @@ import {
  * important to keep as what it produced.
  */
 @Entity('lead_applications')
-@Index(['profileId', 'leadId', 'version'])
+// Unique, not merely indexed: the next version is read and then written, so two
+// concurrent generates for the same lead would otherwise both compute the same
+// number and store two rows claiming to be that version. Generation runs an LLM
+// call, which keeps that window open long enough for a double-click to hit it.
+@Index(['profileId', 'leadId', 'version'], { unique: true })
 export class LeadApplicationRecord {
   @PrimaryGeneratedColumn('uuid')
   id: string;

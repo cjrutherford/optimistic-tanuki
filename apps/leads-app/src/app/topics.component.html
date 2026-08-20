@@ -173,8 +173,12 @@
                 <span class="chip" *ngFor="let company of selectedCompanies">
                   {{ company.label }}
                   <small>{{ company.provider }}</small>
-                  <button type="button" (click)="removeAtsCompany(company)">
-                    ×
+                  <button
+                    type="button"
+                    [attr.aria-label]="'Remove ' + company.label"
+                    (click)="removeAtsCompany(company)"
+                  >
+                    <span aria-hidden="true">×</span>
                   </button>
                 </span>
               </div>

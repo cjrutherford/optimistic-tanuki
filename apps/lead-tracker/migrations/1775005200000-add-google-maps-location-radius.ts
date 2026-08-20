@@ -1,9 +1,9 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddGoogleMapsLocationRadius2026040101000
+export class AddGoogleMapsLocationRadius1775005200000
   implements MigrationInterface
 {
-  name = 'AddGoogleMapsLocationRadius2026040101000';
+  name = 'AddGoogleMapsLocationRadius1775005200000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(

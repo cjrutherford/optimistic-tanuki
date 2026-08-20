@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -65,17 +70,16 @@ export class ApplicationService {
       nextVersion
     );
 
-    await this.applicationRepository.save(
-      this.applicationRepository.create({
-        leadId,
-        profileId: context.profileId,
-        userId: context.userId || null,
-        version: nextVersion,
-        resume: generated.resume,
-        coverLetter: generated.coverLetter,
-        evidence: generated.evidence,
-        modelGenerated: generated.modelGenerated,
-      })
+    // The version was chosen before a slow generation call, so another request
+    // for the same lead may have claimed it in the meantime. The unique index
+    // turns that into a constraint violation rather than two rows sharing a
+    // version; retrying re-reads the version and stores the work already done,
+    // instead of paying for the generation a second time.
+    const stored = await this.saveWithNextFreeVersion(
+      leadId,
+      context,
+      generated,
+      nextVersion
     );
 
     if (!generated.evidence.clean) {
@@ -84,7 +88,57 @@ export class ApplicationService {
       );
     }
 
-    return generated;
+    // Report the version actually written; a retry means it is not the one the
+    // documents were generated against.
+    return { ...generated, version: stored };
+  }
+
+  /** Postgres unique-violation. */
+  private static readonly UNIQUE_VIOLATION = '23505';
+
+  /**
+   * Stores the generated application, stepping to the next free version if a
+   * concurrent request has taken the intended one.
+   */
+  private async saveWithNextFreeVersion(
+    leadId: string,
+    context: LeadAuthContext,
+    generated: GeneratedApplication,
+    intendedVersion: number
+  ): Promise<number> {
+    let version = intendedVersion;
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await this.applicationRepository.insert(
+          this.applicationRepository.create({
+            leadId,
+            profileId: context.profileId,
+            userId: context.userId || null,
+            version,
+            resume: generated.resume,
+            coverLetter: generated.coverLetter,
+            evidence: generated.evidence,
+            modelGenerated: generated.modelGenerated,
+          })
+        );
+        return version;
+      } catch (error) {
+        const code = (error as { code?: string })?.code;
+        if (code !== ApplicationService.UNIQUE_VIOLATION) {
+          throw error;
+        }
+        version = (await this.latestVersion(leadId, context.profileId)) + 1;
+        this.logger.warn(
+          `Version collision storing application for lead ${leadId}; retrying as version ${version}`
+        );
+      }
+    }
+
+    // Five straight collisions is not contention, it is something wrong.
+    throw new ConflictException(
+      'Could not store the generated application; too many concurrent generations for this lead.'
+    );
   }
 
   /** The most recent version, or null when nothing has been generated yet. */

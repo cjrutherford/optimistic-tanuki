@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddPublicContactFields2026060300000 implements MigrationInterface {
-  name = 'AddPublicContactFields2026060300000';
+export class AddPublicContactFields1780444800000 implements MigrationInterface {
+  name = 'AddPublicContactFields1780444800000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
