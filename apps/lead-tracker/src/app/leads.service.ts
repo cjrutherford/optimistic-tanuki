@@ -14,6 +14,7 @@ import {
 import { Repository } from 'typeorm';
 import {
   LeadQualificationSummary,
+  DiscInterviewTurn,
   LeadAuthContext,
   CreateLeadDto,
   CreateLeadFlagDto,
@@ -28,6 +29,7 @@ import {
   SendLeadResponseDto,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models/leads-contracts';
+import type { AspirationalCompany } from '@optimistic-tanuki/leads-contracts';
 import { LeadQualificationService } from './lead-qualification.service';
 
 @Injectable()
@@ -275,6 +277,8 @@ export class LeadsService {
       discoveryIntent:
         dto.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources,
+      aspirationalCompanies:
+        this.normalizeAspirationalCompanies(dto.aspirationalCompanies) ?? [],
       googleMapsCities: this.normalizeTopicGoogleMapsList(
         dto.googleMapsCities,
         sources
@@ -322,6 +326,9 @@ export class LeadsService {
         excludedTerms: this.normalizeTopicTerms(dto.excludedTerms),
         discoveryIntent: dto.discoveryIntent,
         sources: nextSources,
+        aspirationalCompanies: this.normalizeAspirationalCompanies(
+          dto.aspirationalCompanies
+        ),
         googleMapsCities: this.normalizeTopicGoogleMapsList(
           dto.googleMapsCities,
           nextSources
@@ -346,6 +353,43 @@ export class LeadsService {
 
   async deleteTopic(id: string, profileId: string): Promise<void> {
     await this.leadTopicRepository.delete({ id, profileId });
+  }
+
+  /**
+   * Only entries with a real provider and token are kept. A blank token would
+   * produce a request to a nonexistent board on every discovery run.
+   */
+  private normalizeAspirationalCompanies(
+    companies?: AspirationalCompany[] | null
+  ): AspirationalCompany[] | undefined {
+    if (companies === undefined) {
+      return undefined;
+    }
+    if (companies === null) {
+      return [];
+    }
+
+    const seen = new Set<string>();
+    return companies
+      .filter(
+        (company) =>
+          (company?.provider === 'greenhouse' ||
+            company?.provider === 'lever') &&
+          Boolean(company?.token?.trim())
+      )
+      .map((company) => ({
+        provider: company.provider,
+        token: company.token.trim(),
+        label: (company.label || company.token).trim(),
+      }))
+      .filter((company) => {
+        const key = `${company.provider}:${company.token}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      });
   }
 
   private normalizeTopicSources(
@@ -481,11 +525,13 @@ export class LeadsService {
 
   async saveOnboardingProfile(
     profile: UserOnboardingProfile,
-    context: LeadAuthContext
+    context: LeadAuthContext,
+    discTranscript: DiscInterviewTurn[] = []
   ) {
     return this.leadQualificationService.saveOnboardingProfile(
       profile,
-      context
+      context,
+      discTranscript
     );
   }
 

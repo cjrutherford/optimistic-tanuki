@@ -50,9 +50,15 @@ testem.log
 Thumbs.db
 
 .nx/cache
-.nx/workspace-data
-.nx/workspace-data-build
+# Each target that must not share a project graph with the VS Code Nx Console
+# gets its own workspace-data dir, so match the whole family rather than
+# listing them one at a time.
+.nx/workspace-data*
 .antigravitycli/
+# Agent tooling: local machine settings and the resolved skill lockfile, both
+# specific to one checkout rather than to the project.
+.claude/
+skills-lock.json
 .cursor/
 .github/instructions/nx.instructions.md
 

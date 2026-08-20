@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import {
   DiscInterviewRequest,
   GeneratedTopicSuggestion,
+  MadLibAnalysisRequest,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
 import { ThemeService } from '@optimistic-tanuki/theme-lib';
@@ -57,9 +58,9 @@ export class OnboardingPageComponent {
     });
   }
 
-  onAnalyzeMadLib(text: string): void {
+  onAnalyzeMadLib(request: MadLibAnalysisRequest): void {
     this.analysisError = '';
-    this.leadsService.analyzeMadLib(text).subscribe({
+    this.leadsService.analyzeMadLib(request).subscribe({
       next: (response) => {
         this.wizard?.onMadLibAnalyzed(response);
       },
@@ -106,16 +107,24 @@ export class OnboardingPageComponent {
     this.confirmError = '';
     this.analysisError = '';
 
-    this.leadsService.confirmOnboarding(this.latestProfile, topics).subscribe({
-      next: () => {
-        this.confirmingTopics = false;
-        this.onboardingGateService.markComplete();
-        void this.router.navigateByUrl('/topics');
-      },
-      error: () => {
-        this.confirmingTopics = false;
-        this.confirmError = 'Unable to create your topics right now.';
-      },
-    });
+    this.leadsService
+      .confirmOnboarding(
+        this.latestProfile,
+        topics,
+        // Recorded with the profile so a later re-run is not handed the same
+        // interview questions again.
+        this.wizard?.discTranscript || []
+      )
+      .subscribe({
+        next: () => {
+          this.confirmingTopics = false;
+          this.onboardingGateService.markComplete();
+          void this.router.navigateByUrl('/topics');
+        },
+        error: () => {
+          this.confirmingTopics = false;
+          this.confirmError = 'Unable to create your topics right now.';
+        },
+      });
   }
 }

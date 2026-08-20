@@ -23,6 +23,7 @@ describe('OnboardingAnalysisService', () => {
       analyzeMadLib: jest.fn(),
       parseResumeText: jest.fn(),
       assessDiscInterview: jest.fn(),
+      generateNextDiscQuestion: jest.fn(),
     } as unknown as jest.Mocked<LlmOnboardingAnalysisService>;
 
     service = new OnboardingAnalysisService(llmAnalysisService);
@@ -248,13 +249,263 @@ describe('OnboardingAnalysisService', () => {
     expect(hasInvisibleCharacters(JSON.stringify(result))).toBe(false);
   });
 
+  it('takes composer slot values as fact rather than re-inferring them', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I help plant managers in Manufacturing solve line downtime by delivering automation retrofits.',
+      composition: {
+        sentence: 'ignored',
+        values: {
+          idealCustomer: 'Plant managers',
+          industries: ['Manufacturing'],
+          problemsSolved: ['line downtime'],
+          serviceOffer: 'automation retrofits',
+          skills: ['PLC', 'Robotics'],
+        },
+        unfilledFields: [],
+      },
+    });
+
+    // The heuristic extractor would have guessed "Manufacturing" as a skill and
+    // produced its own serviceOffer phrasing; the explicit slots win.
+    expect(result.suggestedProfile.serviceOffer).toBe('automation retrofits');
+    expect(result.suggestedProfile.idealCustomer).toBe('Plant managers');
+    expect(result.suggestedProfile.skills).toEqual(['PLC', 'Robotics']);
+    expect(result.suggestedProfile.problemsSolved).toEqual(['line downtime']);
+    expect(result.suggestedServiceOffer).toBe('automation retrofits');
+  });
+
+  it('still infers the fields a composer slot was left blank', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I am a consultant who helps SaaS teams modernize React frontends using TypeScript.',
+      composition: {
+        sentence: 'ignored',
+        values: { idealCustomer: 'VP Engineering' },
+        unfilledFields: ['skills', 'industries'],
+      },
+    });
+
+    expect(result.suggestedProfile.idealCustomer).toBe('VP Engineering');
+    // Not supplied by the user, so inference still fills it in.
+    expect(result.suggestedProfile.skills).toEqual(
+      expect.arrayContaining(['React', 'TypeScript'])
+    );
+  });
+
+  it('ignores empty slots so they cannot wipe out an inferred value', async () => {
+    const result = await service.analyzeMadLib({
+      text: 'I help SaaS teams modernize React frontends.',
+      composition: {
+        sentence: 'ignored',
+        values: {
+          serviceOffer: '   ',
+          industries: [],
+          idealCustomer: 'SaaS teams',
+        },
+        unfilledFields: [],
+      },
+    });
+
+    expect(result.suggestedProfile.idealCustomer).toBe('SaaS teams');
+    expect(result.suggestedProfile.serviceOffer).toBeTruthy();
+    expect(result.suggestedProfile.serviceOffer?.trim()).not.toBe('');
+  });
+
+  it('accepts a plain string for the freeform escape hatch', async () => {
+    const result = await service.analyzeMadLib(
+      'I help SaaS teams modernize React frontends using TypeScript.'
+    );
+
+    expect(result.summary).toContain('React');
+    expect(result.suggestedSkills.length).toBeGreaterThan(0);
+  });
+
   it('returns the next DISC question until enough transcript exists', async () => {
     const result = await service.advanceDiscInterview({
       transcript: [{ role: 'user', text: 'I like making fast decisions.' }],
     });
 
     expect(result.complete).toBe(false);
-    expect(result.nextQuestion).toContain('teammate misses a deadline');
+    expect(result.nextQuestion).toBeTruthy();
+    // The first quadrant is already probed, so the next question moves on.
+    expect(result.nextQuestionDimension).toBe('I');
+  });
+
+  it('varies the offline interview by profile instead of replaying one script', async () => {
+    const askFor = async (profile: Record<string, unknown>) =>
+      (
+        await service.advanceDiscInterview({
+          transcript: [],
+          profile: profile as never,
+        })
+      ).nextQuestion;
+
+    const questions = await Promise.all(
+      [
+        { serviceOffer: 'React modernization', industries: ['SaaS'] },
+        { serviceOffer: 'Executive coaching', industries: ['Healthcare'] },
+        { serviceOffer: 'SEO services', industries: ['Ecommerce'] },
+        { serviceOffer: 'Fractional CFO', industries: ['Finance'] },
+        { serviceOffer: 'Brand strategy', industries: ['Manufacturing'] },
+        { serviceOffer: 'Data platform builds', industries: ['Education'] },
+      ].map(askFor)
+    );
+
+    expect(questions.every(Boolean)).toBe(true);
+    // The old flow handed every user the identical first question. Any spread
+    // at all proves the profile is now feeding question selection.
+    expect(new Set(questions).size).toBeGreaterThan(1);
+  });
+
+  it('asks the model for each question and reports the quadrant it targets', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'Tell me about the last time you overruled your own team.',
+      targetDimension: 'D',
+      sufficientSignal: false,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: [],
+      profile: { serviceOffer: 'React modernization' } as never,
+    });
+
+    expect(llmAnalysisService.generateNextDiscQuestion).toHaveBeenCalled();
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestion).toBe(
+      'Tell me about the last time you overruled your own team.'
+    );
+    expect(result.nextQuestionDimension).toBe('D');
+  });
+
+  it('will not finish while a DISC quadrant is still unprobed', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    // The model claims it has enough, but only D and I have been answered.
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'How do you handle a shifting deadline?',
+      targetDimension: 'S',
+      sufficientSignal: true,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: [
+        { role: 'assistant', text: 'q1', targetDimension: 'D' },
+        { role: 'user', text: 'I decide fast.' },
+        { role: 'assistant', text: 'q2', targetDimension: 'I' },
+        { role: 'user', text: 'I win people over.' },
+      ],
+    });
+
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestionDimension).toBe('S');
+  });
+
+  it('terminates at the turn cap even if the model never reports enough signal', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'One more question?',
+      targetDimension: 'C',
+      sufficientSignal: false,
+    });
+    llmAnalysisService.assessDiscInterview.mockResolvedValue({
+      dScore: 30,
+      iScore: 20,
+      sScore: 20,
+      cScore: 30,
+      primaryType: 'C',
+      summary: 'Analytical and deliberate.',
+      confidence: 80,
+    });
+
+    const result = await service.advanceDiscInterview({
+      transcript: Array.from({ length: 6 }, () => ({
+        role: 'user' as const,
+        text: 'I plan carefully and use data to clarify expectations.',
+      })),
+    });
+
+    expect(result.complete).toBe(true);
+    expect(result.assessment).toBeDefined();
+  });
+
+  it('tells the model which questions this profile was already asked', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockResolvedValue({
+      question: 'Something new.',
+      targetDimension: 'D',
+      sufficientSignal: false,
+    });
+
+    const previouslyAsked = ['What did you do when the launch slipped?'];
+    await service.advanceDiscInterview({ transcript: [] }, previouslyAsked);
+
+    expect(llmAnalysisService.generateNextDiscQuestion).toHaveBeenCalledWith(
+      undefined,
+      [],
+      [],
+      previouslyAsked
+    );
+  });
+
+  it('does not repeat an offline question the profile already answered', async () => {
+    const profile = { serviceOffer: 'React modernization' } as never;
+
+    const first = await service.advanceDiscInterview({
+      transcript: [],
+      profile,
+    });
+
+    // Same profile, but now that question is on record from a previous run.
+    const second = await service.advanceDiscInterview(
+      { transcript: [], profile },
+      [first.nextQuestion as string]
+    );
+
+    expect(second.nextQuestion).toBeTruthy();
+    expect(second.nextQuestion).not.toBe(first.nextQuestion);
+    expect(second.nextQuestionDimension).toBe(first.nextQuestionDimension);
+  });
+
+  it('still returns a question when a re-run has exhausted the offline bank', async () => {
+    const profile = { serviceOffer: 'React modernization' } as never;
+    const everyDQuestion = [
+      'Tell me about a recent decision you pushed through when other people were hesitating. What did you do?',
+      'Describe a time you took over something that was stalling. What was your first move?',
+      'When was the last time you overruled a group to keep something moving?',
+    ];
+
+    const result = await service.advanceDiscInterview(
+      { transcript: [], profile },
+      everyDQuestion
+    );
+
+    expect(result.complete).toBe(false);
+    expect(everyDQuestion).toContain(result.nextQuestion);
+  });
+
+  it('falls back to a generated question when the model call fails', async () => {
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      get: () => true,
+    });
+    llmAnalysisService.generateNextDiscQuestion.mockRejectedValue(
+      new Error('ollama unreachable')
+    );
+
+    const result = await service.advanceDiscInterview({
+      transcript: [],
+      profile: { serviceOffer: 'React modernization' } as never,
+    });
+
+    expect(result.complete).toBe(false);
+    expect(result.nextQuestion).toBeTruthy();
+    expect(result.nextQuestionDimension).toBe('D');
   });
 
   it('produces a lightweight DISC behavioral profile with quadrant percentages', async () => {

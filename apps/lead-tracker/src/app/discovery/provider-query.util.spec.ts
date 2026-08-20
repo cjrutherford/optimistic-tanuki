@@ -16,7 +16,7 @@ describe('provider-query.util', () => {
     keywords: ['react', 'typescript', 'frontend architecture'],
     excludedTerms: [],
     discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
-    sources: [LeadDiscoverySource.CLUTCH],
+    sources: [LeadDiscoverySource.FUNDING_NEWS],
     googleMapsCities: null,
     googleMapsTypes: null,
     enabled: true,
@@ -33,37 +33,27 @@ describe('provider-query.util', () => {
     updatedAt: new Date(),
   } as LeadTopic;
 
-  it('builds richer indeed queries across multiple site scopes and signals', () => {
+  it('builds funding-news queries with no site scope and funding signals', () => {
     const queries = buildProviderQueries(
       {
         ...topic,
-        discoveryIntent: LeadTopicDiscoveryIntent.JOB_OPENINGS,
+        discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
       },
-      getProviderQueryRecipe('indeed', LeadTopicDiscoveryIntent.JOB_OPENINGS),
+      getProviderQueryRecipe(
+        'funding-news',
+        LeadTopicDiscoveryIntent.SERVICE_BUYERS
+      ),
       6
     );
 
-    expect(queries).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('site:indeed.com/viewjob'),
-        expect.stringContaining('site:indeed.com/jobs'),
-        expect.stringContaining('remote'),
-      ])
-    );
-  });
-
-  it('builds clutch queries without hard-coding only web developer directories', () => {
-    const queries = buildProviderQueries(
-      topic,
-      getProviderQueryRecipe('clutch', topic.discoveryIntent),
-      6
-    );
-
+    // No site: scope — the source reads the news feed at large. Pinning it to
+    // crunchbase.com is what made the old provider misdescribe its data.
+    expect(queries.some((query) => query.includes('site:'))).toBe(false);
+    expect(queries.some((query) => query.includes('funding'))).toBe(true);
     expect(
-      queries.some((query) => query.includes('site:clutch.co/agencies'))
+      queries.some(
+        (query) => query.includes('raised') || query.includes('series')
+      )
     ).toBe(true);
-    expect(queries.some((query) => query.includes('"client reviews"'))).toBe(
-      true
-    );
   });
 });

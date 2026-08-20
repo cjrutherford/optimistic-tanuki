@@ -41,19 +41,10 @@ export declare type LeadTrackerConfigType = {
     weWorkRemotely: {
       enabled: boolean;
     };
-    justRemote: {
-      enabled: boolean;
-    };
     jobicy: {
       enabled: boolean;
     };
-    clutch: {
-      enabled: boolean;
-    };
-    crunchbase: {
-      enabled: boolean;
-    };
-    indeed: {
+    fundingNews: {
       enabled: boolean;
     };
     googleMaps: {
@@ -92,11 +83,8 @@ const loadConfig = () => {
   const remoteOkConfig = configData.leadDiscovery?.remoteOk;
   const himalayasConfig = configData.leadDiscovery?.himalayas;
   const weWorkRemotelyConfig = configData.leadDiscovery?.weWorkRemotely;
-  const justRemoteConfig = configData.leadDiscovery?.justRemote;
   const jobicyConfig = configData.leadDiscovery?.jobicy;
-  const clutchConfig = configData.leadDiscovery?.clutch;
-  const crunchbaseConfig = configData.leadDiscovery?.crunchbase;
-  const indeedConfig = configData.leadDiscovery?.indeed;
+  const fundingNewsConfig = configData.leadDiscovery?.fundingNews;
   const googleMapsConfig = configData.leadDiscovery?.googleMaps;
 
   return {
@@ -183,34 +171,16 @@ const loadConfig = () => {
           weWorkRemotelyConfig?.enabled ?? true
         ),
       },
-      justRemote: {
-        enabled: toBoolean(
-          process.env.LEAD_DISCOVERY_JUST_REMOTE_ENABLED,
-          justRemoteConfig?.enabled ?? true
-        ),
-      },
       jobicy: {
         enabled: toBoolean(
           process.env.LEAD_DISCOVERY_JOBICY_ENABLED,
           jobicyConfig?.enabled ?? true
         ),
       },
-      clutch: {
+      fundingNews: {
         enabled: toBoolean(
-          process.env.LEAD_DISCOVERY_CLUTCH_ENABLED,
-          clutchConfig?.enabled ?? true
-        ),
-      },
-      crunchbase: {
-        enabled: toBoolean(
-          process.env.LEAD_DISCOVERY_CRUNCHBASE_ENABLED,
-          crunchbaseConfig?.enabled ?? true
-        ),
-      },
-      indeed: {
-        enabled: toBoolean(
-          process.env.LEAD_DISCOVERY_INDEED_ENABLED,
-          indeedConfig?.enabled ?? true
+          process.env.LEAD_DISCOVERY_FUNDING_NEWS_ENABLED,
+          fundingNewsConfig?.enabled ?? true
         ),
       },
       googleMaps: {

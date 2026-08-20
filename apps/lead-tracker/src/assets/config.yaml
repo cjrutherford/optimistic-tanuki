@@ -28,15 +28,9 @@ leadDiscovery:
     enabled: true
   weWorkRemotely:
     enabled: true
-  justRemote:
-    enabled: true
   jobicy:
     enabled: true
-  clutch:
-    enabled: true
-  crunchbase:
-    enabled: true
-  indeed:
+  fundingNews:
     enabled: true
   googleMaps:
     enabled: true

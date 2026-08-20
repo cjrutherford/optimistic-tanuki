@@ -32,6 +32,8 @@ describe('LeadsComponent', () => {
     updateLead: jest.fn(),
     deleteLead: jest.fn(),
     flagLead: jest.fn(),
+    findApplication: jest.fn(),
+    generateApplication: jest.fn(),
   };
 
   const themeServiceStub = {
@@ -45,6 +47,9 @@ describe('LeadsComponent', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     leadsServiceStub.getLeads.mockReturnValue(of([]));
+    // Opening the detail view now looks for a previously generated application.
+    leadsServiceStub.findApplication.mockReturnValue(of(null));
+    leadsServiceStub.generateApplication.mockReturnValue(of(null));
     leadsServiceStub.getStats.mockReturnValue(
       of({
         total: 0,

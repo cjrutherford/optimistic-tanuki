@@ -525,7 +525,11 @@
   <app-lead-detail-modal
     *ngIf="selectedLeadForView"
     [lead]="selectedLeadForView"
-    (closed)="selectedLeadForView = null"
+    [application]="viewedApplication"
+    [applicationPending]="applicationPending"
+    [applicationError]="applicationError"
+    (generateApplication)="onGenerateApplication($event)"
+    (closed)="closeLeadDetail()"
     (editRequested)="openEditFromView(selectedLeadForView!)"
   ></app-lead-detail-modal>
 </div>

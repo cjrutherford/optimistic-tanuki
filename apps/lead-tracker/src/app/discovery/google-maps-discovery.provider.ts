@@ -8,6 +8,12 @@ import {
 } from '@optimistic-tanuki/models/leads-contracts';
 import { readJsonResponse } from './provider-http.util';
 import {
+  estimateGapValue,
+  findPresenceGaps,
+  scoreGaps,
+  summarizeGaps,
+} from './presence-gap.util';
+import {
   ProviderSearchResult,
   TopicDiscoveryProvider,
 } from './discovery.types';
@@ -27,6 +33,13 @@ type GoogleMapsPlace = {
   formatted_address?: string;
   place_id?: string;
   business_status?: string;
+  // Gap signals. Text Search returns these on the basic result, so scoring
+  // costs no extra billed request.
+  website?: string;
+  rating?: number;
+  user_ratings_total?: number;
+  opening_hours?: { open_now?: boolean };
+  formatted_phone_number?: string;
 };
 
 type GoogleGeocodeResult = {
@@ -149,6 +162,7 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
       );
 
       let excludedCount = 0;
+      let gaplessCount = 0;
       const candidates = payloads
         .flatMap(({ query, payload }) =>
           (payload.results || [])
@@ -178,22 +192,41 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
             return null;
           }
 
+          const gaps = findPresenceGaps({
+            website: place.website,
+            phone: place.formatted_phone_number,
+            hasOpeningHours: Boolean(place.opening_hours),
+            rating: place.rating,
+            reviewCount: place.user_ratings_total ?? 0,
+          });
+          const gapScore = scoreGaps(gaps);
+
+          // A business with a complete online presence is not a lead for this
+          // kind of work; surfacing it wastes the operator's attention.
+          if (!gaps.length) {
+            gaplessCount += 1;
+            return null;
+          }
+
+          const gapSummary = summarizeGaps(gaps);
+
           return {
             lead: createLeadEntity({
               seed: `google-maps:${
                 place.place_id || `${place.name}:${place.formatted_address}`
               }`,
-              name: `${place.name || 'Business'} - Website Development`,
+              name: `${place.name || 'Business'} - ${gaps[0].label}`,
               company: place.name || 'Google Maps opportunity',
               source: LeadSource.GOOGLE_MAPS,
-              originalPostingUrl: undefined,
+              originalPostingUrl: place.website,
               notes: `Discovered via Google Maps text search. Query: ${query}. Address: ${
                 place.formatted_address || 'n/a'
               }. Business status: ${
                 place.business_status || 'unknown'
-              }. Discovery intent: ${discoveryIntent}.`,
+              }. Presence gaps (${gapScore}/100): ${gapSummary}. Discovery intent: ${discoveryIntent}.`,
               searchKeywords: effectiveKeywords,
-              value: 3000,
+              // Bigger gaps are worth more work, so the estimate tracks the score.
+              value: estimateGapValue(gapScore),
             }),
             matchedKeywords: effectiveKeywords,
             providerName: this.providerName,
@@ -211,6 +244,11 @@ export class GoogleMapsDiscoveryProvider implements TopicDiscoveryProvider {
           `Excluded ${excludedCount} result(s) because they matched blocked terms: ${excludedTerms.join(
             ', '
           )}.`
+        );
+      }
+      if (gaplessCount) {
+        warnings.push(
+          `Skipped ${gaplessCount} business(es) with no gaps in their online presence — they are not leads for this kind of work.`
         );
       }
 

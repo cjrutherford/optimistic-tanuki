@@ -79,6 +79,16 @@
           "TS_NODE_PROJECT": "tsconfig.app.json"
         }
       }
+    },
+    "probe-sources": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node -r ts-node/register -r tsconfig-paths/register src/tools/probe-sources.ts",
+        "cwd": "apps/lead-tracker",
+        "env": {
+          "TS_NODE_PROJECT": "tsconfig.app.json"
+        }
+      }
     }
   }
 }

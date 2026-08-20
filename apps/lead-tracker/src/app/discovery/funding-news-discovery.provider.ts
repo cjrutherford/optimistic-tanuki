@@ -28,10 +28,10 @@ import {
 } from './provider-query.util';
 
 @Injectable()
-export class CrunchbaseDiscoveryProvider implements TopicDiscoveryProvider {
-  readonly providerName = 'crunchbase';
-  readonly supportedSources = [LeadDiscoverySource.CRUNCHBASE];
-  private readonly logger = new Logger(CrunchbaseDiscoveryProvider.name);
+export class FundingNewsDiscoveryProvider implements TopicDiscoveryProvider {
+  readonly providerName = 'funding-news';
+  readonly supportedSources = [LeadDiscoverySource.FUNDING_NEWS];
+  private readonly logger = new Logger(FundingNewsDiscoveryProvider.name);
 
   constructor(
     private readonly searchAcquisitionService: SearchAcquisitionService
@@ -45,7 +45,7 @@ export class CrunchbaseDiscoveryProvider implements TopicDiscoveryProvider {
     const excludedTerms = normalizeExcludedTerms(topic.excludedTerms);
     const queries = buildProviderQueries(
       topic,
-      getProviderQueryRecipe('crunchbase', topic.discoveryIntent),
+      getProviderQueryRecipe('funding-news', topic.discoveryIntent),
       this.searchAcquisitionService.getMaxQueriesPerProvider()
     );
 
@@ -53,9 +53,10 @@ export class CrunchbaseDiscoveryProvider implements TopicDiscoveryProvider {
       const rawResults = await Promise.all(
         queries.map((query) => this.searchAcquisitionService.searchNews(query))
       );
-      const results = rawResults
-        .flat()
-        .filter((result) => /crunchbase\.com\//i.test(result.url));
+      // Deliberately unfiltered by domain. The old source pinned this to
+      // crunchbase.com, which both misdescribed the data and threw away most of
+      // the funding coverage the feed actually returns.
+      const results = rawResults.flat();
       const analyzed = await Promise.all(
         results.map(async (result) =>
           this.mapResult(result, keywords, excludedTerms)
@@ -71,20 +72,20 @@ export class CrunchbaseDiscoveryProvider implements TopicDiscoveryProvider {
         warnings: candidates.length
           ? []
           : [
-              'Crunchbase search returned no analyzable funding leads for the configured topic.',
+              'Funding news search returned no analyzable funding leads for the configured topic.',
             ],
         queries,
       };
     } catch (error) {
       this.logger.warn(
-        `Crunchbase discovery failed for topic ${topic.id}: ${
+        `Funding news discovery failed for topic ${topic.id}: ${
           error instanceof Error ? error.message : String(error)
         }`
       );
       return {
         candidates: [],
         warnings: [
-          `Crunchbase search failed: ${
+          `Funding news search failed: ${
             error instanceof Error ? error.message : 'Unknown error'
           }`,
         ],
@@ -111,16 +112,16 @@ export class CrunchbaseDiscoveryProvider implements TopicDiscoveryProvider {
     }
 
     const title = (pageAnalysis?.title || result.title)
-      .replace(/\s*\|\s*Crunchbase.*$/i, '')
+      .replace(/\s*[|–-]\s*(Crunchbase|TechCrunch|Reuters|Bloomberg)\s*$/i, '')
       .trim();
     return {
       lead: createLeadEntity({
-        seed: `crunchbase:${result.url}`,
+        seed: `funding-news:${result.url}`,
         name: `${title} - Tech Development`,
-        company: title || 'Crunchbase company',
-        source: LeadSource.CRUNCHBASE,
+        company: title || 'Unnamed company',
+        source: LeadSource.FUNDING_NEWS,
         originalPostingUrl: result.url,
-        notes: `Discovered via Crunchbase funding search. Source: ${
+        notes: `Discovered via funding-news search. Source: ${
           result.url
         }. ${truncateText(
           pageAnalysis?.description || result.snippet || '',

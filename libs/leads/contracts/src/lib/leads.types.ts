@@ -1,3 +1,5 @@
+import type { AspirationalCompany } from './lead-source-registry';
+
 export enum LeadSource {
   REMOTE_OK = 'remoteok',
   HIMALAYAS = 'himalayas',
@@ -6,6 +8,14 @@ export enum LeadSource {
   JOBICY = 'jobicy',
   CLUTCH = 'clutch',
   CRUNCHBASE = 'crunchbase',
+  FUNDING_NEWS = 'funding-news',
+  ARBEITNOW = 'arbeitnow',
+  REMOTIVE = 'remotive',
+  THE_MUSE = 'themuse',
+  HACKER_NEWS = 'hackernews',
+  OVERPASS = 'overpass',
+  GREENHOUSE = 'greenhouse',
+  LEVER = 'lever',
   INDEED = 'indeed',
   GOOGLE_MAPS = 'google-maps',
   REFERRAL = 'referral',
@@ -24,6 +34,14 @@ export enum LeadDiscoverySource {
   JOBICY = 'jobicy',
   CLUTCH = 'clutch',
   CRUNCHBASE = 'crunchbase',
+  FUNDING_NEWS = 'funding-news',
+  ARBEITNOW = 'arbeitnow',
+  REMOTIVE = 'remotive',
+  THE_MUSE = 'themuse',
+  HACKER_NEWS = 'hackernews',
+  OVERPASS = 'overpass',
+  GREENHOUSE = 'greenhouse',
+  LEVER = 'lever',
   INDEED = 'indeed',
   GOOGLE_MAPS = 'google-maps',
 }
@@ -137,6 +155,7 @@ export interface Topic {
   excludedTerms: string[];
   discoveryIntent: LeadTopicDiscoveryIntent;
   sources?: LeadDiscoverySource[];
+  aspirationalCompanies?: AspirationalCompany[] | null;
   googleMapsCities?: string[] | null;
   googleMapsTypes?: string[] | null;
   googleMapsLocation?: string | null;
@@ -192,6 +211,7 @@ export interface CreateTopicDto {
   excludedTerms?: string[];
   discoveryIntent?: LeadTopicDiscoveryIntent;
   sources?: LeadDiscoverySource[];
+  aspirationalCompanies?: AspirationalCompany[] | null;
   googleMapsCities?: string[];
   googleMapsTypes?: string[];
   googleMapsLocation?: string;
@@ -208,6 +228,7 @@ export interface UpdateTopicDto {
   excludedTerms?: string[];
   discoveryIntent?: LeadTopicDiscoveryIntent;
   sources?: LeadDiscoverySource[];
+  aspirationalCompanies?: AspirationalCompany[] | null;
   googleMapsCities?: string[];
   googleMapsTypes?: string[];
   googleMapsLocation?: string;

@@ -14,14 +14,17 @@ import {
   Put,
   Query,
   UploadedFile,
+  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   LeadAnalysisCommands,
+  LeadApplicationCommands,
   LeadCommands,
   LeadFlagCommands,
   LeadOnboardingCommands,
@@ -36,6 +39,7 @@ import {
   DiscInterviewRequest,
   LeadTopicDiscoveryResultDto,
   LocationAutocompleteSuggestion,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseResult,
   UpdateLeadDto,
@@ -402,7 +406,7 @@ export class LeadsController {
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Analyze a mad-lib onboarding prompt' })
   async analyzeMadLib(
-    @Body() body: { text: string }
+    @Body() body: MadLibAnalysisRequest
   ): Promise<MadLibAnalysisResult> {
     return firstValueFrom(
       this.leadClient.send(
@@ -457,12 +461,52 @@ export class LeadsController {
     );
   }
 
+  @Post('ats/company/lookup')
+  @RequirePermissions('lead.onboarding.update')
+  @ApiOperation({
+    summary: 'Resolve a company name to a verified ATS board token',
+  })
+  async lookupAtsCompany(@Body() body: { companyName?: string }) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadOnboardingCommands.LOOKUP_ATS_COMPANY },
+        body
+      )
+    );
+  }
+
+  @Get('ats/company/suggestions')
+  @RequirePermissions('lead.onboarding.update')
+  @ApiOperation({
+    summary: 'Suggest dream companies from lead history and past employers',
+  })
+  async suggestAtsCompanies(
+    @User() user: UserContext,
+    @AppScope() appScope: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadOnboardingCommands.SUGGEST_ATS_COMPANIES },
+        { context: this.getContext(user, appScope) }
+      )
+    );
+  }
+
   @Post('onboarding/disc/advance')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Advance the onboarding DISC interview' })
-  async advanceDiscInterview(@Body() body: DiscInterviewRequest) {
+  async advanceDiscInterview(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Body() body: DiscInterviewRequest
+  ) {
     return firstValueFrom(
-      this.leadClient.send({ cmd: LeadOnboardingCommands.ADVANCE_DISC }, body)
+      this.leadClient.send(
+        { cmd: LeadOnboardingCommands.ADVANCE_DISC },
+        // Context lets the service look up what this profile was asked in a
+        // previous onboarding run so the questions are not repeated.
+        { ...body, context: this.getContext(user, appScope) }
+      )
     );
   }
 
@@ -483,6 +527,97 @@ export class LeadsController {
         }
       )
     );
+  }
+
+  @Post(':id/application/generate')
+  @LongRunning()
+  @RequirePermissions('lead.update')
+  @ApiOperation({
+    summary: 'Generate a tailored resume and cover letter for a lead',
+  })
+  async generateApplication(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadApplicationCommands.GENERATE },
+        { leadId: id, context: this.getContext(user, appScope) }
+      )
+    );
+  }
+
+  @Get(':id/application')
+  @RequirePermissions('lead.read')
+  @ApiOperation({ summary: 'Get the latest generated application for a lead' })
+  async findApplication(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadApplicationCommands.FIND_LATEST },
+        { leadId: id, context: this.getContext(user, appScope) }
+      )
+    );
+  }
+
+  @Get(':id/application/history')
+  @RequirePermissions('lead.read')
+  @ApiOperation({ summary: 'Get every generated version for a lead' })
+  async findApplicationHistory(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string
+  ) {
+    return firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadApplicationCommands.FIND_HISTORY },
+        { leadId: id, context: this.getContext(user, appScope) }
+      )
+    );
+  }
+
+  @Get(':id/application/export')
+  @RequirePermissions('lead.read')
+  @ApiOperation({ summary: 'Download a generated document as .odt or .docx' })
+  async exportApplication(
+    @User() user: UserContext,
+    @AppScope() appScope: string,
+    @Param('id') id: string,
+    @Query('kind') kind: 'resume' | 'cover-letter',
+    @Query('format') format: 'odt' | 'docx',
+    @Res() response: Response
+  ) {
+    const exported = await firstValueFrom(
+      this.leadClient.send(
+        { cmd: LeadApplicationCommands.EXPORT },
+        {
+          leadId: id,
+          kind: kind || 'resume',
+          format: format || 'docx',
+          candidateName: user?.userId || 'application',
+          context: this.getContext(user, appScope),
+        }
+      )
+    );
+
+    if (!exported) {
+      throw new NotFoundException(
+        `No generated application exists for lead ${id}`
+      );
+    }
+
+    // Streamed as a real download so the browser saves a usable file rather
+    // than rendering base64 in a tab.
+    response.setHeader('Content-Type', exported.contentType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${exported.filename}"`
+    );
+    response.send(Buffer.from(exported.contentBase64, 'base64'));
   }
 
   @Post('analysis/run')

@@ -32,7 +32,15 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        // Playwright ships no chromium build for some newer Linux hosts
+        // (e.g. Ubuntu 26.04). Setting PW_CHANNEL=chrome runs against a locally
+        // installed browser instead; unset, CI keeps using bundled chromium.
+        ...(process.env['PW_CHANNEL']
+          ? { channel: process.env['PW_CHANNEL'] }
+          : {}),
+      },
     },
 
     {

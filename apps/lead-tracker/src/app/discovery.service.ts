@@ -17,14 +17,21 @@ import {
   LeadTopicProviderStatus,
 } from '@optimistic-tanuki/models/leads-contracts';
 import { In, Repository } from 'typeorm';
-import { ClutchDiscoveryProvider } from './discovery/clutch-discovery.provider';
-import { CrunchbaseDiscoveryProvider } from './discovery/crunchbase-discovery.provider';
+import { getLeadSourceDescriptor } from '@optimistic-tanuki/leads-contracts';
+import { ArbeitnowDiscoveryProvider } from './discovery/arbeitnow-discovery.provider';
+import { HackerNewsDiscoveryProvider } from './discovery/hacker-news-discovery.provider';
+import { RemotiveDiscoveryProvider } from './discovery/remotive-discovery.provider';
+import { TheMuseDiscoveryProvider } from './discovery/the-muse-discovery.provider';
+import { FundingNewsDiscoveryProvider } from './discovery/funding-news-discovery.provider';
+import {
+  GreenhouseDiscoveryProvider,
+  LeverDiscoveryProvider,
+} from './discovery/aspirational-ats.provider';
+import { OverpassDiscoveryProvider } from './discovery/overpass-discovery.provider';
 import { GoogleMapsDiscoveryProvider } from './discovery/google-maps-discovery.provider';
 import { HimalayasDiscoveryProvider } from './discovery/himalayas-discovery.provider';
-import { IndeedDiscoveryProvider } from './discovery/indeed-discovery.provider';
 import { InternalDiscoveryProvider } from './discovery/internal-discovery.provider';
 import { JobicyDiscoveryProvider } from './discovery/jobicy-discovery.provider';
-import { JustRemoteDiscoveryProvider } from './discovery/justremote-discovery.provider';
 import { RemoteOkDiscoveryProvider } from './discovery/remoteok-discovery.provider';
 import {
   DiscoveredLeadCandidate,
@@ -66,11 +73,15 @@ export class DiscoveryService {
     private readonly remoteOkDiscoveryProvider: RemoteOkDiscoveryProvider,
     private readonly himalayasDiscoveryProvider: HimalayasDiscoveryProvider,
     private readonly weWorkRemotelyDiscoveryProvider: WeWorkRemotelyDiscoveryProvider,
-    private readonly justRemoteDiscoveryProvider: JustRemoteDiscoveryProvider,
     private readonly jobicyDiscoveryProvider: JobicyDiscoveryProvider,
-    private readonly clutchDiscoveryProvider: ClutchDiscoveryProvider,
-    private readonly crunchbaseDiscoveryProvider: CrunchbaseDiscoveryProvider,
-    private readonly indeedDiscoveryProvider: IndeedDiscoveryProvider,
+    private readonly fundingNewsDiscoveryProvider: FundingNewsDiscoveryProvider,
+    private readonly arbeitnowDiscoveryProvider: ArbeitnowDiscoveryProvider,
+    private readonly remotiveDiscoveryProvider: RemotiveDiscoveryProvider,
+    private readonly theMuseDiscoveryProvider: TheMuseDiscoveryProvider,
+    private readonly hackerNewsDiscoveryProvider: HackerNewsDiscoveryProvider,
+    private readonly overpassDiscoveryProvider: OverpassDiscoveryProvider,
+    private readonly greenhouseDiscoveryProvider: GreenhouseDiscoveryProvider,
+    private readonly leverDiscoveryProvider: LeverDiscoveryProvider,
     private readonly googleMapsDiscoveryProvider: GoogleMapsDiscoveryProvider,
     private readonly leadQualificationService: LeadQualificationService
   ) {
@@ -84,11 +95,15 @@ export class DiscoveryService {
         LeadDiscoverySource.WE_WORK_REMOTELY,
         this.weWorkRemotelyDiscoveryProvider,
       ],
-      [LeadDiscoverySource.JUST_REMOTE, this.justRemoteDiscoveryProvider],
       [LeadDiscoverySource.JOBICY, this.jobicyDiscoveryProvider],
-      [LeadDiscoverySource.CLUTCH, this.clutchDiscoveryProvider],
-      [LeadDiscoverySource.CRUNCHBASE, this.crunchbaseDiscoveryProvider],
-      [LeadDiscoverySource.INDEED, this.indeedDiscoveryProvider],
+      [LeadDiscoverySource.FUNDING_NEWS, this.fundingNewsDiscoveryProvider],
+      [LeadDiscoverySource.ARBEITNOW, this.arbeitnowDiscoveryProvider],
+      [LeadDiscoverySource.REMOTIVE, this.remotiveDiscoveryProvider],
+      [LeadDiscoverySource.THE_MUSE, this.theMuseDiscoveryProvider],
+      [LeadDiscoverySource.HACKER_NEWS, this.hackerNewsDiscoveryProvider],
+      [LeadDiscoverySource.OVERPASS, this.overpassDiscoveryProvider],
+      [LeadDiscoverySource.GREENHOUSE, this.greenhouseDiscoveryProvider],
+      [LeadDiscoverySource.LEVER, this.leverDiscoveryProvider],
       [LeadDiscoverySource.GOOGLE_MAPS, this.googleMapsDiscoveryProvider],
     ]);
   }
@@ -304,8 +319,11 @@ export class DiscoveryService {
       return skippedResult;
     }
 
-    const { matches: matchedResults, providerResults } =
-      await this.discoverCandidates(topic);
+    const {
+      matches: matchedResults,
+      providerResults,
+      crossSourceDuplicates,
+    } = await this.discoverCandidates(topic);
     await this.persistDiscoveredLeads(matchedResults, topic);
     const existingLinks = await this.leadTopicLinkRepository.find({
       where: { topicId },
@@ -374,7 +392,8 @@ export class DiscoveryService {
 
     const diagnostics = this.buildDiscoveryDiagnostics(
       matchedResults.length,
-      providerResults
+      providerResults,
+      crossSourceDuplicates
     );
     const result: LeadTopicDiscoveryResultDto = {
       topicId,
@@ -399,6 +418,8 @@ export class DiscoveryService {
 
   private async discoverCandidates(topic: LeadTopic): Promise<{
     matches: DiscoveredLeadCandidate[];
+    /** Postings the same topic found on more than one source. */
+    crossSourceDuplicates: number;
     providerResults: LeadTopicProviderResultDto[];
   }> {
     const providerResponses = await Promise.all(
@@ -445,6 +466,9 @@ export class DiscoveryService {
     });
 
     const deduped = new Map<string, DiscoveredLeadCandidate>();
+    // Counted so the discovery report can say the same posting was found on
+    // several boards, rather than silently dropping the extras.
+    let crossSourceDuplicates = 0;
 
     for (const providerResponse of providerResponses) {
       for (const match of providerResponse.result.candidates) {
@@ -456,13 +480,16 @@ export class DiscoveryService {
           },
           existingLeadsByFingerprint
         );
-        const dedupeKey = this.buildLeadFingerprint(alignedCandidate.lead);
+        const dedupeKey = this.buildCandidateDedupeKey(alignedCandidate.lead);
         const existingCandidate = deduped.get(dedupeKey);
         if (!existingCandidate) {
           deduped.set(dedupeKey, alignedCandidate);
           continue;
         }
 
+        if (existingCandidate.providerName !== alignedCandidate.providerName) {
+          crossSourceDuplicates += 1;
+        }
         deduped.set(
           dedupeKey,
           this.mergeCandidates(existingCandidate, alignedCandidate)
@@ -479,6 +506,7 @@ export class DiscoveryService {
 
     return {
       matches,
+      crossSourceDuplicates,
       providerResults: providerResponses.map((providerResponse) => ({
         providerName: providerResponse.providerName,
         status: this.determineProviderStatus(
@@ -600,6 +628,38 @@ export class DiscoveryService {
       score += lead.searchKeywords.length * 3;
     }
     return score;
+  }
+
+  /**
+   * Dedupe key for a candidate.
+   *
+   * The same posting is frequently syndicated across several boards with
+   * slightly different titles, so the original posting URL is the strongest
+   * signal when it exists — matching on company and title alone lets the same
+   * job through several times under different phrasings.
+   */
+  private buildCandidateDedupeKey(
+    lead: Pick<Lead, 'name' | 'company' | 'originalPostingUrl'>
+  ): string {
+    const postingUrl = this.normalizePostingUrl(lead.originalPostingUrl);
+    return postingUrl
+      ? `url:${postingUrl}`
+      : `name:${this.buildLeadFingerprint(lead)}`;
+  }
+
+  /** Host + path, lowercased, without tracking parameters or a trailing slash. */
+  private normalizePostingUrl(value?: string | null): string | null {
+    if (!value) {
+      return null;
+    }
+    try {
+      const url = new URL(value);
+      const host = url.hostname.replace(/^www\./i, '').toLowerCase();
+      const path = url.pathname.replace(/\/+$/, '').toLowerCase();
+      return `${host}${path}`;
+    } catch {
+      return null;
+    }
   }
 
   private buildLeadFingerprint(lead: Pick<Lead, 'name' | 'company'>): string {
@@ -755,7 +815,8 @@ export class DiscoveryService {
 
   private buildDiscoveryDiagnostics(
     matchedCount: number,
-    providerResults: LeadTopicProviderResultDto[]
+    providerResults: LeadTopicProviderResultDto[],
+    crossSourceDuplicates = 0
   ): {
     message: string;
     severity: LeadTopicDiscoverySeverity;
@@ -774,6 +835,14 @@ export class DiscoveryService {
           .filter((action): action is string => Boolean(action))
       )
     );
+    // One line about cross-source overlap, rather than leaving the operator to
+    // infer it from per-provider counts that no longer add up to the total.
+    const duplicateNote = crossSourceDuplicates
+      ? ` ${crossSourceDuplicates} duplicate posting${
+          crossSourceDuplicates === 1 ? '' : 's'
+        } merged across sources.`
+      : '';
+
     const diagnosticCounts: LeadTopicDiagnosticCountsDto = {
       errors: issues.filter((issue) => issue.severity === 'error').length,
       warnings: issues.filter((issue) => issue.severity === 'warning').length,
@@ -789,7 +858,7 @@ export class DiscoveryService {
         summaryTitle: 'Discovery complete',
         summaryBody: `Discovery matched ${matchedCount} candidate lead${
           matchedCount === 1 ? '' : 's'
-        }.`,
+        }.${duplicateNote}`,
         actionItems: [],
         diagnosticCounts,
       };
@@ -806,7 +875,7 @@ export class DiscoveryService {
           diagnosticCounts.providersWithIssues === 1 ? '' : 's'
         } reported issue${
           diagnosticCounts.providersWithIssues === 1 ? '' : 's'
-        }.`,
+        }.${duplicateNote}`,
         actionItems,
         diagnosticCounts,
       };
@@ -954,21 +1023,19 @@ export class DiscoveryService {
   }
 
   private formatProviderLabel(providerName: string): string {
-    switch (providerName) {
-      case 'remoteok':
-        return 'Remote OK';
-      case 'weworkremotely':
-        return 'We Work Remotely';
-      case 'justremote':
-        return 'JustRemote';
-      case 'google-maps':
-        return 'Google Maps';
-      default:
-        return providerName
-          .split('-')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ');
+    // Labels come from the source registry so the backend and the topics UI
+    // cannot disagree about what a source is called.
+    const descriptor = getLeadSourceDescriptor(
+      providerName as LeadDiscoverySource
+    );
+    if (descriptor) {
+      return descriptor.label;
     }
+
+    return providerName
+      .split('-')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   private getProvidersForTopic(topic: LeadTopic): TopicDiscoveryProvider[] {

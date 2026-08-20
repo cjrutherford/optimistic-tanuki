@@ -11,26 +11,34 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import {
+import type {
   DiscInterviewRequest,
   DiscInterviewResponse,
   DiscInterviewTurn,
   GeneratedTopicSuggestion,
   LocationAutocompleteSuggestion,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
+  MadLibComposition,
   OnboardingProfileSuggestions,
   OnboardingQuestion,
   ResumeParseResult,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
 import { LeadsService } from './leads.service';
+import { MadLibComposerComponent } from './mad-lib-composer.component';
 
 type WizardStage = 'mad-lib' | 'resume' | 'profile' | 'disc';
 
 @Component({
   selector: 'app-interview-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonComponent,
+    MadLibComposerComponent,
+  ],
   templateUrl: './interview-wizard.component.html',
   styleUrl: './interview-wizard.component.scss',
 })
@@ -42,7 +50,7 @@ export class InterviewWizardComponent implements OnDestroy {
   @Input() errorMessage = '';
   @Input() confirmingTopics = false;
   @Output() closed = new EventEmitter<void>();
-  @Output() analyzeMadLib = new EventEmitter<string>();
+  @Output() analyzeMadLib = new EventEmitter<MadLibAnalysisRequest>();
   @Output() parseResume = new EventEmitter<File>();
   @Output() advanceDiscInterview = new EventEmitter<DiscInterviewRequest>();
   @Output() analyzeTopics = new EventEmitter<UserOnboardingProfile>();
@@ -57,6 +65,9 @@ export class InterviewWizardComponent implements OnDestroy {
   showTopicReview = false;
   newChipValue = '';
   madLibValue = '';
+  /** Escape hatch: the original free-prose textarea. */
+  madLibFreeform = false;
+  composition?: MadLibComposition;
   discAnswerValue = '';
   discTranscript: DiscInterviewTurn[] = [];
   resumeFileName = '';
@@ -360,13 +371,42 @@ export class InterviewWizardComponent implements OnDestroy {
     return Boolean(value);
   }
 
+  onCompositionChange(composition: MadLibComposition): void {
+    this.composition = composition;
+    // Keep the readable sentence in sync so the summary and the freeform
+    // escape hatch both start from what the user has already built.
+    this.madLibValue = composition.sentence;
+  }
+
+  useFreeform(): void {
+    this.madLibFreeform = true;
+    this.cdr.detectChanges();
+  }
+
+  useComposer(): void {
+    this.madLibFreeform = false;
+    this.cdr.detectChanges();
+  }
+
+  get canAnalyzeMadLib(): boolean {
+    if (this.madLibFreeform) {
+      return this.madLibValue.trim().length > 0;
+    }
+    return Object.keys(this.composition?.values || {}).length > 0;
+  }
+
   requestMadLibAnalysis(): void {
-    const value = this.madLibValue.trim();
-    if (!value) {
+    if (!this.canAnalyzeMadLib) {
       return;
     }
+
     this.isAnalyzing = true;
-    this.analyzeMadLib.emit(value);
+    this.analyzeMadLib.emit({
+      text: this.madLibValue.trim(),
+      // Only send the structured payload when the composer produced it; the
+      // freeform path stays on the inference-only route.
+      composition: this.madLibFreeform ? undefined : this.composition,
+    });
   }
 
   onMadLibAnalyzed(result: MadLibAnalysisResult): void {
@@ -615,7 +655,13 @@ export class InterviewWizardComponent implements OnDestroy {
     if (response.nextQuestion) {
       this.discTranscript = [
         ...this.discTranscript,
-        { role: 'assistant', text: response.nextQuestion },
+        {
+          role: 'assistant',
+          text: response.nextQuestion,
+          // Carried back on the next request so the service knows which DISC
+          // quadrants have actually been probed and answered.
+          targetDimension: response.nextQuestionDimension,
+        },
       ];
     }
     this.cdr.detectChanges();
@@ -708,6 +754,8 @@ export class InterviewWizardComponent implements OnDestroy {
     this.isDiscLoading = false;
     this.newChipValue = '';
     this.madLibValue = '';
+    this.madLibFreeform = false;
+    this.composition = undefined;
     this.discAnswerValue = '';
     this.discTranscript = [];
     this.resumeFileName = '';

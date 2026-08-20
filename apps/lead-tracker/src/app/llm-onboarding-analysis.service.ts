@@ -4,7 +4,10 @@ import { ChatOllama } from '@langchain/ollama';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import {
   DiscAssessment,
+  DiscDimension,
   DiscInterviewTurn,
+  DiscQuestionSuggestion,
+  DISC_DIMENSIONS,
   MadLibAnalysisResult,
   ResumeParseResult,
   UserOnboardingProfile,
@@ -12,6 +15,7 @@ import {
   LeadDiscoverySource,
   LeadTopicDiscoveryIntent,
 } from '@optimistic-tanuki/models';
+import { ACTIVE_LEAD_DISCOVERY_SOURCES } from '@optimistic-tanuki/leads-contracts';
 
 interface LlmTopicOutput {
   name: string;
@@ -34,13 +38,54 @@ interface OnboardingAnalysisOutput {
   topics: LlmTopicOutput[];
 }
 
+// Only sources the registry marks active. A model that suggests a retired one
+// (they still exist in the enum for historical leads) has that topic dropped
+// rather than silently configured against a provider that no longer runs.
 const VALID_SOURCES = new Set<string>(
-  Object.values(LeadDiscoverySource) as string[]
+  ACTIVE_LEAD_DISCOVERY_SOURCES as string[]
 );
 const VALID_INTENTS = new Set<string>(
   Object.values(LeadTopicDiscoveryIntent) as string[]
 );
 const VALID_STRATEGIES = new Set(['aggressive', 'balanced', 'conservative']);
+
+/**
+ * Ollama supports schema-constrained decoding via the `format` field. Passing a
+ * schema makes malformed JSON structurally impossible, rather than something we
+ * try to recover by scraping braces out of prose after the fact.
+ */
+const DISC_QUESTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    question: { type: 'string' },
+    targetDimension: { type: 'string', enum: DISC_DIMENSIONS },
+    sufficientSignal: { type: 'boolean' },
+  },
+  required: ['question', 'targetDimension', 'sufficientSignal'],
+} as const;
+
+const DISC_ASSESSMENT_SCHEMA = {
+  type: 'object',
+  properties: {
+    dScore: { type: 'number' },
+    iScore: { type: 'number' },
+    sScore: { type: 'number' },
+    cScore: { type: 'number' },
+    primaryType: { type: 'string', enum: DISC_DIMENSIONS },
+    secondaryType: { type: 'string', enum: DISC_DIMENSIONS },
+    summary: { type: 'string' },
+    confidence: { type: 'number' },
+  },
+  required: [
+    'dScore',
+    'iScore',
+    'sScore',
+    'cScore',
+    'primaryType',
+    'summary',
+    'confidence',
+  ],
+} as const;
 
 @Injectable()
 export class LlmOnboardingAnalysisService {
@@ -70,6 +115,10 @@ export class LlmOnboardingAnalysisService {
         model: ollama.model || 'gemma3',
         baseUrl,
         temperature: ollama.temperature ?? 0.3,
+        // Reasoning-capable models (qwen3/qwen3.5, nemotron) otherwise emit a
+        // long thinking trace before the answer, which costs seconds on every
+        // interview turn without improving a schema-constrained result.
+        think: this.config.get<boolean>('ollama.think') ?? false,
       });
       this.logger.log(
         `Initialized LLM model: ${ollama.model || 'gemma3'} at ${baseUrl}`
@@ -219,6 +268,103 @@ Respond with only valid JSON using this exact shape:
     };
   }
 
+  /**
+   * Produces the next interview question from the user's actual profile and
+   * what they have already said.
+   *
+   * This replaces a hardcoded four-prompt array that was indexed by turn count,
+   * which meant every user was asked the same four questions in the same order
+   * no matter what they answered.
+   */
+  async generateNextDiscQuestion(
+    profile: Partial<UserOnboardingProfile> | undefined,
+    transcript: DiscInterviewTurn[],
+    coveredDimensions: DiscDimension[],
+    previouslyAskedQuestions: string[] = []
+  ): Promise<DiscQuestionSuggestion> {
+    const remaining = DISC_DIMENSIONS.filter(
+      (dimension) => !coveredDimensions.includes(dimension)
+    );
+
+    const parsed = await this.invokeJson<DiscQuestionSuggestion>(
+      `You are conducting a short behavioural interview to place someone on the DISC model.
+
+DISC quadrants:
+- D (Dominance): pace, control, decisiveness, appetite for confrontation
+- I (Influence): persuasion, enthusiasm, relationship building
+- S (Steadiness): consistency, patience, support, reaction to change
+- C (Conscientiousness): precision, process, analysis, standards
+
+Write ONE open question that draws out concrete behaviour — ask about a specific
+past situation, never for self-description or self-rating. Ground it in the
+person's own work and words so it could not have been asked of anyone else.
+Never repeat a question already asked. Keep it under 40 words.
+
+Set sufficientSignal to true only when the answers so far already reveal a clear
+behavioural pattern across all four quadrants.`,
+      `Their professional profile:
+${this.describeProfileForInterview(profile)}
+
+Interview so far:
+${this.formatTranscript(transcript) || '(nothing asked yet)'}
+${
+  previouslyAskedQuestions.length
+    ? `\nThis person completed onboarding before and was already asked the following. Do not ask any of these again, and do not paraphrase them:\n${previouslyAskedQuestions
+        .map((question) => `- ${question}`)
+        .join('\n')}\n`
+    : ''
+}
+Quadrants not yet probed: ${remaining.length ? remaining.join(', ') : 'none'}
+Prefer a question targeting one of those.`,
+      DISC_QUESTION_SCHEMA
+    );
+
+    const targetDimension = DISC_DIMENSIONS.includes(
+      parsed.targetDimension as DiscDimension
+    )
+      ? (parsed.targetDimension as DiscDimension)
+      : remaining[0] || 'D';
+
+    return {
+      question: (parsed.question || '').trim(),
+      targetDimension,
+      sufficientSignal: Boolean(parsed.sufficientSignal),
+    };
+  }
+
+  private describeProfileForInterview(
+    profile: Partial<UserOnboardingProfile> | undefined
+  ): string {
+    if (!profile) {
+      return '(no profile captured)';
+    }
+
+    const lines = [
+      ['Sells', profile.serviceOffer],
+      ['Experience', profile.yearsExperience],
+      ['Skills', (profile.skills || []).join(', ')],
+      ['Ideal customer', profile.idealCustomer],
+      ['Industries', (profile.industries || []).join(', ')],
+      ['Problems solved', (profile.problemsSolved || []).join(', ')],
+      ['Sales approach', profile.salesApproach],
+      ['Communication style', profile.communicationStyle],
+      ['Intro summary', profile.madLibSummary],
+    ]
+      .filter(([, value]) => value && String(value).trim())
+      .map(([label, value]) => `${label}: ${value}`);
+
+    return lines.length ? lines.join('\n') : '(no profile captured)';
+  }
+
+  private formatTranscript(transcript: DiscInterviewTurn[]): string {
+    return transcript
+      .map(
+        (turn) =>
+          `${turn.role === 'assistant' ? 'INTERVIEWER' : 'THEM'}: ${turn.text}`
+      )
+      .join('\n');
+  }
+
   async assessDiscInterview(
     transcript: DiscInterviewTurn[]
   ): Promise<DiscAssessment> {
@@ -240,7 +386,8 @@ Respond with only valid JSON using this exact shape:
   "summary": "<short explanation>",
   "confidence": <0-100>
 }`,
-      `Assess this DISC interview transcript and return balanced DISC scores.\n\n${transcriptText}`
+      `Assess this DISC interview transcript and return balanced DISC scores.\n\n${transcriptText}`,
+      DISC_ASSESSMENT_SCHEMA
     );
 
     return {
@@ -272,7 +419,7 @@ The JSON must have this exact structure:
       "keywords": ["<relevant search keywords>"],
       "excludedTerms": ["<terms to exclude from search>"],
       "discoveryIntent": "<one of: job-openings, service-buyers>",
-      "sources": ["<subset of: remoteok, himalayas, weworkremotely, justremote, jobicy, clutch, crunchbase, indeed, google-maps>"],
+      "sources": ["<subset of: remoteok, himalayas, weworkremotely, jobicy, arbeitnow, remotive, themuse, hackernews, funding-news, google-maps>"],
       "priority": <number 1-10, lower is higher priority>,
       "targetCompanies": ["<target company descriptions>"],
       "buyerPersona": "<description of ideal buyer>",
@@ -461,9 +608,23 @@ Excluded Industries: ${
       : ['business'];
   }
 
+  /**
+   * Public, schema-constrained JSON generation for callers outside onboarding
+   * (the application generator uses it). Decoding is constrained to the schema,
+   * so malformed JSON is structurally impossible.
+   */
+  async generateJson<T>(
+    systemPrompt: string,
+    userPrompt: string,
+    schema?: Record<string, unknown>
+  ): Promise<T> {
+    return this.invokeJson<T>(systemPrompt, userPrompt, schema);
+  }
+
   private async invokeJson<T>(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    schema?: Record<string, unknown>
   ): Promise<T> {
     if (!this.llm) {
       throw new Error('LLM model not available');
@@ -472,10 +633,12 @@ Excluded Industries: ${
     const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
 
     const response = await Promise.race([
-      this.llm.invoke([
-        new SystemMessage(systemPrompt),
-        new HumanMessage(userPrompt),
-      ]),
+      this.llm.invoke(
+        [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
+        // Schema-constrained decoding when a schema is supplied; the brace
+        // scraping in parseJsonObject stays as the path for callers without one.
+        schema ? { format: schema } : undefined
+      ),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('LLM request timed out')), timeoutMs)
       ),

@@ -1,8 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
   DiscAssessment,
+  DiscDimension,
   DiscInterviewRequest,
   DiscInterviewResponse,
+  DiscInterviewTurn,
+  DISC_DIMENSIONS,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
   OnboardingProfileSuggestions,
   OnboardingSuggestionEvidence,
@@ -16,6 +20,33 @@ import {
 } from '@optimistic-tanuki/models';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
+/**
+ * Used only when no model is reachable. Several options per quadrant so the
+ * offline interview still varies between users rather than replaying one script.
+ */
+const FALLBACK_DISC_QUESTIONS: Record<DiscDimension, string[]> = {
+  D: [
+    'Tell me about a recent decision you pushed through when other people were hesitating. What did you do?',
+    'Describe a time you took over something that was stalling. What was your first move?',
+    'When was the last time you overruled a group to keep something moving?',
+  ],
+  I: [
+    'Tell me about a time you had to bring someone around to your point of view. How did you approach it?',
+    'Describe how you won over a sceptical client or colleague recently.',
+    'When did you last rally people around an idea that started as just yours?',
+  ],
+  S: [
+    'Describe a time the ground shifted under a project you were on. How did you respond?',
+    'Tell me about a stretch where you kept something steady while things around it changed.',
+    'When a teammate was struggling recently, what did you actually do?',
+  ],
+  C: [
+    'Tell me about a time you found a problem others had missed. How did you find it?',
+    'Describe how you decide something is finished and ready to ship.',
+    'When did you last slow something down because the quality was not there?',
+  ],
+};
+
 @Injectable()
 export class OnboardingAnalysisService {
   private readonly logger = new Logger(OnboardingAnalysisService.name);
@@ -24,8 +55,62 @@ export class OnboardingAnalysisService {
     private readonly llmAnalysisService: LlmOnboardingAnalysisService
   ) {}
 
-  async analyzeMadLib(text: string): Promise<MadLibAnalysisResult> {
-    const normalizedText = text.trim();
+  async analyzeMadLib(
+    input: string | MadLibAnalysisRequest
+  ): Promise<MadLibAnalysisResult> {
+    const request: MadLibAnalysisRequest =
+      typeof input === 'string' ? { text: input } : input || { text: '' };
+    const normalizedText = (request.text || '').trim();
+    const explicit = request.composition?.values;
+
+    if (!normalizedText && !explicit) {
+      return {
+        summary: '',
+        suggestedServiceOffer: '',
+        suggestedSkills: [],
+        suggestedProfile: {},
+      };
+    }
+
+    const inferred = await this.inferMadLibProfile(normalizedText);
+
+    // What the user typed into a slot is not a suggestion to be second-guessed:
+    // explicit values overwrite anything inferred for the same field, and the
+    // inference only survives where a slot was left blank.
+    const suggestedProfile = explicit
+      ? { ...inferred.suggestedProfile, ...this.pruneEmpty(explicit) }
+      : inferred.suggestedProfile;
+
+    return this.sanitizeMadLibAnalysisResult({
+      ...inferred,
+      summary: normalizedText || inferred.summary,
+      suggestedServiceOffer:
+        (explicit?.serviceOffer as string) || inferred.suggestedServiceOffer,
+      suggestedSkills: (explicit?.skills as string[])?.length
+        ? (explicit.skills as string[])
+        : inferred.suggestedSkills,
+      suggestedIdealCustomer:
+        (explicit?.idealCustomer as string) || inferred.suggestedIdealCustomer,
+      suggestedProfile,
+    });
+  }
+
+  /** Strips blanks so an empty slot never clobbers an inferred value. */
+  private pruneEmpty(
+    values: OnboardingProfileSuggestions
+  ): OnboardingProfileSuggestions {
+    return Object.fromEntries(
+      Object.entries(values).filter(([, value]) => {
+        if (Array.isArray(value)) return value.length > 0;
+        if (typeof value === 'string') return value.trim().length > 0;
+        return value !== undefined && value !== null;
+      })
+    ) as OnboardingProfileSuggestions;
+  }
+
+  private async inferMadLibProfile(
+    normalizedText: string
+  ): Promise<MadLibAnalysisResult> {
     if (!normalizedText) {
       return {
         summary: '',
@@ -37,9 +122,7 @@ export class OnboardingAnalysisService {
 
     if (this.llmAnalysisService.isAvailable) {
       try {
-        return this.sanitizeMadLibAnalysisResult(
-          await this.llmAnalysisService.analyzeMadLib(normalizedText)
-        );
+        return await this.llmAnalysisService.analyzeMadLib(normalizedText);
       } catch (error) {
         this.logger.warn(
           `LLM mad-lib analysis failed, using deterministic fallback: ${
@@ -123,32 +206,179 @@ export class OnboardingAnalysisService {
     });
   }
 
+  /** Hard ceiling on interview length, so a model that never reports enough signal still terminates. */
+  private static readonly MAX_DISC_QUESTIONS = 6;
+
   async advanceDiscInterview(
-    request: DiscInterviewRequest
+    request: DiscInterviewRequest,
+    previouslyAskedQuestions: string[] = []
   ): Promise<DiscInterviewResponse> {
-    const prompts = [
-      'Tell me about a recent situation where you had to influence a difficult decision quickly.',
-      'How do you usually react when a teammate misses a deadline or quality bar?',
-      'When a project becomes ambiguous, what do you do first?',
-      'What kind of work environment helps you perform at your best?',
-    ];
-    const userResponses = request.transcript.filter(
+    const answered = request.transcript.filter(
       (turn) => turn.role === 'user'
+    ).length;
+    const covered = this.coveredDiscDimensions(request.transcript);
+    const allQuadrantsProbed = DISC_DIMENSIONS.every((dimension) =>
+      covered.includes(dimension)
     );
 
-    if (userResponses.length < prompts.length) {
-      return {
-        complete: false,
-        nextQuestion: prompts[userResponses.length],
-      };
+    if (answered >= OnboardingAnalysisService.MAX_DISC_QUESTIONS) {
+      return this.completeDiscInterview(request);
     }
 
+    if (this.llmAnalysisService.isAvailable) {
+      try {
+        const suggestion =
+          await this.llmAnalysisService.generateNextDiscQuestion(
+            request.profile,
+            request.transcript,
+            covered,
+            previouslyAskedQuestions
+          );
+
+        // Completion needs both the model's judgement and full quadrant
+        // coverage, so a confident model cannot cut the interview short while
+        // a whole dimension is still unprobed.
+        if (suggestion.sufficientSignal && allQuadrantsProbed && answered > 0) {
+          return this.completeDiscInterview(request);
+        }
+
+        if (suggestion.question) {
+          return {
+            complete: false,
+            nextQuestion: suggestion.question,
+            nextQuestionDimension: suggestion.targetDimension,
+          };
+        }
+
+        this.logger.warn(
+          'LLM returned an empty interview question, using deterministic fallback'
+        );
+      } catch (error) {
+        this.logger.warn(
+          `LLM interview question generation failed, using deterministic fallback: ${
+            (error as Error).message
+          }`
+        );
+      }
+    }
+
+    return this.fallbackDiscTurn(
+      request,
+      covered,
+      answered,
+      previouslyAskedQuestions
+    );
+  }
+
+  private async completeDiscInterview(
+    request: DiscInterviewRequest
+  ): Promise<DiscInterviewResponse> {
     const assessment = await this.assessDiscTranscript(request);
     return {
       complete: true,
       assessment,
       discType: assessment.primaryType,
     };
+  }
+
+  private coveredDiscDimensions(
+    transcript: DiscInterviewTurn[]
+  ): DiscDimension[] {
+    // Only questions that were actually answered count as probed.
+    const covered: DiscDimension[] = [];
+    let hasDimensionMetadata = false;
+
+    transcript.forEach((turn, index) => {
+      if (turn.role !== 'assistant' || !turn.targetDimension) {
+        return;
+      }
+      hasDimensionMetadata = true;
+      const answered = transcript
+        .slice(index + 1)
+        .some((later) => later.role === 'user');
+      if (answered && !covered.includes(turn.targetDimension)) {
+        covered.push(turn.targetDimension);
+      }
+    });
+
+    if (hasDimensionMetadata) {
+      return covered;
+    }
+
+    // Clients that do not echo the quadrant back (and transcripts recorded
+    // before that field existed) would otherwise never register coverage and
+    // would run to the turn cap. Questions are asked in DISC order, so the
+    // answer count is a sound stand-in.
+    const answeredCount = transcript.filter(
+      (turn) => turn.role === 'user'
+    ).length;
+    return DISC_DIMENSIONS.slice(
+      0,
+      Math.min(answeredCount, DISC_DIMENSIONS.length)
+    );
+  }
+
+  /**
+   * Offline path. The question bank is fixed, but which question a user sees is
+   * seeded from their own profile, so two people do not walk the same script.
+   */
+  private async fallbackDiscTurn(
+    request: DiscInterviewRequest,
+    covered: DiscDimension[],
+    answered: number,
+    previouslyAskedQuestions: string[] = []
+  ): Promise<DiscInterviewResponse> {
+    const remaining = DISC_DIMENSIONS.filter(
+      (dimension) => !covered.includes(dimension)
+    );
+
+    if (!remaining.length) {
+      return this.completeDiscInterview(request);
+    }
+
+    const dimension = remaining[0];
+    const bank = FALLBACK_DISC_QUESTIONS[dimension];
+    const seed = this.profileSeed(request.profile) + answered;
+    const alreadyAsked = new Set(
+      previouslyAskedQuestions.map((question) => question.trim())
+    );
+
+    // Walk the bank from the profile-seeded offset and take the first entry
+    // this person has not already seen; fall back to the seeded one when a
+    // re-run has exhausted the bank.
+    for (let offset = 0; offset < bank.length; offset++) {
+      const candidate = bank[(seed + offset) % bank.length];
+      if (!alreadyAsked.has(candidate)) {
+        return {
+          complete: false,
+          nextQuestion: candidate,
+          nextQuestionDimension: dimension,
+        };
+      }
+    }
+
+    return {
+      complete: false,
+      nextQuestion: bank[seed % bank.length],
+      nextQuestionDimension: dimension,
+    };
+  }
+
+  private profileSeed(profile: DiscInterviewRequest['profile']): number {
+    const source = [
+      profile?.serviceOffer,
+      profile?.idealCustomer,
+      ...(profile?.skills || []),
+      ...(profile?.industries || []),
+    ]
+      .filter(Boolean)
+      .join('|');
+
+    let hash = 0;
+    for (let index = 0; index < source.length; index++) {
+      hash = (hash * 31 + source.charCodeAt(index)) >>> 0;
+    }
+    return hash;
   }
 
   async analyzeProfile(
@@ -255,7 +485,7 @@ export class OnboardingAnalysisService {
         keywords: this.deriveBuyerKeywords(profile),
         excludedTerms: this.normalizeExcludedTerms(profile),
         discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
-        sources: [LeadDiscoverySource.CLUTCH, LeadDiscoverySource.CRUNCHBASE],
+        sources: [LeadDiscoverySource.FUNDING_NEWS],
         priority: 2,
         targetCompanies: profile.companySizeTarget,
         buyerPersona: profile.idealCustomer,
@@ -275,7 +505,7 @@ export class OnboardingAnalysisService {
         keywords: this.deriveBuyerKeywords(profile),
         excludedTerms: this.normalizeExcludedTerms(profile),
         discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
-        sources: [LeadDiscoverySource.GOOGLE_MAPS, LeadDiscoverySource.CLUTCH],
+        sources: [LeadDiscoverySource.GOOGLE_MAPS],
         googleMapsCities: [
           profile.localSearchLocation || profile.geographicFocus,
         ],
@@ -346,8 +576,8 @@ export class OnboardingAnalysisService {
       discoveryIntent: LeadTopicDiscoveryIntent.SERVICE_BUYERS,
       sources:
         profile.geographicFocus && profile.geographicFocus !== 'Global'
-          ? [LeadDiscoverySource.GOOGLE_MAPS, LeadDiscoverySource.CLUTCH]
-          : [LeadDiscoverySource.CLUTCH, LeadDiscoverySource.CRUNCHBASE],
+          ? [LeadDiscoverySource.GOOGLE_MAPS]
+          : [LeadDiscoverySource.FUNDING_NEWS],
       googleMapsCities:
         profile.geographicFocus && profile.geographicFocus !== 'Global'
           ? [profile.localSearchLocation || profile.geographicFocus]
@@ -431,9 +661,14 @@ export class OnboardingAnalysisService {
       LeadDiscoverySource.REMOTE_OK,
       LeadDiscoverySource.HIMALAYAS,
       LeadDiscoverySource.WE_WORK_REMOTELY,
+      LeadDiscoverySource.ARBEITNOW,
+      LeadDiscoverySource.REMOTIVE,
     ];
+    // Larger budgets historically also fanned out to Indeed; that source is
+    // retired (HTTP 403 to any server request), and Jobicy covers the same
+    // ground from a documented public API.
     if ((profile.budgetRange || []).some((range) => range.includes('25k'))) {
-      sources.push(LeadDiscoverySource.INDEED);
+      sources.push(LeadDiscoverySource.JOBICY);
     }
     return sources;
   }

@@ -137,21 +137,35 @@
 
       <div class="questions-container">
         <div class="question-card" *ngIf="currentStage === 'mad-lib'">
-          <label for="mad-lib">
-            Fill in the onboarding scaffold
+          <label [attr.for]="madLibFreeform ? 'mad-lib' : null">
+            Tell us about yourself
             <span class="required">*</span>
           </label>
-          <p class="question-help">
-            Each section maps to later onboarding fields, so include the buyer,
-            problems, outcomes, delivery, and outreach details you want
-            prefilled.
-          </p>
-          <textarea
-            id="mad-lib"
-            [(ngModel)]="madLibValue"
-            rows="7"
-            placeholder="I help [customer type] in [industries] solve [problems] by delivering [service offer/results] using [skills]. I usually work with [company sizes/budget/geography] and reach buyers through [outreach methods]. My communication style is [style]."
-          ></textarea>
+
+          <ng-container *ngIf="!madLibFreeform">
+            <app-mad-lib-composer
+              (compositionChange)="onCompositionChange($event)"
+            ></app-mad-lib-composer>
+            <button type="button" class="link-toggle" (click)="useFreeform()">
+              Write it as a paragraph instead
+            </button>
+          </ng-container>
+
+          <ng-container *ngIf="madLibFreeform">
+            <p class="question-help">
+              Mention the buyer, the problems you solve, the outcomes, what you
+              deliver, and how you reach people.
+            </p>
+            <textarea
+              id="mad-lib"
+              [(ngModel)]="madLibValue"
+              rows="7"
+              placeholder="I help [customer type] in [industries] solve [problems] by delivering [service offer/results] using [skills]. I usually work with [company sizes/budget/geography] and reach buyers through [outreach methods]. My communication style is [style]."
+            ></textarea>
+            <button type="button" class="link-toggle" (click)="useComposer()">
+              Back to guided fill-in
+            </button>
+          </ng-container>
         </div>
 
         <div class="question-card" *ngIf="currentStage === 'resume'">
@@ -395,7 +409,7 @@
           *ngIf="currentStage === 'mad-lib'"
           class="btn-primary"
           (click)="requestMadLibAnalysis()"
-          [disabled]="!madLibValue.trim() || isAnalyzing"
+          [disabled]="!canAnalyzeMadLib || isAnalyzing"
         >
           {{ isAnalyzing ? 'Analyzing...' : 'Continue' }}
         </button>
