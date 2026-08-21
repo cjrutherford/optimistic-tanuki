@@ -244,16 +244,88 @@ const SELF_REPORT = [
  * 300s headers timeout on a cold model load — the same failure that killed the
  * non-streaming pull.
  */
-const chatJson = async (model, system, user, schema) => {
+/**
+ * Does the parsed value actually satisfy the schema?
+ *
+ * The original pilot only asked whether the response was parseable JSON, and
+ * that is what let a model through that cannot do structured output at all: a
+ * bare string like `"Tell me about a time..."` parses perfectly well as JSON,
+ * it is simply not an object, so every consumer expecting fields gets nothing.
+ * Conformance is the metric that matters, not parseability.
+ */
+const conformsTo = (schema, value) => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    return { ok: false, why: Array.isArray(value) ? 'array' : typeof value };
+  }
+
+  for (const key of schema.required || []) {
+    if (!(key in value)) {
+      return { ok: false, why: `missing ${key}` };
+    }
+    const spec = schema.properties?.[key] || {};
+    const actual = value[key];
+    if (spec.type === 'string' && typeof actual !== 'string') {
+      return { ok: false, why: `${key} not a string` };
+    }
+    if (spec.type === 'number' && typeof actual !== 'number') {
+      return { ok: false, why: `${key} not a number` };
+    }
+    if (spec.type === 'boolean' && typeof actual !== 'boolean') {
+      return { ok: false, why: `${key} not a boolean` };
+    }
+    if (spec.enum && !spec.enum.includes(actual)) {
+      return { ok: false, why: `${key}="${actual}" outside enum` };
+    }
+  }
+
+  return { ok: true, why: '' };
+};
+
+/**
+ * Priming strategies, weakest nudge first.
+ *
+ * `none` is what the app does today: hand the schema to Ollama and trust
+ * constrained decoding. The rest exist to find out whether a model that
+ * ignores the schema can be talked into complying anyway, which is cheaper
+ * than swapping models if it works.
+ */
+const PRIMING = {
+  none: (system) => ({ system, prefill: null }),
+  instruction: (system, schema) => ({
+    system: `${system}
+
+Reply with a single JSON object and nothing else. No prose, no code fence, no
+explanation. It must have exactly these keys: ${Object.keys(
+      schema.properties || {}
+    ).join(', ')}.`,
+    prefill: null,
+  }),
+  prefill: (system, schema) => ({
+    system: `${system}
+
+Reply with one JSON object only, using exactly these keys: ${Object.keys(
+      schema.properties || {}
+    ).join(', ')}.`,
+    // Putting an opening brace in the model's mouth: it can only continue the
+    // object rather than starting a sentence.
+    prefill: '{',
+  }),
+};
+
+const chatJson = async (model, system, user, schema, priming = 'none') => {
   const started = Date.now();
+  const shaped = (PRIMING[priming] || PRIMING.none)(system, schema);
   const res = await fetch(`${BASE}/api/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: system },
+        { role: 'system', content: shaped.system },
         { role: 'user', content: user },
+        ...(shaped.prefill
+          ? [{ role: 'assistant', content: shaped.prefill }]
+          : []),
       ],
       format: schema,
       stream: true,
@@ -294,11 +366,22 @@ const chatJson = async (model, system, user, schema) => {
   }
 
   const ms = Date.now() - started;
+  // With a prefill the model continues the object rather than restating it, so
+  // the seed has to be put back before parsing.
+  const text =
+    shaped.prefill && !raw.trimStart().startsWith('{')
+      ? `${shaped.prefill}${raw}`
+      : raw;
+
+  let value = null;
   try {
-    return { ok: true, ms, value: JSON.parse(raw), raw };
+    value = JSON.parse(text);
   } catch {
-    return { ok: false, ms, value: null, raw };
+    return { ok: false, ms, value: null, raw: text, why: 'unparseable' };
   }
+
+  const conforms = conformsTo(schema, value);
+  return { ok: conforms.ok, ms, value, raw: text, why: conforms.why };
 };
 
 const describeProfile = (p) => `Sells: ${p.serviceOffer}
@@ -477,6 +560,101 @@ const median = (xs) => {
   return s[Math.floor(s.length / 2)];
 };
 
+/**
+ * The structured-output gate.
+ *
+ * Every model here is asked the real DISC question prompt against the real
+ * schema, three times per priming mode, and scored on whether the reply is an
+ * object carrying the required keys. A model that cannot clear this cannot run
+ * the interview, however good its prose is — the app throws the reply away and
+ * serves a canned question instead, which is the "interview feels canned"
+ * symptom users actually see.
+ */
+const structuredRun = async (models, installed) => {
+  const modes = ['none', 'instruction', 'prefill'];
+  const rows = [];
+
+  for (const candidate of models) {
+    const { model } = candidate;
+    if (!installed.has(model)) {
+      if (!SHOULD_PULL) {
+        rows.push({ model, missing: true });
+        console.log(`  ${model}: not installed (use --pull)`);
+        continue;
+      }
+      console.log(`  pulling ${model} ...`);
+      try {
+        await pull(model);
+      } catch (error) {
+        rows.push({ model, error: error.message });
+        continue;
+      }
+    }
+
+    const row = { model, size: candidate.size, modes: {} };
+    for (const mode of modes) {
+      let pass = 0;
+      let why = '';
+      const times = [];
+      for (const profile of PROFILES.slice(0, 3)) {
+        const out = await chatJson(
+          model,
+          SYSTEM_PROMPT,
+          `Their professional profile:\n${describeProfile(
+            profile
+          )}\n\nInterview so far:\n(nothing asked yet)\n\nQuadrants not yet probed: D, I, S, C\nPrefer a question targeting one of those.`,
+          QUESTION_SCHEMA,
+          mode
+        );
+        times.push(out.ms);
+        if (out.ok) pass += 1;
+        else if (!why) why = out.why || 'failed';
+      }
+      row.modes[mode] = { pass, of: 3, why, medianMs: median(times) };
+      console.log(
+        `  ${model.padEnd(26)} ${mode.padEnd(12)} ${pass}/3` +
+          (pass < 3 ? `  (${why})` : '')
+      );
+    }
+    rows.push(row);
+  }
+
+  console.log(
+    '\n=== STRUCTURED OUTPUT (schema conformance, 3 prompts each) ==='
+  );
+  console.log(
+    'model'.padEnd(26) +
+      'size'.padEnd(8) +
+      'bare'.padEnd(8) +
+      'instruct'.padEnd(10) +
+      'prefill'.padEnd(9) +
+      'median ms'
+  );
+  for (const row of rows) {
+    if (row.missing || row.error) {
+      console.log(`${row.model.padEnd(26)}${row.error || 'not installed'}`);
+      continue;
+    }
+    const cell = (m) => `${row.modes[m].pass}/3`;
+    console.log(
+      row.model.padEnd(26) +
+        String(row.size || '').padEnd(8) +
+        cell('none').padEnd(8) +
+        cell('instruction').padEnd(10) +
+        cell('prefill').padEnd(9) +
+        row.modes.none.medianMs
+    );
+  }
+
+  if (JSON_OUT) {
+    const { writeFileSync } = await import('node:fs');
+    writeFileSync(JSON_OUT, JSON.stringify(rows, null, 2));
+    console.log(`\nWrote ${JSON_OUT}`);
+  }
+
+  return rows;
+};
+
 const main = async () => {
   console.log(`\nOllama host: ${BASE}`);
   let installed;
@@ -491,6 +669,14 @@ const main = async () => {
       installed.size ? [...installed].join(', ') : '(none)'
     }\n`
   );
+
+  if (flag('structured', false)) {
+    await structuredRun(
+      ONLY ? CANDIDATES.filter((c) => c.model.includes(ONLY)) : CANDIDATES,
+      installed
+    );
+    return;
+  }
 
   const results = [];
   // Smallest first: the link to the Ollama host runs around 1.3 MB/s, so a

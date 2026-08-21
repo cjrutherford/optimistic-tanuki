@@ -659,7 +659,12 @@ Excluded Industries: ${
 
     const response = await this.raceWithTimeout(
       this.llm.invoke(
-        [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
+        [
+          new SystemMessage(
+            schema ? this.primeForJson(systemPrompt, schema) : systemPrompt
+          ),
+          new HumanMessage(userPrompt),
+        ],
         // Schema-constrained decoding when a schema is supplied; the brace
         // scraping in parseJsonObject stays as the path for callers without one.
         schema ? { format: schema } : undefined
@@ -672,6 +677,33 @@ Excluded Industries: ${
         : JSON.stringify(response.content);
 
     return this.parseJsonObject<T>(responseText);
+  }
+
+  /**
+   * Spells out the JSON contract in the prompt as well as the `format` field.
+   *
+   * Passing a schema to Ollama is meant to be enough, but not every model
+   * honours it. `qwen3.5:4b-q8_0` ignores both the schema and legacy JSON mode
+   * and answers in prose — measured at 0/3 conformance — while the same model
+   * with this instruction scores 3/3. Since the response is thrown away when it
+   * is not an object, the user sees a canned fallback question instead of a
+   * generated one, so the belt-and-braces is worth the few tokens.
+   *
+   * Verify with: `node tools/scripts/pilot-onboarding-models.mjs --structured`
+   */
+  private primeForJson(
+    systemPrompt: string,
+    schema: { properties?: Record<string, unknown> }
+  ): string {
+    const keys = Object.keys(schema.properties || {});
+    if (!keys.length) {
+      return systemPrompt;
+    }
+
+    return `${systemPrompt}
+
+Reply with a single JSON object and nothing else — no prose, no code fence, no
+explanation. It must contain exactly these keys: ${keys.join(', ')}.`;
   }
 
   private parseJsonObject<T>(raw: string): T {
