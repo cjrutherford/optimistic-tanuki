@@ -140,22 +140,17 @@ export class LlmOnboardingAnalysisService {
       throw new Error('LLM model not available');
     }
 
-    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
-
     const systemPrompt = this.buildSystemPrompt();
     const userPrompt = this.buildUserPrompt(profile);
 
     this.logger.log('Sending onboarding profile to LLM for analysis');
 
-    const response = await Promise.race([
+    const response = await this.raceWithTimeout(
       this.llm.invoke([
         new SystemMessage(systemPrompt),
         new HumanMessage(userPrompt),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM request timed out')), timeoutMs)
-      ),
-    ]);
+      ])
+    );
 
     const responseText =
       typeof response.content === 'string'
@@ -613,6 +608,38 @@ Excluded Industries: ${
    * (the application generator uses it). Decoding is constrained to the schema,
    * so malformed JSON is structurally impossible.
    */
+  /**
+   * Applies the configured model timeout, or none at all.
+   *
+   * `ollama.timeoutMs` at or below zero disables it. This exists separately
+   * from the gateway's own timeout, and having only lowered that one still left
+   * topic analysis dying here at exactly 120s on local hardware — a second
+   * ceiling nobody thinks to look for.
+   */
+  private async raceWithTimeout<T>(work: Promise<T>): Promise<T> {
+    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
+    if (!timeoutMs || timeoutMs <= 0) {
+      return work;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        work,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('LLM request timed out')),
+            timeoutMs
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  }
+
   async generateJson<T>(
     systemPrompt: string,
     userPrompt: string,
@@ -630,19 +657,14 @@ Excluded Industries: ${
       throw new Error('LLM model not available');
     }
 
-    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
-
-    const response = await Promise.race([
+    const response = await this.raceWithTimeout(
       this.llm.invoke(
         [new SystemMessage(systemPrompt), new HumanMessage(userPrompt)],
         // Schema-constrained decoding when a schema is supplied; the brace
         // scraping in parseJsonObject stays as the path for callers without one.
         schema ? { format: schema } : undefined
-      ),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM request timed out')), timeoutMs)
-      ),
-    ]);
+      )
+    );
 
     const responseText =
       typeof response.content === 'string'
