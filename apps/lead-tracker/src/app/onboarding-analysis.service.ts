@@ -83,14 +83,26 @@ export class OnboardingAnalysisService {
     // explicit values overwrite anything inferred for the same field, and the
     // inference only survives where a slot was left blank.
     const suggestedProfile = explicit
-      ? { ...inferred.suggestedProfile, ...this.pruneEmpty(explicit) }
+      ? {
+          ...inferred.suggestedProfile,
+          ...this.pruneEmpty(explicit),
+          // serviceOffer arrives as a list from the composer but is stored as
+          // prose, so it is collapsed here rather than leaving an array in a
+          // field every consumer reads as a string. Tested against the
+          // collapsed value, not the raw one: a slot holding only whitespace is
+          // truthy and would otherwise wipe out what was inferred.
+          ...(this.toProseValue(explicit.serviceOffer)
+            ? { serviceOffer: this.toProseValue(explicit.serviceOffer) }
+            : {}),
+        }
       : inferred.suggestedProfile;
 
     return this.sanitizeMadLibAnalysisResult({
       ...inferred,
       summary: normalizedText || inferred.summary,
       suggestedServiceOffer:
-        (explicit?.serviceOffer as string) || inferred.suggestedServiceOffer,
+        this.toProseValue(explicit?.serviceOffer) ||
+        inferred.suggestedServiceOffer,
       suggestedSkills: (explicit?.skills as string[])?.length
         ? (explicit.skills as string[])
         : inferred.suggestedSkills,
@@ -139,7 +151,7 @@ export class OnboardingAnalysisService {
 
     const heuristic = this.buildSuggestedProfile(normalizedText);
     const serviceOffer =
-      heuristic.serviceOffer ||
+      this.toProseValue(heuristic.serviceOffer) ||
       normalizedText.replace(/^i am\s+/i, '').replace(/\.$/, '');
 
     return {
@@ -1112,12 +1124,30 @@ export class OnboardingAnalysisService {
       .filter((value) => value.length > 0);
   }
 
-  private sanitizeOptionalString(value?: string): string | undefined {
+  /**
+   * Collapses a multi-value slot into the single sentence fragment the profile
+   * stores. Anything already a string passes through untouched.
+   */
+  private toProseValue(value?: string | string[]): string {
+    if (Array.isArray(value)) {
+      const items = value.map((item) => (item || '').trim()).filter(Boolean);
+      if (items.length <= 1) {
+        return items[0] || '';
+      }
+      return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+    }
+
+    return (value || '').trim();
+  }
+
+  private sanitizeOptionalString(
+    value?: string | string[]
+  ): string | undefined {
     if (!value) {
       return undefined;
     }
 
-    const sanitized = this.sanitizeExtractedText(value);
+    const sanitized = this.sanitizeExtractedText(this.toProseValue(value));
     return sanitized || undefined;
   }
 

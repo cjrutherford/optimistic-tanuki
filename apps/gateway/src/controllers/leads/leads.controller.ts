@@ -393,6 +393,7 @@ export class LeadsController {
     );
   }
 
+  @LongRunning()
   @Post('onboarding/analyze')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Analyze onboarding profile and generate topics' })
@@ -402,6 +403,7 @@ export class LeadsController {
     );
   }
 
+  @LongRunning()
   @Post('onboarding/mad-lib/analyze')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Analyze a mad-lib onboarding prompt' })
@@ -505,6 +507,7 @@ export class LeadsController {
     );
   }
 
+  @LongRunning()
   @Post('onboarding/disc/advance')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Advance the onboarding DISC interview' })
@@ -633,6 +636,7 @@ export class LeadsController {
     response.send(Buffer.from(exported.contentBase64, 'base64'));
   }
 
+  @LongRunning()
   @Post('analysis/run')
   @RequirePermissions('lead.read')
   @ApiOperation({ summary: 'Run lead analysis for a lead and topic' })

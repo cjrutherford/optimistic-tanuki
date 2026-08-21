@@ -30,6 +30,14 @@ import { MadLibComposerComponent } from './mad-lib-composer.component';
 
 type WizardStage = 'mad-lib' | 'resume' | 'profile' | 'disc';
 
+/**
+ * Suggestion fields the profile stores as a single sentence, even though the
+ * intro composer collects several values for them.
+ */
+const PROSE_FIELDS = new Set<keyof OnboardingProfileSuggestions>([
+  'serviceOffer',
+]);
+
 @Component({
   selector: 'app-interview-wizard',
   standalone: true,
@@ -887,6 +895,19 @@ export class InterviewWizardComponent implements OnDestroy {
             [normalized]
           );
           (this.profile as unknown as Record<string, unknown>)[field] = merged;
+        }
+      } else if (Array.isArray(value) && PROSE_FIELDS.has(field)) {
+        // The composer collects several of these, but the profile stores one
+        // sentence — everything reading it downstream expects prose, not an
+        // array. Collapsing here keeps that contract at the boundary.
+        const joined = value.map((item) => item.trim()).filter(Boolean);
+        if (joined.length && !profileValue) {
+          (this.profile as unknown as Record<string, unknown>)[field] =
+            joined.length === 1
+              ? joined[0]
+              : `${joined.slice(0, -1).join(', ')} and ${
+                  joined[joined.length - 1]
+                }`;
         }
       } else if (Array.isArray(value)) {
         const merged = this.mergeUnique(

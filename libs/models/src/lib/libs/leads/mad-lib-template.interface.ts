@@ -20,7 +20,14 @@ export type MadLibSlotKind =
   /** One value chosen from `options`, e.g. geographic focus. */
   | 'choice'
   /** Several values entered as bullets/chips, e.g. industries. */
-  | 'list';
+  | 'list'
+  /**
+   * Several values ticked from a fixed set, e.g. contact methods. Use this
+   * rather than `list` when the useful answers are known in advance: typing
+   * them free-hand invites near-duplicates ("email", "e-mail", "Email") that
+   * nothing downstream can group.
+   */
+  | 'checkset';
 
 export interface MadLibTextSegment {
   kind: 'text';

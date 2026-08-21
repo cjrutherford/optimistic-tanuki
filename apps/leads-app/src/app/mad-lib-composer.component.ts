@@ -32,9 +32,17 @@ import { DEFAULT_MAD_LIB_TEMPLATE } from './mad-lib-template';
   template: `
     <p class="mad-lib" [attr.aria-label]="'Introduction builder'">
       <ng-container *ngFor="let segment of template.segments; let i = index">
-        <span class="lit" *ngIf="segment.kind === 'text'">{{
-          segment.text
-        }}</span>
+        <!--
+          Punctuation is its own span with no leading gap, so a full stop hugs
+          the slot it closes instead of drifting a space away from it. Without
+          this the sentence reads "...faster releases . I do that using".
+        -->
+        <span
+          class="lit"
+          *ngIf="segment.kind === 'text'"
+          [class.punct]="isPunctuation(segment)"
+          >{{ segment.text }}</span
+        >
 
         <ng-container *ngIf="segment.kind === 'slot'">
           <ng-container [ngSwitch]="asSlot(segment).slotType">
@@ -71,6 +79,24 @@ import { DEFAULT_MAD_LIB_TEMPLATE } from './mad-lib-template';
               </select>
             </span>
 
+            <!-- several values ticked from a known set -->
+            <span class="slot checkset" *ngSwitchCase="'checkset'">
+              <span
+                class="check-option"
+                *ngFor="let option of asSlot(segment).options; let oi = index"
+              >
+                <input
+                  type="checkbox"
+                  [id]="slotId(asSlot(segment), i) + '-' + oi"
+                  [checked]="isChecked(asSlot(segment).field, option)"
+                  (change)="toggleOption(asSlot(segment).field, option)"
+                />
+                <label [attr.for]="slotId(asSlot(segment), i) + '-' + oi">{{
+                  option
+                }}</label>
+              </span>
+            </span>
+
             <!-- several values, entered as bullets -->
             <span class="slot list" *ngSwitchCase="'list'">
               <span
@@ -89,6 +115,7 @@ import { DEFAULT_MAD_LIB_TEMPLATE } from './mad-lib-template';
               <input
                 type="text"
                 class="chip-input"
+                [size]="chipInputSize(asSlot(segment))"
                 [id]="slotId(asSlot(segment), i)"
                 [attr.aria-label]="asSlot(segment).label"
                 [attr.list]="
@@ -136,6 +163,51 @@ import { DEFAULT_MAD_LIB_TEMPLATE } from './mad-lib-template';
 
       .lit {
         margin-right: 0.3rem;
+      }
+
+      /* Cancels the previous element's trailing gap so punctuation sits
+         against the word or field it closes. */
+      .lit.punct {
+        margin-left: -0.3rem;
+      }
+
+      .slot.checkset {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.6rem;
+        vertical-align: middle;
+        margin-right: 0.3rem;
+      }
+
+      .check-option {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.1rem 0.5rem 0.1rem 0.35rem;
+        border: 1px solid var(--app-border, #d0d7de);
+        border-radius: 999px;
+        background: var(--app-surface-raised, #f6f8fa);
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
+
+      .check-option label {
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .check-option input {
+        margin: 0;
+        cursor: pointer;
+      }
+
+      .check-option:has(input:checked) {
+        border-color: var(--app-accent, #2e7d62);
+        background: color-mix(
+          in srgb,
+          var(--app-accent, #2e7d62) 12%,
+          transparent
+        );
       }
 
       .slot {
@@ -196,8 +268,10 @@ import { DEFAULT_MAD_LIB_TEMPLATE } from './mad-lib-template';
         min-height: 1.5rem;
       }
 
+      /* Sized to its own text via the size attribute. A fixed min-width made
+         every empty list slot a wide blank that broke the sentence apart. */
       .chip-input {
-        min-width: 7rem;
+        min-width: 0;
       }
 
       .composer-hint {
@@ -256,8 +330,44 @@ export class MadLibComposerComponent {
     return segment as MadLibSlotSegment;
   }
 
+  /** True for a segment that is only punctuation, so it renders flush left. */
+  isPunctuation(segment: { kind: string; text?: string }): boolean {
+    return /^[.,;:!?]+$/.test((segment.text || '').trim());
+  }
+
+  isChecked(field: MadLibField, option: string): boolean {
+    return this.listValue(field).includes(option);
+  }
+
+  toggleOption(field: MadLibField, option: string): void {
+    const current = this.listValue(field);
+    // Rebuilt in the template's own order rather than click order, so the
+    // sentence reads the same however the boxes were ticked.
+    const next = current.includes(option)
+      ? current.filter((item) => item !== option)
+      : [...current, option];
+
+    (this.values as Record<string, unknown>)[field] = next;
+    this.emit();
+  }
+
   slotId(slot: MadLibSlotSegment, index: number): string {
     return `madlib-${slot.field}-${index}`;
+  }
+
+  /**
+   * Width of a list slot's entry box.
+   *
+   * Once a slot has chips the box is only there to add the next one, so it
+   * shrinks to its prompt. Left at a fixed width it opened a gap wide enough
+   * to read as a missing answer mid-sentence.
+   */
+  chipInputSize(slot: MadLibSlotSegment): number {
+    const draft = this.drafts[slot.field] || '';
+    const prompt = this.listValue(slot.field).length
+      ? 'Add another'
+      : slot.placeholder;
+    return Math.max(6, Math.min((draft || prompt).length + 1, 32));
   }
 
   inputSize(slot: MadLibSlotSegment): number {
@@ -338,23 +448,29 @@ export class MadLibComposerComponent {
 
     for (const segment of this.template.segments) {
       if (segment.kind === 'text') {
-        sentence += `${sentence && !/[.,]$/.test(sentence) ? ' ' : ''}${
-          segment.text
-        }`;
+        // Punctuation closes the preceding clause, so it joins with no space;
+        // everything else starts a new word and needs one. Keying off the
+        // segment rather than what the sentence already ends with is what
+        // stops "faster releases.I do that using".
+        sentence += this.isPunctuation(segment)
+          ? segment.text
+          : `${sentence ? ' ' : ''}${segment.text}`;
         continue;
       }
 
       const slot = segment;
-      const rendered =
-        slot.slotType === 'list'
-          ? this.joinList(this.listValue(slot.field))
-          : this.textValue(slot.field);
+      // Both multi-value kinds read out as a list; only how they are entered
+      // differs, so they must be collected the same way here.
+      const isMultiValue =
+        slot.slotType === 'list' || slot.slotType === 'checkset';
+      const rendered = isMultiValue
+        ? this.joinList(this.listValue(slot.field))
+        : this.textValue(slot.field);
 
       if (rendered) {
-        (filled as Record<string, unknown>)[slot.field] =
-          slot.slotType === 'list'
-            ? this.listValue(slot.field)
-            : this.textValue(slot.field);
+        (filled as Record<string, unknown>)[slot.field] = isMultiValue
+          ? this.listValue(slot.field)
+          : this.textValue(slot.field);
         sentence += ` ${rendered}`;
       } else {
         if (!slot.optional) {

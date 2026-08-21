@@ -384,7 +384,9 @@ describe('OnboardingAnalysisService', () => {
 
     expect(result.suggestedProfile.idealCustomer).toBe('SaaS teams');
     expect(result.suggestedProfile.serviceOffer).toBeTruthy();
-    expect(result.suggestedProfile.serviceOffer?.trim()).not.toBe('');
+    expect(String(result.suggestedProfile.serviceOffer ?? '').trim()).not.toBe(
+      ''
+    );
   });
 
   it('accepts a plain string for the freeform escape hatch', async () => {

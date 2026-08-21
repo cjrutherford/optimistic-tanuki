@@ -25,7 +25,14 @@ export interface ResumeRoleSummary {
 export interface OnboardingProfileSuggestions {
   /** What the person calls themselves, e.g. "Senior Platform Engineer". */
   professionalTitle?: string;
-  serviceOffer?: string;
+  /**
+   * What they deliver. The intro composer collects several, since people
+   * rarely sell exactly one thing, but the stored profile keeps a single
+   * prose value — everything downstream (topic analysis, the fact guard,
+   * generated applications) reads it as a sentence. The list is joined at the
+   * boundary rather than changing that.
+   */
+  serviceOffer?: string | string[];
   yearsExperience?: string;
   skills?: string[];
   certifications?: string[];
