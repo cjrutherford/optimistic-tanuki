@@ -97,6 +97,18 @@ const DISC_ASSESSMENT_SCHEMA = {
   ],
 } as const;
 
+/**
+ * Ceiling on a single model call when nothing is configured.
+ *
+ * Measured against a local 4b model: resume parsing 102s, intro analysis 63s,
+ * topic analysis 164-332s. The old 120s default cut the longest of those off.
+ * Ten minutes matches the gateway's own model-bound preset, so neither layer
+ * silently undercuts the other — a mismatch there is what made the first fix
+ * look ineffective. Setting it to 0 disables it, which is for debugging only:
+ * a hung model then holds the request open indefinitely.
+ */
+const DEFAULT_MODEL_TIMEOUT_MS = 600_000;
+
 @Injectable()
 export class LlmOnboardingAnalysisService {
   private readonly logger = new Logger(LlmOnboardingAnalysisService.name);
@@ -652,7 +664,8 @@ Excluded Industries: ${
    * ceiling nobody thinks to look for.
    */
   private async raceWithTimeout<T>(work: Promise<T>): Promise<T> {
-    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
+    const timeoutMs =
+      this.config.get<number>('ollama.timeoutMs') ?? DEFAULT_MODEL_TIMEOUT_MS;
     if (!timeoutMs || timeoutMs <= 0) {
       return work;
     }

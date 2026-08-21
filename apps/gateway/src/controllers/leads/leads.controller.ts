@@ -51,7 +51,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User } from '../../decorators/user.decorator';
-import { RequestTimeout } from '../../decorators/request-timeout.decorator';
+import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 
 @ApiTags('leads')
@@ -393,12 +393,7 @@ export class LeadsController {
     );
   }
 
-  // Disabled rather than merely lengthened while local inference is the
-  // bottleneck: on modest hardware a cold model load plus a long prompt can
-  // outrun any fixed ceiling, and a request cut off mid-generation looks to the
-  // user exactly like the feature being broken. Revisit once the model host is
-  // settled — an unbounded route ties up a connection if the model ever hangs.
-  @RequestTimeout('none')
+  @ModelBound()
   @Post('onboarding/analyze')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Analyze onboarding profile and generate topics' })
@@ -408,12 +403,7 @@ export class LeadsController {
     );
   }
 
-  // Disabled rather than merely lengthened while local inference is the
-  // bottleneck: on modest hardware a cold model load plus a long prompt can
-  // outrun any fixed ceiling, and a request cut off mid-generation looks to the
-  // user exactly like the feature being broken. Revisit once the model host is
-  // settled — an unbounded route ties up a connection if the model ever hangs.
-  @RequestTimeout('none')
+  @ModelBound()
   @Post('onboarding/mad-lib/analyze')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Analyze a mad-lib onboarding prompt' })
@@ -428,12 +418,8 @@ export class LeadsController {
     );
   }
 
-  // Same reasoning as the other model-bound routes: a 2-page resume measured
-  // 102s of the 120s preset on local inference, so a cold model or a longer
-  // document runs out of budget and the upload just fails. Revisit alongside
-  // the others once the model host is settled.
   @Post('onboarding/resume/parse')
-  @RequestTimeout('none')
+  @ModelBound()
   @UseInterceptors(FileInterceptor('file'))
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Parse a resume upload for onboarding prefill' })
@@ -521,12 +507,7 @@ export class LeadsController {
     );
   }
 
-  // Disabled rather than merely lengthened while local inference is the
-  // bottleneck: on modest hardware a cold model load plus a long prompt can
-  // outrun any fixed ceiling, and a request cut off mid-generation looks to the
-  // user exactly like the feature being broken. Revisit once the model host is
-  // settled — an unbounded route ties up a connection if the model ever hangs.
-  @RequestTimeout('none')
+  @ModelBound()
   @Post('onboarding/disc/advance')
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Advance the onboarding DISC interview' })
@@ -564,12 +545,8 @@ export class LeadsController {
     );
   }
 
-  // Same reasoning as the other model-bound routes: a 2-page resume measured
-  // 102s of the 120s preset on local inference, so a cold model or a longer
-  // document runs out of budget and the upload just fails. Revisit alongside
-  // the others once the model host is settled.
   @Post(':id/application/generate')
-  @RequestTimeout('none')
+  @ModelBound()
   @RequirePermissions('lead.update')
   @ApiOperation({
     summary: 'Generate a tailored resume and cover letter for a lead',
@@ -659,12 +636,7 @@ export class LeadsController {
     response.send(Buffer.from(exported.contentBase64, 'base64'));
   }
 
-  // Disabled rather than merely lengthened while local inference is the
-  // bottleneck: on modest hardware a cold model load plus a long prompt can
-  // outrun any fixed ceiling, and a request cut off mid-generation looks to the
-  // user exactly like the feature being broken. Revisit once the model host is
-  // settled — an unbounded route ties up a connection if the model ever hangs.
-  @RequestTimeout('none')
+  @ModelBound()
   @Post('analysis/run')
   @RequirePermissions('lead.read')
   @ApiOperation({ summary: 'Run lead analysis for a lead and topic' })

@@ -7,7 +7,9 @@ ollama:
   # conforms without prompt priming; see the --structured pilot.
   fallbackModel: granite4:tiny-h
   temperature: 0.3
-  timeoutMs: 120000
+  # Matches the gateway's model-bound preset. 120000 was too tight: topic
+  # analysis measured 164-332s against a local 4b model.
+  timeoutMs: 600000
 database:
   host: db
   port: 5432

@@ -1058,8 +1058,8 @@ services:
       - OLLAMA_PORT=${OLLAMA_PORT:-11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3.5:4b-q8_0}
       - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-granite4:tiny-h}
-      # 0 disables the service-side model timeout; see .env.
-      - OLLAMA_TIMEOUT_MS=${OLLAMA_TIMEOUT_MS:-120000}
+      # Matches the gateway's model-bound preset; 0 disables it (debugging only).
+      - OLLAMA_TIMEOUT_MS=${OLLAMA_TIMEOUT_MS:-600000}
       - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}
       - LEAD_DISCOVERY_SEARCH_GOOGLE_CX=${LEAD_DISCOVERY_SEARCH_GOOGLE_CX:-}
       - LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY=${LEAD_DISCOVERY_GOOGLE_MAPS_API_KEY:-}
