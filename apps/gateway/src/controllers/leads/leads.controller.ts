@@ -433,16 +433,29 @@ export class LeadsController {
       throw new BadRequestException('Resume file is required.');
     }
 
-    return firstValueFrom(
-      this.leadClient.send(
-        { cmd: LeadOnboardingCommands.PARSE_RESUME },
-        {
-          filename: file.originalname,
-          mimeType: file.mimetype,
-          contentBase64: file.buffer.toString('base64'),
-        }
-      )
-    );
+    try {
+      return await firstValueFrom(
+        this.leadClient.send(
+          { cmd: LeadOnboardingCommands.PARSE_RESUME },
+          {
+            filename: file.originalname,
+            mimeType: file.mimetype,
+            contentBase64: file.buffer.toString('base64'),
+          }
+        )
+      );
+    } catch (error) {
+      // A file we cannot read is the user's problem to fix, not a server
+      // fault, and the reason is the whole value of the message: "this looks
+      // like a scan" tells them what to do, a 500 does not.
+      const refusal = error as { statusCode?: number; message?: string };
+      if (refusal?.statusCode === 400) {
+        throw new BadRequestException(
+          refusal.message || 'That file could not be read.'
+        );
+      }
+      throw error;
+    }
   }
 
   @Get('locations/autocomplete')

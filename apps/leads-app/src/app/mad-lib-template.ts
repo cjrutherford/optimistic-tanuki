@@ -12,7 +12,18 @@ import { MadLibTemplate } from '@optimistic-tanuki/models';
 export const DEFAULT_MAD_LIB_TEMPLATE: MadLibTemplate = {
   id: 'lead-intro-v1',
   segments: [
-    { kind: 'text', text: 'I help' },
+    // Opens with who the person is, not only what they do for others. This app
+    // finds roles as well as clients, and "I help…" alone frames every user as
+    // a consultant pitching a service.
+    { kind: 'text', text: 'I am a' },
+    {
+      kind: 'slot',
+      field: 'professionalTitle',
+      slotType: 'inline',
+      label: 'Your title',
+      placeholder: 'Senior Platform Engineer',
+    },
+    { kind: 'text', text: 'who helps' },
     {
       kind: 'slot',
       field: 'idealCustomer',

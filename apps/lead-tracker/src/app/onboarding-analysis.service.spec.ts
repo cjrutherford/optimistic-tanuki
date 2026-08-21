@@ -1,3 +1,4 @@
+import { RpcException } from '@nestjs/microservices';
 import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
@@ -189,22 +190,92 @@ describe('OnboardingAnalysisService', () => {
     );
   });
 
-  it('strips non-printing characters out of binary-looking resume uploads', async () => {
+  it('prefills the title without the name attached to it', async () => {
+    // Resume headings read "Jane Rivera - Senior Platform Engineer". The whole
+    // line is fine as a heading but wrong for an intro that reads "I am a ...".
+    const text = [
+      'Jane Rivera - Senior Platform Engineer',
+      'Acme Robotics, 2019-2024',
+      'Led migration of billing to Kubernetes, cutting deploy time 40%.',
+      'Skills: TypeScript, PostgreSQL, Terraform, AWS',
+    ].join('\n');
+
+    const result = await service.parseResume({
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: Buffer.from(text, 'utf8').toString('base64'),
+    });
+
+    expect(result.suggestedProfile.professionalTitle).toBe(
+      'Senior Platform Engineer'
+    );
+  });
+
+  it('does not classify a skills line as a certification', async () => {
+    // "aws" alone used to match, so the skills line was reported as a credential.
+    const text = [
+      'Dana Okafor - Staff Engineer',
+      'Skills: TypeScript, PostgreSQL, Terraform, AWS',
+      'Built deployment tooling used by four teams.',
+    ].join('\n');
+
+    const result = await service.parseResume({
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: Buffer.from(text, 'utf8').toString('base64'),
+    });
+
+    expect(result.certifications).toEqual([]);
+  });
+
+  it('refuses an upload whose bytes are not a document it can read', async () => {
+    // This used to be accepted: the old extractor scraped printable runs out of
+    // arbitrary bytes, which is exactly how PDF scaffolding ended up being
+    // treated as the candidate's own words. Refusing is the point now.
     const noisyBinary = Buffer.from(
       'Principal Consultant\x00\x01\x02 Northstar Digital\u200BSavannah, GA\x7F\x1FReact TypeScript',
       'binary'
     );
 
+    const refusal = await service
+      .parseResume({
+        filename: 'resume.pdf',
+        mimeType: 'application/pdf',
+        contentBase64: noisyBinary.toString('base64'),
+      })
+      .then(
+        () => null,
+        (error: RpcException) => error
+      );
+
+    // The payload has to survive the microservice transport, so it is asserted
+    // through getError() rather than as an HTTP exception body.
+    expect(refusal).toBeInstanceOf(RpcException);
+    expect(refusal?.getError()).toMatchObject({
+      statusCode: 400,
+      reason: 'unsupported-format',
+    });
+  });
+
+  it('strips non-printing characters out of readable resume text', async () => {
+    const noisyText = Buffer.from(
+      'Principal Consultant\u200B at Northstar Digital\n' +
+        'Savannah, GA \u00A0 React, TypeScript, PostgreSQL\n' +
+        'Led platform work across three product teams.',
+      'utf8'
+    );
+
     const result = await service.parseResume({
-      filename: 'resume.pdf',
-      mimeType: 'application/pdf',
-      contentBase64: noisyBinary.toString('base64'),
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      contentBase64: noisyText.toString('base64'),
     });
 
     expect(result.summary).toContain('Principal Consultant');
     expect(result.summary).toContain('Northstar Digital');
     // eslint-disable-next-line no-control-regex
     expect(result.summary).not.toMatch(/[\x00-\x1F\x7F]/);
+    expect(result.summary).not.toContain('\u200B');
   });
 
   it('sanitizes llm resume evidence and summaries before returning them', async () => {
@@ -236,9 +307,15 @@ describe('OnboardingAnalysisService', () => {
     } as any);
 
     const result = await service.parseResume({
-      filename: 'resume.pdf',
-      mimeType: 'application/pdf',
-      contentBase64: Buffer.from('stub').toString('base64'),
+      filename: 'resume.txt',
+      mimeType: 'text/plain',
+      // The subject here is sanitising what the model returns, but extraction
+      // still has to succeed first, so this is a readable resume rather than a
+      // four-byte stub.
+      contentBase64: Buffer.from(
+        'Principal Consultant at Northstar Digital, Savannah GA. React and TypeScript.',
+        'utf8'
+      ).toString('base64'),
     });
 
     expect(result.summary).toBe('Principal Consultant');

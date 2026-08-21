@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import {
   DiscAssessment,
   DiscDimension,
@@ -18,6 +19,10 @@ import {
   LeadDiscoverySource,
   LeadTopicDiscoveryIntent,
 } from '@optimistic-tanuki/models';
+import {
+  extractResumeText,
+  ResumeExtractionError,
+} from './documents/resume-text.extractor';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
 /**
@@ -148,7 +153,7 @@ export class OnboardingAnalysisService {
   }
 
   async parseResume(request: ResumeParseRequest): Promise<ResumeParseResult> {
-    const extractedText = this.extractResumeText(request);
+    const extractedText = await this.readResumeText(request);
 
     if (this.llmAnalysisService.isAvailable && extractedText) {
       try {
@@ -194,7 +199,12 @@ export class OnboardingAnalysisService {
         .slice(0, 6),
       certifications: lines
         .filter((line) =>
-          /(certified|certification|pmp|aws|scrum|google|azure)/i.test(line)
+          // A bare vendor name is not a credential: matching "aws" alone
+          // classified "Skills: TypeScript, PostgreSQL, Terraform, AWS" as a
+          // certification. Require a word that actually denotes one.
+          /(certified|certification|credential|accredited|\bPMP\b|\bCSM\b|\bCISSP\b)/i.test(
+            line
+          )
         )
         .slice(0, 6),
       suggestedProfile,
@@ -772,72 +782,39 @@ export class OnboardingAnalysisService {
       .map(([, label]) => label);
   }
 
-  private extractResumeText(request: ResumeParseRequest): string {
-    const buffer = Buffer.from(request.contentBase64, 'base64');
-    const extractedText = this.isPlainTextDocument(request, buffer)
-      ? this.decodePlainTextBuffer(buffer)
-      : this.extractReadableTextFromBinary(buffer);
-
-    return this.sanitizeExtractedText(extractedText);
-  }
-
-  private isPlainTextDocument(
-    request: ResumeParseRequest,
-    buffer: Buffer
-  ): boolean {
-    const mimeType = request.mimeType.toLowerCase();
-    const filename = request.filename.toLowerCase();
-    if (
-      mimeType.startsWith('text/') ||
-      filename.endsWith('.txt') ||
-      filename.endsWith('.md')
-    ) {
-      return true;
-    }
-
-    const sample = buffer.subarray(0, Math.min(buffer.length, 512));
-    const printableCount = sample.reduce((count, byte) => {
-      if (
-        byte === 0x09 ||
-        byte === 0x0a ||
-        byte === 0x0d ||
-        (byte >= 0x20 && byte <= 0x7e)
-      ) {
-        return count + 1;
+  /**
+   * Reads the upload into text, or refuses.
+   *
+   * A file we cannot read is reported rather than passed on as an empty or
+   * near-empty string. The previous byte-scraping extractor did the opposite:
+   * for a PDF it returned the container's scaffolding, and that scaffolding
+   * then reached the model prompt, the fallback summary, and the fact guard's
+   * record of what the candidate actually claimed.
+   */
+  private async readResumeText(request: ResumeParseRequest): Promise<string> {
+    try {
+      return await extractResumeText({
+        filename: request.filename,
+        mimeType: request.mimeType,
+        buffer: Buffer.from(request.contentBase64, 'base64'),
+      });
+    } catch (error) {
+      if (error instanceof ResumeExtractionError) {
+        this.logger.warn(
+          `Resume "${request.filename}" could not be read (${error.reason}): ${error.message}`
+        );
+        // RpcException rather than an HTTP exception: this is a microservice
+        // handler, and only an RpcException's payload survives the transport
+        // intact. A BadRequestException thrown here reaches the gateway as an
+        // opaque error and becomes a 500, losing the reason the user needs.
+        throw new RpcException({
+          statusCode: 400,
+          reason: error.reason,
+          message: error.message,
+        });
       }
-      return count;
-    }, 0);
-
-    return sample.length > 0 && printableCount / sample.length > 0.85;
-  }
-
-  private decodePlainTextBuffer(buffer: Buffer): string {
-    return buffer.toString('utf8');
-  }
-
-  private extractReadableTextFromBinary(buffer: Buffer): string {
-    const binaryText = buffer.toString('latin1');
-    const spans = this.replaceNonPrintable(binaryText, '\n', true)
-      .split(/\n+/)
-      .map((line) =>
-        line.replace(/[^A-Za-z0-9@&/().,:'"+\-_%# ]+/g, ' ').trim()
-      )
-      .filter((line) => this.isReadableResumeSpan(line));
-
-    if (spans.length) {
-      return spans.join('\n');
+      throw error;
     }
-
-    return binaryText;
-  }
-
-  private isReadableResumeSpan(line: string): boolean {
-    if (line.length < 4) {
-      return false;
-    }
-
-    const alphaNumericCount = (line.match(/[A-Za-z0-9]/g) || []).length;
-    return alphaNumericCount >= 4 && alphaNumericCount / line.length >= 0.45;
   }
 
   private sanitizeExtractedText(text: string): string {
@@ -855,30 +832,6 @@ export class OnboardingAnalysisService {
       .replace(/[ \t]+/g, ' ')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
-  }
-
-  private replaceNonPrintable(
-    value: string,
-    replacement: string,
-    collapseRuns = false
-  ): string {
-    let result = '';
-    let inRun = false;
-
-    for (const char of value) {
-      if (this.isNonPrintable(char)) {
-        if (!collapseRuns || !inRun) {
-          result += replacement;
-        }
-        inRun = true;
-        continue;
-      }
-
-      inRun = false;
-      result += char;
-    }
-
-    return result;
   }
 
   private isNonPrintable(char: string): boolean {
@@ -950,6 +903,7 @@ export class OnboardingAnalysisService {
     const yearsExperience = this.extractYearsExperience(text);
 
     return {
+      professionalTitle: this.extractProfessionalTitle(text, roleSummaries),
       serviceOffer,
       yearsExperience,
       skills,
@@ -965,6 +919,58 @@ export class OnboardingAnalysisService {
       communicationStyle: this.extractCommunicationStyle(text),
       leadSignalTypes: this.extractLeadSignals(text),
     };
+  }
+
+  /**
+   * The person's own job title, for the "I am a ..." opening of the intro.
+   *
+   * A parsed resume already states it, so the most recent role wins. Falling
+   * back to a phrase match only matters for the mad-lib path, where there is
+   * no structured resume to read.
+   */
+  private extractProfessionalTitle(
+    text: string,
+    roleSummaries: ResumeRoleSummary[] = []
+  ): string | undefined {
+    const fromResume = roleSummaries.find((role) => role.title?.trim())?.title;
+    if (fromResume) {
+      return this.narrowToRolePhrase(fromResume);
+    }
+
+    const stated = text.match(
+      /\bI(?:'m| am)\s+an?\s+([A-Za-z][A-Za-z0-9+#/ .-]{2,60}?)(?=[,.;\n]|\s+(?:who|that|with|specialising|specializing|helping)\b)/i
+    );
+    return stated?.[1]?.trim() || undefined;
+  }
+
+  /** Words that mark a fragment as a job title rather than a name or employer. */
+  private static readonly ROLE_WORDS =
+    /(engineer|developer|consultant|manager|lead|architect|director|designer|analyst|scientist|specialist|administrator|officer|president|founder|principal|head of)/i;
+
+  /**
+   * Reduces a resume heading to just the role.
+   *
+   * The top line of a resume is usually "Jane Rivera - Senior Platform
+   * Engineer", and the role extractor keeps the whole thing. That is fine as a
+   * heading but wrong for the intro, which reads "I am a ...". Where the line
+   * splits on a separator, the side naming a role wins; where it does not, the
+   * heading is left alone rather than guessed at.
+   */
+  private narrowToRolePhrase(title: string): string {
+    const parts = title
+      .split(/\s+[-–—|·•]\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length < 2) {
+      return title.trim();
+    }
+
+    const roleParts = parts.filter((part) =>
+      OnboardingAnalysisService.ROLE_WORDS.test(part)
+    );
+    // Exactly one side looks like a role, so the other is a name or employer.
+    return roleParts.length === 1 ? roleParts[0] : title.trim();
   }
 
   private buildSuggestionEvidence(

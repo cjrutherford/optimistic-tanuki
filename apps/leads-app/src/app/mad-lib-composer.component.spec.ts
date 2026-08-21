@@ -60,6 +60,7 @@ describe('MadLibComposerComponent', () => {
   });
 
   it('composes a readable sentence from the filled slots', () => {
+    component.setText('professionalTitle', 'Senior Platform Engineer');
     component.setText('idealCustomer', 'VP Engineering');
     component.setText('serviceOffer', 'React modernization');
     component.drafts['industries'] = 'SaaS';
@@ -68,7 +69,9 @@ describe('MadLibComposerComponent', () => {
     component.commitItem('outcomes');
 
     const sentence = latest().sentence;
-    expect(sentence).toContain('I help VP Engineering in SaaS');
+    expect(sentence).toContain(
+      'I am a Senior Platform Engineer who helps VP Engineering in SaaS'
+    );
     expect(sentence).toContain('React modernization');
     expect(sentence).toContain('faster releases');
   });

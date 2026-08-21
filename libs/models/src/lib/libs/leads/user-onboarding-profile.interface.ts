@@ -23,6 +23,8 @@ export interface ResumeRoleSummary {
 }
 
 export interface OnboardingProfileSuggestions {
+  /** What the person calls themselves, e.g. "Senior Platform Engineer". */
+  professionalTitle?: string;
   serviceOffer?: string;
   yearsExperience?: string;
   skills?: string[];
@@ -115,6 +117,8 @@ export interface UserOnboardingProfile {
   userId?: string;
   // Section A: Professional Background
   madLibSummary?: string;
+  /** Stored on the profile (jsonb), so adding it needs no migration. */
+  professionalTitle?: string;
   serviceOffer: string;
   yearsExperience: string;
   skills: string[];

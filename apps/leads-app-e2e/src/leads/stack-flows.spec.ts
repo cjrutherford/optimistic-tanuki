@@ -154,7 +154,7 @@ test.describe('leads-app against the docker stack', () => {
       const composer = page.locator('app-mad-lib-composer');
       // The scaffold must stay visible rather than living in a placeholder.
       await expect(composer).toBeVisible({ timeout: 20000 });
-      await expect(composer).toContainText('I help');
+      await expect(composer).toContainText('I am a');
       await expect(
         page.getByRole('button', { name: /write it as a paragraph/i })
       ).toBeVisible();
