@@ -151,6 +151,10 @@ test.describe('leads-app against the docker stack', () => {
     }) => {
       await page.goto('/onboarding');
 
+      // The resume upload is step 1 now, so the intro sits behind it. Skipping
+      // has to remain a real way through for anyone without a resume.
+      await page.getByRole('button', { name: /skip for now/i }).click();
+
       const composer = page.locator('app-mad-lib-composer');
       // The scaffold must stay visible rather than living in a placeholder.
       await expect(composer).toBeVisible({ timeout: 20000 });

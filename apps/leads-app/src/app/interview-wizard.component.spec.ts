@@ -72,7 +72,55 @@ describe('InterviewWizardComponent', () => {
     expect(component.newChipValue).toBe('');
   });
 
-  it('applies mad-lib suggestions and advances to the resume step', () => {
+  it('opens on the resume step so the intro can be prefilled from it', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+
+    expect(fixture.componentInstance.currentStage).toBe('resume');
+  });
+
+  it('goes from a parsed resume into the intro, not past it', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    component.onResumeParsed({
+      summary: 'Senior Platform Engineer at Acme Robotics.',
+      skills: ['TypeScript'],
+      experience: [],
+      certifications: [],
+      suggestedProfile: { professionalTitle: 'Senior Platform Engineer' },
+      roleSummaries: [],
+    });
+
+    expect(component.currentStage).toBe('mad-lib');
+    // ...and the intro is handed what the resume found, so the slots are not
+    // blank when the user gets there.
+    expect(component.madLibPrefill).toEqual(
+      expect.objectContaining({
+        professionalTitle: 'Senior Platform Engineer',
+        skills: expect.arrayContaining(['TypeScript']),
+      })
+    );
+  });
+
+  it('still reaches the intro when the resume is skipped', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    component.skipResumeStep();
+
+    expect(component.currentStage).toBe('mad-lib');
+  });
+
+  it('omits empty fields from the intro prefill', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    // A blank value would render as an answered slot and hide the placeholder.
+    expect(component.madLibPrefill).not.toHaveProperty('idealCustomer');
+    expect(component.madLibPrefill).not.toHaveProperty('professionalTitle');
+  });
+
+  it('applies mad-lib suggestions and advances to the profile questions', () => {
     const fixture = TestBed.createComponent(InterviewWizardComponent);
     const component = fixture.componentInstance;
 
@@ -107,7 +155,8 @@ describe('InterviewWizardComponent', () => {
     expect(component.profile.outcomes).toEqual(['faster releases']);
     expect(component.profile.localSearchLocation).toBe('Atlanta, GA');
     expect(component.profile.localSearchRadiusMiles).toBe(50);
-    expect(component.currentStage).toBe('resume');
+    // The resume step now runs first, so the intro leads into the questions.
+    expect(component.currentStage).toBe('profile');
   });
 
   it('merges parsed resume details into the editable onboarding profile', () => {

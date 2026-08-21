@@ -56,7 +56,11 @@ export class InterviewWizardComponent implements OnDestroy {
   @Output() analyzeTopics = new EventEmitter<UserOnboardingProfile>();
   @Output() confirmTopics = new EventEmitter<GeneratedTopicSuggestion[]>();
 
-  currentStage: WizardStage = 'mad-lib';
+  // The resume comes first because it is the richest source we have: it fills
+  // the title, skills, industries and outcomes that the intro then asks for.
+  // Asking for the intro first made people type from scratch what the resume
+  // was about to tell us anyway.
+  currentStage: WizardStage = 'resume';
   currentQuestionIndex = 0;
   submittedTopics: GeneratedTopicSuggestion[] = [];
   isAnalyzing = false;
@@ -255,6 +259,43 @@ export class InterviewWizardComponent implements OnDestroy {
     this.locationAutocompleteSub?.unsubscribe();
   }
 
+  /**
+   * What the resume already told us, shaped for the intro composer.
+   *
+   * Only fields the intro actually asks about are passed through; the rest of
+   * the parsed profile belongs to the later questions and would not map to a
+   * slot. Empty values are left out so the composer keeps its placeholders
+   * rather than rendering blanks as answers.
+   */
+  get madLibPrefill(): OnboardingProfileSuggestions {
+    const source = this.profile as unknown as Record<string, unknown>;
+    const prefill: Record<string, unknown> = {};
+
+    for (const field of [
+      'professionalTitle',
+      'idealCustomer',
+      'industries',
+      'problemsSolved',
+      'serviceOffer',
+      'outcomes',
+      'skills',
+      'companySizeTarget',
+      'geographicFocus',
+      'outreachMethod',
+      'communicationStyle',
+    ]) {
+      const value = source[field];
+      const isEmpty = Array.isArray(value)
+        ? value.length === 0
+        : value === undefined || value === null || value === '';
+      if (!isEmpty) {
+        prefill[field] = value;
+      }
+    }
+
+    return prefill as OnboardingProfileSuggestions;
+  }
+
   get currentQuestion(): OnboardingQuestion {
     return this.questions[this.currentQuestionIndex];
   }
@@ -265,9 +306,9 @@ export class InterviewWizardComponent implements OnDestroy {
     }
 
     switch (this.currentStage) {
-      case 'mad-lib':
-        return 10;
       case 'resume':
+        return 10;
+      case 'mad-lib':
         return 25;
       case 'profile':
         return (
@@ -422,7 +463,7 @@ export class InterviewWizardComponent implements OnDestroy {
       result.evidenceByField || {},
       'mad-lib'
     );
-    this.currentStage = 'resume';
+    this.currentStage = 'profile';
     this.cdr.detectChanges();
   }
 
@@ -459,7 +500,7 @@ export class InterviewWizardComponent implements OnDestroy {
       'resume'
     );
     this.locationInputValue = '';
-    this.currentStage = 'profile';
+    this.currentStage = 'mad-lib';
     this.cdr.detectChanges();
   }
 
@@ -526,7 +567,7 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   skipResumeStep(): void {
-    this.currentStage = 'profile';
+    this.currentStage = 'mad-lib';
     this.cdr.detectChanges();
   }
 
@@ -550,6 +591,12 @@ export class InterviewWizardComponent implements OnDestroy {
     }
 
     if (this.currentStage === 'profile' && this.currentQuestionIndex === 0) {
+      this.currentStage = 'mad-lib';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (this.currentStage === 'mad-lib') {
       this.currentStage = 'resume';
       this.cdr.detectChanges();
       return;
@@ -745,7 +792,7 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   private reset(): void {
-    this.currentStage = 'mad-lib';
+    this.currentStage = 'resume';
     this.currentQuestionIndex = 0;
     this.showTopicReview = false;
     this.submittedTopics = [];

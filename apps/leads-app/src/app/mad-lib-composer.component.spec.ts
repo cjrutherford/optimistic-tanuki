@@ -59,6 +59,25 @@ describe('MadLibComposerComponent', () => {
     expect(latest().values.skills).toEqual(['Vue']);
   });
 
+  it('seeds empty slots from what the resume found', () => {
+    component.initialValues = {
+      professionalTitle: 'Senior Platform Engineer',
+      industries: ['SaaS'],
+    };
+
+    expect(latest().values.professionalTitle).toBe('Senior Platform Engineer');
+    expect(latest().values.industries).toEqual(['SaaS']);
+  });
+
+  it('never overwrites something the user has already entered', () => {
+    component.setText('professionalTitle', 'Staff Engineer');
+
+    component.initialValues = { professionalTitle: 'Senior Platform Engineer' };
+
+    // The prefill arrives after the user has typed, so it must lose.
+    expect(latest().values.professionalTitle).toBe('Staff Engineer');
+  });
+
   it('composes a readable sentence from the filled slots', () => {
     component.setText('professionalTitle', 'Senior Platform Engineer');
     component.setText('idealCustomer', 'VP Engineering');

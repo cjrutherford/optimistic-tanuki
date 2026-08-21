@@ -212,12 +212,45 @@ export class MadLibComposerComponent {
   private readonly cdr = inject(ChangeDetectorRef);
 
   @Input() template: MadLibTemplate = DEFAULT_MAD_LIB_TEMPLATE;
+
+  /**
+   * Slot values known before the user starts typing — in practice whatever the
+   * resume told us. Only applied where a slot is still empty, so a prefill
+   * never overwrites something the user has already changed.
+   */
+  @Input() set initialValues(values: OnboardingProfileSuggestions | undefined) {
+    if (!values) {
+      return;
+    }
+
+    for (const [field, value] of Object.entries(values)) {
+      const isEmpty = Array.isArray(value)
+        ? value.length === 0
+        : value === undefined || value === null || value === '';
+      if (isEmpty || this.hasValue(field as MadLibField)) {
+        continue;
+      }
+      (this.values as Record<string, unknown>)[field] = Array.isArray(value)
+        ? [...value]
+        : value;
+    }
+
+    this.emit();
+  }
+
   @Output() compositionChange = new EventEmitter<MadLibComposition>();
 
   /** In-progress text for each list slot, before it is committed as an entry. */
   drafts: Partial<Record<MadLibField, string>> = {};
 
   private values: OnboardingProfileSuggestions = {};
+
+  private hasValue(field: MadLibField): boolean {
+    const current = (this.values as Record<string, unknown>)[field];
+    return Array.isArray(current)
+      ? current.length > 0
+      : current !== undefined && current !== null && current !== '';
+  }
 
   asSlot(segment: unknown): MadLibSlotSegment {
     return segment as MadLibSlotSegment;
