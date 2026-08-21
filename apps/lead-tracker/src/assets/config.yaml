@@ -3,6 +3,9 @@ ollama:
   host: prompt-proxy
   port: 11434
   model: gemma3
+  # Retried when the primary returns output the schema rejects. granite4:tiny-h
+  # conforms without prompt priming; see the --structured pilot.
+  fallbackModel: granite4:tiny-h
   temperature: 0.3
   timeoutMs: 120000
 database:

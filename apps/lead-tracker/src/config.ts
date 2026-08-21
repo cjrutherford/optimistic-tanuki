@@ -9,6 +9,8 @@ export declare type LeadTrackerConfigType = {
     host: string;
     port: number;
     model: string;
+    /** Retried when the primary returns output the schema rejects. */
+    fallbackModel?: string;
     temperature: number;
     timeoutMs: number;
   };
@@ -93,6 +95,8 @@ const loadConfig = () => {
       host: process.env.OLLAMA_HOST || ollamaConfig?.host || 'prompt-proxy',
       port: toNumber(process.env.OLLAMA_PORT, ollamaConfig?.port ?? 11434),
       model: process.env.OLLAMA_MODEL || ollamaConfig?.model || 'gemma3',
+      fallbackModel:
+        process.env.OLLAMA_FALLBACK_MODEL || ollamaConfig?.fallbackModel || '',
       temperature: toNumber(
         process.env.OLLAMA_TEMPERATURE,
         ollamaConfig?.temperature ?? 0.3

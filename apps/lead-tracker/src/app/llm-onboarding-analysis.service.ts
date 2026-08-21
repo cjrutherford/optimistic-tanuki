@@ -91,6 +91,9 @@ const DISC_ASSESSMENT_SCHEMA = {
 export class LlmOnboardingAnalysisService {
   private readonly logger = new Logger(LlmOnboardingAnalysisService.name);
   private llm: ChatOllama | null = null;
+  private fallbackLlm: ChatOllama | null = null;
+  private primaryModelName = '';
+  private fallbackModelName = '';
 
   constructor(private readonly config: ConfigService) {
     this.initializeModel();
@@ -111,17 +114,36 @@ export class LlmOnboardingAnalysisService {
       }
 
       const baseUrl = `http://${ollama.host}:${ollama.port}`;
-      this.llm = new ChatOllama({
-        model: ollama.model || 'gemma3',
-        baseUrl,
-        temperature: ollama.temperature ?? 0.3,
-        // Reasoning-capable models (qwen3/qwen3.5, nemotron) otherwise emit a
-        // long thinking trace before the answer, which costs seconds on every
-        // interview turn without improving a schema-constrained result.
-        think: this.config.get<boolean>('ollama.think') ?? false,
-      });
+      const build = (model: string) =>
+        new ChatOllama({
+          model,
+          baseUrl,
+          temperature: ollama.temperature ?? 0.3,
+          // Reasoning-capable models (qwen3/qwen3.5, nemotron) otherwise emit a
+          // long thinking trace before the answer, which costs seconds on every
+          // interview turn without improving a schema-constrained result.
+          think: this.config.get<boolean>('ollama.think') ?? false,
+        });
+
+      this.primaryModelName = ollama.model || 'gemma3';
+      this.llm = build(this.primaryModelName);
+
+      // A second model to retry with when the first returns something the
+      // schema rejects. Measured on the candidate roster, `granite4:tiny-h`
+      // conforms without any prompt priming while the configured primary needs
+      // it, so it is the sensible safety net — see
+      // `tools/scripts/pilot-onboarding-models.mjs --structured`.
+      const fallbackName = this.config.get<string>('ollama.fallbackModel');
+      if (fallbackName && fallbackName !== this.primaryModelName) {
+        this.fallbackModelName = fallbackName;
+        this.fallbackLlm = build(fallbackName);
+      }
+
       this.logger.log(
-        `Initialized LLM model: ${ollama.model || 'gemma3'} at ${baseUrl}`
+        `Initialized LLM model: ${this.primaryModelName} at ${baseUrl}` +
+          (this.fallbackModelName
+            ? ` (fallback: ${this.fallbackModelName})`
+            : '')
       );
     } catch (error) {
       this.logger.error('Failed to initialize LLM model', error);
@@ -657,26 +679,44 @@ Excluded Industries: ${
       throw new Error('LLM model not available');
     }
 
-    const response = await this.raceWithTimeout(
-      this.llm.invoke(
-        [
-          new SystemMessage(
-            schema ? this.primeForJson(systemPrompt, schema) : systemPrompt
-          ),
-          new HumanMessage(userPrompt),
-        ],
-        // Schema-constrained decoding when a schema is supplied; the brace
-        // scraping in parseJsonObject stays as the path for callers without one.
-        schema ? { format: schema } : undefined
-      )
-    );
+    const messages = [
+      new SystemMessage(
+        schema ? this.primeForJson(systemPrompt, schema) : systemPrompt
+      ),
+      new HumanMessage(userPrompt),
+    ];
+    // Schema-constrained decoding when a schema is supplied; the brace
+    // scraping in parseJsonObject stays as the path for callers without one.
+    const options = schema ? { format: schema } : undefined;
 
-    const responseText =
-      typeof response.content === 'string'
-        ? response.content
-        : JSON.stringify(response.content);
+    const ask = async (llm: ChatOllama): Promise<T> => {
+      const response = await this.raceWithTimeout(
+        llm.invoke(messages, options)
+      );
+      const responseText =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
+      return this.parseJsonObject<T>(responseText);
+    };
 
-    return this.parseJsonObject<T>(responseText);
+    try {
+      return await ask(this.llm);
+    } catch (error) {
+      if (!this.fallbackLlm) {
+        throw error;
+      }
+
+      // The primary produced something unusable. Retrying on a model that
+      // conforms without coaxing costs one more call and saves the caller from
+      // dropping to a scripted answer, which is what the user actually notices.
+      this.logger.warn(
+        `${this.primaryModelName} returned unusable output (${
+          (error as Error).message
+        }); retrying on ${this.fallbackModelName}`
+      );
+      return ask(this.fallbackLlm);
+    }
   }
 
   /**
