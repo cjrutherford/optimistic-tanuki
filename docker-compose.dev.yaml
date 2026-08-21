@@ -1056,8 +1056,8 @@ services:
       - NODE_ENV=development
       - OLLAMA_HOST=${OLLAMA_HOST:-192.168.50.191}
       - OLLAMA_PORT=${OLLAMA_PORT:-11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3.5:4b-q8_0}
-      - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-granite4:tiny-h}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-granite4:tiny-h}
+      - OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-qwen3.5:4b-q8_0}
       # Matches the gateway's model-bound preset; 0 disables it (debugging only).
       - OLLAMA_TIMEOUT_MS=${OLLAMA_TIMEOUT_MS:-600000}
       - LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY=${LEAD_DISCOVERY_SEARCH_GOOGLE_API_KEY:-}

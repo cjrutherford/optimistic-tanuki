@@ -94,7 +94,10 @@ const loadConfig = () => {
     ollama: {
       host: process.env.OLLAMA_HOST || ollamaConfig?.host || 'prompt-proxy',
       port: toNumber(process.env.OLLAMA_PORT, ollamaConfig?.port ?? 11434),
-      model: process.env.OLLAMA_MODEL || ollamaConfig?.model || 'gemma3',
+      // Last-resort default. gemma3 used to sit here and was never on the
+      // candidate list; granite is the measured-conforming choice.
+      model:
+        process.env.OLLAMA_MODEL || ollamaConfig?.model || 'granite4:tiny-h',
       fallbackModel:
         process.env.OLLAMA_FALLBACK_MODEL || ollamaConfig?.fallbackModel || '',
       temperature: toNumber(

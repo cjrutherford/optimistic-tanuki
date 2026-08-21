@@ -147,7 +147,7 @@ export class LlmOnboardingAnalysisService {
           think: this.config.get<boolean>('ollama.think') ?? false,
         });
 
-      this.primaryModelName = ollama.model || 'gemma3';
+      this.primaryModelName = ollama.model || 'granite4:tiny-h';
       this.llm = build(this.primaryModelName);
 
       // A second model to retry with when the first returns something the
