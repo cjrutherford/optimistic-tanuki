@@ -177,7 +177,13 @@ export class OnboardingAnalysisService {
           parsed.skills.length ||
           parsed.experience.length
         ) {
-          return this.sanitizeResumeParseResult(parsed);
+          // The model is not asked for a job title, so the intro's "I am a ..."
+          // slot would arrive empty on the LLM path even though the roles it
+          // just parsed name one. Derive it here rather than only in the
+          // deterministic fallback.
+          return this.sanitizeResumeParseResult(
+            this.withProfessionalTitle(parsed)
+          );
         }
       } catch (error) {
         this.logger.warn(
@@ -226,6 +232,32 @@ export class OnboardingAnalysisService {
         suggestedProfile
       ),
     });
+  }
+
+  /**
+   * Fills in `professionalTitle` from the parsed roles when it is missing.
+   *
+   * Only the deterministic path builds the suggestion profile itself, so on the
+   * LLM path this field had nobody to set it and the intro opened with an empty
+   * title.
+   */
+  private withProfessionalTitle(parsed: ResumeParseResult): ResumeParseResult {
+    if (parsed.suggestedProfile?.professionalTitle) {
+      return parsed;
+    }
+
+    const title = this.extractProfessionalTitle('', parsed.roleSummaries || []);
+    if (!title) {
+      return parsed;
+    }
+
+    return {
+      ...parsed,
+      suggestedProfile: {
+        ...parsed.suggestedProfile,
+        professionalTitle: title,
+      },
+    };
   }
 
   /** Hard ceiling on interview length, so a model that never reports enough signal still terminates. */

@@ -51,10 +51,7 @@ import { AuthGuard } from '../../auth/auth.guard';
 import { AppScope } from '../../decorators/appscope.decorator';
 import { RequirePermissions } from '../../decorators/permissions.decorator';
 import { User } from '../../decorators/user.decorator';
-import {
-  LongRunning,
-  RequestTimeout,
-} from '../../decorators/request-timeout.decorator';
+import { RequestTimeout } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 
 @ApiTags('leads')
@@ -431,8 +428,12 @@ export class LeadsController {
     );
   }
 
+  // Same reasoning as the other model-bound routes: a 2-page resume measured
+  // 102s of the 120s preset on local inference, so a cold model or a longer
+  // document runs out of budget and the upload just fails. Revisit alongside
+  // the others once the model host is settled.
   @Post('onboarding/resume/parse')
-  @LongRunning()
+  @RequestTimeout('none')
   @UseInterceptors(FileInterceptor('file'))
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Parse a resume upload for onboarding prefill' })
@@ -563,8 +564,12 @@ export class LeadsController {
     );
   }
 
+  // Same reasoning as the other model-bound routes: a 2-page resume measured
+  // 102s of the 120s preset on local inference, so a cold model or a longer
+  // document runs out of budget and the upload just fails. Revisit alongside
+  // the others once the model host is settled.
   @Post(':id/application/generate')
-  @LongRunning()
+  @RequestTimeout('none')
   @RequirePermissions('lead.update')
   @ApiOperation({
     summary: 'Generate a tailored resume and cover letter for a lead',
