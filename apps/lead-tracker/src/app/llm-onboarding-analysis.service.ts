@@ -1,7 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatOllama } from '@langchain/ollama';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import {
+  applyPriming,
+  describePriming,
+  PrimingStrategy,
+  resolvePrimingStrategy,
+} from './llm/model-priming';
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import {
   DiscAssessment,
   DiscDimension,
@@ -141,8 +151,11 @@ export class LlmOnboardingAnalysisService {
 
       this.logger.log(
         `Initialized LLM model: ${this.primaryModelName} at ${baseUrl}` +
+          ` [priming: ${describePriming(this.primaryModelName)}]` +
           (this.fallbackModelName
-            ? ` (fallback: ${this.fallbackModelName})`
+            ? ` (fallback: ${
+                this.fallbackModelName
+              } [priming: ${describePriming(this.fallbackModelName)}])`
             : '')
       );
     } catch (error) {
@@ -679,29 +692,48 @@ Excluded Industries: ${
       throw new Error('LLM model not available');
     }
 
-    const messages = [
-      new SystemMessage(
-        schema ? this.primeForJson(systemPrompt, schema) : systemPrompt
-      ),
-      new HumanMessage(userPrompt),
-    ];
     // Schema-constrained decoding when a schema is supplied; the brace
     // scraping in parseJsonObject stays as the path for callers without one.
     const options = schema ? { format: schema } : undefined;
 
-    const ask = async (llm: ChatOllama): Promise<T> => {
-      const response = await this.raceWithTimeout(
-        llm.invoke(messages, options)
+    const ask = async (llm: ChatOllama, model: string): Promise<T> => {
+      // Each model declares how much coaxing it needs, so one that honours
+      // `format` is not charged for instructions it does not read.
+      const primed = applyPriming(
+        this.config.get<PrimingStrategy>('ollama.priming') ||
+          resolvePrimingStrategy(model),
+        systemPrompt,
+        schema
       );
+
+      const response = await this.raceWithTimeout(
+        llm.invoke(
+          [
+            new SystemMessage(primed.system),
+            new HumanMessage(userPrompt),
+            ...(primed.prefill ? [new AIMessage(primed.prefill)] : []),
+          ],
+          options
+        )
+      );
+
       const responseText =
         typeof response.content === 'string'
           ? response.content
           : JSON.stringify(response.content);
-      return this.parseJsonObject<T>(responseText);
+
+      // A prefill means the model continued the object rather than restating
+      // it, so the seed has to be put back before parsing.
+      const stitched =
+        primed.prefill && !responseText.trimStart().startsWith('{')
+          ? `${primed.prefill}${responseText}`
+          : responseText;
+
+      return this.parseJsonObject<T>(stitched);
     };
 
     try {
-      return await ask(this.llm);
+      return await ask(this.llm, this.primaryModelName);
     } catch (error) {
       if (!this.fallbackLlm) {
         throw error;
@@ -715,35 +747,8 @@ Excluded Industries: ${
           (error as Error).message
         }); retrying on ${this.fallbackModelName}`
       );
-      return ask(this.fallbackLlm);
+      return ask(this.fallbackLlm, this.fallbackModelName);
     }
-  }
-
-  /**
-   * Spells out the JSON contract in the prompt as well as the `format` field.
-   *
-   * Passing a schema to Ollama is meant to be enough, but not every model
-   * honours it. `qwen3.5:4b-q8_0` ignores both the schema and legacy JSON mode
-   * and answers in prose — measured at 0/3 conformance — while the same model
-   * with this instruction scores 3/3. Since the response is thrown away when it
-   * is not an object, the user sees a canned fallback question instead of a
-   * generated one, so the belt-and-braces is worth the few tokens.
-   *
-   * Verify with: `node tools/scripts/pilot-onboarding-models.mjs --structured`
-   */
-  private primeForJson(
-    systemPrompt: string,
-    schema: { properties?: Record<string, unknown> }
-  ): string {
-    const keys = Object.keys(schema.properties || {});
-    if (!keys.length) {
-      return systemPrompt;
-    }
-
-    return `${systemPrompt}
-
-Reply with a single JSON object and nothing else — no prose, no code fence, no
-explanation. It must contain exactly these keys: ${keys.join(', ')}.`;
   }
 
   private parseJsonObject<T>(raw: string): T {
