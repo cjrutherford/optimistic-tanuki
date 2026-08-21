@@ -11,6 +11,11 @@ export declare type LeadTrackerConfigType = {
     model: string;
     /** Retried when the primary returns output the schema rejects. */
     fallbackModel?: string;
+    /**
+     * Used for the DISC turns, which are the only tasks that must build on
+     * what the candidate just said. See llm/task-models.ts.
+     */
+    conversationalModel?: string;
     temperature: number;
     timeoutMs: number;
   };
@@ -100,6 +105,10 @@ const loadConfig = () => {
         process.env.OLLAMA_MODEL || ollamaConfig?.model || 'granite4:tiny-h',
       fallbackModel:
         process.env.OLLAMA_FALLBACK_MODEL || ollamaConfig?.fallbackModel || '',
+      conversationalModel:
+        process.env.OLLAMA_CONVERSATIONAL_MODEL ||
+        ollamaConfig?.conversationalModel ||
+        '',
       temperature: toNumber(
         process.env.OLLAMA_TEMPERATURE,
         ollamaConfig?.temperature ?? 0.3

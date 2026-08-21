@@ -8,6 +8,13 @@ import {
   resolvePrimingStrategy,
 } from './llm/model-priming';
 import {
+  ALL_LLM_TASKS,
+  describeTaskModel,
+  LlmTask,
+  resolveTaskModel,
+  TaskModelConfig,
+} from './llm/task-models';
+import {
   AIMessage,
   HumanMessage,
   SystemMessage,
@@ -116,6 +123,10 @@ export class LlmOnboardingAnalysisService {
   private fallbackLlm: ChatOllama | null = null;
   private primaryModelName = '';
   private fallbackModelName = '';
+  /** One client per model name; tasks share whichever they resolve to. */
+  private readonly clients = new Map<string, ChatOllama>();
+  private taskModels: TaskModelConfig = { primary: '' };
+  private buildClient: ((model: string) => ChatOllama) | null = null;
 
   constructor(private readonly config: ConfigService) {
     this.initializeModel();
@@ -148,7 +159,20 @@ export class LlmOnboardingAnalysisService {
         });
 
       this.primaryModelName = ollama.model || 'granite4:tiny-h';
-      this.llm = build(this.primaryModelName);
+      this.buildClient = build;
+      this.llm = this.clientFor(this.primaryModelName);
+
+      // Conversational tasks can run on a different model from extraction —
+      // see llm/task-models.ts for the measurements behind the split.
+      this.taskModels = {
+        primary: this.primaryModelName,
+        conversational:
+          this.config.get<string>('ollama.conversationalModel') || undefined,
+        overrides:
+          this.config.get<Partial<Record<LlmTask, string>>>(
+            'ollama.taskModels'
+          ),
+      };
 
       // A second model to retry with when the first returns something the
       // schema rejects. Measured on the candidate roster, `granite4:tiny-h`
@@ -158,22 +182,54 @@ export class LlmOnboardingAnalysisService {
       const fallbackName = this.config.get<string>('ollama.fallbackModel');
       if (fallbackName && fallbackName !== this.primaryModelName) {
         this.fallbackModelName = fallbackName;
-        this.fallbackLlm = build(fallbackName);
+        this.fallbackLlm = this.clientFor(fallbackName);
       }
 
       this.logger.log(
-        `Initialized LLM model: ${this.primaryModelName} at ${baseUrl}` +
-          ` [priming: ${describePriming(this.primaryModelName)}]` +
+        `Initialized LLM at ${baseUrl}` +
           (this.fallbackModelName
-            ? ` (fallback: ${
-                this.fallbackModelName
-              } [priming: ${describePriming(this.fallbackModelName)}])`
-            : '')
+            ? ` (fallback: ${this.fallbackModelName})`
+            : '') +
+          ' — ' +
+          ALL_LLM_TASKS.map(
+            (task) =>
+              `${task}: ${describeTaskModel(task, this.taskModels)}` +
+              ` [${describePriming(resolveTaskModel(task, this.taskModels))}]`
+          ).join(', ')
       );
     } catch (error) {
       this.logger.error('Failed to initialize LLM model', error);
       this.llm = null;
     }
+  }
+
+  /** Reuses a client per model so switching tasks costs no new connection. */
+  private clientFor(model: string): ChatOllama | null {
+    if (!this.buildClient || !model) {
+      return null;
+    }
+
+    const existing = this.clients.get(model);
+    if (existing) {
+      return existing;
+    }
+
+    const created = this.buildClient(model);
+    this.clients.set(model, created);
+    return created;
+  }
+
+  /** The client a given task should run on, falling back to the primary. */
+  private clientForTask(task?: LlmTask): {
+    llm: ChatOllama | null;
+    model: string;
+  } {
+    if (!task) {
+      return { llm: this.llm, model: this.primaryModelName };
+    }
+
+    const model = resolveTaskModel(task, this.taskModels);
+    return { llm: this.clientFor(model) ?? this.llm, model };
   }
 
   get isAvailable(): boolean {
@@ -237,7 +293,10 @@ Respond with only valid JSON using this exact shape:
     "serviceOffer": ["<supporting snippet>"]
   }
 }`,
-      `Analyze this self-description and infer a concise service offer, skills, and likely buyer.\n\n${text}`
+      `Analyze this self-description and infer a concise service offer, skills, and likely buyer.\n\n${text}`,
+      // No schema here; these callers rely on parseJsonObject instead.
+      undefined,
+      'mad-lib'
     );
 
     return {
@@ -290,7 +349,10 @@ Respond with only valid JSON using this exact shape:
     "idealCustomer": ["<supporting snippet>"]
   }
 }`,
-      `Extract the key onboarding fields from this resume text.\n\n${text}`
+      `Extract the key onboarding fields from this resume text.\n\n${text}`,
+      // No schema here; these callers rely on parseJsonObject instead.
+      undefined,
+      'resume-parse'
     );
 
     return {
@@ -358,7 +420,8 @@ ${
 }
 Quadrants not yet probed: ${remaining.length ? remaining.join(', ') : 'none'}
 Prefer a question targeting one of those.`,
-      DISC_QUESTION_SCHEMA
+      DISC_QUESTION_SCHEMA,
+      'disc-question'
     );
 
     const targetDimension = DISC_DIMENSIONS.includes(
@@ -429,7 +492,8 @@ Respond with only valid JSON using this exact shape:
   "confidence": <0-100>
 }`,
       `Assess this DISC interview transcript and return balanced DISC scores.\n\n${transcriptText}`,
-      DISC_ASSESSMENT_SCHEMA
+      DISC_ASSESSMENT_SCHEMA,
+      'disc-assessment'
     );
 
     return {
@@ -699,9 +763,11 @@ Excluded Industries: ${
   private async invokeJson<T>(
     systemPrompt: string,
     userPrompt: string,
-    schema?: Record<string, unknown>
+    schema?: Record<string, unknown>,
+    task?: LlmTask
   ): Promise<T> {
-    if (!this.llm) {
+    const chosen = this.clientForTask(task);
+    if (!chosen.llm) {
       throw new Error('LLM model not available');
     }
 
@@ -746,7 +812,7 @@ Excluded Industries: ${
     };
 
     try {
-      return await ask(this.llm, this.primaryModelName);
+      return await ask(chosen.llm, chosen.model);
     } catch (error) {
       if (!this.fallbackLlm) {
         throw error;
@@ -756,7 +822,7 @@ Excluded Industries: ${
       // conforms without coaxing costs one more call and saves the caller from
       // dropping to a scripted answer, which is what the user actually notices.
       this.logger.warn(
-        `${this.primaryModelName} returned unusable output (${
+        `${chosen.model} returned unusable output (${
           (error as Error).message
         }); retrying on ${this.fallbackModelName}`
       );

@@ -8,6 +8,10 @@ ollama:
   model: granite4:tiny-h
   # Retried when the primary returns output the schema rejects.
   fallbackModel: qwen3.5:4b-q8_0
+  # The DISC turns run here instead: qwen's follow-ups build on the answer just
+  # given, where granite's stay grounded in the profile. Slower, and worth it
+  # for the only tasks the user experiences as a conversation.
+  conversationalModel: qwen3.5:4b-q8_0
   temperature: 0.3
   # Matches the gateway's model-bound preset. 120000 was too tight: topic
   # analysis measured 164-332s against a local 4b model.
