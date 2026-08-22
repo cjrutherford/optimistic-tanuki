@@ -1,0 +1,97 @@
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+@Component({
+  selector: 'learning-landing',
+  imports: [RouterLink],
+  template: ` <main class="landing">
+    <nav>
+      <span>Tanuki Learning</span><a routerLink="/dashboard">Sign in</a>
+    </nav>
+    <section>
+      <p>Four languages · internal curriculum</p>
+      <h1>Practice the idea<br />before you move on.</h1>
+      <div class="code">
+        fn main() &#123;<br />&nbsp;&nbsp;let next =
+        <b>understand</b>();<br />&#125;
+      </div>
+      <p class="lede">
+        A practical path through TypeScript, Go, C++, and Rust. Read a small
+        lesson, change working code, then see what happens.
+      </p>
+      <a class="start" routerLink="/dashboard">Start learning</a>
+    </section>
+  </main>`,
+  styles: [
+    `
+      .landing {
+        min-height: 100vh;
+        padding: 1.4rem clamp(1.4rem, 6vw, 6rem);
+        color: #e6f1f8;
+        background: radial-gradient(
+            circle at 78% 35%,
+            #12394a 0,
+            transparent 28%
+          ),
+          #07101a;
+      }
+      .landing nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .landing nav span {
+        color: #76e3d0;
+        font-weight: 800;
+      }
+      .landing nav a {
+        color: #b9ccdb;
+        text-decoration: none;
+      }
+      .landing section {
+        max-width: 900px;
+        margin: clamp(5rem, 16vh, 11rem) auto;
+      }
+      .landing section > p:first-child {
+        color: #76e3d0;
+        font: 700 0.72rem ui-monospace, monospace;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .landing h1 {
+        margin: 0.7rem 0 1.5rem;
+        font-size: clamp(3.3rem, 8vw, 7.5rem);
+        line-height: 0.88;
+        letter-spacing: -0.075em;
+      }
+      .code {
+        max-width: 420px;
+        margin: 2rem 0;
+        padding: 1.1rem 1.4rem;
+        border-left: 2px solid #76e3d0;
+        background: #091a28;
+        color: #9ec2dd;
+        font: 400 0.95rem/1.7 ui-monospace, monospace;
+      }
+      .code b {
+        color: #ffd47a;
+      }
+      .lede {
+        max-width: 54ch;
+        color: #b4c7d8;
+        line-height: 1.7;
+        font-size: 1.08rem;
+        margin-bottom: 1.7rem;
+      }
+      .start {
+        display: inline-block;
+        padding: 0.8rem 1.2rem;
+        background: #76e3d0;
+        color: #07101a;
+        text-decoration: none;
+        font-weight: 800;
+      }
+    `,
+  ],
+})
+export class LandingComponent {}
