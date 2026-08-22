@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { LeadsController } from './leads.controller';
+import { LeadsController, MAX_RESUME_UPLOAD_BYTES } from './leads.controller';
 import { ClientProxy } from '@nestjs/microservices';
 import { of } from 'rxjs';
 import {
@@ -134,6 +134,21 @@ describe('LeadsController', () => {
       { cmd: LeadOnboardingCommands.ANALYZE_MAD_LIB },
       { text: 'I modernize React codebases.' }
     );
+  });
+
+  it('rejects oversized resume uploads before forwarding them over TCP', async () => {
+    const file = {
+      originalname: 'large-resume.pdf',
+      mimetype: 'application/pdf',
+      buffer: Buffer.alloc(MAX_RESUME_UPLOAD_BYTES + 1),
+    };
+
+    await expect(controller.parseResume(file)).rejects.toMatchObject({
+      response: expect.objectContaining({
+        message: expect.stringContaining('25 MB or smaller'),
+      }),
+    });
+    expect(leadClient.send).not.toHaveBeenCalled();
   });
 
   it('proxies onboarding confirmation with context', async () => {

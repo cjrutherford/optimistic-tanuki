@@ -41,7 +41,7 @@ export function parseOwnerBootstrapArgs(
 
     switch (arg) {
       case '--api-base-url':
-        values.apiBaseUrl = trimTrailingSlash(nextValue.trim());
+        values.apiBaseUrl = normalizeApiBaseUrl(nextValue.trim());
         break;
       default:
         throw new Error(`${OWNER_BOOTSTRAP_USAGE}\n\nUnknown argument: ${arg}`);
@@ -176,6 +176,11 @@ export async function runOwnerBootstrapCli(
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function normalizeApiBaseUrl(value: string): string {
+  const baseUrl = trimTrailingSlash(value);
+  return baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 }
 
 async function buildBootstrapError(

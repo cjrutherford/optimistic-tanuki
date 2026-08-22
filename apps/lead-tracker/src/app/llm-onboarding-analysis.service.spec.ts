@@ -77,6 +77,46 @@ describe('LlmOnboardingAnalysisService model fallback', () => {
     expect(fallback.invoke).not.toHaveBeenCalled();
   });
 
+  it('uses the task-selected model for topic analysis', async () => {
+    const service = new LlmOnboardingAnalysisService(
+      buildConfig({
+        ollama: {
+          host: 'ollama.test',
+          port: 11434,
+          model: 'primary-model',
+          fallbackModel: 'fallback-model',
+          taskModels: { 'topic-analysis': 'topic-model' },
+          temperature: 0.3,
+        },
+        'ollama.conversationalModel': undefined,
+        'ollama.taskModels': { 'topic-analysis': 'topic-model' },
+      })
+    );
+    const primary = {
+      invoke: jest
+        .fn()
+        .mockResolvedValue(
+          reply('{"personalityArchetype":"Builder","topics":[]}')
+        ),
+    };
+    const topicModel = {
+      invoke: jest
+        .fn()
+        .mockResolvedValue(
+          reply('{"personalityArchetype":"Builder","topics":[]}')
+        ),
+    };
+    withClients(service, primary, { invoke: jest.fn() });
+    (service as unknown as Record<string, unknown>)['buildClient'] = (
+      model: string
+    ) => (model === 'topic-model' ? topicModel : primary);
+
+    await service.analyzeProfile({} as any);
+
+    expect(topicModel.invoke).toHaveBeenCalledTimes(1);
+    expect(primary.invoke).not.toHaveBeenCalled();
+  });
+
   it('surfaces the original failure when no fallback is configured', async () => {
     const service = new LlmOnboardingAnalysisService(buildConfig());
     const primary = { invoke: jest.fn().mockResolvedValue(reply('nope')) };

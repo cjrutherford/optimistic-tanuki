@@ -40,6 +40,15 @@ describe('parseOwnerBootstrapArgs', () => {
     });
   });
 
+  it('adds the admin API prefix when given a host-only base URL', () => {
+    expect(
+      parseOwnerBootstrapArgs(
+        ['--api-base-url', 'http://127.0.0.1:8098'],
+        ownerBootstrapEnvironment
+      ).apiBaseUrl
+    ).toBe('http://127.0.0.1:8098/api');
+  });
+
   it('passes the deployment bootstrap token from the environment', () => {
     expect(
       parseOwnerBootstrapArgs([], {
