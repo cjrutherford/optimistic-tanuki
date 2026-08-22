@@ -9,15 +9,16 @@ export default [
         'error',
         {
           type: 'attribute',
-          prefix: 'app',
+          prefix: ['app', 'learning'],
           style: 'camelCase',
         },
       ],
+      // 'app' stays for the bootstrap app-root; everything else is 'learning'.
       '@angular-eslint/component-selector': [
         'error',
         {
           type: 'element',
-          prefix: 'app',
+          prefix: ['app', 'learning'],
           style: 'kebab-case',
         },
       ],

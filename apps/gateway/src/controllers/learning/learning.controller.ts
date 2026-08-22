@@ -82,6 +82,22 @@ export class LearningController {
     );
   }
 
+  // Anonymous visitors get an empty list rather than a 401, so the lesson page
+  // renders for everyone and only the saving depends on a session.
+  @Public()
+  @UseGuards(AuthGuard)
+  @Get('me/progress')
+  async getMyProgress(@Req() req: { user?: { userId?: string } }) {
+    const userId = req.user?.userId;
+    if (!userId) return [];
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.GetProgress },
+        { userId }
+      )
+    );
+  }
+
   @Put('progress/:userId')
   async saveProgress(
     @Param('userId') userId: string,

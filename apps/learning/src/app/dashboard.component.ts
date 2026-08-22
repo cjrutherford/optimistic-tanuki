@@ -3,7 +3,7 @@ import { AsyncPipe, NgIf } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { LoadingStateComponent } from '@optimistic-tanuki/common-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
-import { LearningDataService } from './learning-data.service';
+import { DashboardEntry, LearningDataService } from './learning-data.service';
 
 @Component({
   selector: 'learning-dashboard',
@@ -31,8 +31,12 @@ import { LearningDataService } from './learning-data.service';
           ><span>Exercises</span>
         </div>
         <div>
-          <b>{{ totalPoints(paths) }}</b
-          ><span>Points</span>
+          <b>{{ earnedPoints(paths) }}/{{ totalPoints(paths) }}</b
+          ><span>Points earned</span>
+        </div>
+        <div>
+          <b>{{ solvedExercises(paths) }}</b
+          ><span>Solved</span>
         </div>
       </section>
       <section class="paths" aria-label="Learning paths">
@@ -48,7 +52,10 @@ import { LearningDataService } from './learning-data.service';
             ><b>{{ entry.program.displayName }}</b
             ><em
               >{{ entry.totals.lessons }} lessons ·
-              {{ entry.totals.exercises }} practice exercises</em
+              {{ entry.totals.exercises }} practice exercises @if
+              (entry.progress.completedExercises) { ·
+              {{ entry.progress.completedExercises }} solved,
+              {{ entry.progress.points }} pts }</em
             ></span
           ><strong
             >{{ entry.progress.nextLessonId ? 'Continue' : 'Open' }} →</strong
@@ -144,7 +151,15 @@ import { LearningDataService } from './learning-data.service';
 })
 export class DashboardComponent {
   readonly paths$ = inject(LearningDataService).dashboard();
-  totalLessons = (p: any[]) => p.reduce((n, x) => n + x.totals.lessons, 0);
-  totalExercises = (p: any[]) => p.reduce((n, x) => n + x.totals.exercises, 0);
-  totalPoints = (p: any[]) => p.reduce((n, x) => n + x.totals.points, 0);
+
+  totalLessons = (p: DashboardEntry[]) =>
+    p.reduce((n, x) => n + x.totals.lessons, 0);
+  totalExercises = (p: DashboardEntry[]) =>
+    p.reduce((n, x) => n + x.totals.exercises, 0);
+  totalPoints = (p: DashboardEntry[]) =>
+    p.reduce((n, x) => n + x.totals.points, 0);
+  earnedPoints = (p: DashboardEntry[]) =>
+    p.reduce((n, x) => n + x.progress.points, 0);
+  solvedExercises = (p: DashboardEntry[]) =>
+    p.reduce((n, x) => n + x.progress.completedExercises, 0);
 }

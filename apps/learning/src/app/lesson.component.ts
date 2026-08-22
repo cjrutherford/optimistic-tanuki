@@ -2,10 +2,23 @@ import { Component, inject } from '@angular/core';
 import { AsyncPipe, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { switchMap, tap } from 'rxjs';
+import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
-import { LearningDataService, Exercise } from './learning-data.service';
+import {
+  Exercise,
+  LearningDataService,
+  NotSignedInError,
+} from './learning-data.service';
+
+interface ExerciseOutcome {
+  output: string;
+  errors: string[];
+  /** Absent for a plain run, which never judges the answer. */
+  passed?: boolean;
+  awardedPoints?: number;
+  needsSignIn?: boolean;
+}
 
 @Component({
   selector: 'learning-lesson',
@@ -18,54 +31,100 @@ import { LearningDataService, Exercise } from './learning-data.service';
     ButtonComponent,
     BadgeComponent,
   ],
-  template: ` <learning-layout
-    ><ng-container *ngIf="lesson$ | async as lesson"
+  template: `<learning-layout
+    ><ng-container *ngIf="vm$ | async as vm"
       ><a [routerLink]="['/module', trackId, moduleId]" class="back"
         >← Module</a
       >
       <header>
         <small>Lesson</small>
-        <h1>{{ lesson.lesson.title }}</h1>
+        <h1>{{ vm.lesson.lesson.title }}</h1>
       </header>
       <div class="lesson-grid">
         <article>
-          <pre>{{ lesson.content }}</pre>
+          <pre>{{ vm.lesson.content }}</pre>
         </article>
         <aside>
           <div class="practice-head">
-            <span>Practice</span
-            ><span>{{ lesson.exercises.length }} exercises</span>
+            <span>Practice</span>
+            <span
+              >{{ vm.solvedCount }}/{{
+                vm.lesson.exercises.length
+              }}
+              solved</span
+            >
           </div>
-          @for (exercise of lesson.exercises; track exercise.id) {
-          <section class="exercise">
-            <div>
-              <otui-badge tone="warning" shape="soft">{{
+          @for (exercise of vm.lesson.exercises; track exercise.id) {
+          <section class="exercise" [class.solved]="vm.solved.has(exercise.id)">
+            <div class="exercise-head">
+              <otui-badge tone="warning" emphasis="soft">{{
                 exercise.difficulty
               }}</otui-badge>
-              <h2>{{ exercise.title }}</h2>
-              <p>{{ exercise.description }}</p>
+              <span class="points">{{ exercise.points }} pts</span>
+              @if (vm.solved.has(exercise.id)) {
+              <otui-badge tone="success" emphasis="soft">Solved</otui-badge>
+              }
             </div>
+            <h2>{{ exercise.title }}</h2>
+            <p>{{ exercise.description }}</p>
             <textarea
               [(ngModel)]="code[exercise.id]"
               [attr.aria-label]="exercise.title + ' code'"
               spellcheck="false"
             ></textarea>
             <div class="hints">
-              @for (hint of exercise.hints; track hint) {<span
-                >Hint · {{ hint }}</span
-              >}
+              @for (hint of exercise.hints; track hint) {
+              <span>Hint · {{ hint }}</span>
+              }
             </div>
-            <otui-button variant="primary" (action)="run(exercise)"
-              >Run code</otui-button
-            >@if (results[exercise.id]; as result) {
-            <pre class="result">{{
-              result.output ||
-                result.errors.join(
-                  '
+            <div class="actions">
+              <otui-button
+                variant="secondary"
+                [disabled]="busy[exercise.id]"
+                (action)="run(exercise)"
+                >Run</otui-button
+              >
+              <otui-button
+                variant="primary"
+                [disabled]="busy[exercise.id]"
+                (action)="submit(exercise)"
+                >Submit</otui-button
+              >
+              @if (busy[exercise.id]) {
+              <span class="working">Running…</span>
+              }
+            </div>
+            @if (results[exercise.id]; as result) {
+            <div
+              class="result"
+              [class.pass]="result.passed === true"
+              [class.fail]="result.passed === false"
+              role="status"
+            >
+              @if (result.needsSignIn) {
+              <p class="verdict">Sign in to save your progress.</p>
+              <p class="detail">
+                Your code still runs without an account. Only the score needs
+                one.
+              </p>
+              } @else { @if (result.passed === true) {
+              <p class="verdict">
+                Passed@if (result.awardedPoints) {, +{{ result.awardedPoints }}
+                points }
+              </p>
+              } @else if (result.passed === false) {
+              <p class="verdict">Not passed yet</p>
+              }
+              <pre>{{
+                result.output ||
+                  result.errors.join(
+                    '
 '
-                ) ||
-                'No output'
-            }}</pre>
+                  ) ||
+                  'No output'
+              }}</pre>
+              }
+            </div>
             }
           </section>
           }
@@ -131,6 +190,18 @@ import { LearningDataService, Exercise } from './learning-data.service';
       .exercise:last-child {
         border-bottom: 0;
       }
+      .exercise.solved h2 {
+        color: #76e3d0;
+      }
+      .exercise-head {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+      }
+      .points {
+        color: #7894ab;
+        font: 700 0.7rem ui-monospace, monospace;
+      }
       .exercise h2 {
         margin: 0.65rem 0 0.35rem;
         font-size: 1.15rem;
@@ -158,10 +229,48 @@ import { LearningDataService, Exercise } from './learning-data.service';
         color: #8fa7bf;
         font-size: 0.8rem;
       }
+      .actions {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .working {
+        color: #7894ab;
+        font-size: 0.8rem;
+      }
       .result {
         margin: 1rem 0 0;
         padding: 0.8rem;
+        border-left: 3px solid #365674;
         background: #06101c;
+      }
+      .result.pass {
+        border-left-color: #76e3d0;
+      }
+      .result.fail {
+        border-left-color: #d98b6a;
+      }
+      .result .verdict {
+        margin: 0 0 0.4rem;
+        color: #dce8f4;
+        font: 700 0.8rem ui-monospace, monospace;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .result.pass .verdict {
+        color: #76e3d0;
+      }
+      .result.fail .verdict {
+        color: #d98b6a;
+      }
+      .result .detail {
+        margin: 0;
+        color: #8fa7bf;
+        font-size: 0.8rem;
+      }
+      .result pre {
+        margin: 0;
         color: #d8e9f7;
         white-space: pre-wrap;
         font: 400 0.78rem/1.5 ui-monospace, monospace;
@@ -177,11 +286,15 @@ import { LearningDataService, Exercise } from './learning-data.service';
 export class LessonComponent {
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
+
   protected code: Record<string, string> = {};
-  protected results: Record<string, { output: string; errors: string[] }> = {};
+  protected results: Record<string, ExerciseOutcome> = {};
+  protected busy: Record<string, boolean> = {};
+
   readonly trackId = this.route.snapshot.paramMap.get('trackId')!;
   readonly moduleId = this.route.snapshot.paramMap.get('moduleId')!;
-  readonly lesson$ = this.route.paramMap.pipe(
+
+  private readonly lesson$ = this.route.paramMap.pipe(
     switchMap((params) =>
       this.data.lesson(params.get('trackId')!, params.get('lessonId')!)
     ),
@@ -191,16 +304,77 @@ export class LessonComponent {
       )
     )
   );
+
+  /** Pushed after a passing submit so the solved badges update immediately. */
+  private readonly progressReload$ = new BehaviorSubject<void>(undefined);
+
+  private readonly progress$ = this.progressReload$.pipe(
+    switchMap(() => this.data.myProgress())
+  );
+
+  readonly vm$ = combineLatest([this.lesson$, this.progress$]).pipe(
+    map(([lesson, progress]) => {
+      const solved = new Set(
+        progress.flatMap((entry) => entry.completedExerciseIds)
+      );
+      return {
+        lesson,
+        solved,
+        solvedCount: lesson.exercises.filter((exercise) =>
+          solved.has(exercise.id)
+        ).length,
+      };
+    })
+  );
+
   protected run(exercise: Exercise): void {
-    this.data
-      .run(exercise.id, this.code[exercise.id] ?? exercise.starterCode)
-      .subscribe({
-        next: (result) => (this.results[exercise.id] = result),
-        error: (error) =>
-          (this.results[exercise.id] = {
-            output: '',
-            errors: [error.message ?? 'Code could not run'],
-          }),
-      });
+    this.busy[exercise.id] = true;
+    this.data.run(exercise.id, this.codeFor(exercise)).subscribe({
+      next: (result) => {
+        this.results[exercise.id] = {
+          output: result.output,
+          errors: result.errors,
+        };
+        this.busy[exercise.id] = false;
+      },
+      error: (error) => this.fail(exercise, error),
+    });
+  }
+
+  protected submit(exercise: Exercise): void {
+    this.busy[exercise.id] = true;
+    this.data.submit(exercise.id, this.codeFor(exercise)).subscribe({
+      next: (result) => {
+        this.results[exercise.id] = {
+          output: result.output,
+          errors: result.errors,
+          passed: result.passed,
+          awardedPoints: result.awardedPoints,
+        };
+        this.busy[exercise.id] = false;
+        if (result.passed) this.progressReload$.next();
+      },
+      error: (error) => this.fail(exercise, error),
+    });
+  }
+
+  private codeFor(exercise: Exercise): string {
+    return this.code[exercise.id] ?? exercise.starterCode;
+  }
+
+  private fail(exercise: Exercise, error: unknown): void {
+    this.busy[exercise.id] = false;
+    if (error instanceof NotSignedInError) {
+      this.results[exercise.id] = {
+        output: '',
+        errors: [],
+        needsSignIn: true,
+      };
+      return;
+    }
+    this.results[exercise.id] = {
+      output: '',
+      errors: [(error as Error)?.message ?? 'Code could not run'],
+    };
   }
 }
