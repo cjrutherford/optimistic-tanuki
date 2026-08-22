@@ -88,6 +88,10 @@ function setup(
 type Handlers = {
   run(exercise: Exercise): void;
   submit(exercise: Exercise): void;
+  revealHint(exercise: Exercise): void;
+  revealedHints(exercise: Exercise): string[];
+  hasMoreHints(exercise: Exercise): boolean;
+  remainingHints(exercise: Exercise): number;
   results: Record<
     string,
     {
@@ -160,6 +164,63 @@ describe('LessonComponent', () => {
     expect(page.results['go-b-01'].needsSignIn).toBe(true);
     expect(page.results['go-b-01'].errors).toEqual([]);
     expect(page.busy['go-b-01']).toBe(false);
+  });
+
+  describe('hints', () => {
+    const threeHints: Exercise = {
+      ...exercise,
+      hints: ['Start with fmt', 'Println adds a newline', 'Check the spelling'],
+    };
+
+    it('gives nothing away until the learner asks', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      expect(page.revealedHints(threeHints)).toEqual([]);
+      expect(page.remainingHints(threeHints)).toBe(3);
+    });
+
+    it('reveals one hint at a time, in order', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      page.revealHint(threeHints);
+      expect(page.revealedHints(threeHints)).toEqual(['Start with fmt']);
+
+      page.revealHint(threeHints);
+      expect(page.revealedHints(threeHints)).toEqual([
+        'Start with fmt',
+        'Println adds a newline',
+      ]);
+      expect(page.remainingHints(threeHints)).toBe(1);
+    });
+
+    it('stops offering more once every hint is out', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      page.revealHint(threeHints);
+      page.revealHint(threeHints);
+      page.revealHint(threeHints);
+
+      expect(page.hasMoreHints(threeHints)).toBe(false);
+      expect(page.remainingHints(threeHints)).toBe(0);
+
+      // A further click cannot walk past the end.
+      page.revealHint(threeHints);
+      expect(page.revealedHints(threeHints)).toHaveLength(3);
+    });
+
+    it('tracks each exercise separately', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+      const other: Exercise = { ...threeHints, id: 'go-b-02' };
+
+      page.revealHint(threeHints);
+
+      expect(page.revealedHints(threeHints)).toHaveLength(1);
+      expect(page.revealedHints(other)).toHaveLength(0);
+    });
   });
 
   it('surfaces a real failure as an error message', () => {

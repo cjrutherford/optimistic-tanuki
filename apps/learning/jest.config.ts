@@ -12,7 +12,11 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$)'],
+  // marked ships ESM only, so it has to be transformed rather than skipped.
+  // The `.*` matters: pnpm nests the real file under
+  // node_modules/.pnpm/marked@x.y.z/node_modules/marked/, so a lookahead
+  // anchored right after the first `node_modules/` never sees the name.
+  transformIgnorePatterns: ['node_modules/(?!.*\\.mjs$|.*marked)'],
   snapshotSerializers: [
     'jest-preset-angular/build/serializers/no-ng-attributes',
     'jest-preset-angular/build/serializers/ng-snapshot',

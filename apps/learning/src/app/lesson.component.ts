@@ -5,6 +5,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
+import { LessonMarkdownService } from './lesson-markdown.service';
 import {
   Exercise,
   LearningDataService,
@@ -41,9 +42,7 @@ interface ExerciseOutcome {
         <h1>{{ vm.lesson.lesson.title }}</h1>
       </header>
       <div class="lesson-grid">
-        <article>
-          <pre>{{ vm.lesson.content }}</pre>
-        </article>
+        <article class="prose" [innerHTML]="vm.content"></article>
         <aside>
           <div class="practice-head">
             <span>Practice</span>
@@ -72,11 +71,30 @@ interface ExerciseOutcome {
               [attr.aria-label]="exercise.title + ' code'"
               spellcheck="false"
             ></textarea>
+            @if (exercise.hints.length) {
             <div class="hints">
-              @for (hint of exercise.hints; track hint) {
-              <span>Hint · {{ hint }}</span>
+              @for (hint of revealedHints(exercise); track hint; let i = $index)
+              {
+              <p>
+                <span>Hint {{ i + 1 }}</span
+                >{{ hint }}
+              </p>
+              } @if (hasMoreHints(exercise)) {
+              <button
+                type="button"
+                class="hint-more"
+                (click)="revealHint(exercise)"
+              >
+                {{
+                  shownHints[exercise.id]
+                    ? 'Show another hint'
+                    : 'Stuck? Show a hint'
+                }}
+                <em>({{ remainingHints(exercise) }} left)</em>
+              </button>
               }
             </div>
+            }
             <div class="actions">
               <otui-button
                 variant="secondary"
@@ -159,13 +177,157 @@ interface ExerciseOutcome {
         background: #091622;
       }
       article {
-        padding: 1.2rem;
+        padding: 1.2rem 1.5rem 2rem;
       }
-      article pre {
-        margin: 0;
-        white-space: pre-wrap;
+
+      /* Rendered lesson markdown. */
+      .prose {
+        color: #cfe0ee;
+        line-height: 1.7;
+        overflow-wrap: break-word;
+      }
+      .prose :first-child {
+        margin-top: 0;
+      }
+      .prose h1,
+      .prose h2,
+      .prose h3,
+      .prose h4 {
+        margin: 2rem 0 0.6rem;
+        color: #eaf3fa;
+        letter-spacing: -0.02em;
+        line-height: 1.25;
+        text-wrap: balance;
+      }
+      .prose h1 {
+        font-size: 1.8rem;
+      }
+      .prose h2 {
+        font-size: 1.4rem;
+      }
+      .prose h3 {
+        font-size: 1.13rem;
+      }
+      .prose h4 {
+        font-size: 1rem;
+      }
+      .prose p,
+      .prose ul,
+      .prose ol,
+      .prose blockquote,
+      .prose table {
+        margin: 0 0 1rem;
+      }
+      .prose ul,
+      .prose ol {
+        padding-left: 1.35rem;
+      }
+      .prose li {
+        margin-bottom: 0.35rem;
+      }
+      .prose a {
+        color: #76e3d0;
+      }
+      .prose strong {
+        color: #eaf3fa;
+      }
+      .prose blockquote {
+        padding: 0.2rem 0 0.2rem 1rem;
+        border-left: 3px solid #2f5771;
+        color: #a9bed2;
+      }
+      .prose hr {
+        margin: 2rem 0;
+        border: 0;
+        border-top: 1px solid #294b62;
+      }
+      .prose table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        border-collapse: collapse;
+        font-size: 0.87rem;
+      }
+      .prose th,
+      .prose td {
+        padding: 0.5rem 0.7rem;
+        border: 1px solid #294b62;
+        text-align: left;
+      }
+      .prose th {
+        color: #9db4c7;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      /* Inline code, but not the code inside a highlighted block. */
+      .prose :not(pre) > code {
+        padding: 0.12em 0.4em;
+        border-radius: 3px;
+        background: #14293a;
+        color: #9fe8d8;
+        font: 400 0.85em ui-monospace, monospace;
+      }
+      .prose pre {
+        margin: 0 0 1.15rem;
+        padding: 0.95rem 1.1rem;
+        overflow-x: auto;
+        border: 1px solid #24455d;
+        border-left: 3px solid #3d7f96;
+        background: #050d16;
         color: #d5e7f6;
-        font: 400 0.86rem/1.72 ui-monospace, monospace;
+        font: 400 0.83rem/1.65 ui-monospace, monospace;
+      }
+      .prose pre code {
+        background: none;
+        padding: 0;
+        font: inherit;
+      }
+
+      /* Prism tokens, tuned to this app's console palette. */
+      .prose .token.comment,
+      .prose .token.prolog,
+      .prose .token.doctype,
+      .prose .token.cdata {
+        color: #5f7c91;
+        font-style: italic;
+      }
+      .prose .token.punctuation {
+        color: #90a9bd;
+      }
+      .prose .token.keyword,
+      .prose .token.rule,
+      .prose .token.important {
+        color: #7fb2ff;
+      }
+      .prose .token.string,
+      .prose .token.char,
+      .prose .token.attr-value {
+        color: #9fe8b0;
+      }
+      .prose .token.number,
+      .prose .token.boolean,
+      .prose .token.constant,
+      .prose .token.symbol {
+        color: #f0c987;
+      }
+      .prose .token.function,
+      .prose .token.class-name {
+        color: #76e3d0;
+      }
+      .prose .token.operator,
+      .prose .token.entity,
+      .prose .token.url {
+        color: #b8cadb;
+      }
+      .prose .token.property,
+      .prose .token.tag,
+      .prose .token.attr-name,
+      .prose .token.builtin {
+        color: #dfa2c4;
+      }
+      .prose .token.deleted {
+        color: #d98b6a;
       }
       aside {
         padding: 1.1rem;
@@ -217,10 +379,46 @@ interface ExerciseOutcome {
       }
       .hints {
         display: grid;
-        gap: 0.35rem;
+        gap: 0.5rem;
         margin: 0 0 1rem;
-        color: #8fa7bf;
-        font-size: 0.8rem;
+        justify-items: start;
+      }
+      .hints p {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.55rem;
+        margin: 0;
+        color: #a9bed2;
+        font-size: 0.82rem;
+        line-height: 1.5;
+      }
+      .hints p span {
+        color: #76e3d0;
+        font: 700 0.65rem ui-monospace, monospace;
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        padding-top: 0.16rem;
+      }
+      .hint-more {
+        padding: 0.4rem 0.75rem;
+        border: 1px dashed #3d6a86;
+        border-radius: 2px;
+        background: none;
+        color: #9db4c7;
+        font: 400 0.78rem inherit;
+        cursor: pointer;
+      }
+      .hint-more:hover {
+        border-color: #76e3d0;
+        color: #76e3d0;
+      }
+      .hint-more:focus-visible {
+        outline: 2px solid #76e3d0;
+        outline-offset: 2px;
+      }
+      .hint-more em {
+        color: #6b8299;
+        font-style: normal;
       }
       .actions {
         display: flex;
@@ -279,6 +477,7 @@ interface ExerciseOutcome {
 export class LessonComponent {
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
+  private readonly markdown = inject(LessonMarkdownService);
 
   protected code: Record<string, string> = {};
   protected results: Record<string, ExerciseOutcome> = {};
@@ -312,6 +511,10 @@ export class LessonComponent {
       );
       return {
         lesson,
+        // Rendered once per lesson rather than on every change detection
+        // pass. Bound as a plain string so Angular sanitizes it on both the
+        // server and the browser.
+        content: this.markdown.render(lesson.content),
         solved,
         solvedCount: lesson.exercises.filter((exercise) =>
           solved.has(exercise.id)
@@ -319,6 +522,26 @@ export class LessonComponent {
       };
     })
   );
+
+  /** How many hints the learner has asked for, per exercise. */
+  protected shownHints: Record<string, number> = {};
+
+  protected revealedHints(exercise: Exercise): string[] {
+    return exercise.hints.slice(0, this.shownHints[exercise.id] ?? 0);
+  }
+
+  protected hasMoreHints(exercise: Exercise): boolean {
+    return (this.shownHints[exercise.id] ?? 0) < exercise.hints.length;
+  }
+
+  protected remainingHints(exercise: Exercise): number {
+    return exercise.hints.length - (this.shownHints[exercise.id] ?? 0);
+  }
+
+  protected revealHint(exercise: Exercise): void {
+    if (!this.hasMoreHints(exercise)) return;
+    this.shownHints[exercise.id] = (this.shownHints[exercise.id] ?? 0) + 1;
+  }
 
   protected run(exercise: Exercise): void {
     this.busy[exercise.id] = true;

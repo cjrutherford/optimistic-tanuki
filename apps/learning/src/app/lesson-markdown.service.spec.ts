@@ -1,0 +1,129 @@
+import { Component, inject } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { LessonMarkdownService } from './lesson-markdown.service';
+
+describe('LessonMarkdownService', () => {
+  let service: LessonMarkdownService;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({});
+    service = TestBed.inject(LessonMarkdownService);
+  });
+
+  describe('markdown', () => {
+    it('renders headings, emphasis and lists as HTML', () => {
+      const html = service.render(
+        '# Goroutines\n\nRun work **concurrently**.\n\n- one\n- two\n'
+      );
+
+      expect(html).toContain('<h1');
+      expect(html).toContain('Goroutines');
+      expect(html).toContain('<strong>concurrently</strong>');
+      expect(html).toContain('<li>one</li>');
+    });
+
+    it('renders GitHub tables, which the lessons use', () => {
+      const html = service.render(
+        '| Type | Zero |\n| --- | --- |\n| int | 0 |\n'
+      );
+
+      expect(html).toContain('<table>');
+      expect(html).toContain('<td>int</td>');
+    });
+
+    it('returns an empty string for empty content', () => {
+      expect(service.render('')).toBe('');
+    });
+  });
+
+  describe('highlighting', () => {
+    it.each([
+      ['go', 'func main() {}'],
+      ['rust', 'fn main() {}'],
+      ['cpp', 'int main() { return 0; }'],
+      ['typescript', 'const a: number = 1;'],
+    ])('highlights %s, one of the four tracks', (lang, code) => {
+      const html = service.render('```' + lang + '\n' + code + '\n```');
+      expect(html).toContain(`language-${lang}`);
+      expect(html).toContain('class="token');
+    });
+
+    it('resolves the aliases the lessons write fences with', () => {
+      expect(service.render('```rs\nfn main() {}\n```')).toContain(
+        'language-rust'
+      );
+      expect(service.render('```ts\nconst a = 1;\n```')).toContain(
+        'language-typescript'
+      );
+    });
+
+    it('ignores extras after the language in a fence', () => {
+      expect(
+        service.render('```go title="main.go"\nfunc main() {}\n```')
+      ).toContain('language-go');
+    });
+
+    it('escapes a block whose language it does not know', () => {
+      const html = service.render('```brainfuck\n<script>x</script>\n```');
+
+      expect(html).toContain('&lt;script&gt;');
+      expect(html).not.toContain('<script>');
+    });
+  });
+
+  // render() deliberately returns unsanitized HTML: the binding sanitizes it.
+  // These cover the contract that arrangement depends on, because Angular's
+  // sanitizer has to strip the dangerous parts WITHOUT stripping the token
+  // spans and language classes that highlighting produces.
+  describe('once bound through Angular', () => {
+    @Component({
+      standalone: true,
+      template: `<div [innerHTML]="html"></div>`,
+    })
+    class HostComponent {
+      private readonly markdown = inject(LessonMarkdownService);
+      markdownSource = '';
+      get html() {
+        return this.markdown.render(this.markdownSource);
+      }
+    }
+
+    function bind(markdown: string): string {
+      const fixture = TestBed.createComponent(HostComponent);
+      fixture.componentInstance.markdownSource = markdown;
+      fixture.detectChanges();
+      return (fixture.nativeElement as HTMLElement).querySelector('div')!
+        .innerHTML;
+    }
+
+    it('keeps the token spans highlighting produced', () => {
+      const rendered = bind('```go\nfunc main() {}\n```');
+
+      expect(rendered).toContain('token');
+      expect(rendered).toContain('keyword');
+    });
+
+    it('keeps the language class on the code block', () => {
+      expect(bind('```rust\nfn main() {}\n```')).toContain('language-rust');
+    });
+
+    it('keeps ordinary prose structure', () => {
+      const rendered = bind('# Title\n\nSome **bold** text.\n\n- a\n- b\n');
+
+      expect(rendered).toContain('<h1');
+      expect(rendered).toContain('<strong>bold</strong>');
+      expect(rendered).toContain('<li>');
+    });
+
+    it('drops script tags', () => {
+      const rendered = bind('Hello\n\n<script>alert(1)</script>\n');
+
+      expect(rendered).not.toContain('<script');
+      expect(rendered).toContain('Hello');
+    });
+
+    it('drops inline event handlers', () => {
+      expect(bind('<img src="x" onerror="alert(1)">')).not.toContain('onerror');
+    });
+  });
+});

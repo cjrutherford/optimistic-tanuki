@@ -281,6 +281,9 @@ importers:
       prettier-eslint:
         specifier: ^16.4.2
         version: 16.4.2(typescript@5.9.3)
+      prismjs:
+        specifier: ^1.30.0
+        version: 1.30.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -504,6 +507,9 @@ importers:
       '@types/pg':
         specifier: ^8.18.0
         version: 8.20.0
+      '@types/prismjs':
+        specifier: ^1.26.6
+        version: 1.26.6
       '@types/redis':
         specifier: ^4.0.10
         version: 4.0.11
@@ -6461,6 +6467,9 @@ packages:
 
   '@types/pg@8.20.0':
     resolution: {integrity: sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow==}
+
+  '@types/prismjs@1.26.6':
+    resolution: {integrity: sha512-vqlvI7qlMvcCBbVe0AKAb4f97//Hy0EBTaiW8AalRnG/xAN5zOiWWyrNqNXeq8+KAuvRewjCVY1+IPxk4RdNYw==}
 
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
@@ -22198,6 +22207,8 @@ snapshots:
       '@types/node': 20.19.9
       pg-protocol: 1.14.0
       pg-types: 2.2.0
+
+  '@types/prismjs@1.26.6': {}
 
   '@types/qs@6.15.1': {}
 
