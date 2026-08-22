@@ -2,7 +2,11 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import {
   DiscInterviewRequest,
+  ApplicationDocumentKind,
+  ApplicationExportFormat,
+  DiscInterviewTurn,
   LeadAuthContext,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseRequest,
   CreateLeadDto,
@@ -20,11 +24,16 @@ import {
 } from '@optimistic-tanuki/models';
 import { DiscoveryService } from './discovery.service';
 import { LeadQualificationService } from './lead-qualification.service';
+import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service';
+import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
+import { ApplicationService } from './applications/application.service';
+import { DocumentExportService } from './applications/document-export.service';
 import { LeadsService } from './leads.service';
 import { GoogleMapsLocationAutocompleteService } from './google-maps-location-autocomplete.service';
 import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import {
   LeadAnalysisCommands,
+  LeadApplicationCommands,
   LeadCommands,
   LeadFlagCommands,
   LeadOnboardingCommands,
@@ -38,7 +47,11 @@ export class LeadsController {
     private readonly discoveryService: DiscoveryService,
     private readonly googleMapsLocationAutocompleteService: GoogleMapsLocationAutocompleteService,
     private readonly onboardingAnalysisService: OnboardingAnalysisService,
-    private readonly leadQualificationService: LeadQualificationService
+    private readonly leadQualificationService: LeadQualificationService,
+    private readonly atsCompanyLookupService: AtsCompanyLookupService,
+    private readonly atsCompanySuggestionService: AtsCompanySuggestionService,
+    private readonly applicationService: ApplicationService,
+    private readonly documentExportService: DocumentExportService
   ) {}
 
   @MessagePattern({ cmd: LeadCommands.FIND_ALL })
@@ -191,9 +204,9 @@ export class LeadsController {
 
   @MessagePattern({ cmd: LeadOnboardingCommands.ANALYZE_MAD_LIB })
   async analyzeMadLib(
-    @Payload() data: { text: string }
+    @Payload() data: MadLibAnalysisRequest
   ): Promise<MadLibAnalysisResult> {
-    return this.onboardingAnalysisService.analyzeMadLib(data.text);
+    return this.onboardingAnalysisService.analyzeMadLib(data);
   }
 
   @MessagePattern({ cmd: LeadOnboardingCommands.PARSE_RESUME })
@@ -210,9 +223,33 @@ export class LeadsController {
     );
   }
 
+  @MessagePattern({ cmd: LeadOnboardingCommands.LOOKUP_ATS_COMPANY })
+  async lookupAtsCompany(@Payload() data: { companyName?: string }) {
+    // Returns only boards that actually answered, so the UI never offers the
+    // user a token that would 404 on every discovery run.
+    return this.atsCompanyLookupService.lookup(data.companyName || '');
+  }
+
+  @MessagePattern({ cmd: LeadOnboardingCommands.SUGGEST_ATS_COMPANIES })
+  async suggestAtsCompanies(@Payload() data: { context: LeadAuthContext }) {
+    return this.atsCompanySuggestionService.suggest(data.context.profileId);
+  }
+
   @MessagePattern({ cmd: LeadOnboardingCommands.ADVANCE_DISC })
-  async advanceDiscInterview(@Payload() data: DiscInterviewRequest) {
-    return this.onboardingAnalysisService.advanceDiscInterview(data);
+  async advanceDiscInterview(
+    @Payload() data: DiscInterviewRequest & { context?: LeadAuthContext }
+  ) {
+    // A returning user should not be asked what they were asked last time.
+    const previouslyAsked = data.context?.profileId
+      ? await this.leadQualificationService.getPreviouslyAskedQuestions(
+          data.context.profileId
+        )
+      : [];
+
+    return this.onboardingAnalysisService.advanceDiscInterview(
+      data,
+      previouslyAsked
+    );
   }
 
   @MessagePattern({ cmd: LeadOnboardingCommands.CONFIRM })
@@ -222,11 +259,16 @@ export class LeadsController {
       profile?: UserOnboardingProfile;
       topics: CreateLeadTopicDto[];
       context: LeadAuthContext;
+      discTranscript?: DiscInterviewTurn[];
     }
   ) {
     const createdTopics = [];
     if (data.profile) {
-      await this.leadsService.saveOnboardingProfile(data.profile, data.context);
+      await this.leadsService.saveOnboardingProfile(
+        data.profile,
+        data.context,
+        data.discTranscript || []
+      );
     }
     for (const topicDto of data.topics) {
       const topic = await this.leadsService.createTopic(topicDto, data.context);
@@ -241,6 +283,67 @@ export class LeadsController {
       );
     }
     return { topics: createdTopics };
+  }
+
+  @MessagePattern({ cmd: LeadApplicationCommands.GENERATE })
+  async generateApplication(
+    @Payload() data: { leadId: string; context: LeadAuthContext }
+  ) {
+    return this.applicationService.generate(data.leadId, data.context);
+  }
+
+  @MessagePattern({ cmd: LeadApplicationCommands.FIND_LATEST })
+  async findLatestApplication(
+    @Payload() data: { leadId: string; context: LeadAuthContext }
+  ) {
+    return this.applicationService.findLatest(
+      data.leadId,
+      data.context.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: LeadApplicationCommands.FIND_HISTORY })
+  async findApplicationHistory(
+    @Payload() data: { leadId: string; context: LeadAuthContext }
+  ) {
+    return this.applicationService.findHistory(
+      data.leadId,
+      data.context.profileId
+    );
+  }
+
+  @MessagePattern({ cmd: LeadApplicationCommands.EXPORT })
+  async exportApplication(
+    @Payload()
+    data: {
+      leadId: string;
+      kind: ApplicationDocumentKind;
+      format: ApplicationExportFormat;
+      candidateName?: string;
+      context: LeadAuthContext;
+    }
+  ) {
+    const application = await this.applicationService.findLatest(
+      data.leadId,
+      data.context.profileId
+    );
+    if (!application) {
+      return null;
+    }
+
+    const exported = this.documentExportService.export(
+      application,
+      data.kind,
+      data.format,
+      data.candidateName || 'application'
+    );
+
+    // Transported base64 because the microservice channel carries JSON.
+    return {
+      filename: exported.filename,
+      contentType: exported.contentType,
+      contentBase64: exported.buffer.toString('base64'),
+    };
   }
 
   @MessagePattern({ cmd: LeadAnalysisCommands.RUN })

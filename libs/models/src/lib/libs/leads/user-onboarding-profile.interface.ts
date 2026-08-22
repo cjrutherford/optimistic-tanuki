@@ -23,7 +23,16 @@ export interface ResumeRoleSummary {
 }
 
 export interface OnboardingProfileSuggestions {
-  serviceOffer?: string;
+  /** What the person calls themselves, e.g. "Senior Platform Engineer". */
+  professionalTitle?: string;
+  /**
+   * What they deliver. The intro composer collects several, since people
+   * rarely sell exactly one thing, but the stored profile keeps a single
+   * prose value — everything downstream (topic analysis, the fact guard,
+   * generated applications) reads it as a sentence. The list is joined at the
+   * boundary rather than changing that.
+   */
+  serviceOffer?: string | string[];
   yearsExperience?: string;
   skills?: string[];
   certifications?: string[];
@@ -67,9 +76,19 @@ export interface MadLibAnalysisResult {
   evidenceByField?: OnboardingSuggestionEvidence;
 }
 
+/** The DISC quadrant a generated interview question is probing for. */
+export type DiscDimension = 'D' | 'I' | 'S' | 'C';
+
+export const DISC_DIMENSIONS: DiscDimension[] = ['D', 'I', 'S', 'C'];
+
 export interface DiscInterviewTurn {
   role: 'assistant' | 'user';
   text: string;
+  /**
+   * Set on assistant turns so the interview can guarantee every quadrant is
+   * probed before it completes, instead of asking a fixed list of questions.
+   */
+  targetDimension?: DiscDimension;
 }
 
 export interface DiscInterviewRequest {
@@ -80,8 +99,18 @@ export interface DiscInterviewRequest {
 export interface DiscInterviewResponse {
   complete: boolean;
   nextQuestion?: string;
+  /** Which quadrant `nextQuestion` is probing, when the question was generated. */
+  nextQuestionDimension?: DiscDimension;
   assessment?: DiscAssessment;
   discType?: string;
+}
+
+/** One adaptively generated interview question. */
+export interface DiscQuestionSuggestion {
+  question: string;
+  targetDimension: DiscDimension;
+  /** The model's judgement that the transcript already supports a scoring. */
+  sufficientSignal: boolean;
 }
 
 export interface ResumeParseRequest {
@@ -95,6 +124,8 @@ export interface UserOnboardingProfile {
   userId?: string;
   // Section A: Professional Background
   madLibSummary?: string;
+  /** Stored on the profile (jsonb), so adding it needs no migration. */
+  professionalTitle?: string;
   serviceOffer: string;
   yearsExperience: string;
   skills: string[];
@@ -176,4 +207,9 @@ export interface OnboardingAnalysisResult {
 export interface ConfirmOnboardingRequest {
   profile: UserOnboardingProfile;
   topics: GeneratedTopicSuggestion[];
+  /**
+   * The interview as conducted. Stored alongside the profile so a later re-run
+   * can avoid asking the same questions again.
+   */
+  discTranscript?: DiscInterviewTurn[];
 }

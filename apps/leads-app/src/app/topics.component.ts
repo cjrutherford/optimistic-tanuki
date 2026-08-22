@@ -5,7 +5,14 @@ import { RouterModule } from '@angular/router';
 import { Subscription, finalize } from 'rxjs';
 import { LeadsService } from './leads.service';
 import {
+  ACTIVE_LEAD_DISCOVERY_SOURCES,
+  AspirationalCompany,
+  isAspirationalSource,
+  getLeadSourceDescriptor,
+  getLeadSourceLabel,
+  isRetiredLeadSource,
   LeadDiscoverySource,
+  LeadDiscoverySourceDescriptor,
   LeadTopicDiscoveryIntent,
   Topic,
   TopicDiscoveryResult,
@@ -26,7 +33,25 @@ export class TopicsComponent implements OnInit, OnDestroy {
   private sub!: Subscription;
   private googleMapsCityAutocompleteSub?: Subscription;
   private googleMapsLocationAutocompleteSub?: Subscription;
-  readonly availableSources = Object.values(LeadDiscoverySource);
+  // Only sources the registry marks active are offerable; retired ids stay in
+  // the enum so historical leads keep their provenance, but nobody can pick one.
+  // Broad sources sweep a market; aspirational ones watch a handful of named
+  // employers. Mixing them in one list reads as if they behave the same way.
+  readonly availableSources = ACTIVE_LEAD_DISCOVERY_SOURCES.filter(
+    (source) => !isAspirationalSource(source)
+  );
+  readonly aspirationalSources =
+    ACTIVE_LEAD_DISCOVERY_SOURCES.filter(isAspirationalSource);
+
+  atsCompanyQuery = '';
+  atsLookupPending = false;
+  atsLookupError = '';
+  atsMatches: (AspirationalCompany & { openingCount: number })[] = [];
+  atsSuggestions: (AspirationalCompany & {
+    openingCount: number;
+    reason: string;
+  })[] = [];
+  atsSuggestionsLoaded = false;
   readonly LeadTopicDiscoveryIntent = LeadTopicDiscoveryIntent;
   readonly defaultSources: LeadDiscoverySource[] = [...this.availableSources];
   private readonly discoveryPollTimers = new Map<
@@ -55,6 +80,7 @@ export class TopicsComponent implements OnInit, OnDestroy {
     excludedTerms: '',
     discoveryIntent: LeadTopicDiscoveryIntent.JOB_OPENINGS,
     sources: [...this.defaultSources],
+    aspirationalCompanies: [] as AspirationalCompany[],
     googleMapsCities: '',
     googleMapsTypes: '',
     googleMapsLocation: '',
@@ -130,6 +156,7 @@ export class TopicsComponent implements OnInit, OnDestroy {
       excludedTerms: '',
       discoveryIntent: LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources: [...this.defaultSources],
+      aspirationalCompanies: [] as AspirationalCompany[],
       googleMapsCities: '',
       googleMapsTypes: '',
       googleMapsLocation: '',
@@ -154,6 +181,7 @@ export class TopicsComponent implements OnInit, OnDestroy {
       discoveryIntent:
         topic.discoveryIntent || LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources: [...this.getTopicSources(topic)],
+      aspirationalCompanies: [...(topic.aspirationalCompanies || [])],
       googleMapsCities: (topic.googleMapsCities || []).join('; '),
       googleMapsTypes: (topic.googleMapsTypes || []).join(', '),
       googleMapsLocation: topic.googleMapsLocation || '',
@@ -227,6 +255,9 @@ export class TopicsComponent implements OnInit, OnDestroy {
       excludedTerms,
       discoveryIntent: this.topicForm.discoveryIntent,
       sources: [...this.topicForm.sources],
+      aspirationalCompanies: this.isAspirationalSelected
+        ? [...this.selectedCompanies]
+        : undefined,
       googleMapsCities: this.isGoogleMapsSelected
         ? googleMapsCities
         : undefined,
@@ -298,6 +329,7 @@ export class TopicsComponent implements OnInit, OnDestroy {
       excludedTerms: '',
       discoveryIntent: LeadTopicDiscoveryIntent.JOB_OPENINGS,
       sources: [...this.defaultSources],
+      aspirationalCompanies: [] as AspirationalCompany[],
       googleMapsCities: '',
       googleMapsTypes: '',
       googleMapsLocation: '',
@@ -489,21 +521,113 @@ export class TopicsComponent implements OnInit, OnDestroy {
   }
 
   formatSourceLabel(source: LeadDiscoverySource): string {
-    switch (source) {
-      case LeadDiscoverySource.REMOTE_OK:
-        return 'Remote OK';
-      case LeadDiscoverySource.WE_WORK_REMOTELY:
-        return 'We Work Remotely';
-      case LeadDiscoverySource.JUST_REMOTE:
-        return 'JustRemote';
-      case LeadDiscoverySource.GOOGLE_MAPS:
-        return 'Google Maps';
-      default:
-        return source
-          .split('-')
-          .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-          .join(' ');
+    return getLeadSourceLabel(source);
+  }
+
+  get isAspirationalSelected(): boolean {
+    return this.topicForm.sources.some((source) =>
+      isAspirationalSource(source)
+    );
+  }
+
+  get selectedCompanies(): AspirationalCompany[] {
+    return this.topicForm.aspirationalCompanies || [];
+  }
+
+  loadAtsSuggestions(): void {
+    if (this.atsSuggestionsLoaded) {
+      return;
     }
+    this.atsSuggestionsLoaded = true;
+    this.leadsService.suggestAtsCompanies().subscribe({
+      next: (suggestions) => {
+        // Anything already on the topic is not a suggestion any more.
+        this.atsSuggestions = suggestions.filter(
+          (suggestion) =>
+            !this.selectedCompanies.some(
+              (company) =>
+                company.provider === suggestion.provider &&
+                company.token === suggestion.token
+            )
+        );
+      },
+      error: () => {
+        this.atsSuggestions = [];
+      },
+    });
+  }
+
+  lookupAtsCompany(): void {
+    const companyName = this.atsCompanyQuery.trim();
+    if (!companyName || this.atsLookupPending) {
+      return;
+    }
+
+    this.atsLookupPending = true;
+    this.atsLookupError = '';
+    this.atsMatches = [];
+
+    this.leadsService.lookupAtsCompany(companyName).subscribe({
+      next: (matches) => {
+        this.atsLookupPending = false;
+        this.atsMatches = matches;
+        if (!matches.length) {
+          // Said plainly, because the alternative is storing a guessed token
+          // that silently returns nothing forever.
+          this.atsLookupError = `No public Greenhouse or Lever board found for "${companyName}". They may use a different system, or post only on their own site.`;
+        }
+      },
+      error: () => {
+        this.atsLookupPending = false;
+        this.atsLookupError = 'Could not check job boards right now.';
+      },
+    });
+  }
+
+  addAtsCompany(match: AspirationalCompany): void {
+    const existing = this.topicForm.aspirationalCompanies || [];
+    const already = existing.some(
+      (company) =>
+        company.provider === match.provider && company.token === match.token
+    );
+    if (!already) {
+      this.topicForm.aspirationalCompanies = [
+        ...existing,
+        { provider: match.provider, token: match.token, label: match.label },
+      ];
+    }
+    this.atsMatches = [];
+    this.atsCompanyQuery = '';
+    this.atsSuggestions = this.atsSuggestions.filter(
+      (suggestion) =>
+        !(
+          suggestion.provider === match.provider &&
+          suggestion.token === match.token
+        )
+    );
+  }
+
+  removeAtsCompany(company: AspirationalCompany): void {
+    this.topicForm.aspirationalCompanies = (
+      this.topicForm.aspirationalCompanies || []
+    ).filter(
+      (entry) =>
+        !(entry.provider === company.provider && entry.token === company.token)
+    );
+  }
+
+  sourceDescriptor(
+    source: LeadDiscoverySource
+  ): LeadDiscoverySourceDescriptor | undefined {
+    return getLeadSourceDescriptor(source);
+  }
+
+  /** Retired sources still stored on an existing topic, so the user can be told. */
+  retiredSourcesFor(topic: Topic): LeadDiscoverySourceDescriptor[] {
+    return (topic.sources || [])
+      .filter((source) => isRetiredLeadSource(source))
+      .map((source) => getLeadSourceDescriptor(source))
+      .filter((d): d is LeadDiscoverySourceDescriptor => Boolean(d));
   }
 
   private clearLocationSuggestions(): void {

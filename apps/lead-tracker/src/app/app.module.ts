@@ -11,20 +11,32 @@ import {
 import {
   Lead,
   LeadFlag,
+  LeadApplicationRecord,
   LeadOnboardingProfileRecord,
   LeadQualification,
   LeadTopic,
   LeadTopicLink,
 } from '@optimistic-tanuki/models/leads-entities';
 import { DataSource } from 'typeorm';
-import { ClutchDiscoveryProvider } from './discovery/clutch-discovery.provider';
-import { CrunchbaseDiscoveryProvider } from './discovery/crunchbase-discovery.provider';
+import { ArbeitnowDiscoveryProvider } from './discovery/arbeitnow-discovery.provider';
+import { HackerNewsDiscoveryProvider } from './discovery/hacker-news-discovery.provider';
+import { RemotiveDiscoveryProvider } from './discovery/remotive-discovery.provider';
+import { TheMuseDiscoveryProvider } from './discovery/the-muse-discovery.provider';
+import { FundingNewsDiscoveryProvider } from './discovery/funding-news-discovery.provider';
+import {
+  GreenhouseDiscoveryProvider,
+  LeverDiscoveryProvider,
+} from './discovery/aspirational-ats.provider';
+import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service';
+import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
+import { ApplicationGenerationService } from './applications/application-generation.service';
+import { ApplicationService } from './applications/application.service';
+import { DocumentExportService } from './applications/document-export.service';
+import { OverpassDiscoveryProvider } from './discovery/overpass-discovery.provider';
 import { GoogleMapsDiscoveryProvider } from './discovery/google-maps-discovery.provider';
 import { HimalayasDiscoveryProvider } from './discovery/himalayas-discovery.provider';
-import { IndeedDiscoveryProvider } from './discovery/indeed-discovery.provider';
 import { InternalDiscoveryProvider } from './discovery/internal-discovery.provider';
 import { JobicyDiscoveryProvider } from './discovery/jobicy-discovery.provider';
-import { JustRemoteDiscoveryProvider } from './discovery/justremote-discovery.provider';
 import { RemoteOkDiscoveryProvider } from './discovery/remoteok-discovery.provider';
 import { SearchAcquisitionService } from './discovery/search-acquisition.service';
 import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-discovery.provider';
@@ -69,6 +81,7 @@ import loadConfig from '../config';
             LeadTopic,
             LeadTopicLink,
             LeadQualification,
+            LeadApplicationRecord,
             LeadOnboardingProfileRecord,
           ],
         };
@@ -115,12 +128,21 @@ import loadConfig from '../config';
     RemoteOkDiscoveryProvider,
     HimalayasDiscoveryProvider,
     WeWorkRemotelyDiscoveryProvider,
-    JustRemoteDiscoveryProvider,
     JobicyDiscoveryProvider,
-    ClutchDiscoveryProvider,
-    CrunchbaseDiscoveryProvider,
-    IndeedDiscoveryProvider,
+    FundingNewsDiscoveryProvider,
+    ArbeitnowDiscoveryProvider,
+    RemotiveDiscoveryProvider,
+    TheMuseDiscoveryProvider,
+    HackerNewsDiscoveryProvider,
     GoogleMapsDiscoveryProvider,
+    OverpassDiscoveryProvider,
+    GreenhouseDiscoveryProvider,
+    LeverDiscoveryProvider,
+    AtsCompanyLookupService,
+    AtsCompanySuggestionService,
+    ApplicationGenerationService,
+    ApplicationService,
+    DocumentExportService,
     {
       provide: getRepositoryToken(Lead),
       useFactory: (ds: DataSource) => ds.getRepository(Lead),
@@ -150,6 +172,11 @@ import loadConfig from '../config';
       provide: getRepositoryToken(LeadOnboardingProfileRecord),
       useFactory: (ds: DataSource) =>
         ds.getRepository(LeadOnboardingProfileRecord),
+      inject: ['LEAD_TRACKER_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(LeadApplicationRecord),
+      useFactory: (ds: DataSource) => ds.getRepository(LeadApplicationRecord),
       inject: ['LEAD_TRACKER_CONNECTION'],
     },
   ],

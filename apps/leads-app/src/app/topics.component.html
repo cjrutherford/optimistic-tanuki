@@ -144,6 +144,100 @@
               </label>
             </div>
           </div>
+          <div class="form-group aspirational-group">
+            <span class="form-section-label">Dream companies</span>
+            <p class="form-hint">
+              Long shots. These watch a specific employer's own job board
+              instead of scanning the market, so most runs will find nothing —
+              that is normal.
+            </p>
+            <div class="source-selector">
+              <label
+                class="source-option"
+                *ngFor="let source of aspirationalSources"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="topicForm.sources.includes(source)"
+                  (change)="
+                    toggleSource(source, $any($event.target).checked);
+                    loadAtsSuggestions()
+                  "
+                />
+                <span>{{ formatSourceLabel(source) }}</span>
+              </label>
+            </div>
+
+            <ng-container *ngIf="isAspirationalSelected">
+              <div class="chips" *ngIf="selectedCompanies.length">
+                <span class="chip" *ngFor="let company of selectedCompanies">
+                  {{ company.label }}
+                  <small>{{ company.provider }}</small>
+                  <button
+                    type="button"
+                    [attr.aria-label]="'Remove ' + company.label"
+                    (click)="removeAtsCompany(company)"
+                  >
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </span>
+              </div>
+
+              <div class="ats-lookup">
+                <input
+                  type="text"
+                  [(ngModel)]="atsCompanyQuery"
+                  name="atsCompanyQuery"
+                  placeholder="Company you would love to work for"
+                  (keydown.enter)="$event.preventDefault(); lookupAtsCompany()"
+                />
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  (click)="lookupAtsCompany()"
+                  [disabled]="atsLookupPending || !atsCompanyQuery.trim()"
+                >
+                  {{ atsLookupPending ? 'Checking…' : 'Find board' }}
+                </button>
+              </div>
+
+              <p class="form-error" *ngIf="atsLookupError">
+                {{ atsLookupError }}
+              </p>
+
+              <div class="ats-matches" *ngIf="atsMatches.length">
+                <button
+                  type="button"
+                  class="ats-match"
+                  *ngFor="let match of atsMatches"
+                  (click)="addAtsCompany(match)"
+                >
+                  <span class="ats-match-name">{{ match.label }}</span>
+                  <span class="ats-match-meta">
+                    {{ match.provider }}/{{ match.token }} ·
+                    {{ match.openingCount }} open role(s)
+                  </span>
+                </button>
+              </div>
+
+              <div class="ats-suggestions" *ngIf="atsSuggestions.length">
+                <span class="form-section-label">Suggested for you</span>
+                <button
+                  type="button"
+                  class="ats-match"
+                  *ngFor="let suggestion of atsSuggestions"
+                  (click)="addAtsCompany(suggestion)"
+                >
+                  <span class="ats-match-name">{{ suggestion.label }}</span>
+                  <span class="ats-match-meta">
+                    {{ suggestion.reason }} · {{ suggestion.openingCount }} open
+                    role(s)
+                  </span>
+                </button>
+              </div>
+            </ng-container>
+          </div>
+
           <div class="form-row local-search-row" *ngIf="isGoogleMapsSelected">
             <div class="form-group">
               <label for="topic-google-maps-cities">Google Maps Cities *</label>
@@ -362,9 +456,27 @@
             *ngFor="let source of getTopicSources(topic)"
             class="source-chip"
             [attr.data-source]="source"
+            [class.source-chip-retired]="
+              sourceDescriptor(source)?.status === 'retired'
+            "
           >
             {{ formatSourceLabel(source) }}
           </span>
+        </div>
+
+        <div
+          class="retired-source-notice"
+          *ngIf="retiredSourcesFor(topic).length"
+          role="status"
+        >
+          <strong>Some sources on this topic have been retired.</strong>
+          <p *ngFor="let retired of retiredSourcesFor(topic)">
+            <b>{{ retired.label }}</b> — {{ retired.retiredReason }}
+          </p>
+          <p>
+            They are skipped when this topic runs. Edit the topic to pick
+            replacements.
+          </p>
         </div>
 
         <div class="topic-summary-metrics">

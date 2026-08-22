@@ -27,6 +27,40 @@ const migrationDirectories = [
   'apps/wellness/migrations',
 ];
 
+/**
+ * Migration timestamps must be real `Date.now()` epoch milliseconds, which is
+ * what `typeorm migration:generate` produces. Numbers shaped like a date
+ * (`20260603_____`) are numerically far larger than a present-day epoch value,
+ * so they sort after everything the CLI will generate for years — which quietly
+ * inverts run order and can make the schema unbuildable from scratch.
+ *
+ * `lead-tracker` had seven such migrations. They are now real epoch values for
+ * the dates they were written on, so every directory here uses one convention
+ * and CLI output can be committed as-is.
+ */
+/**
+ * A hand-written date is recognised by its shape, not its magnitude: as an
+ * epoch value `2026090100000` is only the year 2034, so a plain upper bound
+ * does not catch it. What gives it away is that its leading eight digits read
+ * as a calendar date. Real epoch timestamps do not — `1787227913318` starts
+ * `17872279`, a month 22 that no date has.
+ */
+const looksLikeHandWrittenDate = (timestamp) => {
+  const [, year, month, day] =
+    /^(\d{4})(\d{2})(\d{2})\d{5}$/.exec(timestamp) || [];
+  if (!year) {
+    return false;
+  }
+  return (
+    Number(year) >= 2000 &&
+    Number(year) <= 2099 &&
+    Number(month) >= 1 &&
+    Number(month) <= 12 &&
+    Number(day) >= 1 &&
+    Number(day) <= 31
+  );
+};
+
 const errors = [];
 for (const migrationDirectory of migrationDirectories) {
   const absoluteDirectory = join(workspaceRoot, migrationDirectory);
@@ -68,6 +102,18 @@ for (const migrationDirectory of migrationDirectories) {
           workspaceRoot,
           filePath
         )}: timestamp ${timestamp} duplicates ${timestamps.get(timestamp)}`
+      );
+      continue;
+    }
+    if (looksLikeHandWrittenDate(timestamp)) {
+      errors.push(
+        `${relative(
+          workspaceRoot,
+          filePath
+        )}: timestamp ${timestamp} is not a plausible epoch-ms value — it looks ` +
+          `like a hand-written date. Use the timestamp ` +
+          `\`typeorm migration:generate\` assigns, so run order matches the ` +
+          `order migrations were written in.`
       );
       continue;
     }

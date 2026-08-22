@@ -8,6 +8,7 @@ import {
   LeadTopicLink,
 } from '@optimistic-tanuki/models/leads-entities';
 import {
+  DiscInterviewTurn,
   LeadAuthContext,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models/leads-contracts';
@@ -34,7 +35,8 @@ export class LeadQualificationService {
 
   async saveOnboardingProfile(
     profile: UserOnboardingProfile,
-    context: LeadAuthContext
+    context: LeadAuthContext,
+    discTranscript: DiscInterviewTurn[] = []
   ): Promise<LeadOnboardingProfileRecord> {
     const record = this.onboardingProfileRepository.create({
       userId: context.userId || profile.userId || null,
@@ -44,6 +46,7 @@ export class LeadQualificationService {
         ...profile,
         userId: context.userId,
       },
+      discTranscript,
       currentStep: profile.currentStep || 0,
       completedAt: profile.completedAt
         ? new Date(profile.completedAt)
@@ -51,6 +54,30 @@ export class LeadQualificationService {
     });
 
     return this.onboardingProfileRepository.save(record);
+  }
+
+  /**
+   * Every interview question this profile has already been asked, across all
+   * previous onboarding runs, so a re-run can avoid repeating them.
+   */
+  async getPreviouslyAskedQuestions(profileId: string): Promise<string[]> {
+    if (!profileId) {
+      return [];
+    }
+
+    const records = await this.onboardingProfileRepository.find({
+      where: { profileId },
+      order: { createdAt: 'DESC' },
+      take: 5,
+    });
+
+    const questions = records
+      .flatMap((record) => record.discTranscript || [])
+      .filter((turn) => turn.role === 'assistant')
+      .map((turn) => turn.text.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set(questions));
   }
 
   async getLatestOnboardingProfile(

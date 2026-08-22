@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import {
   Lead,
   LeadFlag,
+  LeadApplicationRecord,
   LeadOnboardingProfileRecord,
   LeadQualification,
   LeadTopic,
@@ -17,6 +18,7 @@ const loadDatabase = (config: ConfigService) => {
     LeadTopic,
     LeadTopicLink,
     LeadQualification,
+    LeadApplicationRecord,
     LeadOnboardingProfileRecord,
   ];
   const ormConfig: PostgresConnectionOptions = {

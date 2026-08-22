@@ -11,26 +11,47 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { ButtonComponent } from '@optimistic-tanuki/common-ui';
-import {
+import type {
   DiscInterviewRequest,
   DiscInterviewResponse,
   DiscInterviewTurn,
   GeneratedTopicSuggestion,
   LocationAutocompleteSuggestion,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
+  MadLibComposition,
   OnboardingProfileSuggestions,
   OnboardingQuestion,
   ResumeParseResult,
   UserOnboardingProfile,
 } from '@optimistic-tanuki/models';
 import { LeadsService } from './leads.service';
+import { MadLibComposerComponent } from './mad-lib-composer.component';
 
 type WizardStage = 'mad-lib' | 'resume' | 'profile' | 'disc';
+
+/**
+ * Profile fields stored as lists, even where a question collects one value.
+ */
+const LIST_VALUED_FIELDS = new Set<string>(['budgetRange']);
+
+/**
+ * Suggestion fields the profile stores as a single sentence, even though the
+ * intro composer collects several values for them.
+ */
+const PROSE_FIELDS = new Set<keyof OnboardingProfileSuggestions>([
+  'serviceOffer',
+]);
 
 @Component({
   selector: 'app-interview-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule, ButtonComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ButtonComponent,
+    MadLibComposerComponent,
+  ],
   templateUrl: './interview-wizard.component.html',
   styleUrl: './interview-wizard.component.scss',
 })
@@ -42,13 +63,17 @@ export class InterviewWizardComponent implements OnDestroy {
   @Input() errorMessage = '';
   @Input() confirmingTopics = false;
   @Output() closed = new EventEmitter<void>();
-  @Output() analyzeMadLib = new EventEmitter<string>();
+  @Output() analyzeMadLib = new EventEmitter<MadLibAnalysisRequest>();
   @Output() parseResume = new EventEmitter<File>();
   @Output() advanceDiscInterview = new EventEmitter<DiscInterviewRequest>();
   @Output() analyzeTopics = new EventEmitter<UserOnboardingProfile>();
   @Output() confirmTopics = new EventEmitter<GeneratedTopicSuggestion[]>();
 
-  currentStage: WizardStage = 'mad-lib';
+  // The resume comes first because it is the richest source we have: it fills
+  // the title, skills, industries and outcomes that the intro then asks for.
+  // Asking for the intro first made people type from scratch what the resume
+  // was about to tell us anyway.
+  currentStage: WizardStage = 'resume';
   currentQuestionIndex = 0;
   submittedTopics: GeneratedTopicSuggestion[] = [];
   isAnalyzing = false;
@@ -57,6 +82,9 @@ export class InterviewWizardComponent implements OnDestroy {
   showTopicReview = false;
   newChipValue = '';
   madLibValue = '';
+  /** Escape hatch: the original free-prose textarea. */
+  madLibFreeform = false;
+  composition?: MadLibComposition;
   discAnswerValue = '';
   discTranscript: DiscInterviewTurn[] = [];
   resumeFileName = '';
@@ -80,7 +108,11 @@ export class InterviewWizardComponent implements OnDestroy {
       id: 'yearsExperience',
       section: 'professional',
       question: 'How many years of experience do you have?',
-      type: 'multiselect',
+      // Single-select, not multiselect: you have one answer, and the profile
+      // stores it as a string. Asked as a multiselect it wrote an array into a
+      // string field, and because the resume prefills it ("10+"), toggling an
+      // option spread that string into its characters.
+      type: 'single-select',
       options: ['0-1 years', '2-5 years', '6-10 years', '10+ years'],
       required: true,
     },
@@ -244,6 +276,43 @@ export class InterviewWizardComponent implements OnDestroy {
     this.locationAutocompleteSub?.unsubscribe();
   }
 
+  /**
+   * What the resume already told us, shaped for the intro composer.
+   *
+   * Only fields the intro actually asks about are passed through; the rest of
+   * the parsed profile belongs to the later questions and would not map to a
+   * slot. Empty values are left out so the composer keeps its placeholders
+   * rather than rendering blanks as answers.
+   */
+  get madLibPrefill(): OnboardingProfileSuggestions {
+    const source = this.profile as unknown as Record<string, unknown>;
+    const prefill: Record<string, unknown> = {};
+
+    for (const field of [
+      'professionalTitle',
+      'idealCustomer',
+      'industries',
+      'problemsSolved',
+      'serviceOffer',
+      'outcomes',
+      'skills',
+      'companySizeTarget',
+      'geographicFocus',
+      'outreachMethod',
+      'communicationStyle',
+    ]) {
+      const value = source[field];
+      const isEmpty = Array.isArray(value)
+        ? value.length === 0
+        : value === undefined || value === null || value === '';
+      if (!isEmpty) {
+        prefill[field] = value;
+      }
+    }
+
+    return prefill as OnboardingProfileSuggestions;
+  }
+
   get currentQuestion(): OnboardingQuestion {
     return this.questions[this.currentQuestionIndex];
   }
@@ -254,9 +323,9 @@ export class InterviewWizardComponent implements OnDestroy {
     }
 
     switch (this.currentStage) {
-      case 'mad-lib':
-        return 10;
       case 'resume':
+        return 10;
+      case 'mad-lib':
         return 25;
       case 'profile':
         return (
@@ -316,7 +385,16 @@ export class InterviewWizardComponent implements OnDestroy {
 
   setProfileValue(key: string, value: unknown): void {
     (this.profile as unknown as Record<string, unknown>)[key] =
-      key === 'localSearchRadiusMiles' ? Number(value) : value;
+      key === 'localSearchRadiusMiles'
+        ? Number(value)
+        : // Some single-select questions answer fields the profile stores as
+        // lists. Writing the bare string left `budgetRange` as a string in a
+        // `string[]` field, and the backend then called .join and .some on it
+        // and failed the whole analysis. mergeSuggestedProfile already
+        // normalised this on the prefill path; the direct answer path did not.
+        LIST_VALUED_FIELDS.has(key) && typeof value === 'string'
+        ? [value]
+        : value;
     if (key === 'localSearchLocation') {
       this.locationInputValue = '';
     }
@@ -360,13 +438,42 @@ export class InterviewWizardComponent implements OnDestroy {
     return Boolean(value);
   }
 
+  onCompositionChange(composition: MadLibComposition): void {
+    this.composition = composition;
+    // Keep the readable sentence in sync so the summary and the freeform
+    // escape hatch both start from what the user has already built.
+    this.madLibValue = composition.sentence;
+  }
+
+  useFreeform(): void {
+    this.madLibFreeform = true;
+    this.cdr.detectChanges();
+  }
+
+  useComposer(): void {
+    this.madLibFreeform = false;
+    this.cdr.detectChanges();
+  }
+
+  get canAnalyzeMadLib(): boolean {
+    if (this.madLibFreeform) {
+      return this.madLibValue.trim().length > 0;
+    }
+    return Object.keys(this.composition?.values || {}).length > 0;
+  }
+
   requestMadLibAnalysis(): void {
-    const value = this.madLibValue.trim();
-    if (!value) {
+    if (!this.canAnalyzeMadLib) {
       return;
     }
+
     this.isAnalyzing = true;
-    this.analyzeMadLib.emit(value);
+    this.analyzeMadLib.emit({
+      text: this.madLibValue.trim(),
+      // Only send the structured payload when the composer produced it; the
+      // freeform path stays on the inference-only route.
+      composition: this.madLibFreeform ? undefined : this.composition,
+    });
   }
 
   onMadLibAnalyzed(result: MadLibAnalysisResult): void {
@@ -382,7 +489,7 @@ export class InterviewWizardComponent implements OnDestroy {
       result.evidenceByField || {},
       'mad-lib'
     );
-    this.currentStage = 'resume';
+    this.currentStage = 'profile';
     this.cdr.detectChanges();
   }
 
@@ -419,7 +526,7 @@ export class InterviewWizardComponent implements OnDestroy {
       'resume'
     );
     this.locationInputValue = '';
-    this.currentStage = 'profile';
+    this.currentStage = 'mad-lib';
     this.cdr.detectChanges();
   }
 
@@ -486,7 +593,7 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   skipResumeStep(): void {
-    this.currentStage = 'profile';
+    this.currentStage = 'mad-lib';
     this.cdr.detectChanges();
   }
 
@@ -510,6 +617,12 @@ export class InterviewWizardComponent implements OnDestroy {
     }
 
     if (this.currentStage === 'profile' && this.currentQuestionIndex === 0) {
+      this.currentStage = 'mad-lib';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    if (this.currentStage === 'mad-lib') {
       this.currentStage = 'resume';
       this.cdr.detectChanges();
       return;
@@ -550,10 +663,15 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   toggleMultiSelect(field: string, value: string): void {
-    const current =
-      ((this.profile as unknown as Record<string, unknown>)[
-        field
-      ] as string[]) || [];
+    const stored = (this.profile as unknown as Record<string, unknown>)[field];
+    // A scalar here is a bug elsewhere, but spreading it would turn "10+" into
+    // ['1','0','+'] and corrupt the profile silently rather than failing, so it
+    // is treated as the single existing selection.
+    const current: string[] = Array.isArray(stored)
+      ? (stored as string[])
+      : typeof stored === 'string' && stored
+      ? [stored]
+      : [];
     if (current.includes(value)) {
       (this.profile as unknown as Record<string, unknown>)[field] =
         current.filter((item: string) => item !== value);
@@ -615,7 +733,13 @@ export class InterviewWizardComponent implements OnDestroy {
     if (response.nextQuestion) {
       this.discTranscript = [
         ...this.discTranscript,
-        { role: 'assistant', text: response.nextQuestion },
+        {
+          role: 'assistant',
+          text: response.nextQuestion,
+          // Carried back on the next request so the service knows which DISC
+          // quadrants have actually been probed and answered.
+          targetDimension: response.nextQuestionDimension,
+        },
       ];
     }
     this.cdr.detectChanges();
@@ -699,7 +823,7 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   private reset(): void {
-    this.currentStage = 'mad-lib';
+    this.currentStage = 'resume';
     this.currentQuestionIndex = 0;
     this.showTopicReview = false;
     this.submittedTopics = [];
@@ -708,6 +832,8 @@ export class InterviewWizardComponent implements OnDestroy {
     this.isDiscLoading = false;
     this.newChipValue = '';
     this.madLibValue = '';
+    this.madLibFreeform = false;
+    this.composition = undefined;
     this.discAnswerValue = '';
     this.discTranscript = [];
     this.resumeFileName = '';
@@ -792,6 +918,19 @@ export class InterviewWizardComponent implements OnDestroy {
             [normalized]
           );
           (this.profile as unknown as Record<string, unknown>)[field] = merged;
+        }
+      } else if (Array.isArray(value) && PROSE_FIELDS.has(field)) {
+        // The composer collects several of these, but the profile stores one
+        // sentence — everything reading it downstream expects prose, not an
+        // array. Collapsing here keeps that contract at the boundary.
+        const joined = value.map((item) => item.trim()).filter(Boolean);
+        if (joined.length && !profileValue) {
+          (this.profile as unknown as Record<string, unknown>)[field] =
+            joined.length === 1
+              ? joined[0]
+              : `${joined.slice(0, -1).join(', ')} and ${
+                  joined[joined.length - 1]
+                }`;
         }
       } else if (Array.isArray(value)) {
         const merged = this.mergeUnique(

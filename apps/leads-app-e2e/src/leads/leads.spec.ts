@@ -3,14 +3,16 @@ import { test, expect } from '@playwright/test';
 test.describe('Leads App E2E', () => {
   const baseURL = process.env.BASE_URL || 'http://localhost:4200';
 
-  test('redirects anonymous users to login', async ({ page }) => {
+  test('serves the landing page to anonymous users', async ({ page }) => {
+    // Was asserting a /login redirect. `app.routes.ts` maps '' to
+    // LandingComponent, so `/` has not redirected since the landing page
+    // shipped — the assertion was stale, not the app broken.
     await page.goto(baseURL);
 
-    await expect(page).toHaveURL(/\/login$/);
+    await expect(page).toHaveURL(/\/$/);
     await expect(
-      page.getByRole('heading', { name: 'Sign in to your leads workspace.' })
+      page.getByRole('heading', { name: 'Opportunities worth pursuing.' })
     ).toBeVisible();
-    await expect(page.getByText('Lead Command')).toBeVisible();
   });
 
   test('shows unauthenticated navigation links', async ({ page }) => {

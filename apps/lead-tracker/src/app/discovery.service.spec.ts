@@ -12,14 +12,20 @@ import {
 } from '@optimistic-tanuki/models/leads-contracts';
 import { Repository } from 'typeorm';
 import { DiscoveryService } from './discovery.service';
-import { ClutchDiscoveryProvider } from './discovery/clutch-discovery.provider';
-import { CrunchbaseDiscoveryProvider } from './discovery/crunchbase-discovery.provider';
+import { ArbeitnowDiscoveryProvider } from './discovery/arbeitnow-discovery.provider';
+import { HackerNewsDiscoveryProvider } from './discovery/hacker-news-discovery.provider';
+import { RemotiveDiscoveryProvider } from './discovery/remotive-discovery.provider';
+import { TheMuseDiscoveryProvider } from './discovery/the-muse-discovery.provider';
+import {
+  GreenhouseDiscoveryProvider,
+  LeverDiscoveryProvider,
+} from './discovery/aspirational-ats.provider';
+import { OverpassDiscoveryProvider } from './discovery/overpass-discovery.provider';
+import { FundingNewsDiscoveryProvider } from './discovery/funding-news-discovery.provider';
 import { GoogleMapsDiscoveryProvider } from './discovery/google-maps-discovery.provider';
 import { HimalayasDiscoveryProvider } from './discovery/himalayas-discovery.provider';
-import { IndeedDiscoveryProvider } from './discovery/indeed-discovery.provider';
 import { InternalDiscoveryProvider } from './discovery/internal-discovery.provider';
 import { JobicyDiscoveryProvider } from './discovery/jobicy-discovery.provider';
-import { JustRemoteDiscoveryProvider } from './discovery/justremote-discovery.provider';
 import { RemoteOkDiscoveryProvider } from './discovery/remoteok-discovery.provider';
 import { WeWorkRemotelyDiscoveryProvider } from './discovery/weworkremotely-discovery.provider';
 import { LeadQualificationService } from './lead-qualification.service';
@@ -33,11 +39,15 @@ describe('DiscoveryService', () => {
   let remoteOkProvider: { providerName: string; search: jest.Mock };
   let himalayasProvider: { providerName: string; search: jest.Mock };
   let weWorkRemotelyProvider: { providerName: string; search: jest.Mock };
-  let justRemoteProvider: { providerName: string; search: jest.Mock };
   let jobicyProvider: { providerName: string; search: jest.Mock };
-  let clutchProvider: { providerName: string; search: jest.Mock };
-  let crunchbaseProvider: { providerName: string; search: jest.Mock };
-  let indeedProvider: { providerName: string; search: jest.Mock };
+  let fundingNewsProvider: { providerName: string; search: jest.Mock };
+  let arbeitnowProvider: { providerName: string; search: jest.Mock };
+  let remotiveProvider: { providerName: string; search: jest.Mock };
+  let theMuseProvider: { providerName: string; search: jest.Mock };
+  let hackerNewsProvider: { providerName: string; search: jest.Mock };
+  let overpassProvider: { providerName: string; search: jest.Mock };
+  let greenhouseProvider: { providerName: string; search: jest.Mock };
+  let leverProvider: { providerName: string; search: jest.Mock };
   let googleMapsProvider: { providerName: string; search: jest.Mock };
   let leadQualificationService: {
     analyzeAndSave: jest.Mock;
@@ -129,11 +139,15 @@ describe('DiscoveryService', () => {
       providerName: 'weworkremotely',
       search: jest.fn(),
     };
-    justRemoteProvider = { providerName: 'justremote', search: jest.fn() };
     jobicyProvider = { providerName: 'jobicy', search: jest.fn() };
-    clutchProvider = { providerName: 'clutch', search: jest.fn() };
-    crunchbaseProvider = { providerName: 'crunchbase', search: jest.fn() };
-    indeedProvider = { providerName: 'indeed', search: jest.fn() };
+    fundingNewsProvider = { providerName: 'funding-news', search: jest.fn() };
+    arbeitnowProvider = { providerName: 'arbeitnow', search: jest.fn() };
+    remotiveProvider = { providerName: 'remotive', search: jest.fn() };
+    theMuseProvider = { providerName: 'themuse', search: jest.fn() };
+    hackerNewsProvider = { providerName: 'hackernews', search: jest.fn() };
+    overpassProvider = { providerName: 'overpass', search: jest.fn() };
+    greenhouseProvider = { providerName: 'greenhouse', search: jest.fn() };
+    leverProvider = { providerName: 'lever', search: jest.fn() };
     googleMapsProvider = { providerName: 'google-maps', search: jest.fn() };
     leadQualificationService = {
       analyzeAndSave: jest.fn(),
@@ -172,25 +186,20 @@ describe('DiscoveryService', () => {
           useValue: weWorkRemotelyProvider,
         },
         {
-          provide: JustRemoteDiscoveryProvider,
-          useValue: justRemoteProvider,
-        },
-        {
           provide: JobicyDiscoveryProvider,
           useValue: jobicyProvider,
         },
         {
-          provide: ClutchDiscoveryProvider,
-          useValue: clutchProvider,
+          provide: FundingNewsDiscoveryProvider,
+          useValue: fundingNewsProvider,
         },
-        {
-          provide: CrunchbaseDiscoveryProvider,
-          useValue: crunchbaseProvider,
-        },
-        {
-          provide: IndeedDiscoveryProvider,
-          useValue: indeedProvider,
-        },
+        { provide: ArbeitnowDiscoveryProvider, useValue: arbeitnowProvider },
+        { provide: RemotiveDiscoveryProvider, useValue: remotiveProvider },
+        { provide: TheMuseDiscoveryProvider, useValue: theMuseProvider },
+        { provide: HackerNewsDiscoveryProvider, useValue: hackerNewsProvider },
+        { provide: OverpassDiscoveryProvider, useValue: overpassProvider },
+        { provide: GreenhouseDiscoveryProvider, useValue: greenhouseProvider },
+        { provide: LeverDiscoveryProvider, useValue: leverProvider },
         {
           provide: GoogleMapsDiscoveryProvider,
           useValue: googleMapsProvider,
@@ -220,11 +229,15 @@ describe('DiscoveryService', () => {
     remoteOkProvider.search.mockResolvedValue(emptyProviderResult);
     himalayasProvider.search.mockResolvedValue(emptyProviderResult);
     weWorkRemotelyProvider.search.mockResolvedValue(emptyProviderResult);
-    justRemoteProvider.search.mockResolvedValue(emptyProviderResult);
     jobicyProvider.search.mockResolvedValue(emptyProviderResult);
-    clutchProvider.search.mockResolvedValue(emptyProviderResult);
-    crunchbaseProvider.search.mockResolvedValue(emptyProviderResult);
-    indeedProvider.search.mockResolvedValue(emptyProviderResult);
+    fundingNewsProvider.search.mockResolvedValue(emptyProviderResult);
+    arbeitnowProvider.search.mockResolvedValue(emptyProviderResult);
+    remotiveProvider.search.mockResolvedValue(emptyProviderResult);
+    theMuseProvider.search.mockResolvedValue(emptyProviderResult);
+    hackerNewsProvider.search.mockResolvedValue(emptyProviderResult);
+    overpassProvider.search.mockResolvedValue(emptyProviderResult);
+    greenhouseProvider.search.mockResolvedValue(emptyProviderResult);
+    leverProvider.search.mockResolvedValue(emptyProviderResult);
     googleMapsProvider.search.mockResolvedValue(emptyProviderResult);
   });
 
@@ -586,5 +599,116 @@ describe('DiscoveryService', () => {
         addedCount: 1,
       })
     );
+  });
+  it('merges the same posting found on two different sources', async () => {
+    topicRepository.findOneBy.mockResolvedValue({
+      ...topic,
+      sources: [LeadDiscoverySource.REMOTE_OK, LeadDiscoverySource.REMOTIVE],
+    });
+    leadRepository.find.mockResolvedValue([]);
+    leadRepository.findBy.mockResolvedValue([]);
+    linkRepository.find.mockResolvedValue([]);
+
+    // Same posting URL, different titles — syndication across boards is common,
+    // and matching on company plus title alone would let it through twice.
+    const sharedUrl = 'https://boards.example.com/jobs/react-engineer';
+    remoteOkProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: {
+            ...matchingLead,
+            id: 'lead-a',
+            source: LeadSource.REMOTE_OK,
+            name: 'React Engineer',
+            company: 'Acme',
+            originalPostingUrl: `${sharedUrl}?utm_source=remoteok`,
+            isAutoDiscovered: true,
+          },
+          matchedKeywords: ['react'],
+          providerName: 'remoteok',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+    remotiveProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: {
+            ...matchingLead,
+            id: 'lead-b',
+            source: LeadSource.REMOTIVE,
+            name: 'Senior React Engineer (Remote)',
+            company: 'Acme Inc',
+            originalPostingUrl: `${sharedUrl}/`,
+            isAutoDiscovered: true,
+          },
+          matchedKeywords: ['react'],
+          providerName: 'remotive',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+
+    const result = await service.runNow(topic.id);
+
+    expect(result.linkedLeadCount).toBe(1);
+    expect(result.summaryBody).toContain('1 duplicate posting merged');
+  });
+
+  it('does not merge different postings that share a company', async () => {
+    topicRepository.findOneBy.mockResolvedValue({
+      ...topic,
+      sources: [LeadDiscoverySource.REMOTE_OK, LeadDiscoverySource.REMOTIVE],
+    });
+    leadRepository.find.mockResolvedValue([]);
+    leadRepository.findBy.mockResolvedValue([]);
+    linkRepository.find.mockResolvedValue([]);
+
+    remoteOkProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: {
+            ...matchingLead,
+            id: 'lead-a',
+            source: LeadSource.REMOTE_OK,
+            name: 'React Engineer',
+            company: 'Acme',
+            originalPostingUrl: 'https://boards.example.com/jobs/react-eng',
+            isAutoDiscovered: true,
+          },
+          matchedKeywords: ['react'],
+          providerName: 'remoteok',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+    remotiveProvider.search.mockResolvedValue({
+      candidates: [
+        {
+          lead: {
+            ...matchingLead,
+            id: 'lead-b',
+            source: LeadSource.REMOTIVE,
+            name: 'React Architect',
+            company: 'Acme',
+            originalPostingUrl: 'https://boards.example.com/jobs/react-arch',
+            isAutoDiscovered: true,
+          },
+          matchedKeywords: ['react'],
+          providerName: 'remotive',
+        },
+      ],
+      warnings: [],
+      queries: [],
+    });
+
+    const result = await service.runNow(topic.id);
+
+    // Two genuinely distinct roles at one company must both survive.
+    expect(result.linkedLeadCount).toBe(2);
+    expect(result.summaryBody).not.toContain('duplicate posting');
   });
 });

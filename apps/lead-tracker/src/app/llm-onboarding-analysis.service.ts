@@ -1,10 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatOllama } from '@langchain/ollama';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import {
+  applyPriming,
+  describePriming,
+  PrimingStrategy,
+  resolvePrimingStrategy,
+} from './llm/model-priming';
+import { toStringList } from './llm/to-string-list';
+import {
+  ALL_LLM_TASKS,
+  describeTaskModel,
+  LlmTask,
+  resolveTaskModel,
+  TaskModelConfig,
+} from './llm/task-models';
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from '@langchain/core/messages';
 import {
   DiscAssessment,
+  DiscDimension,
   DiscInterviewTurn,
+  DiscQuestionSuggestion,
+  DISC_DIMENSIONS,
   MadLibAnalysisResult,
   ResumeParseResult,
   UserOnboardingProfile,
@@ -12,6 +33,7 @@ import {
   LeadDiscoverySource,
   LeadTopicDiscoveryIntent,
 } from '@optimistic-tanuki/models';
+import { ACTIVE_LEAD_DISCOVERY_SOURCES } from '@optimistic-tanuki/leads-contracts';
 
 interface LlmTopicOutput {
   name: string;
@@ -34,18 +56,78 @@ interface OnboardingAnalysisOutput {
   topics: LlmTopicOutput[];
 }
 
+// Only sources the registry marks active. A model that suggests a retired one
+// (they still exist in the enum for historical leads) has that topic dropped
+// rather than silently configured against a provider that no longer runs.
 const VALID_SOURCES = new Set<string>(
-  Object.values(LeadDiscoverySource) as string[]
+  ACTIVE_LEAD_DISCOVERY_SOURCES as string[]
 );
 const VALID_INTENTS = new Set<string>(
   Object.values(LeadTopicDiscoveryIntent) as string[]
 );
 const VALID_STRATEGIES = new Set(['aggressive', 'balanced', 'conservative']);
 
+/**
+ * Ollama supports schema-constrained decoding via the `format` field. Passing a
+ * schema makes malformed JSON structurally impossible, rather than something we
+ * try to recover by scraping braces out of prose after the fact.
+ */
+const DISC_QUESTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    question: { type: 'string' },
+    targetDimension: { type: 'string', enum: DISC_DIMENSIONS },
+    sufficientSignal: { type: 'boolean' },
+  },
+  required: ['question', 'targetDimension', 'sufficientSignal'],
+} as const;
+
+const DISC_ASSESSMENT_SCHEMA = {
+  type: 'object',
+  properties: {
+    dScore: { type: 'number' },
+    iScore: { type: 'number' },
+    sScore: { type: 'number' },
+    cScore: { type: 'number' },
+    primaryType: { type: 'string', enum: DISC_DIMENSIONS },
+    secondaryType: { type: 'string', enum: DISC_DIMENSIONS },
+    summary: { type: 'string' },
+    confidence: { type: 'number' },
+  },
+  required: [
+    'dScore',
+    'iScore',
+    'sScore',
+    'cScore',
+    'primaryType',
+    'summary',
+    'confidence',
+  ],
+} as const;
+
+/**
+ * Ceiling on a single model call when nothing is configured.
+ *
+ * Measured against a local 4b model: resume parsing 102s, intro analysis 63s,
+ * topic analysis 164-332s. The old 120s default cut the longest of those off.
+ * Ten minutes matches the gateway's own model-bound preset, so neither layer
+ * silently undercuts the other — a mismatch there is what made the first fix
+ * look ineffective. Setting it to 0 disables it, which is for debugging only:
+ * a hung model then holds the request open indefinitely.
+ */
+const DEFAULT_MODEL_TIMEOUT_MS = 600_000;
+
 @Injectable()
 export class LlmOnboardingAnalysisService {
   private readonly logger = new Logger(LlmOnboardingAnalysisService.name);
   private llm: ChatOllama | null = null;
+  private fallbackLlm: ChatOllama | null = null;
+  private primaryModelName = '';
+  private fallbackModelName = '';
+  /** One client per model name; tasks share whichever they resolve to. */
+  private readonly clients = new Map<string, ChatOllama>();
+  private taskModels: TaskModelConfig = { primary: '' };
+  private buildClient: ((model: string) => ChatOllama) | null = null;
 
   constructor(private readonly config: ConfigService) {
     this.initializeModel();
@@ -66,18 +148,89 @@ export class LlmOnboardingAnalysisService {
       }
 
       const baseUrl = `http://${ollama.host}:${ollama.port}`;
-      this.llm = new ChatOllama({
-        model: ollama.model || 'gemma3',
-        baseUrl,
-        temperature: ollama.temperature ?? 0.3,
-      });
+      const build = (model: string) =>
+        new ChatOllama({
+          model,
+          baseUrl,
+          temperature: ollama.temperature ?? 0.3,
+          // Reasoning-capable models (qwen3/qwen3.5, nemotron) otherwise emit a
+          // long thinking trace before the answer, which costs seconds on every
+          // interview turn without improving a schema-constrained result.
+          think: this.config.get<boolean>('ollama.think') ?? false,
+        });
+
+      this.primaryModelName = ollama.model || 'granite4:tiny-h';
+      this.buildClient = build;
+      this.llm = this.clientFor(this.primaryModelName);
+
+      // Conversational tasks can run on a different model from extraction —
+      // see llm/task-models.ts for the measurements behind the split.
+      this.taskModels = {
+        primary: this.primaryModelName,
+        conversational:
+          this.config.get<string>('ollama.conversationalModel') || undefined,
+        overrides:
+          this.config.get<Partial<Record<LlmTask, string>>>(
+            'ollama.taskModels'
+          ),
+      };
+
+      // A second model to retry with when the first returns something the
+      // schema rejects. Measured on the candidate roster, `granite4:tiny-h`
+      // conforms without any prompt priming while the configured primary needs
+      // it, so it is the sensible safety net — see
+      // `tools/scripts/pilot-onboarding-models.mjs --structured`.
+      const fallbackName = this.config.get<string>('ollama.fallbackModel');
+      if (fallbackName && fallbackName !== this.primaryModelName) {
+        this.fallbackModelName = fallbackName;
+        this.fallbackLlm = this.clientFor(fallbackName);
+      }
+
       this.logger.log(
-        `Initialized LLM model: ${ollama.model || 'gemma3'} at ${baseUrl}`
+        `Initialized LLM at ${baseUrl}` +
+          (this.fallbackModelName
+            ? ` (fallback: ${this.fallbackModelName})`
+            : '') +
+          ' — ' +
+          ALL_LLM_TASKS.map(
+            (task) =>
+              `${task}: ${describeTaskModel(task, this.taskModels)}` +
+              ` [${describePriming(resolveTaskModel(task, this.taskModels))}]`
+          ).join(', ')
       );
     } catch (error) {
       this.logger.error('Failed to initialize LLM model', error);
       this.llm = null;
     }
+  }
+
+  /** Reuses a client per model so switching tasks costs no new connection. */
+  private clientFor(model: string): ChatOllama | null {
+    if (!this.buildClient || !model) {
+      return null;
+    }
+
+    const existing = this.clients.get(model);
+    if (existing) {
+      return existing;
+    }
+
+    const created = this.buildClient(model);
+    this.clients.set(model, created);
+    return created;
+  }
+
+  /** The client a given task should run on, falling back to the primary. */
+  private clientForTask(task?: LlmTask): {
+    llm: ChatOllama | null;
+    model: string;
+  } {
+    if (!task) {
+      return { llm: this.llm, model: this.primaryModelName };
+    }
+
+    const model = resolveTaskModel(task, this.taskModels);
+    return { llm: this.clientFor(model) ?? this.llm, model };
   }
 
   get isAvailable(): boolean {
@@ -91,22 +244,17 @@ export class LlmOnboardingAnalysisService {
       throw new Error('LLM model not available');
     }
 
-    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
-
     const systemPrompt = this.buildSystemPrompt();
     const userPrompt = this.buildUserPrompt(profile);
 
     this.logger.log('Sending onboarding profile to LLM for analysis');
 
-    const response = await Promise.race([
+    const response = await this.raceWithTimeout(
       this.llm.invoke([
         new SystemMessage(systemPrompt),
         new HumanMessage(userPrompt),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM request timed out')), timeoutMs)
-      ),
-    ]);
+      ])
+    );
 
     const responseText =
       typeof response.content === 'string'
@@ -146,7 +294,10 @@ Respond with only valid JSON using this exact shape:
     "serviceOffer": ["<supporting snippet>"]
   }
 }`,
-      `Analyze this self-description and infer a concise service offer, skills, and likely buyer.\n\n${text}`
+      `Analyze this self-description and infer a concise service offer, skills, and likely buyer.\n\n${text}`,
+      // No schema here; these callers rely on parseJsonObject instead.
+      undefined,
+      'mad-lib'
     );
 
     return {
@@ -199,7 +350,10 @@ Respond with only valid JSON using this exact shape:
     "idealCustomer": ["<supporting snippet>"]
   }
 }`,
-      `Extract the key onboarding fields from this resume text.\n\n${text}`
+      `Extract the key onboarding fields from this resume text.\n\n${text}`,
+      // No schema here; these callers rely on parseJsonObject instead.
+      undefined,
+      'resume-parse'
     );
 
     return {
@@ -217,6 +371,104 @@ Respond with only valid JSON using this exact shape:
         : [],
       evidenceByField: parsed.evidenceByField || {},
     };
+  }
+
+  /**
+   * Produces the next interview question from the user's actual profile and
+   * what they have already said.
+   *
+   * This replaces a hardcoded four-prompt array that was indexed by turn count,
+   * which meant every user was asked the same four questions in the same order
+   * no matter what they answered.
+   */
+  async generateNextDiscQuestion(
+    profile: Partial<UserOnboardingProfile> | undefined,
+    transcript: DiscInterviewTurn[],
+    coveredDimensions: DiscDimension[],
+    previouslyAskedQuestions: string[] = []
+  ): Promise<DiscQuestionSuggestion> {
+    const remaining = DISC_DIMENSIONS.filter(
+      (dimension) => !coveredDimensions.includes(dimension)
+    );
+
+    const parsed = await this.invokeJson<DiscQuestionSuggestion>(
+      `You are conducting a short behavioural interview to place someone on the DISC model.
+
+DISC quadrants:
+- D (Dominance): pace, control, decisiveness, appetite for confrontation
+- I (Influence): persuasion, enthusiasm, relationship building
+- S (Steadiness): consistency, patience, support, reaction to change
+- C (Conscientiousness): precision, process, analysis, standards
+
+Write ONE open question that draws out concrete behaviour — ask about a specific
+past situation, never for self-description or self-rating. Ground it in the
+person's own work and words so it could not have been asked of anyone else.
+Never repeat a question already asked. Keep it under 40 words.
+
+Set sufficientSignal to true only when the answers so far already reveal a clear
+behavioural pattern across all four quadrants.`,
+      `Their professional profile:
+${this.describeProfileForInterview(profile)}
+
+Interview so far:
+${this.formatTranscript(transcript) || '(nothing asked yet)'}
+${
+  previouslyAskedQuestions.length
+    ? `\nThis person completed onboarding before and was already asked the following. Do not ask any of these again, and do not paraphrase them:\n${previouslyAskedQuestions
+        .map((question) => `- ${question}`)
+        .join('\n')}\n`
+    : ''
+}
+Quadrants not yet probed: ${remaining.length ? remaining.join(', ') : 'none'}
+Prefer a question targeting one of those.`,
+      DISC_QUESTION_SCHEMA,
+      'disc-question'
+    );
+
+    const targetDimension = DISC_DIMENSIONS.includes(
+      parsed.targetDimension as DiscDimension
+    )
+      ? (parsed.targetDimension as DiscDimension)
+      : remaining[0] || 'D';
+
+    return {
+      question: (parsed.question || '').trim(),
+      targetDimension,
+      sufficientSignal: Boolean(parsed.sufficientSignal),
+    };
+  }
+
+  private describeProfileForInterview(
+    profile: Partial<UserOnboardingProfile> | undefined
+  ): string {
+    if (!profile) {
+      return '(no profile captured)';
+    }
+
+    const lines = [
+      ['Sells', profile.serviceOffer],
+      ['Experience', profile.yearsExperience],
+      ['Skills', (profile.skills || []).join(', ')],
+      ['Ideal customer', profile.idealCustomer],
+      ['Industries', (profile.industries || []).join(', ')],
+      ['Problems solved', (profile.problemsSolved || []).join(', ')],
+      ['Sales approach', profile.salesApproach],
+      ['Communication style', profile.communicationStyle],
+      ['Intro summary', profile.madLibSummary],
+    ]
+      .filter(([, value]) => value && String(value).trim())
+      .map(([label, value]) => `${label}: ${value}`);
+
+    return lines.length ? lines.join('\n') : '(no profile captured)';
+  }
+
+  private formatTranscript(transcript: DiscInterviewTurn[]): string {
+    return transcript
+      .map(
+        (turn) =>
+          `${turn.role === 'assistant' ? 'INTERVIEWER' : 'THEM'}: ${turn.text}`
+      )
+      .join('\n');
   }
 
   async assessDiscInterview(
@@ -240,7 +492,9 @@ Respond with only valid JSON using this exact shape:
   "summary": "<short explanation>",
   "confidence": <0-100>
 }`,
-      `Assess this DISC interview transcript and return balanced DISC scores.\n\n${transcriptText}`
+      `Assess this DISC interview transcript and return balanced DISC scores.\n\n${transcriptText}`,
+      DISC_ASSESSMENT_SCHEMA,
+      'disc-assessment'
     );
 
     return {
@@ -272,7 +526,7 @@ The JSON must have this exact structure:
       "keywords": ["<relevant search keywords>"],
       "excludedTerms": ["<terms to exclude from search>"],
       "discoveryIntent": "<one of: job-openings, service-buyers>",
-      "sources": ["<subset of: remoteok, himalayas, weworkremotely, justremote, jobicy, clutch, crunchbase, indeed, google-maps>"],
+      "sources": ["<subset of: remoteok, himalayas, weworkremotely, jobicy, arbeitnow, remotive, themuse, hackernews, funding-news, google-maps>"],
       "priority": <number 1-10, lower is higher priority>,
       "targetCompanies": ["<target company descriptions>"],
       "buyerPersona": "<description of ideal buyer>",
@@ -324,7 +578,7 @@ Target Company Sizes: ${(profile.companySizeTarget || []).join(', ') || 'Any'}
 Industries: ${(profile.industries || []).join(', ') || 'Any'}
 Problems Solved: ${(profile.problemsSolved || []).join(', ') || 'Not specified'}
 Desired Outcomes: ${(profile.outcomes || []).join(', ') || 'Not specified'}
-Budget Range: ${(profile.budgetRange || []).join(', ') || 'Not specified'}
+Budget Range: ${toStringList(profile.budgetRange).join(', ') || 'Not specified'}
 Geographic Focus: ${profile.geographicFocus || 'Global'}
 
 Sales Approach: ${profile.salesApproach || 'Not specified'}
@@ -461,32 +715,120 @@ Excluded Industries: ${
       : ['business'];
   }
 
+  /**
+   * Public, schema-constrained JSON generation for callers outside onboarding
+   * (the application generator uses it). Decoding is constrained to the schema,
+   * so malformed JSON is structurally impossible.
+   */
+  /**
+   * Applies the configured model timeout, or none at all.
+   *
+   * `ollama.timeoutMs` at or below zero disables it. This exists separately
+   * from the gateway's own timeout, and having only lowered that one still left
+   * topic analysis dying here at exactly 120s on local hardware — a second
+   * ceiling nobody thinks to look for.
+   */
+  private async raceWithTimeout<T>(work: Promise<T>): Promise<T> {
+    const timeoutMs =
+      this.config.get<number>('ollama.timeoutMs') ?? DEFAULT_MODEL_TIMEOUT_MS;
+    if (!timeoutMs || timeoutMs <= 0) {
+      return work;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        work,
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('LLM request timed out')),
+            timeoutMs
+          );
+        }),
+      ]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  }
+
+  async generateJson<T>(
+    systemPrompt: string,
+    userPrompt: string,
+    schema?: Record<string, unknown>
+  ): Promise<T> {
+    return this.invokeJson<T>(systemPrompt, userPrompt, schema);
+  }
+
   private async invokeJson<T>(
     systemPrompt: string,
-    userPrompt: string
+    userPrompt: string,
+    schema?: Record<string, unknown>,
+    task?: LlmTask
   ): Promise<T> {
-    if (!this.llm) {
+    const chosen = this.clientForTask(task);
+    if (!chosen.llm) {
       throw new Error('LLM model not available');
     }
 
-    const timeoutMs = this.config.get<number>('ollama.timeoutMs') ?? 120000;
+    // Schema-constrained decoding when a schema is supplied; the brace
+    // scraping in parseJsonObject stays as the path for callers without one.
+    const options = schema ? { format: schema } : undefined;
 
-    const response = await Promise.race([
-      this.llm.invoke([
-        new SystemMessage(systemPrompt),
-        new HumanMessage(userPrompt),
-      ]),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('LLM request timed out')), timeoutMs)
-      ),
-    ]);
+    const ask = async (llm: ChatOllama, model: string): Promise<T> => {
+      // Each model declares how much coaxing it needs, so one that honours
+      // `format` is not charged for instructions it does not read.
+      const primed = applyPriming(
+        this.config.get<PrimingStrategy>('ollama.priming') ||
+          resolvePrimingStrategy(model),
+        systemPrompt,
+        schema
+      );
 
-    const responseText =
-      typeof response.content === 'string'
-        ? response.content
-        : JSON.stringify(response.content);
+      const response = await this.raceWithTimeout(
+        llm.invoke(
+          [
+            new SystemMessage(primed.system),
+            new HumanMessage(userPrompt),
+            ...(primed.prefill ? [new AIMessage(primed.prefill)] : []),
+          ],
+          options
+        )
+      );
 
-    return this.parseJsonObject<T>(responseText);
+      const responseText =
+        typeof response.content === 'string'
+          ? response.content
+          : JSON.stringify(response.content);
+
+      // A prefill means the model continued the object rather than restating
+      // it, so the seed has to be put back before parsing.
+      const stitched =
+        primed.prefill && !responseText.trimStart().startsWith('{')
+          ? `${primed.prefill}${responseText}`
+          : responseText;
+
+      return this.parseJsonObject<T>(stitched);
+    };
+
+    try {
+      return await ask(chosen.llm, chosen.model);
+    } catch (error) {
+      if (!this.fallbackLlm) {
+        throw error;
+      }
+
+      // The primary produced something unusable. Retrying on a model that
+      // conforms without coaxing costs one more call and saves the caller from
+      // dropping to a scripted answer, which is what the user actually notices.
+      this.logger.warn(
+        `${chosen.model} returned unusable output (${
+          (error as Error).message
+        }); retrying on ${this.fallbackModelName}`
+      );
+      return ask(this.fallbackLlm, this.fallbackModelName);
+    }
   }
 
   private parseJsonObject<T>(raw: string): T {

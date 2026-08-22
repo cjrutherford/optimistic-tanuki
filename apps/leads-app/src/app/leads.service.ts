@@ -1,7 +1,10 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LeadFlagsService } from '@optimistic-tanuki/leads-feature-flags';
+import type { GeneratedApplication } from '@optimistic-tanuki/models';
+import type { AspirationalCompany } from '@optimistic-tanuki/leads-contracts';
 import { LeadOnboardingService } from '@optimistic-tanuki/leads-feature-onboarding';
 import { LeadTopicsService } from '@optimistic-tanuki/leads-feature-topics';
 import { LeadsApiService } from '@optimistic-tanuki/leads-data-access';
@@ -19,10 +22,12 @@ import {
 } from './leads.types';
 import {
   DiscInterviewRequest,
+  DiscInterviewTurn,
   DiscInterviewResponse,
   ConfirmOnboardingRequest,
   GeneratedTopicSuggestion,
   LocationAutocompleteSuggestion,
+  MadLibAnalysisRequest,
   MadLibAnalysisResult,
   ResumeParseResult,
   UserOnboardingProfile,
@@ -33,6 +38,7 @@ export class LeadsService {
   private readonly leadsApi = inject(LeadsApiService);
   private readonly topics = inject(LeadTopicsService);
   private readonly flags = inject(LeadFlagsService);
+  private readonly http = inject(HttpClient);
   private readonly onboarding = inject(LeadOnboardingService);
 
   private localLeads: Lead[] = [];
@@ -131,8 +137,10 @@ export class LeadsService {
     return this.onboarding.analyzeOnboarding(profile);
   }
 
-  analyzeMadLib(text: string): Observable<MadLibAnalysisResult> {
-    return this.onboarding.analyzeMadLib(text);
+  analyzeMadLib(
+    request: string | MadLibAnalysisRequest
+  ): Observable<MadLibAnalysisResult> {
+    return this.onboarding.analyzeMadLib(request);
   }
 
   parseResume(file: File): Observable<ResumeParseResult> {
@@ -149,10 +157,44 @@ export class LeadsService {
     return this.onboarding.advanceDiscInterview(request);
   }
 
+  lookupAtsCompany(
+    companyName: string
+  ): Observable<(AspirationalCompany & { openingCount: number })[]> {
+    return this.onboarding.lookupAtsCompany(companyName);
+  }
+
+  suggestAtsCompanies(): Observable<
+    (AspirationalCompany & { openingCount: number; reason: string })[]
+  > {
+    return this.onboarding.suggestAtsCompanies();
+  }
+
+  generateApplication(leadId: string): Observable<GeneratedApplication> {
+    return this.http.post<GeneratedApplication>(
+      `/api/leads/${leadId}/application/generate`,
+      {}
+    );
+  }
+
+  findApplication(leadId: string): Observable<GeneratedApplication | null> {
+    return this.http.get<GeneratedApplication | null>(
+      `/api/leads/${leadId}/application`
+    );
+  }
+
+  applicationExportUrl(
+    leadId: string,
+    kind: 'resume' | 'cover-letter',
+    format: 'odt' | 'docx'
+  ): string {
+    return `/api/leads/${leadId}/application/export?kind=${kind}&format=${format}`;
+  }
+
   confirmOnboarding(
     profile: UserOnboardingProfile,
-    topics: GeneratedTopicSuggestion[]
+    topics: GeneratedTopicSuggestion[],
+    discTranscript: DiscInterviewTurn[] = []
   ): Observable<{ topics: Topic[] }> {
-    return this.onboarding.confirmOnboarding(profile, topics);
+    return this.onboarding.confirmOnboarding(profile, topics, discTranscript);
   }
 }

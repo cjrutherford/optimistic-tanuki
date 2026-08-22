@@ -125,8 +125,8 @@
 
       <div class="section-indicator">
         <ng-container [ngSwitch]="currentStage">
-          <span *ngSwitchCase="'mad-lib'">Step 1 of 4: Quick intro</span>
-          <span *ngSwitchCase="'resume'">Step 2 of 4: Resume prefill</span>
+          <span *ngSwitchCase="'resume'">Step 1 of 4: Resume prefill</span>
+          <span *ngSwitchCase="'mad-lib'">Step 2 of 4: Quick intro</span>
           <span *ngSwitchCase="'profile'">
             Step 3 of 4: Question {{ currentQuestionIndex + 1 }} of
             {{ questions.length }}
@@ -137,28 +137,44 @@
 
       <div class="questions-container">
         <div class="question-card" *ngIf="currentStage === 'mad-lib'">
-          <label for="mad-lib">
-            Fill in the onboarding scaffold
+          <label [attr.for]="madLibFreeform ? 'mad-lib' : null">
+            Tell us about yourself
             <span class="required">*</span>
           </label>
-          <p class="question-help">
-            Each section maps to later onboarding fields, so include the buyer,
-            problems, outcomes, delivery, and outreach details you want
-            prefilled.
-          </p>
-          <textarea
-            id="mad-lib"
-            [(ngModel)]="madLibValue"
-            rows="7"
-            placeholder="I help [customer type] in [industries] solve [problems] by delivering [service offer/results] using [skills]. I usually work with [company sizes/budget/geography] and reach buyers through [outreach methods]. My communication style is [style]."
-          ></textarea>
+
+          <ng-container *ngIf="!madLibFreeform">
+            <app-mad-lib-composer
+              [initialValues]="madLibPrefill"
+              (compositionChange)="onCompositionChange($event)"
+            ></app-mad-lib-composer>
+            <button type="button" class="link-toggle" (click)="useFreeform()">
+              Write it as a paragraph instead
+            </button>
+          </ng-container>
+
+          <ng-container *ngIf="madLibFreeform">
+            <p class="question-help">
+              Mention the buyer, the problems you solve, the outcomes, what you
+              deliver, and how you reach people.
+            </p>
+            <textarea
+              id="mad-lib"
+              [(ngModel)]="madLibValue"
+              rows="7"
+              placeholder="I am a [your title] who helps [customer type] in [industries] solve [problems] by delivering [service offer/results] using [skills]. I usually work with [company sizes/budget/geography] and reach buyers through [outreach methods]. My communication style is [style]."
+            ></textarea>
+            <button type="button" class="link-toggle" (click)="useComposer()">
+              Back to guided fill-in
+            </button>
+          </ng-container>
         </div>
 
         <div class="question-card" *ngIf="currentStage === 'resume'">
           <label for="resume-upload">Upload your resume</label>
           <p class="question-help">
-            Optional. We'll parse it to prefill your skills and experience, and
-            you can edit everything before analysis.
+            Optional, and it saves the most typing: we read it first so your
+            intro and the questions that follow arrive already filled in. You
+            can edit everything before analysis.
           </p>
           <input
             id="resume-upload"
@@ -382,7 +398,7 @@
           class="btn-secondary"
           (click)="prevQuestion()"
           [disabled]="
-            currentStage === 'mad-lib' ||
+            currentStage === 'resume' ||
             isAnalyzing ||
             isResumeParsing ||
             isDiscLoading
@@ -395,7 +411,7 @@
           *ngIf="currentStage === 'mad-lib'"
           class="btn-primary"
           (click)="requestMadLibAnalysis()"
-          [disabled]="!madLibValue.trim() || isAnalyzing"
+          [disabled]="!canAnalyzeMadLib || isAnalyzing"
         >
           {{ isAnalyzing ? 'Analyzing...' : 'Continue' }}
         </button>
@@ -413,7 +429,7 @@
             (click)="skipResumeStep()"
             [disabled]="isResumeParsing"
           >
-            {{ isResumeParsing ? 'Parsing...' : 'Continue to questions' }}
+            {{ isResumeParsing ? 'Parsing...' : 'Continue to your intro' }}
           </button>
         </ng-container>
 

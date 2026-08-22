@@ -44,6 +44,11 @@ export class RegisterBlockComponent extends Themeable {
   @Input() callToAction = 'Join us on your journey';
   @Input() heroSource =
     'https://source.unsplash.com/random/800x600/?nature,water';
+  // Hosts that render their own marketing column suppress the in-card hero so
+  // the page does not end up with two headlines competing for the same job.
+  @Input() showHero = true;
+  @Input() errorMessage = '';
+  @Input() pending = false;
   @Input() showOAuth = true;
   @Input() enabledOAuthProviders: string[] = [
     'google',

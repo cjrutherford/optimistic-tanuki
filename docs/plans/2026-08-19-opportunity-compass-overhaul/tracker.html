@@ -1,0 +1,1840 @@
+<title>Opportunity Compass Overhaul</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..600&family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+/>
+
+<style>
+  :root {
+    --ground: #eff3f2;
+    --surface: #ffffff;
+    --surface-sunk: #e7edeb;
+    --ink: #0e2027;
+    --ink-muted: #536a71;
+    --line: #d3dcda;
+    --line-soft: #e3eae8;
+    --brass: #9a6f16;
+    --brass-bright: #b0801f;
+    --teal: #14676d;
+    --st-done: #2e7d62;
+    --st-active: #14676d;
+    --st-blocked: #a8402f;
+    --st-planned: #6e8288;
+    --shadow: 0 1px 2px rgba(14, 32, 39, 0.06),
+      0 8px 24px -16px rgba(14, 32, 39, 0.28);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      --ground: #0a1418;
+      --surface: #111e23;
+      --surface-sunk: #0d181c;
+      --ink: #e3ecea;
+      --ink-muted: #8da3a8;
+      --line: #23343a;
+      --line-soft: #1a282d;
+      --brass: #d8a63f;
+      --brass-bright: #e7ba5c;
+      --teal: #4fb3b8;
+      --st-done: #57b489;
+      --st-active: #4fb3b8;
+      --st-blocked: #e08066;
+      --st-planned: #7c9298;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4),
+        0 8px 24px -16px rgba(0, 0, 0, 0.8);
+    }
+  }
+
+  :root[data-theme='dark'] {
+    --ground: #0a1418;
+    --surface: #111e23;
+    --surface-sunk: #0d181c;
+    --ink: #e3ecea;
+    --ink-muted: #8da3a8;
+    --line: #23343a;
+    --line-soft: #1a282d;
+    --brass: #d8a63f;
+    --brass-bright: #e7ba5c;
+    --teal: #4fb3b8;
+    --st-done: #57b489;
+    --st-active: #4fb3b8;
+    --st-blocked: #e08066;
+    --st-planned: #7c9298;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -16px rgba(0, 0, 0, 0.8);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 62rem;
+    margin: 0 auto;
+    padding: clamp(2rem, 5vw, 4rem) clamp(1rem, 4vw, 2.5rem) 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2.75rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .kicker {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--brass);
+    margin: 0;
+  }
+
+  h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.6rem, 7vw, 4.2rem);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--teal);
+  }
+
+  .standfirst {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 1.06rem;
+    color: var(--ink-muted);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.76rem;
+    color: var(--ink-muted);
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+  }
+  .meta b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  /* ---------- status strip ---------- */
+
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .tally div {
+    background: var(--surface);
+    padding: 0.9rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .tally .n {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 1.7rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .tally .l {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .tally .planned .n {
+    color: var(--st-planned);
+  }
+  .tally .active .n {
+    color: var(--st-active);
+  }
+  .tally .done .n {
+    color: var(--st-done);
+  }
+  .tally .blocked .n {
+    color: var(--st-blocked);
+  }
+
+  /* ---------- sections ---------- */
+
+  h2 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    font-size: 1.9rem;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  .section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    border-bottom: 2px solid var(--brass);
+    padding-bottom: 0.55rem;
+  }
+
+  .section-head .kicker {
+    margin-left: auto;
+  }
+
+  .note {
+    margin: 0;
+    max-width: 68ch;
+    color: var(--ink-muted);
+  }
+  .note strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ---------- evidence tables ---------- */
+
+  .scroller {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+  }
+
+  thead th {
+    text-align: left;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    background: var(--surface-sunk);
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  tbody td {
+    padding: 0.62rem 0.9rem;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  td.ep,
+  td.code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.77rem;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  td.name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .http {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.77rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .http.ok {
+    color: var(--st-done);
+  }
+  .http.bad {
+    color: var(--st-blocked);
+  }
+  .http.warn {
+    color: var(--brass);
+  }
+
+  /* ---------- verdict chips ---------- */
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.5rem;
+    border-radius: 2px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .chip.keep {
+    color: var(--st-done);
+    border-color: color-mix(in srgb, var(--st-done) 45%, transparent);
+    background: color-mix(in srgb, var(--st-done) 10%, transparent);
+  }
+  .chip.cut {
+    color: var(--st-blocked);
+    border-color: color-mix(in srgb, var(--st-blocked) 45%, transparent);
+    background: color-mix(in srgb, var(--st-blocked) 10%, transparent);
+  }
+  .chip.fix {
+    color: var(--brass);
+    border-color: color-mix(in srgb, var(--brass) 50%, transparent);
+    background: color-mix(in srgb, var(--brass) 10%, transparent);
+  }
+  .chip.add {
+    color: var(--st-active);
+    border-color: color-mix(in srgb, var(--st-active) 45%, transparent);
+    background: color-mix(in srgb, var(--st-active) 10%, transparent);
+  }
+
+  /* ---------- workstreams ---------- */
+
+  .ws {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .rail {
+    background: var(--surface-sunk);
+    border-right: 1px solid var(--line);
+    display: flex;
+    justify-content: center;
+    padding-top: 1.15rem;
+  }
+
+  .rail span {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--brass);
+  }
+
+  .ws-body {
+    padding: 1.15rem 1.35rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  .ws-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.005em;
+  }
+
+  .ws-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .cause {
+    margin: 0;
+    padding: 0.7rem 0.9rem;
+    background: var(--surface-sunk);
+    border-left: 2px solid var(--brass);
+    font-size: 0.89rem;
+    color: var(--ink-muted);
+  }
+  .cause b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .cause code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.82em;
+    color: var(--teal);
+    overflow-wrap: anywhere;
+  }
+
+  ol.tasks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ol.tasks li {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+    gap: 0.5rem 0.75rem;
+    align-items: baseline;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.92rem;
+  }
+
+  ol.tasks li:first-child {
+    border-top: 0;
+  }
+
+  .tid {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--brass);
+    letter-spacing: 0.04em;
+  }
+
+  .state {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.64rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--st-planned);
+    white-space: nowrap;
+  }
+  .state.active {
+    color: var(--st-active);
+  }
+  .state.done {
+    color: var(--st-done);
+  }
+  .state.blocked {
+    color: var(--st-blocked);
+  }
+
+  .task-text code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.82em;
+    color: var(--teal);
+    overflow-wrap: anywhere;
+  }
+
+  /* ---------- open questions / risks ---------- */
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: 1rem;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1.05rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .panel h3 {
+    margin: 0;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+
+  .panel ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .panel li {
+    font-size: 0.92rem;
+  }
+  .panel li code {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.82em;
+    color: var(--teal);
+    overflow-wrap: anywhere;
+  }
+
+  .verify {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.8rem;
+    line-height: 1.9;
+    margin: 0;
+    padding: 1rem 1.2rem;
+    background: var(--surface-sunk);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow-x: auto;
+    color: var(--ink-muted);
+  }
+  .verify b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1rem;
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 34rem) {
+    ol.tasks li {
+      grid-template-columns: 2.2rem minmax(0, 1fr);
+    }
+    ol.tasks li .state {
+      grid-column: 2;
+    }
+    .ws {
+      grid-template-columns: 2rem minmax(0, 1fr);
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <p class="kicker">
+      leads-app · lead-tracker · branch opportunity-compass-overhaul
+    </p>
+    <h1>Opportunity Compass <em>overhaul</em></h1>
+    <p class="standfirst">
+      Five workstreams to take the leads app from prototype to shippable: auth
+      layout, an interview that stops repeating itself, a structured intro, a
+      discovery source set that is free and real, and per-position application
+      drafts.
+    </p>
+    <div class="meta">
+      <span><b>Opened</b> 2026-08-19</span>
+      <span
+        ><b>Plan</b>
+        docs/plans/2026-08-19-opportunity-compass-overhaul/plan.md</span
+      >
+      <span><b>Tasks</b> 40</span>
+      <span><b>Shipped</b> A, B, C, D, E</span>
+    </div>
+  </header>
+
+  <div class="tally">
+    <div class="planned">
+      <span class="n">0</span><span class="l">Planned</span>
+    </div>
+    <div class="active">
+      <span class="n">0</span><span class="l">Partial</span>
+    </div>
+    <div class="done"><span class="n">41</span><span class="l">Done</span></div>
+    <div class="blocked">
+      <span class="n">1</span><span class="l">Needs models</span>
+    </div>
+  </div>
+
+  <!-- ============ ACTION: PULL MODELS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Models to pull</h2>
+      <p class="kicker">manual · 192.168.50.191</p>
+    </div>
+    <p class="note">
+      <strong>Nothing is installed on the host yet</strong>, so the pilot cannot
+      score anything until these land. Pulling is disk-bound and slow — roughly
+      40 GB in total — so run them directly on the box rather than through an
+      agent session. Ten candidates across three kinds: first-party
+      <em>vendor</em> releases, <em>api-distill</em> builds trained on
+      proprietary API outputs (see the licence note), and
+      <em>open-distill</em> builds whose teacher weights were openly licensed.
+    </p>
+    <pre class="verify"><b># first-party (23.2 GB)</b>
+ollama pull qwen3.5:4b-q8_0
+ollama pull qwen3:8b
+ollama pull granite4:tiny-h
+ollama pull gemma4:e2b-it-qat
+ollama pull nemotron-3-nano:4b-q8_0
+
+<b># open-teacher distills — clean licence chain (7.2 GB)</b>
+ollama pull hf.co/mradermacher/gpt-oss-120b-Distill-Qwen3-4B-Thinking-i1-GGUF:i1-Q4_K_M
+ollama pull hf.co/bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF:Q4_K_M
+
+<b># frontier API distills — strong, but see the licence note (10.1 GB)</b>
+ollama pull hf.co/Jackrong/Qwen3.5-4B-Claude-4.6-Opus-Reasoning-Distilled-GGUF:Q4_K_M
+ollama pull hf.co/Jackrong/GPT-5-Distill-Qwen3-4B-Instruct-GGUF:Q4_K_S
+ollama pull hf.co/TeichAI/Qwen3-8B-GPT-5.2-High-Reasoning-Distill-GGUF:Q4_K_M
+
+<b># then score them all</b>
+node tools/scripts/pilot-onboarding-models.mjs</pre>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Kind</th>
+            <th>Size</th>
+            <th>Ctx</th>
+            <th>Licence / why</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">qwen3.5:4b-q8_0</td>
+            <td class="code">vendor</td>
+            <td class="code">5.3 GB</td>
+            <td class="code">256K</td>
+            <td>Apache-2.0 · 8-bit, least quant damage of the ten</td>
+          </tr>
+          <tr>
+            <td class="name">qwen3:8b</td>
+            <td class="code">vendor</td>
+            <td class="code">5.2 GB</td>
+            <td class="code">40K</td>
+            <td>Apache-2.0 · control: more params, heavier quant</td>
+          </tr>
+          <tr>
+            <td class="name">granite4:tiny-h</td>
+            <td class="code">vendor</td>
+            <td class="code">4.2 GB</td>
+            <td class="code">1M</td>
+            <td>Apache-2.0 · IBM, tuned for instruction following + JSON</td>
+          </tr>
+          <tr>
+            <td class="name">gemma4:e2b-it-qat</td>
+            <td class="code">vendor</td>
+            <td class="code">4.3 GB</td>
+            <td class="code">128K</td>
+            <td>Apache-2.0 · Google's own QAT build; the Gemma 4 that fits</td>
+          </tr>
+          <tr>
+            <td class="name">nemotron-3-nano:4b-q8_0</td>
+            <td class="code">vendor</td>
+            <td class="code">4.2 GB</td>
+            <td class="code">256K</td>
+            <td>NVIDIA open · trained on structured output + multi-turn</td>
+          </tr>
+          <tr>
+            <td class="name">gpt-oss-120b-Distill-Qwen3-4B</td>
+            <td class="code">open-distill</td>
+            <td class="code">2.5 GB</td>
+            <td class="code">256K</td>
+            <td>
+              <span class="chip keep">Apache-2.0 end to end</span> 120B
+              open-weight teacher → 4B student
+            </td>
+          </tr>
+          <tr>
+            <td class="name">DeepSeek-R1-Distill-Qwen-7B</td>
+            <td class="code">open-distill</td>
+            <td class="code">4.7 GB</td>
+            <td class="code">128K</td>
+            <td>
+              <span class="chip keep">MIT</span> most-downloaded candidate here
+              by a wide margin
+            </td>
+          </tr>
+          <tr>
+            <td class="name">Qwen3.5-4B-Claude-4.6-Opus-Distill</td>
+            <td class="code">api-distill</td>
+            <td class="code">2.7 GB</td>
+            <td class="code">256K</td>
+            <td>
+              <span class="chip cut">ToS risk</span> trained on Claude API
+              outputs
+            </td>
+          </tr>
+          <tr>
+            <td class="name">GPT-5-Distill-Qwen3-4B-Instruct</td>
+            <td class="code">api-distill</td>
+            <td class="code">2.4 GB</td>
+            <td class="code">256K</td>
+            <td>
+              <span class="chip cut">ToS risk</span> instruct, not reasoning —
+              best latency fit of the three
+            </td>
+          </tr>
+          <tr>
+            <td class="name">Qwen3-8B-GPT-5.2-Distill</td>
+            <td class="code">api-distill</td>
+            <td class="code">5.0 GB</td>
+            <td class="code">40K</td>
+            <td>
+              <span class="chip cut">ToS risk</span> trained on GPT API outputs
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      <strong>Licence note.</strong> Anthropic's and OpenAI's usage policies
+      both prohibit training on their model outputs, and the three
+      <em>api-distill</em> repos were built that way. Evaluating them is one
+      thing; shipping one in a commercial product carries exposure the vendor
+      and open-distill rows do not. The pilot scores all ten on merit so the
+      trade-off is measurable rather than assumed — in particular whether the
+      legally clean options actually give anything up.
+    </p>
+  </section>
+
+  <!-- ============ MODEL PILOT ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Model pilot</h2>
+      <p class="kicker">8 GB budget</p>
+    </div>
+    <p class="note">
+      The dev host
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >192.168.50.191:11434</code
+      >
+      is reachable on Ollama 0.32.14 but has
+      <strong>no models installed</strong>. Five candidates, all sized to leave
+      KV-cache headroom on an 8 GB card.
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >tools/scripts/pilot-onboarding-models.mjs</code
+      >
+      scores each on the real onboarding prompts — run it with
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >--pull</code
+      >.
+    </p>
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Size</th>
+            <th>Context</th>
+            <th>Why it is on the list</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">qwen3.5:4b-q8_0</td>
+            <td class="code">5.3 GB</td>
+            <td class="code">256K</td>
+            <td>
+              8-bit rather than 4-bit — least quantization damage of the five
+            </td>
+          </tr>
+          <tr>
+            <td class="name">qwen3:8b</td>
+            <td class="code">5.2 GB</td>
+            <td class="code">40K</td>
+            <td>
+              The control: more parameters, heavier quantization, same VRAM
+            </td>
+          </tr>
+          <tr>
+            <td class="name">granite4:tiny-h</td>
+            <td class="code">4.2 GB</td>
+            <td class="code">1M</td>
+            <td>IBM, tuned for instruction following and JSON; Apache-2.0</td>
+          </tr>
+          <tr>
+            <td class="name">gemma4:e2b-it-qat</td>
+            <td class="code">4.3 GB</td>
+            <td class="code">128K</td>
+            <td>
+              Google's own quantization-aware build — the Gemma 4 that fits
+            </td>
+          </tr>
+          <tr>
+            <td class="name">nemotron-3-nano:4b-q8_0</td>
+            <td class="code">4.2 GB</td>
+            <td class="code">256K</td>
+            <td>
+              NVIDIA, trained explicitly on structured output and multi-turn
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">
+      The harness scores <strong>schema conformance</strong>,
+      <strong>question distinctness across five different people</strong> (the
+      exact failure being fixed — a model that collapses to one question
+      reintroduces it), <strong>grounding</strong> in the person's own work,
+      <strong>self-report avoidance</strong>, whether it honours
+      remaining-quadrant instructions, assessment sanity, and median latency.
+      Nemotron 3 Nano's 30B variant and plain <code>nemotron</code> (70B) were
+      ruled out on size; DeepSeek-R1 distills were ruled out because their
+      thinking traces fight strict JSON and add seconds to an interactive turn.
+    </p>
+  </section>
+
+  <!-- ============ EVIDENCE ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Source probe</h2>
+      <p class="kicker">curl · 2026-08-19</p>
+    </div>
+    <p class="note">
+      Every endpoint below was requested from this machine before any source
+      decision was made. Three of the nine wired sources cannot return data at
+      all: <strong>Indeed</strong> and <strong>Clutch</strong> answer server
+      requests with 403, and <strong>JustRemote</strong>'s XML feed now serves
+      an HTML page that the provider parses as XML and silently yields nothing.
+    </p>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Wired source</th>
+            <th>Endpoint</th>
+            <th>Response</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">RemoteOK</td>
+            <td class="ep">remoteok.com/api</td>
+            <td><span class="http ok">200</span> json 489 KB</td>
+            <td><span class="chip keep">Keep + attribute</span></td>
+          </tr>
+          <tr>
+            <td class="name">Himalayas</td>
+            <td class="ep">himalayas.app/jobs/api</td>
+            <td><span class="http ok">200</span> json</td>
+            <td><span class="chip keep">Keep</span></td>
+          </tr>
+          <tr>
+            <td class="name">We Work Remotely</td>
+            <td class="ep">weworkremotely.com/remote-jobs.rss</td>
+            <td><span class="http ok">200</span> rss</td>
+            <td><span class="chip keep">Keep</span></td>
+          </tr>
+          <tr>
+            <td class="name">Jobicy</td>
+            <td class="ep">jobicy.com/api/v2/remote-jobs</td>
+            <td><span class="http ok">200</span> json</td>
+            <td><span class="chip keep">Keep + attribute</span></td>
+          </tr>
+          <tr>
+            <td class="name">JustRemote</td>
+            <td class="ep">justremote.co/jobs.xml</td>
+            <td><span class="http warn">200</span> <b>text/html</b></td>
+            <td><span class="chip fix">Fix or cut</span></td>
+          </tr>
+          <tr>
+            <td class="name">Indeed</td>
+            <td class="ep">indeed.com/jobs</td>
+            <td><span class="http bad">403</span> anti-bot</td>
+            <td><span class="chip cut">Remove</span></td>
+          </tr>
+          <tr>
+            <td class="name">Clutch</td>
+            <td class="ep">clutch.co/web-developers</td>
+            <td><span class="http bad">403</span> cloudflare</td>
+            <td><span class="chip cut">Remove</span></td>
+          </tr>
+          <tr>
+            <td class="name">Crunchbase</td>
+            <td class="ep">news RSS filtered to crunchbase.com</td>
+            <td><span class="http ok">200</span> rss</td>
+            <td><span class="chip fix">Rename or cut</span></td>
+          </tr>
+          <tr>
+            <td class="name">Google HTML</td>
+            <td class="ep">google.com/search</td>
+            <td><span class="http warn">200</span> ToS risk</td>
+            <td><span class="chip fix">De-risk</span></td>
+          </tr>
+          <tr>
+            <td class="name">DuckDuckGo HTML</td>
+            <td class="ep">html.duckduckgo.com/html</td>
+            <td><span class="http warn">200</span> rate-limited</td>
+            <td><span class="chip fix">De-risk</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="note">
+      Replacements were held to one bar: a documented public endpoint, free, no
+      key, and no terms that forbid this use. Seven cleared it.
+    </p>
+
+    <div class="scroller">
+      <table>
+        <thead>
+          <tr>
+            <th>Candidate</th>
+            <th>Endpoint</th>
+            <th>Response</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="name">Arbeitnow</td>
+            <td class="ep">arbeitnow.com/api/job-board-api</td>
+            <td><span class="http ok">200</span> json</td>
+            <td>Keyless</td>
+          </tr>
+          <tr>
+            <td class="name">Remotive</td>
+            <td class="ep">remotive.com/api/remote-jobs</td>
+            <td><span class="http ok">200</span> json</td>
+            <td>Keyless</td>
+          </tr>
+          <tr>
+            <td class="name">The Muse</td>
+            <td class="ep">themuse.com/api/public/jobs</td>
+            <td><span class="http ok">200</span> json</td>
+            <td>408 231 postings</td>
+          </tr>
+          <tr>
+            <td class="name">HN Who&nbsp;is&nbsp;Hiring</td>
+            <td class="ep">hn.algolia.com/api/v1/search</td>
+            <td><span class="http ok">200</span> json</td>
+            <td>Keyless</td>
+          </tr>
+          <tr>
+            <td class="name">Greenhouse</td>
+            <td class="ep">boards-api.greenhouse.io/v1/boards/…</td>
+            <td><span class="http ok">200</span> json</td>
+            <td>Per-company ATS</td>
+          </tr>
+          <tr>
+            <td class="name">Lever</td>
+            <td class="ep">api.lever.co/v0/postings/…</td>
+            <td><span class="http ok">live</span></td>
+            <td>Per-company ATS</td>
+          </tr>
+          <tr>
+            <td class="name">OSM Overpass</td>
+            <td class="ep">overpass-api.de/api/interpreter</td>
+            <td><span class="http ok">live</span></td>
+            <td>Keyless local-business search</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ WORKSTREAMS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Workstreams</h2>
+      <p class="kicker">A–E</p>
+    </div>
+
+    <!-- A -->
+    <article class="ws">
+      <div class="rail"><span>A</span></div>
+      <div class="ws-body">
+        <div class="ws-head">
+          <h3 class="ws-title">Auth surfaces</h3>
+          <span class="state done">Done · 7 tasks</span>
+        </div>
+        <p class="cause">
+          <b>Cause.</b> <code>LoginBlockComponent</code> renders its own hero —
+          h1, description, and a 300 px image — <em>inside</em> the card, while
+          leads-app renders a second marketing column outside it. Two
+          <code>&lt;h1&gt;</code>s, two headlines. The card is
+          <code>flex-direction: row</code> and only stacks below 640 px, but
+          leads-app drops it into a <code>minmax(320px, 480px)</code> column, so
+          it is squeezed the whole way down. <code>.form</code> also sets
+          <code>margin: 30px</code> on a <code>width: 100%</code> border-box
+          child, which overflows the card.
+        </p>
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>Measured</th>
+                <th>1440</th>
+                <th>1024</th>
+                <th>768</th>
+                <th>390</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="name">Form width — before</td>
+                <td class="code">156</td>
+                <td class="code">156</td>
+                <td class="code">157</td>
+                <td class="code">288</td>
+              </tr>
+              <tr>
+                <td class="name">Form width — after</td>
+                <td class="code"><span class="http ok">458</span></td>
+                <td class="code"><span class="http ok">407</span></td>
+                <td class="code"><span class="http ok">621</span></td>
+                <td class="code"><span class="http ok">288</span></td>
+              </tr>
+              <tr>
+                <td class="name">&lt;h1&gt; count</td>
+                <td class="code">2 → <span class="http ok">1</span></td>
+                <td class="code">2 → <span class="http ok">1</span></td>
+                <td class="code">2 → <span class="http ok">1</span></td>
+                <td class="code">2 → <span class="http ok">1</span></td>
+              </tr>
+              <tr>
+                <td class="name">Horizontal scroll</td>
+                <td class="code">no</td>
+                <td class="code">
+                  <span class="http bad">yes</span> →
+                  <span class="http ok">no</span>
+                </td>
+                <td class="code">no</td>
+                <td class="code">no</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ol class="tasks">
+          <li>
+            <span class="tid">A1</span
+            ><span class="task-text"
+              >Baseline captured at 1440 / 1024 / 768 / 390 with a Playwright
+              audit script that also measures overflow, heading count, and form
+              width</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A2</span
+            ><span class="task-text"
+              ><code>[showHero]</code> added to both blocks; leads-app passes
+              <code>false</code> and owns the single page headline</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A3</span
+            ><span class="task-text"
+              >Card now wraps on available width rather than viewport width;
+              <code>margin: 30px</code> → flex <code>gap</code>; hero image
+              capped at <code>min(300px, 100%)</code></span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A4</span
+            ><span class="task-text"
+              >New <code>AuthShellComponent</code> replaces ~85 duplicated
+              inline style lines per route; <code>rgba()</code> literals
+              tokenised; fixed header height dropped</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A5</span
+            ><span class="task-text"
+              >Auth failures surfaced — pending state,
+              <code>role="alert"</code> error region, and reciprocal login ↔
+              register links</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A6</span
+            ><span class="task-text"
+              >10 viewport regression assertions added in
+              <code>auth-layout.spec.ts</code>; all pass</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">A7</span
+            ><span class="task-text"
+              >Added slice: <code>hai-about-tag</code> collapses to its 44 px
+              mark under 640 px so the fixed badge stops covering form controls
+              — shared by 12 apps</span
+            ><span class="state done">Done</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+
+    <!-- B -->
+    <article class="ws">
+      <div class="rail"><span>B</span></div>
+      <div class="ws-body">
+        <div class="ws-head">
+          <h3 class="ws-title">Adaptive onboarding interview</h3>
+          <span class="state done">Done · 6 tasks</span>
+        </div>
+        <p class="cause">
+          <b>Cause.</b> <code>advanceDiscInterview</code> in
+          <code>onboarding-analysis.service.ts:129</code> returns from a
+          hardcoded four-prompt array indexed by the count of user turns. The
+          model is consulted only to score the finished transcript — never to
+          write a question. Every user gets the same four questions in the same
+          order, which is exactly what the flow feels like. Ollama is live on
+          <code>:11434</code>, so the adaptive path is available today.
+        </p>
+        <ol class="tasks">
+          <li>
+            <span class="tid">B1</span
+            ><span class="task-text"
+              ><code>generateNextDiscQuestion</code> added — takes the profile,
+              the transcript, and which quadrants remain; returns question +
+              target quadrant + a sufficient-signal judgement</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">B2</span
+            ><span class="task-text"
+              ><code>advanceDiscInterview</code> now drives off that call,
+              capped at 6 turns. The static bank survives only as the offline
+              path, seeded from a profile hash so two people do not walk the
+              same script</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">B3</span
+            ><span class="task-text"
+              ><code>targetDimension</code> recorded per turn and echoed by the
+              client; completion requires all four quadrants probed
+              <em>and</em> the model's agreement, so a confident model cannot
+              cut the interview short</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">B4</span
+            ><span class="task-text"
+              ><code>discTranscript</code> jsonb column + CLI-generated
+              migration; the transcript travels with the confirmation, and a
+              re-run is handed the questions this profile already answered so
+              neither the model nor the offline bank repeats them. Verified run
+              → revert → run</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">B5</span
+            ><span class="task-text"
+              >6 new tests: profile-varied questions, quadrant gating, turn cap,
+              model-failure fallback. lead-tracker 90/90</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">B6</span
+            ><span class="task-text"
+              >Added: schema-constrained decoding via Ollama's
+              <code>format</code> field — malformed JSON is now structurally
+              impossible rather than recovered by scraping braces out of prose.
+              Also disables thinking traces for latency</span
+            ><span class="state done">Done</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+
+    <!-- C -->
+    <article class="ws">
+      <div class="rail"><span>C</span></div>
+      <div class="ws-body">
+        <div class="ws-head">
+          <h3 class="ws-title">Mad-lib intro composer</h3>
+          <span class="state done">Done · 6 tasks</span>
+        </div>
+        <p class="cause">
+          <b>Cause.</b> The "tell me about yourself" step is one
+          <code>&lt;textarea rows="7"&gt;</code> whose mad-lib scaffold lives in
+          the <em>placeholder</em> — so it disappears the moment anyone types.
+          The backend then regex-mines the resulting prose for fields the user
+          could have just filled in directly.
+        </p>
+        <ol class="tasks">
+          <li>
+            <span class="tid">C1</span
+            ><span class="task-text"
+              ><code>MadLibTemplate</code> / <code>MadLibComposition</code> /
+              <code>MadLibAnalysisRequest</code> defined; every slot binds 1:1
+              to an <code>OnboardingProfileSuggestions</code> field</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C2</span
+            ><span class="task-text"
+              ><code>MadLibComposerComponent</code> renders the scaffold as
+              always-visible prose with inline inputs, dropdowns, and chip
+              editors for the five list slots</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C3</span
+            ><span class="task-text"
+              >Emits the readable sentence, the field-keyed values, and the list
+              of still-blank required fields</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C4</span
+            ><span class="task-text"
+              ><code>analyzeMadLib</code> takes slot values as fact and infers
+              only where a slot was left blank; blank slots are pruned so they
+              cannot wipe an inferred value</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C5</span
+            ><span class="task-text"
+              >"Write it as a paragraph instead" toggles to the original
+              textarea, which stays on the inference-only route</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C6</span
+            ><span class="task-text"
+              >13 new tests — 9 composer, 4 backend precedence. leads-app
+              101/101, lead-tracker 94/94</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">C7</span
+            ><span class="task-text"
+              >Caught in review: importing a runtime const from the models
+              barrel pulled TypeORM entities into the browser bundle and broke 4
+              unrelated suites. Template const moved into the app; frontend
+              model imports are now <code>import type</code></span
+            ><span class="state done">Done</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+
+    <!-- D -->
+    <article class="ws">
+      <div class="rail"><span>D</span></div>
+      <div class="ws-body">
+        <div class="ws-head">
+          <h3 class="ws-title">Discovery sources</h3>
+          <span class="state done">Done · 13 tasks</span>
+        </div>
+        <p class="cause">
+          <b>Cause.</b> <code>indeed</code>, <code>clutch</code>, and
+          <code>crunchbase</code> all work the same way: scrape a search engine,
+          then filter results by domain. Two of those domains answer 403 to any
+          server request, so page enrichment can never succeed; the third
+          fetches Google News and labels it Crunchbase. Meanwhile there is no
+          registry saying which sources are legitimate, keyed, rate-limited, or
+          owed attribution.
+        </p>
+        <ol class="tasks">
+          <li>
+            <span class="tid">D1</span
+            ><span class="task-text"
+              >Registry shipped in the entity-free contracts lib — legal basis,
+              auth, rate limit, attribution, intents, health probe per source.
+              The topics UI and the LLM's allowed-source list both read from it,
+              so a retired source cannot be offered or suggested. 9 tests</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D2</span
+            ><span class="task-text"
+              ><code>indeed</code> and <code>clutch</code> providers deleted,
+              <code>justremote</code> retired alongside them. A data migration
+              strips them from stored topics and backfills intent defaults so no
+              topic is left unable to run; the topic card explains what was
+              retired and why</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D3</span
+            ><span class="task-text"
+              ><code>crunchbase</code> → <code>funding-news</code>, and the
+              provider no longer filters results to crunchbase.com — that domain
+              pin both misdescribed the data and threw away most of the feed's
+              coverage</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D3b</span
+            ><span class="task-text"
+              ><b>Verified, not built.</b> Crunchbase removed free API access in
+              2025 — cheapest tier is $49/mo, full API is Enterprise-only. No
+              free tier exists, so per the plan this was recorded rather than
+              shipped</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D4</span
+            ><span class="task-text"
+              >Retired. Provider and its dead XML parsing helpers deleted;
+              <code>formatProviderLabel</code> now reads the registry so backend
+              and UI cannot disagree on a source name</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D5</span
+            ><span class="task-text"
+              >Arbeitnow, Remotive, The Muse and HN Who-is-Hiring shipped
+              against verified response shapes. Greenhouse and Lever now ship
+              too, reframed as <b>dream companies</b> — long shots that watch
+              one employer's own board rather than sweeping a market, presented
+              separately in the UI and reporting a quiet board as normal rather
+              than as a failure</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D5b</span
+            ><span class="task-text"
+              >Places scores presence gaps (no website 40, no reviews 25, few
+              reviews 15, low rating 15, no hours 10, no phone 10), names them
+              on the lead, sizes the estimate by the score, and
+              <b>skips businesses with no gaps</b>. OSM Overpass now provides
+              the same thing keylessly — scoped by administrative area so no
+              geocoder is needed — closing the local-discovery hole for
+              deployments with no Places key. Scoring extracted to one shared
+              module so the two cannot drift. 6 tests</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D6</span
+            ><span class="task-text"
+              >Lead detail shows the registry label instead of a raw enum value,
+              plus the attribution note for any source whose terms require
+              credit. The obligation lives in one place, so it cannot be met in
+              one view and forgotten in another</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D7</span
+            ><span class="task-text"
+              ><code>nx run lead-tracker:probe-sources</code> checks every
+              declared endpoint and asserts the <em>content type</em>, not just
+              a 200 — the exact silent failure JustRemote had. Non-zero exit on
+              any unhealthy active source; <code>--all</code> re-confirms
+              retirements. All 9 active sources currently healthy</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D8</span
+            ><span class="task-text"
+              >Dedupe now keys on the normalised posting URL (host + path,
+              tracking params stripped) before falling back to company/title, so
+              one posting syndicated across boards merges instead of appearing
+              several times. The report states how many merged. 2 tests,
+              including one proving two distinct roles at one company still both
+              survive</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D9</span
+            ><span class="task-text"
+              >Deleted — 454 lines, zero importers confirmed before
+              removal</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D10</span
+            ><span class="task-text"
+              >Added: company names resolve to <b>verified</b> board tokens by
+              trying the conventional forms against the live APIs — "Clean
+              Harbors" is not <code>cleanharbors</code>, and an unverified guess
+              would 404 forever in silence. Nothing is stored until a board
+              actually answers</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">D11</span
+            ><span class="task-text"
+              >Added: dream companies are <b>suggested from behaviour</b> —
+              employers whose leads the user actually pursued, and past
+              employers from the parsed resume. Companies whose leads were
+              flagged are never suggested back. Every suggestion is
+              board-verified first. 5 tests</span
+            ><span class="state done">Done</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+
+    <!-- E -->
+    <article class="ws">
+      <div class="rail"><span>E</span></div>
+      <div class="ws-body">
+        <div class="ws-head">
+          <h3 class="ws-title">Tailored resume &amp; cover letter</h3>
+          <span class="state done">Done · 9 tasks</span>
+        </div>
+        <p class="cause">
+          <b>Greenfield.</b> Nothing in the workspace mentions cover letters or
+          resume tailoring. The raw material already exists though: the resume
+          parser produces <code>roleSummaries</code> with per-role highlights,
+          skills, and outcomes, and every lead carries its posting text and
+          matched terms.
+        </p>
+        <ol class="tasks">
+          <li>
+            <span class="tid">E1</span
+            ><span class="task-text"
+              >Message patterns shipped: <code>GENERATE</code>,
+              <code>FIND_LATEST</code>, <code>FIND_HISTORY</code>,
+              <code>EXPORT</code>, with gateway routes behind lead
+              permissions</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E2</span
+            ><span class="task-text"
+              >Generation reads the stored onboarding profile (skills, role
+              summaries, certifications) plus the target lead's title, company,
+              and posting text</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E3</span
+            ><span class="task-text"
+              >Schema-constrained JSON — summary, per-role highlights,
+              relevance-ordered skills, gap list — so sections render and
+              regenerate independently</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E4</span
+            ><span class="task-text"
+              ><b>Enforced in code, not prompt.</b> Every generated document
+              passes a fact guard that strips unknown employers, unrecognised
+              titles, unclaimed skills, invented credentials, and unsupported
+              numbers. Verified: an 85% metric is rejected where the resume says
+              40%</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E5</span
+            ><span class="task-text"
+              ><code>lead_applications</code> table + generated migration.
+              Regeneration inserts a new version rather than overwriting, so an
+              earlier draft is recoverable. The evidence report is stored
+              too</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E6</span
+            ><span class="task-text"
+              >Lead-detail section renders the draft with the
+              <b>evidence report above it</b> — what was removed, and which
+              posting requirements have no support in the resume</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E6b</span
+            ><span class="task-text"
+              ><b>.odt and .docx</b> written from one shared block list, so the
+              formats cannot drift. No zip dependency added — Node's zlib builds
+              the container. Validated with real <code>unzip</code>:
+              <code>file(1)</code> reports "OpenDocument Text" and "Microsoft
+              Word 2007+", and ODT's mimetype entry is first and stored per
+              spec</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E7</span
+            ><span class="task-text"
+              >Cover-letter tone drawn from <code>communicationStyle</code> and
+              the DISC assessment produced by workstream B</span
+            ><span class="state done">Done</span>
+          </li>
+          <li>
+            <span class="tid">E8</span
+            ><span class="task-text"
+              >22 tests. Subset rule enforced, fabricated
+              employer/credential/skill removal proven, deterministic fallback
+              covered, and exports validated with real <code>unzip</code></span
+            ><span class="state done">Done</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ RISKS / QUESTIONS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Watch list</h2>
+      <p class="kicker">risks &amp; decisions</p>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <h3>Risks</h3>
+        <ul>
+          <li>
+            <s>Local model reliability.</s> <b>Handled.</b> Both
+            <code>onboarding-analysis.service</code> and
+            <code>application-generation.service</code> fall back to
+            deterministic output when Ollama is unreachable or returns unusable
+            JSON, so the interview and the generator degrade instead of
+            stalling. Exercised by the unit suites, which run with no Ollama
+            present.
+          </li>
+          <li>
+            <b>Fabrication is the load-bearing risk in E.</b> A resume generator
+            that invents employment is worse than none. The subset assertion in
+            E8 is the gate, not a nice-to-have.
+          </li>
+          <li>
+            <s>ATS sources need a company list.</s> <b>Resolved.</b>
+            <code>ats-company-lookup.service</code> resolves board tokens and
+            <code>ats-company-suggestion.service</code> proposes companies from
+            the onboarding interview and lead interactions, so the user is never
+            asked to supply a raw token.
+          </li>
+          <li>
+            <s>Removing sources changes live topics.</s> <b>Resolved</b> by
+            <code>1787184267302-migrate-topics-off-retired-sources</code>, which
+            moves live topics off the retired providers rather than leaving them
+            pointing at deleted code.
+          </li>
+          <li>
+            <s>Unmigrated schema drift in lead-tracker.</s> <b>Resolved.</b> The
+            FK rewrite was fixed at the entity (restoring
+            <code>ON DELETE CASCADE</code> on
+            <code>lead_qualifications.leadId</code>) and landed as its own
+            <code>AlignLeadQualificationConstraints</code> migration.
+            <code>migration:generate</code> now reports no schema changes.
+          </li>
+          <li>
+            <s>lead-tracker mixes two migration timestamp styles.</s>
+            <b>Fixed — this was a hard blocker, not a style nit.</b> A fresh
+            database could not be built at all:
+            <code>AddOnboardingDiscTranscript</code> sorted ahead of the
+            migration that creates <code>lead_onboarding_profiles</code> and
+            died on
+            <code>relation "lead_onboarding_profiles" does not exist</code>.
+            Every existing database already had the old migrations applied, so
+            nothing failed locally — only CI and a new developer would have hit
+            it. The whole directory now uses CLI epoch timestamps: the seven
+            hand-numbered migrations moved to real epoch-ms values for the dates
+            they were written, and the eight generated ones kept what the CLI
+            assigned them. Run order matches authoring order, and
+            <code>migration:generate</code> output can be committed as-is — no
+            renaming step, and so no deviation from AGENTS.md's "do not
+            hand-create migration timestamps". A fresh database applies all 21
+            in order with no drift against the entities. Enforced by
+            <code>validate-typeorm-migrations.mjs</code> in CI, which detects
+            hand-written dates by <em>shape</em> rather than magnitude — as an
+            epoch value <code>2026090100000</code> is only the year 2034, so an
+            upper bound missed it entirely.
+          </li>
+          <li>
+            <b
+              >Do not run a bare <code>nx build</code> while the dev stack is
+              up.</b
+            >
+            It writes the production bundle over what the containers serve, and
+            nodemon does not recover from the gap — the service stays down with
+            <code>Cannot find module … main.js</code> until restarted. Use
+            <code>--configuration=development</code>, then restart the affected
+            containers.
+          </li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>Decisions · 2026-08-19</h3>
+        <ul>
+          <li>
+            <b>Crunchbase.</b> Rename the existing provider to
+            <code>funding-news</code>, and add a genuine Crunchbase provider if
+            a free tier exists.
+          </li>
+          <li>
+            <b>Google Places.</b> Keep it, keyed, with an explicit purpose —
+            surface local businesses whose web presence has gaps.
+          </li>
+          <li>
+            <b>Export formats.</b> OpenDocument Text (<code>.odt</code>) and
+            Word (<code>.docx</code>).
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VERIFICATION ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Verification</h2>
+      <p class="kicker">run per workstream</p>
+    </div>
+    <pre class="verify"><b># unit + lint + build</b>
+pnpm exec nx run-many --target=lint --projects=leads-app,lead-tracker,models,leads-feature-onboarding,gateway,leads-contracts,leads-app-e2e
+pnpm exec nx test leads-app        <span style="opacity:.7"># 101/101</span>
+pnpm exec nx test lead-tracker     <span style="opacity:.7"># 153/153, 27 suites</span>
+pnpm exec nx run-many --target=build --projects=leads-app,lead-tracker,gateway
+pnpm run ui:heuristics:ci          <span style="opacity:.7"># leads-app pinned at 0</span>
+pnpm run validate:typeorm-migrations  <span style="opacity:.7"># migration naming + ordering</span>
+
+<b># full stack, for anything touching auth or the API</b>
+pnpm run build:dev
+pnpm run docker:dev
+pnpm run docker:dev:seed
+pnpm exec nx run lead-tracker:typeorm:migration:run   <span style="opacity:.7"># see note</span>
+
+<b># end-to-end against the stack</b>
+PW_CHANNEL=chrome BASE_URL=http://localhost:8095 \
+  pnpm exec playwright test --config=apps/leads-app-e2e/playwright.config.ts \
+  --project=chromium                                  <span style="opacity:.7"># 19/19</span></pre>
+    <p class="note">
+      The local dev server is fine for design work on unauthenticated routes,
+      but anything that exercises a real auth round-trip needs the docker stack.
+      Playwright ships no chromium build for Ubuntu 26.04, hence
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >PW_CHANNEL=chrome</code
+      >.
+    </p>
+    <p class="note">
+      <b
+        >Run migrations after
+        <code
+          style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+          >docker:dev</code
+        >, and confirm with
+        <code
+          style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+          >migration:show</code
+        >, not
+        <code
+          style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+          >migration:run</code
+        >.</b
+      >
+      A run reporting <em>“No migrations are pending”</em> was contradicted by
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >migration:show</code
+      >, which listed eight unapplied — the schema was missing
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >lead_topics.aspirationalCompanies</code
+      >
+      and the whole
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >lead_applications</code
+      >
+      table, so
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >GET /api/leads/topics</code
+      >
+      returned 500.
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >migration:show</code
+      >
+      prints each migration with
+      <code style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >[X]</code
+      >/<code
+        style="font-family: 'IBM Plex Mono', monospace; color: var(--teal)"
+        >[ ]</code
+      >
+      and is the trustworthy view.
+    </p>
+  </section>
+
+  <!-- ============ STACK FINDINGS ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>What the stack run smoked out</h2>
+      <p class="kicker">
+        defects only reachable with the full stack up · 2026-08-20
+      </p>
+    </div>
+
+    <div class="panel">
+      <ul>
+        <li>
+          <b>Sessions did not survive a reload.</b> The session lives in an
+          httpOnly cookie, so the only way to know whether a user is signed in
+          is to ask the gateway — and nothing did that at bootstrap. A hard
+          load, a deep link, or a refresh all came up anonymous. Fixed with
+          <code>provideAppInitializer</code> (not the
+          <code>APP_INITIALIZER</code> deprecated in Angular 19) calling
+          <code>restoreSession()</code> before the first guard runs,
+          browser-platform only. Verified: after a reload the app reports
+          <code>AUTHENTICATED (session survived reload)</code>.
+        </li>
+        <li>
+          <b>Eight migrations had never been applied.</b>
+          <code>GET /api/leads/topics</code> returned 500 on
+          <code>column LeadTopic.aspirationalCompanies does not exist</code>
+          while <code>migration:run</code> insisted nothing was pending.
+          <code>migration:show</code> disagreed and was right. Applying them
+          fixed the endpoint (now 200) and created the missing
+          <code>lead_applications</code> table.
+        </li>
+        <li>
+          <b>Every topic creation was rejected by validation.</b>
+          <code>aspirationalCompanies</code> had been inserted between a
+          <code>@ValidateIf</code> and the property it guarded, so
+          <code>googleMapsCities</code> lost its condition and became
+          unconditionally required with <code>@ArrayMinSize(1)</code> — no topic
+          could be created without Google Maps cities. The stray guard was also
+          wrong on its own terms: it tied dream-company targets to
+          <code>GOOGLE_MAPS</code> rather than the ATS boards. Now
+          <code>@IsOptional()</code>, with <code>googleMapsCities</code>' guard
+          restored. This was invisible to unit tests and to every UI check; only
+          a real POST through the gateway surfaced it.
+        </li>
+        <li>
+          <b>The e2e suite depended on a developer's own login.</b> The
+          signed-in tests read <code>E2E_EMAIL</code>/<code>E2E_PASSWORD</code>
+          and silently skipped without them — and the account they expected did
+          not exist on a seeded stack. They now register a throwaway account per
+          test through the API, matching the <code>authe2e_*</code> pattern used
+          elsewhere in the repo. No credentials, no out-of-band setup, no skip.
+        </li>
+        <li>
+          <b>The schema could not be built from scratch.</b> Following up on the
+          eight unapplied migrations turned up the reason they were also
+          mis-ordered: <code>lead-tracker</code> numbers migrations by date
+          (<code>2026060300000</code>) while
+          <code>migration:generate</code> emits epoch milliseconds
+          (<code>1787226492478</code>). The dated numbers are far larger, so
+          every generated migration sorted <em>ahead</em> of the ones it depends
+          on. A fresh database died on
+          <code>relation "lead_onboarding_profiles" does not exist</code>.
+          Existing databases already had the old migrations applied, which is
+          why nothing failed locally and no test noticed — only CI and a new
+          developer build from nothing. The whole directory was moved onto CLI
+          epoch timestamps: the seven hand-numbered migrations became real
+          epoch-ms values for the dates they were written, and the eight
+          generated ones kept what the CLI gave them. Verified from an empty
+          database: all 21 apply in order, a second run is a clean no-op, and
+          <code>migration:generate</code> finds no drift.
+          <code>scripts/validate-typeorm-migrations.mjs</code> — which already
+          runs in CI and in <code>setup-and-migrate.sh</code> — now rejects
+          hand-written dates, detecting them by the shape of their leading
+          digits rather than by magnitude.
+        </li>
+        <li>
+          <b>A stale assertion, not a bug.</b> The
+          <code>redirects anonymous users to login</code> test encoded behaviour
+          the app no longer has — <code>app.routes.ts</code> maps
+          <code>''</code> to the landing page. The test was corrected rather
+          than the app.
+        </li>
+      </ul>
+      <p class="note" style="margin-top: 14px">
+        Result: <b>19/19 e2e</b> (was 16/19), <b>153/153</b> lead-tracker unit
+        tests across 27 suites, <b>101/101</b> leads-app, <b>62/62</b> payments,
+        lint clean across 8 projects, and
+        <code>validate:typeorm-migrations</code> passing.
+      </p>
+      <p class="note" style="margin-top: 10px">
+        <b>Confirmed from nothing.</b> The stack was torn down with its volumes
+        removed and rebuilt end to end. All 21 lead-tracker migrations applied
+        in order against an empty database, seeding completed, and the full e2e
+        suite passed <b>19/19</b> against it — so the schema is reproducible
+        from migrations alone, which is what CI and a new developer actually do.
+        The dev database ledger now reads 21 applied / 0 pending with no drift
+        against the entities.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ REVIEW RESPONSE ============ -->
+  <section class="section">
+    <div class="section-head">
+      <h2>Review response</h2>
+      <p class="kicker">PR #235 · 2026-08-20</p>
+    </div>
+
+    <div class="panel">
+      <ul>
+        <li>
+          <b>Presence gaps were fabricated on every Google result.</b> The
+          review flagged that <code>findPresenceGaps</code> treated
+          <code>undefined</code> as a confirmed absence, contradicting the
+          contract its own doc comment stated. The cause ran deeper: the
+          provider queries <b>Text Search</b>, which never returns
+          <code>website</code>, <code>formatted_phone_number</code> or full
+          <code>opening_hours</code> — those are Place <em>Details</em> fields.
+          So the mapping did not occasionally collapse an unknown; it fired on
+          <em>every</em> result, stamping "No website listed" (40) and "No phone
+          number listed" (10) on every lead and writing invented findings into
+          the pitch text. Fixed by making the data real rather than only the
+          mapping cautious: a bounded Place Details lookup
+          (<code>maxDetailLookups</code>, default 25, since Details is billed
+          per call) now establishes those fields, and anything it cannot answer
+          stays unknown. The specs returned <code>website</code> on the search
+          result and so could never have caught this; they now split search and
+          details fields honestly.
+        </li>
+        <li>
+          <b>Concurrent generates could share a version.</b>
+          <code>lead_applications</code> indexed
+          <code>(profileId, leadId, version)</code> without uniqueness, and the
+          next version was read before a slow LLM call — wide enough for a
+          double-click. The index is now unique. Rather than hold a transaction
+          across the generation, the service catches the unique violation
+          (<code>23505</code>), re-reads the version and stores the documents it
+          already produced, so a collision costs a retry of the insert rather
+          than of the generation.
+        </li>
+        <li>
+          <b>An unlabelled control.</b> The remove-company chip button was a
+          bare <code>×</code>; it now carries an <code>aria-label</code> naming
+          the company, with the glyph <code>aria-hidden</code>.
+        </li>
+        <li>
+          <b>CI was red for an unrelated reason.</b>
+          <code>payments/offer.service.spec.ts</code> hardcoded
+          <code>expiresAt: 2026-08-16</code>, so from the 17th the fixture was
+          an already-expired offer and the suite failed on any branch — it fails
+          identically on <code>main</code>. The first fix then introduced a
+          subtler bug: sampling <code>Date.now()</code> inside the builder made
+          it non-deterministic, and several tests call it twice, so two calls
+          straddling a millisecond stopped being <code>toEqual</code>. One run
+          passed by luck before the next failed elsewhere. Sampled once per run,
+          and verified across repeated runs rather than a single green.
+        </li>
+      </ul>
+      <p class="note" style="margin-top: 14px">
+        CI on PR #235: <b>58 pass, 0 fail</b> (7 skipped are staging-deploy
+        steps that only run on <code>main</code>).
+      </p>
+    </div>
+  </section>
+
+  <footer>
+    Opportunity Compass overhaul · plan and probe evidence recorded 2026-08-19 ·
+    stack findings 2026-08-20 · states update as work lands
+  </footer>
+</div>

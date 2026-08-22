@@ -5,7 +5,10 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserOnboardingProfile } from './user-onboarding-profile.interface';
+import {
+  DiscInterviewTurn,
+  UserOnboardingProfile,
+} from './user-onboarding-profile.interface';
 
 @Entity('lead_onboarding_profiles')
 export class LeadOnboardingProfileRecord {
@@ -23,6 +26,17 @@ export class LeadOnboardingProfileRecord {
 
   @Column({ type: 'jsonb' })
   profile: UserOnboardingProfile;
+
+  /**
+   * The DISC interview as it was actually conducted. Persisted so a re-run can
+   * be told what this person was already asked, instead of putting the same
+   * questions to them a second time.
+   */
+  // Plain string default rather than `() => "'[]'::jsonb"`: TypeORM compares a
+  // function default against the database's rendering and never matches, so the
+  // generator proposed a no-op ALTER on every run.
+  @Column({ type: 'jsonb', default: '[]' })
+  discTranscript: DiscInterviewTurn[];
 
   @Column({ type: 'int', default: 0 })
   currentStep: number;

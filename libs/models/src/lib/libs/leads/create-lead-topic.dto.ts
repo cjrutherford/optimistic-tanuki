@@ -1,3 +1,4 @@
+import type { AspirationalCompany } from './aspirational-company.interface';
 import {
   ArrayMinSize,
   IsArray,
@@ -41,6 +42,12 @@ export class CreateLeadTopicDto {
   @ArrayMinSize(1)
   @IsEnum(LeadDiscoverySource, { each: true })
   sources?: LeadDiscoverySource[];
+
+  // Dream-company targets for the ATS boards. Always optional: a topic may name
+  // no companies yet, and the boards are only queried once it does.
+  @IsOptional()
+  @IsArray()
+  aspirationalCompanies?: AspirationalCompany[];
 
   @ValidateIf((topic) =>
     (topic.sources || []).includes(LeadDiscoverySource.GOOGLE_MAPS)

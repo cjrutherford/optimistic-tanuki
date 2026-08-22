@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
+import type { GeneratedApplication } from '@optimistic-tanuki/models';
 import { LeadsService } from './leads.service';
 import {
   Lead,
@@ -56,6 +57,10 @@ export class LeadsComponent implements OnInit {
 
   // Flagging
   selectedLeadForFlag: Lead | null = null;
+  viewedApplication: GeneratedApplication | null = null;
+  applicationPending = false;
+  applicationError = '';
+
   selectedLeadForView: Lead | null = null;
 
   sources = [LeadSource.REFERRAL, LeadSource.COLD, LeadSource.OTHER];
@@ -150,6 +155,48 @@ export class LeadsComponent implements OnInit {
 
   viewLead(lead: Lead) {
     this.selectedLeadForView = lead;
+    // Cleared first so a previous lead's documents cannot appear under a
+    // different lead while the request is in flight.
+    this.viewedApplication = null;
+    this.applicationError = '';
+
+    this.leadsService.findApplication(lead.id).subscribe({
+      next: (application) => {
+        // Guard against a slow response arriving after the user moved on.
+        if (this.selectedLeadForView?.id === lead.id) {
+          this.viewedApplication = application;
+        }
+      },
+      error: () => {
+        this.viewedApplication = null;
+      },
+    });
+  }
+
+  closeLeadDetail() {
+    this.selectedLeadForView = null;
+    this.viewedApplication = null;
+    this.applicationError = '';
+  }
+
+  onGenerateApplication(leadId: string) {
+    if (this.applicationPending) {
+      return;
+    }
+    this.applicationPending = true;
+    this.applicationError = '';
+
+    this.leadsService.generateApplication(leadId).subscribe({
+      next: (application) => {
+        this.applicationPending = false;
+        this.viewedApplication = application;
+      },
+      error: () => {
+        this.applicationPending = false;
+        this.applicationError =
+          'Could not generate documents. Finish onboarding with a resume first, then try again.';
+      },
+    });
   }
 
   editLead(lead: Lead) {

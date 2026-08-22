@@ -11,128 +11,33 @@ import {
   submitTypeToRegisterRequest,
 } from '@optimistic-tanuki/ui-models';
 import { AuthenticationService } from './authentication.service';
+import { AuthShellComponent } from './auth-shell.component';
 import { AuthStateService } from './auth-state.service';
 import { ProfileService } from './profile.service';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RegisterBlockComponent],
+  imports: [AuthShellComponent, RegisterBlockComponent],
   template: `
-    <section class="auth-shell">
-      <div class="auth-copy">
-        <p class="eyebrow">Lead Command</p>
-        <h1>Create your account.</h1>
-        <p>
-          Registration creates your Leads user account. The leads-specific
-          profile setup happens after sign-in.
-        </p>
-        <div class="signal-grid" aria-hidden="true">
-          <span>Prospects</span>
-          <span>Qualification</span>
-          <span>Follow-through</span>
-          <span>Activation</span>
-        </div>
-      </div>
-      <div class="auth-panel">
-        <lib-register-block
-          [heroSource]="'assets/compass-splash.png'"
-          registerHeader="Create your Lead Command account"
-          callToAction="Start with an account, then finish your leads profile flow."
-          (submitEvent)="onSubmit($event)"
-          (oauthProviderSelected)="onOAuthProvider($event)"
-        ></lib-register-block>
-      </div>
-    </section>
+    <app-auth-shell
+      headline="Create your account."
+      lede="Registration creates your Leads user account. The leads-specific profile setup happens after sign-in."
+      [signals]="['Prospects', 'Qualification', 'Follow-through', 'Activation']"
+      switchPrompt="Already have an account?"
+      switchLabel="Sign in"
+      switchLink="/login"
+    >
+      <lib-register-block
+        [showHero]="false"
+        [errorMessage]="errorMessage"
+        [pending]="pending"
+        registerButtonText="Create account"
+        (submitEvent)="onSubmit($event)"
+        (oauthProviderSelected)="onOAuthProvider($event)"
+      ></lib-register-block>
+    </app-auth-shell>
   `,
-  styles: [
-    `
-      .auth-shell {
-        min-height: calc(100vh - 56px);
-        display: grid;
-        grid-template-columns: minmax(0, 420px) minmax(320px, 520px);
-        gap: clamp(2rem, 5vw, 4.5rem);
-        align-items: center;
-        justify-content: center;
-        padding: clamp(2rem, 5vw, 4.5rem) 1.5rem;
-        background: radial-gradient(
-            circle at top left,
-            rgba(13, 148, 136, 0.12),
-            transparent 24rem
-          ),
-          radial-gradient(
-            circle at bottom right,
-            rgba(14, 165, 233, 0.14),
-            transparent 26rem
-          ),
-          linear-gradient(
-            180deg,
-            var(--app-surface) 0%,
-            var(--app-background) 100%
-          );
-      }
-      .auth-copy {
-        max-width: 30rem;
-        display: grid;
-        gap: 1rem;
-      }
-      .eyebrow {
-        margin: 0;
-        font-size: 0.8rem;
-        font-weight: 700;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--app-primary);
-      }
-      h1 {
-        margin: 0;
-        font-size: clamp(2.2rem, 4vw, 3.6rem);
-        line-height: 0.98;
-        letter-spacing: -0.04em;
-      }
-      p {
-        margin: 0;
-        color: var(--app-foreground-muted);
-        line-height: 1.7;
-      }
-      .signal-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 0.8rem;
-        margin-top: 0.25rem;
-      }
-      .signal-grid span {
-        padding: 0.9rem 1rem;
-        border-radius: 1rem;
-        background: rgba(255, 255, 255, 0.78);
-        border: 1px solid rgba(8, 47, 73, 0.08);
-        box-shadow: 0 18px 34px rgba(13, 68, 93, 0.08);
-        font-size: 0.92rem;
-        font-weight: 600;
-        color: var(--app-foreground);
-      }
-      .auth-panel {
-        width: 100%;
-        min-width: 0;
-      }
-      @media (max-width: 900px) {
-        .auth-shell {
-          grid-template-columns: minmax(0, 36rem);
-          justify-content: center;
-        }
-        .auth-copy {
-          max-width: 36rem;
-        }
-      }
-      @media (max-width: 640px) {
-        .auth-shell {
-          min-height: calc(100vh - 104px);
-          padding: 1.5rem 1rem 2rem;
-          gap: 2rem;
-        }
-      }
-    `,
-  ],
 })
 export class RegisterComponent {
   private readonly authenticationService = inject(AuthenticationService);
@@ -141,6 +46,9 @@ export class RegisterComponent {
   private readonly profileService = inject(ProfileService);
   private readonly router = inject(Router);
   private readonly oauthService = new OAuthService(this.http, '/api');
+
+  errorMessage = '';
+  pending = false;
 
   constructor() {
     void this.loadOAuthConfig();
@@ -158,41 +66,72 @@ export class RegisterComponent {
   }
 
   onSubmit(event: RegisterSubmitType) {
+    if (this.pending) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.pending = true;
+
     const request = submitTypeToRegisterRequest(event);
     this.authenticationService.register(request).subscribe({
       next: async () => {
+        this.pending = false;
         await this.router.navigate(['/login']);
+      },
+      // Registration failures previously had no `error` handler at all, so a
+      // rejected sign-up looked identical to doing nothing.
+      error: () => {
+        this.pending = false;
+        this.errorMessage =
+          'That account could not be created. The email may already be registered.';
       },
     });
   }
 
   async onOAuthProvider(event: OAuthProviderEvent): Promise<void> {
-    const result = await this.oauthService.initiateOAuthLogin(
-      event.provider,
-      'leads-app'
-    );
-
-    if (result.success) {
-      await this.authState.restoreSession();
-      await this.handleAuthenticatedUser();
+    if (this.pending) {
       return;
     }
 
-    if (result.needsRegistration && result.userData) {
-      const names = result.userData.displayName.split(' ');
-      const regResult = await this.oauthService.completeOAuthRegistration(
-        result.userData.provider,
-        result.userData.providerUserId,
-        result.userData.email,
-        names[0] || '',
-        names.slice(1).join(' ') || '',
-        ''
+    this.errorMessage = '';
+    this.pending = true;
+
+    try {
+      const result = await this.oauthService.initiateOAuthLogin(
+        event.provider,
+        'leads-app'
       );
 
-      if (regResult.success) {
+      if (result.success) {
         await this.authState.restoreSession();
         await this.handleAuthenticatedUser();
+        return;
       }
+
+      if (result.needsRegistration && result.userData) {
+        const names = result.userData.displayName.split(' ');
+        const regResult = await this.oauthService.completeOAuthRegistration(
+          result.userData.provider,
+          result.userData.providerUserId,
+          result.userData.email,
+          names[0] || '',
+          names.slice(1).join(' ') || '',
+          ''
+        );
+
+        if (regResult.success) {
+          await this.authState.restoreSession();
+          await this.handleAuthenticatedUser();
+          return;
+        }
+      }
+
+      this.errorMessage = `Signing up with ${event.provider} did not complete. Try again or register with your email.`;
+    } catch {
+      this.errorMessage = `Signing up with ${event.provider} did not complete. Try again or register with your email.`;
+    } finally {
+      this.pending = false;
     }
   }
 

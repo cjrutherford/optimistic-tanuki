@@ -129,6 +129,7 @@ export {
   LeadFlagCommands,
   LeadOnboardingCommands,
   LeadAnalysisCommands,
+  LeadApplicationCommands,
 } from './lib/libs/leads/lead-commands';
 export {
   AccountCommands,

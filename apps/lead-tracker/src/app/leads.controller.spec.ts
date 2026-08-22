@@ -5,6 +5,10 @@ import { LeadsService } from './leads.service';
 import { GoogleMapsLocationAutocompleteService } from './google-maps-location-autocomplete.service';
 import { OnboardingAnalysisService } from './onboarding-analysis.service';
 import { LeadQualificationService } from './lead-qualification.service';
+import { AtsCompanyLookupService } from './discovery/ats-company-lookup.service';
+import { AtsCompanySuggestionService } from './discovery/ats-company-suggestion.service';
+import { ApplicationService } from './applications/application.service';
+import { DocumentExportService } from './applications/document-export.service';
 import {
   LeadAnalysisCommands,
   LeadOnboardingCommands,
@@ -54,6 +58,14 @@ describe('LeadsController', () => {
       parseResume: jest.fn(),
       advanceDiscInterview: jest.fn(),
     };
+    const mockApplicationService = {
+      generate: jest.fn(),
+      findLatest: jest.fn(),
+      findHistory: jest.fn(),
+    };
+    const mockDocumentExportService = { export: jest.fn() };
+    const mockAtsCompanyLookupService = { lookup: jest.fn() };
+    const mockAtsCompanySuggestionService = { suggest: jest.fn() };
     const mockGoogleMapsLocationAutocompleteService = {
       searchCities: jest.fn(),
     };
@@ -78,6 +90,19 @@ describe('LeadsController', () => {
         {
           provide: LeadQualificationService,
           useValue: mockLeadQualificationService,
+        },
+        {
+          provide: AtsCompanyLookupService,
+          useValue: mockAtsCompanyLookupService,
+        },
+        {
+          provide: AtsCompanySuggestionService,
+          useValue: mockAtsCompanySuggestionService,
+        },
+        { provide: ApplicationService, useValue: mockApplicationService },
+        {
+          provide: DocumentExportService,
+          useValue: mockDocumentExportService,
         },
       ],
     }).compile();
@@ -157,9 +182,12 @@ describe('LeadsController', () => {
       context,
     });
 
+    // The interview transcript is persisted alongside the profile now; this
+    // call carried none, so it saves an empty one.
     expect(service.saveOnboardingProfile).toHaveBeenCalledWith(
       { currentStep: 4 },
-      context
+      context,
+      []
     );
     expect(leadQualificationService.requalifyAllLeads).toHaveBeenCalledWith(
       'profile-1'
@@ -175,9 +203,11 @@ describe('LeadsController', () => {
     await controller.analyzeMadLib({ text: 'hello' });
     await controller.autocompleteLocations({ query: 'sav' });
 
-    expect(onboardingAnalysisService.analyzeMadLib).toHaveBeenCalledWith(
-      'hello'
-    );
+    // The whole request is forwarded now, so composer slot values reach the
+    // service instead of being flattened to a bare string.
+    expect(onboardingAnalysisService.analyzeMadLib).toHaveBeenCalledWith({
+      text: 'hello',
+    });
     expect(
       googleMapsLocationAutocompleteService.searchCities
     ).toHaveBeenCalledWith('sav');

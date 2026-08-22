@@ -22,14 +22,6 @@ export type RssItem = {
   expiresAt?: string;
 };
 
-export type JustRemoteEmbeddedJob = {
-  title: string;
-  companyName: string;
-  link: string;
-  description: string;
-  pubDate?: string;
-};
-
 export const normalizeTopicKeywords = (
   topicName: string,
   keywords: string[]
@@ -112,55 +104,6 @@ export const isRecentPublication = (
 
   const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
   return Date.now() - publishedAt.getTime() <= maxAgeMs;
-};
-
-export const parseJustRemoteEmbeddedJobs = (
-  html: string
-): JustRemoteEmbeddedJob[] => {
-  const stateMatch = html.match(
-    /<script id="__PRELOADED_STATE__"[^>]*>([\s\S]*?)<\/script>/i
-  );
-  if (!stateMatch?.[1]) {
-    return [];
-  }
-
-  try {
-    const state = JSON.parse(stateMatch[1]);
-    const jobs = state?.jobsState?.entity?.jobs;
-    if (!Array.isArray(jobs)) {
-      return [];
-    }
-
-    return jobs
-      .map((job) => {
-        const title = typeof job?.title === 'string' ? job.title.trim() : '';
-        const companyName =
-          typeof job?.company_name === 'string' ? job.company_name.trim() : '';
-        const href = typeof job?.href === 'string' ? job.href.trim() : '';
-        if (!title || !href) {
-          return null;
-        }
-
-        return {
-          title,
-          companyName: companyName || 'JustRemote opportunity',
-          link: toAbsoluteUrl(href, 'https://justremote.co/'),
-          description: [
-            job?.category,
-            job?.remote_type,
-            Array.isArray(job?.location_restrictions)
-              ? job.location_restrictions.join(', ')
-              : job?.job_country,
-          ]
-            .filter(Boolean)
-            .join(' · '),
-          pubDate: typeof job?.raw_date === 'string' ? job.raw_date : undefined,
-        };
-      })
-      .filter(Boolean) as JustRemoteEmbeddedJob[];
-  } catch {
-    return [];
-  }
 };
 
 const readXmlTag = (value: string, tag: string): string => {
