@@ -993,11 +993,44 @@ services:
       - DATABASE_USER=postgres
       - DATABASE_PASSWORD=postgres
       - DATABASE_NAME=ot_learning_service
+      - LEARNING_RUNNER_URL=http://learning-runner:3025
     depends_on:
       postgres:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
+
+  learning-runner:
+    container_name: ot_learning_runner
+    build:
+      context: .
+      dockerfile: ./apps/learning-runner/Dockerfile
+    environment:
+      - PORT=3025
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    mem_limit: 256m
+
+  learning:
+    container_name: ot_learning
+    build:
+      context: .
+      dockerfile: ./apps/learning/Dockerfile
+    image: cjrutherford/optimistic_tanuki_learning:${PRODUCTION_IMAGE_TAG:-latest}
+    ports:
+      - '${LEARNING_PORT:-8096}:4000'
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 4000
+      <<: *gateway_client_env
+    depends_on:
+      - gateway
+      - learning-service
 
 volumes:
   postgres_data:

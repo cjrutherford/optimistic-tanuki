@@ -61,7 +61,7 @@ ESSENTIAL_API_SERVICES=(
 )
 FEATURE_SERVICES=(
     finance payments store assets project-planning chat-collector prompt-proxy
-    telos-docs-service blogging forum wellness classifieds
+    telos-docs-service blogging forum wellness classifieds learning-runner learning-service
 )
 HEAVY_SERVICES=(
     ai-orchestration lead-tracker video-transcoder-worker videos
@@ -71,6 +71,7 @@ CLIENT_SERVICES=(
     hai-client-interface local-hub-client-interface crdn-client-interface leads-app
     store-client configurable-client fin-commander marketing-generator business-site
     owner-console d6 system-configurator video-client
+    learning
 )
 MANAGED_SERVICES=(
     postgres redis "${CORE_SERVICES[@]}" "${ESSENTIAL_API_SERVICES[@]}"
