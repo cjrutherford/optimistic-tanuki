@@ -3,180 +3,218 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawn } from 'node:child_process';
+import {
+  TYPESCRIPT_HARNESS,
+  splitTestResults,
+  allTestsPassed,
+} from './lib/typescript-harness.mjs';
+import { CATCH2_DIR, catch2Available, catch2Results } from './lib/catch2.mjs';
+import { buildSource, prepare, verdict } from './lib/run-plan.mjs';
 
 const port = Number(process.env.PORT || 3025);
+
+/**
+ * Where compiled work goes.
+ *
+ * It has to be a mount that allows exec: C++ and Rust compile a binary and
+ * then run it. The container keeps /tmp noexec, so a separate scratch mount is
+ * pointed here instead.
+ */
+const scratchRoot = process.env.LEARNING_SCRATCH_DIR || tmpdir();
 const limits = { timeoutMs: 10_000, maxOutputBytes: 1_048_576 };
-const commands = {
-  typescript: ['node', ['--experimental-strip-types', 'main.ts']],
-  go: ['go', ['run', 'main.go']],
-  cpp: ['sh', ['-c', 'g++ -std=c++17 main.cpp -o main && ./main']],
-  rust: ['sh', ['-c', 'rustc --edition 2021 main.rs -o main && ./main']],
-};
+
 const sourceNames = {
   typescript: 'main.ts',
   go: 'main.go',
   cpp: 'main.cpp',
   rust: 'main.rs',
 };
-const typescriptHarness = `
-const __learningResults = [];
-function test(name, fn) { try { fn(); __learningResults.push({ name, passed: true }); } catch (error) { __learningResults.push({ name, passed: false, error: String(error) }); throw error; } }
-function expect(actual) { return { toBe(expected) { if (actual !== expected) throw new Error('Expected ' + JSON.stringify(expected) + ', received ' + JSON.stringify(actual)); }, toEqual(expected) { if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error('Values are not equal'); }, toBeTruthy() { if (!actual) throw new Error('Expected a truthy value'); }, toBeFalsy() { if (actual) throw new Error('Expected a falsy value'); } }; }
-`;
 
-function execute(languageId, cwd, testMode = false) {
-  const command = commands[languageId];
-  if (!command)
-    return Promise.resolve({
-      success: false,
-      output: '',
-      errors: ['Unsupported language'],
-      timedOut: false,
-    });
-  const executable =
-    testMode && languageId === 'rust'
-      ? ['rustc', ['--edition', '2021', '--test', 'main.rs', '-o', 'main-test']]
-      : command;
+const NSJAIL = [
+  '--quiet',
+  '--clone_newnet',
+  '--time_limit',
+  '10',
+  '--rlimit_as',
+  '268435456',
+  '--rlimit_nproc',
+  '32',
+];
+
+/** Runs one command under the sandbox and collects what it said. */
+function sandboxed(command, args, cwd) {
   return new Promise((resolve) => {
     const child = spawn(
       'nsjail',
-      [
-        '--quiet',
-        '--clone_newnet',
-        '--time_limit',
-        '10',
-        '--rlimit_as',
-        '268435456',
-        '--rlimit_nproc',
-        '32',
-        '--cwd',
-        cwd,
-        '--',
-        executable[0],
-        ...executable[1],
-      ],
+      [...NSJAIL, '--cwd', cwd, '--', command, ...args],
       { cwd, env: { PATH: process.env.PATH } }
     );
+
     let output = '';
     let errors = '';
     let timedOut = false;
-    const collect = (chunk, target) => {
-      const text = chunk.toString();
-      if (output.length + errors.length < limits.maxOutputBytes) target(text);
+
+    const collect = (chunk, append) => {
+      if (output.length + errors.length < limits.maxOutputBytes) {
+        append(chunk.toString());
+      }
     };
-    child.stdout.on('data', (chunk) =>
-      collect(chunk, (text) => (output += text))
-    );
-    child.stderr.on('data', (chunk) =>
-      collect(chunk, (text) => (errors += text))
-    );
+    child.stdout.on('data', (c) => collect(c, (t) => (output += t)));
+    child.stderr.on('data', (c) => collect(c, (t) => (errors += t)));
+
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill('SIGKILL');
     }, limits.timeoutMs);
+
     child.on('close', (code) => {
       clearTimeout(timer);
       resolve({
+        exitCode: code,
         success: code === 0 && !timedOut,
         output,
         errors: errors ? errors.trim().split('\n') : [],
         timedOut,
       });
     });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      resolve({
+        exitCode: -1,
+        success: false,
+        output: '',
+        errors: [error.message],
+        timedOut: false,
+      });
+    });
   });
+}
+
+/** Compiles when the language needs it, then runs, in the sandbox. */
+async function execute(languageId, cwd, testMode) {
+  const steps = prepare(languageId, testMode, CATCH2_DIR);
+  if (!steps) {
+    return {
+      success: false,
+      output: '',
+      errors: [`Unsupported language: ${languageId}`],
+      timedOut: false,
+      exitCode: -1,
+    };
+  }
+
+  for (const step of steps.compile) {
+    const built = await sandboxed(step[0], step.slice(1), cwd);
+    if (!built.success) {
+      return {
+        ...built,
+        // Compilers write diagnostics to stderr; keep them as the errors.
+        errors: built.errors.length
+          ? built.errors
+          : built.output.trim().split('\n').filter(Boolean),
+        output: '',
+      };
+    }
+  }
+
+  return await sandboxed(steps.run[0], steps.run.slice(1), cwd);
+}
+
+async function handleRun(payload) {
+  const { languageId, code, verifier = {}, expectedOutput } = payload;
+
+  if (typeof code !== 'string' || code.length > 50_000) {
+    throw new Error('Invalid code payload');
+  }
+  if (!sourceNames[languageId]) {
+    throw new Error(`Unsupported language: ${languageId}`);
+  }
+
+  const testCode = verifier.testCode;
+  const wantsCppTests = Boolean(testCode) && languageId === 'cpp';
+
+  // C++ tests need the pre-compiled Catch2 the image builds. Say so plainly
+  // rather than failing with a compiler error about a missing header.
+  if (wantsCppTests && !(await catch2Available())) {
+    return {
+      success: false,
+      output: '',
+      errors: [
+        'C++ tests are unavailable: this runner has no pre-compiled Catch2.',
+      ],
+      timedOut: false,
+      testsPassed: false,
+      testResults: [],
+    };
+  }
+
+  const testMode =
+    Boolean(testCode) &&
+    (languageId === 'typescript' ||
+      languageId === 'rust' ||
+      languageId === 'cpp');
+
+  const directory = await mkdtemp(join(scratchRoot, 'learning-run-'));
+  try {
+    await writeFile(
+      join(directory, sourceNames[languageId]),
+      buildSource(languageId, code, testCode, TYPESCRIPT_HARNESS)
+    );
+
+    const result = await execute(languageId, directory, testMode);
+
+    if (testMode && languageId === 'typescript') {
+      const { output, testResults } = splitTestResults(result.output);
+      return {
+        ...result,
+        output,
+        testResults,
+        testsPassed: result.success && allTestsPassed(testResults),
+      };
+    }
+
+    if (testMode && languageId === 'cpp') {
+      const { testsPassed, testResults } = catch2Results(
+        result.output,
+        result.exitCode
+      );
+      return { ...result, testResults, testsPassed };
+    }
+
+    if (testMode && languageId === 'rust') {
+      return { ...result, testsPassed: result.success, testResults: [] };
+    }
+
+    return {
+      ...result,
+      testResults: [],
+      testsPassed: verdict(result, expectedOutput, verifier.validationPattern),
+    };
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 }
 
 http
   .createServer(async (req, res) => {
     if (req.method === 'GET' && req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
-      return res.end(JSON.stringify({ status: 'ok' }));
+      return res.end(
+        JSON.stringify({ status: 'ok', cpp: await catch2Available() })
+      );
     }
     if (req.method !== 'POST' || req.url !== '/runs') {
       res.writeHead(404);
       return res.end();
     }
+
     let raw = '';
     for await (const chunk of req) raw += chunk;
+
     try {
-      const {
-        languageId,
-        code,
-        verifier = {},
-        expectedOutput,
-      } = JSON.parse(raw);
-      if (typeof code !== 'string' || code.length > 50_000)
-        throw new Error('Invalid code payload');
-      const directory = await mkdtemp(join(tmpdir(), 'learning-run-'));
-      try {
-        const hasNativeTests =
-          Boolean(verifier.testCode) &&
-          (languageId === 'typescript' || languageId === 'rust');
-        const source =
-          languageId === 'typescript' && verifier.testCode
-            ? `${typescriptHarness}\n${code}\n${verifier.testCode}`
-            : languageId === 'rust' && verifier.testCode
-            ? `${code}\n${verifier.testCode}`
-            : code;
-        await writeFile(join(directory, sourceNames[languageId]), source);
-        let result = await execute(
-          languageId,
-          directory,
-          languageId === 'rust' && hasNativeTests
-        );
-        if (languageId === 'rust' && hasNativeTests && result.success) {
-          result = await new Promise((resolve) => {
-            const child = spawn(
-              'nsjail',
-              [
-                '--quiet',
-                '--clone_newnet',
-                '--time_limit',
-                '10',
-                '--rlimit_as',
-                '268435456',
-                '--rlimit_nproc',
-                '32',
-                '--cwd',
-                directory,
-                '--',
-                './main-test',
-              ],
-              { cwd: directory, env: { PATH: process.env.PATH } }
-            );
-            let output = '';
-            let errors = '';
-            child.stdout.on('data', (chunk) => (output += chunk.toString()));
-            child.stderr.on('data', (chunk) => (errors += chunk.toString()));
-            child.on('close', (exitCode) =>
-              resolve({
-                success: exitCode === 0,
-                output,
-                errors: errors ? errors.trim().split('\n') : [],
-                timedOut: false,
-              })
-            );
-          });
-        }
-        const validationPattern = verifier.validationPattern;
-        const outputMatches = expectedOutput
-          ? result.output.trim() === expectedOutput.trim()
-          : true;
-        const patternMatches = validationPattern
-          ? new RegExp(validationPattern).test(result.output)
-          : true;
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            ...result,
-            testsPassed: hasNativeTests
-              ? result.success
-              : result.success && outputMatches && patternMatches,
-          })
-        );
-      } finally {
-        await rm(directory, { recursive: true, force: true });
-      }
+      const result = await handleRun(JSON.parse(raw));
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify(result));
     } catch (error) {
       res.writeHead(400, { 'content-type': 'application/json' });
       res.end(

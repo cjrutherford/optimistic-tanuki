@@ -13,13 +13,22 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "node --check server.mjs",
-        "cwd": "apps/learning-runner"
+        "commands": [
+          "node --check server.mjs",
+          "node --check lib/typescript-harness.mjs",
+          "node --check lib/catch2.mjs",
+          "node --check lib/run-plan.mjs"
+        ],
+        "cwd": "apps/learning-runner",
+        "parallel": false
       }
     },
     "test": {
       "executor": "nx:run-commands",
-      "options": { "command": "node --test", "cwd": "apps/learning-runner" }
+      "options": {
+        "command": "node --test 'test/**/*.test.mjs'",
+        "cwd": "apps/learning-runner"
+      }
     }
   }
 }

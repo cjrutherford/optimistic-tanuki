@@ -1006,10 +1006,17 @@ services:
       context: .
       dockerfile: ./apps/learning-runner/Dockerfile
     environment:
+      - LEARNING_SCRATCH_DIR=/scratch
       - PORT=3025
     read_only: true
     tmpfs:
       - /tmp:size=16m,noexec,nosuid
+      # C++ and Rust compile a binary and then run it, so the working
+      # directory has to allow exec. /tmp stays noexec; this is the only
+      # place execution is possible, and it is wiped between runs.
+      # tmpfs counts against mem_limit, so it is kept small: a Catch2-linked
+      # test binary is about 1 MB.
+      - /scratch:size=64m,exec,nosuid,nodev,mode=1777
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
