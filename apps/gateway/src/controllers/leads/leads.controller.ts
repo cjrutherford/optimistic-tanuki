@@ -54,6 +54,10 @@ import { User } from '../../decorators/user.decorator';
 import { ModelBound } from '../../decorators/request-timeout.decorator';
 import { PermissionsGuard } from '../../guards/permissions.guard';
 
+// Resume parsing is text extraction, not an image-upload path. Keep oversized
+// scans out of the gateway's memory and out of the TCP JSON envelope.
+export const MAX_RESUME_UPLOAD_BYTES = 25 * 1024 * 1024;
+
 @ApiTags('leads')
 @Controller('leads')
 @UseGuards(AuthGuard, PermissionsGuard)
@@ -420,7 +424,9 @@ export class LeadsController {
 
   @Post('onboarding/resume/parse')
   @ModelBound()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_RESUME_UPLOAD_BYTES } })
+  )
   @RequirePermissions('lead.onboarding.update')
   @ApiOperation({ summary: 'Parse a resume upload for onboarding prefill' })
   async parseResume(
@@ -433,6 +439,13 @@ export class LeadsController {
   ): Promise<ResumeParseResult> {
     if (!file) {
       throw new BadRequestException('Resume file is required.');
+    }
+    if (file.buffer.length > MAX_RESUME_UPLOAD_BYTES) {
+      throw new BadRequestException(
+        `Resume files must be ${
+          MAX_RESUME_UPLOAD_BYTES / (1024 * 1024)
+        } MB or smaller.`
+      );
     }
 
     try {

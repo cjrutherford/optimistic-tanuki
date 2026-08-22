@@ -240,7 +240,8 @@ export class LlmOnboardingAnalysisService {
   async analyzeProfile(
     profile: UserOnboardingProfile
   ): Promise<{ archetype: string; topics: GeneratedTopicSuggestion[] }> {
-    if (!this.llm) {
+    const chosen = this.clientForTask('topic-analysis');
+    if (!chosen.llm) {
       throw new Error('LLM model not available');
     }
 
@@ -249,12 +250,29 @@ export class LlmOnboardingAnalysisService {
 
     this.logger.log('Sending onboarding profile to LLM for analysis');
 
-    const response = await this.raceWithTimeout(
-      this.llm.invoke([
-        new SystemMessage(systemPrompt),
-        new HumanMessage(userPrompt),
-      ])
-    );
+    const ask = (llm: ChatOllama) =>
+      this.raceWithTimeout(
+        llm.invoke([
+          new SystemMessage(systemPrompt),
+          new HumanMessage(userPrompt),
+        ])
+      );
+
+    let response;
+    try {
+      response = await ask(chosen.llm);
+    } catch (error) {
+      if (!this.fallbackLlm || this.fallbackModelName === chosen.model) {
+        throw error;
+      }
+
+      this.logger.warn(
+        `${chosen.model} topic analysis failed (${
+          (error as Error).message
+        }); ` + `retrying on ${this.fallbackModelName}`
+      );
+      response = await ask(this.fallbackLlm);
+    }
 
     const responseText =
       typeof response.content === 'string'
