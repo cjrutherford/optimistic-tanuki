@@ -1,0 +1,25 @@
+{
+  "name": "learning-runner",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/learning-runner",
+  "projectType": "application",
+  "tags": [
+    "type:app",
+    "scope:learning",
+    "platform:server",
+    "visibility:internal"
+  ],
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --check server.mjs",
+        "cwd": "apps/learning-runner"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "node --test", "cwd": "apps/learning-runner" }
+    }
+  }
+}
