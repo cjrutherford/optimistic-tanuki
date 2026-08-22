@@ -166,6 +166,7 @@
     "langchain": "^1.2.3",
     "leaflet": "^1.9.4",
     "marked": "^16.1.2",
+    "monaco-editor": "^0.54.0",
     "ng2-charts": "^10.0.0",
     "ngx-quill": "^28.0.1",
     "ngx-tiptap": "^14.0.1",

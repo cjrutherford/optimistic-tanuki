@@ -32,6 +32,8 @@ export interface DashboardEntry {
 }
 export interface Exercise {
   id: string;
+  /** Which track's runtime this exercise belongs to: go, rust, cpp, typescript. */
+  languageId: string;
   title: string;
   description: string;
   starterCode: string;

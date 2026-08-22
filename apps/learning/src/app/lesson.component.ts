@@ -6,6 +6,9 @@ import { BehaviorSubject, combineLatest, map, switchMap, tap } from 'rxjs';
 import { ButtonComponent, BadgeComponent } from '@optimistic-tanuki/common-ui';
 import { LearningLayoutComponent } from './learning-layout.component';
 import { LessonMarkdownService } from './lesson-markdown.service';
+import { CodeEditorComponent } from './code-editor.component';
+import { CodeDraftStore } from './code-draft.store';
+import { Diagnostic, parseCompilerErrors } from './code-diagnostics';
 import {
   Exercise,
   LearningDataService,
@@ -31,6 +34,7 @@ interface ExerciseOutcome {
     FormsModule,
     ButtonComponent,
     BadgeComponent,
+    CodeEditorComponent,
   ],
   template: `<learning-layout
     ><ng-container *ngIf="vm$ | async as vm"
@@ -66,11 +70,13 @@ interface ExerciseOutcome {
             </div>
             <h2>{{ exercise.title }}</h2>
             <p>{{ exercise.description }}</p>
-            <textarea
-              [(ngModel)]="code[exercise.id]"
-              [attr.aria-label]="exercise.title + ' code'"
-              spellcheck="false"
-            ></textarea>
+            <learning-code-editor
+              [code]="code[exercise.id] ?? exercise.starterCode"
+              (codeChange)="onCodeChange(exercise, $event)"
+              [language]="exercise.languageId"
+              [diagnostics]="diagnostics[exercise.id] ?? []"
+              [label]="exercise.title + ' code'"
+            ></learning-code-editor>
             @if (exercise.hints.length) {
             <div class="hints">
               @for (hint of revealedHints(exercise); track hint; let i = $index)
@@ -108,7 +114,11 @@ interface ExerciseOutcome {
                 (action)="submit(exercise)"
                 >Submit</otui-button
               >
-              @if (busy[exercise.id]) {
+              @if (isEdited(exercise)) {
+              <button type="button" class="reset" (click)="resetCode(exercise)">
+                Reset to starter
+              </button>
+              } @if (busy[exercise.id]) {
               <span class="working">Running…</span>
               }
             </div>
@@ -430,6 +440,23 @@ interface ExerciseOutcome {
         color: #7894ab;
         font-size: 0.8rem;
       }
+      .reset {
+        padding: 0.4rem 0.7rem;
+        border: 1px solid transparent;
+        border-radius: 2px;
+        background: none;
+        color: #8fa7bf;
+        font: 400 0.78rem inherit;
+        cursor: pointer;
+      }
+      .reset:hover {
+        border-color: #3d6a86;
+        color: #dce8f4;
+      }
+      .reset:focus-visible {
+        outline: 2px solid #76e3d0;
+        outline-offset: 2px;
+      }
       .result {
         margin: 1rem 0 0;
         padding: 0.8rem;
@@ -478,9 +505,11 @@ export class LessonComponent {
   private readonly data = inject(LearningDataService);
   private readonly route = inject(ActivatedRoute);
   private readonly markdown = inject(LessonMarkdownService);
+  private readonly drafts = inject(CodeDraftStore);
 
   protected code: Record<string, string> = {};
   protected results: Record<string, ExerciseOutcome> = {};
+  protected diagnostics: Record<string, Diagnostic[]> = {};
   protected busy: Record<string, boolean> = {};
 
   readonly trackId = this.route.snapshot.paramMap.get('trackId')!;
@@ -491,9 +520,12 @@ export class LessonComponent {
       this.data.lesson(params.get('trackId')!, params.get('lessonId')!)
     ),
     tap((lesson) =>
-      lesson.exercises.forEach(
-        (exercise) => (this.code[exercise.id] ??= exercise.starterCode)
-      )
+      lesson.exercises.forEach((exercise) => {
+        // A saved draft wins over the starter, so navigating away and back
+        // does not throw away what the learner was in the middle of writing.
+        this.code[exercise.id] ??=
+          this.drafts.read(exercise.id) ?? exercise.starterCode;
+      })
     )
   );
 
@@ -551,6 +583,7 @@ export class LessonComponent {
           output: result.output,
           errors: result.errors,
         };
+        this.diagnostics[exercise.id] = parseCompilerErrors(result.errors);
         this.busy[exercise.id] = false;
       },
       error: (error) => this.fail(exercise, error),
@@ -567,6 +600,7 @@ export class LessonComponent {
           passed: result.passed,
           awardedPoints: result.awardedPoints,
         };
+        this.diagnostics[exercise.id] = parseCompilerErrors(result.errors);
         this.busy[exercise.id] = false;
         if (result.passed) this.progressReload$.next();
       },
@@ -583,12 +617,33 @@ export class LessonComponent {
     return result.output || result.errors.join('\n') || 'No output';
   }
 
+  /** Records an edit and keeps a draft of it for next time. */
+  protected onCodeChange(exercise: Exercise, next: string): void {
+    this.code[exercise.id] = next;
+    if (next === exercise.starterCode) {
+      this.drafts.clear(exercise.id);
+      return;
+    }
+    this.drafts.write(exercise.id, next);
+  }
+
+  protected isEdited(exercise: Exercise): boolean {
+    return this.codeFor(exercise) !== exercise.starterCode;
+  }
+
+  protected resetCode(exercise: Exercise): void {
+    this.code[exercise.id] = exercise.starterCode;
+    this.drafts.clear(exercise.id);
+    this.diagnostics[exercise.id] = [];
+  }
+
   private codeFor(exercise: Exercise): string {
     return this.code[exercise.id] ?? exercise.starterCode;
   }
 
   private fail(exercise: Exercise, error: unknown): void {
     this.busy[exercise.id] = false;
+    this.diagnostics[exercise.id] = [];
     if (error instanceof NotSignedInError) {
       this.results[exercise.id] = {
         output: '',

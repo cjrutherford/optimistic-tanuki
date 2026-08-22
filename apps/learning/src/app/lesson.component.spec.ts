@@ -12,6 +12,7 @@ import {
 
 const exercise: Exercise = {
   id: 'go-b-01',
+  languageId: 'go',
   title: 'Hello, Go',
   description: 'Print a greeting.',
   starterCode: 'package main',
@@ -89,6 +90,14 @@ type Handlers = {
   run(exercise: Exercise): void;
   submit(exercise: Exercise): void;
   revealHint(exercise: Exercise): void;
+  onCodeChange(exercise: Exercise, next: string): void;
+  resetCode(exercise: Exercise): void;
+  isEdited(exercise: Exercise): boolean;
+  code: Record<string, string>;
+  diagnostics: Record<
+    string,
+    { line: number; column: number; message: string }[]
+  >;
   revealedHints(exercise: Exercise): string[];
   hasMoreHints(exercise: Exercise): boolean;
   remainingHints(exercise: Exercise): number;
@@ -220,6 +229,93 @@ describe('LessonComponent', () => {
 
       expect(page.revealedHints(threeHints)).toHaveLength(1);
       expect(page.revealedHints(other)).toHaveLength(0);
+    });
+  });
+
+  describe('drafts', () => {
+    beforeEach(() => localStorage.clear());
+
+    it('starts an untouched exercise from the starter code', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      expect(page.code['go-b-01']).toBe('package main');
+      expect(page.isEdited(exercise)).toBe(false);
+    });
+
+    it('keeps an edit so it survives leaving the page', () => {
+      const first = setup();
+      (first.component as Handlers).onCodeChange(exercise, 'edited code');
+
+      // A fresh mount, as if the learner navigated away and came back.
+      TestBed.resetTestingModule();
+      const second = setup();
+
+      expect((second.component as Handlers).code['go-b-01']).toBe(
+        'edited code'
+      );
+    });
+
+    it('treats code back at the starter as no draft at all', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      page.onCodeChange(exercise, 'edited code');
+      page.onCodeChange(exercise, exercise.starterCode);
+
+      expect(page.isEdited(exercise)).toBe(false);
+      expect(localStorage.length).toBe(0);
+    });
+
+    it('puts the starter back on reset and forgets the draft', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      page.onCodeChange(exercise, 'edited code');
+      page.resetCode(exercise);
+
+      expect(page.code['go-b-01']).toBe('package main');
+      expect(localStorage.length).toBe(0);
+    });
+  });
+
+  describe('compiler markers', () => {
+    it('positions the errors a run reported', () => {
+      const { component } = setup({
+        run: jest.fn(() =>
+          of({ output: '', errors: ['./main.go:6:2: undefined: foo'] })
+        ),
+      });
+      const page = component as Handlers;
+
+      page.run(exercise);
+
+      expect(page.diagnostics['go-b-01']).toEqual([
+        { line: 6, column: 2, message: 'undefined: foo', severity: 'error' },
+      ]);
+    });
+
+    it('clears markers once the code compiles', () => {
+      const { component } = setup();
+      const page = component as Handlers;
+
+      page.run(exercise);
+
+      expect(page.diagnostics['go-b-01']).toEqual([]);
+    });
+
+    it('clears markers on reset', () => {
+      const { component } = setup({
+        run: jest.fn(() =>
+          of({ output: '', errors: ['./main.go:6:2: undefined: foo'] })
+        ),
+      });
+      const page = component as Handlers;
+
+      page.run(exercise);
+      page.resetCode(exercise);
+
+      expect(page.diagnostics['go-b-01']).toEqual([]);
     });
   });
 
