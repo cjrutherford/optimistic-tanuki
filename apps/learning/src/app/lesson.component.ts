@@ -115,14 +115,7 @@ interface ExerciseOutcome {
               } @else if (result.passed === false) {
               <p class="verdict">Not passed yet</p>
               }
-              <pre>{{
-                result.output ||
-                  result.errors.join(
-                    '
-'
-                  ) ||
-                  'No output'
-              }}</pre>
+              <pre>{{ transcript(result) }}</pre>
               }
             </div>
             }
@@ -356,6 +349,15 @@ export class LessonComponent {
       },
       error: (error) => this.fail(exercise, error),
     });
+  }
+
+  /**
+   * Output to show under a result. Joining lives here rather than in the
+   * template because the template is a tagged string, so an escape like \n
+   * would already be a real newline by the time Angular parsed it.
+   */
+  protected transcript(result: ExerciseOutcome): string {
+    return result.output || result.errors.join('\n') || 'No output';
   }
 
   private codeFor(exercise: Exercise): string {
