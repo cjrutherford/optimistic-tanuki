@@ -10,7 +10,11 @@ import { AttemptEntity } from '../entities/attempt.entity';
 import { EvaluationEntity } from '../entities/evaluation.entity';
 import { ProgramTrackEntity } from '../entities/program-track.entity';
 import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
-import { sampleProgramTracks } from '@optimistic-tanuki/learning-domain';
+import {
+  tutorialProgramTracks,
+  LessonProgress,
+} from '@optimistic-tanuki/learning-domain';
+import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 
 export { LEARNING_REPOSITORY };
 
@@ -22,15 +26,19 @@ export class TypeOrmLearningRepository implements LearningRepository {
     @InjectRepository(AttemptEntity)
     private readonly attemptRepo: Repository<AttemptEntity>,
     @InjectRepository(EvaluationEntity)
-    private readonly evaluationRepo: Repository<EvaluationEntity>
+    private readonly evaluationRepo: Repository<EvaluationEntity>,
+    @InjectRepository(LessonProgressEntity)
+    private readonly lessonProgressRepo: Repository<LessonProgressEntity>
   ) {}
 
   async listPrograms(): Promise<ProgramTrack[]> {
     const rows = await this.programTrackRepo.find();
     if (rows.length === 0) {
-      return sampleProgramTracks;
+      return tutorialProgramTracks;
     }
-    return rows.map((row) => row.data as unknown as ProgramTrack);
+    return rows
+      .map((row) => row.data as unknown as ProgramTrack)
+      .filter((track) => track.source?.repositoryUrl);
   }
 
   async createAttempt(input: Attempt): Promise<Attempt> {
@@ -75,6 +83,30 @@ export class TypeOrmLearningRepository implements LearningRepository {
     return this.toEvaluationDomain(saved);
   }
 
+  async getProgress(userId: string): Promise<LessonProgress[]> {
+    return (await this.lessonProgressRepo.find({ where: { userId } })).map(
+      (row) => this.toProgressDomain(row)
+    );
+  }
+
+  async saveProgress(
+    userId: string,
+    progress: Omit<LessonProgress, 'updatedAt'>
+  ): Promise<LessonProgress> {
+    const existing = await this.lessonProgressRepo.findOne({
+      where: { userId, lessonId: progress.lessonId },
+    });
+    const entity = this.lessonProgressRepo.create({
+      ...(existing ?? {}),
+      userId,
+      lessonId: progress.lessonId,
+      completed: progress.completed,
+      completedExerciseIds: progress.completedExerciseIds,
+      points: progress.points,
+    });
+    return this.toProgressDomain(await this.lessonProgressRepo.save(entity));
+  }
+
   private toAttemptDomain(entity: AttemptEntity): Attempt {
     return {
       id: entity.id,
@@ -101,6 +133,16 @@ export class TypeOrmLearningRepository implements LearningRepository {
       rubric: entity.rubric as unknown as Evaluation['rubric'],
       humanOverride: entity.humanOverride,
       evaluatedAt: entity.evaluatedAt.toISOString(),
+    };
+  }
+
+  private toProgressDomain(entity: LessonProgressEntity): LessonProgress {
+    return {
+      lessonId: entity.lessonId,
+      completed: entity.completed,
+      completedExerciseIds: entity.completedExerciseIds,
+      points: entity.points,
+      updatedAt: entity.updatedAt.toISOString(),
     };
   }
 }

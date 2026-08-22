@@ -11,6 +11,7 @@ import { AttemptEntity } from '../entities/attempt.entity';
 import { EvaluationEntity } from '../entities/evaluation.entity';
 import { CreditLedgerEntryEntity } from '../entities/credit-ledger-entry.entity';
 import { ProgramTrackEntity } from '../entities/program-track.entity';
+import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 
@@ -53,7 +54,11 @@ import loadDatabase from './loadDatabase';
       useFactory: (ds: DataSource) => ds.getRepository(CreditLedgerEntryEntity),
       inject: ['LEARNING_CONNECTION'],
     },
+    {
+      provide: getRepositoryToken(LessonProgressEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(LessonProgressEntity),
+      inject: ['LEARNING_CONNECTION'],
+    },
   ],
 })
 export class AppModule {}
-

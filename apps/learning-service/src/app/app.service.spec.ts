@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import {
   Attempt,
   Evaluation,
+  LessonProgress,
   ProgramTrack,
   sampleProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
@@ -14,6 +15,10 @@ class InMemoryLearningRepository implements LearningRepository {
   private readonly programs: ProgramTrack[] = sampleProgramTracks;
   private readonly attempts = new Map<string, Attempt>();
   private readonly evaluations = new Map<string, Evaluation>();
+  private readonly progress = new Map<
+    string,
+    LessonProgress & { userId: string }
+  >();
 
   listPrograms() {
     return this.programs;
@@ -32,6 +37,18 @@ class InMemoryLearningRepository implements LearningRepository {
   recordEvaluation(input: Evaluation) {
     this.evaluations.set(input.id, input);
     return input;
+  }
+  getProgress(userId: string) {
+    return [...this.progress.values()].filter((item) => item.userId === userId);
+  }
+  saveProgress(userId: string, input: Omit<LessonProgress, 'updatedAt'>) {
+    const value = {
+      ...input,
+      userId,
+      updatedAt: new Date().toISOString(),
+    } as LessonProgress & { userId: string };
+    this.progress.set(`${userId}:${input.lessonId}`, value);
+    return value;
   }
 }
 
