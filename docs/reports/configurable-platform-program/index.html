@@ -347,10 +347,10 @@
           moderation, and honest marketing.
         </p>
         <div class="meta">
-          <span>2026-08-18</span><span>Slice 16 complete</span
+          <span>2026-08-22</span><span>Slice 16 complete</span
           ><span
-            >24 slices · 9 complete · business-site child-scope isolation
-            verified</span
+            >24 slices · 10 complete · business-site and community child-scope
+            isolation verified</span
           ><span>Scores: impact 40 · reuse 25 · risk 20 · readiness 15</span>
         </div>
       </div>
@@ -729,12 +729,12 @@
         [
           16,
           'Authorization and isolation enforcement',
-          95,
+          97,
           'Security',
           'Gateway and service context require app scope + workspace target + capability permission + record ownership; cache keys include workspace.',
           'Claims create/reuse UUID child AppScopes, both community creation surfaces auto-provision the workspace/owner role, and all community owner, moderation, election, and manager mutations resolve strict canonical context; member/invite actions first perform authoritative Social lookups.',
-          'The composed Gateway stack is not running locally, so runtime community E2E has not yet exercised the new path.',
-          'Start the focused Gateway/Social/Workspace composition and run the checked-in community E2E.',
+          'Focused Gateway/Social/Workspace Docker composition verified on 2026-08-18: community E2E passed 17/17. The flow covers registration, authenticated scope selection, community workspace provisioning, owner assignment, scoped update, member protection, invite, and delete.',
+          'Complete: static role-init and policy tests pass, Gateway Compose configuration regression tests pass, and the focused community E2E is green. Broader product E2E coverage is tracked by later capability slices.',
           [
             'Cross-workspace read/write/preview/publish denied.',
             'No forbidden ID leaks.',
@@ -851,9 +851,9 @@
         panels = document.querySelector('#panels'),
         rows = document.querySelector('#indexRows');
       document.querySelector('.scorekey').textContent =
-        '9 complete · 15 proposed';
+        '10 complete · 14 proposed';
       function isComplete(n) {
-        return n <= 5 || n === 14 || n === 15;
+        return n <= 5 || n === 14 || n === 15 || n === 16;
       }
       function statusFor(n) {
         return n === 0
@@ -873,7 +873,7 @@
           : n === 15
           ? 'Complete · verified identity, safe intent, idempotent activation repair'
           : n === 16
-          ? 'Complete · strict business-site child scope verified'
+          ? 'Complete · business-site and community child scopes verified'
           : 'Proposed';
       }
       function panel(s) {
