@@ -31,6 +31,11 @@ import { MadLibComposerComponent } from './mad-lib-composer.component';
 type WizardStage = 'mad-lib' | 'resume' | 'profile' | 'disc';
 
 /**
+ * Profile fields stored as lists, even where a question collects one value.
+ */
+const LIST_VALUED_FIELDS = new Set<string>(['budgetRange']);
+
+/**
  * Suggestion fields the profile stores as a single sentence, even though the
  * intro composer collects several values for them.
  */
@@ -103,7 +108,11 @@ export class InterviewWizardComponent implements OnDestroy {
       id: 'yearsExperience',
       section: 'professional',
       question: 'How many years of experience do you have?',
-      type: 'multiselect',
+      // Single-select, not multiselect: you have one answer, and the profile
+      // stores it as a string. Asked as a multiselect it wrote an array into a
+      // string field, and because the resume prefills it ("10+"), toggling an
+      // option spread that string into its characters.
+      type: 'single-select',
       options: ['0-1 years', '2-5 years', '6-10 years', '10+ years'],
       required: true,
     },
@@ -376,7 +385,16 @@ export class InterviewWizardComponent implements OnDestroy {
 
   setProfileValue(key: string, value: unknown): void {
     (this.profile as unknown as Record<string, unknown>)[key] =
-      key === 'localSearchRadiusMiles' ? Number(value) : value;
+      key === 'localSearchRadiusMiles'
+        ? Number(value)
+        : // Some single-select questions answer fields the profile stores as
+        // lists. Writing the bare string left `budgetRange` as a string in a
+        // `string[]` field, and the backend then called .join and .some on it
+        // and failed the whole analysis. mergeSuggestedProfile already
+        // normalised this on the prefill path; the direct answer path did not.
+        LIST_VALUED_FIELDS.has(key) && typeof value === 'string'
+        ? [value]
+        : value;
     if (key === 'localSearchLocation') {
       this.locationInputValue = '';
     }
@@ -645,10 +663,15 @@ export class InterviewWizardComponent implements OnDestroy {
   }
 
   toggleMultiSelect(field: string, value: string): void {
-    const current =
-      ((this.profile as unknown as Record<string, unknown>)[
-        field
-      ] as string[]) || [];
+    const stored = (this.profile as unknown as Record<string, unknown>)[field];
+    // A scalar here is a bug elsewhere, but spreading it would turn "10+" into
+    // ['1','0','+'] and corrupt the profile silently rather than failing, so it
+    // is treated as the single existing selection.
+    const current: string[] = Array.isArray(stored)
+      ? (stored as string[])
+      : typeof stored === 'string' && stored
+      ? [stored]
+      : [];
     if (current.includes(value)) {
       (this.profile as unknown as Record<string, unknown>)[field] =
         current.filter((item: string) => item !== value);

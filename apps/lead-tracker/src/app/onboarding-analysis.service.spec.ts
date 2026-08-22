@@ -228,6 +228,69 @@ describe('OnboardingAnalysisService', () => {
     expect(result.certifications).toEqual([]);
   });
 
+  it('survives a model returning evidence as a string instead of a list', async () => {
+    // Observed in production against granite: the same prompt returns
+    // {"idealCustomer": ["..."]} on most runs and {"idealCustomer": "..."} on
+    // others, and the string form threw `values.map is not a function` out of
+    // sanitizeStringArray, taking down the whole mad-lib step. Model output is
+    // an expectation, not a guarantee, so a wrong shape is coerced.
+    Object.defineProperty(llmAnalysisService, 'isAvailable', {
+      configurable: true,
+      value: true,
+    });
+    llmAnalysisService.analyzeMadLib.mockResolvedValue({
+      summary: 'I help SaaS teams modernize React frontends.',
+      suggestedServiceOffer: 'React modernization',
+      suggestedSkills: 'React, TypeScript',
+      suggestedProfile: { idealCustomer: 'VP Engineering' },
+      evidenceByField: {
+        idealCustomer: 'VP Engineering at mid-size SaaS',
+        skills: ['React'],
+      },
+    } as never);
+
+    const result = await service.analyzeMadLib({
+      text: 'I help SaaS teams modernize React frontends.',
+    });
+
+    // The stray string becomes a single-entry list rather than an exception.
+    expect(result.evidenceByField?.idealCustomer).toEqual([
+      'VP Engineering at mid-size SaaS',
+    ]);
+    expect(result.evidenceByField?.skills).toEqual(['React']);
+    expect(result.suggestedSkills).toEqual(['React, TypeScript']);
+  });
+
+  it('analyzes a profile whose budgetRange is a bare string', async () => {
+    // The wizard's single-select wrote a string into a string[] field, and both
+    // the LLM path and the deterministic fallback called array methods on it,
+    // so the whole final step 500'd with "unable to analyze your profile".
+    const profile = {
+      serviceOffer: 'React modernization',
+      yearsExperience: '10+ years',
+      skills: ['React'],
+      certifications: [],
+      idealCustomer: 'VP Engineering',
+      companySizeTarget: ['51-200'],
+      industries: ['SaaS'],
+      problemsSolved: ['slow releases'],
+      outcomes: ['faster releases'],
+      budgetRange: '$25k-$100k',
+      geographicFocus: 'North America',
+      salesApproach: 'Consultative',
+      outreachMethod: ['Email'],
+      communicationStyle: 'Direct',
+      leadSignalTypes: ['Company growth'],
+      excludedCompanies: [],
+      excludedIndustries: [],
+      currentStep: 0,
+    } as never;
+
+    const topics = await service.analyzeProfile(profile);
+
+    expect(topics.length).toBeGreaterThan(0);
+  });
+
   it('refuses an upload whose bytes are not a document it can read', async () => {
     // This used to be accepted: the old extractor scraped printable runs out of
     // arbitrary bytes, which is exactly how PDF scaffolding ended up being

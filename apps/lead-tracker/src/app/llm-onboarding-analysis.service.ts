@@ -7,6 +7,7 @@ import {
   PrimingStrategy,
   resolvePrimingStrategy,
 } from './llm/model-priming';
+import { toStringList } from './llm/to-string-list';
 import {
   ALL_LLM_TASKS,
   describeTaskModel,
@@ -577,7 +578,7 @@ Target Company Sizes: ${(profile.companySizeTarget || []).join(', ') || 'Any'}
 Industries: ${(profile.industries || []).join(', ') || 'Any'}
 Problems Solved: ${(profile.problemsSolved || []).join(', ') || 'Not specified'}
 Desired Outcomes: ${(profile.outcomes || []).join(', ') || 'Not specified'}
-Budget Range: ${(profile.budgetRange || []).join(', ') || 'Not specified'}
+Budget Range: ${toStringList(profile.budgetRange).join(', ') || 'Not specified'}
 Geographic Focus: ${profile.geographicFocus || 'Global'}
 
 Sales Approach: ${profile.salesApproach || 'Not specified'}

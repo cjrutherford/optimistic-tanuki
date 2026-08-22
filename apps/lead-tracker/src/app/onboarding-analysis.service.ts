@@ -23,6 +23,7 @@ import {
   extractResumeText,
   ResumeExtractionError,
 } from './documents/resume-text.extractor';
+import { toStringList } from './llm/to-string-list';
 import { LlmOnboardingAnalysisService } from './llm-onboarding-analysis.service';
 
 /**
@@ -721,7 +722,9 @@ export class OnboardingAnalysisService {
     // Larger budgets historically also fanned out to Indeed; that source is
     // retired (HTTP 403 to any server request), and Jobicy covers the same
     // ground from a documented public API.
-    if ((profile.budgetRange || []).some((range) => range.includes('25k'))) {
+    if (
+      toStringList(profile.budgetRange).some((range) => range.includes('25k'))
+    ) {
       sources.push(LeadDiscoverySource.JOBICY);
     }
     return sources;
@@ -1103,7 +1106,10 @@ export class OnboardingAnalysisService {
       skills: this.sanitizeStringArray(result.skills || []),
       experience: this.sanitizeStringArray(result.experience || []),
       certifications: this.sanitizeStringArray(result.certifications || []),
-      roleSummaries: (result.roleSummaries || []).map((role) => ({
+      roleSummaries: (Array.isArray(result.roleSummaries)
+        ? result.roleSummaries
+        : []
+      ).map((role) => ({
         ...role,
         title: this.sanitizeExtractedText(role.title || ''),
         company: this.sanitizeOptionalString(role.company),
@@ -1150,9 +1156,27 @@ export class OnboardingAnalysisService {
     ) as OnboardingSuggestionEvidence;
   }
 
-  private sanitizeStringArray(values: string[]): string[] {
-    return values
-      .map((value) => this.sanitizeExtractedText(value))
+  /**
+   * Normalises a list of strings coming back from a model.
+   *
+   * The parameter is typed `string[]`, but this sits on the boundary where the
+   * type is an expectation rather than a guarantee: a model that has been told
+   * to return `{"skills": ["a","b"]}` will sometimes return `"a, b"` instead.
+   * That produced `values.map is not a function` from evidence fields and took
+   * out the whole mad-lib step, so a wrong shape is coerced rather than thrown.
+   */
+  private sanitizeStringArray(values: unknown): string[] {
+    const list = Array.isArray(values)
+      ? values
+      : // A single string is the common miss, and it is still an answer.
+      typeof values === 'string' && values.trim()
+      ? [values]
+      : [];
+
+    return list
+      .map((value) =>
+        this.sanitizeExtractedText(typeof value === 'string' ? value : '')
+      )
       .filter((value) => value.length > 0);
   }
 

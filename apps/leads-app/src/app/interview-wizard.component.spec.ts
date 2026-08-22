@@ -72,6 +72,54 @@ describe('InterviewWizardComponent', () => {
     expect(component.newChipValue).toBe('');
   });
 
+  it('never spreads a scalar answer into characters', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    // The resume prefills yearsExperience as "10+". Toggling used to spread it,
+    // giving ['1','0','+', ...] — no crash, just silent corruption that reached
+    // the analysis prompt and the generated application.
+    (component.profile as unknown as Record<string, unknown>)[
+      'yearsExperience'
+    ] = '10+';
+
+    component.toggleMultiSelect('yearsExperience', '2-5 years');
+
+    expect(component.profile.yearsExperience).toEqual(['10+', '2-5 years']);
+  });
+
+  it('asks single-valued questions with a single-select', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const question = fixture.componentInstance.questions.find(
+      (q) => q.id === 'yearsExperience'
+    );
+
+    expect(question?.type).toBe('single-select');
+  });
+
+  it('stores a single-select answer for a list field as a list', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    // budgetRange is asked with a single-select but stored as string[]. Writing
+    // the bare string left the backend calling .join and .some on a string,
+    // which failed the whole analysis with no fallback.
+    component.setProfileValue('budgetRange', '$25k-$100k');
+
+    expect(component.profile.budgetRange).toEqual(['$25k-$100k']);
+  });
+
+  it('leaves ordinary single-select answers as scalars', () => {
+    const fixture = TestBed.createComponent(InterviewWizardComponent);
+    const component = fixture.componentInstance;
+
+    component.setProfileValue('geographicFocus', 'North America');
+    component.setProfileValue('localSearchRadiusMiles', '25');
+
+    expect(component.profile.geographicFocus).toBe('North America');
+    expect(component.profile.localSearchRadiusMiles).toBe(25);
+  });
+
   it('opens on the resume step so the intro can be prefilled from it', () => {
     const fixture = TestBed.createComponent(InterviewWizardComponent);
 
