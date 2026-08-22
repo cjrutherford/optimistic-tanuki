@@ -4,4 +4,10 @@ export const LearningCommands = {
   RecordEvaluation: 'learning.evaluations.record',
   GetAttempt: 'learning.attempts.get',
   GetCreditLedger: 'learning.credits.list',
+  GetLesson: 'learning.lessons.get',
+  GetProgress: 'learning.progress.get',
+  SaveLessonProgress: 'learning.progress.save',
+  RunCode: 'learning.code.run',
+  GetDashboard: 'learning.dashboard.get',
+  SubmitExercise: 'learning.exercises.submit',
 };

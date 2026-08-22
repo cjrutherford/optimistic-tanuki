@@ -30,7 +30,10 @@ export const RunnerProfileSchema = z.object({
 export type RunnerProfile = z.infer<typeof RunnerProfileSchema>;
 
 export const TutorialSourceSchema = z.object({
-  repositoryUrl: z.url().startsWith('https://github.com/cjrutherford/'),
+  repositoryUrl: z
+    .string()
+    .url()
+    .startsWith('https://github.com/cjrutherford/'),
   revision: z.string().regex(/^[a-f0-9]{40}$/),
   runner: RunnerProfileSchema,
 });
@@ -108,6 +111,44 @@ export const ActivitySchema = z.discriminatedUnion('type', [
   ProjectSubmissionActivitySchema,
 ]);
 export type Activity = z.infer<typeof ActivitySchema>;
+
+/** Workspace-owned exercise data, normalized from the former letsgo clients. */
+export const CodeExerciseSchema = z.object({
+  id: z.string().min(1),
+  languageId: z.enum(['typescript', 'go', 'cpp', 'rust']),
+  lessonSlug: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  starterCode: z.string(),
+  hints: z.array(z.string()),
+  points: z.number().nonnegative(),
+  difficulty: z.enum(['easy', 'medium', 'hard']),
+  expectedOutput: z.string().optional(),
+  /** Never returned by the public catalog endpoint. */
+  verifier: z.object({
+    testCode: z.string().optional(),
+    validationPattern: z.string().optional(),
+  }),
+});
+export type CodeExercise = z.infer<typeof CodeExerciseSchema>;
+
+export const LessonProgressSchema = z.object({
+  lessonId: z.string().min(1),
+  completed: z.boolean(),
+  completedExerciseIds: z.array(z.string()),
+  points: z.number().nonnegative(),
+  updatedAt: z.string().datetime(),
+});
+export type LessonProgress = z.infer<typeof LessonProgressSchema>;
+
+export const CodeRunResultSchema = z.object({
+  success: z.boolean(),
+  output: z.string(),
+  errors: z.array(z.string()),
+  timedOut: z.boolean().default(false),
+  testsPassed: z.boolean().optional(),
+});
+export type CodeRunResult = z.infer<typeof CodeRunResultSchema>;
 
 export const RequirementNodeSchema = z.object({
   kind: z.literal('offering'),
