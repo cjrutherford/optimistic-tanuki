@@ -16,7 +16,7 @@ describe('LessonMarkdownService', () => {
         '# Goroutines\n\nRun work **concurrently**.\n\n- one\n- two\n'
       );
 
-      expect(html).toContain('<h1');
+      expect(html).toContain('<h2');
       expect(html).toContain('Goroutines');
       expect(html).toContain('<strong>concurrently</strong>');
       expect(html).toContain('<li>one</li>');
@@ -33,6 +33,26 @@ describe('LessonMarkdownService', () => {
 
     it('returns an empty string for empty content', () => {
       expect(service.render('')).toBe('');
+    });
+
+    // The page supplies the <h1>. A lesson file that opens with its own
+    // '# Title' used to produce a second one saying the same thing.
+    it('leaves the only h1 to the page, shifting lesson headings down', () => {
+      const html = service.render('# Title\n\n## Section\n\n### Detail\n');
+
+      expect(html).not.toContain('<h1');
+      expect(html).toContain('<h2>Title</h2>');
+      expect(html).toContain('<h3>Section</h3>');
+      expect(html).toContain('<h4>Detail</h4>');
+    });
+
+    it('does not shift past h6', () => {
+      const html = service.render('###### Deep\n');
+      expect(html).toContain('<h6>Deep</h6>');
+    });
+
+    it('still renders inline markup inside a heading', () => {
+      expect(service.render('# Use `fmt`\n')).toContain('<code>fmt</code>');
     });
   });
 
@@ -110,7 +130,7 @@ describe('LessonMarkdownService', () => {
     it('keeps ordinary prose structure', () => {
       const rendered = bind('# Title\n\nSome **bold** text.\n\n- a\n- b\n');
 
-      expect(rendered).toContain('<h1');
+      expect(rendered).toContain('<h2');
       expect(rendered).toContain('<strong>bold</strong>');
       expect(rendered).toContain('<li>');
     });

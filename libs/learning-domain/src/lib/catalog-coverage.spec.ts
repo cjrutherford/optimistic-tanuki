@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { tutorialProgramTracks } from './tutorial-catalog';
+import { tutorialExercises } from './tutorial-content';
 import { LessonMetadata } from './learning-domain';
 
 /**
@@ -141,6 +142,50 @@ describe('curriculum catalog coverage', () => {
         (lesson) => lesson.parentLessonId === lesson.id
       );
       expect(selfReferencing).toEqual([]);
+    });
+  });
+
+  // An exercise whose lessonSlug matches no lesson is invisible: nothing
+  // renders it and no learner can reach it. Found by opening the Go
+  // hello-world lesson and seeing an empty practice pane.
+  describe('exercise reachability', () => {
+    const reachability = tracks.map(({ language, lessons }) => {
+      const slugs = new Set(lessons.map((lesson) => lesson.slug));
+      const exercises = tutorialExercises.filter(
+        (exercise) => exercise.languageId === language
+      );
+      return {
+        language,
+        total: exercises.length,
+        orphans: exercises
+          .filter((exercise) => !slugs.has(exercise.lessonSlug))
+          .map((exercise) => exercise.lessonSlug),
+      };
+    });
+
+    it.each(reachability.filter((entry) => entry.language !== 'go'))(
+      'attaches every $language exercise to a lesson',
+      ({ orphans }) => {
+        expect([...new Set(orphans)]).toEqual([]);
+      }
+    );
+
+    // Go still has seven, and they are a content gap rather than a mapping
+    // bug: each names a sub-topic that upstream taught inside another lesson
+    // and that has no markdown file here. Pinned so the number cannot grow
+    // quietly; shrink it by adding the lessons, not by editing this list.
+    it('has exactly the known Go exercises with nowhere to live', () => {
+      const go = reachability.find((entry) => entry.language === 'go');
+
+      expect([...new Set(go?.orphans)].sort()).toEqual([
+        'basic-select',
+        'benchmark-basics',
+        'context-basics',
+        'defer-statements',
+        'error-values',
+        'middleware-pattern',
+        'waitgroup-basics',
+      ]);
     });
   });
 });

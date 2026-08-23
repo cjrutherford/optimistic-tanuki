@@ -38,9 +38,21 @@ export class LessonMarkdownService {
   });
 
   constructor() {
+    const renderCode = (text: string, lang?: string) =>
+      this.renderCode(text, lang);
+
     this.marked.use({
       renderer: {
-        code: ({ text, lang }) => this.renderCode(text, lang),
+        code: ({ text, lang }) => renderCode(text, lang),
+        // A method, not an arrow: marked binds `this` to the renderer, which
+        // is where the parser needed for inline markup lives.
+        heading({ tokens, depth }) {
+          // Shifted down one. The page already gives the lesson its <h1>, and
+          // most lesson files open with their own '# Title', which left two
+          // h1s saying the same thing and no single document outline.
+          const level = Math.min(depth + 1, 6);
+          return `<h${level}>${this.parser.parseInline(tokens)}</h${level}>`;
+        },
       },
     });
   }

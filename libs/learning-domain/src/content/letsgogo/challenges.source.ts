@@ -1252,7 +1252,7 @@ func main() {
   // Basics Module - Hello World
   {
     id: 'b-01',
-    lessonSlug: 'basics-hello-world',
+    lessonSlug: 'hello-world',
     title: 'Your First Go Program',
     description:
       'Write a Go program that prints "Hello, World!" to the console.',
@@ -1274,7 +1274,7 @@ func main() {
   },
   {
     id: 'b-02',
-    lessonSlug: 'basics-hello-world',
+    lessonSlug: 'hello-world',
     title: 'Multiple Print Statements',
     description:
       'Print your name and favorite programming language on separate lines.',
@@ -1299,7 +1299,7 @@ func main() {
   // Basics Module - Variables & Types
   {
     id: 'b-03',
-    lessonSlug: 'basics-variables-types',
+    lessonSlug: 'variables-types',
     title: 'Declare Variables',
     description:
       'Declare variables of type string, int, and bool, then print them all on one line separated by spaces.',
@@ -1324,7 +1324,7 @@ func main() {
   },
   {
     id: 'b-04',
-    lessonSlug: 'basics-variables-types',
+    lessonSlug: 'variables-types',
     title: 'Short Variable Declaration',
     description:
       'Use short variable declaration (:=) to create variables and print their values.',
@@ -1344,7 +1344,7 @@ func main() {
   },
   {
     id: 'b-05',
-    lessonSlug: 'basics-variables-types',
+    lessonSlug: 'variables-types',
     title: 'Type Conversion',
     description:
       'Convert an int to a string and concatenate it with another string.',
@@ -1370,7 +1370,7 @@ func main() {
   // Basics Module - Functions
   {
     id: 'b-06',
-    lessonSlug: 'basics-functions',
+    lessonSlug: 'functions',
     title: 'Basic Function',
     description:
       'Write a function called greet that takes a string parameter and returns a greeting.',
@@ -1397,7 +1397,7 @@ func main() {
   },
   {
     id: 'b-07',
-    lessonSlug: 'basics-functions',
+    lessonSlug: 'functions',
     title: 'Multiple Return Values',
     description:
       'Write a function that divides two numbers and returns both the result and any error.',
@@ -1430,7 +1430,7 @@ func main() {
   // Basics Module - Control Flow
   {
     id: 'b-08',
-    lessonSlug: 'basics-control-flow',
+    lessonSlug: 'control-flow',
     title: 'If-Else Statement',
     description:
       'Write a function that checks if a number is positive, negative, or zero.',

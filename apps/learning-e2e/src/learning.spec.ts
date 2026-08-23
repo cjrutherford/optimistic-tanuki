@@ -136,7 +136,10 @@ test.describe('Learning Studio', () => {
     page.on('pageerror', (error) => problems.push(error.message));
 
     await page.goto(LESSON_URL);
-    await page.waitForLoadState('networkidle');
+    // Wait on something real rather than the network going quiet: the editor
+    // chunk loads lazily, and that is where a console error would come from.
+    await expect(page.locator('learning-code-editor')).toBeVisible();
+    await expect(page.locator('.result, .actions').first()).toBeVisible();
 
     expect(problems).toEqual([]);
   });
