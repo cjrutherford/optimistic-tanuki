@@ -109,4 +109,50 @@ describe('learning permission seeds', () => {
       expect(matchingPermission).toBeDefined();
     }
   });
+
+  // Platform owners answer for everything the platform does, so learning
+  // cannot be a blind spot for them. They get the unscoped permissions only:
+  // an owner acting on someone else's course uses offering.update, and
+  // offering.update.own would never match.
+  describe('owner authority over the learning scope', () => {
+    const OWNER_ROLES = ['owner', 'global_admin'];
+
+    const learningPermissionNames: string[] = seedData.permissions
+      .filter((permission) => permission.appScope === 'learning')
+      .map((permission) => permission.name as string);
+
+    const unscoped = learningPermissionNames.filter(
+      (name) => !name.endsWith('.own')
+    );
+
+    const grantsFor = (role: string): Set<string> =>
+      new Set<string>(
+        seedData.role_permissions
+          .filter(
+            (link) =>
+              link.role === role && link.permissionAppScope === 'learning'
+          )
+          .map((link) => link.permission as string)
+      );
+
+    it.each(OWNER_ROLES)(
+      'gives %s every unscoped learning permission',
+      (role) => {
+        const granted = grantsFor(role);
+        const missing = unscoped.filter((name) => !granted.has(name));
+
+        expect(missing).toEqual([]);
+      }
+    );
+
+    it.each(OWNER_ROLES)('lets %s grade', (role) => {
+      expect(grantsFor(role).has('evaluation.create')).toBe(true);
+    });
+
+    it.each(OWNER_ROLES)('does not hand %s the own-scoped variants', (role) => {
+      const granted = [...grantsFor(role)];
+
+      expect(granted.filter((name) => name.endsWith('.own'))).toEqual([]);
+    });
+  });
 });

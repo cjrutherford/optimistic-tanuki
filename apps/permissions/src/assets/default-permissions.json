@@ -7327,6 +7327,256 @@
       "role": "learning_admin",
       "permission": "evaluation.read.own",
       "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "activity.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "enrolment.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "evaluation.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "lesson.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "module.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "offering.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "progress.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "owner",
+      "permission": "progress.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.run",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "activity.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "enrolment.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "evaluation.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "lesson.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "module.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.create",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.delete",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "offering.update",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "progress.read",
+      "permissionAppScope": "learning"
+    },
+    {
+      "role": "global_admin",
+      "permission": "progress.update",
+      "permissionAppScope": "learning"
     }
   ]
 }
