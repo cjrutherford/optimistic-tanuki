@@ -20,3 +20,22 @@ body {
 button {
   cursor: pointer;
 }
+
+/* Monaco's hidden input, which is anything but.
+ *
+ * It builds its DOM after Angular has stamped its scoping attributes, so
+ * component styles never reach it and it renders with UA defaults: a grey
+ * 182x36 box sitting on top of the first line of code. It only exists to
+ * catch IME composition, so it needs to be present and focusable without
+ * being seen. This has to be global for the same reason it broke. */
+.monaco-editor .ime-text-area {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: transparent;
+  opacity: 0;
+  overflow: hidden;
+}

@@ -218,6 +218,14 @@ export class CodeEditorComponent {
     this.monaco = monaco;
     this.defineTheme(monaco);
 
+    // Reveal the container before creating the editor. Monaco measures on
+    // construction, and a display:none host measures zero, which left its
+    // hidden input rendered as a visible grey box over the code.
+    this.mounted.set(true);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => resolve())
+    );
+
     this.editor = monaco.editor.create(this.host().nativeElement, {
       value: this.code(),
       language: this.monacoLanguage(),
@@ -244,7 +252,6 @@ export class CodeEditorComponent {
     });
 
     this.showDiagnostics(this.diagnostics());
-    this.mounted.set(true);
   }
 
   private showDiagnostics(found: readonly Diagnostic[]): void {
