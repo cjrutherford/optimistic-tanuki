@@ -10,9 +10,11 @@ import { LearningCommands } from '@optimistic-tanuki/constants';
 import { LearningController } from './learning.controller';
 import { AuthGuard } from '../../auth/auth.guard';
 import { IS_PUBLIC_KEY } from '../../decorators/public.decorator';
+import { LearningProfileResolver } from './learning-profile.resolver';
 
 describe('LearningController', () => {
   let client: jest.Mocked<ClientProxy>;
+  let profiles: jest.Mocked<LearningProfileResolver>;
   let controller: LearningController;
 
   beforeEach(() => {
@@ -21,7 +23,11 @@ describe('LearningController', () => {
       connect: jest.fn().mockResolvedValue(undefined),
     } as unknown as jest.Mocked<ClientProxy>;
 
-    controller = new LearningController(client);
+    profiles = {
+      resolveProfileId: jest.fn().mockResolvedValue('profile-1'),
+    } as unknown as jest.Mocked<LearningProfileResolver>;
+
+    controller = new LearningController(client, profiles);
   });
 
   describe('me/progress', () => {
@@ -32,9 +38,10 @@ describe('LearningController', () => {
         user: { userId: 'user-1' },
       });
 
+      expect(profiles.resolveProfileId).toHaveBeenCalledWith('user-1');
       expect(client.send).toHaveBeenCalledWith(
         { cmd: LearningCommands.GetProgress },
-        { userId: 'user-1' }
+        { profileId: 'profile-1' }
       );
       expect(progress).toEqual([{ lessonId: 'b-01', points: 10 }]);
     });
@@ -44,6 +51,7 @@ describe('LearningController', () => {
     it('returns nothing for an anonymous visitor without calling the service', async () => {
       expect(await controller.getMyProgress({})).toEqual([]);
       expect(client.send).not.toHaveBeenCalled();
+      expect(profiles.resolveProfileId).not.toHaveBeenCalled();
     });
 
     it('returns nothing when the guard produced a user with no id', async () => {
@@ -62,6 +70,9 @@ describe('LearningController', () => {
         LearningController.prototype.saveMyProgress,
         LearningController.prototype.getMyProgress,
         LearningController.prototype.getDashboard,
+        LearningController.prototype.enrol,
+        LearningController.prototype.withdraw,
+        LearningController.prototype.getMyEnrolments,
       ]) {
         expect(Reflect.getMetadata(GUARDS_METADATA, handler)).toEqual(
           expect.arrayContaining([AuthGuard])
@@ -85,6 +96,9 @@ describe('LearningController', () => {
         LearningController.prototype.runCode,
         LearningController.prototype.submitExercise,
         LearningController.prototype.saveMyProgress,
+        LearningController.prototype.enrol,
+        LearningController.prototype.withdraw,
+        LearningController.prototype.getMyEnrolments,
       ]) {
         expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).not.toBe(true);
       }
@@ -195,9 +209,60 @@ describe('LearningController', () => {
 
       expect(client.send).toHaveBeenCalledWith(
         { cmd: LearningCommands.SubmitExercise },
-        { userId: 'user-1', activityId: 'go-b-01', code: 'package main' }
+        {
+          userId: 'user-1',
+          profileId: 'profile-1',
+          activityId: 'go-b-01',
+          code: 'package main',
+        }
       );
       expect(result).toEqual({ passed: true, awardedPoints: 10 });
+    });
+  });
+
+  describe('enrolments', () => {
+    it('enrols using the resolved profile, not a caller-supplied id', async () => {
+      client.send.mockReturnValue(of({ id: 'enrolment-1', status: 'active' }));
+
+      await controller.enrol(
+        { offeringId: 'go-foundations-100-core' },
+        { user: { userId: 'user-1' } }
+      );
+
+      expect(profiles.resolveProfileId).toHaveBeenCalledWith('user-1');
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.Enrol },
+        { profileId: 'profile-1', offeringId: 'go-foundations-100-core' }
+      );
+    });
+
+    it('withdraws using the resolved profile', async () => {
+      client.send.mockReturnValue(
+        of({ id: 'enrolment-1', status: 'withdrawn' })
+      );
+
+      await controller.withdraw('go-foundations-100-core', {
+        user: { userId: 'user-1' },
+      });
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.Withdraw },
+        { profileId: 'profile-1', offeringId: 'go-foundations-100-core' }
+      );
+    });
+
+    it('lists enrolments for the resolved profile', async () => {
+      client.send.mockReturnValue(of([{ id: 'enrolment-1' }]));
+
+      const result = await controller.getMyEnrolments({
+        user: { userId: 'user-1' },
+      });
+
+      expect(client.send).toHaveBeenCalledWith(
+        { cmd: LearningCommands.ListMyEnrolments },
+        { profileId: 'profile-1' }
+      );
+      expect(result).toEqual([{ id: 'enrolment-1' }]);
     });
   });
 });

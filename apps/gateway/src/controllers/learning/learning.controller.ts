@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -14,12 +15,14 @@ import { firstValueFrom } from 'rxjs';
 import { LearningCommands, ServiceTokens } from '@optimistic-tanuki/constants';
 import { AuthGuard } from '../../auth/auth.guard';
 import { Public } from '../../decorators/public.decorator';
+import { LearningProfileResolver } from './learning-profile.resolver';
 
 @Controller('learning')
 export class LearningController {
   constructor(
     @Inject(ServiceTokens.LEARNING_SERVICE)
-    private readonly learningService: ClientProxy
+    private readonly learningService: ClientProxy,
+    private readonly learningProfiles: LearningProfileResolver
   ) {}
 
   @Get('programs')
@@ -33,10 +36,14 @@ export class LearningController {
   @UseGuards(AuthGuard)
   @Get('dashboard')
   async getDashboard(@Req() req: { user?: { userId?: string } }) {
+    const userId = req.user?.userId;
+    const profileId = userId
+      ? await this.learningProfiles.resolveProfileId(userId)
+      : undefined;
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.GetDashboard },
-        { userId: req.user?.userId }
+        { profileId }
       )
     );
   }
@@ -93,10 +100,11 @@ export class LearningController {
   async getMyProgress(@Req() req: { user?: { userId?: string } }) {
     const userId = req.user?.userId;
     if (!userId) return [];
+    const profileId = await this.learningProfiles.resolveProfileId(userId);
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.GetProgress },
-        { userId }
+        { profileId }
       )
     );
   }
@@ -107,10 +115,13 @@ export class LearningController {
     @Req() req: { user: { userId: string } },
     @Body() progress: unknown
   ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.SaveLessonProgress },
-        { userId: req.user.userId, progress }
+        { userId: req.user.userId, profileId, progress }
       )
     );
   }
@@ -132,10 +143,68 @@ export class LearningController {
     @Body() body: { code: string },
     @Req() req: { user: { userId: string } }
   ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.SubmitExercise },
-        { userId: req.user.userId, activityId, code: body.code }
+        {
+          userId: req.user.userId,
+          profileId,
+          activityId,
+          code: body.code,
+        }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('enrolments')
+  async enrol(
+    @Body() body: { offeringId: string },
+    @Req() req: { user: { userId: string } }
+  ) {
+    // The profile always comes from the resolver, never the body, so a
+    // caller cannot enrol someone else by supplying their profileId.
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.Enrol },
+        { profileId, offeringId: body.offeringId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Delete('enrolments/:offeringId')
+  async withdraw(
+    @Param('offeringId') offeringId: string,
+    @Req() req: { user: { userId: string } }
+  ) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.Withdraw },
+        { profileId, offeringId }
+      )
+    );
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('me/enrolments')
+  async getMyEnrolments(@Req() req: { user: { userId: string } }) {
+    const profileId = await this.learningProfiles.resolveProfileId(
+      req.user.userId
+    );
+    return await firstValueFrom(
+      this.learningService.send(
+        { cmd: LearningCommands.ListMyEnrolments },
+        { profileId }
       )
     );
   }

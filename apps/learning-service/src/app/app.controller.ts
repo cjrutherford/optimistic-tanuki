@@ -55,19 +55,24 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: LearningCommands.GetProgress })
-  getProgress(@Payload() body: { userId: string }) {
-    return this.appService.getProgress(body.userId);
+  getProgress(@Payload() body: { profileId: string }) {
+    return this.appService.getProgress(body.profileId);
   }
 
   @MessagePattern({ cmd: LearningCommands.SaveLessonProgress })
   saveProgress(
     @Payload()
     body: {
+      profileId: string;
       userId: string;
       progress: Omit<LessonProgress, 'updatedAt'>;
     }
   ) {
-    return this.appService.saveProgress(body.userId, body.progress);
+    return this.appService.saveProgress(
+      body.profileId,
+      body.userId,
+      body.progress
+    );
   }
 
   @MessagePattern({ cmd: LearningCommands.RunCode })
@@ -76,18 +81,40 @@ export class AppController {
   }
 
   @MessagePattern({ cmd: LearningCommands.GetDashboard })
-  getDashboard(@Payload() body: { userId?: string }) {
-    return this.appService.getDashboard(body.userId);
+  getDashboard(@Payload() body: { profileId?: string }) {
+    return this.appService.getDashboard(body.profileId);
   }
 
   @MessagePattern({ cmd: LearningCommands.SubmitExercise })
   submitExercise(
-    @Payload() body: { userId: string; activityId: string; code: string }
+    @Payload()
+    body: {
+      profileId: string;
+      userId: string;
+      activityId: string;
+      code: string;
+    }
   ) {
     return this.appService.submitExercise(
+      body.profileId,
       body.userId,
       body.activityId,
       body.code
     );
+  }
+
+  @MessagePattern({ cmd: LearningCommands.Enrol })
+  enrol(@Payload() body: { profileId: string; offeringId: string }) {
+    return this.appService.enrol(body.profileId, body.offeringId);
+  }
+
+  @MessagePattern({ cmd: LearningCommands.Withdraw })
+  withdraw(@Payload() body: { profileId: string; offeringId: string }) {
+    return this.appService.withdraw(body.profileId, body.offeringId);
+  }
+
+  @MessagePattern({ cmd: LearningCommands.ListMyEnrolments })
+  listMyEnrolments(@Payload() body: { profileId: string }) {
+    return this.appService.listEnrolments(body.profileId);
   }
 }

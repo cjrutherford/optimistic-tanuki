@@ -4,11 +4,14 @@ import { LEARNING_REPOSITORY, LearningRepository } from './learning.repository';
 import { Test } from '@nestjs/testing';
 import {
   Attempt,
+  Enrolment,
   Evaluation,
   LessonProgress,
   ProgramTrack,
   sampleProgramTracks,
+  tutorialExercises,
 } from '@optimistic-tanuki/learning-domain';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
@@ -17,8 +20,9 @@ class InMemoryLearningRepository implements LearningRepository {
   private readonly evaluations = new Map<string, Evaluation>();
   private readonly progress = new Map<
     string,
-    LessonProgress & { userId: string }
+    LessonProgress & { userId: string; profileId: string }
   >();
+  private readonly enrolments = new Map<string, Enrolment>();
 
   listPrograms() {
     return this.programs;
@@ -38,17 +42,68 @@ class InMemoryLearningRepository implements LearningRepository {
     this.evaluations.set(input.id, input);
     return input;
   }
-  getProgress(userId: string) {
-    return [...this.progress.values()].filter((item) => item.userId === userId);
+  getProgress(profileId: string) {
+    return [...this.progress.values()].filter(
+      (item) => item.profileId === profileId
+    );
   }
-  saveProgress(userId: string, input: Omit<LessonProgress, 'updatedAt'>) {
+  saveProgress(
+    profileId: string,
+    userId: string,
+    enrolmentId: string,
+    input: Omit<LessonProgress, 'updatedAt'>
+  ) {
     const value = {
       ...input,
       userId,
+      profileId,
       updatedAt: new Date().toISOString(),
-    } as LessonProgress & { userId: string };
-    this.progress.set(`${userId}:${input.lessonId}`, value);
+    } as LessonProgress & { userId: string; profileId: string };
+    this.progress.set(`${profileId}:${input.lessonId}`, value);
     return value;
+  }
+  enrol(profileId: string, offeringId: string) {
+    const key = `${profileId}:${offeringId}`;
+    const existing = this.enrolments.get(key);
+    if (existing) {
+      const reactivated: Enrolment = { ...existing, status: 'active' };
+      delete reactivated.withdrawnAt;
+      this.enrolments.set(key, reactivated);
+      return reactivated;
+    }
+    const enrolment: Enrolment = {
+      id: randomUUID(),
+      profileId,
+      offeringId,
+      status: 'active',
+      enrolledAt: new Date().toISOString(),
+    };
+    this.enrolments.set(key, enrolment);
+    return enrolment;
+  }
+  withdraw(profileId: string, offeringId: string) {
+    const key = `${profileId}:${offeringId}`;
+    const existing = this.enrolments.get(key);
+    if (!existing) {
+      throw new Error(
+        `Profile ${profileId} is not enrolled in offering ${offeringId}`
+      );
+    }
+    const withdrawn: Enrolment = {
+      ...existing,
+      status: 'withdrawn',
+      withdrawnAt: new Date().toISOString(),
+    };
+    this.enrolments.set(key, withdrawn);
+    return withdrawn;
+  }
+  listEnrolments(profileId: string) {
+    return [...this.enrolments.values()].filter(
+      (item) => item.profileId === profileId
+    );
+  }
+  getEnrolment(profileId: string, offeringId: string) {
+    return this.enrolments.get(`${profileId}:${offeringId}`);
   }
 }
 
@@ -112,16 +167,19 @@ describe('AppService', () => {
     ];
     const overview = 'go-foundations-basics-variables-types';
 
+    const profileId = 'profile-learner';
+
     async function completed(lessonIds: string[]) {
+      await service.enrol(profileId, 'go-foundations-100-core');
       for (const lessonId of lessonIds) {
-        await service.saveProgress('learner', {
+        await service.saveProgress(profileId, 'learner', {
           lessonId,
           completed: true,
           completedExerciseIds: [],
           points: 0,
         });
       }
-      const dashboard = await service.getDashboard('learner');
+      const dashboard = await service.getDashboard(profileId);
       return dashboard.find((entry) => entry.program.id === 'go-foundations')!;
     }
 
@@ -191,6 +249,126 @@ describe('AppService', () => {
       });
 
       expect(evaluation.recordedByUserId).toBeUndefined();
+    });
+  });
+
+  // Enrolment is the fact that someone is taking an offering. Progress must
+  // not be recordable without it, or a lessonId is all it takes to forge
+  // completion for a course nobody signed up for.
+  describe('enrolment gates progress', () => {
+    it('refuses to save progress for a profile with no enrolment', async () => {
+      await expect(
+        service.saveProgress('profile-unenrolled', 'user-1', {
+          lessonId: 'go-foundations-basics-variables-types',
+          completed: true,
+          completedExerciseIds: [],
+          points: 0,
+        })
+      ).rejects.toThrow(/enrolled/);
+    });
+
+    it('saves progress once the profile is enrolled in the owning offering', async () => {
+      await service.enrol('profile-enrolled', 'go-foundations-100-core');
+
+      const progress = await service.saveProgress(
+        'profile-enrolled',
+        'user-1',
+        {
+          lessonId: 'go-foundations-basics-variables-types',
+          completed: true,
+          completedExerciseIds: [],
+          points: 0,
+        }
+      );
+
+      expect(progress.lessonId).toBe('go-foundations-basics-variables-types');
+    });
+
+    it('stops progress after withdrawal', async () => {
+      await service.enrol('profile-withdrawn', 'go-foundations-100-core');
+      await service.withdraw('profile-withdrawn', 'go-foundations-100-core');
+
+      await expect(
+        service.saveProgress('profile-withdrawn', 'user-1', {
+          lessonId: 'go-foundations-basics-variables-types',
+          completed: true,
+          completedExerciseIds: [],
+          points: 0,
+        })
+      ).rejects.toThrow(/enrolled/);
+    });
+
+    it("lists only a profile's own enrolments", async () => {
+      await service.enrol('profile-a', 'go-foundations-100-core');
+      await service.enrol('profile-b', 'go-foundations-100-core');
+
+      const enrolments = await service.listEnrolments('profile-a');
+      expect(enrolments).toHaveLength(1);
+      expect(enrolments[0].profileId).toBe('profile-a');
+    });
+  });
+
+  // Submitting an exercise is how someone starts a course. If that required
+  // an enrol call first, the Submit button would simply fail for every new
+  // learner, which is exactly what happened when enrolment landed.
+  describe('enrolling by starting work', () => {
+    // The runner is a separate service over HTTP. What is under test here is
+    // the enrolment side effect, not the sandbox, so the run is stubbed.
+    beforeEach(() => {
+      global.fetch = jest.fn().mockResolvedValue({
+        json: async () => ({
+          success: true,
+          output: '',
+          errors: [],
+          timedOut: false,
+          testsPassed: true,
+        }),
+      }) as unknown as typeof fetch;
+    });
+
+    afterEach(() => {
+      (global.fetch as unknown as jest.Mock | undefined)?.mockRestore?.();
+    });
+
+    it('enrols a learner on their first submission', async () => {
+      const exercise = tutorialExercises.find(
+        (candidate) => candidate.languageId === 'go'
+      )!;
+
+      const before = await service.listEnrolments('profile-new');
+      expect(before).toEqual([]);
+
+      await service.submitExercise(
+        'profile-new',
+        'user-new',
+        exercise.id,
+        exercise.starterCode
+      );
+
+      const after = await service.listEnrolments('profile-new');
+      expect(after).toHaveLength(1);
+      expect(after[0].status).toBe('active');
+    });
+
+    it('does not enrol a second time on a later submission', async () => {
+      const exercise = tutorialExercises.find(
+        (candidate) => candidate.languageId === 'go'
+      )!;
+
+      await service.submitExercise(
+        'profile-twice',
+        'user-twice',
+        exercise.id,
+        ''
+      );
+      await service.submitExercise(
+        'profile-twice',
+        'user-twice',
+        exercise.id,
+        ''
+      );
+
+      expect(await service.listEnrolments('profile-twice')).toHaveLength(1);
     });
   });
 });

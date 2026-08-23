@@ -302,6 +302,27 @@ export const EvaluationSchema = z.object({
 });
 export type Evaluation = z.infer<typeof EvaluationSchema>;
 
+/**
+ * A learner's claim on an offering.
+ *
+ * Progress cannot be recorded without one of these existing first: it is the
+ * thing that makes "taking this course" a real fact rather than an inference
+ * from whatever rows happen to exist in lesson_progress.
+ */
+export const EnrolmentStatusSchema = z.enum(['active', 'withdrawn']);
+export type EnrolmentStatus = z.infer<typeof EnrolmentStatusSchema>;
+
+export const EnrolmentSchema = z.object({
+  id: z.string().min(1),
+  /** The learner's learning-scoped profile id, not their bare userId. */
+  profileId: z.string().min(1),
+  offeringId: z.string().min(1),
+  status: EnrolmentStatusSchema,
+  enrolledAt: z.string().datetime(),
+  withdrawnAt: z.string().datetime().optional(),
+});
+export type Enrolment = z.infer<typeof EnrolmentSchema>;
+
 export const CreditLedgerEntrySchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   Attempt,
+  Enrolment,
   Evaluation,
   LessonProgress,
   ProgramTrack,
@@ -74,13 +75,13 @@ export class AppService {
     };
   }
 
-  async getProgress(userId: string): Promise<LessonProgress[]> {
-    return await this.repository.getProgress(userId);
+  async getProgress(profileId: string): Promise<LessonProgress[]> {
+    return await this.repository.getProgress(profileId);
   }
 
-  async getDashboard(userId?: string) {
+  async getDashboard(profileId?: string) {
     const programs = await this.listPrograms();
-    const progress = userId ? await this.getProgress(userId) : [];
+    const progress = profileId ? await this.getProgress(profileId) : [];
     const completedByLesson = new Map(
       progress.map((item) => [item.lessonId, item])
     );
@@ -137,10 +138,51 @@ export class AppService {
   }
 
   async saveProgress(
+    profileId: string,
     userId: string,
     progress: Omit<LessonProgress, 'updatedAt'>
   ): Promise<LessonProgress> {
-    return await this.repository.saveProgress(userId, progress);
+    const offeringId = await this.findOfferingIdForLesson(progress.lessonId);
+    const enrolment = await this.repository.getEnrolment(profileId, offeringId);
+    // No enrolment, no progress. Without this, saving progress is the only
+    // signal that anyone is taking anything, and it's forgeable by anyone
+    // who knows a lessonId.
+    if (!enrolment || enrolment.status !== 'active') {
+      throw new Error(
+        `Profile ${profileId} must be enrolled in offering ${offeringId} before recording progress on lesson ${progress.lessonId}`
+      );
+    }
+    return await this.repository.saveProgress(
+      profileId,
+      userId,
+      enrolment.id,
+      progress
+    );
+  }
+
+  private async findOfferingIdForLesson(lessonId: string): Promise<string> {
+    const tracks = await this.listPrograms();
+    for (const track of tracks) {
+      for (const offering of track.offerings) {
+        const lessons = offering.modules.flatMap((module) => module.lessons);
+        if (lessons.some((lesson) => lesson.id === lessonId)) {
+          return offering.id;
+        }
+      }
+    }
+    throw new Error(`Lesson ${lessonId} is not attached to any offering`);
+  }
+
+  async enrol(profileId: string, offeringId: string): Promise<Enrolment> {
+    return await this.repository.enrol(profileId, offeringId);
+  }
+
+  async withdraw(profileId: string, offeringId: string): Promise<Enrolment> {
+    return await this.repository.withdraw(profileId, offeringId);
+  }
+
+  async listEnrolments(profileId: string): Promise<Enrolment[]> {
+    return await this.repository.listEnrolments(profileId);
   }
 
   async runCode(activityId: string, code: string) {
@@ -173,7 +215,12 @@ export class AppService {
     };
   }
 
-  async submitExercise(userId: string, activityId: string, code: string) {
+  async submitExercise(
+    profileId: string,
+    userId: string,
+    activityId: string,
+    code: string
+  ) {
     const exercise = tutorialExercises.find(
       (candidate) => candidate.id === activityId
     );
@@ -220,7 +267,13 @@ export class AppService {
       );
     if (!lesson)
       throw new Error(`Exercise ${activityId} is not attached to a lesson`);
-    const previous = (await this.getProgress(userId)).find(
+    // Working an exercise in a course is how someone takes that course, so
+    // the first submission enrols them. saveProgress stays strict and refuses
+    // progress without an enrolment; this is what makes sure there is one,
+    // rather than making a learner find an enrol button before they can start.
+    await this.enrol(profileId, await this.findOfferingIdForLesson(lesson.id));
+
+    const previous = (await this.getProgress(profileId)).find(
       (item) => item.lessonId === lesson.id
     );
     const alreadyComplete =
@@ -231,7 +284,7 @@ export class AppService {
     const points =
       (previous?.points ?? 0) +
       (passed && !alreadyComplete ? exercise.points : 0);
-    const progress = await this.saveProgress(userId, {
+    const progress = await this.saveProgress(profileId, userId, {
       lessonId: lesson.id,
       completed: previous?.completed ?? false,
       completedExerciseIds,

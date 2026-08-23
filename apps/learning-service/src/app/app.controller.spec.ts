@@ -5,11 +5,13 @@ import { AppService } from './app.service';
 import { LearningRepository, LEARNING_REPOSITORY } from './learning.repository';
 import {
   Attempt,
+  Enrolment,
   Evaluation,
   LessonProgress,
   ProgramTrack,
   sampleProgramTracks,
 } from '@optimistic-tanuki/learning-domain';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 class InMemoryLearningRepository implements LearningRepository {
@@ -18,8 +20,9 @@ class InMemoryLearningRepository implements LearningRepository {
   private readonly evaluations = new Map<string, Evaluation>();
   private readonly progress = new Map<
     string,
-    LessonProgress & { userId: string }
+    LessonProgress & { userId: string; profileId: string }
   >();
+  private readonly enrolments = new Map<string, Enrolment>();
 
   listPrograms() {
     return this.programs;
@@ -39,17 +42,61 @@ class InMemoryLearningRepository implements LearningRepository {
     this.evaluations.set(input.id, input);
     return input;
   }
-  getProgress(userId: string) {
-    return [...this.progress.values()].filter((item) => item.userId === userId);
+  getProgress(profileId: string) {
+    return [...this.progress.values()].filter(
+      (item) => item.profileId === profileId
+    );
   }
-  saveProgress(userId: string, input: Omit<LessonProgress, 'updatedAt'>) {
+  saveProgress(
+    profileId: string,
+    userId: string,
+    enrolmentId: string,
+    input: Omit<LessonProgress, 'updatedAt'>
+  ) {
     const value = {
       ...input,
       userId,
+      profileId,
       updatedAt: new Date().toISOString(),
-    } as LessonProgress & { userId: string };
-    this.progress.set(`${userId}:${input.lessonId}`, value);
+    } as LessonProgress & { userId: string; profileId: string };
+    this.progress.set(`${profileId}:${input.lessonId}`, value);
     return value;
+  }
+  enrol(profileId: string, offeringId: string) {
+    const key = `${profileId}:${offeringId}`;
+    const enrolment: Enrolment = {
+      id: randomUUID(),
+      profileId,
+      offeringId,
+      status: 'active',
+      enrolledAt: new Date().toISOString(),
+    };
+    this.enrolments.set(key, enrolment);
+    return enrolment;
+  }
+  withdraw(profileId: string, offeringId: string) {
+    const key = `${profileId}:${offeringId}`;
+    const existing = this.enrolments.get(key);
+    if (!existing) {
+      throw new Error(
+        `Profile ${profileId} is not enrolled in offering ${offeringId}`
+      );
+    }
+    const withdrawn: Enrolment = {
+      ...existing,
+      status: 'withdrawn',
+      withdrawnAt: new Date().toISOString(),
+    };
+    this.enrolments.set(key, withdrawn);
+    return withdrawn;
+  }
+  listEnrolments(profileId: string) {
+    return [...this.enrolments.values()].filter(
+      (item) => item.profileId === profileId
+    );
+  }
+  getEnrolment(profileId: string, offeringId: string) {
+    return this.enrolments.get(`${profileId}:${offeringId}`);
   }
 }
 

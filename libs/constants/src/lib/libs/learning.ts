@@ -10,4 +10,7 @@ export const LearningCommands = {
   RunCode: 'learning.code.run',
   GetDashboard: 'learning.dashboard.get',
   SubmitExercise: 'learning.exercises.submit',
+  Enrol: 'learning.enrolments.create',
+  Withdraw: 'learning.enrolments.withdraw',
+  ListMyEnrolments: 'learning.enrolments.list',
 };

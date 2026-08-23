@@ -12,6 +12,7 @@ import { EvaluationEntity } from '../entities/evaluation.entity';
 import { CreditLedgerEntryEntity } from '../entities/credit-ledger-entry.entity';
 import { ProgramTrackEntity } from '../entities/program-track.entity';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
+import { EnrolmentEntity } from '../entities/enrolment.entity';
 import loadConfig from '../config';
 import loadDatabase from './loadDatabase';
 
@@ -57,6 +58,11 @@ import loadDatabase from './loadDatabase';
     {
       provide: getRepositoryToken(LessonProgressEntity),
       useFactory: (ds: DataSource) => ds.getRepository(LessonProgressEntity),
+      inject: ['LEARNING_CONNECTION'],
+    },
+    {
+      provide: getRepositoryToken(EnrolmentEntity),
+      useFactory: (ds: DataSource) => ds.getRepository(EnrolmentEntity),
       inject: ['LEARNING_CONNECTION'],
     },
   ],

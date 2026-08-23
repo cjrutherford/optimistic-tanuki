@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   Attempt,
+  Enrolment,
   Evaluation,
   ProgramTrack,
 } from '@optimistic-tanuki/learning-domain';
@@ -15,6 +16,7 @@ import {
   LessonProgress,
 } from '@optimistic-tanuki/learning-domain';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
+import { EnrolmentEntity } from '../entities/enrolment.entity';
 
 export { LEARNING_REPOSITORY };
 
@@ -28,7 +30,9 @@ export class TypeOrmLearningRepository implements LearningRepository {
     @InjectRepository(EvaluationEntity)
     private readonly evaluationRepo: Repository<EvaluationEntity>,
     @InjectRepository(LessonProgressEntity)
-    private readonly lessonProgressRepo: Repository<LessonProgressEntity>
+    private readonly lessonProgressRepo: Repository<LessonProgressEntity>,
+    @InjectRepository(EnrolmentEntity)
+    private readonly enrolmentRepo: Repository<EnrolmentEntity>
   ) {}
 
   async listPrograms(): Promise<ProgramTrack[]> {
@@ -84,28 +88,85 @@ export class TypeOrmLearningRepository implements LearningRepository {
     return this.toEvaluationDomain(saved);
   }
 
-  async getProgress(userId: string): Promise<LessonProgress[]> {
-    return (await this.lessonProgressRepo.find({ where: { userId } })).map(
+  async getProgress(profileId: string): Promise<LessonProgress[]> {
+    return (await this.lessonProgressRepo.find({ where: { profileId } })).map(
       (row) => this.toProgressDomain(row)
     );
   }
 
   async saveProgress(
+    profileId: string,
     userId: string,
+    enrolmentId: string,
     progress: Omit<LessonProgress, 'updatedAt'>
   ): Promise<LessonProgress> {
     const existing = await this.lessonProgressRepo.findOne({
-      where: { userId, lessonId: progress.lessonId },
+      where: { profileId, lessonId: progress.lessonId },
     });
     const entity = this.lessonProgressRepo.create({
       ...(existing ?? {}),
       userId,
+      profileId,
+      enrolmentId,
       lessonId: progress.lessonId,
       completed: progress.completed,
       completedExerciseIds: progress.completedExerciseIds,
       points: progress.points,
     });
     return this.toProgressDomain(await this.lessonProgressRepo.save(entity));
+  }
+
+  async enrol(profileId: string, offeringId: string): Promise<Enrolment> {
+    const existing = await this.enrolmentRepo.findOne({
+      where: { profileId, offeringId },
+    });
+    if (existing) {
+      // Re-enrolling after a withdrawal reactivates the same row rather than
+      // creating a second one, which the unique constraint would reject
+      // anyway.
+      if (existing.status === 'withdrawn') {
+        existing.status = 'active';
+        existing.withdrawnAt = null;
+        return this.toEnrolmentDomain(await this.enrolmentRepo.save(existing));
+      }
+      return this.toEnrolmentDomain(existing);
+    }
+    const entity = this.enrolmentRepo.create({
+      profileId,
+      offeringId,
+      status: 'active',
+    });
+    return this.toEnrolmentDomain(await this.enrolmentRepo.save(entity));
+  }
+
+  async withdraw(profileId: string, offeringId: string): Promise<Enrolment> {
+    const existing = await this.enrolmentRepo.findOne({
+      where: { profileId, offeringId },
+    });
+    if (!existing) {
+      throw new Error(
+        `Profile ${profileId} is not enrolled in offering ${offeringId}`
+      );
+    }
+    existing.status = 'withdrawn';
+    existing.withdrawnAt = new Date();
+    return this.toEnrolmentDomain(await this.enrolmentRepo.save(existing));
+  }
+
+  async listEnrolments(profileId: string): Promise<Enrolment[]> {
+    return (await this.enrolmentRepo.find({ where: { profileId } })).map(
+      (row) => this.toEnrolmentDomain(row)
+    );
+  }
+
+  async getEnrolment(
+    profileId: string,
+    offeringId: string
+  ): Promise<Enrolment | undefined> {
+    const entity = await this.enrolmentRepo.findOne({
+      where: { profileId, offeringId },
+    });
+    return entity ? this.toEnrolmentDomain(entity) : undefined;
   }
 
   private toAttemptDomain(entity: AttemptEntity): Attempt {
@@ -137,6 +198,19 @@ export class TypeOrmLearningRepository implements LearningRepository {
         ? { recordedByUserId: entity.recordedByUserId }
         : {}),
       evaluatedAt: entity.evaluatedAt.toISOString(),
+    };
+  }
+
+  private toEnrolmentDomain(entity: EnrolmentEntity): Enrolment {
+    return {
+      id: entity.id,
+      profileId: entity.profileId,
+      offeringId: entity.offeringId,
+      status: entity.status as Enrolment['status'],
+      enrolledAt: entity.enrolledAt.toISOString(),
+      ...(entity.withdrawnAt
+        ? { withdrawnAt: entity.withdrawnAt.toISOString() }
+        : {}),
     };
   }
 
