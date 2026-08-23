@@ -5,19 +5,17 @@ import { RouterLink } from '@angular/router';
   selector: 'learning-landing',
   imports: [RouterLink],
   template: ` <main class="landing">
-    <nav>
-      <span>Tanuki Learning</span><a routerLink="/dashboard">Sign in</a>
-    </nav>
+    <nav><span>Let&rsquo;s Go</span><a routerLink="/dashboard">Sign in</a></nav>
     <section>
-      <p>Four languages · internal curriculum</p>
-      <h1>Practice the idea<br />before you move on.</h1>
+      <p>Let&rsquo;s Go · TypeScript, Go, C++, Rust</p>
+      <h1>Let&rsquo;s go.<br />One language at a time.</h1>
       <div class="code">
         fn main() &#123;<br />&nbsp;&nbsp;let next =
         <b>understand</b>();<br />&#125;
       </div>
       <p class="lede">
-        A practical path through TypeScript, Go, C++, and Rust. Read a small
-        lesson, change working code, then see what happens.
+        Four tracks, one place. Read a short lesson, change code that runs, and
+        find out immediately whether you were right.
       </p>
       <a class="start" routerLink="/dashboard">Start learning</a>
     </section>

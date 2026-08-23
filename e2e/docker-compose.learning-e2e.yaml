@@ -1,0 +1,116 @@
+# Just enough real stack to run the Learning Studio.
+#
+# Postgres, the learning service, the sandboxed runner, the gateway and the
+# client. No auth service: the routes this exercises are either public or
+# degrade to anonymous, which is exactly the path a signed-out learner takes.
+#
+#   nx run learning-e2e:up
+#   nx run learning-e2e:e2e-docker
+services:
+  db:
+    image: postgres:17
+    container_name: e2e_db_learning
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      # The service migrates into this on first boot.
+      POSTGRES_DB: ot_learning_service
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d ot_learning_service']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # The gateway keeps OAuth state here and refuses to boot without it.
+  redis:
+    image: redis:7-alpine
+    container_name: e2e_redis_learning
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  learning-runner:
+    container_name: e2e_learning_runner
+    build:
+      context: ..
+      dockerfile: ./apps/learning-runner/Dockerfile
+    environment:
+      PORT: 3025
+      LEARNING_SCRATCH_DIR: /scratch
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+      - /scratch:size=512m,exec,nosuid,nodev,mode=1777
+    # On an internal network: the learning service can reach it, and it
+    # cannot reach the internet. network_mode: none would be tighter but
+    # also unreachable, which is no use to anyone.
+    networks: [learning-internal]
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1g
+
+  learning-service:
+    container_name: ot_learning_service
+    build:
+      context: ..
+      dockerfile: ./apps/learning-service/Dockerfile
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: ot_learning_service
+      LEARNING_CONTENT_ROOT: /usr/src/app/assets/content
+      LEARNING_RUNNER_URL: http://learning-runner:3025
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [default, learning-internal]
+  gateway:
+    container_name: e2e_gateway_learning
+    build:
+      context: ..
+      dockerfile: ./apps/gateway/Dockerfile
+    environment:
+      PORT: 3000
+      LISTEN_PORT: 3000
+      JWT_SECRET: c3VwZXJzZWNyZXRzdHJpbmc=
+      # The gateway refuses to boot without this, even with no OAuth provider
+      # configured. Test-only value.
+      OAUTH_STATE_SECRET: e2e-learning-oauth-state-secret-value
+      CORS_ALLOWED_ORIGINS: http://localhost:8096,http://localhost:8084
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+    ports:
+      - '3000:3000'
+    depends_on:
+      learning-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  learning:
+    container_name: e2e_learning
+    build:
+      context: ..
+      dockerfile: ./apps/learning/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      GATEWAY_URL: http://gateway:3000
+    ports:
+      - '8096:4000'
+    depends_on:
+      - gateway
+
+networks:
+  learning-internal:
+    internal: true

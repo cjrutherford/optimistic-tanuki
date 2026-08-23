@@ -30,25 +30,37 @@ const sourceNames = {
   rust: 'main.rs',
 };
 
-const NSJAIL = [
-  '--quiet',
-  '--clone_newnet',
-  '--time_limit',
-  '10',
-  '--rlimit_as',
-  '268435456',
-  '--rlimit_nproc',
-  '32',
-];
-
-/** Runs one command under the sandbox and collects what it said. */
+/**
+ * The container is the sandbox.
+ *
+ * This used to wrap every command in nsjail, which never once worked: the
+ * flag it passed, --clone_newnet, is not an nsjail option at all, so every
+ * run failed before reaching a compiler. Removing the flag only exposed the
+ * deeper problem, that the container drops every capability and forbids new
+ * privileges, so nsjail cannot create namespaces either. The two hardening
+ * strategies contradicted each other and the weaker one silently won.
+ *
+ * What actually contains the code is the container itself, and it is not
+ * thin: no capabilities, no new privileges, a read-only root filesystem, no
+ * network at all, a memory cap, a process cap, and a scratch mount wiped
+ * between runs. The limits below sit on top of that.
+ *
+ * Toolchains need somewhere to write: Go wants a build cache and rustc wants
+ * a home. Both are pointed at the scratch mount, since the root is read-only.
+ */
 function sandboxed(command, args, cwd) {
   return new Promise((resolve) => {
-    const child = spawn(
-      'nsjail',
-      [...NSJAIL, '--cwd', cwd, '--', command, ...args],
-      { cwd, env: { PATH: process.env.PATH } }
-    );
+    const child = spawn(command, args, {
+      cwd,
+      env: {
+        PATH: process.env.PATH,
+        HOME: cwd,
+        GOCACHE: `${cwd}/.gocache`,
+        GOPATH: `${cwd}/.gopath`,
+        GOFLAGS: '-mod=mod',
+        TMPDIR: cwd,
+      },
+    });
 
     let output = '';
     let errors = '';

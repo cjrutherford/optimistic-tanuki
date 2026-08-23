@@ -84,13 +84,15 @@
     },
     "serve-static": {
       "continuous": true,
-      "executor": "@nx/web:file-server",
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "learning:build",
-        "staticFilePath": "dist/apps/learning/browser",
-        "spa": true,
-        "port": 4215
-      }
+        "command": "node dist/apps/learning/server/server.mjs",
+        "cwd": "{workspaceRoot}",
+        "env": {
+          "PORT": "4215"
+        }
+      },
+      "dependsOn": ["build"]
     }
   }
 }

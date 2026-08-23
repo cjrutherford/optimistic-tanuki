@@ -1,6 +1,6 @@
 FROM node:24-alpine
 
-RUN apk add --no-cache dumb-init nsjail go g++ rust cargo curl
+RUN apk add --no-cache dumb-init go g++ rust cargo curl
 
 # Catch2, for the C++ testing exercises.
 #

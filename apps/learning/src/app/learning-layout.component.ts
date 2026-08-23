@@ -7,8 +7,8 @@ import { LearningDataService } from './learning-data.service';
   selector: 'learning-layout',
   imports: [RouterLink, RouterLinkActive, AsyncPipe],
   template: ` <header class="topbar">
-      <a routerLink="/dashboard">Tanuki Learning Studio</a
-      ><span>Internal curriculum · TypeScript · Go · C++ · Rust</span>
+      <a routerLink="/dashboard">Let&rsquo;s Go</a
+      ><span>TypeScript · Go · C++ · Rust</span>
     </header>
     <div class="studio">
       <aside>

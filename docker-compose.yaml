@@ -999,7 +999,7 @@ services:
         condition: service_healthy
       db-setup:
         condition: service_completed_successfully
-
+    networks: [default, learning-internal]
   learning-runner:
     container_name: ot_learning_runner
     build:
@@ -1014,14 +1014,19 @@ services:
       # C++ and Rust compile a binary and then run it, so the working
       # directory has to allow exec. /tmp stays noexec; this is the only
       # place execution is possible, and it is wiped between runs.
-      # tmpfs counts against mem_limit, so it is kept small: a Catch2-linked
-      # test binary is about 1 MB.
-      - /scratch:size=64m,exec,nosuid,nodev,mode=1777
+      # tmpfs counts against mem_limit, so mem_limit has to cover it. Go's
+      # build cache alone needs a few hundred MB the first time it compiles
+      # the standard library, which 64m could not hold.
+      - /scratch:size=512m,exec,nosuid,nodev,mode=1777
+    # On an internal network: the learning service can reach it, and it
+    # cannot reach the internet. network_mode: none would be tighter but
+    # also unreachable, which is no use to anyone.
+    networks: [learning-internal]
     cap_drop: [ALL]
     security_opt:
       - no-new-privileges:true
-    pids_limit: 32
-    mem_limit: 256m
+    pids_limit: 256
+    mem_limit: 1g
 
   learning:
     container_name: ot_learning
@@ -1042,3 +1047,7 @@ services:
 volumes:
   postgres_data:
   video-processing-data:
+
+networks:
+  learning-internal:
+    internal: true

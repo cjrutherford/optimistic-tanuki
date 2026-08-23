@@ -108,8 +108,14 @@ interface ExerciseOutcome {
                 (action)="run(exercise)"
                 >Run</otui-button
               >
+              <!--
+                Flat rather than gradient: the personality paints the gradient
+                from a much darker tint than the one --on-primary is computed
+                against, which left dark text on a dark stripe.
+              -->
               <otui-button
                 variant="primary"
+                [useGradient]="false"
                 [disabled]="busy[exercise.id]"
                 (action)="submit(exercise)"
                 >Submit</otui-button

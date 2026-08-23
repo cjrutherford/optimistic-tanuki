@@ -4,7 +4,7 @@ import { cppCompileCommand } from './catch2.mjs';
  * What to compile and what to run, per language.
  *
  * Kept apart from the sandbox so the decisions can be tested without needing
- * nsjail or a compiler on the machine running the tests.
+ * a compiler on the machine running the tests.
  */
 export function prepare(languageId, testMode, catch2Dir) {
   switch (languageId) {
