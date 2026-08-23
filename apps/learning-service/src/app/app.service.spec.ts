@@ -141,4 +141,56 @@ describe('AppService', () => {
       expect(go.progress.nextLessonId).not.toBe(overview);
     });
   });
+
+  // A learner must never be able to grade themselves. Knowing who wrote a
+  // score is what makes that checkable after the fact, so the gateway sends
+  // the acting user and it has to survive the trip.
+  describe('evaluation audit trail', () => {
+    it('keeps the user who recorded the score', async () => {
+      const attempt = await service.submitAttempt({
+        userId: 'learner-1',
+        offeringId: 'systems-100-core',
+        activityId: 'systems-100-code-activity',
+        activityType: 'code.run',
+        submission: { stdout: 'ok' },
+        isAsync: false,
+      });
+
+      const evaluation = await service.recordEvaluation({
+        attemptId: attempt.id,
+        mode: 'sync',
+        grader: 'human',
+        score: 9,
+        maxScore: 10,
+        feedback: 'Close enough',
+        humanOverride: true,
+        recordedByUserId: 'grader-7',
+      });
+
+      expect(evaluation.recordedByUserId).toBe('grader-7');
+    });
+
+    it('accepts an evaluation with no recorded user, for rows that predate it', async () => {
+      const attempt = await service.submitAttempt({
+        userId: 'learner-2',
+        offeringId: 'systems-100-core',
+        activityId: 'systems-100-code-activity',
+        activityType: 'code.run',
+        submission: { stdout: 'ok' },
+        isAsync: false,
+      });
+
+      const evaluation = await service.recordEvaluation({
+        attemptId: attempt.id,
+        mode: 'sync',
+        grader: 'auto',
+        score: 10,
+        maxScore: 10,
+        feedback: 'Passed',
+        humanOverride: false,
+      });
+
+      expect(evaluation.recordedByUserId).toBeUndefined();
+    });
+  });
 });

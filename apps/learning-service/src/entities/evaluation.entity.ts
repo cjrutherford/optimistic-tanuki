@@ -34,6 +34,15 @@ export class EvaluationEntity {
   @Column({ type: 'boolean', default: false })
   humanOverride!: boolean;
 
+  /**
+   * Who wrote this score, taken from the verified token at the gateway.
+   *
+   * Nullable because rows written before the gateway started sending it have
+   * no answer, and guessing one would be worse than admitting the gap.
+   */
+  @Column({ type: 'uuid', nullable: true })
+  recordedByUserId!: string | null;
+
   @CreateDateColumn()
   evaluatedAt!: Date;
 }

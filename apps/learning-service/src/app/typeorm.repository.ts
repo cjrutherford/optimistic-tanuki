@@ -78,6 +78,7 @@ export class TypeOrmLearningRepository implements LearningRepository {
       feedback: input.feedback,
       rubric: input.rubric as unknown as Record<string, unknown>,
       humanOverride: input.humanOverride,
+      recordedByUserId: input.recordedByUserId ?? null,
     });
     const saved = await this.evaluationRepo.save(entity);
     return this.toEvaluationDomain(saved);
@@ -132,6 +133,9 @@ export class TypeOrmLearningRepository implements LearningRepository {
       feedback: entity.feedback,
       rubric: entity.rubric as unknown as Evaluation['rubric'],
       humanOverride: entity.humanOverride,
+      ...(entity.recordedByUserId
+        ? { recordedByUserId: entity.recordedByUserId }
+        : {}),
       evaluatedAt: entity.evaluatedAt.toISOString(),
     };
   }

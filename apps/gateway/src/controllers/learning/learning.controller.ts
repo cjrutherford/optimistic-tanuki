@@ -41,19 +41,33 @@ export class LearningController {
     );
   }
 
+  @UseGuards(AuthGuard)
   @Post('attempts')
-  async submitAttempt(@Body() body: unknown) {
+  async submitAttempt(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { user: { userId: string } }
+  ) {
+    // The acting user always comes from the verified token. A userId in the
+    // body would let a caller submit an attempt as someone else.
     return await firstValueFrom(
-      this.learningService.send({ cmd: LearningCommands.SubmitAttempt }, body)
+      this.learningService.send(
+        { cmd: LearningCommands.SubmitAttempt },
+        { ...body, userId: req.user.userId }
+      )
     );
   }
 
+  @UseGuards(AuthGuard)
   @Post('evaluations')
-  async recordEvaluation(@Body() body: unknown) {
+  async recordEvaluation(
+    @Body() body: Record<string, unknown>,
+    @Req() req: { user: { userId: string } }
+  ) {
+    // Recording who graded an attempt gives an audit trail for scores.
     return await firstValueFrom(
       this.learningService.send(
         { cmd: LearningCommands.RecordEvaluation },
-        body
+        { ...body, recordedByUserId: req.user.userId }
       )
     );
   }
@@ -67,17 +81,6 @@ export class LearningController {
       this.learningService.send(
         { cmd: LearningCommands.GetLesson },
         { trackId, lessonId }
-      )
-    );
-  }
-
-  // Authentication integration will replace this development identity with the JWT subject.
-  @Get('progress/:userId')
-  async getProgress(@Param('userId') userId: string) {
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.GetProgress },
-        { userId }
       )
     );
   }
@@ -98,19 +101,6 @@ export class LearningController {
     );
   }
 
-  @Put('progress/:userId')
-  async saveProgress(
-    @Param('userId') userId: string,
-    @Body() progress: unknown
-  ) {
-    return await firstValueFrom(
-      this.learningService.send(
-        { cmd: LearningCommands.SaveLessonProgress },
-        { userId, progress }
-      )
-    );
-  }
-
   @UseGuards(AuthGuard)
   @Put('me/progress')
   async saveMyProgress(
@@ -125,6 +115,9 @@ export class LearningController {
     );
   }
 
+  // Running code is compute and must be attributable to a session, even
+  // though a plain run does not record anything against the learner.
+  @UseGuards(AuthGuard)
   @Post('runs')
   async runCode(@Body() body: { activityId: string; code: string }) {
     return await firstValueFrom(

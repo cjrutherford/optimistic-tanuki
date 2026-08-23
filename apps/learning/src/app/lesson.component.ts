@@ -22,6 +22,8 @@ interface ExerciseOutcome {
   passed?: boolean;
   awardedPoints?: number;
   needsSignIn?: boolean;
+  /** Which action needed the session, so the message fits what was tried. */
+  needsSignInFor?: 'run' | 'submit';
 }
 
 @Component({
@@ -135,7 +137,12 @@ interface ExerciseOutcome {
               [class.fail]="result.passed === false"
               role="status"
             >
-              @if (result.needsSignIn) {
+              @if (result.needsSignIn && result.needsSignInFor === 'run') {
+              <p class="verdict">Sign in to run code.</p>
+              <p class="detail">
+                Executing code needs a session so it can be attributed to you.
+              </p>
+              } @else if (result.needsSignIn) {
               <p class="verdict">Sign in to save your progress.</p>
               <p class="detail">
                 Your code still runs without an account. Only the score needs
@@ -592,7 +599,7 @@ export class LessonComponent {
         this.diagnostics[exercise.id] = parseCompilerErrors(result.errors);
         this.busy[exercise.id] = false;
       },
-      error: (error) => this.fail(exercise, error),
+      error: (error) => this.fail(exercise, error, 'run'),
     });
   }
 
@@ -610,7 +617,7 @@ export class LessonComponent {
         this.busy[exercise.id] = false;
         if (result.passed) this.progressReload$.next();
       },
-      error: (error) => this.fail(exercise, error),
+      error: (error) => this.fail(exercise, error, 'submit'),
     });
   }
 
@@ -647,7 +654,11 @@ export class LessonComponent {
     return this.code[exercise.id] ?? exercise.starterCode;
   }
 
-  private fail(exercise: Exercise, error: unknown): void {
+  private fail(
+    exercise: Exercise,
+    error: unknown,
+    action: 'run' | 'submit'
+  ): void {
     this.busy[exercise.id] = false;
     this.diagnostics[exercise.id] = [];
     if (error instanceof NotSignedInError) {
@@ -655,6 +666,7 @@ export class LessonComponent {
         output: '',
         errors: [],
         needsSignIn: true,
+        needsSignInFor: action,
       };
       return;
     }

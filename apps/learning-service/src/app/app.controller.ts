@@ -23,6 +23,8 @@ interface RecordEvaluationDto {
   feedback: string;
   rubric?: Evaluation['rubric'];
   humanOverride?: boolean;
+  /** The gateway supplies this from the verified token. */
+  recordedByUserId?: string;
 }
 
 @Controller()

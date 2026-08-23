@@ -112,12 +112,23 @@ export class LearningDataService {
     );
   }
 
-  /** Runs code without recording anything. Open to anonymous visitors. */
+  /**
+   * Runs code without recording anything, but the run itself is compute and
+   * needs a session, so a 401 becomes a NotSignedInError the caller can show.
+   */
   run(activityId: string, code: string): Observable<RunResult> {
-    return this.http.post<RunResult>('/api/learning/runs', {
-      activityId,
-      code,
-    });
+    return this.http
+      .post<RunResult>('/api/learning/runs', {
+        activityId,
+        code,
+      })
+      .pipe(
+        catchError((error: HttpErrorResponse) =>
+          error.status === 401
+            ? throwError(() => new NotSignedInError())
+            : throwError(() => error)
+        )
+      );
   }
 
   /**

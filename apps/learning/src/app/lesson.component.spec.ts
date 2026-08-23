@@ -109,6 +109,7 @@ type Handlers = {
       passed?: boolean;
       awardedPoints?: number;
       needsSignIn?: boolean;
+      needsSignInFor?: 'run' | 'submit';
     }
   >;
   busy: Record<string, boolean>;
@@ -171,6 +172,21 @@ describe('LessonComponent', () => {
     page.submit(exercise);
 
     expect(page.results['go-b-01'].needsSignIn).toBe(true);
+    expect(page.results['go-b-01'].needsSignInFor).toBe('submit');
+    expect(page.results['go-b-01'].errors).toEqual([]);
+    expect(page.busy['go-b-01']).toBe(false);
+  });
+
+  it('asks an anonymous visitor to sign in to run code, not just to save', () => {
+    const { component } = setup({
+      run: jest.fn(() => throwError(() => new NotSignedInError())),
+    });
+    const page = component as Handlers;
+
+    page.run(exercise);
+
+    expect(page.results['go-b-01'].needsSignIn).toBe(true);
+    expect(page.results['go-b-01'].needsSignInFor).toBe('run');
     expect(page.results['go-b-01'].errors).toEqual([]);
     expect(page.busy['go-b-01']).toBe(false);
   });

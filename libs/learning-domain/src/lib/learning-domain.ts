@@ -290,6 +290,14 @@ export const EvaluationSchema = z.object({
   feedback: z.string().min(1),
   rubric: RubricSchema.optional(),
   humanOverride: z.boolean().default(false),
+  /**
+   * Who wrote the score, taken from the verified token at the gateway.
+   *
+   * Optional because rows predate the field, not because it is dispensable.
+   * A learner must never be able to grade themselves, so knowing who did is
+   * the record that makes that checkable after the fact.
+   */
+  recordedByUserId: z.string().min(1).optional(),
   evaluatedAt: z.string().datetime(),
 });
 export type Evaluation = z.infer<typeof EvaluationSchema>;

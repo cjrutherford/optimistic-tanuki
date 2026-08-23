@@ -6,6 +6,7 @@ import { ProgramTrackEntity } from '../entities/program-track.entity';
 import { LessonProgressEntity } from '../entities/lesson-progress.entity';
 import { InitialSchema1770000000000 } from '../migrations/1770000000000-initial-schema';
 import { LessonProgress1770000000001 } from '../migrations/1770000000001-lesson-progress';
+import { EvaluationRecordedBy1770000000002 } from '../migrations/1770000000002-evaluation-recorded-by';
 
 const config = {
   type: 'postgres' as const,
@@ -21,7 +22,11 @@ const config = {
     CreditLedgerEntryEntity,
     LessonProgressEntity,
   ],
-  migrations: [InitialSchema1770000000000, LessonProgress1770000000001],
+  migrations: [
+    InitialSchema1770000000000,
+    LessonProgress1770000000001,
+    EvaluationRecordedBy1770000000002,
+  ],
   synchronize: false,
   logging: true,
 };

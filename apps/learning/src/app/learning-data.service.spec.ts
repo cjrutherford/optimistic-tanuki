@@ -81,7 +81,7 @@ describe('LearningDataService', () => {
     expect(progress).toHaveBeenCalledWith([]);
   });
 
-  it('runs code without a session', () => {
+  it('posts code to the run route', () => {
     const result = jest.fn();
     service.run('go-b-01', 'package main').subscribe(result);
 
@@ -94,6 +94,30 @@ describe('LearningDataService', () => {
 
     expect(result).toHaveBeenCalledWith(
       expect.objectContaining({ output: 'hello' })
+    );
+  });
+
+  it('turns a 401 on run into a NotSignedInError', () => {
+    const failure = jest.fn();
+    service.run('go-b-01', 'package main').subscribe({ error: failure });
+
+    http
+      .expectOne('/api/learning/runs')
+      .flush('Unauthorized', { status: 401, statusText: 'Unauthorized' });
+
+    expect(failure).toHaveBeenCalledWith(expect.any(NotSignedInError));
+  });
+
+  it('leaves other run failures alone', () => {
+    const failure = jest.fn();
+    service.run('go-b-01', 'package main').subscribe({ error: failure });
+
+    http
+      .expectOne('/api/learning/runs')
+      .flush('Boom', { status: 500, statusText: 'Server Error' });
+
+    expect(failure).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 500 })
     );
   });
 });
